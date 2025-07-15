@@ -1,0 +1,242 @@
+import 'package:flutter/material.dart';
+import 'package:ringdrill/models/exercise.dart';
+
+class ExerciseFormScreen extends StatefulWidget {
+  const ExerciseFormScreen({super.key, this.exercise});
+
+  final Exercise? exercise;
+
+  @override
+  State<ExerciseFormScreen> createState() => _ExerciseFormScreenState();
+}
+
+class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  TimeOfDay _startTime = const TimeOfDay(
+    hour: 9,
+    minute: 0,
+  ); // Default start time
+
+  // Form field controllers
+  final TextEditingController _nameController = TextEditingController(
+    text: "Exercise",
+  );
+  final TextEditingController _numberOfTeamsController = TextEditingController(
+    text: "4",
+  );
+  final TextEditingController _numberOfRoundsController = TextEditingController(
+    text: "4",
+  );
+  final TextEditingController _executionTimeController = TextEditingController(
+    text: "15",
+  );
+  final TextEditingController _evaluationTimeController = TextEditingController(
+    text: "10",
+  );
+  final TextEditingController _rotationTimeController = TextEditingController(
+    text: "5",
+  );
+
+  @override
+  void initState() {
+    final e = widget.exercise;
+    if (e != null) {
+      _startTime = e.startTime;
+      _nameController.text = e.name;
+      _numberOfTeamsController.text = e.numberOfTeams.toString();
+      _numberOfRoundsController.text = e.numberOfRounds.toString();
+      _executionTimeController.text = e.executionTime.toString();
+      _evaluationTimeController.text = e.evaluationTime.toString();
+      _rotationTimeController.text = e.rotationTime.toString();
+    }
+    super.initState();
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime,
+    );
+    if (picked != null) {
+      setState(() {
+        _startTime = picked;
+      });
+    }
+  }
+
+  // Validate and add the exercise
+  void _saveExercise() {
+    final String? validationError = ExerciseX.sanitizeExerciseName(
+      _nameController.text,
+    );
+
+    if (validationError != null) {
+      // Show an error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationError),
+          showCloseIcon: true,
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (_formKey.currentState?.validate() ?? false) {
+      final name = _nameController.text.trim();
+      final numberOfTeams = int.parse(_numberOfTeamsController.text);
+      final numberOfStations = int.parse(_numberOfRoundsController.text);
+      final executionTime = int.parse(_executionTimeController.text);
+      final evaluationTime = int.parse(_evaluationTimeController.text);
+      final rotationTime = int.parse(_rotationTimeController.text);
+
+      // Generate exercise with user input
+      final newExercise = ExerciseX.generateSchedule(
+        name: name,
+        startTime: _startTime,
+        uuid: widget.exercise?.uuid,
+        numberOfTeams: numberOfTeams,
+        numberOfRounds: numberOfStations,
+        executionTime: executionTime,
+        evaluationTime: evaluationTime,
+        rotationTime: rotationTime,
+      );
+
+      // Return the exercise to the previous screen
+      Navigator.of(context).pop(newExercise);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.exercise == null ? 'Create Exercise' : 'Edit Exercise',
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              // Exercise Name
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Exercise Name'),
+                validator:
+                    (value) =>
+                        value != null && value.trim().isNotEmpty
+                            ? null
+                            : 'Please enter a name',
+              ),
+
+              // Start Time Picker
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Start Time'),
+                subtitle: Text(ExerciseX.formatTime(_startTime)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.access_time),
+                  onPressed: _pickStartTime,
+                ),
+              ),
+
+              // Number of Teams
+              TextFormField(
+                controller: _numberOfTeamsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Number of Teams'),
+                validator:
+                    (value) =>
+                        value != null &&
+                                int.tryParse(value) != null &&
+                                int.parse(value) > 0
+                            ? null
+                            : 'Please enter a valid number',
+              ),
+
+              // Number of Rounds
+              TextFormField(
+                controller: _numberOfRoundsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Number of Rounds',
+                ),
+                validator:
+                    (value) =>
+                        value != null &&
+                                int.tryParse(value) != null &&
+                                int.parse(value) > 0
+                            ? null
+                            : 'Please enter a valid number',
+              ),
+
+              // Execution Time
+              TextFormField(
+                controller: _executionTimeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Execution Time'),
+                validator:
+                    (value) =>
+                        value != null &&
+                                int.tryParse(value) != null &&
+                                int.parse(value) > 0
+                            ? null
+                            : 'Please enter a valid time',
+              ),
+
+              // Evaluation Time
+              TextFormField(
+                controller: _evaluationTimeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Evaluation Time'),
+                validator:
+                    (value) =>
+                        value != null &&
+                                int.tryParse(value) != null &&
+                                int.parse(value) > 0
+                            ? null
+                            : 'Please enter a valid time',
+              ),
+
+              // Rotation Time
+              TextFormField(
+                controller: _rotationTimeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Rotation Time'),
+                validator:
+                    (value) =>
+                        value != null &&
+                                int.tryParse(value) != null &&
+                                int.parse(value) > 0
+                            ? null
+                            : 'Please enter a valid time',
+              ),
+
+              // Save Button
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _saveExercise,
+                child: const Text('Save Exercise'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _numberOfRoundsController.dispose();
+    _numberOfTeamsController.dispose();
+    _nameController.dispose();
+    _evaluationTimeController.dispose();
+    _rotationTimeController.dispose();
+    _executionTimeController.dispose();
+    super.dispose();
+  }
+}
