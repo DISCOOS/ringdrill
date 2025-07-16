@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
+import 'package:ringdrill/screens/about_page.dart';
+import 'package:ringdrill/screens/settings_page.dart';
+import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/sentry_config.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'coordinator_view_screen.dart';
 import 'exercise_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.isFirstLaunch});
+
+  final bool isFirstLaunch;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,6 +28,53 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initRepository();
+    if (widget.isFirstLaunch) _showConsentDialog();
+  }
+
+  void _showConsentDialog() {
+    Future.microtask(() async {
+      if (mounted) {
+        // Show a dialog asking the user to provide consent
+        final consent =
+            await showDialog(
+                  context: context,
+                  barrierDismissible:
+                      false, // Prevent closing without taking action
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text('App Analytics Consent'),
+                        content: const Text(
+                          'We use analytics to improve the app experience by collecting '
+                          'crash reports and general usage data from your device. '
+                          'You can choose whether to enable this feature now or later '
+                          'in the settings.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(context, false); // Close dialog
+                            },
+                            child: const Text('Decline'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              Navigator.pop(context, true); // Close dialog
+                            },
+                            child: const Text('Allow'),
+                          ),
+                        ],
+                      ),
+                )
+                as bool;
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(AppConfig.keyAnalyticsConsent, consent);
+
+        if (consent) {
+          await SentryFlutter.init(SentryConfig.apply);
+        }
+      }
+    });
   }
 
   Future<void> _initRepository() async {
@@ -59,6 +113,58 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Exercises')),
+      drawer: Drawer(
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              Container(
+                color: Theme.of(context).appBarTheme.backgroundColor,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 15.0,
+                  horizontal: 16.0,
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'RingDrill',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20.0, // Smaller font size than DrawerHeader
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings),
+                title: const Text('Settings'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsPage(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info),
+                title: const Text('About'),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AboutPage()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
       body:
           _exercises.isEmpty
               ? const Center(child: Text('No exercises yet!'))

@@ -18,6 +18,7 @@ class ExerciseRepository {
   List<Exercise> loadExercises() {
     final keys = _prefs.getKeys();
     return keys
+        .where((key) => !key.startsWith('app:'))
         .map((key) {
           final jsonString = _prefs.getString(key);
           if (jsonString == null) return null;

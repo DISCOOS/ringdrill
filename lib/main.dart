@@ -1,13 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ringdrill/screens/home_screen.dart';
+import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/sentry_config.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(RingDrillApp());
+Future<void> main() async {
+  SentryWidgetsFlutterBinding.ensureInitialized();
+
+  // Load user consent for analytics from SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  final isFirstLaunch = prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
+  final analyticsConsent =
+      prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
+
+  if (isFirstLaunch) {
+    // Set default "analyticsConsent" to false (opt-out by default)
+    await prefs.setBool(AppConfig.keyAnalyticsConsent, false);
+    await prefs.setBool(AppConfig.keyIsFirstLaunch, false);
+  }
+
+  if (analyticsConsent) {
+    // Run app with Sentry on consent
+    await SentryFlutter.init(
+      SentryConfig.apply,
+      appRunner:
+          () => runApp(SentryWidget(child: RingDrillApp(isFirstLaunch: false))),
+    );
+  } else {
+    // Run app without Sentry if no consent
+    runApp(RingDrillApp(isFirstLaunch: isFirstLaunch));
+  }
 }
 
 class RingDrillApp extends StatelessWidget {
-  const RingDrillApp({super.key});
+  const RingDrillApp({super.key, required this.isFirstLaunch});
+
+  final bool isFirstLaunch;
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +46,7 @@ class RingDrillApp extends StatelessWidget {
       theme: ringDrillTheme,
       darkTheme: ringDrillDarkTheme,
       themeMode: ThemeMode.dark,
-      home: HomeScreen(),
+      home: HomeScreen(isFirstLaunch: isFirstLaunch),
       debugShowCheckedModeBanner: false,
     );
   }
