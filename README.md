@@ -1,6 +1,6 @@
 # ringdrill
 
-Plan, synchronize and execute station-based drills with teams and supervisors.
+Efficient station-based training. Organize, run and track drills with ease.
 
 ## Getting Started
 To get started with developing for RingDrill using Flutter, follow these steps:
