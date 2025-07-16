@@ -62,6 +62,7 @@ extension ExerciseX on Exercise {
     required int executionTime,
     required int evaluationTime,
     required int rotationTime,
+    bool calcFromTimes = true,
     List<Team> teams = const [],
     List<Station> stations = const [],
   }) {
@@ -83,10 +84,15 @@ extension ExerciseX on Exercise {
       );
 
       return List.generate(3, (phaseIndex) {
-        final phaseDuration =
-            phaseIndex == 0
-                ? executionTime
-                : (phaseIndex == 1 ? evaluationTime : rotationTime);
+        final phaseDuration = switch (phaseIndex) {
+          0 => calcFromTimes ? 0 : executionTime,
+          1 => calcFromTimes ? executionTime : evaluationTime,
+          2 => calcFromTimes ? evaluationTime : rotationTime,
+          _ => throw UnimplementedError(),
+        };
+        phaseIndex == 0
+            ? executionTime
+            : (phaseIndex == 1 ? evaluationTime : rotationTime);
         final phaseTime = _addMinutesToTime(currentStartTime, phaseDuration);
 
         // Update currentStartTime to the end of the current phase
