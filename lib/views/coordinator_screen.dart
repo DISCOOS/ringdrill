@@ -5,18 +5,18 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
-import 'supervisor_view_screen.dart';
+import 'supervisor_screen.dart';
 
-class CoordinatorViewScreen extends StatefulWidget {
+class CoordinatorScreen extends StatefulWidget {
   final Exercise exercise;
 
-  const CoordinatorViewScreen({super.key, required this.exercise});
+  const CoordinatorScreen({super.key, required this.exercise});
 
   @override
-  State<CoordinatorViewScreen> createState() => _CoordinatorViewScreenState();
+  State<CoordinatorScreen> createState() => _CoordinatorScreenState();
 }
 
-class _CoordinatorViewScreenState extends State<CoordinatorViewScreen> {
+class _CoordinatorScreenState extends State<CoordinatorScreen> {
   late Exercise _current;
   bool _isStarted = false;
 
@@ -164,7 +164,7 @@ class _CoordinatorViewScreenState extends State<CoordinatorViewScreen> {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) => SupervisorViewScreen(
+                      (context) => SupervisorScreen(
                         teamIndex: teamIndex,
                         exercise: _current,
                       ),

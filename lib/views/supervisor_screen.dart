@@ -3,21 +3,21 @@ import 'package:pretty_date_time/pretty_date_time.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 
-class SupervisorViewScreen extends StatefulWidget {
+class SupervisorScreen extends StatefulWidget {
   final int teamIndex;
   final Exercise exercise;
 
-  const SupervisorViewScreen({
+  const SupervisorScreen({
     super.key,
     required this.teamIndex,
     required this.exercise,
   });
 
   @override
-  State<SupervisorViewScreen> createState() => _SupervisorViewScreenState();
+  State<SupervisorScreen> createState() => _SupervisorScreenState();
 }
 
-class _SupervisorViewScreenState extends State<SupervisorViewScreen> {
+class _SupervisorScreenState extends State<SupervisorScreen> {
   int currentIndex = 0;
 
   @override

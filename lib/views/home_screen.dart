@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
-import 'package:ringdrill/screens/about_page.dart';
-import 'package:ringdrill/screens/settings_page.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
+import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/settings_page.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'coordinator_view_screen.dart';
+import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -204,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             MaterialPageRoute(
                               builder:
                                   (context) =>
-                                      CoordinatorViewScreen(exercise: exercise),
+                                      CoordinatorScreen(exercise: exercise),
                             ),
                           );
                           _fetchExercises();
