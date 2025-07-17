@@ -138,6 +138,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Start Time'),
                 subtitle: Text(ExerciseX.formatTime(_startTime)),
+                onTap: _pickStartTime,
                 trailing: IconButton(
                   icon: const Icon(Icons.access_time),
                   onPressed: _pickStartTime,
