@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 
 class NotificationService {
@@ -23,8 +24,8 @@ class NotificationService {
   late bool _fullScreenIntent;
   late int _urgentThreshold;
 
-  bool _wasUrgent = false;
   int _urgentCount = 0;
+  bool _wasUrgent = false;
 
   StreamSubscription? _subscription;
 
@@ -50,7 +51,7 @@ class NotificationService {
     await _init();
 
     if (ExerciseService().last != null) {
-      _showOrUpdateNotification(ExerciseService().last!);
+      _notify(ExerciseService().last!);
     }
 
     return _enabled;
@@ -166,7 +167,7 @@ class NotificationService {
   void start() {
     // Subscribe to the exercise event stream
     _subscription = ExerciseService().events.listen((ExerciseEvent event) {
-      _showOrUpdateNotification(event);
+      _notify(event);
     });
   }
 
@@ -178,28 +179,16 @@ class NotificationService {
   }
 
   Future<void> cancel() async {
-    if (_currentChannelId != null) {
-      await _flutterLocalNotificationsPlugin.cancel(idExerciseNotification);
-      if (Platform.isAndroid) {
-        await _flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >()
-            ?.deleteNotificationChannel(_currentChannelId!);
-      }
-    }
+    await _flutterLocalNotificationsPlugin.cancelAll();
   }
 
   // Show or update a notification based on the ExerciseEvent
-  Future<void> _showOrUpdateNotification(ExerciseEvent event) async {
+  Future<void> _notify(ExerciseEvent event) async {
     if (event.isDone) {
       _urgentCount = 0;
       _wasUrgent = false;
       return cancel();
     }
-    final String currentPhase = event.phase.name;
-    final int remainingTime = event.remainingTime;
-    final int currentRound = event.currentRound;
     bool isUrgent =
         !event.isDone && event.remainingTime.abs() <= _urgentThreshold;
 
@@ -225,7 +214,9 @@ class NotificationService {
       autoCancel: false,
       channelBypassDnd: true,
       fullScreenIntent: isUrgent ? _fullScreenIntent : false,
-      priority: isUrgent ? Priority.max : Priority.defaultPriority,
+      // NOTE: On Garmin smart watches does not show
+      // notifications with Priority.defaultPriority
+      priority: isUrgent ? Priority.max : Priority.high,
       importance: isUrgent ? Importance.max : Importance.defaultImportance,
       playSound: isUrgent ? _playSound : false,
       enableVibration: isUrgent ? _enableVibration : false,
@@ -233,7 +224,7 @@ class NotificationService {
       category:
           isUrgent
               ? AndroidNotificationCategory.alarm
-              : AndroidNotificationCategory.reminder,
+              : AndroidNotificationCategory.progress,
       audioAttributesUsage:
           isUrgent
               ? AudioAttributesUsage.alarm
@@ -256,8 +247,17 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.show(
       idExerciseNotification,
       event.exercise.name,
-      'Round: ${currentRound + 1} | $currentPhase | Remaining: ${remainingTime.abs()} min',
+      _format(event),
       platformNotificationDetails,
     );
+  }
+
+  String _format(ExerciseEvent e) {
+    return [
+      "Round ${e.currentRound + 1}: ${e.phase.abbr}",
+      if (!e.isDone) "${e.remainingTime} min left",
+      if (!e.isDone) "${e.nextTimeOfDay.tuple()} next",
+      if (e.isDone) "${e.elapsedTime} min",
+    ].join(' | ');
   }
 }

@@ -205,22 +205,45 @@ class TimeOfDayConverter
 }
 
 extension DateTimeX on DateTime {
-  static DateTime fromSeconds(int seconds) {
+  static DateTime fromMinutes(int minutes) {
     final now = DateTime.now();
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
+    final hours = minutes ~/ 60;
     return DateTime(
       now.year,
       now.month,
       now.day,
       hours == 0 ? now.hour : hours,
-      minutes == 0 ? now.minute : minutes,
-      seconds % 60,
+      hours == 0 ? now.minute : minutes - hours * 60,
+      now.second,
     );
   }
 }
 
 extension TimeOfDayX on TimeOfDay {
+  static TimeOfDay fromMinutes(int minutes) {
+    final now = DateTime.now();
+    final hours = minutes ~/ 60;
+
+    return TimeOfDay(
+      hour: hours == 0 ? now.hour : hours,
+      minute: now.minute + minutes - hours * 60,
+    );
+  }
+
+  String tuple() {
+    String addLeadingZeroIfNeeded(int value) {
+      if (value < 10) {
+        return '0$value';
+      }
+      return value.toString();
+    }
+
+    final String hourLabel = addLeadingZeroIfNeeded(hour);
+    final String minuteLabel = addLeadingZeroIfNeeded(minute);
+
+    return '$hourLabel:$minuteLabel';
+  }
+
   DateTime toDateTime([DateTime? when]) {
     final now = when ?? DateTime.now();
     return DateTime(now.year, now.month, now.day, hour, minute, now.second);
