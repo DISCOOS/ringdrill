@@ -1,14 +1,65 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+    Required for url_launcher to open external URLs and interact with internet resources.
+    -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!--
+    Required for managing the ScheduledNotificationBootReceiver,
+    particularly useful for boot-time-related states.
+    -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!--
+    Enables vibration for notifications enabled by NotificationService._enableVibration.
+    -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!--
+    Necessary for full-screen notification intents with NotificationService.fullScreenIntent.
+    -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Add these when flutterLocalNotificationsPlugin.zonedSchedule()
+         is used to schedule notification on exact date and time.
+         Example use could be to schedule a notification like
+         ```Dart
+            await flutterLocalNotificationsPlugin.zonedSchedule(
+              42, // unique notification ID
+              'Upcoming Drill',
+              'Your RingDrill starts in 10 minutes',
+              scheduledTime, // a TZDateTime 10 minutes before start
+              const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  'exercise_reminders',
+                  'Drill Reminders',
+                  channelDescription: 'Notifications before drills begin',
+                  importance: Importance.high,
+                  priority: Priority.high,
+                ),
+              ),
+              androidAllowWhileIdle: true, // needed for Doze
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
+              matchDateTimeComponents: DateTimeComponents.dateAndTime,
+            );
+         ```
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    !-->
+    <!--
+    Essential for posting local notifications with FlutterLocalNotificationsPlugin.
+    -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!--
+    Required for managing notifications and other key foreground services via FlutterLocalNotificationsPlugin.
+    -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!--
+    Used in conjunction with android.permission.FOREGROUND_SERVICE to justify its special use for app publishing.
+    -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!--
+    Needed for channelBypassDnd: true, allowing notifications to bypass Do Not Disturb mode.
+    -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
+
     <application
         android:label="RingDrill"
         android:name="${applicationName}"
