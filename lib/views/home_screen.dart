@@ -137,6 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16.0),
               ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text('Settings'),

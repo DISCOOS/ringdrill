@@ -17,15 +17,17 @@ class CoordinatorScreen extends StatefulWidget {
 }
 
 class _CoordinatorScreenState extends State<CoordinatorScreen> {
+  late bool _isStarted;
   late Exercise _current;
-  bool _isStarted = false;
+  final _exerciseService = ExerciseService();
 
   @override
   void initState() {
     _current = widget.exercise;
+    _isStarted = _exerciseService.isStarted;
 
     // Listen to ExerciseService state changes
-    ExerciseService().events.listen((event) {
+    _exerciseService.events.listen((event) {
       // Update the state based on the current event phase
       if (mounted) {
         final changed = _isStarted != (event.isRunning || event.isPending);
@@ -50,6 +52,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     });
 
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    _current = widget.exercise;
+    _isStarted = _exerciseService.isStarted;
+    super.didChangeDependencies();
   }
 
   /// Converts TimeOfDay to string for display
@@ -95,7 +104,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     padding: const EdgeInsets.all(8.0),
                     onPressed: () {
                       // Stop the exercise
-                      ExerciseService().stop();
+                      _exerciseService.stop();
                     },
                     tooltip: 'Stop Exercise',
                   ),
@@ -113,14 +122,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     padding: const EdgeInsets.all(8.0),
                     onPressed: () {
                       // Start the exercise
-                      ExerciseService().start(_current);
+                      _exerciseService.start(_current);
                     },
                     tooltip: 'Start Exercise',
                   ),
                 ],
       ),
       body:
-          widget.exercise.schedule.isEmpty
+          _current.schedule.isEmpty
               ? const Center(child: Text('No rounds scheduled!'))
               : OrientationBuilder(
                 builder: (context, orientation) {
@@ -146,7 +155,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   ListView _buildTeamList() {
     return ListView.builder(
-      itemCount: widget.exercise.teams.length,
+      itemCount: _current.teams.length,
       itemBuilder: (context, teamIndex) {
         return Card(
           elevation: 2,
@@ -154,7 +163,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           child: ListTile(
             title: Text('Team ${teamIndex + 1}'),
             subtitle: Text(
-              'Stations: ${List<int>.generate(widget.exercise.schedule.length, (roundIndex) {
+              'Stations: ${List<int>.generate(_current.schedule.length, (roundIndex) {
                 return stationIndex(teamIndex, roundIndex) + 1;
               }).join(' ')}',
             ),
@@ -182,8 +191,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment:
           isPortrait ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-      children: List<Text>.generate(widget.exercise.schedule.length, (index) {
-        final round = widget.exercise.schedule[index];
+      children: List<Text>.generate(_current.schedule.length, (index) {
+        final round = _current.schedule[index];
         return Text(
           style: TextStyle(fontSize: 18),
           'Round ${index + 1}: '

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -14,23 +15,118 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool analyticsConsent = false; // User consent for analytics
+  bool isNotificationsEnabled = true; // Main notification toggle
+  bool isFullScreenIntentEnabled = false; // Full-screen intent notifications
+  bool playSound = true; // Notification sound toggle
+  bool vibrateEnabled = true; // Notification vibration toggle
+  int urgentNotificationThreshold =
+      2; // Minutes remaining for an urgent notification
+
+  static const List<int> thresholdOptions = [1, 2, 3, 4, 5];
 
   @override
   void initState() {
     super.initState();
-    _loadConsent();
+    _loadPreferences();
   }
 
-  Future<void> _loadConsent() async {
-    // Load saved consent state from shared preferences
+  Future<void> _loadPreferences() async {
+    // Load saved preferences from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       analyticsConsent = prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
+      isNotificationsEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationsEnabled) ??
+          true; // Default ON
+      isFullScreenIntentEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
+          false; // Default OFF
+      playSound = prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
+      vibrateEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
+      urgentNotificationThreshold =
+          prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
     });
   }
 
+  Future<void> _saveNotificationPreference({
+    bool? enabled,
+    bool? fullScreen,
+    bool? sound,
+    bool? vibrate,
+    int? threshold,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (enabled != null) {
+      await prefs.setBool(AppConfig.keyIsNotificationsEnabled, enabled);
+      await _initNotificationService(prefs);
+      setState(() {
+        isNotificationsEnabled = enabled;
+      });
+    }
+
+    if (fullScreen != null) {
+      await prefs.setBool(
+        AppConfig.keyIsNotificationFullScreenIntentEnabled,
+        fullScreen,
+      );
+      await _initNotificationService(prefs);
+      setState(() {
+        isFullScreenIntentEnabled = fullScreen;
+      });
+    }
+
+    if (sound != null) {
+      await prefs.setBool(AppConfig.keyNotificationPlaySound, sound);
+      await _initNotificationService(prefs);
+      setState(() {
+        playSound = sound;
+      });
+    }
+
+    if (vibrate != null) {
+      await prefs.setBool(AppConfig.keyIsNotificationVibrateEnabled, vibrate);
+      await _initNotificationService(prefs);
+      setState(() {
+        vibrateEnabled = vibrate;
+      });
+    }
+
+    if (threshold != null) {
+      await prefs.setInt(AppConfig.keyUrgentNotificationThreshold, threshold);
+      await _initNotificationService(prefs);
+      setState(() {
+        urgentNotificationThreshold = threshold;
+      });
+    }
+  }
+
+  Future<void> _initNotificationService(SharedPreferences prefs) async {
+    final enabled = prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
+    if (enabled) {
+      final playSound =
+          prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
+      final vibrateEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
+      final isFullScreenIntentEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
+          false;
+      final threshold =
+          prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
+      await NotificationService().init(
+        playSound: playSound,
+        enableVibration: vibrateEnabled,
+        fullScreenIntent: isFullScreenIntentEnabled,
+        urgentThreshold: threshold,
+      );
+    } else {
+      NotificationService().cancel(); // Disable notifications
+    }
+  }
+
   Future<void> _saveConsent(bool consent) async {
-    // Save consent state to shared preferences
+    // Save consent state to SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(AppConfig.keyAnalyticsConsent, consent);
     await _toggleSentryAnalytics(consent);
@@ -61,7 +157,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _toggleSentryAnalytics(bool value) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Save the updated consent state
+    // Save updated consent state
     prefs.setBool(AppConfig.keyAnalyticsConsent, value);
 
     if (value) {
@@ -80,49 +176,165 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          const Text(
-            'App Analytics Consent',
-            style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16.0),
-          const Text(
-            'We use analytics to improve the app experience by collecting certain data from your device. '
-            'This includes information about your device (e.g., device model, OS version) and crash reports '
-            'in case of failures. This data is sent to and processed by Sentry.io.',
-          ),
-          const SizedBox(height: 12.0),
-
-          // Learn More Button
-          TextButton.icon(
-            onPressed: () {
-              launchUrl(
-                Uri.parse(
-                  'https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected',
-                ),
-              );
-            },
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('Learn More About Data Collected'),
-          ),
+          _buildAnalyticsConsentSection(),
           const Divider(),
-
-          // Analytics Consent Toggle
-          SwitchListTile(
-            value: analyticsConsent,
-            onChanged: (value) {
-              setState(() {
-                analyticsConsent = value;
-              });
-              _saveConsent(value);
-            },
-            title: const Text('Allow App Analytics'),
-            subtitle: const Text(
-              'Enable collection of analytics and crash reports. This data is linked to your device but does not identify you personally.',
-            ),
-            secondary: const Icon(Icons.analytics_outlined),
-          ),
+          _buildNotificationSettingsSection(),
         ],
       ),
+    );
+  }
+
+  Widget _buildAnalyticsConsentSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Analytics Consent Section
+        const Text(
+          'App Analytics Consent',
+          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16.0),
+        const Text(
+          'We use analytics to improve the app experience by collecting certain data from your device. '
+          'This includes information about your device (e.g., device model, OS version) and crash reports '
+          'in case of failures. This data is sent to and processed by Sentry.io.',
+        ),
+        const SizedBox(height: 12.0),
+
+        TextButton.icon(
+          onPressed: () {
+            launchUrl(
+              Uri.parse(
+                'https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected',
+              ),
+            );
+          },
+          icon: const Icon(Icons.open_in_new),
+          label: const Text('Learn More About Data Collected'),
+        ),
+
+        const Divider(),
+
+        // Analytics Consent Toggle
+        SwitchListTile(
+          value: analyticsConsent,
+          onChanged: (value) {
+            setState(() {
+              analyticsConsent = value;
+            });
+            _saveConsent(value);
+          },
+          title: const Text('Allow App Analytics'),
+          subtitle: const Text(
+            'Enable collection of analytics and crash reports. This data is linked '
+            'to your device, but not your identity.',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationSettingsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Notifications Settings Section
+        const Text(
+          'Notifications',
+          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16.0),
+        const Text(
+          'Enable or disable local notifications for reminders and updates while using the app. '
+          'Disabling this will stop sending all notifications immediately.',
+        ),
+        const SizedBox(height: 12.0),
+
+        // Global Notifications Toggle
+        SwitchListTile(
+          value: isNotificationsEnabled,
+          onChanged: (value) {
+            _saveNotificationPreference(enabled: value); // Save user preference
+          },
+          title: const Text('Enable Notifications'),
+          subtitle: const Text(
+            'When enabled, you will receive reminders and updates via notifications.',
+          ),
+        ),
+
+        const Divider(),
+
+        // Urgent Notification Threshold
+        ListTile(
+          title: const Text('Set Urgent Notification Threshold'),
+          subtitle: const Text(
+            'The number of minutes remaining before the next phase to show an urgent notification.',
+          ),
+          trailing: DropdownButton<int>(
+            value: urgentNotificationThreshold,
+            items:
+                thresholdOptions
+                    .map(
+                      (minute) => DropdownMenuItem<int>(
+                        value: minute,
+                        child: Text('$minute min'),
+                      ),
+                    )
+                    .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                _saveNotificationPreference(threshold: value);
+              }
+            },
+          ),
+        ),
+
+        // Full-Screen Intent Toggle
+        SwitchListTile(
+          value: isFullScreenIntentEnabled,
+          onChanged:
+              isNotificationsEnabled
+                  ? (value) {
+                    _saveNotificationPreference(fullScreen: value);
+                  }
+                  : null, // Disable if notifications are off
+          title: const Text('Full-Screen Notifications'),
+          subtitle: const Text(
+            'Allow notifications to appear in full-screen mode for urgent updates, '
+            'even when other apps are open.',
+          ),
+        ),
+
+        // Play Sound Toggle
+        SwitchListTile(
+          value: playSound,
+          onChanged:
+              isNotificationsEnabled
+                  ? (value) {
+                    _saveNotificationPreference(sound: value);
+                  }
+                  : null, // Disable if notifications are off
+          title: const Text('Play Sound when urgent'),
+          subtitle: const Text(
+            'Toggle notification sounds on or off on urgent notifications.',
+          ),
+        ),
+
+        // Vibrate Toggle
+        SwitchListTile(
+          value: vibrateEnabled,
+          onChanged:
+              isNotificationsEnabled
+                  ? (value) {
+                    _saveNotificationPreference(vibrate: value);
+                  }
+                  : null, // Disable if notifications are off
+          title: const Text('Vibrate when urgent'),
+          subtitle: const Text(
+            'Enable or disable vibration for urgent notifications.',
+          ),
+        ),
+      ],
     );
   }
 }

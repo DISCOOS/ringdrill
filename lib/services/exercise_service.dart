@@ -47,6 +47,7 @@ class ExerciseService {
 
   final StreamController<ExerciseEvent> _eventController =
       StreamController<ExerciseEvent>.broadcast();
+
   Timer? _timer;
 
   Exercise? _exercise;
@@ -64,6 +65,8 @@ class ExerciseService {
   int get elapsedSeconds => _elapsedMinutes;
   Exercise? get exercise => _exercise;
   ExercisePhase get phase => _currentPhase;
+
+  bool get isStarted => _exercise != null && last?.isDone != true;
 
   /// Start the timer for the given `Exercise`
   void start(Exercise exercise) {

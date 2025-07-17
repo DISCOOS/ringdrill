@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/home_screen.dart';
@@ -34,10 +35,55 @@ Future<void> main() async {
   }
 }
 
-class RingDrillApp extends StatelessWidget {
+class RingDrillApp extends StatefulWidget {
   const RingDrillApp({super.key, required this.isFirstLaunch});
 
   final bool isFirstLaunch;
+
+  @override
+  State<RingDrillApp> createState() => _RingDrillAppState();
+}
+
+class _RingDrillAppState extends State<RingDrillApp> {
+  @override
+  void initState() {
+    _startNotificationService();
+    super.initState();
+  }
+
+  Future<void> _startNotificationService() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isNotificationsEnabled =
+        prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
+    if (isNotificationsEnabled) {
+      final playSound =
+          prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
+      final vibrateEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
+      final isFullScreenIntentEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
+          false;
+      final threshold =
+          prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
+
+      final init = await NotificationService().init(
+        playSound: playSound,
+        enableVibration: vibrateEnabled,
+        fullScreenIntent: isFullScreenIntentEnabled,
+        urgentThreshold: threshold,
+      );
+
+      if (!init) {
+        if (Sentry.isEnabled) {
+          await Sentry.captureMessage(
+            'NotificationService failed to initialize',
+          );
+        }
+        return;
+      }
+      NotificationService().start();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +92,7 @@ class RingDrillApp extends StatelessWidget {
       theme: ringDrillTheme,
       darkTheme: ringDrillDarkTheme,
       themeMode: ThemeMode.dark,
-      home: HomeScreen(isFirstLaunch: isFirstLaunch),
+      home: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
       debugShowCheckedModeBanner: false,
     );
   }
