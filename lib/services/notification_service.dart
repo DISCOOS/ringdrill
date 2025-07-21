@@ -189,8 +189,7 @@ class NotificationService {
       _wasUrgent = false;
       return cancel();
     }
-    bool isUrgent =
-        !event.isDone && event.remainingTime.abs() <= _urgentThreshold;
+    bool isUrgent = !event.isDone && event.remainingTime <= _urgentThreshold;
 
     if (isUrgent) {
       _urgentCount++;
@@ -256,7 +255,8 @@ class NotificationService {
     return [
       "Round ${e.currentRound + 1}: ${e.phase.abbr}",
       if (!e.isDone) "${e.remainingTime} min left",
-      if (!e.isDone) "${e.nextTimeOfDay.formal()} next",
+      if (e.isPending) "${e.nextTimeOfDay.formal()} start",
+      if (e.isRunning) "${e.nextTimeOfDay.formal()} next",
       if (e.isDone) "${e.elapsedTime} min",
     ].join(' | ');
   }

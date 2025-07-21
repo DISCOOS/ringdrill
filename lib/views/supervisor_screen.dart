@@ -59,9 +59,7 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
                     ),
                     Text(
                       event.isPending
-                          ? DateTimeX.fromMinutes(
-                            event.remainingTime.abs(),
-                          ).pretty()
+                          ? DateTimeX.fromMinutes(event.remainingTime).formal()
                           : '${event.remainingTime} min',
                       style: const TextStyle(
                         fontSize: 24,

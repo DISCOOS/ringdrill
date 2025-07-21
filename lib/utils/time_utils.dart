@@ -120,7 +120,14 @@ extension TimeOfDayX on TimeOfDay {
       minute,
       now.second,
     ).difference(
-      DateTime(now.year, now.month, now.day, other.hour, other.minute),
+      DateTime(
+        now.year,
+        now.month,
+        now.day,
+        other.hour,
+        other.minute,
+        now.second,
+      ),
     );
   }
 }

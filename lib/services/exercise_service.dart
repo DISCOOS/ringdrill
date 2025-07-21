@@ -6,11 +6,11 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
 enum ExercisePhase {
-  pending('wait'),
-  execution('exec'),
-  evaluation('eval'),
-  rotation('roll'),
-  done('done');
+  pending('WAIT'),
+  execution('EXEC'),
+  evaluation('EVAL'),
+  rotation('ROLL'),
+  done('DONE');
 
   final String abbr;
   const ExercisePhase(this.abbr);
@@ -21,12 +21,15 @@ class ExerciseEvent {
   final ExercisePhase phase;
   final DateTime when;
   final int elapsedTime; // Total elapsed time in seconds
-  final int remainingTime; // Remaining time in seconds for the current phase
+  final int remainingTime; // Remaining time in minutes for the current phase
   final int currentRound;
+  final double phaseProgress;
+  final double roundProgress;
+  final double totalProgress;
 
   int get currentDuration {
     return switch (phase) {
-      ExercisePhase.pending => remainingTime.abs(),
+      ExercisePhase.pending => remainingTime,
       ExercisePhase.execution => exercise.executionTime,
       ExercisePhase.evaluation => exercise.evaluationTime,
       ExercisePhase.rotation => exercise.rotationTime,
@@ -53,6 +56,9 @@ class ExerciseEvent {
     elapsedTime: 0,
     remainingTime: 0,
     currentRound: 0,
+    phaseProgress: 0,
+    roundProgress: 0,
+    totalProgress: 0,
     when: DateTime.now(),
   ); // Current round index (1-based)
 
@@ -63,6 +69,9 @@ class ExerciseEvent {
     required this.elapsedTime,
     required this.remainingTime,
     required this.currentRound,
+    required this.phaseProgress,
+    required this.roundProgress,
+    required this.totalProgress,
   });
 }
 
@@ -81,6 +90,9 @@ class ExerciseService {
   Exercise? _exercise;
   int _elapsedMinutes = 0; // Tracks total elapsed time
   int _roundIndex = 0; // Current round (0-based index)
+  double _phaseProgress = 0.0;
+  double _roundProgress = 0.0;
+  double _totalProgress = 0.0;
   ExercisePhase _currentPhase = ExercisePhase.execution;
 
   /// Expose stream of `ExerciseEvent`s
@@ -104,6 +116,9 @@ class ExerciseService {
     _exercise = exercise;
     _elapsedMinutes = 0;
     _roundIndex = 0;
+    _totalProgress = 0.0;
+    _roundProgress = 0.0;
+    _phaseProgress = 0.0;
     _last = ExerciseEvent.from(exercise);
     _currentPhase = _last!.phase;
 
@@ -119,57 +134,87 @@ class ExerciseService {
   }
 
   void _progress(Exercise exercise, bool force) {
-    final currentTimeOfDay = TimeOfDay.now();
-    // Only process each time a whole minute has passed
-    if (force || currentTimeOfDay.minute > _lastTimeOfDay.minute) {
-      _lastTimeOfDay = currentTimeOfDay;
+    if (_exercise != null) {
+      final currentTimeOfDay = TimeOfDay.now();
+      // Only process each time a whole minute has passed
+      if (force || currentTimeOfDay.minute > _lastTimeOfDay.minute) {
+        _lastTimeOfDay = currentTimeOfDay;
 
-      final totalRounds = exercise.numberOfRounds;
-      final executionTime = exercise.executionTime;
-      final evaluationTime = exercise.evaluationTime;
-      final rotationTime = exercise.rotationTime;
+        final totalRounds = exercise.numberOfRounds;
+        final executionTime = exercise.executionTime;
+        final evaluationTime = exercise.evaluationTime;
+        final rotationTime = exercise.rotationTime;
 
-      // Total duration of a single round
-      final roundDuration = executionTime + evaluationTime + rotationTime;
+        // Total duration of a single round
+        final roundDuration = executionTime + evaluationTime + rotationTime;
+        final totalTime = totalRounds * roundDuration;
 
-      final totalRemainingTime = currentTimeOfDay.difference(
-        _exercise!.startTime,
-      );
+        final totalRemainingTime = currentTimeOfDay.difference(
+          _exercise!.startTime,
+        );
 
-      if (totalRemainingTime.isNegative) {
-        _raise(exercise, phase, totalRemainingTime.inMinutes);
-      } else {
-        _elapsedMinutes = totalRemainingTime.inMinutes;
-
-        // Determine the current round
-        _roundIndex = (_elapsedMinutes ~/ roundDuration);
-
-        if (_roundIndex >= totalRounds) {
-          // Timer has completed all rounds — end the exercise
-          stop();
-          return;
-        }
-
-        // Calculate seconds elapsed within the current round
-        final minutesInCurrentRound = _elapsedMinutes % roundDuration;
-
-        // Determine the phase (execution, evaluation, rotation) and remaining time for the phase
-        int remainingTime = 0;
-        if (minutesInCurrentRound < executionTime) {
-          _currentPhase = ExercisePhase.execution;
-          remainingTime = executionTime - minutesInCurrentRound;
-        } else if (minutesInCurrentRound < (executionTime + evaluationTime)) {
-          _currentPhase = ExercisePhase.evaluation;
-          remainingTime =
-              executionTime + evaluationTime - minutesInCurrentRound;
+        if (totalRemainingTime.isNegative) {
+          _totalProgress = 0.0;
+          _roundProgress = 0.0;
+          _phaseProgress = 0.0;
+          _raise(exercise, phase, totalRemainingTime.inMinutes.abs());
         } else {
-          _currentPhase = ExercisePhase.rotation;
-          remainingTime =
-              roundDuration - minutesInCurrentRound; // Remaining rotation time
-        }
+          _elapsedMinutes = totalRemainingTime.inMinutes;
 
-        // Emit the current exercise event
-        _raise(_exercise!, _currentPhase, remainingTime);
+          if (_elapsedMinutes >= totalTime) {
+            _totalProgress = 1.0;
+            _roundProgress = 1.0;
+            _phaseProgress = 1.0;
+            // Timer has completed all rounds — end the exercise
+            stop();
+            return;
+          }
+
+          // Determine the current round
+          _roundIndex = (_elapsedMinutes ~/ roundDuration);
+
+          // Calculate minutes elapsed within the current round
+          final minutesInCurrentRound = _elapsedMinutes % roundDuration;
+
+          // Calculate progress indicators
+          int remainingTime = 0;
+          if (minutesInCurrentRound < executionTime) {
+            _currentPhase = ExercisePhase.execution;
+            remainingTime = executionTime - minutesInCurrentRound;
+            if (executionTime < 2) {
+              _phaseProgress = remainingTime > 0 ? 0.5 : 1.0;
+            } else {
+              _phaseProgress = (executionTime - remainingTime) / executionTime;
+            }
+          } else if (minutesInCurrentRound < (executionTime + evaluationTime)) {
+            _currentPhase = ExercisePhase.evaluation;
+            remainingTime =
+                executionTime + evaluationTime - minutesInCurrentRound;
+            if (evaluationTime < 2) {
+              _phaseProgress = remainingTime > 0 ? 0.5 : 1.0;
+            } else {
+              _phaseProgress =
+                  (evaluationTime - remainingTime) / evaluationTime;
+            }
+          } else {
+            _currentPhase = ExercisePhase.rotation;
+            remainingTime =
+                roundDuration -
+                minutesInCurrentRound; // Remaining rotation time
+            if (rotationTime < 2) {
+              _phaseProgress = remainingTime > 0 ? 0.5 : 1.0;
+            } else {
+              _phaseProgress = (rotationTime - remainingTime) / rotationTime;
+            }
+          }
+
+          // Calculate total and round progress
+          _roundProgress = minutesInCurrentRound / roundDuration;
+          _totalProgress = remainingTime / totalTime;
+
+          // Emit the current exercise event
+          _raise(_exercise!, _currentPhase, remainingTime);
+        }
       }
     }
   }
@@ -196,6 +241,9 @@ class ExerciseService {
         elapsedTime: _elapsedMinutes,
         remainingTime: remainingTime,
         currentRound: _roundIndex,
+        phaseProgress: _phaseProgress,
+        roundProgress: _roundProgress,
+        totalProgress: _totalProgress,
       ),
     );
   }
