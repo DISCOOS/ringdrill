@@ -47,11 +47,8 @@ class ExerciseEvent {
   bool get isPending => phase == ExercisePhase.pending;
   bool get isDone => phase == ExercisePhase.done;
 
-  static ExerciseEvent from(Exercise exercise) => ExerciseEvent(
-    phase:
-        TimeOfDay.now().difference(exercise.startTime).isNegative
-            ? ExercisePhase.pending
-            : ExercisePhase.done,
+  static ExerciseEvent done(Exercise exercise) => ExerciseEvent(
+    phase: ExercisePhase.done,
     exercise: exercise,
     elapsedTime: 0,
     remainingTime: 0,
@@ -119,7 +116,7 @@ class ExerciseService {
     _totalProgress = 0.0;
     _roundProgress = 0.0;
     _phaseProgress = 0.0;
-    _last = ExerciseEvent.from(exercise);
+    _last = ExerciseEvent.done(exercise);
     _currentPhase = _last!.phase;
 
     // Start immediately

@@ -25,29 +25,32 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   @override
   void initState() {
     _current = widget.exercise;
-    _isStarted = _exerciseService.isStarted;
+    _isStarted =
+        _exerciseService.exercise == _current && _exerciseService.isStarted;
 
     // Listen to ExerciseService state changes
     _exerciseService.events.listen((event) {
-      // Update the state based on the current event phase
-      if (mounted) {
-        final changed = _isStarted != (event.isRunning || event.isPending);
-        setState(() {
-          _isStarted = event.isRunning || event.isPending;
-        });
-        if (changed || event.isDone) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${_current.name} ${event.isRunning
-                    ? 'is running'
-                    : event.isPending
-                    ? 'is pending'
-                    : 'is done'}!',
+      if (event.exercise == _current) {
+        // Update the state based on the current event phase
+        if (mounted) {
+          final changed = _isStarted != (event.isRunning || event.isPending);
+          setState(() {
+            _isStarted = event.isRunning || event.isPending;
+          });
+          if (changed || event.isDone) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${_current.name} ${event.isRunning
+                      ? 'is running'
+                      : event.isPending
+                      ? 'is pending'
+                      : 'is done'}!',
+                ),
               ),
-            ),
-          );
+            );
+          }
         }
       }
     });
@@ -58,7 +61,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   @override
   void didChangeDependencies() {
     _current = widget.exercise;
-    _isStarted = _exerciseService.isStarted;
+    _isStarted =
+        _exerciseService.exercise == _current && _exerciseService.isStarted;
     super.didChangeDependencies();
   }
 
@@ -90,8 +94,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   Widget build(BuildContext context) {
     return StreamBuilder(
       stream: ExerciseService().events,
-      initialData:
-          ExerciseService().last ?? ExerciseEvent.from(widget.exercise),
+      initialData: _initialData(),
       builder: (context, asyncSnapshot) {
         final event = asyncSnapshot.data!;
         return Scaffold(
@@ -100,37 +103,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             title: Text(
               _current.name,
             ), // Dynamic title shows the exercise's name
-            actions:
-                _isStarted
-                    ? [
-                      IconButton(
-                        icon: const Icon(Icons.stop),
-                        padding: const EdgeInsets.all(8.0),
-                        onPressed: () {
-                          // Stop the exercise
-                          _exerciseService.stop();
-                        },
-                        tooltip: 'Stop Exercise',
-                      ),
-                    ]
-                    : [
-                      // Edit Exercise Button
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        padding: const EdgeInsets.all(8.0),
-                        onPressed: () => _editExercise(context),
-                        tooltip: 'Edit Exercise',
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.play_arrow),
-                        padding: const EdgeInsets.all(8.0),
-                        onPressed: () {
-                          // Start the exercise
-                          _exerciseService.start(_current);
-                        },
-                        tooltip: 'Start Exercise',
-                      ),
-                    ],
+            actions: [
+              // Edit Exercise Button
+              IconButton(
+                icon: const Icon(Icons.edit),
+                padding: const EdgeInsets.all(8.0),
+                onPressed: _isStarted ? null : () => _editExercise(context),
+                tooltip: _isStarted ? 'Stop exercise first' : 'Edit Exercise',
+              ),
+            ],
           ),
           body:
               _current.schedule.isEmpty
@@ -154,9 +135,43 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                       );
                     },
                   ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              if (!isStartable) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      "Stop '${_exerciseService.exercise!.name}' first!",
+                    ),
+                  ),
+                );
+                return;
+              }
+              if (_isStarted) {
+                // Stop the exercise
+                _exerciseService.stop();
+              } else {
+                // Start the exercise
+                _exerciseService.start(_current);
+              }
+            },
+            child: Icon(_isStarted ? Icons.stop : Icons.play_arrow),
+          ),
         );
       },
     );
+  }
+
+  ExerciseEvent _initialData() {
+    final last = ExerciseService().last;
+    if (last?.exercise == _current) return last!;
+    return ExerciseEvent.done(widget.exercise);
+  }
+
+  bool get isStartable {
+    return _exerciseService.exercise == null ||
+        _exerciseService.exercise == _current;
   }
 
   ListView _buildTeamList(ExerciseEvent event) {

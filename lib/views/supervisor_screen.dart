@@ -36,8 +36,7 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
       appBar: AppBar(title: Text('Team ${widget.teamIndex + 1}')),
       body: StreamBuilder(
         stream: ExerciseService().events,
-        initialData:
-            ExerciseService().last ?? ExerciseEvent.from(widget.exercise),
+        initialData: _initialData(),
         builder: (context, asyncSnapshot) {
           final event = asyncSnapshot.data!;
           currentIndex = stationIndex(event.currentRound);
@@ -102,5 +101,11 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
         },
       ),
     );
+  }
+
+  ExerciseEvent _initialData() {
+    final last = ExerciseService().last;
+    if (last?.exercise == widget.exercise) return last!;
+    return ExerciseEvent.done(widget.exercise);
   }
 }
