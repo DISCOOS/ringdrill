@@ -91,9 +91,9 @@ class _RingDrillAppState extends State<RingDrillApp> {
       title: 'RingDrill',
       theme: ringDrillTheme,
       darkTheme: ringDrillDarkTheme,
-      themeMode: ThemeMode.dark,
-      home: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
+      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
+      home: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
     );
   }
 }
