@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 
 class NotificationService {
   static const int idExerciseNotification = 1001;
@@ -256,7 +256,7 @@ class NotificationService {
     return [
       "Round ${e.currentRound + 1}: ${e.phase.abbr}",
       if (!e.isDone) "${e.remainingTime} min left",
-      if (!e.isDone) "${e.nextTimeOfDay.tuple()} next",
+      if (!e.isDone) "${e.nextTimeOfDay.formal()} next",
       if (e.isDone) "${e.elapsedTime} min",
     ].join(' | ');
   }

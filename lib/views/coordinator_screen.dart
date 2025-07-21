@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
@@ -59,11 +60,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     _current = widget.exercise;
     _isStarted = _exerciseService.isStarted;
     super.didChangeDependencies();
-  }
-
-  /// Converts TimeOfDay to string for display
-  String formatTimeOfDay(TimeOfDay time) {
-    return ExerciseX.formatTime(time);
   }
 
   /// Function to handle editing the exercise
@@ -196,9 +192,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         return Text(
           style: TextStyle(fontSize: 18),
           'Round ${index + 1}: '
-          '${formatTimeOfDay(round[0])} | '
-          '${formatTimeOfDay(round[1])} | '
-          '${formatTimeOfDay(round[2])}',
+          '${round[0].formal()} | '
+          '${round[1].formal()} | '
+          '${round[2].formal()}',
         );
       }),
     );

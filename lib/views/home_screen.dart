@@ -3,6 +3,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/settings_page.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -195,8 +196,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListTile(
                         title: Text(exercise.name),
                         subtitle: Text(
-                          'Start: ${ExerciseX.formatTime(exercise.startTime)} - '
-                          'End: ${ExerciseX.formatTime(exercise.endTime)}',
+                          [
+                            '${exercise.startTime.formal()} - ${exercise.endTime.formal()}',
+                            exercise.endTime.toDateTime().formal(
+                              exercise.startTime.toDateTime(),
+                            ),
+                            '${exercise.numberOfRounds} rounds',
+                            '${exercise.numberOfTeams} teams',
+                          ].join(' | '),
                         ),
                         onTap: () async {
                           // Navigate to CoordinatorViewScreen with the selected exercise

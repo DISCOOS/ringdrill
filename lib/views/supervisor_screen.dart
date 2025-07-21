@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:pretty_date_time/pretty_date_time.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 
 class SupervisorScreen extends StatefulWidget {
   final int teamIndex;
@@ -24,10 +24,6 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
   void initState() {
     currentIndex = widget.teamIndex;
     super.initState();
-  }
-
-  String formatTimeOfDay(TimeOfDay time) {
-    return ExerciseX.formatTime(time);
   }
 
   int stationIndex(int index) {
@@ -63,9 +59,9 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
                     ),
                     Text(
                       event.isPending
-                          ? prettyDateTime(
-                            DateTimeX.fromMinutes(event.remainingTime.abs()),
-                          )
+                          ? DateTimeX.fromMinutes(
+                            event.remainingTime.abs(),
+                          ).pretty()
                           : '${event.remainingTime} min',
                       style: const TextStyle(
                         fontSize: 24,
@@ -93,9 +89,9 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
                         child: ListTile(
                           title: Text(
                             '${widget.exercise.stations[stationIndex(index)].name}: '
-                            '${formatTimeOfDay(round[0])} | '
-                            '${formatTimeOfDay(round[1])} | '
-                            '${formatTimeOfDay(round[2])}',
+                            '${round[0].formal()} | '
+                            '${round[1].formal()} | '
+                            '${round[2].formal()}',
                           ),
                         ),
                       );

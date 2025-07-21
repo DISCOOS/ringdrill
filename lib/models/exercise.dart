@@ -104,7 +104,10 @@ extension ExerciseX on Exercise {
     // Compute the endTime from the last phase of the last round
     final lastRound = schedule.last;
     final lastPhase = lastRound.last;
-    final endTime = lastPhase; // End time is when the last phase ends
+    final endTime =
+        calcFromTimes
+            ? lastPhase.replacing(minute: lastPhase.minute + rotationTime)
+            : lastPhase; // End time is when the last phase ends
 
     // Return a new Exercise instance
     return Exercise(
@@ -179,11 +182,6 @@ extension ExerciseX on Exercise {
     );
   }
 
-  /// Format `TimeOfDay` for display
-  static String formatTime(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  }
-
   int stationIndex(int teamIndex, int roundIndex) {
     return (teamIndex + roundIndex) % stations.length;
   }
@@ -201,65 +199,5 @@ class TimeOfDayConverter
   @override
   Map<String, dynamic> toJson(TimeOfDay object) {
     return {'hour': object.hour, 'minute': object.minute};
-  }
-}
-
-extension DateTimeX on DateTime {
-  static DateTime fromMinutes(int minutes) {
-    final now = DateTime.now();
-    final hours = minutes ~/ 60;
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      hours == 0 ? now.hour : hours,
-      hours == 0 ? now.minute : minutes - hours * 60,
-      now.second,
-    );
-  }
-}
-
-extension TimeOfDayX on TimeOfDay {
-  static TimeOfDay fromMinutes(int minutes) {
-    final now = DateTime.now();
-    final hours = minutes ~/ 60;
-
-    return TimeOfDay(
-      hour: hours == 0 ? now.hour : hours,
-      minute: now.minute + minutes - hours * 60,
-    );
-  }
-
-  String tuple() {
-    String addLeadingZeroIfNeeded(int value) {
-      if (value < 10) {
-        return '0$value';
-      }
-      return value.toString();
-    }
-
-    final String hourLabel = addLeadingZeroIfNeeded(hour);
-    final String minuteLabel = addLeadingZeroIfNeeded(minute);
-
-    return '$hourLabel:$minuteLabel';
-  }
-
-  DateTime toDateTime([DateTime? when]) {
-    final now = when ?? DateTime.now();
-    return DateTime(now.year, now.month, now.day, hour, minute, now.second);
-  }
-
-  Duration difference(TimeOfDay other) {
-    final now = DateTime.now();
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-      now.second,
-    ).difference(
-      DateTime(now.year, now.month, now.day, other.hour, other.minute),
-    );
   }
 }

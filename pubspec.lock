@@ -680,14 +680,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.3"
-  pretty_date_time:
-    dependency: "direct main"
-    description:
-      name: pretty_date_time
-      sha256: "78b555b94e97f69e90177711a7fa707eb188bfac1cad0c2dae8f9f4220db44a0"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.3"
   process:
     dependency: transitive
     description:

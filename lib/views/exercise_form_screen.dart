@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 
 class ExerciseFormScreen extends StatefulWidget {
   const ExerciseFormScreen({super.key, this.exercise});
@@ -137,7 +138,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Start Time'),
-                subtitle: Text(ExerciseX.formatTime(_startTime)),
+                subtitle: Text(_startTime.formal()),
                 onTap: _pickStartTime,
                 trailing: IconButton(
                   icon: const Icon(Icons.access_time),
