@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 
 part 'exercise.freezed.dart';
 part 'exercise.g.dart';
@@ -106,7 +107,9 @@ extension ExerciseX on Exercise {
     final lastPhase = lastRound.last;
     final endTime =
         calcFromTimes
-            ? lastPhase.replacing(minute: lastPhase.minute + rotationTime)
+            ? TimeOfDay.fromDateTime(
+              lastPhase.toDateTime().add(Duration(minutes: rotationTime)),
+            )
             : lastPhase; // End time is when the last phase ends
 
     // Return a new Exercise instance
