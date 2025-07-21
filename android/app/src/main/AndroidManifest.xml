@@ -100,7 +100,7 @@
             </intent-filter>
         </receiver>
         <service
-            android:name="com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin"
+            android:name="com.dexterous.flutterlocalnotifications.ForegroundService"
             android:exported="false"
             android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
