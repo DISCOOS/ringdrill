@@ -65,8 +65,9 @@ class _RingDrillAppState extends State<RingDrillApp> {
           false;
       final threshold =
           prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
+      final service = NotificationService();
 
-      final init = await NotificationService().init(
+      final init = await service.init(
         playSound: playSound,
         enableVibration: vibrateEnabled,
         fullScreenIntent: isFullScreenIntentEnabled,
@@ -81,7 +82,7 @@ class _RingDrillAppState extends State<RingDrillApp> {
         }
         return;
       }
-      NotificationService().start();
+      service.start();
     }
   }
 
@@ -193,106 +194,3 @@ final ThemeData ringDrillDarkTheme = ThemeData(
     clipBehavior: Clip.antiAlias,
   ),
 );
-
-/*
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Create Drill')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Start Time (e.g., 13:30)',
-              ),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Number of Stations'),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Drill Duration (min)'),
-            ),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Evaluation Duration (min)',
-              ),
-            ),
-            TextField(
-              decoration: InputDecoration(labelText: 'Rotation Duration (min)'),
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {},
-                child: Text('Start Exercise'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class TeamViewScreen extends StatelessWidget {
-  const TeamViewScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Team View')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Current: Post 2', style: TextStyle(fontSize: 20)),
-            SizedBox(height: 8),
-            Text('Phase: Evaluation'),
-            Text('Started: 14:10'),
-            SizedBox(height: 16),
-            Text(
-              'Next: Post 3 at 14:25',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class CoordinatorViewScreen extends StatelessWidget {
-  const CoordinatorViewScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Coordinator View')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          ListTile(title: Text('R1: 13:30 - 14:25')),
-          ListTile(title: Text('R2: 14:30 - 15:25')),
-          ListTile(title: Text('R3: 15:30 - 16:25')),
-          ListTile(title: Text('R4: 16:30 - 17:25')),
-          Divider(),
-          ListTile(
-            title: Text(
-              'Return: 17:50',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
- */

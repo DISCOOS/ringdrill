@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
+import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/utils/time_utils.dart';
@@ -17,6 +18,14 @@ class HomeScreen extends StatefulWidget {
 
   final bool isFirstLaunch;
 
+  static void showSettings(BuildContext context, [bool pop = false]) {
+    if (pop) Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsPage()),
+    );
+  }
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -30,6 +39,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _initRepository();
     if (widget.isFirstLaunch) _showConsentDialog();
+    NotificationService().events.listen((event) {
+      if (event.action == NotificationAction.showSettings) {
+        if (mounted) {
+          HomeScreen.showSettings(context);
+        }
+      }
+    });
   }
 
   void _showConsentDialog() {
@@ -143,13 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 leading: const Icon(Icons.settings),
                 title: const Text('Settings'),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsPage(),
-                    ),
-                  );
+                  HomeScreen.showSettings(context, true);
                 },
               ),
               ListTile(

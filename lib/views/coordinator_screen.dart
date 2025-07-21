@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,7 +23,10 @@ class CoordinatorScreen extends StatefulWidget {
 class _CoordinatorScreenState extends State<CoordinatorScreen> {
   late bool _isStarted;
   late Exercise _current;
+  bool _promptShowNotification = false;
   final _exerciseService = ExerciseService();
+  late StreamSubscription<ExerciseEvent> _exerciseListener;
+  late StreamSubscription<NotificationEvent> _notificationListener;
 
   @override
   void initState() {
@@ -29,7 +35,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         _exerciseService.exercise == _current && _exerciseService.isStarted;
 
     // Listen to ExerciseService state changes
-    _exerciseService.events.listen((event) {
+    _exerciseListener = _exerciseService.events.listen((event) {
       if (event.exercise == _current) {
         // Update the state based on the current event phase
         if (mounted) {
@@ -54,6 +60,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         }
       }
     });
+
+    // Listen to Notification Events
+    _notificationListener = NotificationService().events
+        .where((e) => e.action == NotificationAction.promptReshow)
+        .where((e) => e.exercise == _current)
+        .listen((event) {
+          if (mounted) {
+            setState(() {
+              _promptShowNotification = true;
+            });
+          }
+        });
 
     super.initState();
   }
@@ -104,6 +122,21 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               _current.name,
             ), // Dynamic title shows the exercise's name
             actions: [
+              IconButton(
+                icon: const Icon(Icons.notifications_on),
+                padding: const EdgeInsets.all(8.0),
+                onPressed:
+                    _promptShowNotification
+                        ? () {
+                          unawaited(NotificationService().initFromPrefs());
+                          setState(() {
+                            _promptShowNotification = false;
+                          });
+                        }
+                        : null,
+                tooltip: 'Show notification',
+              ),
+
               // Edit Exercise Button
               IconButton(
                 icon: const Icon(Icons.edit),
@@ -369,5 +402,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _exerciseListener.cancel();
+    _notificationListener.cancel();
+    super.dispose();
   }
 }

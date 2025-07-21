@@ -60,7 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (enabled != null) {
       await prefs.setBool(AppConfig.keyIsNotificationsEnabled, enabled);
-      await _initNotificationService(prefs);
+      await NotificationService().initFromPrefs(prefs);
       setState(() {
         isNotificationsEnabled = enabled;
       });
@@ -71,7 +71,7 @@ class _SettingsPageState extends State<SettingsPage> {
         AppConfig.keyIsNotificationFullScreenIntentEnabled,
         fullScreen,
       );
-      await _initNotificationService(prefs);
+      await NotificationService().initFromPrefs(prefs);
       setState(() {
         isFullScreenIntentEnabled = fullScreen;
       });
@@ -79,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (sound != null) {
       await prefs.setBool(AppConfig.keyNotificationPlaySound, sound);
-      await _initNotificationService(prefs);
+      await NotificationService().initFromPrefs(prefs);
       setState(() {
         playSound = sound;
       });
@@ -87,7 +87,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (vibrate != null) {
       await prefs.setBool(AppConfig.keyIsNotificationVibrateEnabled, vibrate);
-      await _initNotificationService(prefs);
+      await NotificationService().initFromPrefs(prefs);
       setState(() {
         vibrateEnabled = vibrate;
       });
@@ -95,33 +95,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (threshold != null) {
       await prefs.setInt(AppConfig.keyUrgentNotificationThreshold, threshold);
-      await _initNotificationService(prefs);
+      await NotificationService().initFromPrefs(prefs);
       setState(() {
         urgentNotificationThreshold = threshold;
       });
-    }
-  }
-
-  Future<void> _initNotificationService(SharedPreferences prefs) async {
-    final enabled = prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
-    if (enabled) {
-      final playSound =
-          prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
-      final vibrateEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
-      final isFullScreenIntentEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
-          false;
-      final threshold =
-          prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
-      await NotificationService().init(
-        playSound: playSound,
-        enableVibration: vibrateEnabled,
-        fullScreenIntent: isFullScreenIntentEnabled,
-        urgentThreshold: threshold,
-      );
-    } else {
-      NotificationService().cancel(); // Disable notifications
     }
   }
 
