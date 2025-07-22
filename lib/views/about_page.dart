@@ -98,6 +98,32 @@ class _AboutPageState extends State<AboutPage> {
             ),
             const Divider(),
             ListTile(
+              leading: const Icon(Icons.link_outlined),
+              title: const Text('Privacy Policy'),
+              subtitle: const Text('$projectUrl/privacy/'), // Your website URL
+              onTap: () async {
+                if (!await launchUrl(Uri.parse('$projectUrl/privacy/'))) {
+                  Sentry.captureException(
+                    Exception('Could not launch $projectUrl/privacy/'),
+                  );
+                }
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.link_outlined),
+              title: const Text('Terms of Service'),
+              subtitle: const Text('$projectUrl/tos/'), // Your website URL
+              onTap: () async {
+                if (!await launchUrl(Uri.parse('$projectUrl/tos/'))) {
+                  Sentry.captureException(
+                    Exception('Could not launch $projectUrl/tos/'),
+                  );
+                }
+              },
+            ),
+            const Divider(),
+            ListTile(
               leading: const Icon(Icons.mail_outline),
               title: const Text('Contact Support'),
               subtitle: const Text('support@discoos.org'),
