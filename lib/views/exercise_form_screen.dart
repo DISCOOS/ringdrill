@@ -14,10 +14,15 @@ class ExerciseFormScreen extends StatefulWidget {
 class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  TimeOfDay _startTime = const TimeOfDay(
-    hour: 9,
-    minute: 0,
-  ); // Default start time
+  TimeOfDay _startTime = _initStartTime();
+
+  static TimeOfDay _initStartTime() {
+    final now = DateTime.now();
+    return TimeOfDay(
+      hour: now.minute > 30 ? (now.hour + 1) % 24 : now.hour,
+      minute: now.minute > 30 ? 0 : 30,
+    );
+  } // Default start time
 
   // Form field controllers
   final TextEditingController _nameController = TextEditingController(
