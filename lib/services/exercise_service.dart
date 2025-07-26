@@ -145,11 +145,14 @@ class ExerciseService {
         final rotationTime = exercise.rotationTime;
 
         // Total duration of a single round
-        final roundDuration = executionTime + evaluationTime + rotationTime;
-        final totalTime = totalRounds * roundDuration;
+        final roundTime = executionTime + evaluationTime + rotationTime;
+        final totalTime = totalRounds * roundTime;
 
-        // Calculate start time with date
-        final startTime = _exercise!.startTime.toDateTime();
+        // Calculate start date and time
+        final startTime =
+            _exercise!.endTime.isBefore(currentTimeOfDay)
+                ? _exercise!.startTime.toDateTime().add(const Duration(days: 1))
+                : _exercise!.startTime.toDateTime();
 
         final startTimeDelta =
             currentTimeOfDay.toDateTime().difference(startTime).inMinutes;
@@ -159,7 +162,7 @@ class ExerciseService {
           _roundProgress = 0.0;
           _phaseProgress = 0.0;
           // Exercise is pending
-          _raise(exercise, startTimeDelta);
+          _raise(exercise, startTimeDelta.abs());
         } else {
           _elapsedMinutes = startTimeDelta;
 
@@ -173,10 +176,10 @@ class ExerciseService {
           }
 
           // Determine the current round
-          _roundIndex = (_elapsedMinutes ~/ roundDuration);
+          _roundIndex = (_elapsedMinutes ~/ roundTime);
 
           // Calculate minutes elapsed within the current round
-          final minutesInCurrentRound = _elapsedMinutes % roundDuration;
+          final minutesInCurrentRound = _elapsedMinutes % roundTime;
 
           // Calculate progress indicators
           int remainingTime = 0;
@@ -201,8 +204,7 @@ class ExerciseService {
           } else {
             _currentPhase = ExercisePhase.rotation;
             remainingTime =
-                roundDuration -
-                minutesInCurrentRound; // Remaining rotation time
+                roundTime - minutesInCurrentRound; // Remaining rotation time
             if (rotationTime < 2) {
               _phaseProgress = remainingTime > 0 ? 0.5 : 1.0;
             } else {
@@ -211,7 +213,7 @@ class ExerciseService {
           }
 
           // Calculate total and round progress
-          _roundProgress = minutesInCurrentRound / roundDuration;
+          _roundProgress = minutesInCurrentRound / roundTime;
           _totalProgress = remainingTime / totalTime;
 
           // Emit the current exercise event
