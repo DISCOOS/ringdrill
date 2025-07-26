@@ -81,12 +81,8 @@ extension DateTimeX on DateTime {
 
 extension TimeOfDayX on TimeOfDay {
   static TimeOfDay fromMinutes(int minutes) {
-    final now = DateTime.now();
-    final hours = minutes ~/ 60;
-
-    return TimeOfDay(
-      hour: hours == 0 ? now.hour : hours,
-      minute: now.minute + minutes - hours * 60,
+    return TimeOfDay.fromDateTime(
+      DateTime.now().add(Duration(minutes: minutes)),
     );
   }
 
@@ -106,28 +102,7 @@ extension TimeOfDayX on TimeOfDay {
   }
 
   DateTime toDateTime([DateTime? when]) {
-    final now = when ?? DateTime.now();
+    DateTime now = when ?? DateTime.now();
     return DateTime(now.year, now.month, now.day, hour, minute, now.second);
-  }
-
-  Duration difference(TimeOfDay other) {
-    final now = DateTime.now();
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-      now.second,
-    ).difference(
-      DateTime(
-        now.year,
-        now.month,
-        now.day,
-        other.hour,
-        other.minute,
-        now.second,
-      ),
-    );
   }
 }

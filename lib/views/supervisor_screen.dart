@@ -106,6 +106,6 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
   ExerciseEvent _initialData() {
     final last = ExerciseService().last;
     if (last?.exercise == widget.exercise) return last!;
-    return ExerciseEvent.done(widget.exercise);
+    return ExerciseEvent.pending(widget.exercise);
   }
 }

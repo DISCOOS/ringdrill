@@ -47,8 +47,8 @@ class ExerciseEvent {
   bool get isPending => phase == ExercisePhase.pending;
   bool get isDone => phase == ExercisePhase.done;
 
-  static ExerciseEvent done(Exercise exercise) => ExerciseEvent(
-    phase: ExercisePhase.done,
+  static ExerciseEvent pending(Exercise exercise) => ExerciseEvent(
+    phase: ExercisePhase.pending,
     exercise: exercise,
     elapsedTime: 0,
     remainingTime: 0,
@@ -104,7 +104,9 @@ class ExerciseService {
   Exercise? get exercise => _exercise;
   ExercisePhase get phase => _currentPhase;
 
-  bool get isStarted => _exercise != null && last?.isDone != true;
+  bool get isStarted => isPending || isRunning;
+  bool get isPending => _exercise != null && last?.isPending == true;
+  bool get isRunning => _exercise != null && last?.isRunning == true;
 
   /// Start the timer for the given `Exercise`
   void start(Exercise exercise) {
@@ -116,7 +118,7 @@ class ExerciseService {
     _totalProgress = 0.0;
     _roundProgress = 0.0;
     _phaseProgress = 0.0;
-    _last = ExerciseEvent.done(exercise);
+    _last = ExerciseEvent.pending(exercise);
     _currentPhase = _last!.phase;
 
     // Start immediately
@@ -145,18 +147,27 @@ class ExerciseService {
         // Total duration of a single round
         final roundDuration = executionTime + evaluationTime + rotationTime;
         final totalTime = totalRounds * roundDuration;
+        DateTime now = DateTime.now();
 
-        final totalRemainingTime = currentTimeOfDay.difference(
-          _exercise!.startTime,
-        );
+        // Calculate start time with date
+        final startTime =
+            _exercise!.startTime.isBefore(TimeOfDay.fromDateTime(now))
+                ? _exercise!.startTime.toDateTime(
+                  now.add(const Duration(days: 1)),
+                )
+                : _exercise!.startTime.toDateTime();
 
-        if (totalRemainingTime.isNegative) {
+        final startTimeDelta =
+            startTime.difference(currentTimeOfDay.toDateTime()).abs().inMinutes;
+
+        if (isPending && startTimeDelta >= 0) {
           _totalProgress = 0.0;
           _roundProgress = 0.0;
           _phaseProgress = 0.0;
-          _raise(exercise, phase, totalRemainingTime.inMinutes.abs());
+          // Exercise is pending
+          _raise(exercise, startTimeDelta);
         } else {
-          _elapsedMinutes = totalRemainingTime.inMinutes;
+          _elapsedMinutes = startTimeDelta;
 
           if (_elapsedMinutes >= totalTime) {
             _totalProgress = 1.0;
@@ -210,7 +221,7 @@ class ExerciseService {
           _totalProgress = remainingTime / totalTime;
 
           // Emit the current exercise event
-          _raise(_exercise!, _currentPhase, remainingTime);
+          _raise(_exercise!, remainingTime);
         }
       }
     }
@@ -224,12 +235,12 @@ class ExerciseService {
     if (_exercise != null) {
       _currentPhase = ExercisePhase.done;
       // Emit a stop event with details of the last state
-      _raise(_exercise!, _currentPhase, 0);
+      _raise(_exercise!, 0);
       _exercise = null;
     }
   }
 
-  void _raise(Exercise exercise, ExercisePhase phase, int remainingTime) {
+  void _raise(Exercise exercise, int remainingTime) {
     return _eventController.add(
       _last = ExerciseEvent(
         exercise: exercise,

@@ -199,7 +199,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   ExerciseEvent _initialData() {
     final last = ExerciseService().last;
     if (last?.exercise == _current) return last!;
-    return ExerciseEvent.done(widget.exercise);
+    return ExerciseEvent.pending(widget.exercise);
   }
 
   bool get isStartable {
