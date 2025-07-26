@@ -147,20 +147,14 @@ class ExerciseService {
         // Total duration of a single round
         final roundDuration = executionTime + evaluationTime + rotationTime;
         final totalTime = totalRounds * roundDuration;
-        DateTime now = DateTime.now();
 
         // Calculate start time with date
-        final startTime =
-            _exercise!.startTime.isBefore(TimeOfDay.fromDateTime(now))
-                ? _exercise!.startTime.toDateTime(
-                  now.add(const Duration(days: 1)),
-                )
-                : _exercise!.startTime.toDateTime();
+        final startTime = _exercise!.startTime.toDateTime();
 
         final startTimeDelta =
-            startTime.difference(currentTimeOfDay.toDateTime()).abs().inMinutes;
+            currentTimeOfDay.toDateTime().difference(startTime).inMinutes;
 
-        if (isPending && startTimeDelta >= 0) {
+        if (isPending && startTimeDelta < 0) {
           _totalProgress = 0.0;
           _roundProgress = 0.0;
           _phaseProgress = 0.0;
