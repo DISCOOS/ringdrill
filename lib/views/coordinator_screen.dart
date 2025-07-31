@@ -284,6 +284,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           );
 
           return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
@@ -336,6 +337,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     final isComplete = isCurrentRound && event.phase.index > phaseIndex + 1;
     return SizedBox(
       width: cellSize,
+      height: 24,
       child: Stack(
         fit: StackFit.passthrough,
         children: [
@@ -396,7 +398,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 _current.schedule[roundIndex][phaseIndex].formal(),
                 style: style,
               ),
-              if (phaseIndex < 2) Text(' |', style: style),
+              if (phaseIndex < 2) Text(' | ', style: style),
             ],
           ),
         ],
