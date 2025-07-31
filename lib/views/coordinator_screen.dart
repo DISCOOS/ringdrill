@@ -268,55 +268,81 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             isPortrait ? MainAxisAlignment.center : MainAxisAlignment.start,
         crossAxisAlignment:
             isPortrait ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-        children: List<Widget>.generate(_current.schedule.length, (roundIndex) {
-          // Determine whether this round is completed or current
-          final isCurrent = event.isRunning && roundIndex == event.currentRound;
-          final textStyle = TextStyle(
-            fontSize: 18,
-            fontWeight:
-                isCurrent
-                    ? FontWeight.bold
-                    : FontWeight.normal, // Emphasize current round
-            color:
-                isCurrent
-                    ? Colors.white
-                    : Colors.black, // Contrast for visibility
-          );
-
-          return Row(
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
+              SizedBox(width: 75, height: 24),
+              SizedBox(
+                width: 56,
                 height: 24,
-                padding: EdgeInsets.only(left: 8),
-                decoration: BoxDecoration(
-                  color: isCurrent ? Colors.blueAccent : Colors.transparent,
-                  borderRadius:
-                      isCurrent
-                          ? BorderRadius.only(
-                            topLeft: Radius.circular(4),
-                            bottomLeft: Radius.circular(4),
-                          )
-                          : null,
-                ),
-                child: Text('Round ${roundIndex + 1}: ', style: textStyle),
+                child: Center(child: Text('EXEC')),
               ),
-              ...List<Widget>.generate(_current.schedule[roundIndex].length, (
-                phaseIndex,
-              ) {
-                return _buildPhaseCell(
-                  event,
-                  roundIndex,
-                  phaseIndex,
-                  textStyle,
-                  isPortrait,
-                  isCurrent,
-                );
-              }),
+              SizedBox(
+                width: 56,
+                height: 24,
+                child: Center(child: Text('EVAL')),
+              ),
+              SizedBox(
+                width: 56,
+                height: 24,
+                child: Center(child: Text('ROLL')),
+              ),
             ],
-          );
-        }),
+          ),
+          ...List<Widget>.generate(_current.schedule.length, (roundIndex) {
+            // Determine whether this round is completed or current
+            final isCurrent =
+                event.isRunning && roundIndex == event.currentRound;
+            final textStyle = TextStyle(
+              fontSize: 18,
+              fontWeight:
+                  isCurrent
+                      ? FontWeight.bold
+                      : FontWeight.normal, // Emphasize current round
+              color:
+                  isCurrent
+                      ? Colors.white
+                      : Colors.black, // Contrast for visibility
+            );
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 24,
+                  padding: EdgeInsets.only(left: 8),
+                  decoration: BoxDecoration(
+                    color: isCurrent ? Colors.blueAccent : Colors.transparent,
+                    borderRadius:
+                        isCurrent
+                            ? BorderRadius.only(
+                              topLeft: Radius.circular(4),
+                              bottomLeft: Radius.circular(4),
+                            )
+                            : null,
+                  ),
+                  child: Text('Round ${roundIndex + 1}: ', style: textStyle),
+                ),
+                ...List<Widget>.generate(_current.schedule[roundIndex].length, (
+                  phaseIndex,
+                ) {
+                  return _buildPhaseCell(
+                    event,
+                    roundIndex,
+                    phaseIndex,
+                    textStyle,
+                    isPortrait,
+                    isCurrent,
+                  );
+                }),
+              ],
+            );
+          }),
+        ],
       ),
     );
   }
