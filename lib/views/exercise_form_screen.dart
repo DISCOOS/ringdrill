@@ -156,13 +156,17 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 controller: _numberOfTeamsController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Number of Teams'),
-                validator:
-                    (value) =>
-                        value != null &&
-                                int.tryParse(value) != null &&
-                                int.parse(value) > 0
-                            ? null
-                            : 'Please enter a valid number',
+                validator: (value) {
+                  if (_isValidNumber(value)) {
+                    if (_isValidNumber(_numberOfRoundsController.text)) {
+                      return int.parse(_numberOfRoundsController.text) <
+                              int.parse(value!)
+                          ? 'Must be equal to or less than Number of Rounds'
+                          : null;
+                    }
+                  }
+                  return 'Please enter a valid number';
+                },
               ),
 
               // Number of Rounds
@@ -172,13 +176,17 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Number of Rounds',
                 ),
-                validator:
-                    (value) =>
-                        value != null &&
-                                int.tryParse(value) != null &&
-                                int.parse(value) > 0
-                            ? null
-                            : 'Please enter a valid number',
+                validator: (value) {
+                  if (_isValidNumber(value)) {
+                    if (_isValidNumber(_numberOfTeamsController.text)) {
+                      return int.parse(_numberOfTeamsController.text) >
+                              int.parse(value!)
+                          ? 'Must be equal to or greater than Number of Teams'
+                          : null;
+                    }
+                  }
+                  return 'Please enter a valid number';
+                },
               ),
 
               // Execution Time
@@ -188,9 +196,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 decoration: const InputDecoration(labelText: 'Execution Time'),
                 validator:
                     (value) =>
-                        value != null &&
-                                int.tryParse(value) != null &&
-                                int.parse(value) > 0
+                        _isValidNumber(value)
                             ? null
                             : 'Please enter a valid time',
               ),
@@ -202,9 +208,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 decoration: const InputDecoration(labelText: 'Evaluation Time'),
                 validator:
                     (value) =>
-                        value != null &&
-                                int.tryParse(value) != null &&
-                                int.parse(value) > 0
+                        _isValidNumber(value)
                             ? null
                             : 'Please enter a valid time',
               ),
@@ -216,9 +220,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 decoration: const InputDecoration(labelText: 'Rotation Time'),
                 validator:
                     (value) =>
-                        value != null &&
-                                int.tryParse(value) != null &&
-                                int.parse(value) > 0
+                        _isValidNumber(value)
                             ? null
                             : 'Please enter a valid time',
               ),
@@ -234,6 +236,10 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         ),
       ),
     );
+  }
+
+  bool _isValidNumber(String? value) {
+    return value != null && int.tryParse(value) != null && int.parse(value) > 0;
   }
 
   @override

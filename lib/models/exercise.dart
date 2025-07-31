@@ -68,6 +68,10 @@ extension ExerciseX on Exercise {
     List<Station> stations = const [],
   }) {
     assert(
+      numberOfTeams <= numberOfRounds,
+      '<numberOfTeams> must be less or equal to <numberOfRounds>',
+    );
+    assert(
       teams.isEmpty || teams.length <= numberOfRounds,
       '<teams> must be less or equal to <numberOfRounds>',
     );
@@ -124,7 +128,7 @@ extension ExerciseX on Exercise {
       numberOfRounds: numberOfRounds,
       teams: List.unmodifiable(
         teams.isEmpty
-            ? List<Team>.generate(numberOfRounds, (index) {
+            ? List<Team>.generate(numberOfTeams, (index) {
               return Team(index: index, name: 'Team ${index + 1}');
             })
             : stations,
