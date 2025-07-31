@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
@@ -121,6 +122,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Delete an exercise and refresh the list
   Future<void> _deleteExercise(Exercise exercise) async {
+    if (ExerciseService().exercise == exercise) {
+      ExerciseService().stop();
+    }
     // Remove the exercise from the repository
     await _repository.deleteExercise(exercise.uuid);
     _fetchExercises();
