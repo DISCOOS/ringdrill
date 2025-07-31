@@ -198,6 +198,33 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: const Icon(Icons.delete, color: Colors.white),
                     ),
+                    confirmDismiss:
+                        (direction) => showDialog(
+                          context: context,
+                          barrierDismissible:
+                              false, // Prevent closing without taking action
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text('Confirm'),
+                                content: const Text(
+                                  'This will delete the exercise. Do you want to continue?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      Navigator.pop(context, false);
+                                    },
+                                    child: const Text('NO'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      Navigator.pop(context, true);
+                                    },
+                                    child: const Text('YES'),
+                                  ),
+                                ],
+                              ),
+                        ),
                     onDismissed: (direction) {
                       _deleteExercise(exercise);
                     },
