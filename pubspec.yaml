@@ -28,7 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  sentry_flutter: ^9.4.1
+  sentry_flutter: ^9.5.0
   flutter:
     sdk: flutter
 
@@ -41,7 +41,7 @@ dependencies:
   package_info_plus: ^8.3.0
   freezed_annotation: ^3.1.0
   shared_preferences: ^2.5.3
-  flutter_local_notifications: ^19.3.1
+  flutter_local_notifications: ^19.4.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -53,9 +53,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  build_runner: ^2.5.4
-  freezed: ^3.1.0
-  json_serializable: ^6.9.5
+  build_runner: ^2.6.0
+  freezed: ^3.2.0
+  json_serializable: ^6.10.0
   flutter_launcher_icons: ^0.14.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
