@@ -189,6 +189,10 @@ extension ExerciseX on Exercise {
     );
   }
 
+  int teamIndex(int stationIndex, int roundIndex) {
+    return (stationIndex + roundIndex) % stations.length;
+  }
+
   int stationIndex(int teamIndex, int roundIndex) {
     return (teamIndex + roundIndex) % stations.length;
   }

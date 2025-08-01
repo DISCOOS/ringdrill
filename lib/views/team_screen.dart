@@ -2,32 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/station_widget.dart' show StationWidget;
 
-class SupervisorScreen extends StatefulWidget {
+class TeamScreen extends StatefulWidget {
   final int teamIndex;
   final Exercise exercise;
 
-  const SupervisorScreen({
+  const TeamScreen({
     super.key,
     required this.teamIndex,
     required this.exercise,
   });
 
   @override
-  State<SupervisorScreen> createState() => _SupervisorScreenState();
+  State<TeamScreen> createState() => _TeamScreenState();
 }
 
-class _SupervisorScreenState extends State<SupervisorScreen> {
+class _TeamScreenState extends State<TeamScreen> {
   int currentIndex = 0;
 
   @override
   void initState() {
     currentIndex = widget.teamIndex;
     super.initState();
-  }
-
-  int stationIndex(int index) {
-    return widget.exercise.stationIndex(widget.teamIndex, index);
   }
 
   @override
@@ -39,7 +36,10 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
         initialData: _initialData(),
         builder: (context, asyncSnapshot) {
           final event = asyncSnapshot.data!;
-          currentIndex = stationIndex(event.currentRound);
+          currentIndex = widget.exercise.stationIndex(
+            widget.teamIndex,
+            event.currentRound,
+          );
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -74,21 +74,18 @@ class _SupervisorScreenState extends State<SupervisorScreen> {
                   child: ListView.builder(
                     itemCount: widget.exercise.schedule.length,
                     itemBuilder: (context, index) {
-                      final round = widget.exercise.schedule[index];
-                      final station =
-                          widget.exercise.stations[stationIndex(index)];
                       return Card(
-                        color:
-                            !event.isDone && station.index == currentIndex
-                                ? Theme.of(context).colorScheme.primaryFixed
-                                : null,
-                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 4),
                         child: ListTile(
-                          title: Text(
-                            '${widget.exercise.stations[stationIndex(index)].name}: '
-                            '${round[0].formal()} | '
-                            '${round[1].formal()} | '
-                            '${round[2].formal()}',
+                          title: StationWidget(
+                            event: event,
+                            stationIndex: widget.exercise.stationIndex(
+                              widget.teamIndex,
+                              index,
+                            ),
+                            exercise: widget.exercise,
+                            roundIndex: index,
+                            mainAxisAlignment: MainAxisAlignment.start,
                           ),
                         ),
                       );
