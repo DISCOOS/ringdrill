@@ -3,20 +3,20 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/phase_widget.dart';
 
-class StationWidget extends StatelessWidget {
-  const StationWidget({
+class TeamStateWidget extends StatelessWidget {
+  const TeamStateWidget({
     super.key,
     required this.event,
     required this.exercise,
     required this.roundIndex,
-    required this.stationIndex,
+    required this.teamIndex,
     this.isPortrait = true,
     this.mainAxisAlignment = MainAxisAlignment.center,
   });
 
   final bool isPortrait;
   final int roundIndex;
-  final int stationIndex;
+  final int teamIndex;
   final Exercise exercise;
   final ExerciseEvent event;
   final MainAxisAlignment mainAxisAlignment;
@@ -33,7 +33,7 @@ class StationWidget extends StatelessWidget {
       color: isCurrent ? Colors.white : Colors.black, // Contrast for visibility
     );
 
-    final name = '${exercise.stations[stationIndex].name}: ';
+    final name = 'Team ${teamIndex + 1}: ';
 
     final TextPainter painter = TextPainter(
       text: TextSpan(text: name, style: textStyle),

@@ -2,46 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/station_screen.dart';
-import 'package:ringdrill/views/station_state_widget.dart'
-    show StationStateWidget;
+import 'package:ringdrill/views/team_state_widget.dart';
 
-class TeamScreen extends StatefulWidget {
-  final int teamIndex;
+class StationScreen extends StatefulWidget {
+  final int stationIndex;
   final Exercise exercise;
 
-  const TeamScreen({
+  const StationScreen({
     super.key,
-    required this.teamIndex,
+    required this.stationIndex,
     required this.exercise,
   });
 
   @override
-  State<TeamScreen> createState() => _TeamScreenState();
+  State<StationScreen> createState() => _StationScreenState();
 }
 
-class _TeamScreenState extends State<TeamScreen> {
+class _StationScreenState extends State<StationScreen> {
   int currentIndex = 0;
 
   @override
   void initState() {
-    currentIndex = widget.teamIndex;
+    currentIndex = widget.stationIndex;
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Team ${widget.teamIndex + 1}')),
+      appBar: AppBar(
+        title: Text(widget.exercise.stations[widget.stationIndex].name),
+      ),
       body: StreamBuilder(
         stream: ExerciseService().events,
         initialData: _initialData(),
         builder: (context, asyncSnapshot) {
           final event = asyncSnapshot.data!;
-          currentIndex = widget.exercise.stationIndex(
-            widget.teamIndex,
-            event.currentRound,
-          );
+          currentIndex = widget.stationIndex;
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -79,29 +76,16 @@ class _TeamScreenState extends State<TeamScreen> {
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         child: ListTile(
-                          title: StationStateWidget(
+                          title: TeamStateWidget(
                             event: event,
-                            stationIndex: widget.exercise.stationIndex(
-                              widget.teamIndex,
+                            roundIndex: index,
+                            teamIndex: widget.exercise.teamIndex(
+                              widget.stationIndex,
                               index,
                             ),
                             exercise: widget.exercise,
-                            roundIndex: index,
                             mainAxisAlignment: MainAxisAlignment.start,
                           ),
-                          onTap: () {
-                            // Navigate to SupervisorViewScreen, starting from the selected station
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => StationScreen(
-                                      stationIndex: index,
-                                      exercise: widget.exercise,
-                                    ),
-                              ),
-                            );
-                          },
                         ),
                       );
                     },

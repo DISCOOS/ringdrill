@@ -6,6 +6,7 @@ import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/views/round_widget.dart';
+import 'package:ringdrill/views/station_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
@@ -326,19 +327,16 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     ),
                     onTap: () {
                       // Navigate to SupervisorViewScreen, starting from the selected station
-                      // TODO: Implement Station Screen
-                      /*
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => SupervisorScreen(
-                          teamIndex: teamIndex,
-                          exercise: _current,
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => StationScreen(
+                                stationIndex: stationIndex,
+                                exercise: _current,
+                              ),
                         ),
-                  ),
-                );
-                 */
+                      );
                     },
                   ),
                 );
