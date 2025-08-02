@@ -35,6 +35,7 @@ sealed class Station with _$Station {
     required int index,
     required String name,
     LatLng? position,
+    String? description,
   }) = _Station;
 
   factory Station.fromJson(Map<String, dynamic> json) =>

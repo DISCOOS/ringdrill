@@ -194,11 +194,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         return mode(
           children: [
             Expanded(
-              flex: isPortrait ? 2 : 4,
-              child: _buildRoundTable(event, isPortrait),
+              flex: isPortrait ? -1 : 5,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: _buildRoundTable(event, isPortrait),
+              ),
             ),
-            Expanded(flex: isPortrait ? 4 : 5, child: _buildStationList(event)),
-            Expanded(flex: isPortrait ? 4 : 5, child: _buildTeamList(event)),
+            Expanded(flex: isPortrait ? 1 : 5, child: _buildStationList(event)),
+            Expanded(flex: isPortrait ? 1 : 5, child: _buildTeamList(event)),
           ],
         );
       },
@@ -208,12 +211,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
     final color = Theme.of(context).colorScheme.surfaceContainer;
     return Container(
+      height: 150,
       padding: EdgeInsets.all(8.0),
       child: Column(
-        mainAxisAlignment:
-            isPortrait ? MainAxisAlignment.center : MainAxisAlignment.start,
-        crossAxisAlignment:
-            isPortrait ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 4.0),
@@ -261,6 +261,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             height: 24,
@@ -325,9 +326,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                         }),
                       ],
                     ),
-                    onTap: () {
+                    onTap: () async {
                       // Navigate to SupervisorViewScreen, starting from the selected station
-                      Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
@@ -337,6 +338,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                               ),
                         ),
                       );
+                      if (mounted) {
+                        final prefs = await SharedPreferences.getInstance();
+                        final repo = ExerciseRepository(prefs);
+                        final exercise = await repo.getExercise(_current.uuid);
+                        setState(() {
+                          _current = exercise!;
+                        });
+                      }
                     },
                   ),
                 );
@@ -352,6 +361,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             height: 24,

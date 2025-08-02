@@ -1,8 +1,16 @@
 .PHONY: \
-	release
+	build watch release
 
 .SILENT: \
-	release
+	build watch release
+
+build:
+	echo "Run code generation..."
+	dart run build_runner build --delete-conflicting-outputs
+
+watch:
+	echo "Watch for buildable changes..."
+	dart run build_runner watch --delete-conflicting-outputs
 
 release:
 	flutter build appbundle --obfuscate --split-debug-info=build/debug-info

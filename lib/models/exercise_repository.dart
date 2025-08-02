@@ -28,6 +28,12 @@ class ExerciseRepository {
         .toList();
   }
 
+  Future<Exercise?> getExercise(String uuid) async {
+    final jsonString = _prefs.getString(uuid);
+    if (jsonString == null) return null;
+    return Exercise.fromJson(jsonDecode(jsonString));
+  }
+
   /// Add a new exercise to SharedPreferences, ensuring uniqueness by uuid
   Future<void> addExercise(Exercise exercise, [bool replace = false]) async {
     if (!replace && _prefs.containsKey(exercise.uuid)) {

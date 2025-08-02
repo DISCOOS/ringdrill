@@ -68,12 +68,14 @@ _Station _$StationFromJson(Map<String, dynamic> json) => _Station(
       json['position'] == null
           ? null
           : LatLng.fromJson(json['position'] as Map<String, dynamic>),
+  description: json['description'] as String?,
 );
 
 Map<String, dynamic> _$StationToJson(_Station instance) => <String, dynamic>{
   'index': instance.index,
   'name': instance.name,
   'position': instance.position,
+  'description': instance.description,
 };
 
 _Team _$TeamFromJson(Map<String, dynamic> json) => _Team(

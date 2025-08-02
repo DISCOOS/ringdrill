@@ -323,7 +323,7 @@ as TimeOfDay,
 /// @nodoc
 mixin _$Station {
 
- int get index; String get name; LatLng? get position;
+ int get index; String get name; LatLng? get position; String? get description;
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -336,16 +336,16 @@ $StationCopyWith<Station> get copyWith => _$StationCopyWithImpl<Station>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.position, position) || other.position == position));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,name,position);
+int get hashCode => Object.hash(runtimeType,index,name,position,description);
 
 @override
 String toString() {
-  return 'Station(index: $index, name: $name, position: $position)';
+  return 'Station(index: $index, name: $name, position: $position, description: $description)';
 }
 
 
@@ -356,7 +356,7 @@ abstract mixin class $StationCopyWith<$Res>  {
   factory $StationCopyWith(Station value, $Res Function(Station) _then) = _$StationCopyWithImpl;
 @useResult
 $Res call({
- int index, String name, LatLng? position
+ int index, String name, LatLng? position, String? description
 });
 
 
@@ -373,12 +373,13 @@ class _$StationCopyWithImpl<$Res>
 
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? name = null,Object? position = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? name = null,Object? position = freezed,Object? description = freezed,}) {
   return _then(_self.copyWith(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
-as LatLng?,
+as LatLng?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -460,10 +461,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name,  LatLng? position)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name,  LatLng? position,  String? description)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
-return $default(_that.index,_that.name,_that.position);case _:
+return $default(_that.index,_that.name,_that.position,_that.description);case _:
   return orElse();
 
 }
@@ -481,10 +482,10 @@ return $default(_that.index,_that.name,_that.position);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name,  LatLng? position)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name,  LatLng? position,  String? description)  $default,) {final _that = this;
 switch (_that) {
 case _Station():
-return $default(_that.index,_that.name,_that.position);}
+return $default(_that.index,_that.name,_that.position,_that.description);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -498,10 +499,10 @@ return $default(_that.index,_that.name,_that.position);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name,  LatLng? position)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name,  LatLng? position,  String? description)?  $default,) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
-return $default(_that.index,_that.name,_that.position);case _:
+return $default(_that.index,_that.name,_that.position,_that.description);case _:
   return null;
 
 }
@@ -513,12 +514,13 @@ return $default(_that.index,_that.name,_that.position);case _:
 @JsonSerializable()
 
 class _Station implements Station {
-  const _Station({required this.index, required this.name, this.position});
+  const _Station({required this.index, required this.name, this.position, this.description});
   factory _Station.fromJson(Map<String, dynamic> json) => _$StationFromJson(json);
 
 @override final  int index;
 @override final  String name;
 @override final  LatLng? position;
+@override final  String? description;
 
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
@@ -533,16 +535,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.position, position) || other.position == position));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,name,position);
+int get hashCode => Object.hash(runtimeType,index,name,position,description);
 
 @override
 String toString() {
-  return 'Station(index: $index, name: $name, position: $position)';
+  return 'Station(index: $index, name: $name, position: $position, description: $description)';
 }
 
 
@@ -553,7 +555,7 @@ abstract mixin class _$StationCopyWith<$Res> implements $StationCopyWith<$Res> {
   factory _$StationCopyWith(_Station value, $Res Function(_Station) _then) = __$StationCopyWithImpl;
 @override @useResult
 $Res call({
- int index, String name, LatLng? position
+ int index, String name, LatLng? position, String? description
 });
 
 
@@ -570,12 +572,13 @@ class __$StationCopyWithImpl<$Res>
 
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? name = null,Object? position = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? name = null,Object? position = freezed,Object? description = freezed,}) {
   return _then(_Station(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
-as LatLng?,
+as LatLng?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
