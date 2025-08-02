@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ringdrill/services/notification_service.dart';
@@ -6,9 +7,15 @@ import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/home_screen.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:upgrader/upgrader.dart';
 
 Future<void> main() async {
   SentryWidgetsFlutterBinding.ensureInitialized();
+
+  if (kDebugMode) {
+    // Only call clearSavedSettings() during testing to reset internal values.
+    await Upgrader.clearSavedSettings(); // REMOVE this for release builds
+  }
 
   // Load user consent for analytics from SharedPreferences
   final prefs = await SharedPreferences.getInstance();
@@ -94,16 +101,20 @@ class _RingDrillAppState extends State<RingDrillApp> {
       darkTheme: ringDrillDarkTheme,
       themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
+      // ---------------------------------
+      // Upgrader
+      // ---------------------------------
+      // On Android, the default behavior will be to use
+      // the Google Play Store version of the app.
+      // On iOS, the default behavior will be to use the
+      // App Store version of the app, so update the
+      // Bundle Identifier in example/ios/Runner with a
+      // valid identifier already in the App Store.
+      home: UpgradeAlert(
+        child: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
+      ),
     );
   }
-}
-
-// Phase-specific colors (usable throughout the app)
-class PhaseColors {
-  static const drill = Color(0xFF10B981); // Green
-  static const evaluation = Color(0xFFF59E0B); // Amber
-  static const rotation = Color(0xFF3B82F6); // Blue
 }
 
 final ThemeData ringDrillTheme = ThemeData(
