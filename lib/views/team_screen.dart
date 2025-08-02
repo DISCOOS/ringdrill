@@ -48,71 +48,73 @@ class _TeamScreenState extends State<TeamScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Team Info
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${widget.exercise.name} (${event.state})',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      event.isPending
-                          ? DateTimeX.fromMinutes(event.remainingTime).formal()
-                          : '${event.remainingTime} min',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+                _buildTeamStatus(event),
                 const SizedBox(height: 8),
 
                 // Schedule Details
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: widget.exercise.schedule.length,
-                    itemBuilder: (context, index) {
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        child: ListTile(
-                          title: StationStateWidget(
-                            event: event,
-                            stationIndex: widget.exercise.stationIndex(
-                              widget.teamIndex,
-                              index,
-                            ),
-                            exercise: widget.exercise,
-                            roundIndex: index,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                          ),
-                          onTap: () {
-                            // Navigate to SupervisorViewScreen, starting from the selected station
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => StationScreen(
-                                      stationIndex: index,
-                                      exercise: widget.exercise,
-                                    ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                Expanded(child: _buildStationList(event)),
               ],
             ),
           );
         },
       ),
     );
+  }
+
+  ListView _buildStationList(ExerciseEvent event) {
+    return ListView.builder(
+      itemCount: widget.exercise.schedule.length,
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            title: StationStateWidget(
+              event: event,
+              stationIndex: widget.exercise.stationIndex(
+                widget.teamIndex,
+                index,
+              ),
+              exercise: widget.exercise,
+              roundIndex: index,
+              mainAxisAlignment: MainAxisAlignment.start,
+            ),
+            onTap: () {
+              // Navigate to SupervisorViewScreen, starting from the selected station
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => StationScreen(
+                        stationIndex: index,
+                        exercise: widget.exercise,
+                      ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTeamStatus(ExerciseEvent event) {
+    return ExerciseService().isStarted
+        ? Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${widget.exercise.name} (${event.state})',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              event.isPending
+                  ? DateTimeX.fromMinutes(event.remainingTime).formal()
+                  : '${event.remainingTime} min',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ],
+        )
+        : Text(widget.exercise.name);
   }
 
   ExerciseEvent _initialData() {

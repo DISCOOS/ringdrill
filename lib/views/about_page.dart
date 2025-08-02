@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const String projectUrl = 'https://www.discoos.org/projects/ringdrill';
@@ -15,6 +17,8 @@ class AboutPage extends StatefulWidget {
 class _AboutPageState extends State<AboutPage> {
   String appVersion = 'Loading...';
   String buildNumber = 'Loading...';
+  String patchNumber = 'Loading...';
+  final updater = ShorebirdUpdater();
 
   @override
   void initState() {
@@ -25,9 +29,13 @@ class _AboutPageState extends State<AboutPage> {
   Future<void> _getAppInfo() async {
     // Use package_info_plus to get app version and build number
     final packageInfo = await PackageInfo.fromPlatform();
+    // Get the current patch number and print it to the console.
+    // It will be `null` if no patches are installed.
+    final patch = await updater.readCurrentPatch();
     setState(() {
-      appVersion = packageInfo.version; // e.g., "1.0.0"
-      buildNumber = packageInfo.buildNumber; // e.g., "42"
+      appVersion = packageInfo.version;
+      buildNumber = packageInfo.buildNumber;
+      patchNumber = patch?.number.toString() ?? (kDebugMode ? '<debug>' : '?');
     });
   }
 
@@ -74,7 +82,7 @@ class _AboutPageState extends State<AboutPage> {
               leading: const Icon(Icons.verified_outlined),
               title: const Text('Version'),
               subtitle: Text(
-                '$appVersion (Build $buildNumber)',
+                '$appVersion (Build $buildNumber, Patch $patchNumber)',
               ), // Update as appropriate
             ),
             const Divider(),
