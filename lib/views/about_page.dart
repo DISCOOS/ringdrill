@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:restart_app/restart_app.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,12 +21,20 @@ class _AboutPageState extends State<AboutPage> {
   String appVersion = 'Loading...';
   String buildNumber = 'Loading...';
   String patchNumber = 'Loading...';
+  bool isOutdated = false;
   final updater = ShorebirdUpdater();
 
   @override
   void initState() {
     super.initState();
-    _getAppInfo();
+    unawaited(_getAppInfo());
+    unawaited(_checkForUpdates());
+  }
+
+  @override
+  void didChangeDependencies() {
+    unawaited(_checkForUpdates());
+    super.didChangeDependencies();
   }
 
   Future<void> _getAppInfo() async {
@@ -37,6 +48,41 @@ class _AboutPageState extends State<AboutPage> {
       buildNumber = packageInfo.buildNumber;
       patchNumber = patch?.number.toString() ?? (kDebugMode ? '<debug>' : '?');
     });
+  }
+
+  Future<void> _checkForUpdates() async {
+    // Check whether a new update is available.
+    final status = await updater.checkForUpdate();
+
+    if (status == UpdateStatus.outdated) {
+      try {
+        setState(() {
+          isOutdated = true;
+        });
+      } on UpdateException catch (error, stackTrace) {
+        unawaited(Sentry.captureException(error, stackTrace: stackTrace));
+      }
+    }
+  }
+
+  Future<void> update() async {
+    // Perform the update
+    await updater.update();
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('App updated, restarting...')));
+    }
+    final ok = await Restart.restartApp();
+    if (mounted) {
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('App updated, please close app and open again'),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -83,7 +129,11 @@ class _AboutPageState extends State<AboutPage> {
               title: const Text('Version'),
               subtitle: Text(
                 '$appVersion (Build $buildNumber, Patch $patchNumber)',
-              ), // Update as appropriate
+              ),
+              trailing: IconButton(
+                onPressed: isOutdated ? update : null,
+                icon: Icon(Icons.update),
+              ),
             ),
             const Divider(),
             ListTile(
