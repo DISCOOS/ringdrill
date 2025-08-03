@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
 
 class MapPickerScreen extends StatefulWidget {
@@ -41,13 +42,17 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Pick a Location"),
+        title: Text(localizations.pickALocation),
         actions: [
           IconButton(
             icon: Icon(useTopoLayer ? Icons.map : Icons.terrain),
-            tooltip: useTopoLayer ? 'Switch to OSM' : 'Switch to Topo',
+            tooltip:
+                useTopoLayer
+                    ? localizations.switchToOSM
+                    : localizations.switchToTopo,
             onPressed: () => setState(() => useTopoLayer = !useTopoLayer),
           ),
         ],
@@ -66,7 +71,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         heroTag: 'select',
         onPressed: () => Navigator.pop(context, _selected),
         icon: const Icon(Icons.check),
-        label: const Text("Select"),
+        label: Text(localizations.selectAction),
       ),
     );
   }

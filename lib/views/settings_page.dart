@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
@@ -109,21 +110,26 @@ class _SettingsPageState extends State<SettingsPage> {
     await _toggleSentryAnalytics(consent);
 
     if (mounted) {
+      final localization = AppLocalizations.of(context)!;
       // Show a confirmation message to the user
       showDialog(
         context: context,
         builder:
             (context) => AlertDialog(
-              title: Text(consent ? 'Analytics Enabled' : 'Analytics Disabled'),
+              title: Text(
+                consent
+                    ? localization.analyticsEnabled
+                    : localization.analyticsDisabled,
+              ),
               content: Text(
                 consent
-                    ? 'You have agreed to allow analytics data to be collected from your device.'
-                    : 'You have opted out of analytics. No data will be collected from your device.',
+                    ? localization.analyticsIsAllowed
+                    : localization.analyticsIsDenied,
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text(localization.ok),
                 ),
               ],
             ),
@@ -149,7 +155,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.settings)),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
@@ -162,19 +168,21 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAnalyticsConsentSection() {
+    final localizations = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Analytics Consent Section
-        const Text(
-          'App Analytics Consent',
+        Text(
+          localizations.appAnalyticsConsent,
           style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16.0),
-        const Text(
-          'We use analytics to improve the app experience by collecting certain data from your device. '
-          'This includes information about your device (e.g., device model, OS version) and crash reports '
-          'in case of failures. This data is sent to and processed by Sentry.io.',
+        Text(
+          [
+            localizations.appAnalyticsConsentMessage,
+            localizations.appAnalyticsConsentCollectedData,
+          ].join('. '),
         ),
         const SizedBox(height: 12.0),
 
@@ -187,7 +195,7 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           },
           icon: const Icon(Icons.open_in_new),
-          label: const Text('Learn More About Data Collected'),
+          label: Text(localizations.learnMoreAboutDataCollected),
         ),
 
         const Divider(),
@@ -201,30 +209,25 @@ class _SettingsPageState extends State<SettingsPage> {
             });
             _saveConsent(value);
           },
-          title: const Text('Allow App Analytics'),
-          subtitle: const Text(
-            'Enable collection of analytics and crash reports. This data is linked '
-            'to your device, but not your identity.',
-          ),
+          title: Text(localizations.allowAppAnalytics),
+          subtitle: Text(localizations.allowAppAnalyticsMessage),
         ),
       ],
     );
   }
 
   Widget _buildNotificationSettingsSection() {
+    final localizations = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Notifications Settings Section
-        const Text(
-          'Notifications',
+        Text(
+          localizations.notification(2),
           style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16.0),
-        const Text(
-          'Enable or disable local notifications for reminders and updates while using the app. '
-          'Disabling this will stop sending all notifications immediately.',
-        ),
+        Text(localizations.toggleNotificationDescription),
         const SizedBox(height: 12.0),
 
         // Global Notifications Toggle
@@ -233,19 +236,17 @@ class _SettingsPageState extends State<SettingsPage> {
           onChanged: (value) {
             _saveNotificationPreference(enabled: value); // Save user preference
           },
-          title: const Text('Enable Notifications'),
-          subtitle: const Text(
-            'When enabled, you will receive reminders and updates via notifications.',
-          ),
+          title: Text(localizations.enableNotifications),
+          subtitle: Text(localizations.enableNotificationsMessage),
         ),
 
         const Divider(),
 
         // Urgent Notification Threshold
         ListTile(
-          title: const Text('Set Urgent Notification Threshold'),
-          subtitle: const Text(
-            'The number of minutes remaining before the next phase to show an urgent notification.',
+          title: Text(localizations.setUrgentNotificationThreshold),
+          subtitle: Text(
+            localizations.setUrgentNotificationThresholdDescription,
           ),
           trailing: DropdownButton<int>(
             value: urgentNotificationThreshold,
@@ -254,7 +255,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     .map(
                       (minute) => DropdownMenuItem<int>(
                         value: minute,
-                        child: Text('$minute min'),
+                        child: Text(localizations.minute(minute)),
                       ),
                     )
                     .toList(),
@@ -275,11 +276,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     _saveNotificationPreference(fullScreen: value);
                   }
                   : null, // Disable if notifications are off
-          title: const Text('Full-Screen Notifications'),
-          subtitle: const Text(
-            'Allow notifications to appear in full-screen mode for urgent updates, '
-            'even when other apps are open.',
-          ),
+          title: Text(localizations.fullScreenNotifications),
+          subtitle: Text(localizations.fullScreenNotificationsDescription),
         ),
 
         // Play Sound Toggle
@@ -291,10 +289,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     _saveNotificationPreference(sound: value);
                   }
                   : null, // Disable if notifications are off
-          title: const Text('Play Sound when urgent'),
-          subtitle: const Text(
-            'Toggle notification sounds on or off on urgent notifications.',
-          ),
+          title: Text(localizations.playSoundWhenUrgent),
+          subtitle: Text(localizations.playSoundWhenUrgentDescription),
         ),
 
         // Vibrate Toggle
@@ -306,10 +302,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     _saveNotificationPreference(vibrate: value);
                   }
                   : null, // Disable if notifications are off
-          title: const Text('Vibrate when urgent'),
-          subtitle: const Text(
-            'Enable or disable vibration for urgent notifications.',
-          ),
+          title: Text(localizations.vibrateWhenUrgent),
+          subtitle: Text(localizations.vibrateWhenUrgentDescription),
         ),
       ],
     );

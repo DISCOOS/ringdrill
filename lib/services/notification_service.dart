@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
@@ -43,6 +46,7 @@ class NotificationService {
   late bool _enableVibration;
   late bool _fullScreenIntent;
   late int _urgentThreshold;
+  late AppLocalizations _localizations;
 
   int _urgentCount = 0;
   bool _wasUrgent = false;
@@ -96,6 +100,8 @@ class NotificationService {
     _fullScreenIntent = fullScreenIntent;
     _urgentThreshold = urgentThreshold;
 
+    _localizations = await _loadLocalization();
+
     await _init();
 
     if (ExerciseService().last != null) {
@@ -123,18 +129,18 @@ class NotificationService {
           requestAlertPermission: false,
           notificationCategories: [
             DarwinNotificationCategory(
-              'Exercise Notifications',
+              _localizations.exerciseNotifications,
               actions: <DarwinNotificationAction>[
                 DarwinNotificationAction.plain(
                   idActionStopExercise,
-                  'Stop Exercise',
+                  _localizations.stopExercise,
                   options: <DarwinNotificationActionOption>{
                     DarwinNotificationActionOption.foreground,
                   },
                 ),
                 DarwinNotificationAction.plain(
                   idActionShowSettings,
-                  'Settings',
+                  _localizations.settings,
                   options: <DarwinNotificationActionOption>{
                     DarwinNotificationActionOption.foreground,
                   },
@@ -148,7 +154,9 @@ class NotificationService {
         );
 
     final LinuxInitializationSettings linuxInitializationSettings =
-        LinuxInitializationSettings(defaultActionName: 'Open notification');
+        LinuxInitializationSettings(
+          defaultActionName: _localizations.openNotification,
+        );
 
     final InitializationSettings initializationSettings =
         InitializationSettings(
@@ -193,6 +201,12 @@ class NotificationService {
             false;
       }
     }
+  }
+
+  Future<AppLocalizations> _loadLocalization() async {
+    final parts = Intl.getCurrentLocale().split('_');
+    final locale = Locale(parts.first, parts.last);
+    return await AppLocalizations.delegate.load(locale);
   }
 
   String _generateChannelId() {
@@ -334,13 +348,13 @@ class NotificationService {
       actions: [
         AndroidNotificationAction(
           idActionStopExercise,
-          'Stop Exercise',
+          _localizations.stopExercise,
           showsUserInterface: true,
           cancelNotification: false,
         ),
         AndroidNotificationAction(
           idActionShowSettings,
-          'Settings',
+          _localizations.settings,
           showsUserInterface: true,
           cancelNotification: false,
         ),
@@ -361,12 +375,20 @@ class NotificationService {
   }
 
   String _format(ExerciseEvent e) {
+    final name =
+        switch (e.phase) {
+          ExercisePhase.pending => _localizations.wait,
+          ExercisePhase.execution => _localizations.drill,
+          ExercisePhase.evaluation => _localizations.eval,
+          ExercisePhase.rotation => _localizations.roll,
+          ExercisePhase.done => _localizations.done,
+        }.toUpperCase();
     return [
-      "Round ${e.currentRound + 1}: ${e.phase.abbr}",
-      if (!e.isDone) "${e.remainingTime} min left",
-      if (e.isPending) "${e.nextTimeOfDay.formal()} start",
-      if (e.isRunning) "${e.nextTimeOfDay.formal()} next",
-      if (e.isDone) "${e.elapsedTime} min",
+      "${_localizations.round(1)} ${e.currentRound + 1}: $name",
+      if (!e.isDone) _localizations.minutesLeft(e.remainingTime),
+      if (e.isPending) _localizations.timeToStart(e.nextTimeOfDay.formal()),
+      if (e.isRunning) _localizations.timeToNext(e.nextTimeOfDay.formal()),
+      if (e.isDone) _localizations.minute(e.elapsedTime),
     ].join(' | ');
   }
 

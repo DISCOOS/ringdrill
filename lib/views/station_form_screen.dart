@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 
@@ -34,8 +35,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text('Edit Station')),
+      appBar: AppBar(title: Text(localizations.editStation)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -45,15 +47,15 @@ class _StationFormScreenState extends State<StationFormScreen> {
               // Exercise Name
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Station Name',
-                  hintText: 'Name this station',
+                decoration: InputDecoration(
+                  labelText: localizations.stationName,
+                  hintText: localizations.stationNameHint,
                 ),
                 validator:
                     (value) =>
                         value != null && value.trim().isNotEmpty
                             ? null
-                            : 'Please enter a name',
+                            : localizations.pleaseEnterAName,
               ),
 
               SizedBox(height: 8),
@@ -70,11 +72,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 keyboardType: TextInputType.multiline,
                 minLines: 3,
                 maxLines: 15,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText:
-                      'Give a description of how '
-                      'this station should be executed',
+                decoration: InputDecoration(
+                  labelText: localizations.stationDescription,
+                  hintText: localizations.stationDescriptionHint,
                   hintMaxLines: 10,
                   alignLabelWithHint: true,
                 ),
@@ -84,7 +84,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _saveStation,
-                child: const Text('Save Station'),
+                child: Text(localizations.saveStation),
               ),
             ],
           ),

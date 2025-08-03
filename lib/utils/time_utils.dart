@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 
 extension DateTimeX on DateTime {
   static DateTime fromMinutes(int minutes) {
@@ -14,68 +15,34 @@ extension DateTimeX on DateTime {
     );
   }
 
-  String formal([DateTime? reference, bool abs = true]) {
-    String plural(int value, String single, String plural) {
-      return value < 2 ? '$value $single' : '$value $plural';
-    }
-
+  String formal(
+    AppLocalizations localizations, [
+    DateTime? reference,
+    bool abs = true,
+  ]) {
     final now = reference ?? DateTime.now();
     final diff = abs ? now.difference(this).abs() : now.difference(this);
     final absDiff = diff.abs();
 
     if (absDiff.inSeconds < 60) {
-      return plural(diff.inSeconds, 'second', 'seconds');
+      return localizations.second(diff.inSeconds);
     }
     if (absDiff.inMinutes < 60) {
-      return plural(diff.inMinutes, 'minute', 'minutes');
+      return localizations.minute(absDiff.inMinutes);
     }
     if (absDiff.inHours < 24) {
-      return plural(diff.inHours, 'hour', 'hours');
+      return localizations.hour(diff.inHours);
     }
     if (absDiff.inDays < 7) {
-      return plural(diff.inDays, 'day', 'days');
+      return localizations.day(diff.inDays);
     }
     if (absDiff.inDays < 30) {
-      return plural(diff.inDays ~/ 7, 'week', 'weeks');
+      return localizations.week(diff.inDays ~/ 7);
     }
     if (absDiff.inDays < 365) {
-      return plural(diff.inDays ~/ 30, 'month', 'months');
+      return localizations.month(diff.inDays ~/ 30);
     }
-    return plural(diff.inDays ~/ 365, 'year', 'years');
-  }
-
-  String pretty([DateTime? reference]) {
-    final now = reference ?? DateTime.now();
-    final diff = now.difference(this);
-    final isFuture = diff.isNegative;
-    final absDiff = diff.abs();
-
-    if (absDiff.inSeconds < 60) {
-      return isFuture ? "in a few seconds" : "Just now";
-    }
-    if (absDiff.inMinutes < 60) {
-      return isFuture
-          ? "in ${absDiff.inMinutes} minutes"
-          : "${absDiff.inMinutes} minutes ago";
-    }
-    if (absDiff.inHours < 24) {
-      return isFuture
-          ? "in ${absDiff.inHours} hours"
-          : "${absDiff.inHours} hours ago";
-    }
-    if (absDiff.inDays == 1) return isFuture ? "Tomorrow" : "Yesterday";
-    if (absDiff.inDays < 7) {
-      return isFuture
-          ? "in ${absDiff.inDays} days"
-          : "${absDiff.inDays} days ago";
-    }
-    if (absDiff.inDays < 30) {
-      return isFuture
-          ? "in ${absDiff.inDays ~/ 7} weeks"
-          : "${absDiff.inDays ~/ 7} weeks ago";
-    }
-
-    return toLocal().toString().split(' ').first;
+    return localizations.year(diff.inDays ~/ 365);
   }
 }
 

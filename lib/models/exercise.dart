@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
 part 'exercise.freezed.dart';
@@ -64,6 +65,7 @@ extension ExerciseX on Exercise {
     required int executionTime,
     required int evaluationTime,
     required int rotationTime,
+    required AppLocalizations localizations,
     bool calcFromTimes = true,
     List<Team> teams = const [],
     List<Station> stations = const [],
@@ -130,14 +132,20 @@ extension ExerciseX on Exercise {
       teams: List.unmodifiable(
         teams.isEmpty
             ? List<Team>.generate(numberOfTeams, (index) {
-              return Team(index: index, name: 'Team ${index + 1}');
+              return Team(
+                index: index,
+                name: '${localizations.team(1)} ${index + 1}',
+              );
             })
             : stations,
       ),
       stations: List.unmodifiable(
         stations.isEmpty
             ? List<Station>.generate(numberOfRounds, (index) {
-              return Station(index: index, name: 'Station ${index + 1}');
+              return Station(
+                index: index,
+                name: '${localizations.station(1)} ${index + 1}',
+              );
             })
             : stations,
       ),

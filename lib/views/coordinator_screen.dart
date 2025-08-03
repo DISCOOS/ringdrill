@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -50,10 +51,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               SnackBar(
                 content: Text(
                   '${_current.name} ${event.isRunning
-                      ? 'is running'
+                      ? AppLocalizations.of(context)!.isRunning
                       : event.isPending
-                      ? 'is pending'
-                      : 'is done'}!',
+                      ? AppLocalizations.of(context)!.isPending
+                      : AppLocalizations.of(context)!.isDone}',
                 ),
               ),
             );
@@ -118,6 +119,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return StreamBuilder(
       stream: ExerciseService().events,
       initialData: _initialData(),
@@ -142,7 +144,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                           });
                         }
                         : null,
-                tooltip: 'Show notification',
+                tooltip: localizations.showNotification,
               ),
 
               // Edit Exercise Button
@@ -150,13 +152,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 icon: const Icon(Icons.edit),
                 padding: const EdgeInsets.all(8.0),
                 onPressed: _isStarted ? null : () => _editExercise(context),
-                tooltip: _isStarted ? 'Stop exercise first' : 'Edit Exercise',
+                tooltip:
+                    _isStarted
+                        ? AppLocalizations.of(
+                          context,
+                        )!.stopExerciseFirst(_exerciseService.exercise!.name)
+                        : localizations.editExercise,
               ),
             ],
           ),
           body:
               _current.schedule.isEmpty
-                  ? const Center(child: Text('No rounds scheduled!'))
+                  ? Center(child: Text(localizations.noRoundsScheduled))
                   : _buildBody(event),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
@@ -165,7 +172,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      "Stop '${_exerciseService.exercise!.name}' first!",
+                      localizations.stopExerciseFirst(
+                        _exerciseService.exercise!.name,
+                      ),
                     ),
                   ),
                 );
@@ -210,6 +219,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
     final color = Theme.of(context).colorScheme.surfaceContainer;
+    final localizations = AppLocalizations.of(context)!;
     return Container(
       height: 150,
       padding: EdgeInsets.all(8.0),
@@ -226,19 +236,19 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                   width: 56,
                   height: 24,
                   color: color,
-                  child: Center(child: Text('EXEC')),
+                  child: Center(child: Text(localizations.drill.toUpperCase())),
                 ),
                 Container(
                   width: 56,
                   height: 24,
                   color: color,
-                  child: Center(child: Text('EVAL')),
+                  child: Center(child: Text(localizations.eval.toUpperCase())),
                 ),
                 Container(
                   width: 56,
                   height: 24,
                   color: color,
-                  child: Center(child: Text('ROLL')),
+                  child: Center(child: Text(localizations.roll.toUpperCase())),
                 ),
               ],
             ),
@@ -270,7 +280,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text('Station rotations'),
+                child: Text(AppLocalizations.of(context)!.stationRotations),
               ),
             ),
           ),
@@ -289,7 +299,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: Text('Station ${stationIndex + 1}'),
+                          child: Text(
+                            '${AppLocalizations.of(context)!.station(1)} ${stationIndex + 1}',
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
@@ -297,7 +309,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: Text('Team'),
+                          child: Text(AppLocalizations.of(context)!.team(1)),
                         ),
                         ...List<Widget>.generate(_current.schedule.length, (
                           roundIndex,
@@ -370,7 +382,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text('Team rotations'),
+                child: Text(AppLocalizations.of(context)!.teamRotations),
               ),
             ),
           ),
@@ -389,7 +401,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: Text('Team ${teamIndex + 1}'),
+                          child: Text(
+                            '${AppLocalizations.of(context)!.team(1)} ${teamIndex + 1}',
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
@@ -397,7 +411,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: Text('Station'),
+                          child: Text(AppLocalizations.of(context)!.station(1)),
                         ),
                         ...List<Widget>.generate(_current.schedule.length, (
                           roundIndex,

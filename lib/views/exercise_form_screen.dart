@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
@@ -25,9 +26,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   } // Default start time
 
   // Form field controllers
-  final TextEditingController _nameController = TextEditingController(
-    text: "Exercise",
-  );
+  final TextEditingController _nameController = TextEditingController(text: "");
   final TextEditingController _numberOfTeamsController = TextEditingController(
     text: "4",
   );
@@ -107,6 +106,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         executionTime: executionTime,
         evaluationTime: evaluationTime,
         rotationTime: rotationTime,
+        localizations: AppLocalizations.of(context)!,
       );
 
       // Return the exercise to the previous screen
@@ -116,10 +116,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.exercise == null ? 'Create Exercise' : 'Edit Exercise',
+          widget.exercise == null
+              ? localizations.createExercise
+              : localizations.editExercise,
         ),
       ),
       body: Padding(
@@ -131,18 +134,20 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               // Exercise Name
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Exercise Name'),
+                decoration: InputDecoration(
+                  labelText: localizations.exerciseName,
+                ),
                 validator:
                     (value) =>
-                        value != null && value.trim().isNotEmpty
-                            ? null
-                            : 'Please enter a name',
+                        value == null || value.trim().isEmpty
+                            ? localizations.pleaseEnterAName
+                            : null,
               ),
 
               // Start Time Picker
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Start Time'),
+                title: Text(localizations.startTime),
                 subtitle: Text(_startTime.formal()),
                 onTap: _pickStartTime,
                 trailing: IconButton(
@@ -155,17 +160,21 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               TextFormField(
                 controller: _numberOfTeamsController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Number of Teams'),
+                decoration: InputDecoration(
+                  labelText: localizations.numberOfTeams,
+                ),
                 validator: (value) {
                   if (_isValidNumber(value)) {
                     if (_isValidNumber(_numberOfRoundsController.text)) {
                       return int.parse(_numberOfRoundsController.text) <
                               int.parse(value!)
-                          ? 'Must be equal to or less than Number of Rounds'
+                          ? localizations.mustBeEqualToOrLessThanNumberOf(
+                            localizations.round(2),
+                          )
                           : null;
                     }
                   }
-                  return 'Please enter a valid number';
+                  return localizations.pleaseEnterAValidNumber;
                 },
               ),
 
@@ -173,19 +182,21 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               TextFormField(
                 controller: _numberOfRoundsController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Number of Rounds',
+                decoration: InputDecoration(
+                  labelText: localizations.numberOfRounds,
                 ),
                 validator: (value) {
                   if (_isValidNumber(value)) {
                     if (_isValidNumber(_numberOfTeamsController.text)) {
                       return int.parse(_numberOfTeamsController.text) >
                               int.parse(value!)
-                          ? 'Must be equal to or greater than Number of Teams'
+                          ? localizations.mustBeEqualToOrLessThanNumberOf(
+                            localizations.team(2),
+                          )
                           : null;
                     }
                   }
-                  return 'Please enter a valid number';
+                  return localizations.pleaseEnterAValidNumber;
                 },
               ),
 
@@ -193,43 +204,49 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               TextFormField(
                 controller: _executionTimeController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Execution Time'),
+                decoration: InputDecoration(
+                  labelText: localizations.executionTime,
+                ),
                 validator:
                     (value) =>
                         _isValidNumber(value)
                             ? null
-                            : 'Please enter a valid time',
+                            : localizations.pleaseEnterAValidTime,
               ),
 
               // Evaluation Time
               TextFormField(
                 controller: _evaluationTimeController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Evaluation Time'),
+                decoration: InputDecoration(
+                  labelText: localizations.evaluationTime,
+                ),
                 validator:
                     (value) =>
                         _isValidNumber(value)
                             ? null
-                            : 'Please enter a valid time',
+                            : localizations.pleaseEnterAValidTime,
               ),
 
               // Rotation Time
               TextFormField(
                 controller: _rotationTimeController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Rotation Time'),
+                decoration: InputDecoration(
+                  labelText: localizations.rotationTime,
+                ),
                 validator:
                     (value) =>
                         _isValidNumber(value)
                             ? null
-                            : 'Please enter a valid time',
+                            : localizations.pleaseEnterAValidTime,
               ),
 
               // Save Button
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _saveExercise,
-                child: const Text('Save Exercise'),
+                child: Text(localizations.saveExercise),
               ),
             ],
           ),

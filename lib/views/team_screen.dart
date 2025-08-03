@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
@@ -32,7 +33,11 @@ class _TeamScreenState extends State<TeamScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Team ${widget.teamIndex + 1}')),
+      appBar: AppBar(
+        title: Text(
+          '${AppLocalizations.of(context)!.team(1)} ${widget.teamIndex + 1}',
+        ),
+      ),
       body: StreamBuilder(
         stream: ExerciseService().events,
         initialData: _initialData(),
@@ -98,18 +103,21 @@ class _TeamScreenState extends State<TeamScreen> {
   }
 
   Widget _buildTeamStatus(ExerciseEvent event) {
+    final localizations = AppLocalizations.of(context)!;
     return ExerciseService().isStarted
         ? Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${widget.exercise.name} (${event.state})',
+              '${widget.exercise.name} (${event.getState(localizations)})',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             Text(
               event.isPending
-                  ? DateTimeX.fromMinutes(event.remainingTime).formal()
-                  : '${event.remainingTime} min',
+                  ? DateTimeX.fromMinutes(
+                    event.remainingTime,
+                  ).formal(localizations)
+                  : localizations.minute(event.remainingTime),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],

@@ -9,6 +9,8 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
 
+import 'l10n/app_localizations.dart' show AppLocalizations;
+
 Future<void> main() async {
   SentryWidgetsFlutterBinding.ensureInitialized();
 
@@ -101,6 +103,8 @@ class _RingDrillAppState extends State<RingDrillApp> {
       darkTheme: ringDrillDarkTheme,
       themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       // ---------------------------------
       // Upgrader
       // ---------------------------------

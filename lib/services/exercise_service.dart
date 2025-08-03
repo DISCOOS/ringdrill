@@ -2,19 +2,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
-enum ExercisePhase {
-  pending('WAIT'),
-  execution('EXEC'),
-  evaluation('EVAL'),
-  rotation('ROLL'),
-  done('DONE');
-
-  final String abbr;
-  const ExercisePhase(this.abbr);
-}
+enum ExercisePhase { pending, execution, evaluation, rotation, done }
 
 class ExerciseEvent {
   final Exercise exercise;
@@ -42,7 +34,16 @@ class ExerciseEvent {
     return t;
   }
 
-  String get state => phase.name;
+  String getState(AppLocalizations localizations) {
+    return switch (phase) {
+      ExercisePhase.pending => localizations.pending,
+      ExercisePhase.execution => localizations.execution,
+      ExercisePhase.evaluation => localizations.evaluation,
+      ExercisePhase.rotation => localizations.rotation,
+      ExercisePhase.done => localizations.done,
+    }.toLowerCase();
+  }
+
   bool get isRunning => !(isDone || isPending);
   bool get isPending => phase == ExercisePhase.pending;
   bool get isDone => phase == ExercisePhase.done;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/phase_widget.dart';
@@ -33,7 +34,7 @@ class TeamStateWidget extends StatelessWidget {
       color: isCurrent ? Colors.white : Colors.black, // Contrast for visibility
     );
 
-    final name = 'Team ${teamIndex + 1}: ';
+    final name = '${AppLocalizations.of(context)!.team(1)} ${teamIndex + 1}: ';
 
     final TextPainter painter = TextPainter(
       text: TextSpan(text: name, style: textStyle),

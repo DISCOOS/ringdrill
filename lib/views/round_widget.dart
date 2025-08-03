@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/phase_widget.dart';
@@ -31,7 +32,8 @@ class RoundWidget extends StatelessWidget {
       color: isCurrent ? Colors.white : Colors.black, // Contrast for visibility
     );
 
-    final name = 'Round ${roundIndex + 1}: ';
+    final name =
+        '${AppLocalizations.of(context)!.round(1)} ${roundIndex + 1}: ';
 
     final TextPainter painter = TextPainter(
       text: TextSpan(text: name, style: textStyle),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:restart_app/restart_app.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -69,16 +70,20 @@ class _AboutPageState extends State<AboutPage> {
     // Perform the update
     await updater.update();
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('App updated, restarting...')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.appUpdatedRestarting),
+        ),
+      );
     }
     final ok = await Restart.restartApp();
     if (mounted) {
       if (!ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('App updated, please close app and open again'),
+            content: Text(
+              AppLocalizations.of(context)!.appUpdatedPleaseCloseAndOpen,
+            ),
           ),
         );
       }
@@ -87,8 +92,9 @@ class _AboutPageState extends State<AboutPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('About')),
+      appBar: AppBar(title: Text(localizations.about)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -104,7 +110,7 @@ class _AboutPageState extends State<AboutPage> {
                 ),
                 const SizedBox(width: 16.0),
                 Text(
-                  'RingDrill App', // App name
+                  localizations.appName,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -115,9 +121,7 @@ class _AboutPageState extends State<AboutPage> {
 
             // App Purpose or Description
             Text(
-              'RingDrill makes it easy to plan and manage station-based '
-              'ring exercises – commonly used in tactical, emergency, or '
-              'operational training scenarios.',
+              localizations.appDescription,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 24.0),
@@ -126,7 +130,7 @@ class _AboutPageState extends State<AboutPage> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.verified_outlined),
-              title: const Text('Version'),
+              title: Text(localizations.version),
               subtitle: Text(
                 '$appVersion (Build $buildNumber, Patch $patchNumber)',
               ),
@@ -138,13 +142,13 @@ class _AboutPageState extends State<AboutPage> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.person_outline),
-              title: const Text('Developed By'),
+              title: Text(localizations.developedBy),
               subtitle: const Text('DISCO Open Source'), // Your credits here
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.link_outlined),
-              title: const Text('Website'),
+              title: Text(localizations.website),
               subtitle: const Text(projectUrl), // Your website URL
               onTap: () async {
                 if (!await launchUrl(Uri.parse(projectUrl))) {
@@ -157,7 +161,7 @@ class _AboutPageState extends State<AboutPage> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.link_outlined),
-              title: const Text('Privacy Policy'),
+              title: Text(localizations.privacyPolicy),
               subtitle: const Text('$projectUrl/privacy/'), // Your website URL
               onTap: () async {
                 if (!await launchUrl(Uri.parse('$projectUrl/privacy/'))) {
@@ -170,7 +174,7 @@ class _AboutPageState extends State<AboutPage> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.link_outlined),
-              title: const Text('Terms of Service'),
+              title: Text(localizations.termsOfService),
               subtitle: const Text('$projectUrl/tos/'), // Your website URL
               onTap: () async {
                 if (!await launchUrl(Uri.parse('$projectUrl/tos/'))) {
@@ -183,7 +187,7 @@ class _AboutPageState extends State<AboutPage> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.mail_outline),
-              title: const Text('Contact Support'),
+              title: Text(localizations.contactSupport),
               subtitle: const Text('support@discoos.org'),
               onTap: () async {
                 if (!await launchUrl(

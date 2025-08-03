@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 
 class MapConfig {
   static const int static = InteractiveFlag.none;
@@ -137,9 +138,11 @@ class _MapViewState extends State<MapView> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Search failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.searchFailed(e)),
+          ),
+        );
       }
     }
   }
@@ -158,7 +161,10 @@ class _MapViewState extends State<MapView> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Search for place or location',
+                      hintText:
+                          AppLocalizations.of(
+                            context,
+                          )!.searchForPlaceOrLocation,
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.search),
                         onPressed: _searchLocation,

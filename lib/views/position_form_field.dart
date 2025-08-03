@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/latlng_widget.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/utm_widget.dart';
@@ -21,7 +22,7 @@ class PositionFormField extends FormField<LatLng> {
                Row(
                  crossAxisAlignment: CrossAxisAlignment.start,
                  children: [
-                   Text('Position'),
+                   Text(AppLocalizations.of(state.context)!.position),
                    SizedBox(width: 8),
                    LatLngWidget(position: position),
                    SizedBox(width: 8),

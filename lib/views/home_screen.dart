@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -52,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showConsentDialog() {
     Future.microtask(() async {
       if (mounted) {
+        final localizations = AppLocalizations.of(context)!;
         // Show a dialog asking the user to provide consent
         final consent =
             await showDialog(
@@ -60,25 +62,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       false, // Prevent closing without taking action
                   builder:
                       (context) => AlertDialog(
-                        title: const Text('App Analytics Consent'),
-                        content: const Text(
-                          'We use analytics to improve the app experience by collecting '
-                          'crash reports and general usage data from your device. '
-                          'You can choose whether to enable this feature now or later '
-                          'in the settings.',
+                        title: Text(localizations.appAnalyticsConsent),
+                        content: Text(
+                          [
+                            localizations.appAnalyticsConsentMessage,
+                            localizations.appAnalyticsConsentOptIn,
+                          ].join('. '),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () async {
-                              Navigator.pop(context, false); // Close dialog
+                              Navigator.pop(context, false);
                             },
-                            child: const Text('Decline'),
+                            child: Text(localizations.decline),
                           ),
                           ElevatedButton(
                             onPressed: () async {
-                              Navigator.pop(context, true); // Close dialog
+                              Navigator.pop(context, true);
                             },
-                            child: const Text('Allow'),
+                            child: Text(localizations.allow),
                           ),
                         ],
                       ),
@@ -132,8 +134,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Exercises')),
+      appBar: AppBar(title: Text(localizations.exercise(2))),
       drawer: Drawer(
         child: SafeArea(
           child: ListView(
@@ -147,8 +150,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Text(
-                      'RingDrill',
+                    Text(
+                      localizations.appName,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20.0, // Smaller font size than DrawerHeader
@@ -161,14 +164,14 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16.0),
               ListTile(
                 leading: const Icon(Icons.settings),
-                title: const Text('Settings'),
+                title: Text(localizations.settings),
                 onTap: () {
                   HomeScreen.showSettings(context, true);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.info),
-                title: const Text('About'),
+                title: Text(localizations.about),
                 onTap: () {
                   Navigator.pop(context); // Close the drawer
                   Navigator.push(
@@ -183,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body:
           _exercises.isEmpty
-              ? const Center(child: Text('No exercises yet!'))
+              ? Center(child: Text(localizations.noExercisesYet))
               : ListView.builder(
                 itemCount: _exercises.length,
                 itemBuilder: (context, index) {
@@ -205,22 +208,22 @@ class _HomeScreenState extends State<HomeScreen> {
                               false, // Prevent closing without taking action
                           builder:
                               (context) => AlertDialog(
-                                title: const Text('Confirm'),
-                                content: const Text(
-                                  'This will delete the exercise. Do you want to continue?',
+                                title: Text(localizations.confirm),
+                                content: Text(
+                                  localizations.confirmDeleteExercise,
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () async {
                                       Navigator.pop(context, false);
                                     },
-                                    child: const Text('NO'),
+                                    child: Text(localizations.no),
                                   ),
                                   ElevatedButton(
                                     onPressed: () async {
                                       Navigator.pop(context, true);
                                     },
-                                    child: const Text('YES'),
+                                    child: Text(localizations.yes),
                                   ),
                                 ],
                               ),
@@ -240,10 +243,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           [
                             '${exercise.startTime.formal()} - ${exercise.endTime.formal()}',
                             exercise.endTime.toDateTime().formal(
+                              localizations,
                               exercise.startTime.toDateTime(),
                             ),
-                            '${exercise.numberOfRounds} rounds',
-                            '${exercise.numberOfTeams} teams',
+                            '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds)}',
+                            '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams)}',
                           ].join(' | '),
                         ),
                         onTap: () async {

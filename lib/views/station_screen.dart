@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -53,10 +54,10 @@ class _StationScreenState extends State<StationScreen> {
               SnackBar(
                 content: Text(
                   '${_current.name} ${event.isRunning
-                      ? 'is running'
+                      ? AppLocalizations.of(context)!.isRunning
                       : event.isPending
-                      ? 'is pending'
-                      : 'is done'}!',
+                      ? AppLocalizations.of(context)!.isPending
+                      : AppLocalizations.of(context)!.isDone}',
                 ),
               ),
             );
@@ -75,6 +76,7 @@ class _StationScreenState extends State<StationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(_current.name),
@@ -84,7 +86,10 @@ class _StationScreenState extends State<StationScreen> {
             icon: const Icon(Icons.edit),
             padding: const EdgeInsets.all(8.0),
             onPressed: _isStarted ? null : () => _editStation(context),
-            tooltip: _isStarted ? 'Stop exercise first' : 'Edit Exercise',
+            tooltip:
+                _isStarted
+                    ? localizations.stopExerciseFirst(_current.name)
+                    : localizations.editExercise,
           ),
         ],
       ),
@@ -149,6 +154,7 @@ class _StationScreenState extends State<StationScreen> {
   }
 
   Widget _buildStationInfo(Station station, bool isPortrait) {
+    final localizations = AppLocalizations.of(context)!;
     return LayoutBuilder(
       builder: (context, BoxConstraints constraints) {
         return SizedBox(
@@ -174,7 +180,7 @@ class _StationScreenState extends State<StationScreen> {
                           Expanded(
                             child: SelectableText(
                               station.description == null
-                                  ? 'No description'
+                                  ? localizations.noDescription
                                   : station.description!,
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
@@ -203,7 +209,7 @@ class _StationScreenState extends State<StationScreen> {
                           const SizedBox(width: 8),
                           if (station.position == null)
                             Text(
-                              'No location',
+                              localizations.noLocation,
                               style: Theme.of(context).textTheme.bodyLarge,
                             )
                           else
@@ -239,18 +245,22 @@ class _StationScreenState extends State<StationScreen> {
   }
 
   Widget _buildStationStatus(ExerciseEvent event) {
+    final localizations = AppLocalizations.of(context)!;
     return _exerciseService.isStarted
         ? Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${_current.stations[widget.stationIndex].name} (${event.state})',
+              '${_current.stations[widget.stationIndex].name} '
+              '(${event.getState(localizations)})',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             Text(
               event.isPending
-                  ? DateTimeX.fromMinutes(event.remainingTime).formal()
-                  : '${event.remainingTime} min',
+                  ? DateTimeX.fromMinutes(
+                    event.remainingTime,
+                  ).formal(localizations)
+                  : localizations.minute(event.remainingTime),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
