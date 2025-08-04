@@ -106,7 +106,7 @@ class _RingDrillAppState extends State<RingDrillApp> {
       title: 'RingDrill',
       theme: ringDrillTheme,
       darkTheme: ringDrillDarkTheme,
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
