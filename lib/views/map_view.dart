@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:coordinate_converter/coordinate_converter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -61,6 +63,9 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   late MapController _mapController;
   final TextEditingController _searchController = TextEditingController();
+  Timer? _throttleTimer;
+  bool _isSearching = false;
+  List<SearchResult> _searchResults = [];
 
   @override
   void initState() {
@@ -78,71 +83,6 @@ class _MapViewState extends State<MapView> {
       _mapController.move(widget.initialCenter, widget.initialZoom);
     }
     super.didUpdateWidget(oldWidget);
-  }
-
-  Future<void> _searchLocation() async {
-    final input = _searchController.text.trim();
-    if (input.isEmpty) return;
-
-    try {
-      // Try parsing LatLng
-      if (input.contains(",")) {
-        final parts = input.split(",");
-        final lat = double.tryParse(parts[0]);
-        final lon = double.tryParse(parts[1]);
-        if (lat != null && lon != null) {
-          final result = LatLng(lat, lon);
-          _mapController.move(result, widget.initialZoom);
-          return;
-        }
-      }
-
-      // Try parsing UTM using coordinate_converter
-      final tokens = input.split(RegExp(r'[ ,]+'));
-      if (tokens.length == 4) {
-        final zone = int.tryParse(tokens[0].replaceAll(RegExp(r'[^0-9]'), ''));
-        final band = tokens[0].replaceAll(RegExp(r'[^A-Z]'), '');
-        final x = double.tryParse(tokens[2]);
-        final y = double.tryParse(tokens[3]);
-        if (zone != null && x != null && y != null) {
-          final isSouthern = band.codeUnitAt(0) < 'N'.codeUnitAt(0);
-          final utm = UTMCoordinates(
-            x: x,
-            y: y,
-            zoneNumber: zone,
-            isSouthernHemisphere: isSouthern,
-          );
-          final dd = utm.toDD();
-          final result = LatLng(dd.latitude, dd.longitude);
-          _mapController.move(result, widget.initialZoom);
-          return;
-        }
-      }
-
-      // Try geocoding via osm_nominatim
-      final nominatim = Nominatim(userAgent: 'discoos.org/ringdrill');
-      final results = await nominatim.searchByName(
-        query: input,
-        limit: 1,
-        addressDetails: true,
-        extraTags: true,
-        nameDetails: true,
-      );
-
-      if (results.isNotEmpty) {
-        final loc = results.first;
-        final result = LatLng(loc.lat, loc.lon);
-        _mapController.move(result, widget.initialZoom);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.searchFailed(e)),
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -183,31 +123,244 @@ class _MapViewState extends State<MapView> {
             ),
           ),
         if (widget.withSearch)
+          // Search Results (Dropdown-like List)
           Align(
             alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: 320,
-              height: 78,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0).copyWith(left: 16),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: searchHint,
-                      border: InputBorder.none,
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: _searchLocation,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 88,
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(
+                        8.0,
+                      ).copyWith(left: 8, top: 12),
+                      child: Center(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: searchHint,
+                            hintMaxLines: 1,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 10,
+                            ),
+                            suffixIcon:
+                                _isSearching
+                                    ? Transform.scale(
+                                      scale: 0.6,
+                                      child: SizedBox(
+                                        height: 16,
+                                        width: 16,
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    )
+                                    : IconButton(
+                                      icon: Icon(
+                                        _searchController.text.isEmpty
+                                            ? Icons.search
+                                            : Icons.clear,
+                                      ),
+                                      onPressed:
+                                          _isSearching
+                                              ? null
+                                              : () {
+                                                if (_searchController
+                                                    .text
+                                                    .isNotEmpty) {
+                                                  setState(() {
+                                                    _searchResults.clear();
+                                                    _searchController.clear();
+                                                  });
+                                                }
+                                              },
+                                    ),
+                          ),
+                          onChanged: (input) {
+                            if (_isSearching) return;
+                            _isSearching = true;
+                            _searchLocationWithThrottle(input);
+                          },
+                          onSubmitted: _searchLocation,
+                        ),
                       ),
                     ),
-                    onSubmitted: (_) => _searchLocation(),
                   ),
                 ),
-              ),
+                if (_searchResults.isNotEmpty)
+                  Card(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final result = _searchResults[index];
+                        return ListTile(
+                          onTap: () => _onResultTap(result),
+                          title: Text(result.name),
+                          trailing: const Icon(Icons.location_on),
+                        );
+                      },
+                    ),
+                  ),
+              ],
             ),
           ),
       ],
     );
   }
+
+  void _searchLocationWithThrottle(String input) {
+    if (_throttleTimer?.isActive ?? false) {
+      _throttleTimer!.cancel(); // Cancel any ongoing throttle action
+    }
+
+    // Delay the search by 300ms (adjust duration as needed)
+    _throttleTimer = Timer(const Duration(milliseconds: 50), () {
+      // Perform the search when throttle time ends
+      _searchLocation(input);
+    });
+  }
+
+  Future<void> _searchLocation(String value) async {
+    setState(() {
+      _searchResults.clear();
+    });
+
+    final input = value.trim();
+    if (input.isEmpty) {
+      _isSearching = false;
+      return;
+    }
+
+    try {
+      // Try parsing LatLng
+      if (input.contains(",")) {
+        final parts = input.split(",");
+        final lat = double.tryParse(parts[0]);
+        final lon = double.tryParse(parts[1]);
+        if (lat != null && lon != null) {
+          final result = LatLng(lat, lon);
+          _mapController.move(result, widget.initialZoom);
+          setState(() {
+            _isSearching = false;
+          });
+          return;
+        }
+      }
+
+      // Try parsing UTM using coordinate_converter
+      final tokens = input.split(RegExp(r'[ ,]+'));
+      if (tokens.length == 4) {
+        final zone = int.tryParse(tokens[0].replaceAll(RegExp(r'[^0-9]'), ''));
+        final band = tokens[0].replaceAll(RegExp(r'[^A-Z]'), '');
+        final x = double.tryParse(tokens[2]);
+        final y = double.tryParse(tokens[3]);
+        if (zone != null && x != null && y != null) {
+          final isSouthern = band.codeUnitAt(0) < 'N'.codeUnitAt(0);
+          final utm = UTMCoordinates(
+            x: x,
+            y: y,
+            zoneNumber: zone,
+            isSouthernHemisphere: isSouthern,
+          );
+          final dd = utm.toDD();
+          final result = LatLng(dd.latitude, dd.longitude);
+          _mapController.move(result, widget.initialZoom);
+          setState(() {
+            _isSearching = false;
+          });
+          return;
+        }
+      }
+
+      // Try geocoding via osm_nominatim
+      final nominatim = Nominatim(userAgent: 'discoos.org/ringdrill');
+      final locale = Intl.getCurrentLocale();
+      final results = await nominatim.searchByName(
+        limit: 5,
+        query: '${input.trim()},',
+        nameDetails: true,
+        addressDetails: true,
+        countryCodes: [locale.split('_')[1]],
+      );
+
+      setState(() {
+        _isSearching = false;
+        if (results.isNotEmpty) {
+          _searchResults =
+              results
+                  .map(
+                    (r) => SearchResult(_formatPlace(r), LatLng(r.lat, r.lon)),
+                  )
+                  .toList();
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.searchFailed(e)),
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatPlace(Place result) {
+    if (result.address == null) return _formatNameDetails(result);
+
+    // Check if this is a place (not an address)
+    if (result.address?['road'] == null &&
+        result.address?['house_number'] == null) {
+      return _formatNameDetails(result);
+    }
+
+    // Otherwise, it's an address – extract specific fields
+    final addressParts = <String>[
+      [
+        result.address?['road'] ?? '', // Street
+        result.address?['house_number'] ?? '',
+      ].join(' '), // Street number
+      [
+        result.address?['postcode'] ?? '', // Postal code
+        result.address?['city'] ??
+            result.address?['town'] ??
+            result.address?['village'] ??
+            '',
+      ].join(' '),
+    ];
+
+    return addressParts.where((part) => part.isNotEmpty).join(', ');
+  }
+
+  String _formatNameDetails(Place result) {
+    // Combine place details into a single formatted string
+    return result.displayName;
+  }
+
+  void _onResultTap(SearchResult result) {
+    _mapController.move(result.location, widget.initialZoom);
+    setState(() {
+      _searchResults.clear();
+      _searchController.text = result.name;
+    });
+  }
+
+  @override
+  void dispose() {
+    _throttleTimer?.cancel();
+    super.dispose();
+  }
+}
+
+// Helper class to represent search results
+class SearchResult {
+  final String name;
+  final LatLng location;
+
+  SearchResult(this.name, this.location);
 }
