@@ -17,15 +17,18 @@ class ExerciseRepository {
   /// Load all exercises from SharedPreferences
   List<Exercise> loadExercises() {
     final keys = _prefs.getKeys();
-    return keys
-        .where((key) => !key.startsWith('app:'))
-        .map((key) {
-          final jsonString = _prefs.getString(key);
-          if (jsonString == null) return null;
-          return Exercise.fromJson(jsonDecode(jsonString));
-        })
-        .whereType<Exercise>() // Filter out invalid items
-        .toList();
+    final items =
+        keys
+            .where((key) => !key.startsWith('app:'))
+            .map((key) {
+              final jsonString = _prefs.getString(key);
+              if (jsonString == null) return null;
+              return Exercise.fromJson(jsonDecode(jsonString));
+            })
+            .whereType<Exercise>() // Filter out invalid items
+            .toList();
+    items.sort((e1, e2) => e1.name.compareTo(e2.name));
+    return items;
   }
 
   Future<Exercise?> getExercise(String uuid) async {
