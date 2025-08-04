@@ -58,62 +58,6 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     super.initState();
   }
 
-  Future<void> _pickStartTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _startTime,
-    );
-    if (picked != null) {
-      setState(() {
-        _startTime = picked;
-      });
-    }
-  }
-
-  // Validate and add the exercise
-  void _saveExercise() {
-    final String? validationError = ExerciseX.sanitizeExerciseName(
-      _nameController.text,
-    );
-
-    if (validationError != null) {
-      // Show an error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(validationError),
-          showCloseIcon: true,
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-
-    if (_formKey.currentState?.validate() ?? false) {
-      final name = _nameController.text.trim();
-      final numberOfTeams = int.parse(_numberOfTeamsController.text);
-      final numberOfStations = int.parse(_numberOfRoundsController.text);
-      final executionTime = int.parse(_executionTimeController.text);
-      final evaluationTime = int.parse(_evaluationTimeController.text);
-      final rotationTime = int.parse(_rotationTimeController.text);
-
-      // Generate exercise with user input
-      final newExercise = ExerciseX.generateSchedule(
-        name: name,
-        startTime: _startTime,
-        uuid: widget.exercise?.uuid,
-        numberOfTeams: numberOfTeams,
-        numberOfRounds: numberOfStations,
-        executionTime: executionTime,
-        evaluationTime: evaluationTime,
-        rotationTime: rotationTime,
-        localizations: AppLocalizations.of(context)!,
-      );
-
-      // Return the exercise to the previous screen
-      Navigator.of(context).pop(newExercise);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -124,6 +68,12 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               ? localizations.createExercise
               : localizations.editExercise,
         ),
+        actions: [
+          ElevatedButton(
+            onPressed: _saveExercise,
+            child: Text(localizations.save),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -241,18 +191,67 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                             ? null
                             : localizations.pleaseEnterAValidTime,
               ),
-
-              // Save Button
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _saveExercise,
-                child: Text(localizations.saveExercise),
-              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime,
+    );
+    if (picked != null) {
+      setState(() {
+        _startTime = picked;
+      });
+    }
+  }
+
+  // Validate and add the exercise
+  void _saveExercise() {
+    final String? validationError = ExerciseX.sanitizeExerciseName(
+      _nameController.text,
+    );
+
+    if (validationError != null) {
+      // Show an error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationError),
+          showCloseIcon: true,
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (_formKey.currentState?.validate() ?? false) {
+      final name = _nameController.text.trim();
+      final numberOfTeams = int.parse(_numberOfTeamsController.text);
+      final numberOfStations = int.parse(_numberOfRoundsController.text);
+      final executionTime = int.parse(_executionTimeController.text);
+      final evaluationTime = int.parse(_evaluationTimeController.text);
+      final rotationTime = int.parse(_rotationTimeController.text);
+
+      // Generate exercise with user input
+      final newExercise = ExerciseX.generateSchedule(
+        name: name,
+        startTime: _startTime,
+        uuid: widget.exercise?.uuid,
+        numberOfTeams: numberOfTeams,
+        numberOfRounds: numberOfStations,
+        executionTime: executionTime,
+        evaluationTime: evaluationTime,
+        rotationTime: rotationTime,
+        localizations: AppLocalizations.of(context)!,
+      );
+
+      // Return the exercise to the previous screen
+      Navigator.of(context).pop(newExercise);
+    }
   }
 
   bool _isValidNumber(String? value) {

@@ -111,10 +111,6 @@
   "@editStation": {
     "description": "Label"
   },
-  "saveStation": "SAVE STATION",
-  "@saveStation": {
-    "description": "Button"
-  },
   "stationDescription": "Station Description",
   "@stationDescription": {
     "description": "Label"
@@ -203,6 +199,10 @@
   "@stationRotations": {
     "description": "Label for list of rotations on each station"
   },
+  "save": "SAVE",
+  "@save": {
+    "description": "Button"
+  },
   "createExercise": "Create Exercise",
   "@createExercise": {
     "description": "Label"
@@ -210,10 +210,6 @@
   "editExercise": "Edit Exercise",
   "@editExercise": {
     "description": "Label"
-  },
-  "saveExercise": "SAVE EXERCISE",
-  "@saveExercise": {
-    "description": "Button"
   },
   "stopExercise": "Stop Exercise",
   "@stopExercise": {

@@ -126,9 +126,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editStation => 'Edit Station';
 
   @override
-  String get saveStation => 'SAVE STATION';
-
-  @override
   String get stationDescription => 'Station Description';
 
   @override
@@ -221,13 +218,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stationRotations => 'Rotation on stations';
 
   @override
+  String get save => 'SAVE';
+
+  @override
   String get createExercise => 'Create Exercise';
 
   @override
   String get editExercise => 'Edit Exercise';
-
-  @override
-  String get saveExercise => 'SAVE EXERCISE';
 
   @override
   String get stopExercise => 'Stop Exercise';

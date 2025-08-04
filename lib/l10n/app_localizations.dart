@@ -266,12 +266,6 @@ abstract class AppLocalizations {
   /// **'Edit Station'**
   String get editStation;
 
-  /// Button
-  ///
-  /// In en, this message translates to:
-  /// **'SAVE STATION'**
-  String get saveStation;
-
   /// Label
   ///
   /// In en, this message translates to:
@@ -404,6 +398,12 @@ abstract class AppLocalizations {
   /// **'Rotation on stations'**
   String get stationRotations;
 
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'SAVE'**
+  String get save;
+
   /// Label
   ///
   /// In en, this message translates to:
@@ -415,12 +415,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit Exercise'**
   String get editExercise;
-
-  /// Button
-  ///
-  /// In en, this message translates to:
-  /// **'SAVE EXERCISE'**
-  String get saveExercise;
 
   /// Label
   ///

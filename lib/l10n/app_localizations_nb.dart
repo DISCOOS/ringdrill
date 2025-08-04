@@ -126,9 +126,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get editStation => 'Endre post';
 
   @override
-  String get saveStation => 'LAGRE POST';
-
-  @override
   String get stationDescription => 'Postbeskrivelse';
 
   @override
@@ -219,13 +216,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get stationRotations => 'Postrulleringer';
 
   @override
+  String get save => 'LAGRE';
+
+  @override
   String get createExercise => 'Opprett øvelse';
 
   @override
   String get editExercise => 'Endre øvelse';
-
-  @override
-  String get saveExercise => 'Lagre øvelse';
 
   @override
   String get stopExercise => 'Stop øvelse';

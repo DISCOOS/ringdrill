@@ -37,7 +37,15 @@ class _StationFormScreenState extends State<StationFormScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.editStation)),
+      appBar: AppBar(
+        title: Text(localizations.editStation),
+        actions: [
+          ElevatedButton(
+            onPressed: _saveStation,
+            child: Text(localizations.save),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -78,13 +86,6 @@ class _StationFormScreenState extends State<StationFormScreen> {
                   hintMaxLines: 10,
                   alignLabelWithHint: true,
                 ),
-              ),
-
-              // Save Button
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _saveStation,
-                child: Text(localizations.saveStation),
               ),
             ],
           ),
