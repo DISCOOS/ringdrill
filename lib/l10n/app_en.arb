@@ -271,6 +271,14 @@
   "@pleaseEnterAValidNumber": {
     "description": "Message"
   },
+  "newPatchIsAvailable": "New patch is available",
+  "@newPatchIsAvailable": {
+    "description": "Message"
+  },
+  "restartAppToApplyNewPatch": "Restart app to apply new patch",
+  "@restartAppToApplyNewPatch": {
+    "description": "Message"
+  },
   "appUpdatedRestarting": "App updated, restarting...",
   "@appUpdatedRestarting": {
     "description": "Message"

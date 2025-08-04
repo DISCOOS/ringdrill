@@ -22,48 +22,35 @@ class _AboutPageState extends State<AboutPage> {
   String appVersion = 'Loading...';
   String buildNumber = 'Loading...';
   String patchNumber = 'Loading...';
-  bool isOutdated = false;
+  UpdateStatus patchStatus = UpdateStatus.unavailable;
   final updater = ShorebirdUpdater();
 
   @override
   void initState() {
     super.initState();
     unawaited(_getAppInfo());
-    unawaited(_checkForUpdates());
-  }
-
-  @override
-  void didChangeDependencies() {
-    unawaited(_checkForUpdates());
-    super.didChangeDependencies();
   }
 
   Future<void> _getAppInfo() async {
     // Use package_info_plus to get app version and build number
     final packageInfo = await PackageInfo.fromPlatform();
-    // Get the current patch number and print it to the console.
-    // It will be `null` if no patches are installed.
-    final patch = await updater.readCurrentPatch();
+    // Checks for an available patch on [track] (or [UpdateTrack.stable] if no
+    // track is specified) and returns the [UpdateStatus].
+    patchStatus = await updater.checkForUpdate();
+    Patch? patch;
+    try {
+      // Returns information about the most recently downloaded patch.
+      // Returns the same patch as [readCurrentPatch] if no new patch has been
+      // downloaded.
+      patch = await updater.readCurrentPatch();
+    } on ReadPatchException catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+    }
     setState(() {
       appVersion = packageInfo.version;
       buildNumber = packageInfo.buildNumber;
       patchNumber = patch?.number.toString() ?? (kDebugMode ? '<debug>' : '?');
     });
-  }
-
-  Future<void> _checkForUpdates() async {
-    // Check whether a new update is available.
-    final status = await updater.checkForUpdate();
-
-    if (status == UpdateStatus.outdated) {
-      try {
-        setState(() {
-          isOutdated = true;
-        });
-      } on UpdateException catch (error, stackTrace) {
-        unawaited(Sentry.captureException(error, stackTrace: stackTrace));
-      }
-    }
   }
 
   Future<void> update() async {
@@ -131,13 +118,43 @@ class _AboutPageState extends State<AboutPage> {
             ListTile(
               leading: const Icon(Icons.verified_outlined),
               title: Text(localizations.version),
-              subtitle: Text(
-                '$appVersion (Build $buildNumber, Patch $patchNumber)',
-              ),
-              trailing: IconButton(
-                onPressed: isOutdated ? update : null,
-                icon: Icon(Icons.update),
-              ),
+              subtitle: switch (patchStatus) {
+                UpdateStatus.upToDate => Text(
+                  '$appVersion (Build $buildNumber, Patch $patchNumber)',
+                ),
+                UpdateStatus.outdated => Column(
+                  children: [
+                    Text(
+                      '$appVersion (Build $buildNumber, Patch $patchNumber)',
+                    ),
+                    Text(localizations.newPatchIsAvailable),
+                  ],
+                ),
+                UpdateStatus.restartRequired => Column(
+                  children: [
+                    Text(
+                      '$appVersion (Build $buildNumber, Patch $patchNumber)',
+                    ),
+                    Text(localizations.restartAppToApplyNewPatch),
+                  ],
+                ),
+                UpdateStatus.unavailable => Text(
+                  '$appVersion (Build $buildNumber)',
+                ),
+              },
+              trailing:
+                  patchStatus != UpdateStatus.unavailable
+                      ? IconButton(
+                        onPressed:
+                            const [
+                                  UpdateStatus.outdated,
+                                  UpdateStatus.restartRequired,
+                                ].contains(patchStatus)
+                                ? update
+                                : null,
+                        icon: Icon(Icons.update),
+                      )
+                      : null,
             ),
             const Divider(),
             ListTile(

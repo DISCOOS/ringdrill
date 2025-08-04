@@ -267,6 +267,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pleaseEnterAValidNumber => 'Oppgi et nummer';
 
   @override
+  String get newPatchIsAvailable => 'Ny oppdatering er tilgjengelig';
+
+  @override
+  String get restartAppToApplyNewPatch =>
+      'Start appen på nytt for ny oppdatering';
+
+  @override
   String get appUpdatedRestarting => 'Appen er oppdatert, starter på nytt...';
 
   @override

@@ -509,6 +509,18 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
+  /// **'New patch is available'**
+  String get newPatchIsAvailable;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Restart app to apply new patch'**
+  String get restartAppToApplyNewPatch;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
   /// **'App updated, restarting...'**
   String get appUpdatedRestarting;
 

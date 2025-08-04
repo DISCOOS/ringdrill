@@ -276,6 +276,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseEnterAValidNumber => 'Please enter a valid number';
 
   @override
+  String get newPatchIsAvailable => 'New patch is available';
+
+  @override
+  String get restartAppToApplyNewPatch => 'Restart app to apply new patch';
+
+  @override
   String get appUpdatedRestarting => 'App updated, restarting...';
 
   @override
