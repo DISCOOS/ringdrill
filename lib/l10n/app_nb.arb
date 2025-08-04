@@ -1,4 +1,5 @@
 {
+  "exercise": "{count, plural, =0{Øvelse} =1{Øvelse} other{Øvelser}}",
   "round": "{count, plural, =0{Runde} =1{Runde} other{Runder}}",
   "station": "{count, plural, =0{Post} =1{Post} other{Poster}}",
   "team": "{count, plural, =0{Lag} other{Lag}}",
@@ -26,9 +27,8 @@
   "ok": "OK",
   "yes": "JA",
   "no": "NEI",
-  "allow": "ALLOW",
-  "decline": "DECLINE",
-  "exercise": "Øvelse",
+  "allow": "TILLAT",
+  "decline": "AVSLÅ",
   "stationName": "Postnavn",
   "stationNameHint": "Gi posten et navn",
   "editStation": "Endre post",

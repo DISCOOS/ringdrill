@@ -72,14 +72,21 @@ class AppLocalizationsNb extends AppLocalizations {
   String get no => 'NEI';
 
   @override
-  String get allow => 'ALLOW';
+  String get allow => 'TILLAT';
 
   @override
-  String get decline => 'DECLINE';
+  String get decline => 'AVSLÅ';
 
   @override
   String exercise(num count) {
-    return 'Øvelse';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Øvelser',
+      one: 'Øvelse',
+      zero: 'Øvelse',
+    );
+    return '$_temp0';
   }
 
   @override
