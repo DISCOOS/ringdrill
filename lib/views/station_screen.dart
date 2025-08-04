@@ -292,17 +292,23 @@ class _StationScreenState extends State<StationScreen> {
           child: ListView.builder(
             itemCount: _current.schedule.length,
             itemBuilder: (context, index) {
+              final teamIndex =
+                  _current.teamIndex(widget.stationIndex, index) + 1;
+              final none = teamIndex == 0;
+              final title =
+                  '${AppLocalizations.of(context)!.team(1)} '
+                  '${none ? '×' : _current.teamIndex(widget.stationIndex, index) + 1}';
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   title: PhaseTile(
-                    title:
-                        '${AppLocalizations.of(context)!.team(1)} '
-                        '${_current.teamIndex(widget.stationIndex, index) + 1}',
                     event: event,
+                    title: title,
+                    //titleWidth: none ? null : null,
                     roundIndex: index,
                     exercise: _current,
                     mainAxisAlignment: MainAxisAlignment.start,
+                    decoration: none ? TextDecoration.lineThrough : null,
                   ),
                 ),
               );

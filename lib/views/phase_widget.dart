@@ -11,6 +11,7 @@ class PhasesWidget extends StatelessWidget {
     required this.roundIndex,
     required this.phaseIndex,
     this.isPortrait = true,
+    this.decoration,
     this.mainAxisAlignment = MainAxisAlignment.center,
   });
 
@@ -19,6 +20,7 @@ class PhasesWidget extends StatelessWidget {
   final bool isPortrait;
   final Exercise exercise;
   final ExerciseEvent event;
+  final TextDecoration? decoration;
   final MainAxisAlignment mainAxisAlignment;
 
   @override
@@ -38,6 +40,7 @@ class PhasesWidget extends StatelessWidget {
           isCurrentRound
               ? Colors.white
               : Colors.black, // Contrast for visibility
+      decoration: decoration,
     );
 
     final width = cellSize - (isCurrentPhase ? 0 : 0);

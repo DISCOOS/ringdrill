@@ -199,7 +199,27 @@ extension ExerciseX on Exercise {
   }
 
   int teamIndex(int stationIndex, int roundIndex) {
-    return (stationIndex + roundIndex) % stations.length;
+    /*
+        Station: 0 1 2 3
+        ----------------
+        Round 0: 0 1 - -
+        Round 1: - 0 1 -
+        Round 2: - - 0 1
+        Round 3: 1 - - 0
+
+        t0:0 = s0
+        t0:1 = s1
+        t0:2 = s2
+        t0:3 = s3
+
+        t1:0 = s1
+        t1:1 = s2
+        t1:2 = s3
+        t1:3 = s0
+     */
+
+    final t = (stationIndex - roundIndex + stations.length) % stations.length;
+    return (t < numberOfTeams) ? t : -1;
   }
 
   int stationIndex(int teamIndex, int roundIndex) {

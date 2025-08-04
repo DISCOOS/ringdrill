@@ -10,15 +10,17 @@ class PhaseTile extends StatelessWidget {
     required this.event,
     required this.exercise,
     required this.roundIndex,
+    this.decoration,
     this.isPortrait = true,
     this.mainAxisAlignment = MainAxisAlignment.center,
   });
 
-  final String title;
+  final String? title;
   final int roundIndex;
   final bool isPortrait;
   final Exercise exercise;
   final ExerciseEvent event;
+  final TextDecoration? decoration;
   final MainAxisAlignment mainAxisAlignment;
 
   @override
@@ -27,13 +29,14 @@ class PhaseTile extends StatelessWidget {
     final textStyle = TextStyle(
       fontSize: 18,
       fontWeight:
-          isCurrent
+          isCurrent // Emphasize current round
               ? FontWeight.bold
-              : FontWeight.normal, // Emphasize current round
-      color: isCurrent ? Colors.white : Colors.black, // Contrast for visibility
+              : FontWeight.normal,
+      color: isCurrent ? Colors.white : Colors.black,
+      decoration: decoration,
     );
 
-    final name = '$title: ';
+    final name = title ?? '';
 
     final TextPainter painter = TextPainter(
       text: TextSpan(text: name, style: textStyle),
@@ -49,8 +52,8 @@ class PhaseTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: painter.width + 8,
           height: 32,
+          width: painter.width + 24,
           padding: EdgeInsets.only(left: isCurrent ? 8 : 8),
           decoration: BoxDecoration(
             color: isCurrent ? Colors.blueAccent : Colors.transparent,
@@ -61,6 +64,7 @@ class PhaseTile extends StatelessWidget {
           ),
           child: Center(child: Text(name, style: textStyle)),
         ),
+        _buildVerticalDivider(isCurrent, false, context),
         ...List<Widget>.generate(phaseCount, (phaseIndex) {
           final isComplete = isCurrent && phaseIndex < event.phase.index - 1;
 
@@ -74,37 +78,44 @@ class PhaseTile extends StatelessWidget {
                   exercise: exercise,
                   roundIndex: roundIndex,
                   phaseIndex: phaseIndex,
+                  decoration: decoration,
                 ),
                 if (phaseIndex < phaseCount - 1)
-                  Container(
-                    height: 32,
-                    width: 8,
-                    color:
-                        isCurrent
-                            ? (isComplete
-                                ? Colors.blueAccent
-                                : Theme.of(context).colorScheme.secondary)
-                            : Colors.transparent,
-                    child: Center(
-                      child: SizedBox(
-                        height: 16,
-                        child: VerticalDivider(
-                          thickness: 1,
-                          color:
-                              isCurrent
-                                  ? Theme.of(
-                                    context,
-                                  ).colorScheme.onInverseSurface
-                                  : Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildVerticalDivider(isCurrent, isComplete, context),
               ],
             ),
           );
         }),
       ],
+    );
+  }
+
+  Widget _buildVerticalDivider(
+    bool isCurrent,
+    bool isComplete,
+    BuildContext context,
+  ) {
+    return Container(
+      height: 32,
+      width: 8,
+      color:
+          isCurrent
+              ? (isComplete
+                  ? Colors.blueAccent
+                  : Theme.of(context).colorScheme.secondary)
+              : Colors.transparent,
+      child: Center(
+        child: SizedBox(
+          height: 16,
+          child: VerticalDivider(
+            thickness: 1,
+            color:
+                isCurrent
+                    ? Theme.of(context).colorScheme.onInverseSurface
+                    : Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ),
     );
   }
 }

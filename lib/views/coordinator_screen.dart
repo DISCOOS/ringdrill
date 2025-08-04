@@ -300,14 +300,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                           final isCurrent =
                               event.isRunning &&
                               roundIndex == event.currentRound;
+                          final teamIndex =
+                              widget.exercise.teamIndex(
+                                stationIndex,
+                                roundIndex,
+                              ) +
+                              1;
+                          final none = teamIndex == 0;
                           return Container(
                             padding: EdgeInsets.all(4),
                             color:
                                 isCurrent
-                                    ? Colors.blueAccent
+                                    ? none
+                                        ? Colors.grey
+                                        : Colors.blueAccent
                                     : Colors.transparent,
                             child: Text(
-                              '${widget.exercise.teamIndex(stationIndex, roundIndex) + 1}',
+                              '${none ? '×' : teamIndex}',
                               style: TextStyle(
                                 fontWeight:
                                     isCurrent
