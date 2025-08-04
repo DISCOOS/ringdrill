@@ -11,26 +11,22 @@ class MapConfig {
   static const int static = InteractiveFlag.none;
   static const int interactive =
       InteractiveFlag.drag |
+      InteractiveFlag.flingAnimation |
       InteractiveFlag.pinchMove |
-      InteractiveFlag.pinchZoom;
+      InteractiveFlag.pinchZoom |
+      InteractiveFlag.doubleTapZoom |
+      InteractiveFlag.doubleTapDragZoom |
+      InteractiveFlag.scrollWheelZoom;
+
   static const LatLng initialCenter = LatLng(59.91, 10.75);
-  static TileLayer osmLayer = TileLayer(
+  static TileLayer get osmLayer => TileLayer(
     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     userAgentPackageName: 'discoos.org/ringdrill',
     subdomains: [],
   );
-  static TileLayer topoLayer = TileLayer(
-    wmsOptions: WMSTileLayerOptions(
-      baseUrl: 'https://wms.geonorge.no/skwms1/wms.topo?',
-      layers: ['topo'],
-      format: 'image/png',
-      transparent: true,
-      version: '1.1.1',
-    ),
-    tileProvider: NetworkTileProvider(
-      cachingProvider: const DisabledMapCachingProvider(),
-    ),
-    maxZoom: 20,
+  static TileLayer get topoLayer => TileLayer(
+    urlTemplate:
+        'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',
     subdomains: [],
     userAgentPackageName: 'discoos.org/ringdrill',
   );
@@ -46,6 +42,7 @@ class MapView extends StatefulWidget {
     this.initialZoom = 15,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
+    this.onTap,
   });
 
   final TileLayer layer;
@@ -55,6 +52,7 @@ class MapView extends StatefulWidget {
   final int interactionFlags;
   final LatLng initialCenter;
   final MapController? controller;
+  final TapCallback? onTap;
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -74,7 +72,7 @@ class _MapViewState extends State<MapView> {
   void didUpdateWidget(covariant MapView oldWidget) {
     if (oldWidget != widget) {
       if (widget.controller != null && _mapController != widget.controller) {
-        _mapController.dispose();
+        //_mapController.dispose();
         _mapController = widget.controller!;
       }
       _mapController.move(widget.initialCenter, widget.initialZoom);
@@ -149,22 +147,55 @@ class _MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    final searchHint = AppLocalizations.of(context)!.searchForPlaceOrLocation;
+    return Stack(
       children: [
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialZoom: widget.initialZoom,
+            initialCenter: widget.initialCenter,
+            interactionOptions: InteractionOptions(
+              flags: widget.interactionFlags,
+            ),
+            onTap: (tapPosition, point) {
+              if (widget.interactionFlags != InteractiveFlag.none) {
+                _mapController.move(point, _mapController.camera.zoom);
+              }
+              if (widget.onTap != null) {
+                widget.onTap!(tapPosition, point);
+              }
+            },
+          ),
+          children: [widget.layer],
+        ),
+        if (widget.withCross)
+          IgnorePointer(
+            child: Center(
+              child: Transform.rotate(
+                angle: 45 * math.pi / 180,
+                child: Icon(
+                  Icons.close,
+                  size: 40,
+                  color: Colors.red.withValues(alpha: 0.65),
+                ),
+              ),
+            ),
+          ),
         if (widget.withSearch)
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              children: [
-                Expanded(
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 320,
+              height: 78,
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0).copyWith(left: 16),
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText:
-                          AppLocalizations.of(
-                            context,
-                          )!.searchForPlaceOrLocation,
+                      hintText: searchHint,
+                      border: InputBorder.none,
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.search),
                         onPressed: _searchLocation,
@@ -173,44 +204,9 @@ class _MapViewState extends State<MapView> {
                     onSubmitted: (_) => _searchLocation(),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-        Expanded(
-          child: Stack(
-            children: [
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialZoom: widget.initialZoom,
-                  initialCenter: widget.initialCenter,
-                  interactionOptions: InteractionOptions(
-                    flags: widget.interactionFlags,
-                  ),
-                  onTap: (tapPosition, point) {
-                    if (widget.interactionFlags != InteractiveFlag.none) {
-                      _mapController.move(point, _mapController.camera.zoom);
-                    }
-                  },
-                ),
-                children: [widget.layer],
-              ),
-              if (widget.withCross)
-                IgnorePointer(
-                  child: Center(
-                    child: Transform.rotate(
-                      angle: 45 * math.pi / 180,
-                      child: Icon(
-                        Icons.close,
-                        size: 40,
-                        color: Colors.red.withValues(alpha: 0.65),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
       ],
     );
   }

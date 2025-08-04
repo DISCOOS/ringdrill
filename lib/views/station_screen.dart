@@ -1,16 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/utm_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'map_screen.dart';
 
 class StationScreen extends StatefulWidget {
   final int stationIndex;
@@ -119,6 +123,13 @@ class _StationScreenState extends State<StationScreen> {
                             child: _buildStationInfo(station, isPortrait),
                           ),
                           const SizedBox(width: 8),
+                          PhaseHeaders(
+                            expand: true,
+                            titleWidth: 78,
+                            title: AppLocalizations.of(context)!.schedule,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                          ),
+                          const SizedBox(height: 8),
                           Expanded(child: _buildTeamRotations(event)),
                         ],
                       ),
@@ -233,11 +244,31 @@ class _StationScreenState extends State<StationScreen> {
                         width: constraints.maxWidth,
                         child: MapView(
                           key: _mapKey,
-                          initialZoom: 20,
+                          initialZoom: 18,
                           withCross: true,
                           layer: MapConfig.topoLayer,
                           initialCenter:
                               station.position ?? MapConfig.initialCenter,
+                          onTap: (_, _) {
+                            Navigator.push<LatLng>(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => MapScreen(
+                                      title:
+                                          _current
+                                              .stations[widget.stationIndex]
+                                              .name,
+                                      withCross: true,
+                                      initialZoom: 12,
+                                      initialCenter:
+                                          station.position ??
+                                          MapConfig.initialCenter,
+                                      interactionFlags: MapConfig.interactive,
+                                    ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],

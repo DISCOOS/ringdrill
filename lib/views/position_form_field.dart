@@ -24,9 +24,9 @@ class PositionFormField extends FormField<LatLng> {
                  children: [
                    Text(AppLocalizations.of(state.context)!.position),
                    SizedBox(width: 8),
-                   LatLngWidget(position: position),
-                   SizedBox(width: 8),
                    UtmWidget(position: position),
+                   SizedBox(width: 8),
+                   LatLngWidget(position: position),
                    Spacer(),
                    IconButton(
                      icon: Icon(Icons.map),
