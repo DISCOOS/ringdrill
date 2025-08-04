@@ -64,7 +64,7 @@ class PhaseTile extends StatelessWidget {
           ),
           child: Center(child: Text(name, style: textStyle)),
         ),
-        _buildVerticalDivider(isCurrent, false, context),
+        _buildVerticalDivider(isCurrent, isCurrent, context),
         ...List<Widget>.generate(phaseCount, (phaseIndex) {
           final isComplete = isCurrent && phaseIndex < event.phase.index - 1;
 
