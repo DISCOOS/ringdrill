@@ -203,7 +203,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         return mode(
           children: [
             Expanded(
-              flex: isPortrait ? -1 : 5,
+              flex: isPortrait ? -1 : -1,
               child: Align(
                 alignment: Alignment.topCenter,
                 child: _buildRoundTable(event, isPortrait),

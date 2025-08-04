@@ -65,6 +65,8 @@ class RoundWidget extends StatelessWidget {
           child: Text(name, style: textStyle),
         ),
         ...List<Widget>.generate(phaseCount, (phaseIndex) {
+          final isComplete = isCurrent && phaseIndex < event.phase.index - 1;
+
           return Row(
             children: [
               PhasesWidget(
@@ -73,7 +75,17 @@ class RoundWidget extends StatelessWidget {
                 roundIndex: roundIndex,
                 phaseIndex: phaseIndex,
               ),
-              if (phaseIndex < phaseCount - 1) Text(' | '),
+              if (phaseIndex < phaseCount - 1)
+                Container(
+                  height: 24,
+                  color:
+                      isCurrent
+                          ? (isComplete
+                              ? Colors.blueAccent
+                              : Theme.of(context).colorScheme.secondary)
+                          : Colors.transparent,
+                  child: Text(' | ', style: isCurrent ? textStyle : null),
+                ),
             ],
           );
         }),
