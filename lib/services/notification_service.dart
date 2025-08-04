@@ -375,14 +375,7 @@ class NotificationService {
   }
 
   String _format(ExerciseEvent e) {
-    final name =
-        switch (e.phase) {
-          ExercisePhase.pending => _localizations.wait,
-          ExercisePhase.execution => _localizations.drill,
-          ExercisePhase.evaluation => _localizations.eval,
-          ExercisePhase.rotation => _localizations.roll,
-          ExercisePhase.done => _localizations.done,
-        }.toUpperCase();
+    final name = e.getState(_localizations);
     return [
       "${_localizations.round(1)} ${e.currentRound + 1}: $name",
       if (!e.isDone) _localizations.minutesLeft(e.remainingTime),

@@ -36,12 +36,12 @@ class ExerciseEvent {
 
   String getState(AppLocalizations localizations) {
     return switch (phase) {
-      ExercisePhase.pending => localizations.pending,
-      ExercisePhase.execution => localizations.execution,
-      ExercisePhase.evaluation => localizations.evaluation,
-      ExercisePhase.rotation => localizations.rotation,
+      ExercisePhase.pending => localizations.wait,
+      ExercisePhase.execution => localizations.drill,
+      ExercisePhase.evaluation => localizations.eval,
+      ExercisePhase.rotation => localizations.roll,
       ExercisePhase.done => localizations.done,
-    }.toLowerCase();
+    }.toUpperCase();
   }
 
   bool get isRunning => !(isDone || isPending);

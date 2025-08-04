@@ -4,8 +4,8 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/phase_widget.dart';
 
-class TeamStateWidget extends StatelessWidget {
-  const TeamStateWidget({
+class TeamStateWidget1 extends StatelessWidget {
+  const TeamStateWidget1({
     super.key,
     required this.event,
     required this.exercise,

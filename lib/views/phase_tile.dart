@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/views/phase_widget.dart';
+import 'package:ringdrill/views/phase_widget.dart' show PhasesWidget;
 
-class RoundWidget extends StatelessWidget {
-  const RoundWidget({
+class PhaseTile extends StatelessWidget {
+  const PhaseTile({
     super.key,
+    required this.title,
     required this.event,
     required this.exercise,
     required this.roundIndex,
@@ -14,6 +14,7 @@ class RoundWidget extends StatelessWidget {
     this.mainAxisAlignment = MainAxisAlignment.center,
   });
 
+  final String title;
   final int roundIndex;
   final bool isPortrait;
   final Exercise exercise;
@@ -32,8 +33,7 @@ class RoundWidget extends StatelessWidget {
       color: isCurrent ? Colors.white : Colors.black, // Contrast for visibility
     );
 
-    final name =
-        '${AppLocalizations.of(context)!.round(1)} ${roundIndex + 1}: ';
+    final name = '$title: ';
 
     final TextPainter painter = TextPainter(
       text: TextSpan(text: name, style: textStyle),

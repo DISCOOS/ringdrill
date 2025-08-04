@@ -6,7 +6,8 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
-import 'package:ringdrill/views/round_widget.dart';
+import 'package:ringdrill/views/phase_headers.dart';
+import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -215,53 +216,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   }
 
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
-    final color = Theme.of(context).colorScheme.surfaceContainer;
     final localizations = AppLocalizations.of(context)!;
-    final double cellSize = 62;
     return Container(
       padding: EdgeInsets.all(8.0),
       child: Column(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          PhaseHeaders(
+            titleWidth: 90,
+            title: localizations.schedule,
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 90,
-                height: 24,
-                color: color,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: Text(localizations.schedule),
-                  ),
-                ),
-              ),
-              Container(
-                height: 24,
-                width: cellSize,
-                color: color,
-                child: Center(child: Text(localizations.drill.toUpperCase())),
-              ),
-              Container(
-                height: 24,
-                width: cellSize,
-                color: color,
-                child: Center(child: Text(localizations.eval.toUpperCase())),
-              ),
-              Container(
-                height: 24,
-                width: cellSize,
-                color: color,
-                child: Center(child: Text(localizations.roll.toUpperCase())),
-              ),
-            ],
           ),
           SizedBox(height: 8),
           ...List<Widget>.generate(_current.schedule.length, (roundIndex) {
             // Determine whether this round is completed or current
-            return RoundWidget(
+            return PhaseTile(
+              title:
+                  "${AppLocalizations.of(context)!.round(1)} "
+                  "${roundIndex + 1}",
               event: event,
               exercise: _current,
               roundIndex: roundIndex,

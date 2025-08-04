@@ -7,8 +7,8 @@ import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-import 'package:ringdrill/views/team_state_widget.dart';
 import 'package:ringdrill/views/utm_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -133,24 +133,31 @@ class _StationScreenState extends State<StationScreen> {
     );
   }
 
-  Widget _buildTeamRotations(ExerciseEvent event) {
-    return ListView.builder(
-      itemCount: _current.schedule.length,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            title: TeamStateWidget(
-              event: event,
-              roundIndex: index,
-              teamIndex: _current.teamIndex(widget.stationIndex, index),
-              exercise: _current,
-              mainAxisAlignment: MainAxisAlignment.start,
+  Widget _buildStationStatus(ExerciseEvent event) {
+    final localizations = AppLocalizations.of(context)!;
+    return _exerciseService.isStarted
+        ? Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${_current.stations[widget.stationIndex].name} '
+              '(${event.getState(localizations)})',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-          ),
+            Text(
+              event.isPending
+                  ? DateTimeX.fromMinutes(
+                    event.remainingTime,
+                  ).formal(localizations)
+                  : localizations.minute(event.remainingTime),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ],
+        )
+        : Text(
+          _current.stations[widget.stationIndex].name,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         );
-      },
-    );
   }
 
   Widget _buildStationInfo(Station station, bool isPortrait) {
@@ -244,31 +251,26 @@ class _StationScreenState extends State<StationScreen> {
     );
   }
 
-  Widget _buildStationStatus(ExerciseEvent event) {
-    final localizations = AppLocalizations.of(context)!;
-    return _exerciseService.isStarted
-        ? Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${_current.stations[widget.stationIndex].name} '
-              '(${event.getState(localizations)})',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+  Widget _buildTeamRotations(ExerciseEvent event) {
+    return ListView.builder(
+      itemCount: _current.schedule.length,
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            title: PhaseTile(
+              title:
+                  '${AppLocalizations.of(context)!.team(1)} '
+                  '${_current.teamIndex(widget.stationIndex, index) + 1}',
+              event: event,
+              roundIndex: index,
+              exercise: _current,
+              mainAxisAlignment: MainAxisAlignment.start,
             ),
-            Text(
-              event.isPending
-                  ? DateTimeX.fromMinutes(
-                    event.remainingTime,
-                  ).formal(localizations)
-                  : localizations.minute(event.remainingTime),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ],
-        )
-        : Text(
-          _current.stations[widget.stationIndex].name,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
         );
+      },
+    );
   }
 
   ExerciseEvent _initialData() {
