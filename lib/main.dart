@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl_browser.dart'
+    if (dart.library.io) 'package:intl/intl_standalone.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
@@ -24,6 +26,9 @@ Future<void> main() async {
   final isFirstLaunch = prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
   final analyticsConsent =
       prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
+
+  // Ensure system locale is set
+  await findSystemLocale();
 
   if (isFirstLaunch) {
     // Set default "analyticsConsent" to false (opt-out by default)
