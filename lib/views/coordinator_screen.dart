@@ -196,22 +196,28 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     );
   }
 
-  OrientationBuilder _buildBody(ExerciseEvent event) {
-    return OrientationBuilder(
-      builder: (context, orientation) {
-        final isPortrait = orientation == Orientation.portrait;
-        final mode = (isPortrait ? Column.new : Row.new);
-        return mode(
-          children: [
-            Align(
-              alignment: Alignment.topCenter,
-              child: _buildRoundTable(event, isPortrait),
-            ),
-            Expanded(flex: isPortrait ? 1 : 5, child: _buildStationList(event)),
-            Expanded(flex: isPortrait ? 1 : 5, child: _buildTeamList(event)),
-          ],
-        );
-      },
+  Widget _buildBody(ExerciseEvent event) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: OrientationBuilder(
+        builder: (context, orientation) {
+          final isPortrait = orientation == Orientation.portrait;
+          final mode = (isPortrait ? Column.new : Row.new);
+          return mode(
+            children: [
+              Align(
+                alignment: Alignment.topCenter,
+                child: _buildRoundTable(event, isPortrait),
+              ),
+              Expanded(
+                flex: isPortrait ? 1 : 5,
+                child: _buildStationList(event),
+              ),
+              Expanded(flex: isPortrait ? 1 : 5, child: _buildTeamList(event)),
+            ],
+          );
+        },
+      ),
     );
   }
 

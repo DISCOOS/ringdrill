@@ -43,6 +43,7 @@ class PhasesWidget extends StatelessWidget {
     final width = cellSize - (isCurrentPhase ? 0 : 0);
 
     return SizedBox(
+      height: 32,
       width: width - (isCurrentRound && phaseIndex == 0 ? 2 : 0),
       child: Stack(
         fit: StackFit.passthrough,

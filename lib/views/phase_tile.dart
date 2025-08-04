@@ -86,7 +86,18 @@ class PhaseTile extends StatelessWidget {
                                 : Theme.of(context).colorScheme.secondary)
                             : Colors.transparent,
                     child: Center(
-                      child: Text('|', style: isCurrent ? textStyle : null),
+                      child: SizedBox(
+                        height: 16,
+                        child: VerticalDivider(
+                          thickness: 1,
+                          color:
+                              isCurrent
+                                  ? Theme.of(
+                                    context,
+                                  ).colorScheme.onInverseSurface
+                                  : Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ),
               ],

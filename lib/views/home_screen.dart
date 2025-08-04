@@ -187,89 +187,95 @@ class _HomeScreenState extends State<HomeScreen> {
       body:
           _exercises.isEmpty
               ? Center(child: Text(localizations.noExercisesYet))
-              : ListView.builder(
-                itemCount: _exercises.length,
-                itemBuilder: (context, index) {
-                  final exercise = _exercises[index];
+              : Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: ListView.builder(
+                  itemCount: _exercises.length,
+                  itemBuilder: (context, index) {
+                    final exercise = _exercises[index];
 
-                  return Dismissible(
-                    key: ValueKey(exercise.name),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      color: Colors.red,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: const Icon(Icons.delete, color: Colors.white),
-                    ),
-                    confirmDismiss:
-                        (direction) => showDialog(
-                          context: context,
-                          barrierDismissible:
-                              false, // Prevent closing without taking action
-                          builder:
-                              (context) => AlertDialog(
-                                title: Text(localizations.confirm),
-                                content: Text(
-                                  localizations.confirmDeleteExercise,
+                    return Dismissible(
+                      key: ValueKey(exercise.name),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      confirmDismiss:
+                          (direction) => showDialog(
+                            context: context,
+                            barrierDismissible:
+                                false, // Prevent closing without taking action
+                            builder:
+                                (context) => AlertDialog(
+                                  title: Text(localizations.confirm),
+                                  content: Text(
+                                    localizations.confirmDeleteExercise,
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () async {
+                                        Navigator.pop(context, false);
+                                      },
+                                      child: Text(localizations.no),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        Navigator.pop(context, true);
+                                      },
+                                      child: Text(localizations.yes),
+                                    ),
+                                  ],
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () async {
-                                      Navigator.pop(context, false);
-                                    },
-                                    child: Text(localizations.no),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      Navigator.pop(context, true);
-                                    },
-                                    child: Text(localizations.yes),
-                                  ),
-                                ],
+                          ),
+                      onDismissed: (direction) {
+                        _deleteExercise(exercise);
+                      },
+                      child: Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 5,
+                          horizontal: 10,
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            exercise.name,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            [
+                              '${exercise.startTime.formal()} - ${exercise.endTime.formal()}',
+                              exercise.endTime.toDateTime().formal(
+                                localizations,
+                                exercise.startTime.toDateTime(),
                               ),
+                              '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
+                              '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
+                            ].join(' | '),
+                          ),
+                          onTap: () async {
+                            // Navigate to CoordinatorViewScreen with the selected exercise
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        CoordinatorScreen(exercise: exercise),
+                              ),
+                            );
+                            _fetchExercises();
+                          },
+                          trailing: Icon(
+                            Icons.swipe_left,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ), // An additional swipe icon
                         ),
-                    onDismissed: (direction) {
-                      _deleteExercise(exercise);
-                    },
-                    child: Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 5,
-                        horizontal: 10,
                       ),
-                      child: ListTile(
-                        title: Text(exercise.name),
-                        subtitle: Text(
-                          [
-                            '${exercise.startTime.formal()} - ${exercise.endTime.formal()}',
-                            exercise.endTime.toDateTime().formal(
-                              localizations,
-                              exercise.startTime.toDateTime(),
-                            ),
-                            '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds)}',
-                            '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams)}',
-                          ].join(' | '),
-                        ),
-                        onTap: () async {
-                          // Navigate to CoordinatorViewScreen with the selected exercise
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) =>
-                                      CoordinatorScreen(exercise: exercise),
-                            ),
-                          );
-                          _fetchExercises();
-                        },
-                        trailing: Icon(
-                          Icons.swipe_left,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ), // An additional swipe icon
-                      ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToCreateExercise,
