@@ -169,9 +169,10 @@ class _StationScreenState extends State<StationScreen> {
     final localizations = AppLocalizations.of(context)!;
     return LayoutBuilder(
       builder: (context, BoxConstraints constraints) {
+        final size = station.position == null ? 150.0 : 350.0;
         return SizedBox(
-          height: isPortrait ? 350 : null,
-          width: isPortrait ? null : 350,
+          height: isPortrait ? size : null,
+          width: isPortrait ? null : size,
           child: ListView(
             children: [
               Card(
@@ -234,39 +235,41 @@ class _StationScreenState extends State<StationScreen> {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 200,
-                        width: constraints.maxWidth,
-                        child: MapView(
-                          key: _mapKey,
-                          initialZoom: 18,
-                          withCross: true,
-                          layer: MapConfig.topoLayer,
-                          initialCenter:
-                              station.position ?? MapConfig.initialCenter,
-                          onTap: (_, _) {
-                            Navigator.push<LatLng>(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => MapScreen(
-                                      title:
-                                          _current
-                                              .stations[widget.stationIndex]
-                                              .name,
-                                      withCross: true,
-                                      initialZoom: 12,
-                                      initialCenter:
-                                          station.position ??
-                                          MapConfig.initialCenter,
-                                      interactionFlags: MapConfig.interactive,
-                                    ),
-                              ),
-                            );
-                          },
+                      if (station.position != null) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 200,
+                          width: constraints.maxWidth,
+                          child: MapView(
+                            key: _mapKey,
+                            initialZoom: 18,
+                            withCross: true,
+                            layer: MapConfig.topoLayer,
+                            initialCenter:
+                                station.position ?? MapConfig.initialCenter,
+                            onTap: (_, _) {
+                              Navigator.push<LatLng>(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => MapScreen(
+                                        title:
+                                            _current
+                                                .stations[widget.stationIndex]
+                                                .name,
+                                        withCross: true,
+                                        initialZoom: 12,
+                                        initialCenter:
+                                            station.position ??
+                                            MapConfig.initialCenter,
+                                        interactionFlags: MapConfig.interactive,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
