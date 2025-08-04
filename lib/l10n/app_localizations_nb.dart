@@ -277,6 +277,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get newPatchIsAvailable => 'Ny oppdatering er tilgjengelig';
 
   @override
+  String get updateRequired => 'Oppdater';
+
+  @override
   String get restartAppToApplyNewPatch =>
       'Start appen på nytt for ny oppdatering';
 

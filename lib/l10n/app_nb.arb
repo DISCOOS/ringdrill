@@ -67,6 +67,7 @@
   "numberOfTeams": "Antall lag",
   "mustBeEqualToOrLessThanNumberOf": "Må være lik eller mindre enn antall {name}",
   "pleaseEnterAValidNumber": "Oppgi et nummer",
+  "updateRequired": "Oppdater",
   "newPatchIsAvailable": "Ny oppdatering er tilgjengelig",
   "restartAppToApplyNewPatch": "Start appen på nytt for ny oppdatering",
   "appUpdatedRestarting": "Appen er oppdatert, starter på nytt...",

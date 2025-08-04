@@ -275,6 +275,10 @@
   "@newPatchIsAvailable": {
     "description": "Message"
   },
+  "updateRequired": "Update required",
+  "@updateRequired": {
+    "description": "Message"
+  },
   "restartAppToApplyNewPatch": "Restart app to apply new patch",
   "@restartAppToApplyNewPatch": {
     "description": "Message"

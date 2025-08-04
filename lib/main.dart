@@ -7,6 +7,7 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/home_screen.dart';
+import 'package:ringdrill/views/patch_alert.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
@@ -120,7 +121,13 @@ class _RingDrillAppState extends State<RingDrillApp> {
       // Bundle Identifier in example/ios/Runner with a
       // valid identifier already in the App Store.
       home: UpgradeAlert(
-        child: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
+        // ---------------------------------
+        // Shorebird patch upgrades
+        // ---------------------------------
+        // Notifies user of new patch when app is running
+        child: PatchAlert(
+          child: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
+        ),
       ),
     );
   }

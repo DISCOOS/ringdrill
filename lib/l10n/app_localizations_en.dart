@@ -279,6 +279,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newPatchIsAvailable => 'New patch is available';
 
   @override
+  String get updateRequired => 'Update required';
+
+  @override
   String get restartAppToApplyNewPatch => 'Restart app to apply new patch';
 
   @override

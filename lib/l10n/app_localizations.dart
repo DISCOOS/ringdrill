@@ -515,6 +515,12 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
+  /// **'Update required'**
+  String get updateRequired;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
   /// **'Restart app to apply new patch'**
   String get restartAppToApplyNewPatch;
 
