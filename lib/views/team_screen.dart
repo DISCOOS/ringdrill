@@ -119,7 +119,7 @@ class _TeamScreenState extends State<TeamScreen> {
               mainAxisAlignment: MainAxisAlignment.start,
             ),
             onTap: () {
-              // Navigate to SupervisorViewScreen, starting from the selected station
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(

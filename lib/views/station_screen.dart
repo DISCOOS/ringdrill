@@ -12,6 +12,7 @@ import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/team_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'map_screen.dart';
@@ -292,12 +293,11 @@ class _StationScreenState extends State<StationScreen> {
           child: ListView.builder(
             itemCount: _current.schedule.length,
             itemBuilder: (context, index) {
-              final teamIndex =
-                  _current.teamIndex(widget.stationIndex, index) + 1;
-              final none = teamIndex == 0;
+              final teamIndex = _current.teamIndex(widget.stationIndex, index);
+              final none = teamIndex == -1;
               final title =
                   '${AppLocalizations.of(context)!.team(1)} '
-                  '${none ? '×' : _current.teamIndex(widget.stationIndex, index) + 1}';
+                  '${none ? '×' : teamIndex + 1}';
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
@@ -310,6 +310,22 @@ class _StationScreenState extends State<StationScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     decoration: none ? TextDecoration.lineThrough : null,
                   ),
+                  onTap:
+                      none
+                          ? null
+                          : () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => TeamScreen(
+                                      teamIndex: teamIndex,
+                                      exercise: _current,
+                                    ),
+                              ),
+                            );
+                          },
                 ),
               );
             },
