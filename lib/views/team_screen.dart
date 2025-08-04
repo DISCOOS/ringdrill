@@ -59,6 +59,7 @@ class _TeamScreenState extends State<TeamScreen> {
                   title: AppLocalizations.of(context)!.schedule,
                   mainAxisAlignment: MainAxisAlignment.start,
                 ),
+                const SizedBox(height: 4),
                 Expanded(child: _buildStationList(event)),
               ],
             ),
