@@ -41,12 +41,15 @@ class RoundWidget extends StatelessWidget {
       textDirection: TextDirection.ltr,
     )..layout();
 
+    final phaseCount = exercise.schedule[roundIndex].length;
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: mainAxisAlignment,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: painter.width + 6,
+          width: painter.width + 16,
           height: 24,
           padding: EdgeInsets.only(left: 8),
           decoration: BoxDecoration(
@@ -61,14 +64,17 @@ class RoundWidget extends StatelessWidget {
           ),
           child: Text(name, style: textStyle),
         ),
-        ...List<Widget>.generate(exercise.schedule[roundIndex].length, (
-          phaseIndex,
-        ) {
-          return PhasesWidget(
-            event: event,
-            exercise: exercise,
-            roundIndex: roundIndex,
-            phaseIndex: phaseIndex,
+        ...List<Widget>.generate(phaseCount, (phaseIndex) {
+          return Row(
+            children: [
+              PhasesWidget(
+                event: event,
+                exercise: exercise,
+                roundIndex: roundIndex,
+                phaseIndex: phaseIndex,
+              ),
+              if (phaseIndex < phaseCount - 1) Text(' | '),
+            ],
           );
         }),
       ],

@@ -136,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.exercise(2))),
+      appBar: AppBar(title: Text(localizations.exercise(10))),
       drawer: Drawer(
         child: SafeArea(
           child: ListView(

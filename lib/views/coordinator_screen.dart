@@ -220,6 +220,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
     final color = Theme.of(context).colorScheme.surfaceContainer;
     final localizations = AppLocalizations.of(context)!;
+    final double cellSize = 62;
     return Container(
       height: 150,
       padding: EdgeInsets.all(8.0),
@@ -231,22 +232,22 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(width: 72, height: 24),
+                SizedBox(width: 90, height: 24),
                 Container(
-                  width: 56,
                   height: 24,
+                  width: cellSize,
                   color: color,
                   child: Center(child: Text(localizations.drill.toUpperCase())),
                 ),
                 Container(
-                  width: 56,
                   height: 24,
+                  width: cellSize,
                   color: color,
                   child: Center(child: Text(localizations.eval.toUpperCase())),
                 ),
                 Container(
-                  width: 56,
                   height: 24,
+                  width: cellSize,
                   color: color,
                   child: Center(child: Text(localizations.roll.toUpperCase())),
                 ),
