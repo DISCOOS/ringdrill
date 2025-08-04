@@ -32,7 +32,7 @@ class PhaseTile extends StatelessWidget {
           isCurrent // Emphasize current round
               ? FontWeight.bold
               : FontWeight.normal,
-      color: isCurrent ? Colors.white : Colors.black,
+      color: isCurrent ? Colors.white : null,
       decoration: decoration,
     );
 

@@ -36,10 +36,7 @@ class PhasesWidget extends StatelessWidget {
           isCurrentRound
               ? FontWeight.bold
               : FontWeight.normal, // Emphasize current round
-      color:
-          isCurrentRound
-              ? Colors.white
-              : Colors.black, // Contrast for visibility
+      color: isCurrentRound ? Colors.white : null, // Contrast for visibility
       decoration: decoration,
     );
 

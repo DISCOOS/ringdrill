@@ -267,6 +267,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               ),
             ),
           ),
+          SizedBox(height: 4.0),
           Expanded(
             child: ListView.builder(
               itemCount: _current.stations.length,
@@ -323,7 +324,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                                         ? FontWeight.bold
                                         : FontWeight
                                             .normal, // Emphasize current round
-                                color: isCurrent ? Colors.white : Colors.black,
+                                color: isCurrent ? Colors.white : null,
                               ),
                             ),
                           );
@@ -378,6 +379,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               ),
             ),
           ),
+          SizedBox(height: 4.0),
           Expanded(
             child: ListView.builder(
               itemCount: _current.teams.length,
@@ -425,7 +427,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                                         ? FontWeight.bold
                                         : FontWeight
                                             .normal, // Emphasize current round
-                                color: isCurrent ? Colors.white : Colors.black,
+                                color: isCurrent ? Colors.white : null,
                               ),
                             ),
                           );

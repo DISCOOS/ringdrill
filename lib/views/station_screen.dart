@@ -304,7 +304,6 @@ class _StationScreenState extends State<StationScreen> {
                   title: PhaseTile(
                     event: event,
                     title: title,
-                    //titleWidth: none ? null : null,
                     roundIndex: index,
                     exercise: _current,
                     mainAxisAlignment: MainAxisAlignment.start,
