@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/views/latlng_widget.dart';
 import 'package:ringdrill/views/map_view.dart';
-import 'package:ringdrill/views/utm_widget.dart';
+import 'package:ringdrill/views/position_widget.dart';
 
 import 'map_picker_screen.dart';
 
@@ -20,14 +19,19 @@ class PositionFormField extends FormField<LatLng> {
            return Column(
              children: [
                Row(
-                 crossAxisAlignment: CrossAxisAlignment.start,
+                 crossAxisAlignment: CrossAxisAlignment.center,
                  children: [
                    Text(AppLocalizations.of(state.context)!.position),
-                   SizedBox(width: 8),
-                   UtmWidget(position: position),
-                   SizedBox(width: 8),
-                   LatLngWidget(position: position),
                    Spacer(),
+                   if (position == null) ...[
+                     Text(AppLocalizations.of(state.context)!.pickALocation),
+                   ] else ...[
+                     PositionWidget(
+                       position: position,
+                       format: PositionFormat.utm,
+                     ),
+                   ],
+                   SizedBox(width: 8),
                    IconButton(
                      icon: Icon(Icons.map),
                      onPressed: () async {

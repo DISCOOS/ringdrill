@@ -50,35 +50,55 @@ class _StationFormScreenState extends State<StationFormScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
-              // Exercise Name
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: localizations.stationName,
-                  hintText: localizations.stationNameHint,
-                ),
-                validator:
-                    (value) =>
-                        value != null && value.trim().isNotEmpty
-                            ? null
-                            : localizations.pleaseEnterAName,
+              Row(
+                children: [
+                  // Exercise Name
+                  Expanded(
+                    child: TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        labelText: localizations.stationName,
+                        hintText: localizations.stationNameHint,
+                      ),
+                      validator:
+                          (value) =>
+                              value != null && value.trim().isNotEmpty
+                                  ? null
+                                  : localizations.pleaseEnterAName,
+                    ),
+                  ),
+
+                  SizedBox(width: 8),
+
+                  // Position
+                  SizedBox(
+                    width: 230,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: BoxBorder.all(color: Colors.grey.shade700),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0).copyWith(left: 8.0),
+                        child: PositionFormField(
+                          initialValue: _position,
+                          onSaved: (position) => _position = position,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
-              SizedBox(height: 8),
-
-              // Position
-              PositionFormField(
-                initialValue: _position,
-                onSaved: (position) => _position = position,
-              ),
+              SizedBox(height: 16),
 
               // Description
               TextFormField(
                 controller: _descriptionController,
                 keyboardType: TextInputType.multiline,
-                minLines: 3,
+                minLines: 1,
                 maxLines: 15,
                 decoration: InputDecoration(
                   labelText: localizations.stationDescription,

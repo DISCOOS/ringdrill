@@ -1,6 +1,7 @@
 import 'package:coordinate_converter/coordinate_converter.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 
 class UtmWidget extends StatelessWidget {
   const UtmWidget({
@@ -25,13 +26,15 @@ class UtmWidget extends StatelessWidget {
               ),
             )
             : null;
-    return SelectableText(
-      style: style,
-      textAlign: TextAlign.right,
-      "${utmCoords != null ? "${utmCoords.zoneNumber}${_getUtmZoneLetter(position!.latitude)}" : "?"} "
-      "${utmCoords?.yToStringAsFixed(0).padLeft(7, '0') ?? '?'}N${wrapped ? "\n" : " "}"
-      "${utmCoords?.xToStringAsFixed(0).padLeft(7, '0') ?? '?'}E",
-    );
+    return utmCoords == null
+        ? Text(AppLocalizations.of(context)!.noLocation)
+        : SelectableText(
+          style: style,
+          textAlign: TextAlign.right,
+          "${utmCoords.zoneNumber}${_getUtmZoneLetter(position!.latitude)} "
+          "${utmCoords.yToStringAsFixed(0).padLeft(7, '0')}N${wrapped ? "\n" : " "}"
+          "${utmCoords.xToStringAsFixed(0).padLeft(7, '0')}E",
+        );
   }
 
   String _getUtmZoneLetter(double latitude) {

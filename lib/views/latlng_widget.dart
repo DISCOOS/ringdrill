@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 
 class LatLngWidget extends StatelessWidget {
   const LatLngWidget({
@@ -15,11 +16,13 @@ class LatLngWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText(
-      style: style,
-      textAlign: TextAlign.right,
-      "${position?.latitude.toStringAsFixed(4) ?? '?'}N${wrapped ? "\n" : " "}"
-      "${position?.longitude.toStringAsFixed(4) ?? '?'}E",
-    );
+    return position == null
+        ? Text(AppLocalizations.of(context)!.noLocation)
+        : SelectableText(
+          style: style,
+          textAlign: TextAlign.right,
+          "${position!.latitude.toStringAsFixed(4)}N${wrapped ? "\n" : " "}"
+          "${position!.longitude.toStringAsFixed(4)}E",
+        );
   }
 }

@@ -10,8 +10,8 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-import 'package:ringdrill/views/utm_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'map_screen.dart';
@@ -123,13 +123,6 @@ class _StationScreenState extends State<StationScreen> {
                             child: _buildStationInfo(station, isPortrait),
                           ),
                           const SizedBox(width: 8),
-                          PhaseHeaders(
-                            expand: true,
-                            titleWidth: 78,
-                            title: AppLocalizations.of(context)!.schedule,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                          ),
-                          const SizedBox(height: 8),
                           Expanded(child: _buildTeamRotations(event)),
                         ],
                       ),
@@ -177,6 +170,7 @@ class _StationScreenState extends State<StationScreen> {
       builder: (context, BoxConstraints constraints) {
         return SizedBox(
           height: isPortrait ? 350 : null,
+          width: isPortrait ? null : 350,
           child: ListView(
             children: [
               Card(
@@ -231,8 +225,9 @@ class _StationScreenState extends State<StationScreen> {
                               style: Theme.of(context).textTheme.bodyLarge,
                             )
                           else
-                            UtmWidget(
+                            PositionWidget(
                               wrapped: false,
+                              format: PositionFormat.utm,
                               position: station.position,
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
@@ -283,24 +278,38 @@ class _StationScreenState extends State<StationScreen> {
   }
 
   Widget _buildTeamRotations(ExerciseEvent event) {
-    return ListView.builder(
-      itemCount: _current.schedule.length,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            title: PhaseTile(
-              title:
-                  '${AppLocalizations.of(context)!.team(1)} '
-                  '${_current.teamIndex(widget.stationIndex, index) + 1}',
-              event: event,
-              roundIndex: index,
-              exercise: _current,
-              mainAxisAlignment: MainAxisAlignment.start,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PhaseHeaders(
+          expand: true,
+          titleWidth: 78,
+          title: AppLocalizations.of(context)!.schedule,
+          mainAxisAlignment: MainAxisAlignment.start,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _current.schedule.length,
+            itemBuilder: (context, index) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: PhaseTile(
+                    title:
+                        '${AppLocalizations.of(context)!.team(1)} '
+                        '${_current.teamIndex(widget.stationIndex, index) + 1}',
+                    event: event,
+                    roundIndex: index,
+                    exercise: _current,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
