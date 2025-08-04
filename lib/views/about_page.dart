@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:restart_app/restart_app.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
@@ -59,21 +58,11 @@ class _AboutPageState extends State<AboutPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.appUpdatedRestarting),
+          content: Text(
+            AppLocalizations.of(context)!.appUpdatedPleaseCloseAndOpen,
+          ),
         ),
       );
-    }
-    final ok = await Restart.restartApp();
-    if (mounted) {
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.appUpdatedPleaseCloseAndOpen,
-            ),
-          ),
-        );
-      }
     }
   }
 
