@@ -230,6 +230,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Exercise} =1{Exercise} other{Exercises}}'**
   String exercise(num count);
 
+  /// Exercise schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get schedule;
+
   /// Current exercise round
   ///
   /// In en, this message translates to:

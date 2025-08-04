@@ -202,12 +202,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         final mode = (isPortrait ? Column.new : Row.new);
         return mode(
           children: [
-            Expanded(
-              flex: isPortrait ? -1 : -1,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: _buildRoundTable(event, isPortrait),
-              ),
+            Align(
+              alignment: Alignment.topCenter,
+              child: _buildRoundTable(event, isPortrait),
             ),
             Expanded(flex: isPortrait ? 1 : 5, child: _buildStationList(event)),
             Expanded(flex: isPortrait ? 1 : 5, child: _buildTeamList(event)),
@@ -222,38 +219,46 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     final localizations = AppLocalizations.of(context)!;
     final double cellSize = 62;
     return Container(
-      height: 150,
       padding: EdgeInsets.all(8.0),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(width: 90, height: 24),
-                Container(
-                  height: 24,
-                  width: cellSize,
-                  color: color,
-                  child: Center(child: Text(localizations.drill.toUpperCase())),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 90,
+                height: 24,
+                color: color,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(localizations.schedule),
+                  ),
                 ),
-                Container(
-                  height: 24,
-                  width: cellSize,
-                  color: color,
-                  child: Center(child: Text(localizations.eval.toUpperCase())),
-                ),
-                Container(
-                  height: 24,
-                  width: cellSize,
-                  color: color,
-                  child: Center(child: Text(localizations.roll.toUpperCase())),
-                ),
-              ],
-            ),
+              ),
+              Container(
+                height: 24,
+                width: cellSize,
+                color: color,
+                child: Center(child: Text(localizations.drill.toUpperCase())),
+              ),
+              Container(
+                height: 24,
+                width: cellSize,
+                color: color,
+                child: Center(child: Text(localizations.eval.toUpperCase())),
+              ),
+              Container(
+                height: 24,
+                width: cellSize,
+                color: color,
+                child: Center(child: Text(localizations.roll.toUpperCase())),
+              ),
+            ],
           ),
+          SizedBox(height: 8),
           ...List<Widget>.generate(_current.schedule.length, (roundIndex) {
             // Determine whether this round is completed or current
             return RoundWidget(

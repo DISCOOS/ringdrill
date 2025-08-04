@@ -49,44 +49,48 @@ class RoundWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: painter.width + 16,
-          height: 24,
-          padding: EdgeInsets.only(left: 8),
+          width: painter.width + 8,
+          height: 32,
+          padding: EdgeInsets.only(left: isCurrent ? 8 : 8),
           decoration: BoxDecoration(
             color: isCurrent ? Colors.blueAccent : Colors.transparent,
-            borderRadius:
-                isCurrent
-                    ? BorderRadius.only(
-                      topLeft: Radius.circular(4),
-                      bottomLeft: Radius.circular(4),
-                    )
-                    : null,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(4),
+              bottomLeft: Radius.circular(4),
+            ),
           ),
-          child: Text(name, style: textStyle),
+          child: Center(child: Text(name, style: textStyle)),
         ),
         ...List<Widget>.generate(phaseCount, (phaseIndex) {
           final isComplete = isCurrent && phaseIndex < event.phase.index - 1;
 
-          return Row(
-            children: [
-              PhasesWidget(
-                event: event,
-                exercise: exercise,
-                roundIndex: roundIndex,
-                phaseIndex: phaseIndex,
-              ),
-              if (phaseIndex < phaseCount - 1)
-                Container(
-                  height: 24,
-                  color:
-                      isCurrent
-                          ? (isComplete
-                              ? Colors.blueAccent
-                              : Theme.of(context).colorScheme.secondary)
-                          : Colors.transparent,
-                  child: Text(' | ', style: isCurrent ? textStyle : null),
+          return Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                PhasesWidget(
+                  event: event,
+                  exercise: exercise,
+                  roundIndex: roundIndex,
+                  phaseIndex: phaseIndex,
                 ),
-            ],
+                if (phaseIndex < phaseCount - 1)
+                  Container(
+                    height: 32,
+                    width: 8,
+                    color:
+                        isCurrent
+                            ? (isComplete
+                                ? Colors.blueAccent
+                                : Theme.of(context).colorScheme.secondary)
+                            : Colors.transparent,
+                    child: Center(
+                      child: Text('|', style: isCurrent ? textStyle : null),
+                    ),
+                  ),
+              ],
+            ),
           );
         }),
       ],

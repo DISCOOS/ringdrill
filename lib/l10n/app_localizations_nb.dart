@@ -90,6 +90,9 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get schedule => 'Plan';
+
+  @override
   String round(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

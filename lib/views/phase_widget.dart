@@ -23,8 +23,7 @@ class PhasesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cellSize =
-        phaseIndex < ExercisePhase.rotation.index - 1 ? 56.0 : 52.0;
+    const cellSize = 56.0;
     final isCurrentRound = event.isRunning && roundIndex == event.currentRound;
     final isCurrentPhase =
         isCurrentRound && phaseIndex == event.phase.index - 1;
@@ -41,17 +40,16 @@ class PhasesWidget extends StatelessWidget {
               : Colors.black, // Contrast for visibility
     );
 
-    final width = cellSize;
+    final width = cellSize - (isCurrentPhase ? 0 : 0);
 
     return SizedBox(
-      height: 24,
-      width: width,
+      width: width - (isCurrentRound && phaseIndex == 0 ? 2 : 0),
       child: Stack(
         fit: StackFit.passthrough,
         children: [
           // Background progress bar
           SizedBox(
-            height: 24,
+            height: 32,
             width: width,
             child: Container(
               alignment: Alignment.centerLeft,
@@ -71,7 +69,7 @@ class PhasesWidget extends StatelessWidget {
             ),
           ),
           SizedBox(
-            height: 24,
+            height: 32,
             width: width,
             child: FractionallySizedBox(
               widthFactor:
@@ -99,7 +97,7 @@ class PhasesWidget extends StatelessWidget {
 
           // Phase info
           SizedBox(
-            height: 24,
+            height: 32,
             width: width,
             child: Center(
               child: Text(

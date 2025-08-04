@@ -87,6 +87,10 @@
   "@exercise": {
     "description": "Exercise with plurals"
   },
+  "schedule": "Schedule",
+  "@schedule": {
+    "description": "Exercise schedule"
+  },
   "round": "{count, plural, =0{Round} =1{Round} other{Rounds}}",
   "@round": {
     "description": "Current exercise round"
