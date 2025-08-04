@@ -123,18 +123,22 @@ class _AboutPageState extends State<AboutPage> {
                   '$appVersion (Build $buildNumber, Patch $patchNumber)',
                 ),
                 UpdateStatus.outdated => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '$appVersion (Build $buildNumber, Patch $patchNumber)',
                     ),
+                    SizedBox(height: 8),
                     Text(localizations.newPatchIsAvailable),
                   ],
                 ),
                 UpdateStatus.restartRequired => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '$appVersion (Build $buildNumber, Patch $patchNumber)',
                     ),
+                    SizedBox(height: 8),
                     Text(localizations.restartAppToApplyNewPatch),
                   ],
                 ),
@@ -143,17 +147,11 @@ class _AboutPageState extends State<AboutPage> {
                 ),
               },
               trailing:
-                  patchStatus != UpdateStatus.unavailable
-                      ? IconButton(
-                        onPressed:
-                            const [
-                                  UpdateStatus.outdated,
-                                  UpdateStatus.restartRequired,
-                                ].contains(patchStatus)
-                                ? update
-                                : null,
-                        icon: Icon(Icons.update),
-                      )
+                  [
+                        UpdateStatus.outdated,
+                        UpdateStatus.restartRequired,
+                      ].contains(patchStatus)
+                      ? IconButton(onPressed: update, icon: Icon(Icons.update))
                       : null,
             ),
             const Divider(),
