@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/data/exercise_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/views/phase_headers.dart';
@@ -136,15 +136,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               IconButton(
                 icon: const Icon(Icons.notifications_on),
                 padding: const EdgeInsets.all(8.0),
-                onPressed:
-                    _promptShowNotification
-                        ? () {
-                          unawaited(NotificationService().initFromPrefs());
-                          setState(() {
-                            _promptShowNotification = false;
-                          });
-                        }
-                        : null,
+                onPressed: _promptShowNotification
+                    ? () {
+                        unawaited(NotificationService().initFromPrefs());
+                        setState(() {
+                          _promptShowNotification = false;
+                        });
+                      }
+                    : null,
                 tooltip: localizations.showNotification,
               ),
 
@@ -153,19 +152,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 icon: const Icon(Icons.edit),
                 padding: const EdgeInsets.all(8.0),
                 onPressed: _isStarted ? null : () => _editExercise(context),
-                tooltip:
-                    _isStarted
-                        ? AppLocalizations.of(
-                          context,
-                        )!.stopExerciseFirst(_exerciseService.exercise!.name)
-                        : localizations.editExercise,
+                tooltip: _isStarted
+                    ? AppLocalizations.of(
+                        context,
+                      )!.stopExerciseFirst(_exerciseService.exercise!.name)
+                    : localizations.editExercise,
               ),
             ],
           ),
-          body:
-              _current.schedule.isEmpty
-                  ? Center(child: Text(localizations.noRoundsScheduled))
-                  : _buildBody(event),
+          body: _current.schedule.isEmpty
+              ? Center(child: Text(localizations.noRoundsScheduled))
+              : _buildBody(event),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
               if (!isStartable) {
@@ -310,20 +307,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                           final none = teamIndex == 0;
                           return Container(
                             padding: EdgeInsets.all(4),
-                            color:
-                                isCurrent
-                                    ? none
-                                        ? Colors.grey
-                                        : Colors.blueAccent
-                                    : Colors.transparent,
+                            color: isCurrent
+                                ? none
+                                      ? Colors.grey
+                                      : Colors.blueAccent
+                                : Colors.transparent,
                             child: Text(
                               '${none ? '×' : teamIndex}',
                               style: TextStyle(
-                                fontWeight:
-                                    isCurrent
-                                        ? FontWeight.bold
-                                        : FontWeight
-                                            .normal, // Emphasize current round
+                                fontWeight: isCurrent
+                                    ? FontWeight.bold
+                                    : FontWeight
+                                          .normal, // Emphasize current round
                                 color: isCurrent ? Colors.white : null,
                               ),
                             ),
@@ -336,11 +331,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) => StationScreen(
-                                stationIndex: stationIndex,
-                                exercise: _current,
-                              ),
+                          builder: (context) => StationScreen(
+                            stationIndex: stationIndex,
+                            exercise: _current,
+                          ),
                         ),
                       );
                       if (mounted) {
@@ -415,18 +409,16 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                               roundIndex == event.currentRound;
                           return Container(
                             padding: EdgeInsets.all(4),
-                            color:
-                                isCurrent
-                                    ? Colors.blueAccent
-                                    : Colors.transparent,
+                            color: isCurrent
+                                ? Colors.blueAccent
+                                : Colors.transparent,
                             child: Text(
                               '${widget.exercise.stationIndex(teamIndex, roundIndex) + 1}',
                               style: TextStyle(
-                                fontWeight:
-                                    isCurrent
-                                        ? FontWeight.bold
-                                        : FontWeight
-                                            .normal, // Emphasize current round
+                                fontWeight: isCurrent
+                                    ? FontWeight.bold
+                                    : FontWeight
+                                          .normal, // Emphasize current round
                                 color: isCurrent ? Colors.white : null,
                               ),
                             ),
@@ -439,11 +431,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) => TeamScreen(
-                                teamIndex: teamIndex,
-                                exercise: _current,
-                              ),
+                          builder: (context) => TeamScreen(
+                            teamIndex: teamIndex,
+                            exercise: _current,
+                          ),
                         ),
                       );
                     },

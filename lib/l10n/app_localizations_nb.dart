@@ -56,7 +56,7 @@ class AppLocalizationsNb extends AppLocalizations {
       'Aktiver innsamling av analyser og krasjrapporter. Disse dataene er knyttet til enheten din, men ikke identiteten din.';
 
   @override
-  String get confirm => 'Bekreft';
+  String get confirm => 'BEKREFT';
 
   @override
   String get confirmDeleteExercise =>
@@ -64,6 +64,9 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+
+  @override
+  String get cancel => 'Avbryt';
 
   @override
   String get yes => 'JA';
@@ -76,6 +79,63 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get decline => 'AVSLÅ';
+
+  @override
+  String get enterFileName => 'Skriv inn filnavn';
+
+  @override
+  String get fileNameHint => 'f.eks., MittProgram';
+
+  @override
+  String get invalidFileName => 'Ugyldig filnavn. Prøv igjen.';
+
+  @override
+  String get exportedProgram => 'Eksportert Program';
+
+  @override
+  String exportSuccess(Object name) {
+    return 'Eksport til \"$name\" var vellykket!';
+  }
+
+  @override
+  String get exportFailure => 'Eksporten mislyktes. Prøv igjen.';
+
+  @override
+  String shareSuccess(Object name) {
+    return 'Deling av \"$name\" var vellykket!';
+  }
+
+  @override
+  String get shareFailure => 'Deling mislyktes. Prøv igjen.';
+
+  @override
+  String get storage => 'Lagring';
+
+  @override
+  String get documents => 'Dokumenter';
+
+  @override
+  String get downloads => 'Nedlastinger';
+
+  @override
+  String get sdCard => 'SD kort';
+
+  @override
+  String get select => 'Velg';
+
+  @override
+  String get selectDirectory => 'Velg en mappe';
+
+  @override
+  String get selectFile => 'Velg en fil';
+
+  @override
+  String importSuccess(Object name) {
+    return 'Program \"$name\" ble importert.';
+  }
+
+  @override
+  String get importFailure => 'Kunne ikke importere programmet. Prøv igjen.';
 
   @override
   String exercise(num count) {
@@ -127,6 +187,12 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get stationDescription => 'Postbeskrivelse';
+
+  @override
+  String get importProgram => 'Importer...';
+
+  @override
+  String get exportProgram => 'Eksporter...';
 
   @override
   String get stationDescriptionHint =>

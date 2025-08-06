@@ -56,7 +56,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable collection of analytics and crash reports. This data is linked to your device, but not your identity.';
 
   @override
-  String get confirm => 'Confirm';
+  String get confirm => 'CONFIRM';
 
   @override
   String get confirmDeleteExercise =>
@@ -64,6 +64,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+
+  @override
+  String get cancel => 'CANCEL';
 
   @override
   String get yes => 'YES';
@@ -76,6 +79,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get decline => 'DECLINE';
+
+  @override
+  String get enterFileName => 'Enter File Name';
+
+  @override
+  String get fileNameHint => 'e.g., MyProgram';
+
+  @override
+  String get invalidFileName => 'Invalid file name. Please try again.';
+
+  @override
+  String get exportedProgram => 'Exported Program';
+
+  @override
+  String exportSuccess(Object name) {
+    return 'Export to \"$name\" was successful!';
+  }
+
+  @override
+  String get exportFailure => 'Export failed. Please try again.';
+
+  @override
+  String shareSuccess(Object name) {
+    return 'Shared \"$name\" successfully!';
+  }
+
+  @override
+  String get shareFailure => 'Share failed. Please try again.';
+
+  @override
+  String get storage => 'Storage';
+
+  @override
+  String get documents => 'Documents';
+
+  @override
+  String get downloads => 'Downloads';
+
+  @override
+  String get sdCard => 'SD Card';
+
+  @override
+  String get select => 'SELECT';
+
+  @override
+  String get selectDirectory => 'Select a directory';
+
+  @override
+  String get selectFile => 'Select file';
+
+  @override
+  String importSuccess(Object name) {
+    return 'Program \"$name\" imported successfully!';
+  }
+
+  @override
+  String get importFailure => 'Failed to import the program. Please try again.';
 
   @override
   String exercise(num count) {
@@ -127,6 +187,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stationDescription => 'Station Description';
+
+  @override
+  String get importProgram => 'Import...';
+
+  @override
+  String get exportProgram => 'Export...';
 
   @override
   String get stationDescriptionHint =>

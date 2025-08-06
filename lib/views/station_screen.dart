@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/data/exercise_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/exercise_repository.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
@@ -91,10 +91,9 @@ class _StationScreenState extends State<StationScreen> {
             icon: const Icon(Icons.edit),
             padding: const EdgeInsets.all(8.0),
             onPressed: _isStarted ? null : () => _editStation(context),
-            tooltip:
-                _isStarted
-                    ? localizations.stopExerciseFirst(_current.name)
-                    : localizations.editExercise,
+            tooltip: _isStarted
+                ? localizations.stopExerciseFirst(_current.name)
+                : localizations.editExercise,
           ),
         ],
       ),
@@ -142,27 +141,33 @@ class _StationScreenState extends State<StationScreen> {
     final localizations = AppLocalizations.of(context)!;
     return _exerciseService.isStarted
         ? Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${_current.stations[widget.stationIndex].name} '
-              '(${event.getState(localizations)})',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              event.isPending
-                  ? DateTimeX.fromMinutes(
-                    event.remainingTime,
-                  ).formal(localizations)
-                  : localizations.minute(event.remainingTime),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ],
-        )
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_current.stations[widget.stationIndex].name} '
+                '(${event.getState(localizations)})',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                event.isPending
+                    ? DateTimeX.fromMinutes(
+                        event.remainingTime,
+                      ).formal(localizations)
+                    : localizations.minute(event.remainingTime),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          )
         : Text(
-          _current.stations[widget.stationIndex].name,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        );
+            _current.stations[widget.stationIndex].name,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          );
   }
 
   Widget _buildStationInfo(Station station, bool isPortrait) {
@@ -251,19 +256,17 @@ class _StationScreenState extends State<StationScreen> {
                               Navigator.push<LatLng>(
                                 context,
                                 MaterialPageRoute(
-                                  builder:
-                                      (context) => MapScreen(
-                                        title:
-                                            _current
-                                                .stations[widget.stationIndex]
-                                                .name,
-                                        withCross: true,
-                                        initialZoom: 12,
-                                        initialCenter:
-                                            station.position ??
-                                            MapConfig.initialCenter,
-                                        interactionFlags: MapConfig.interactive,
-                                      ),
+                                  builder: (context) => MapScreen(
+                                    title: _current
+                                        .stations[widget.stationIndex]
+                                        .name,
+                                    withCross: true,
+                                    initialZoom: 12,
+                                    initialCenter:
+                                        station.position ??
+                                        MapConfig.initialCenter,
+                                    interactionFlags: MapConfig.interactive,
+                                  ),
                                 ),
                               );
                             },
@@ -312,22 +315,20 @@ class _StationScreenState extends State<StationScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     decoration: none ? TextDecoration.lineThrough : null,
                   ),
-                  onTap:
-                      none
-                          ? null
-                          : () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => TeamScreen(
-                                      teamIndex: teamIndex,
-                                      exercise: _current,
-                                    ),
+                  onTap: none
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TeamScreen(
+                                teamIndex: teamIndex,
+                                exercise: _current,
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
                 ),
               );
             },
@@ -351,9 +352,8 @@ class _StationScreenState extends State<StationScreen> {
     final newStation = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) =>
-                StationFormScreen(station: stations[widget.stationIndex]),
+        builder: (context) =>
+            StationFormScreen(station: stations[widget.stationIndex]),
       ),
     );
     if (newStation != _current) {

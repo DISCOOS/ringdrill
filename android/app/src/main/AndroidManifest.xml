@@ -60,6 +60,13 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
 
+    <!--
+    Needed for import and export
+    -->
+    <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:label="RingDrill"
         android:name="${applicationName}"
@@ -109,6 +116,15 @@
                 android:value="The foreground service ensures that time-sensitive alarms and critical user notifications (such as emergency alert tones or timed drills) are reliably triggered when the app is running exercises even when the device is idle or locked."
             />
         </service>
+        <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="${applicationId}.fileprovider"
+                android:exported="false"
+                android:grantUriPermissions="true">
+            <meta-data
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/file_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -135,4 +151,5 @@
             <data android:scheme="https" />
         </intent>
     </queries>
+
 </manifest>

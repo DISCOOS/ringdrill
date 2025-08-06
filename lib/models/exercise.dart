@@ -24,6 +24,7 @@ sealed class Exercise with _$Exercise {
     required List<Station> stations,
     @TimeOfDayConverter() required List<List<TimeOfDay>> schedule,
     @TimeOfDayConverter() required TimeOfDay endTime,
+    ExerciseMetadata? metadata,
   }) = _Exercise;
 
   factory Exercise.fromJson(Map<String, dynamic> json) =>
@@ -48,6 +49,7 @@ sealed class Team with _$Team {
   const factory Team({
     required int index,
     required String name,
+    int? numberOfMembers,
     LatLng? position,
   }) = _Team;
 
@@ -112,12 +114,11 @@ extension ExerciseX on Exercise {
     // Compute the endTime from the last phase of the last round
     final lastRound = schedule.last;
     final lastPhase = lastRound.last;
-    final endTime =
-        calcFromTimes
-            ? TimeOfDay.fromDateTime(
-              lastPhase.toDateTime().add(Duration(minutes: rotationTime)),
-            )
-            : lastPhase; // End time is when the last phase ends
+    final endTime = calcFromTimes
+        ? TimeOfDay.fromDateTime(
+            lastPhase.toDateTime().add(Duration(minutes: rotationTime)),
+          )
+        : lastPhase; // End time is when the last phase ends
 
     // Return a new Exercise instance
     return Exercise(
@@ -132,21 +133,21 @@ extension ExerciseX on Exercise {
       teams: List.unmodifiable(
         teams.isEmpty
             ? List<Team>.generate(numberOfTeams, (index) {
-              return Team(
-                index: index,
-                name: '${localizations.team(1)} ${index + 1}',
-              );
-            })
+                return Team(
+                  index: index,
+                  name: '${localizations.team(1)} ${index + 1}',
+                );
+              })
             : stations,
       ),
       stations: List.unmodifiable(
         stations.isEmpty
             ? List<Station>.generate(numberOfRounds, (index) {
-              return Station(
-                index: index,
-                name: '${localizations.station(1)} ${index + 1}',
-              );
-            })
+                return Station(
+                  index: index,
+                  name: '${localizations.station(1)} ${index + 1}',
+                );
+              })
             : stations,
       ),
       schedule: List.unmodifiable(schedule),
@@ -240,4 +241,13 @@ class TimeOfDayConverter
   Map<String, dynamic> toJson(TimeOfDay object) {
     return {'hour': object.hour, 'minute': object.minute};
   }
+}
+
+/// Represents an immutable drill program metadata
+@freezed
+sealed class ExerciseMetadata with _$ExerciseMetadata {
+  const factory ExerciseMetadata({String? copyOfUuid}) = _ExerciseMetadata;
+
+  factory ExerciseMetadata.fromJson(Map<String, dynamic> json) =>
+      _$ExerciseMetadataFromJson(json);
 }

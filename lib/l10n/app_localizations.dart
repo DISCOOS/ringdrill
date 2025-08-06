@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
-  /// **'Confirm'**
+  /// **'CONFIRM'**
   String get confirm;
 
   /// Message
@@ -199,6 +199,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK'**
   String get ok;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'CANCEL'**
+  String get cancel;
 
   /// Label
   ///
@@ -223,6 +229,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'DECLINE'**
   String get decline;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Enter File Name'**
+  String get enterFileName;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., MyProgram'**
+  String get fileNameHint;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid file name. Please try again.'**
+  String get invalidFileName;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Exported Program'**
+  String get exportedProgram;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Export to \"{name}\" was successful!'**
+  String exportSuccess(Object name);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed. Please try again.'**
+  String get exportFailure;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Shared \"{name}\" successfully!'**
+  String shareSuccess(Object name);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Share failed. Please try again.'**
+  String get shareFailure;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get storage;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get documents;
+
+  /// No description provided for @downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get downloads;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'SD Card'**
+  String get sdCard;
+
+  /// BUTTON
+  ///
+  /// In en, this message translates to:
+  /// **'SELECT'**
+  String get select;
+
+  /// No description provided for @selectDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a directory'**
+  String get selectDirectory;
+
+  /// No description provided for @selectFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Select file'**
+  String get selectFile;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Program \"{name}\" imported successfully!'**
+  String importSuccess(Object name);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to import the program. Please try again.'**
+  String get importFailure;
 
   /// Exercise with plurals
   ///
@@ -271,6 +379,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Station Description'**
   String get stationDescription;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Import...'**
+  String get importProgram;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Export...'**
+  String get exportProgram;
 
   /// Label
   ///
