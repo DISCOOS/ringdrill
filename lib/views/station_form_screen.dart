@@ -57,16 +57,16 @@ class _StationFormScreenState extends State<StationFormScreen> {
                   // Exercise Name
                   Expanded(
                     child: TextFormField(
+                      autofocus: true,
                       controller: _nameController,
                       decoration: InputDecoration(
                         labelText: localizations.stationName,
                         hintText: localizations.stationNameHint,
                       ),
-                      validator:
-                          (value) =>
-                              value != null && value.trim().isNotEmpty
-                                  ? null
-                                  : localizations.pleaseEnterAName,
+                      validator: (value) =>
+                          value != null && value.trim().isNotEmpty
+                          ? null
+                          : localizations.pleaseEnterAName,
                     ),
                   ),
 

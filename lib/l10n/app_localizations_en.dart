@@ -90,6 +90,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidFileName => 'Invalid file name. Please try again.';
 
   @override
+  String openSuccess(Object name) {
+    return 'Open \"$name\" was successful!';
+  }
+
+  @override
+  String openFailure(Object name) {
+    return 'Open failed. Please try again.';
+  }
+
+  @override
   String get exportedProgram => 'Exported Program';
 
   @override
@@ -98,7 +108,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get exportFailure => 'Export failed. Please try again.';
+  String exportFailure(Object name) {
+    return 'Export to \"$name\" failed. Please try again.';
+  }
 
   @override
   String shareSuccess(Object name) {
@@ -106,7 +118,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get shareFailure => 'Share failed. Please try again.';
+  String shareFailure(Object name) {
+    return 'Sharing \"$name\" failed. Please try again.';
+  }
+
+  @override
+  String get sharedFileReceived =>
+      'Choose [Open] to replace existing exercises completely, or [Import] to add to existing exercises, overwriting only if they already exist. What would you like to do?';
 
   @override
   String get storage => 'Storage';
@@ -119,6 +137,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sdCard => 'SD Card';
+
+  @override
+  String get open => 'OPEN';
+
+  @override
+  String get import => 'OPEN';
 
   @override
   String get select => 'SELECT';
@@ -135,7 +159,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get importFailure => 'Failed to import the program. Please try again.';
+  String importFailure(Object name) {
+    return 'Failed to import \"$name\". Please try again.';
+  }
 
   @override
   String exercise(num count) {
@@ -187,6 +213,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stationDescription => 'Station Description';
+
+  @override
+  String get openProgram => 'Open...';
 
   @override
   String get importProgram => 'Import...';

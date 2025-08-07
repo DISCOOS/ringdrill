@@ -83,15 +83,14 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
             children: [
               // Exercise Name
               TextFormField(
+                autofocus: true,
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: localizations.exerciseName,
                 ),
-                validator:
-                    (value) =>
-                        value == null || value.trim().isEmpty
-                            ? localizations.pleaseEnterAName
-                            : null,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? localizations.pleaseEnterAName
+                    : null,
               ),
 
               // Start Time Picker
@@ -119,8 +118,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       return int.parse(_numberOfRoundsController.text) <
                               int.parse(value!)
                           ? localizations.mustBeEqualToOrLessThanNumberOf(
-                            localizations.round(2),
-                          )
+                              localizations.round(2),
+                            )
                           : null;
                     }
                   }
@@ -141,8 +140,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       return int.parse(_numberOfTeamsController.text) >
                               int.parse(value!)
                           ? localizations.mustBeEqualToOrLessThanNumberOf(
-                            localizations.team(2),
-                          )
+                              localizations.team(2),
+                            )
                           : null;
                     }
                   }
@@ -157,11 +156,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 decoration: InputDecoration(
                   labelText: localizations.executionTime,
                 ),
-                validator:
-                    (value) =>
-                        _isValidNumber(value)
-                            ? null
-                            : localizations.pleaseEnterAValidTime,
+                validator: (value) => _isValidNumber(value)
+                    ? null
+                    : localizations.pleaseEnterAValidTime,
               ),
 
               // Evaluation Time
@@ -171,11 +168,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 decoration: InputDecoration(
                   labelText: localizations.evaluationTime,
                 ),
-                validator:
-                    (value) =>
-                        _isValidNumber(value)
-                            ? null
-                            : localizations.pleaseEnterAValidTime,
+                validator: (value) => _isValidNumber(value)
+                    ? null
+                    : localizations.pleaseEnterAValidTime,
               ),
 
               // Rotation Time
@@ -185,11 +180,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 decoration: InputDecoration(
                   labelText: localizations.rotationTime,
                 ),
-                validator:
-                    (value) =>
-                        _isValidNumber(value)
-                            ? null
-                            : localizations.pleaseEnterAValidTime,
+                validator: (value) => _isValidNumber(value)
+                    ? null
+                    : localizations.pleaseEnterAValidTime,
               ),
             ],
           ),

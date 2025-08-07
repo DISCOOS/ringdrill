@@ -17,16 +17,15 @@ class ExerciseRepository {
   /// Load all exercises from SharedPreferences
   List<Exercise> loadExercises() {
     final keys = _prefs.getKeys();
-    final items =
-        keys
-            .where((key) => !key.startsWith('app:'))
-            .map((key) {
-              final jsonString = _prefs.getString(key);
-              if (jsonString == null) return null;
-              return Exercise.fromJson(jsonDecode(jsonString));
-            })
-            .whereType<Exercise>() // Filter out invalid items
-            .toList();
+    final items = keys
+        .where((key) => !key.startsWith('app:'))
+        .map((key) {
+          final jsonString = _prefs.getString(key);
+          if (jsonString == null) return null;
+          return Exercise.fromJson(jsonDecode(jsonString));
+        })
+        .whereType<Exercise>() // Filter out invalid items
+        .toList();
     items.sort((e1, e2) => e1.name.compareTo(e2.name));
     return items;
   }
@@ -52,5 +51,12 @@ class ExerciseRepository {
     if (_prefs.containsKey(uuid)) {
       await _prefs.remove(uuid);
     }
+  }
+
+  /// Delete all exercise from SharedPreferences
+  Future<List<Exercise>> deleteAllExercises() async {
+    final exercises = loadExercises();
+    await Future.wait(exercises.map((e) => deleteExercise(e.uuid)));
+    return exercises;
   }
 }

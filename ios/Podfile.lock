@@ -1,7 +1,12 @@
 PODS:
   - device_info_plus (0.0.1):
     - Flutter
+  - external_path (2.0.1):
+    - Flutter
   - Flutter (1.0.0)
+  - flutter_archive (0.0.1):
+    - Flutter
+    - ZIPFoundation (= 0.9.19)
   - flutter_local_notifications (0.0.1):
     - Flutter
   - flutter_native_splash (2.4.3):
@@ -11,40 +16,48 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - restart_app (0.0.1):
-    - Flutter
   - Sentry/HybridSDK (8.52.1)
-  - sentry_flutter (9.5.0):
+  - sentry_flutter (9.6.0):
     - Flutter
     - FlutterMacOS
     - Sentry/HybridSDK (= 8.52.1)
+  - share_plus (0.0.1):
+    - Flutter
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
   - url_launcher_ios (0.0.1):
     - Flutter
+  - ZIPFoundation (0.9.19)
 
 DEPENDENCIES:
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
+  - external_path (from `.symlinks/plugins/external_path/ios`)
   - Flutter (from `Flutter`)
+  - flutter_archive (from `.symlinks/plugins/flutter_archive/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
-  - restart_app (from `.symlinks/plugins/restart_app/ios`)
   - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
   trunk:
     - Sentry
+    - ZIPFoundation
 
 EXTERNAL SOURCES:
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
+  external_path:
+    :path: ".symlinks/plugins/external_path/ios"
   Flutter:
     :path: Flutter
+  flutter_archive:
+    :path: ".symlinks/plugins/flutter_archive/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_native_splash:
@@ -53,10 +66,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
-  restart_app:
-    :path: ".symlinks/plugins/restart_app/ios"
   sentry_flutter:
     :path: ".symlinks/plugins/sentry_flutter/ios"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   url_launcher_ios:
@@ -64,16 +77,19 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
+  external_path: 2594f1f0d6afcff9e202cfe9c8908dd605b86f32
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_archive: cb3e0219e555897ba4b36f166baa1eca394890b9
   flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
   flutter_native_splash: df59bb2e1421aa0282cb2e95618af4dcb0c56c29
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
-  restart_app: 806659942bf932f6ce51c5372f91ce5e81c8c14a
   Sentry: 2cbbe3592f30050c60e916c63c7f5a2fa584005e
-  sentry_flutter: c6d796143314ce5801b1324d39a4af571435b216
+  sentry_flutter: feb376a4d8fd37387898b94e00da2060eeab2a41
+  share_plus: 8b6f8b3447e494cca5317c8c3073de39b3600d1f
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
+  ZIPFoundation: b8c29ea7ae353b309bc810586181fd073cb3312c
 
 PODFILE CHECKSUM: 4305caec6b40dde0ae97be1573c53de1882a07e5
 

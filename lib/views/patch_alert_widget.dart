@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 
-class PatchAlert extends StatefulWidget {
-  const PatchAlert({super.key, required this.child});
+class PatchAlertWidget extends StatefulWidget {
+  const PatchAlertWidget({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<PatchAlert> createState() => _PatchAlertState();
+  State<PatchAlertWidget> createState() => _PatchAlertWidgetState();
 }
 
-class _PatchAlertState extends State<PatchAlert> {
+class _PatchAlertWidgetState extends State<PatchAlertWidget> {
   late Timer _timer;
 
   final updater = ShorebirdUpdater();
@@ -43,25 +43,24 @@ class _PatchAlertState extends State<PatchAlert> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder:
-                  (context) => AlertDialog(
-                    title: Text(localizations.updateRequired),
-                    content: Text(localizations.restartAppToApplyNewPatch),
-                    actions: [
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(context, false);
-                        },
-                        child: Text(localizations.no),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(context, false);
-                        },
-                        child: Text(localizations.yes),
-                      ),
-                    ],
+              builder: (context) => AlertDialog(
+                title: Text(localizations.updateRequired),
+                content: Text(localizations.restartAppToApplyNewPatch),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context, false);
+                    },
+                    child: Text(localizations.no),
                   ),
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context, true);
+                    },
+                    child: Text(localizations.yes),
+                  ),
+                ],
+              ),
             );
           default:
           // NOP

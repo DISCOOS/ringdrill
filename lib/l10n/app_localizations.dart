@@ -248,6 +248,18 @@ abstract class AppLocalizations {
   /// **'Invalid file name. Please try again.'**
   String get invalidFileName;
 
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Open \"{name}\" was successful!'**
+  String openSuccess(Object name);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Open failed. Please try again.'**
+  String openFailure(Object name);
+
   /// Label
   ///
   /// In en, this message translates to:
@@ -263,8 +275,8 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Export failed. Please try again.'**
-  String get exportFailure;
+  /// **'Export to \"{name}\" failed. Please try again.'**
+  String exportFailure(Object name);
 
   /// Message
   ///
@@ -275,8 +287,14 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Share failed. Please try again.'**
-  String get shareFailure;
+  /// **'Sharing \"{name}\" failed. Please try again.'**
+  String shareFailure(Object name);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Choose [Open] to replace existing exercises completely, or [Import] to add to existing exercises, overwriting only if they already exist. What would you like to do?'**
+  String get sharedFileReceived;
 
   /// Label
   ///
@@ -305,6 +323,18 @@ abstract class AppLocalizations {
   /// BUTTON
   ///
   /// In en, this message translates to:
+  /// **'OPEN'**
+  String get open;
+
+  /// BUTTON
+  ///
+  /// In en, this message translates to:
+  /// **'OPEN'**
+  String get import;
+
+  /// BUTTON
+  ///
+  /// In en, this message translates to:
   /// **'SELECT'**
   String get select;
 
@@ -329,8 +359,8 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Failed to import the program. Please try again.'**
-  String get importFailure;
+  /// **'Failed to import \"{name}\". Please try again.'**
+  String importFailure(Object name);
 
   /// Exercise with plurals
   ///
@@ -379,6 +409,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Station Description'**
   String get stationDescription;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Open...'**
+  String get openProgram;
 
   /// Label
   ///

@@ -6,8 +6,9 @@ import 'package:intl/intl_browser.dart'
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
-import 'package:ringdrill/views/home_screen.dart';
-import 'package:ringdrill/views/patch_alert.dart';
+import 'package:ringdrill/views/patch_alert_widget.dart';
+import 'package:ringdrill/views/program_screen.dart';
+import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
@@ -41,8 +42,8 @@ Future<void> main() async {
     // Run app with Sentry on consent
     await SentryFlutter.init(
       SentryConfig.apply,
-      appRunner:
-          () => runApp(SentryWidget(child: RingDrillApp(isFirstLaunch: false))),
+      appRunner: () =>
+          runApp(SentryWidget(child: RingDrillApp(isFirstLaunch: false))),
     );
   } else {
     // Run app without Sentry if no consent
@@ -125,8 +126,13 @@ class _RingDrillAppState extends State<RingDrillApp> {
         // Shorebird patch upgrades
         // ---------------------------------
         // Notifies user of new patch when app is running
-        child: PatchAlert(
-          child: HomeScreen(isFirstLaunch: widget.isFirstLaunch),
+        child: PatchAlertWidget(
+          // ---------------------------------
+          // Handle incoming files from OS
+          // ---------------------------------
+          child: SharedFileWidget(
+            child: ProgramScreen(isFirstLaunch: widget.isFirstLaunch),
+          ),
         ),
       ),
     );

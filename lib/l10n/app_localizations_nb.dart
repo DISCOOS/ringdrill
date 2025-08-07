@@ -66,7 +66,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get ok => 'OK';
 
   @override
-  String get cancel => 'Avbryt';
+  String get cancel => 'AVBRYT';
 
   @override
   String get yes => 'JA';
@@ -90,6 +90,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String get invalidFileName => 'Ugyldig filnavn. Prøv igjen.';
 
   @override
+  String openSuccess(Object name) {
+    return 'Åpning av \"$name\" var vellykket!';
+  }
+
+  @override
+  String openFailure(Object name) {
+    return 'Åpning av \"$name\" mislyktes. Prøv igjen.';
+  }
+
+  @override
   String get exportedProgram => 'Eksportert Program';
 
   @override
@@ -98,7 +108,9 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get exportFailure => 'Eksporten mislyktes. Prøv igjen.';
+  String exportFailure(Object name) {
+    return 'Eksport til \"$name\" mislyktes. Prøv igjen.';
+  }
 
   @override
   String shareSuccess(Object name) {
@@ -106,7 +118,13 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get shareFailure => 'Deling mislyktes. Prøv igjen.';
+  String shareFailure(Object name) {
+    return 'Deling mislyktes. Prøv igjen.';
+  }
+
+  @override
+  String get sharedFileReceived =>
+      'Velg [Åpne] for å erstatte eksisterende øvelser fullstendig, eller [Importer] for å legge til i eksisterende øvelser, og overskrive kun hvis de allerede finnes. Hva ønsker du å gjøre?';
 
   @override
   String get storage => 'Lagring';
@@ -121,7 +139,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get sdCard => 'SD kort';
 
   @override
-  String get select => 'Velg';
+  String get open => 'ÅPNE';
+
+  @override
+  String get import => 'IMPORTER';
+
+  @override
+  String get select => 'VELG';
 
   @override
   String get selectDirectory => 'Velg en mappe';
@@ -135,7 +159,9 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get importFailure => 'Kunne ikke importere programmet. Prøv igjen.';
+  String importFailure(Object name) {
+    return 'Kunne ikke importere \"$name\". Prøv igjen.';
+  }
 
   @override
   String exercise(num count) {
@@ -187,6 +213,9 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get stationDescription => 'Postbeskrivelse';
+
+  @override
+  String get openProgram => 'Åpne...';
 
   @override
   String get importProgram => 'Importer...';

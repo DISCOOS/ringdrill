@@ -99,6 +99,15 @@
   "@invalidFileName": {
     "description": "Message"
   },
+  "openSuccess": "Open \"{name}\" was successful!",
+  "@openSuccess": {
+    "description": "Message"
+  },
+  "openFailure": "Open failed. Please try again.",
+  "@openFailure": {
+    "description": "Message"
+  },
+
   "exportedProgram": "Exported Program",
   "@exportedProgram": {
     "description": "Label"
@@ -107,7 +116,7 @@
   "@exportSuccess": {
     "description": "Message"
   },
-  "exportFailure": "Export failed. Please try again.",
+  "exportFailure": "Export to \"{name}\" failed. Please try again.",
   "@exportFailure": {
     "description": "Message"
   },
@@ -115,10 +124,15 @@
   "@shareSuccess": {
     "description": "Message"
   },
-  "shareFailure": "Share failed. Please try again.",
+  "shareFailure": "Sharing \"{name}\" failed. Please try again.",
   "@shareFailure": {
     "description": "Message"
   },
+  "sharedFileReceived": "Choose [Open] to replace existing exercises completely, or [Import] to add to existing exercises, overwriting only if they already exist. What would you like to do?",
+  "@sharedFileReceived": {
+    "description": "Message"
+  },
+
   "storage": "Storage",
   "@storage": {
     "description": "Label"
@@ -134,6 +148,14 @@
   "sdCard": "SD Card",
   "@sdCard": {
     "description": "Label"
+  },
+  "open": "OPEN",
+  "@open": {
+    "description": "BUTTON"
+  },
+  "import": "OPEN",
+  "@import": {
+    "description": "BUTTON"
   },
   "select": "SELECT",
   "@select": {
@@ -151,7 +173,7 @@
   "@importSuccess": {
     "description": "Message"
   },
-  "importFailure": "Failed to import the program. Please try again.",
+  "importFailure": "Failed to import \"{name}\". Please try again.",
   "@importFailure": {
     "description": "Message"
   },
@@ -185,6 +207,10 @@
   },
   "stationDescription": "Station Description",
   "@stationDescription": {
+    "description": "Label"
+  },
+  "openProgram": "Open...",
+  "@openProgram": {
     "description": "Label"
   },
   "importProgram": "Import...",
