@@ -113,14 +113,18 @@ class _StationScreenState extends State<StationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Team Info
-                    _buildStationStatus(event),
+                    _buildStationStatus(station, event),
                     const SizedBox(height: 8),
                     Expanded(
                       child: mode(
                         children: [
                           Expanded(
                             flex: isPortrait ? -1 : 1,
-                            child: _buildStationInfo(station, isPortrait),
+                            child: _buildStationInfo(
+                              station,
+                              event,
+                              isPortrait,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(child: _buildTeamRotations(event)),
@@ -137,14 +141,14 @@ class _StationScreenState extends State<StationScreen> {
     );
   }
 
-  Widget _buildStationStatus(ExerciseEvent event) {
+  Widget _buildStationStatus(Station station, ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
     return _exerciseService.isStarted
         ? Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${_current.stations[widget.stationIndex].name} '
+                '${station.name} '
                 '(${event.getState(localizations)})',
                 style: const TextStyle(
                   fontSize: 24,
@@ -165,13 +169,18 @@ class _StationScreenState extends State<StationScreen> {
             ],
           )
         : Text(
-            _current.stations[widget.stationIndex].name,
+            station.name,
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           );
   }
 
-  Widget _buildStationInfo(Station station, bool isPortrait) {
+  Widget _buildStationInfo(
+    Station station,
+    ExerciseEvent event,
+    bool isPortrait,
+  ) {
     final localizations = AppLocalizations.of(context)!;
+    final station = _current.stations[widget.stationIndex];
     return LayoutBuilder(
       builder: (context, BoxConstraints constraints) {
         final size = station.position == null ? 150.0 : 350.0;
@@ -180,36 +189,7 @@ class _StationScreenState extends State<StationScreen> {
           width: isPortrait ? null : size,
           child: ListView(
             children: [
-              Card(
-                elevation: 1,
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.description,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: SelectableText(
-                              station.description == null
-                                  ? localizations.noDescription
-                                  : station.description!,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildDescription(station, localizations),
               Card(
                 elevation: 1,
                 margin: const EdgeInsets.only(bottom: 16),
@@ -247,26 +227,46 @@ class _StationScreenState extends State<StationScreen> {
                           width: constraints.maxWidth,
                           child: MapView(
                             key: _mapKey,
-                            initialZoom: 18,
                             withCross: true,
-                            layer: MapConfig.topoLayer,
+                            initialZoom: 16,
                             initialCenter:
                                 station.position ?? MapConfig.initialCenter,
+                            layers: MapConfig.layers,
                             onTap: (_, _) {
                               Navigator.push<LatLng>(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => MapScreen(
-                                    title: _current
-                                        .stations[widget.stationIndex]
-                                        .name,
-                                    withCross: true,
-                                    initialZoom: 12,
-                                    initialCenter:
-                                        station.position ??
-                                        MapConfig.initialCenter,
-                                    interactionFlags: MapConfig.interactive,
-                                  ),
+                                  builder: (context) {
+                                    int i = 0;
+                                    return MapScreen(
+                                      title: station.name,
+                                      withCross: true,
+                                      withSearch: true,
+                                      initialZoom: 14,
+                                      initialCenter:
+                                          station.position ??
+                                          MapConfig.initialCenter,
+                                      interactionFlags: MapConfig.interactive,
+                                      markers: _current.stations
+                                          .where((e) => e.position != null)
+                                          .map(
+                                            (e) => (i++, e.name, e.position!),
+                                          )
+                                          .toList(),
+                                      onMarkerTap: (on) {
+                                        showModalBottomSheet(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return _buildBottomSheet(
+                                              event,
+                                              _current.stations[on.$1],
+                                              isPortrait,
+                                            );
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
                                 ),
                               );
                             },
@@ -281,6 +281,58 @@ class _StationScreenState extends State<StationScreen> {
           ),
         );
       },
+    );
+  }
+
+  Card _buildDescription(Station station, AppLocalizations localizations) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.description,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SelectableText(
+                    station.description == null
+                        ? localizations.noDescription
+                        : station.description!,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Container _buildBottomSheet(
+    ExerciseEvent event,
+    Station station,
+    bool isPortrait,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStationStatus(station, event),
+          Divider(),
+          _buildDescription(station, AppLocalizations.of(context)!),
+          Expanded(child: _buildTeamRotations(event)),
+        ],
+      ),
     );
   }
 

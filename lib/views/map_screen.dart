@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
 
 class MapScreen extends StatefulWidget {
@@ -11,44 +10,50 @@ class MapScreen extends StatefulWidget {
     this.withCross = false,
     this.withSearch = false,
     this.initialZoom = 15,
+    this.markers = const [],
+    this.onMarkerTap,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
   });
 
+  final String title;
   final bool withCross;
   final bool withSearch;
   final double initialZoom;
   final int interactionFlags;
   final LatLng initialCenter;
-  final String title;
+  final List<(int, String, LatLng)> markers;
+
+  final ValueSetter<(int, String, LatLng)>? onMarkerTap;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
 
 class _MapScreenState extends State<MapScreen> {
-  bool useTopoLayer = true;
   final _mapController = MapController();
-
   final _mapKey = GlobalKey<_MapScreenState>();
+
+  int _currentCenterIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCurrentIndex();
+  }
+
+  @override
+  void didUpdateWidget(covariant MapScreen oldWidget) {
+    if (widget.initialCenter != oldWidget.initialCenter) {
+      _initCurrentIndex();
+    }
+    super.didUpdateWidget(oldWidget);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            icon: Icon(useTopoLayer ? Icons.map : Icons.terrain),
-            tooltip:
-                useTopoLayer
-                    ? localizations.switchToOSM
-                    : localizations.switchToTopo,
-            onPressed: () => setState(() => useTopoLayer = !useTopoLayer),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(widget.title)),
       body: MapView(
         key: _mapKey,
         controller: _mapController,
@@ -57,13 +62,66 @@ class _MapScreenState extends State<MapScreen> {
         initialZoom: widget.initialZoom,
         initialCenter: widget.initialCenter,
         interactionFlags: MapConfig.interactive,
-        layer: useTopoLayer ? MapConfig.topoLayer : MapConfig.osmLayer,
+        layers: MapConfig.layers,
+        markers: widget.markers
+            .map(
+              (e) => (
+                e.$2,
+                Marker(
+                  height: 52,
+                  width: 100,
+                  point: e.$3,
+                  alignment: Alignment.topCenter,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.deferToChild,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Material(
+                          elevation: 2,
+                          borderRadius: BorderRadius.circular(4),
+                          child: Padding(
+                            padding: const EdgeInsets.all(1.0),
+                            child: Text(e.$2, style: TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                        Icon(Icons.place, color: Colors.green, size: 32),
+                      ],
+                    ),
+                    onTap: () => widget.onMarkerTap?.call(e),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
       ),
-      floatingActionButton: IconButton(
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'center',
         onPressed: () {
-          _mapController.move(widget.initialCenter, widget.initialZoom);
+          if (widget.markers.isEmpty) {
+            _mapController.move(
+              widget.initialCenter,
+              _mapController.camera.zoom,
+            );
+            return;
+          }
+
+          // Do not toggle to same initial center if exists in markers
+          final unique = !widget.markers.any(
+            (e) => e.$3 == widget.initialCenter,
+          );
+
+          _currentCenterIndex =
+              (_currentCenterIndex + 1) %
+              (widget.markers.length + (unique ? 1 : 0));
+
+          final point = _currentCenterIndex == 0
+              ? widget.initialCenter
+              : widget.markers[_currentCenterIndex + (unique ? 1 : 0)].$3;
+
+          _mapController.move(point, _mapController.camera.zoom);
         },
-        icon: Icon(Icons.center_focus_strong_rounded),
+        child: Icon(Icons.center_focus_strong_rounded),
       ),
     );
   }
@@ -72,5 +130,17 @@ class _MapScreenState extends State<MapScreen> {
   void dispose() {
     super.dispose();
     _mapController.dispose();
+  }
+
+  void _initCurrentIndex() {
+    int i = 0;
+    _currentCenterIndex = 0;
+    for (final it in widget.markers) {
+      if (it.$3 == widget.initialCenter) {
+        _currentCenterIndex = i;
+        return;
+      }
+      i++;
+    }
   }
 }

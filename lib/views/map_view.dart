@@ -21,6 +21,9 @@ class MapConfig {
       InteractiveFlag.scrollWheelZoom;
 
   static const LatLng initialCenter = LatLng(59.91, 10.75);
+
+  static List<TileLayer> layers = [topoLayer, osmLayer];
+
   static TileLayer get osmLayer => TileLayer(
     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     userAgentPackageName: 'discoos.org/ringdrill',
@@ -37,24 +40,30 @@ class MapConfig {
 class MapView extends StatefulWidget {
   const MapView({
     super.key,
-    required this.layer,
+    required this.layers,
     this.controller,
     this.withCross = false,
     this.withSearch = false,
+    this.withToggle = true,
     this.initialZoom = 15,
+    this.markers = const [],
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
     this.onTap,
+    this.toolWidget,
   });
 
-  final TileLayer layer;
   final bool withCross;
   final bool withSearch;
+  final bool withToggle;
   final double initialZoom;
   final int interactionFlags;
   final LatLng initialCenter;
-  final MapController? controller;
   final TapCallback? onTap;
+  final Widget? toolWidget;
+  final MapController? controller;
+  final List<TileLayer> layers;
+  final List<(String, Marker)> markers;
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -65,7 +74,8 @@ class _MapViewState extends State<MapView> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _throttleTimer;
   bool _isSearching = false;
-  List<SearchResult> _searchResults = [];
+  int _currentLayerIndex = 0;
+  final Set<SearchResult> _searchResults = {};
 
   @override
   void initState() {
@@ -77,7 +87,6 @@ class _MapViewState extends State<MapView> {
   void didUpdateWidget(covariant MapView oldWidget) {
     if (oldWidget != widget) {
       if (widget.controller != null && _mapController != widget.controller) {
-        //_mapController.dispose();
         _mapController = widget.controller!;
       }
       _mapController.move(widget.initialCenter, widget.initialZoom);
@@ -87,127 +96,163 @@ class _MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
-    final searchHint = AppLocalizations.of(context)!.searchForPlaceOrLocation;
-    return Stack(
-      children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialZoom: widget.initialZoom,
-            initialCenter: widget.initialCenter,
-            interactionOptions: InteractionOptions(
-              flags: widget.interactionFlags,
+    final withToggle = widget.withToggle && widget.layers.length > 1;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialZoom: widget.initialZoom,
+                initialCenter: widget.initialCenter,
+                interactionOptions: InteractionOptions(
+                  flags: widget.interactionFlags,
+                ),
+                onTap: (tapPosition, point) {
+                  if (widget.interactionFlags != InteractiveFlag.none) {
+                    _mapController.move(point, _mapController.camera.zoom);
+                  }
+                  if (widget.onTap != null) {
+                    widget.onTap!(tapPosition, point);
+                  }
+                },
+              ),
+              children: [
+                widget.layers[_currentLayerIndex],
+                if (widget.markers.isNotEmpty)
+                  MarkerLayer(
+                    markers: widget.markers.map((e) => e.$2).toList(),
+                  ),
+                SafeArea(child: Scalebar(alignment: Alignment.bottomLeft)),
+              ],
             ),
-            onTap: (tapPosition, point) {
-              if (widget.interactionFlags != InteractiveFlag.none) {
-                _mapController.move(point, _mapController.camera.zoom);
-              }
-              if (widget.onTap != null) {
-                widget.onTap!(tapPosition, point);
-              }
-            },
-          ),
-          children: [widget.layer],
-        ),
-        if (widget.withCross)
-          IgnorePointer(
-            child: Center(
-              child: Transform.rotate(
-                angle: 45 * math.pi / 180,
-                child: Icon(
-                  Icons.close,
-                  size: 40,
-                  color: Colors.red.withValues(alpha: 0.65),
+            if (widget.withCross)
+              IgnorePointer(
+                child: Center(
+                  child: Transform.rotate(
+                    angle: 45 * math.pi / 180,
+                    child: Icon(
+                      Icons.close,
+                      size: 40,
+                      color: Colors.red.withValues(alpha: 0.65),
+                    ),
+                  ),
+                ),
+              ),
+            if (widget.withSearch)
+              // Search Results (Dropdown-like List)
+              Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: constraints.maxWidth - (withToggle ? 66 : 0),
+                  child: _buildSearchTool(context),
+                ),
+              ),
+            if (withToggle)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(
+                    10.0,
+                  ).copyWith(top: 16.0), // Add some spacing
+                  child: FloatingActionButton(
+                    heroTag: 'layers',
+                    onPressed: _toggleLayer,
+                    child: const Icon(
+                      Icons.layers,
+                    ), // Layer icon for better context
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchTool(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 88,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0).copyWith(left: 8, top: 12),
+              child: Center(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(
+                      context,
+                    )!.searchForPlaceOrLocation,
+                    hintMaxLines: 1,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 10,
+                    ),
+                    suffixIcon: _isSearching
+                        ? Transform.scale(
+                            scale: 0.6,
+                            child: SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : IconButton(
+                            icon: Icon(
+                              _searchController.text.isEmpty
+                                  ? Icons.search
+                                  : Icons.clear,
+                            ),
+                            onPressed: _isSearching
+                                ? null
+                                : () {
+                                    if (_searchController.text.isNotEmpty) {
+                                      setState(() {
+                                        _searchResults.clear();
+                                        _searchController.clear();
+                                      });
+                                    }
+                                  },
+                          ),
+                  ),
+                  onChanged: (input) {
+                    if (_isSearching) return;
+                    _isSearching = true;
+                    _searchLocationWithThrottle(input);
+                  },
+                  onSubmitted: _searchLocation,
                 ),
               ),
             ),
           ),
-        if (widget.withSearch)
-          // Search Results (Dropdown-like List)
-          Align(
-            alignment: Alignment.topLeft,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 88,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(
-                        8.0,
-                      ).copyWith(left: 8, top: 12),
-                      child: Center(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: searchHint,
-                            hintMaxLines: 1,
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 10,
-                            ),
-                            suffixIcon:
-                                _isSearching
-                                    ? Transform.scale(
-                                      scale: 0.6,
-                                      child: SizedBox(
-                                        height: 16,
-                                        width: 16,
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    )
-                                    : IconButton(
-                                      icon: Icon(
-                                        _searchController.text.isEmpty
-                                            ? Icons.search
-                                            : Icons.clear,
-                                      ),
-                                      onPressed:
-                                          _isSearching
-                                              ? null
-                                              : () {
-                                                if (_searchController
-                                                    .text
-                                                    .isNotEmpty) {
-                                                  setState(() {
-                                                    _searchResults.clear();
-                                                    _searchController.clear();
-                                                  });
-                                                }
-                                              },
-                                    ),
-                          ),
-                          onChanged: (input) {
-                            if (_isSearching) return;
-                            _isSearching = true;
-                            _searchLocationWithThrottle(input);
-                          },
-                          onSubmitted: _searchLocation,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                if (_searchResults.isNotEmpty)
-                  Card(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _searchResults.length,
-                      itemBuilder: (context, index) {
-                        final result = _searchResults[index];
-                        return ListTile(
-                          onTap: () => _onResultTap(result),
-                          title: Text(result.name),
-                          trailing: const Icon(Icons.location_on),
-                        );
-                      },
-                    ),
-                  ),
-              ],
+        ),
+        if (_searchResults.isNotEmpty)
+          Card(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _searchResults.length,
+              itemBuilder: (context, index) {
+                final result = _searchResults.toList()[index];
+                return ListTile(
+                  onTap: () => _onResultTap(result),
+                  title: Text(result.name),
+                  trailing: const Icon(Icons.location_on),
+                );
+              },
             ),
           ),
       ],
     );
+  }
+
+  void _toggleLayer() {
+    setState(() {
+      _currentLayerIndex = (_currentLayerIndex + 1) % widget.layers.length;
+    });
   }
 
   void _searchLocationWithThrottle(String input) {
@@ -241,7 +286,7 @@ class _MapViewState extends State<MapView> {
         final lon = double.tryParse(parts[1]);
         if (lat != null && lon != null) {
           final result = LatLng(lat, lon);
-          _mapController.move(result, widget.initialZoom);
+          _mapController.move(result, _mapController.camera.zoom);
           setState(() {
             _isSearching = false;
           });
@@ -266,11 +311,24 @@ class _MapViewState extends State<MapView> {
           );
           final dd = utm.toDD();
           final result = LatLng(dd.latitude, dd.longitude);
-          _mapController.move(result, widget.initialZoom);
+          _mapController.move(result, _mapController.camera.zoom);
           setState(() {
             _isSearching = false;
           });
           return;
+        }
+      }
+
+      // Try markers
+      if (widget.markers.isNotEmpty) {
+        final found = widget.markers
+            .where((e) => e.$1.contains(input.trim()))
+            .map((e) => SearchResult(e.$1, e.$2.point))
+            .toList();
+        if (found.isNotEmpty) {
+          setState(() {
+            _searchResults.addAll(found);
+          });
         }
       }
 
@@ -288,12 +346,11 @@ class _MapViewState extends State<MapView> {
       setState(() {
         _isSearching = false;
         if (results.isNotEmpty) {
-          _searchResults =
-              results
-                  .map(
-                    (r) => SearchResult(_formatPlace(r), LatLng(r.lat, r.lon)),
-                  )
-                  .toList();
+          _searchResults.addAll(
+            results.map(
+              (r) => SearchResult(_formatPlace(r), LatLng(r.lat, r.lon)),
+            ),
+          );
         }
       });
     } catch (e) {
@@ -343,7 +400,7 @@ class _MapViewState extends State<MapView> {
   }
 
   void _onResultTap(SearchResult result) {
-    _mapController.move(result.location, widget.initialZoom);
+    _mapController.move(result.location, _mapController.camera.zoom);
     setState(() {
       _searchResults.clear();
       _searchController.text = result.name;
@@ -363,4 +420,20 @@ class SearchResult {
   final LatLng location;
 
   SearchResult(this.name, this.location);
+
+  @override
+  String toString() {
+    return 'SearchResult{name: $name}';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SearchResult &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          location == other.location;
+
+  @override
+  int get hashCode => name.hashCode ^ location.hashCode;
 }

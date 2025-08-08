@@ -15,8 +15,6 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  bool useTopoLayer = true;
-
   late LatLng _selected;
   late MapController _mapController;
 
@@ -48,12 +46,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         title: Text(localizations.pickALocation),
         actions: [
           IconButton(
-            icon: Icon(useTopoLayer ? Icons.map : Icons.terrain),
-            tooltip:
-                useTopoLayer
-                    ? localizations.switchToOSM
-                    : localizations.switchToTopo,
-            onPressed: () => setState(() => useTopoLayer = !useTopoLayer),
+            icon: Icon(Icons.check),
+            tooltip: localizations.select,
+            onPressed: () => Navigator.pop(context, _selected),
           ),
         ],
       ),
@@ -65,13 +60,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         controller: _mapController,
         initialCenter: widget.initial,
         interactionFlags: MapConfig.interactive,
-        layer: useTopoLayer ? MapConfig.topoLayer : MapConfig.osmLayer,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'select',
-        onPressed: () => Navigator.pop(context, _selected),
-        icon: const Icon(Icons.check),
-        label: Text(localizations.selectAction),
+        layers: MapConfig.layers,
       ),
     );
   }
