@@ -84,7 +84,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterFileName => 'Enter File Name';
 
   @override
-  String get fileNameHint => 'e.g., MyProgram';
+  String get fileNameHint => 'MyProgram';
 
   @override
   String get invalidFileName => 'Invalid file name. Please try again.';
@@ -152,6 +152,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectFile => 'Select file';
+
+  @override
+  String get selectExercises => 'Select exercises';
 
   @override
   String importSuccess(Object name) {

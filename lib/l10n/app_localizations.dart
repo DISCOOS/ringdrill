@@ -239,7 +239,7 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
-  /// **'e.g., MyProgram'**
+  /// **'MyProgram'**
   String get fileNameHint;
 
   /// Message
@@ -349,6 +349,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select file'**
   String get selectFile;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Select exercises'**
+  String get selectExercises;
 
   /// Message
   ///

@@ -84,7 +84,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get enterFileName => 'Skriv inn filnavn';
 
   @override
-  String get fileNameHint => 'f.eks., MittProgram';
+  String get fileNameHint => 'MittProgram';
 
   @override
   String get invalidFileName => 'Ugyldig filnavn. Prøv igjen.';
@@ -152,6 +152,9 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get selectFile => 'Velg en fil';
+
+  @override
+  String get selectExercises => 'Velg øvelser';
 
   @override
   String importSuccess(Object name) {

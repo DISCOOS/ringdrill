@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:external_path/external_path.dart';
 import 'package:filesystem_picker/filesystem_picker.dart';
@@ -136,63 +137,16 @@ class _ProgramViewState extends State<ProgramView> {
                     onDismissed: (direction) {
                       _deleteExercise(exercise);
                     },
-                    child: Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 5,
-                        horizontal: 10,
+                    child: ExerciseCard(
+                      exercise: exercise,
+                      localizations: localizations,
+                      trailing: ExerciseControlButton(
+                        isFAB: false,
+                        exercise: exercise,
+                        service: _exerciseService,
+                        localizations: localizations,
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ListTile(
-                                  title: Text(
-                                    exercise.name,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    [
-                                      '${exercise.startTime.formal()} - ${exercise.endTime.formal()}',
-                                      exercise.endTime.toDateTime().formal(
-                                        localizations,
-                                        exercise.startTime.toDateTime(),
-                                      ),
-                                      '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
-                                      '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
-                                    ].join(' | '),
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: ExerciseControlButton(
-                                  isFAB: false,
-                                  exercise: exercise,
-                                  service: _exerciseService,
-                                  localizations: localizations,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (markers.isNotEmpty)
-                            SizedBox(
-                              height: 200,
-                              child: IgnorePointer(
-                                child: MapView(
-                                  layers: MapConfig.layers,
-                                  withToggle: false,
-                                  markers: markers,
-                                  initialFit: markers.fit(),
-                                  initialCenter: markers.average(),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                      markers: markers,
                     ),
                   ),
                 );
@@ -216,6 +170,74 @@ class _ProgramViewState extends State<ProgramView> {
     }
     // Remove the exercise from the repository
     await _programService.deleteExercise(exercise.uuid);
+  }
+}
+
+class ExerciseCard extends StatelessWidget {
+  const ExerciseCard({
+    super.key,
+    required this.exercise,
+    required this.localizations,
+    this.trailing,
+    required this.markers,
+  });
+
+  final Widget? trailing;
+  final Exercise exercise;
+  final AppLocalizations localizations;
+  final List<StationLocation> markers;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ListTile(
+                  title: Text(
+                    exercise.name,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    [
+                      '${exercise.startTime.formal()} - ${exercise.endTime.formal()}',
+                      exercise.endTime.toDateTime().formal(
+                        localizations,
+                        exercise.startTime.toDateTime(),
+                      ),
+                      '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
+                      '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
+                    ].join(' | '),
+                  ),
+                ),
+              ),
+              if (trailing != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: trailing,
+                ),
+            ],
+          ),
+          if (markers.isNotEmpty)
+            SizedBox(
+              height: 200,
+              child: IgnorePointer(
+                child: MapView(
+                  layers: MapConfig.layers,
+                  withToggle: false,
+                  markers: markers,
+                  initialFit: markers.fit(),
+                  initialCenter: markers.average(),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -290,7 +312,7 @@ class ProgramPageController extends ScreenController {
       case 'export':
         return _export(context, constraints, localizations);
       case 'share':
-        return _share(context, localizations);
+        return _share(context, constraints, localizations);
       default:
         throw UnimplementedError('Action [$action] not implemented');
     }
@@ -313,6 +335,7 @@ class ProgramPageController extends ScreenController {
 
       try {
         final program = await _programService.openFromLocalFile(file);
+        if (program == null) return;
         if (context.mounted) {
           _showSnackBar(context, localizations.openSuccess(program.name));
         }
@@ -336,12 +359,29 @@ class ProgramPageController extends ScreenController {
       localizations.selectFile,
       FilesystemType.file,
     );
+    if (!context.mounted) return;
 
     if (filePath != null) {
       final file = File(filePath);
 
       try {
-        final program = await _programService.importFromLocalFile(file);
+        final program = await _programService.importFromLocalFile(
+          file,
+          onSelect: (items) async {
+            final selected = await _selectExercises(
+              context,
+              items.toList(),
+              constraints,
+              localizations,
+              true,
+            );
+            return selected.isEmpty
+                ? null
+                : items.where((e) => selected.contains(e.uuid));
+          },
+        );
+        if (program == null) return;
+
         if (context.mounted) {
           _showSnackBar(context, localizations.importSuccess(program.name));
         }
@@ -359,16 +399,27 @@ class ProgramPageController extends ScreenController {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    String? dirPath = await _pickFileOrDir(
+    final selected = await _selectExercises(
       context,
+      _programService.loadExercises(),
       constraints,
-      localizations.selectDirectory,
-      FilesystemType.folder,
+      localizations,
+      false,
     );
+    if (selected.isEmpty || !context.mounted) return;
 
-    if (context.mounted && dirPath != null) {
-      final fileName = await _promptFileName(context, localizations);
-      if (context.mounted && fileName != null) {
+    final fileName = await _promptFileName(context, localizations);
+    if (!context.mounted) return;
+
+    if (fileName != null) {
+      String? dirPath = await _pickFileOrDir(
+        context,
+        constraints,
+        localizations.selectDirectory,
+        FilesystemType.folder,
+      );
+      if (!context.mounted) return;
+      if (dirPath != null) {
         // Ask the user for the file name
         try {
           final file = await _exportToLocal(
@@ -376,8 +427,10 @@ class ProgramPageController extends ScreenController {
             localizations,
             fileName,
             dirPath,
+            selected,
           );
-          if (context.mounted && file != null) {
+          if (!context.mounted) return;
+          if (file != null) {
             _showSnackBar(context, localizations.exportSuccess(file.path));
           }
         } on Exception catch (e, stackTrace) {
@@ -397,6 +450,7 @@ class ProgramPageController extends ScreenController {
 
   Future<void> _share(
     BuildContext context,
+    BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
     // Create a temp folder for export
@@ -404,42 +458,55 @@ class ProgramPageController extends ScreenController {
       (await getTemporaryDirectory()).path,
       'program_share',
     );
+    if (!context.mounted) return;
+
     final tempDir = Directory(tempDirPath);
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
     tempDir.createSync(recursive: true);
 
-    if (context.mounted) {
-      final fileName = await _promptFileName(context, localizations);
-      if (context.mounted && fileName != null) {
-        try {
-          final file = await _exportToLocal(
-            context,
-            localizations,
-            fileName,
-            tempDir.path,
+    final selected = await _selectExercises(
+      context,
+      _programService.loadExercises(),
+      constraints,
+      localizations,
+      false,
+    );
+    if (selected.isEmpty || !context.mounted) return;
+
+    final fileName = await _promptFileName(context, localizations);
+    if (!context.mounted) return;
+
+    if (fileName != null) {
+      try {
+        final file = await _exportToLocal(
+          context,
+          localizations,
+          fileName,
+          tempDir.path,
+          selected,
+        );
+
+        if (file != null) {
+          final params = ShareParams(
+            text: path.basenameWithoutExtension(file.path),
+            files: [XFile(file.path, mimeType: drillMimeType)],
           );
 
-          if (file != null) {
-            final params = ShareParams(
-              text: path.basenameWithoutExtension(file.path),
-              files: [XFile(file.path, mimeType: drillMimeType)],
-            );
+          final result = await SharePlus.instance.share(params);
+          if (!context.mounted) return;
 
-            final result = await SharePlus.instance.share(params);
-
-            if (context.mounted && result.status == ShareResultStatus.success) {
-              _showSnackBar(context, localizations.shareSuccess(file.path));
-            }
+          if (result.status == ShareResultStatus.success) {
+            _showSnackBar(context, localizations.shareSuccess(file.path));
           }
-        } on Exception catch (e, stackTrace) {
-          if (context.mounted) {
-            _showSnackBar(context, localizations.shareFailure(fileName));
-          }
-          unawaited(Sentry.captureException(e, stackTrace: stackTrace));
         }
+      } on Exception catch (e, stackTrace) {
+        if (context.mounted) {
+          _showSnackBar(context, localizations.shareFailure(fileName));
+        }
+        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       }
-      tempDir.deleteSync(recursive: true);
     }
+    tempDir.deleteSync(recursive: true);
   }
 
   Future<File?> _exportToLocal(
@@ -447,17 +514,18 @@ class ProgramPageController extends ScreenController {
     AppLocalizations localizations,
     String fileName,
     String dirPath,
+    List<String> exercises,
   ) async {
     if (fileName.isNotEmpty) {
       return await _programService.exportToLocalFile(
         nanoid(10),
         fileName,
         Directory(dirPath),
+        exercises,
       );
     } else {
       _showSnackBar(context, localizations.invalidFileName);
     }
-
     return null;
   }
 
@@ -486,34 +554,170 @@ class ProgramPageController extends ScreenController {
     final result = await FilesystemPicker.openBottomSheet(
       context: context,
       title: title,
-      constraints: constraints,
       fsType: type,
+      showGoUp: true,
+      constraints: constraints.copyWith(
+        minHeight: 400,
+        maxHeight: max(400, constraints.maxHeight * 0.6),
+      ),
       pickText: localizations.select,
       rootName: localizations.storage,
-      fileTileSelectMode: FileTileSelectMode.checkButton,
+      fileTileSelectMode: FileTileSelectMode.wholeTile,
       shortcuts: [
         FilesystemPickerShortcut(
           name: localizations.documents,
           path: Directory(docsDirPath),
           icon: Icons.folder,
+          isSelectable: false,
         ),
         FilesystemPickerShortcut(
           name: localizations.downloads,
           path: Directory(downloadsDirPath),
           icon: Icons.folder,
+          isSelectable: false,
         ),
         if (extDirs != null)
           ...extDirs.map(
             (dir) => FilesystemPickerShortcut(
               name:
-                  '${localizations.sdCard} ${i++} (${path.basenameWithoutExtension(dir.path)})',
+                  '${localizations.sdCard} ${i++} '
+                  '(${path.basenameWithoutExtension(dir.path)})',
               path: dir,
               icon: Icons.snippet_folder,
+              isSelectable: false,
             ),
           ),
       ],
     );
     return result;
+  }
+
+  static Future<List<String>> _selectExercises(
+    BuildContext context,
+    List<Exercise> exercises,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    bool extended,
+  ) async {
+    final List<String> selected = [];
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: extended,
+      constraints: extended
+          ? constraints
+          : constraints.copyWith(
+              minHeight: 400,
+              maxHeight: max(400, constraints.maxHeight * 0.5),
+            ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16.0,
+                right: 16.0,
+                top: 16.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16.0,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2.0),
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                  ),
+                  Text(
+                    localizations.selectExercises,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8.0),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: exercises.length,
+                      itemBuilder: (context, index) {
+                        final uuid = exercises[index].uuid;
+                        final markers = exercises[index].getLocations(false);
+                        return extended
+                            ? ExerciseCard(
+                                exercise: exercises[index],
+                                localizations: localizations,
+                                markers: markers,
+                                trailing: Switch(
+                                  value: selected.contains(uuid),
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        selected.add(uuid);
+                                      } else {
+                                        selected.remove(uuid);
+                                      }
+                                    });
+                                  },
+                                ),
+                              )
+                            : SwitchListTile(
+                                title: Text(
+                                  exercises[index].name,
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                value: selected.contains(uuid),
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      selected.add(uuid);
+                                    } else {
+                                      selected.remove(uuid);
+                                    }
+                                  });
+                                },
+                              );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context, null);
+                        },
+                        child: Text(localizations.cancel),
+                      ),
+                      const SizedBox(width: 8.0),
+                      ElevatedButton(
+                        onPressed: selected.isEmpty
+                            ? null
+                            : () {
+                                Navigator.pop(context, selected);
+                              },
+                        child: Text(localizations.confirm),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16.0),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return selected;
   }
 
   static Future<String?> _promptFileName(
@@ -522,32 +726,73 @@ class ProgramPageController extends ScreenController {
   ) async {
     String? fileName;
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Allows the bottom sheet to resize properly
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+      ),
       builder: (context) {
-        final TextEditingController controller = TextEditingController();
+        final TextEditingController controller = TextEditingController(
+          text: localizations.exercise(2),
+        );
 
-        return AlertDialog(
-          title: Text(localizations.enterFileName),
-          content: TextField(
-            controller: controller,
-            decoration: InputDecoration(hintText: localizations.fileNameHint),
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16.0,
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context, null);
-              },
-              child: Text(localizations.cancel),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                fileName = controller.text.trim();
-                Navigator.pop(context, fileName);
-              },
-              child: Text(localizations.confirm),
-            ),
-          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2.0),
+                    color: Colors.grey[400],
+                  ),
+                ),
+              ),
+              Text(
+                localizations.enterFileName,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 8.0),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: localizations.fileNameHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context, null);
+                    },
+                    child: Text(localizations.cancel),
+                  ),
+                  const SizedBox(width: 8.0),
+                  ElevatedButton(
+                    onPressed: () {
+                      fileName = controller.text.trim();
+                      Navigator.pop(context, fileName);
+                    },
+                    child: Text(localizations.confirm),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+            ],
+          ),
         );
       },
     );

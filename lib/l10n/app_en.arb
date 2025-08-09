@@ -91,7 +91,7 @@
   "@enterFileName": {
     "description": "Label"
   },
-  "fileNameHint": "e.g., MyProgram",
+  "fileNameHint": "MyProgram",
   "@fileNameHint": {
     "description": "Label"
   },
@@ -167,6 +167,10 @@
   },
   "selectFile": "Select file",
   "@selectDrillFile": {
+    "description": "Message"
+  },
+  "selectExercises": "Select exercises",
+  "@selectExercises": {
     "description": "Message"
   },
   "importSuccess": "Program \"{name}\" imported successfully!",

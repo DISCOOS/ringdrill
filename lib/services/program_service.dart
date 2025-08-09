@@ -17,6 +17,9 @@ import 'package:universal_io/io.dart';
 
 const drillMimeType = 'application/x-drill';
 
+typedef OnSelectExercises =
+    Future<Iterable<Exercise>?> Function(Iterable<Exercise> items);
+
 enum ProgramEventType {
   exerciseAdded,
   exerciseDeleted,
@@ -52,8 +55,6 @@ class ProgramEvent {
   factory ProgramEvent.exported(Program program, File file) =>
       ProgramEvent(ProgramEventType.programExported, program, file: file);
 }
-
-typedef StationLocation = ((String, int), String, LatLng);
 
 class ProgramService {
   static final ProgramService _instance = ProgramService._internal();
@@ -139,6 +140,7 @@ class ProgramService {
     String uuid,
     String fileName,
     Directory destinationDir,
+    List<String> exercises,
   ) async {
     final program = createProgram(uuid: uuid, name: fileName);
     // Create a temp folder for export
@@ -158,7 +160,9 @@ class ProgramService {
     // Serialize Exercises
     final exercisesDir = Directory(path.join(tempDirPath, 'exercises'));
     exercisesDir.createSync();
-    for (var exercise in program.exercises) {
+    for (var exercise in program.exercises.where(
+      (e) => exercises.contains(e.uuid),
+    )) {
       File(
         path.join(exercisesDir.path, '${exercise.uuid}.json'),
       ).writeAsStringSync(jsonEncode(exercise.toJson()));
@@ -217,15 +221,17 @@ class ProgramService {
   }
 
   /// Clears current and open Program from a .drill file
-  Future<Program> openFromLocalFile(
+  Future<Program?> openFromLocalFile(
     File file, {
     OnExtracting? onExtracting,
+    OnSelectExercises? onSelect,
   }) async {
     final deleted = await _repo.deleteAllExercises();
     try {
-      final program = await _importFromLocalFile(file, onExtracting);
-
-      _controller.add(ProgramEvent.opened(program, file));
+      final program = await _importFromLocalFile(file, onExtracting, onSelect);
+      if (program != null) {
+        _controller.add(ProgramEvent.opened(program, file));
+      }
 
       return program;
     } catch (e) {
@@ -237,20 +243,23 @@ class ProgramService {
   }
 
   /// Imports a Program from a .drill file
-  Future<Program> importFromLocalFile(
+  Future<Program?> importFromLocalFile(
     File file, {
     OnExtracting? onExtracting,
+    OnSelectExercises? onSelect,
   }) async {
-    final program = await _importFromLocalFile(file, onExtracting);
-
-    _controller.add(ProgramEvent.imported(program, file));
+    final program = await _importFromLocalFile(file, onExtracting, onSelect);
+    if (program != null) {
+      _controller.add(ProgramEvent.imported(program, file));
+    }
 
     return program;
   }
 
-  Future<Program> _importFromLocalFile(
+  Future<Program?> _importFromLocalFile(
     File file,
     OnExtracting? onExtracting,
+    OnSelectExercises? onSelect,
   ) async {
     const numberOfDirsInDrillFileFormat = 3;
     final t = (await getTemporaryDirectory()).path;
@@ -308,6 +317,13 @@ class ProgramService {
         )
         .toList();
 
+    final selected = onSelect == null
+        ? exercises
+        : await onSelect.call(exercises);
+
+    // User canceled
+    if (selected == null) return null;
+
     // Populate Teams
     final teams = Directory(path.join(unzippedDirPath, 'teams'))
         .listSync()
@@ -332,12 +348,12 @@ class ProgramService {
     final fullProgram = program.copyWith(
       teams: teams,
       sessions: sessions,
-      exercises: exercises,
+      exercises: selected.toList(),
     );
 
     tempDir.deleteSync(recursive: true);
 
-    for (final it in exercises) {
+    for (final it in fullProgram.exercises) {
       _repo.saveExercise(it);
     }
     return fullProgram;
