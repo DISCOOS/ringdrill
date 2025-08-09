@@ -83,110 +83,89 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Exercise Name
-                  Expanded(
-                    child: TextFormField(
-                      autofocus: true,
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: localizations.exerciseName,
-                      ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? localizations.pleaseEnterAName
-                          : null,
-                    ),
-                  ),
-
-                  SizedBox(width: 16.0),
-
-                  // Start Time Picker
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _pickStartTime,
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          isDense: true,
-                          isCollapsed: true,
-                          contentPadding: EdgeInsets.only(top: 8),
-                          label: Text(localizations.startTime),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                _startTime.formal(),
-                                style: TextStyle(fontSize: 16.0),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.access_time),
-                              onPressed: _pickStartTime,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              // Exercise Name
+              TextFormField(
+                autofocus: true,
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: localizations.exerciseName,
+                ),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? localizations.pleaseEnterAName
+                    : null,
               ),
 
               SizedBox(height: 16.0),
 
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Execution Time
-                  Expanded(
-                    child: TextFormField(
-                      controller: _executionTimeController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: localizations.executionTime,
-                      ),
-                      validator: (value) => _isValidNumber(value)
-                          ? null
-                          : localizations.pleaseEnterAValidTime,
-                    ),
+              // Start Time Picker
+              GestureDetector(
+                onTap: _pickStartTime,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    isDense: true,
+                    isCollapsed: true,
+                    contentPadding: EdgeInsets.only(top: 8),
+                    label: Text(localizations.startTime),
                   ),
-
-                  SizedBox(width: 16.0),
-
-                  // Evaluation Time
-                  Expanded(
-                    child: TextFormField(
-                      controller: _evaluationTimeController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: localizations.evaluationTime,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          _startTime.formal(),
+                          style: TextStyle(fontSize: 16.0),
+                        ),
                       ),
-                      validator: (value) => _isValidNumber(value)
-                          ? null
-                          : localizations.pleaseEnterAValidTime,
-                    ),
-                  ),
-
-                  SizedBox(width: 16.0),
-
-                  // Rotation Time
-                  Expanded(
-                    child: TextFormField(
-                      controller: _rotationTimeController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: localizations.rotationTime,
+                      IconButton(
+                        icon: const Icon(Icons.access_time),
+                        onPressed: _pickStartTime,
                       ),
-                      validator: (value) => _isValidNumber(value)
-                          ? null
-                          : localizations.pleaseEnterAValidTime,
-                    ),
+                    ],
                   ),
-                ],
+                ),
+              ),
+
+              SizedBox(height: 16.0),
+
+              // Execution Time
+              TextFormField(
+                controller: _executionTimeController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: localizations.executionTime,
+                ),
+                validator: (value) => _isValidNumber(value)
+                    ? null
+                    : localizations.pleaseEnterAValidTime,
+              ),
+
+              SizedBox(height: 16.0),
+
+              // Evaluation Time
+              TextFormField(
+                controller: _evaluationTimeController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: localizations.evaluationTime,
+                ),
+                validator: (value) => _isValidNumber(value)
+                    ? null
+                    : localizations.pleaseEnterAValidTime,
+              ),
+
+              SizedBox(height: 16.0),
+
+              // Rotation Time
+              TextFormField(
+                controller: _rotationTimeController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: localizations.rotationTime,
+                ),
+                validator: (value) => _isValidNumber(value)
+                    ? null
+                    : localizations.pleaseEnterAValidTime,
               ),
 
               SizedBox(height: 16.0),
