@@ -22,14 +22,22 @@ class MapConfig {
 
   static const LatLng initialCenter = LatLng(59.91, 10.75);
 
-  static List<TileLayer> layers = [topoLayer, osmLayer];
+  // Important! TileLayers are widgets! We need to get new layers
+  // each time since we can not share them across multiple
+  // FlutterMap instances (map may not show correctly)
+  static List<TileLayer> get layers => [topoLayer, osmLayer];
 
+  // Important! We need to get new layers each time. See above!
   static TileLayer get osmLayer => TileLayer(
+    key: ValueKey('osm'),
     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     userAgentPackageName: 'discoos.org/ringdrill',
     subdomains: [],
   );
+
+  // Important! We need to get new layers each time. See above!
   static TileLayer get topoLayer => TileLayer(
+    key: ValueKey('topo'),
     urlTemplate:
         'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',
     subdomains: [],
@@ -37,59 +45,68 @@ class MapConfig {
   );
 }
 
-class MapView extends StatefulWidget {
+class MapView<K> extends StatefulWidget {
   const MapView({
     super.key,
     required this.layers,
     this.controller,
     this.withCross = false,
     this.withSearch = false,
+    this.withCenter = false,
     this.withToggle = true,
     this.initialZoom = 15,
     this.markers = const [],
+    this.initialFit,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
     this.onTap,
-    this.toolWidget,
+    this.onMarkerTap,
   });
 
   final bool withCross;
   final bool withSearch;
+  final bool withCenter;
   final bool withToggle;
   final double initialZoom;
-  final int interactionFlags;
   final LatLng initialCenter;
+  final int interactionFlags;
+  final CameraFit? initialFit;
   final TapCallback? onTap;
-  final Widget? toolWidget;
   final MapController? controller;
   final List<TileLayer> layers;
-  final List<(String, Marker)> markers;
+  final List<(K, String, LatLng)> markers;
+  final ValueSetter<(K, String, LatLng)>? onMarkerTap;
 
   @override
-  State<MapView> createState() => _MapViewState();
+  State<MapView<K>> createState() => _MapViewState();
 }
 
-class _MapViewState extends State<MapView> {
+class _MapViewState<K> extends State<MapView<K>> {
   late MapController _mapController;
   final TextEditingController _searchController = TextEditingController();
+  final Set<SearchResult> _searchResults = {};
+
   Timer? _throttleTimer;
   bool _isSearching = false;
   int _currentLayerIndex = 0;
-  final Set<SearchResult> _searchResults = {};
+  int _currentCenterIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _mapController = widget.controller ?? MapController();
+    _initCurrentIndex();
   }
 
   @override
-  void didUpdateWidget(covariant MapView oldWidget) {
+  void didUpdateWidget(covariant MapView<K> oldWidget) {
     if (oldWidget != widget) {
       if (widget.controller != null && _mapController != widget.controller) {
         _mapController = widget.controller!;
       }
-      _mapController.move(widget.initialCenter, widget.initialZoom);
+      if (widget.initialCenter != oldWidget.initialCenter) {
+        _initCurrentIndex();
+      }
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -105,6 +122,7 @@ class _MapViewState extends State<MapView> {
               mapController: _mapController,
               options: MapOptions(
                 initialZoom: widget.initialZoom,
+                initialCameraFit: widget.initialFit,
                 initialCenter: widget.initialCenter,
                 interactionOptions: InteractionOptions(
                   flags: widget.interactionFlags,
@@ -122,7 +140,41 @@ class _MapViewState extends State<MapView> {
                 widget.layers[_currentLayerIndex],
                 if (widget.markers.isNotEmpty)
                   MarkerLayer(
-                    markers: widget.markers.map((e) => e.$2).toList(),
+                    markers: widget.markers
+                        .map(
+                          (e) => Marker(
+                            height: 52,
+                            width: 100,
+                            point: e.$3,
+                            alignment: Alignment.topCenter,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.deferToChild,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Material(
+                                    elevation: 2,
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(1.0),
+                                      child: Text(
+                                        e.$2,
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.place,
+                                    color: Colors.green,
+                                    size: 32,
+                                  ),
+                                ],
+                              ),
+                              onTap: () => widget.onMarkerTap?.call(e),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
                 SafeArea(child: Scalebar(alignment: Alignment.bottomLeft)),
               ],
@@ -165,10 +217,45 @@ class _MapViewState extends State<MapView> {
                   ),
                 ),
               ),
+            if (widget.withCenter)
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: FloatingActionButton(
+                      heroTag: 'center',
+                      onPressed: _toggleCenter,
+                      child: Icon(Icons.center_focus_strong_rounded),
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
       },
     );
+  }
+
+  void _toggleCenter() {
+    if (widget.markers.isEmpty) {
+      _mapController.move(widget.initialCenter, _mapController.camera.zoom);
+      return;
+    }
+
+    // Do not toggle to same initial center if exists in markers
+    final unique = !widget.markers.any((e) => e.$3 == widget.initialCenter);
+
+    _currentCenterIndex =
+        (_currentCenterIndex + 1) % (widget.markers.length + (unique ? 1 : 0));
+
+    final point = _currentCenterIndex == 0
+        ? widget.initialCenter
+        : widget.markers[_currentCenterIndex - (unique ? 1 : 0)].$3;
+
+    debugPrint((_currentCenterIndex, point).toString());
+
+    _mapController.move(point, _mapController.camera.zoom);
   }
 
   Widget _buildSearchTool(BuildContext context) {
@@ -255,6 +342,18 @@ class _MapViewState extends State<MapView> {
     });
   }
 
+  void _initCurrentIndex() {
+    int i = 0;
+    _currentCenterIndex = 0;
+    for (final it in widget.markers) {
+      if (it.$3 == widget.initialCenter) {
+        _currentCenterIndex = i;
+        return;
+      }
+      i++;
+    }
+  }
+
   void _searchLocationWithThrottle(String input) {
     if (_throttleTimer?.isActive ?? false) {
       _throttleTimer!.cancel(); // Cancel any ongoing throttle action
@@ -322,8 +421,8 @@ class _MapViewState extends State<MapView> {
       // Try markers
       if (widget.markers.isNotEmpty) {
         final found = widget.markers
-            .where((e) => e.$1.contains(input.trim()))
-            .map((e) => SearchResult(e.$1, e.$2.point))
+            .where((e) => e.$2.contains(input.trim()))
+            .map((e) => SearchResult(e.$2, e.$3))
             .toList();
         if (found.isNotEmpty) {
           setState(() {
@@ -360,6 +459,8 @@ class _MapViewState extends State<MapView> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            showCloseIcon: true,
+            dismissDirection: DismissDirection.endToStart,
             content: Text(AppLocalizations.of(context)!.searchFailed(e)),
           ),
         );

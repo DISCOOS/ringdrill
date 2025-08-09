@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 
 class StationFormScreen extends StatefulWidget {
-  const StationFormScreen({super.key, required this.station});
+  const StationFormScreen({
+    super.key,
+    required this.station,
+    this.markers = const [],
+  });
 
   final Station station;
+  final List<(Object, String, LatLng)> markers;
 
   @override
   State<StationFormScreen> createState() => _StationFormScreenState();
@@ -15,6 +20,7 @@ class StationFormScreen extends StatefulWidget {
 
 class _StationFormScreenState extends State<StationFormScreen> {
   final _formKey = GlobalKey<FormState>();
+
   LatLng? _position;
 
   // Form field controllers
@@ -84,6 +90,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                         padding: const EdgeInsets.all(4.0).copyWith(left: 8.0),
                         child: PositionFormField(
                           initialValue: _position,
+                          markers: widget.markers,
                           onSaved: (position) => _position = position,
                         ),
                       ),

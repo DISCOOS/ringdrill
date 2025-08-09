@@ -203,6 +203,9 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get notStationsCreated => 'Ingen poster opprettet';
+
+  @override
   String get stationName => 'Postnavn';
 
   @override
@@ -224,8 +227,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exportProgram => 'Eksporter...';
 
   @override
-  String get stationDescriptionHint =>
-      'Gi en beskrivelse av hvordan denne posten skal utføres';
+  String get stationDescriptionHint => 'Beskriv hvordan posten skal utføres';
 
   @override
   String team(num count) {
@@ -314,6 +316,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get save => 'LAGRE';
 
   @override
+  String get delete => 'SLETT';
+
+  @override
   String get createExercise => 'Opprett øvelse';
 
   @override
@@ -321,6 +326,9 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get stopExercise => 'Stop øvelse';
+
+  @override
+  String get deleteExercise => 'Slett øvelse';
 
   @override
   String get noRoundsScheduled => 'Ingen runder planlagt!';
@@ -340,10 +348,10 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get noLocation => 'Ingen posisjon oppgitt';
+  String get noLocation => 'Ingen posisjon';
 
   @override
-  String get noDescription => 'Ingen beskrivelse oppgitt';
+  String get noDescription => 'Ingen beskrivelse';
 
   @override
   String get exerciseName => 'Øvingsnavn';
@@ -362,7 +370,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String mustBeEqualToOrLessThanNumberOf(Object name) {
-    return 'Må være lik eller mindre enn antall $name';
+    return 'Må være mindre eller lik $name';
   }
 
   @override

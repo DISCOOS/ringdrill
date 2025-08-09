@@ -6,12 +6,14 @@ import 'package:ringdrill/views/position_widget.dart';
 
 import 'map_picker_screen.dart';
 
-class PositionFormField extends FormField<LatLng> {
+class PositionFormField<K> extends FormField<LatLng> {
   PositionFormField({
     super.key,
     required FormFieldSetter<LatLng> super.onSaved,
     required super.initialValue,
     super.validator,
+    List<(K, String, LatLng)> markers = const [],
+
     AutovalidateMode super.autovalidateMode = AutovalidateMode.disabled,
   }) : super(
          builder: (FormFieldState<LatLng> state) {
@@ -38,11 +40,11 @@ class PositionFormField extends FormField<LatLng> {
                        final selected = await Navigator.push<LatLng>(
                          state.context,
                          MaterialPageRoute(
-                           builder:
-                               (context) => MapPickerScreen(
-                                 initial:
-                                     state.value ?? MapConfig.initialCenter,
-                               ),
+                           builder: (context) => MapPickerScreen(
+                             initialCenter:
+                                 state.value ?? MapConfig.initialCenter,
+                             markers: markers,
+                           ),
                          ),
                        );
                        if (selected != null) state.didChange(selected);

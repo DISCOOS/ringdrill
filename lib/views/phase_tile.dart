@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/phase_widget.dart' show PhasesWidget;
+import 'package:ringdrill/views/vertical_divider_widget.dart';
 
 class PhaseTile extends StatelessWidget {
   const PhaseTile({
@@ -30,8 +31,8 @@ class PhaseTile extends StatelessWidget {
       fontSize: 18,
       fontWeight:
           isCurrent // Emphasize current round
-              ? FontWeight.bold
-              : FontWeight.normal,
+          ? FontWeight.bold
+          : FontWeight.normal,
       color: isCurrent ? Colors.white : null,
       decoration: decoration,
     );
@@ -64,7 +65,7 @@ class PhaseTile extends StatelessWidget {
           ),
           child: Center(child: Text(name, style: textStyle)),
         ),
-        _buildVerticalDivider(isCurrent, isCurrent, context),
+        VerticalDividerWidget(isCurrent: isCurrent, isComplete: isCurrent),
         ...List<Widget>.generate(phaseCount, (phaseIndex) {
           final isComplete = isCurrent && phaseIndex < event.phase.index - 1;
 
@@ -81,41 +82,15 @@ class PhaseTile extends StatelessWidget {
                   decoration: decoration,
                 ),
                 if (phaseIndex < phaseCount - 1)
-                  _buildVerticalDivider(isCurrent, isComplete, context),
+                  VerticalDividerWidget(
+                    isCurrent: isCurrent,
+                    isComplete: isComplete,
+                  ),
               ],
             ),
           );
         }),
       ],
-    );
-  }
-
-  Widget _buildVerticalDivider(
-    bool isCurrent,
-    bool isComplete,
-    BuildContext context,
-  ) {
-    return Container(
-      height: 32,
-      width: 8,
-      color:
-          isCurrent
-              ? (isComplete
-                  ? Colors.blueAccent
-                  : Theme.of(context).colorScheme.secondary)
-              : Colors.transparent,
-      child: Center(
-        child: SizedBox(
-          height: 16,
-          child: VerticalDivider(
-            thickness: 1,
-            color:
-                isCurrent
-                    ? Theme.of(context).colorScheme.onInverseSurface
-                    : Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ),
     );
   }
 }

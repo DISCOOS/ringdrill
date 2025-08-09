@@ -11,11 +11,14 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
   name: json['name'] as String,
   description: json['description'] as String,
   metadata: ProgramMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
-  exercises: (json['exercises'] as List<dynamic>)
-      .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
+  teams: (json['teams'] as List<dynamic>)
+      .map((e) => Team.fromJson(e as Map<String, dynamic>))
       .toList(),
   sessions: (json['sessions'] as List<dynamic>)
       .map((e) => Session.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  exercises: (json['exercises'] as List<dynamic>)
+      .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
       .toList(),
 );
 
@@ -24,8 +27,9 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'name': instance.name,
   'description': instance.description,
   'metadata': instance.metadata,
-  'exercises': instance.exercises,
+  'teams': instance.teams,
   'sessions': instance.sessions,
+  'exercises': instance.exercises,
 };
 
 _Session _$SessionFromJson(Map<String, dynamic> json) => _Session(

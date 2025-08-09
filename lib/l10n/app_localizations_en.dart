@@ -203,6 +203,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get notStationsCreated => 'No stations created';
+
+  @override
   String get stationName => 'Station Name';
 
   @override
@@ -316,6 +319,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get save => 'SAVE';
 
   @override
+  String get delete => 'DELETE';
+
+  @override
   String get createExercise => 'Create Exercise';
 
   @override
@@ -323,6 +329,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stopExercise => 'Stop Exercise';
+
+  @override
+  String get deleteExercise => 'Delete Exercise';
 
   @override
   String get noRoundsScheduled => 'No rounds scheduled!';
@@ -364,7 +373,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String mustBeEqualToOrLessThanNumberOf(Object name) {
-    return 'Must be equal to or less than Number of $name';
+    return 'Must be equal or less than $name';
   }
 
   @override

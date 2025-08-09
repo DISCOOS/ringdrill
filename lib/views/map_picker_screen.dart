@@ -4,17 +4,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 
-class MapPickerScreen extends StatefulWidget {
-  final LatLng initial;
-  const MapPickerScreen({super.key, required this.initial});
+class MapPickerScreen<K> extends StatefulWidget {
+  const MapPickerScreen({
+    super.key,
+    this.withCross = true,
+    this.withSearch = true,
+    this.withCenter = true,
+    this.withToggle = true,
+    this.initialZoom = 13,
+    this.markers = const [],
+    this.initialCenter = MapConfig.initialCenter,
+  });
+
+  final bool withCross;
+  final bool withSearch;
+  final bool withCenter;
+  final bool withToggle;
+  final double initialZoom;
+  final LatLng initialCenter;
+  final List<(K, String, LatLng)> markers;
 
   @override
-  State<MapPickerScreen> createState() => _MapPickerScreenState();
+  State<MapPickerScreen<K>> createState() => _MapPickerScreenState<K>();
 }
 
-class _MapPickerScreenState extends State<MapPickerScreen> {
+class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
   late LatLng _selected;
   late MapController _mapController;
 
@@ -25,7 +42,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   @override
   void initState() {
     super.initState();
-    _selected = widget.initial;
+    _selected = widget.initialCenter;
     _mapController = MapController();
     _subscription = _mapController.mapEventStream.listen((e) {
       _selected = e.camera.center;
@@ -41,6 +58,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final points = widget.markers.map((e) => e.$3).toList();
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.pickALocation),
@@ -52,15 +70,19 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           ),
         ],
       ),
-      body: MapView(
+      body: MapView<K>(
         key: _mapKey,
-        initialZoom: 13,
-        withCross: true,
-        withSearch: true,
         controller: _mapController,
-        initialCenter: widget.initial,
+        withCross: widget.withCross,
+        withSearch: widget.withCross,
+        withCenter: widget.withCenter,
+        withToggle: widget.withToggle,
+        initialZoom: widget.initialZoom,
+        initialFit: points.fit(),
+        initialCenter: points.average(widget.initialCenter),
         interactionFlags: MapConfig.interactive,
         layers: MapConfig.layers,
+        markers: widget.markers,
       ),
     );
   }

@@ -1,6 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/team.dart';
 
 part 'program.freezed.dart';
 part 'program.g.dart';
@@ -13,8 +18,9 @@ sealed class Program with _$Program {
     required String name,
     required String description,
     required ProgramMetadata metadata,
-    required List<Exercise> exercises,
+    required List<Team> teams,
     required List<Session> sessions,
+    required List<Exercise> exercises,
   }) = _Program;
 
   factory Program.fromJson(Map<String, dynamic> json) =>
@@ -47,4 +53,24 @@ sealed class ProgramMetadata with _$ProgramMetadata {
 
   factory ProgramMetadata.fromJson(Map<String, dynamic> json) =>
       _$ProgramMetadataFromJson(json);
+}
+
+extension ProgramX on Program {
+  static List<Team> ensureTeams(
+    AppLocalizations localizations,
+    int numberOfTeams,
+    List<Team> teams,
+  ) {
+    return List.unmodifiable(
+      List<Team>.generate(max(numberOfTeams, teams.length), (index) {
+        return index < teams.length
+            ? teams[index]
+            : Team(
+                uuid: nanoid(8),
+                index: index,
+                name: '${localizations.team(1)} ${index + 1}',
+              );
+      }),
+    );
+  }
 }

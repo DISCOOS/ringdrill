@@ -6,8 +6,8 @@ import 'package:intl/intl_browser.dart'
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
+import 'package:ringdrill/views/main_screen.dart';
 import 'package:ringdrill/views/patch_alert_widget.dart';
-import 'package:ringdrill/views/program_screen.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -131,7 +131,7 @@ class _RingDrillAppState extends State<RingDrillApp> {
           // Handle incoming files from OS
           // ---------------------------------
           child: SharedFileWidget(
-            child: ProgramScreen(isFirstLaunch: widget.isFirstLaunch),
+            child: MainScreen(isFirstLaunch: widget.isFirstLaunch),
           ),
         ),
       ),

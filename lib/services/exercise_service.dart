@@ -109,6 +109,14 @@ class ExerciseService {
   bool get isPending => _exercise != null && last?.isPending == true;
   bool get isRunning => _exercise != null && last?.isRunning == true;
 
+  bool isStartedOn(String uuid) {
+    return isStarted && _exercise?.uuid == uuid;
+  }
+
+  bool isStartableOn(String uuid) {
+    return exercise == null || _exercise!.uuid == uuid;
+  }
+
   /// Start the timer for the given `Exercise`
   void start(Exercise exercise) {
     stop(); // Ensure no overlapping timers
@@ -149,19 +157,19 @@ class ExerciseService {
         final roundTime = executionTime + evaluationTime + rotationTime;
         final totalTime = totalRounds * roundTime;
 
-        final endTime =
-            _exercise!.endTime.isBefore(_exercise!.startTime)
-                ? _exercise!.endTime.toDateTime().add(const Duration(days: 1))
-                : _exercise!.endTime.toDateTime();
+        final endTime = _exercise!.endTime.isBefore(_exercise!.startTime)
+            ? _exercise!.endTime.toDateTime().add(const Duration(days: 1))
+            : _exercise!.endTime.toDateTime();
 
         // Calculate start date and time
-        final startTime =
-            endTime.isBefore(DateTime.now())
-                ? _exercise!.startTime.toDateTime().add(const Duration(days: 1))
-                : _exercise!.startTime.toDateTime();
+        final startTime = endTime.isBefore(DateTime.now())
+            ? _exercise!.startTime.toDateTime().add(const Duration(days: 1))
+            : _exercise!.startTime.toDateTime();
 
-        final startTimeDelta =
-            currentTimeOfDay.toDateTime().difference(startTime).inMinutes;
+        final startTimeDelta = currentTimeOfDay
+            .toDateTime()
+            .difference(startTime)
+            .inMinutes;
 
         if (isPending && startTimeDelta < 0) {
           _totalProgress = 0.0;

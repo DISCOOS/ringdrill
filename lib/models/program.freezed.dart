@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Program {
 
- String get uuid; String get name; String get description; ProgramMetadata get metadata; List<Exercise> get exercises; List<Session> get sessions;
+ String get uuid; String get name; String get description; ProgramMetadata get metadata; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises;
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ProgramCopyWith<Program> get copyWith => _$ProgramCopyWithImpl<Program>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&const DeepCollectionEquality().equals(other.sessions, sessions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other.teams, teams)&&const DeepCollectionEquality().equals(other.sessions, sessions)&&const DeepCollectionEquality().equals(other.exercises, exercises));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,const DeepCollectionEquality().hash(exercises),const DeepCollectionEquality().hash(sessions));
+int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,const DeepCollectionEquality().hash(teams),const DeepCollectionEquality().hash(sessions),const DeepCollectionEquality().hash(exercises));
 
 @override
 String toString() {
-  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, exercises: $exercises, sessions: $sessions)';
+  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, teams: $teams, sessions: $sessions, exercises: $exercises)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ProgramCopyWith<$Res>  {
   factory $ProgramCopyWith(Program value, $Res Function(Program) _then) = _$ProgramCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String name, String description, ProgramMetadata metadata, List<Exercise> exercises, List<Session> sessions
+ String uuid, String name, String description, ProgramMetadata metadata, List<Team> teams, List<Session> sessions, List<Exercise> exercises
 });
 
 
@@ -65,15 +65,16 @@ class _$ProgramCopyWithImpl<$Res>
 
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? exercises = null,Object? sessions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? teams = null,Object? sessions = null,Object? exercises = null,}) {
   return _then(_self.copyWith(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
-as ProgramMetadata,exercises: null == exercises ? _self.exercises : exercises // ignore: cast_nullable_to_non_nullable
-as List<Exercise>,sessions: null == sessions ? _self.sessions : sessions // ignore: cast_nullable_to_non_nullable
-as List<Session>,
+as ProgramMetadata,teams: null == teams ? _self.teams : teams // ignore: cast_nullable_to_non_nullable
+as List<Team>,sessions: null == sessions ? _self.sessions : sessions // ignore: cast_nullable_to_non_nullable
+as List<Session>,exercises: null == exercises ? _self.exercises : exercises // ignore: cast_nullable_to_non_nullable
+as List<Exercise>,
   ));
 }
 /// Create a copy of Program
@@ -164,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  List<Exercise> exercises,  List<Session> sessions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Program() when $default != null:
-return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.exercises,_that.sessions);case _:
+return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.teams,_that.sessions,_that.exercises);case _:
   return orElse();
 
 }
@@ -185,10 +186,10 @@ return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.exe
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  List<Exercise> exercises,  List<Session> sessions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises)  $default,) {final _that = this;
 switch (_that) {
 case _Program():
-return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.exercises,_that.sessions);}
+return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.teams,_that.sessions,_that.exercises);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -202,10 +203,10 @@ return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.exe
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  List<Exercise> exercises,  List<Session> sessions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises)?  $default,) {final _that = this;
 switch (_that) {
 case _Program() when $default != null:
-return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.exercises,_that.sessions);case _:
+return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.teams,_that.sessions,_that.exercises);case _:
   return null;
 
 }
@@ -217,18 +218,18 @@ return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.exe
 @JsonSerializable()
 
 class _Program implements Program {
-  const _Program({required this.uuid, required this.name, required this.description, required this.metadata, required final  List<Exercise> exercises, required final  List<Session> sessions}): _exercises = exercises,_sessions = sessions;
+  const _Program({required this.uuid, required this.name, required this.description, required this.metadata, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises}): _teams = teams,_sessions = sessions,_exercises = exercises;
   factory _Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 
 @override final  String uuid;
 @override final  String name;
 @override final  String description;
 @override final  ProgramMetadata metadata;
- final  List<Exercise> _exercises;
-@override List<Exercise> get exercises {
-  if (_exercises is EqualUnmodifiableListView) return _exercises;
+ final  List<Team> _teams;
+@override List<Team> get teams {
+  if (_teams is EqualUnmodifiableListView) return _teams;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_exercises);
+  return EqualUnmodifiableListView(_teams);
 }
 
  final  List<Session> _sessions;
@@ -236,6 +237,13 @@ class _Program implements Program {
   if (_sessions is EqualUnmodifiableListView) return _sessions;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_sessions);
+}
+
+ final  List<Exercise> _exercises;
+@override List<Exercise> get exercises {
+  if (_exercises is EqualUnmodifiableListView) return _exercises;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_exercises);
 }
 
 
@@ -252,16 +260,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&const DeepCollectionEquality().equals(other._sessions, _sessions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other._teams, _teams)&&const DeepCollectionEquality().equals(other._sessions, _sessions)&&const DeepCollectionEquality().equals(other._exercises, _exercises));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,const DeepCollectionEquality().hash(_exercises),const DeepCollectionEquality().hash(_sessions));
+int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,const DeepCollectionEquality().hash(_teams),const DeepCollectionEquality().hash(_sessions),const DeepCollectionEquality().hash(_exercises));
 
 @override
 String toString() {
-  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, exercises: $exercises, sessions: $sessions)';
+  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, teams: $teams, sessions: $sessions, exercises: $exercises)';
 }
 
 
@@ -272,7 +280,7 @@ abstract mixin class _$ProgramCopyWith<$Res> implements $ProgramCopyWith<$Res> {
   factory _$ProgramCopyWith(_Program value, $Res Function(_Program) _then) = __$ProgramCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String name, String description, ProgramMetadata metadata, List<Exercise> exercises, List<Session> sessions
+ String uuid, String name, String description, ProgramMetadata metadata, List<Team> teams, List<Session> sessions, List<Exercise> exercises
 });
 
 
@@ -289,15 +297,16 @@ class __$ProgramCopyWithImpl<$Res>
 
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? exercises = null,Object? sessions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? teams = null,Object? sessions = null,Object? exercises = null,}) {
   return _then(_Program(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
-as ProgramMetadata,exercises: null == exercises ? _self._exercises : exercises // ignore: cast_nullable_to_non_nullable
-as List<Exercise>,sessions: null == sessions ? _self._sessions : sessions // ignore: cast_nullable_to_non_nullable
-as List<Session>,
+as ProgramMetadata,teams: null == teams ? _self._teams : teams // ignore: cast_nullable_to_non_nullable
+as List<Team>,sessions: null == sessions ? _self._sessions : sessions // ignore: cast_nullable_to_non_nullable
+as List<Session>,exercises: null == exercises ? _self._exercises : exercises // ignore: cast_nullable_to_non_nullable
+as List<Exercise>,
   ));
 }
 

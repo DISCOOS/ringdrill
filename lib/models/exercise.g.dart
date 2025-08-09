@@ -17,9 +17,6 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   executionTime: (json['executionTime'] as num).toInt(),
   evaluationTime: (json['evaluationTime'] as num).toInt(),
   rotationTime: (json['rotationTime'] as num).toInt(),
-  teams: (json['teams'] as List<dynamic>)
-      .map((e) => Team.fromJson(e as Map<String, dynamic>))
-      .toList(),
   stations: (json['stations'] as List<dynamic>)
       .map((e) => Station.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -51,45 +48,12 @@ Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'executionTime': instance.executionTime,
   'evaluationTime': instance.evaluationTime,
   'rotationTime': instance.rotationTime,
-  'teams': instance.teams,
   'stations': instance.stations,
   'schedule': instance.schedule
       .map((e) => e.map(const TimeOfDayConverter().toJson).toList())
       .toList(),
   'endTime': const TimeOfDayConverter().toJson(instance.endTime),
   'metadata': instance.metadata,
-};
-
-_Station _$StationFromJson(Map<String, dynamic> json) => _Station(
-  index: (json['index'] as num).toInt(),
-  name: json['name'] as String,
-  position: json['position'] == null
-      ? null
-      : LatLng.fromJson(json['position'] as Map<String, dynamic>),
-  description: json['description'] as String?,
-);
-
-Map<String, dynamic> _$StationToJson(_Station instance) => <String, dynamic>{
-  'index': instance.index,
-  'name': instance.name,
-  'position': instance.position,
-  'description': instance.description,
-};
-
-_Team _$TeamFromJson(Map<String, dynamic> json) => _Team(
-  index: (json['index'] as num).toInt(),
-  name: json['name'] as String,
-  numberOfMembers: (json['numberOfMembers'] as num?)?.toInt(),
-  position: json['position'] == null
-      ? null
-      : LatLng.fromJson(json['position'] as Map<String, dynamic>),
-);
-
-Map<String, dynamic> _$TeamToJson(_Team instance) => <String, dynamic>{
-  'index': instance.index,
-  'name': instance.name,
-  'numberOfMembers': instance.numberOfMembers,
-  'position': instance.position,
 };
 
 _ExerciseMetadata _$ExerciseMetadataFromJson(Map<String, dynamic> json) =>

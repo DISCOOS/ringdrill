@@ -193,6 +193,11 @@
   "@station": {
     "description": "Exercise station"
   },
+  "notStationsCreated": "No stations created",
+  "@notStationsCreated": {
+    "description": "Message"
+  },
+
   "stationName": "Station Name",
   "@stationName": {
     "description": "Label"
@@ -309,6 +314,10 @@
   "@save": {
     "description": "Button"
   },
+  "delete": "DELETE",
+  "@delete": {
+    "description": "Button"
+  },
   "createExercise": "Create Exercise",
   "@createExercise": {
     "description": "Label"
@@ -319,6 +328,10 @@
   },
   "stopExercise": "Stop Exercise",
   "@stopExercise": {
+    "description": "Label"
+  },
+  "deleteExercise": "Delete Exercise",
+  "@deleteExercise": {
     "description": "Label"
   },
   "noRoundsScheduled": "No rounds scheduled!",
@@ -369,7 +382,7 @@
   "@numberOfTeams": {
     "description": "Label"
   },
-  "mustBeEqualToOrLessThanNumberOf": "Must be equal to or less than Number of {name}",
+  "mustBeEqualToOrLessThanNumberOf": "Must be equal or less than {name}",
   "@mustBeEqualToOrLessThanNumberOf": {
     "description": "Parameterized message"
   },

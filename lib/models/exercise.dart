@@ -3,10 +3,13 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
 part 'exercise.freezed.dart';
 part 'exercise.g.dart';
+
+typedef StationLocation = ((String, int), String, LatLng);
 
 /// Represents an immutable exercise with a start and end time
 @freezed
@@ -20,7 +23,6 @@ sealed class Exercise with _$Exercise {
     required int executionTime,
     required int evaluationTime,
     required int rotationTime,
-    required List<Team> teams,
     required List<Station> stations,
     @TimeOfDayConverter() required List<List<TimeOfDay>> schedule,
     @TimeOfDayConverter() required TimeOfDay endTime,
@@ -31,32 +33,20 @@ sealed class Exercise with _$Exercise {
       _$ExerciseFromJson(json);
 }
 
-@freezed
-sealed class Station with _$Station {
-  const factory Station({
-    required int index,
-    required String name,
-    LatLng? position,
-    String? description,
-  }) = _Station;
-
-  factory Station.fromJson(Map<String, dynamic> json) =>
-      _$StationFromJson(json);
-}
-
-@freezed
-sealed class Team with _$Team {
-  const factory Team({
-    required int index,
-    required String name,
-    int? numberOfMembers,
-    LatLng? position,
-  }) = _Team;
-
-  factory Team.fromJson(Map<String, dynamic> json) => _$TeamFromJson(json);
-}
-
 extension ExerciseX on Exercise {
+  List<StationLocation> getLocations([bool withExersiceName = true]) {
+    int i = 0;
+    final markers = <StationLocation>[];
+    for (final s in stations.where((e) => e.position != null)) {
+      markers.add((
+        (uuid, i++),
+        [if (withExersiceName) name, s.name].join(' | '),
+        s.position!,
+      ));
+    }
+    return markers;
+  }
+
   /// Static factory extension to generate a schedule and return an Exercise instance
   static Exercise generateSchedule({
     String? uuid,
@@ -69,20 +59,11 @@ extension ExerciseX on Exercise {
     required int rotationTime,
     required AppLocalizations localizations,
     bool calcFromTimes = true,
-    List<Team> teams = const [],
     List<Station> stations = const [],
   }) {
     assert(
       numberOfTeams <= numberOfRounds,
       '<numberOfTeams> must be less or equal to <numberOfRounds>',
-    );
-    assert(
-      teams.isEmpty || teams.length <= numberOfRounds,
-      '<teams> must be less or equal to <numberOfRounds>',
-    );
-    assert(
-      stations.isEmpty || stations.length == numberOfRounds,
-      '<stations> must be empty or have length equal to <numberOfRounds>',
     );
     // Generate the schedule matrix
     final schedule = List<List<TimeOfDay>>.generate(numberOfRounds, (
@@ -130,28 +111,26 @@ extension ExerciseX on Exercise {
       rotationTime: rotationTime,
       numberOfTeams: numberOfTeams,
       numberOfRounds: numberOfRounds,
-      teams: List.unmodifiable(
-        teams.isEmpty
-            ? List<Team>.generate(numberOfTeams, (index) {
-                return Team(
-                  index: index,
-                  name: '${localizations.team(1)} ${index + 1}',
-                );
-              })
-            : stations,
-      ),
-      stations: List.unmodifiable(
-        stations.isEmpty
-            ? List<Station>.generate(numberOfRounds, (index) {
-                return Station(
-                  index: index,
-                  name: '${localizations.station(1)} ${index + 1}',
-                );
-              })
-            : stations,
-      ),
+      stations: ensureStations(localizations, numberOfRounds, stations),
       schedule: List.unmodifiable(schedule),
       endTime: endTime,
+    );
+  }
+
+  static List<Station> ensureStations(
+    AppLocalizations localizations,
+    int numberOfRounds,
+    List<Station> stations,
+  ) {
+    return List.unmodifiable(
+      List<Station>.generate(numberOfRounds, (index) {
+        return index < stations.length
+            ? stations[index]
+            : Station(
+                index: index,
+                name: '${localizations.station(1)} ${index + 1}',
+              );
+      }),
     );
   }
 

@@ -2,23 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
-import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/station_screen.dart';
 
-class TeamScreen extends StatefulWidget {
-  const TeamScreen({super.key, required this.teamIndex});
+class TeamExerciseScreen extends StatefulWidget {
+  const TeamExerciseScreen({
+    super.key,
+    required this.teamIndex,
+    required this.exercise,
+  });
 
   final int teamIndex;
+  final Exercise exercise;
 
   @override
-  State<TeamScreen> createState() => _TeamScreenState();
+  State<TeamExerciseScreen> createState() => _TeamExerciseScreenState();
 }
 
-class _TeamScreenState extends State<TeamScreen> {
-  final ProgramService _programService = ProgramService();
+class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   int currentIndex = 0;
 
   @override
@@ -29,21 +32,17 @@ class _TeamScreenState extends State<TeamScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final team = _programService.getTeam(widget.teamIndex);
-
     return Scaffold(
-      appBar: AppBar(title: Text(team!.name)),
+      appBar: AppBar(title: Text(widget.exercise.name)),
       body: StreamBuilder(
         stream: ExerciseService().events,
-        initialData: ExerciseService().last,
+        initialData: _initialData(),
         builder: (context, asyncSnapshot) {
-          final event = asyncSnapshot.data;
-          currentIndex = asyncSnapshot.hasData
-              ? event!.exercise.stationIndex(
-                  widget.teamIndex,
-                  event.currentRound,
-                )
-              : 0;
+          final event = asyncSnapshot.data!;
+          currentIndex = widget.exercise.stationIndex(
+            widget.teamIndex,
+            event.currentRound,
+          );
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -70,7 +69,7 @@ class _TeamScreenState extends State<TeamScreen> {
     );
   }
 
-  Widget _buildTeamStatus(ExerciseEvent? event) {
+  Widget _buildTeamStatus(ExerciseEvent event) {
     final name =
         '${AppLocalizations.of(context)!.team(1)} ${widget.teamIndex + 1}';
     final localizations = AppLocalizations.of(context)!;
@@ -79,26 +78,23 @@ class _TeamScreenState extends State<TeamScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                event == null
-                    ? name
-                    : '$name (${event.getState(localizations)})',
+                '$name (${event.getState(localizations)})',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (event != null)
-                Text(
-                  event.isPending
-                      ? DateTimeX.fromMinutes(
-                          event.remainingTime,
-                        ).formal(localizations)
-                      : localizations.minute(event.remainingTime),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Text(
+                event.isPending
+                    ? DateTimeX.fromMinutes(
+                        event.remainingTime,
+                      ).formal(localizations)
+                    : localizations.minute(event.remainingTime),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
             ],
           )
         : Text(
@@ -107,9 +103,9 @@ class _TeamScreenState extends State<TeamScreen> {
           );
   }
 
-  ListView _buildStationList(ExerciseEvent? event) {
+  ListView _buildStationList(ExerciseEvent event) {
     return ListView.builder(
-      itemCount: event?.exercise.schedule.length ?? 0,
+      itemCount: widget.exercise.schedule.length,
       itemBuilder: (context, index) {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -117,16 +113,16 @@ class _TeamScreenState extends State<TeamScreen> {
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: PhaseTile(
-                title: event!
+                title: widget
                     .exercise
-                    .stations[event.exercise.stationIndex(
+                    .stations[widget.exercise.stationIndex(
                       widget.teamIndex,
                       index,
                     )]
                     .name,
                 event: event,
                 roundIndex: index,
-                exercise: event.exercise,
+                exercise: widget.exercise,
                 mainAxisAlignment: MainAxisAlignment.start,
               ),
             ),
@@ -137,7 +133,7 @@ class _TeamScreenState extends State<TeamScreen> {
                 MaterialPageRoute(
                   builder: (context) => StationExerciseScreen(
                     stationIndex: index,
-                    uuid: event.exercise.uuid,
+                    uuid: widget.exercise.uuid,
                   ),
                 ),
               );
@@ -146,5 +142,11 @@ class _TeamScreenState extends State<TeamScreen> {
         );
       },
     );
+  }
+
+  ExerciseEvent _initialData() {
+    final last = ExerciseService().last;
+    if (last?.exercise == widget.exercise) return last!;
+    return ExerciseEvent.pending(widget.exercise);
   }
 }

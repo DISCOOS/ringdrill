@@ -58,6 +58,8 @@ class _AboutPageState extends State<AboutPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          showCloseIcon: true,
+          dismissDirection: DismissDirection.endToStart,
           content: Text(
             AppLocalizations.of(context)!.appUpdatedPleaseCloseAndOpen,
           ),
@@ -137,11 +139,11 @@ class _AboutPageState extends State<AboutPage> {
               },
               trailing:
                   [
-                        UpdateStatus.outdated,
-                        UpdateStatus.restartRequired,
-                      ].contains(patchStatus)
-                      ? IconButton(onPressed: update, icon: Icon(Icons.update))
-                      : null,
+                    UpdateStatus.outdated,
+                    UpdateStatus.restartRequired,
+                  ].contains(patchStatus)
+                  ? IconButton(onPressed: update, icon: Icon(Icons.update))
+                  : null,
             ),
             const Divider(),
             ListTile(

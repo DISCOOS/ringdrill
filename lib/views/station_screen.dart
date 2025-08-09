@@ -1,81 +1,86 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:ringdrill/data/exercise_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-import 'package:ringdrill/views/team_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ringdrill/views/team_exercise_screen.dart';
 
 import 'map_screen.dart';
 
-class StationScreen extends StatefulWidget {
+class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
-  final Exercise exercise;
+  final String uuid;
 
-  const StationScreen({
+  const StationExerciseScreen({
     super.key,
     required this.stationIndex,
-    required this.exercise,
+    required this.uuid,
   });
 
   @override
-  State<StationScreen> createState() => _StationScreenState();
+  State<StationExerciseScreen> createState() => _StationExerciseScreenState();
 }
 
-class _StationScreenState extends State<StationScreen> {
+class _StationExerciseScreenState extends State<StationExerciseScreen> {
   late bool _isStarted;
-  late Exercise _current;
+  late Exercise _exercise;
+  final _programService = ProgramService();
   final _exerciseService = ExerciseService();
-  final _mapKey = GlobalKey<_StationScreenState>();
-  late StreamSubscription<ExerciseEvent> _exerciseListener;
+  final _subscribers = <StreamSubscription>[];
+  final _mapKey = GlobalKey<_StationExerciseScreenState>();
 
   @override
   void initState() {
-    _current = widget.exercise;
-    _isStarted =
-        _exerciseService.exercise == _current && _exerciseService.isStarted;
+    _exercise = _programService.getExercise(widget.uuid)!;
+    _isStarted = _exerciseService.isStartedOn(_exercise.uuid);
 
     // Listen to ExerciseService state changes
-    _exerciseListener = _exerciseService.events.listen((event) {
-      if (event.exercise == _current) {
-        // Update the state based on the current event phase
-        if (mounted) {
-          final changed = _isStarted != (event.isRunning || event.isPending);
-          setState(() {
-            _isStarted = event.isRunning || event.isPending;
-          });
-          if (changed || event.isDone) {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${_current.name} ${event.isRunning
-                      ? AppLocalizations.of(context)!.isRunning
-                      : event.isPending
-                      ? AppLocalizations.of(context)!.isPending
-                      : AppLocalizations.of(context)!.isDone}',
+    _subscribers.add(
+      _exerciseService.events.listen((event) {
+        if (event.exercise.uuid == widget.uuid) {
+          // Update the state based on the current event phase
+          if (mounted) {
+            final changed = _isStarted != (event.isRunning || event.isPending);
+            setState(() {
+              _isStarted = event.isRunning || event.isPending;
+            });
+            if (changed || event.isDone) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  showCloseIcon: true,
+                  dismissDirection: DismissDirection.endToStart,
+                  content: Text(
+                    '${_exercise.name} ${event.isRunning
+                        ? AppLocalizations.of(context)!.isRunning
+                        : event.isPending
+                        ? AppLocalizations.of(context)!.isPending
+                        : AppLocalizations.of(context)!.isDone}',
+                  ),
                 ),
-              ),
-            );
+              );
+            }
           }
         }
-      }
-    });
+      }),
+    );
     super.initState();
   }
 
   @override
   void dispose() {
-    _exerciseListener.cancel();
+    for (final it in _subscribers) {
+      it.cancel();
+    }
     super.dispose();
   }
 
@@ -84,7 +89,7 @@ class _StationScreenState extends State<StationScreen> {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_current.name),
+        title: Text(_exercise.name),
         actions: [
           // Edit Exercise Button
           IconButton(
@@ -92,7 +97,7 @@ class _StationScreenState extends State<StationScreen> {
             padding: const EdgeInsets.all(8.0),
             onPressed: _isStarted ? null : () => _editStation(context),
             tooltip: _isStarted
-                ? localizations.stopExerciseFirst(_current.name)
+                ? localizations.stopExerciseFirst(_exercise.name)
                 : localizations.editExercise,
           ),
         ],
@@ -106,7 +111,7 @@ class _StationScreenState extends State<StationScreen> {
               final isPortrait = orientation == Orientation.portrait;
               final mode = (isPortrait ? Column.new : Row.new);
               final event = asyncSnapshot.data!;
-              final station = _current.stations[widget.stationIndex];
+              final station = _exercise.stations[widget.stationIndex];
               return Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -180,7 +185,7 @@ class _StationScreenState extends State<StationScreen> {
     bool isPortrait,
   ) {
     final localizations = AppLocalizations.of(context)!;
-    final station = _current.stations[widget.stationIndex];
+    final station = _exercise.stations[widget.stationIndex];
     return LayoutBuilder(
       builder: (context, BoxConstraints constraints) {
         final size = station.position == null ? 150.0 : 350.0;
@@ -233,12 +238,12 @@ class _StationScreenState extends State<StationScreen> {
                                 station.position ?? MapConfig.initialCenter,
                             layers: MapConfig.layers,
                             onTap: (_, _) {
-                              Navigator.push<LatLng>(
+                              Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) {
                                     int i = 0;
-                                    return MapScreen(
+                                    return MapScreen<int>(
                                       title: station.name,
                                       withCross: true,
                                       withSearch: true,
@@ -247,7 +252,7 @@ class _StationScreenState extends State<StationScreen> {
                                           station.position ??
                                           MapConfig.initialCenter,
                                       interactionFlags: MapConfig.interactive,
-                                      markers: _current.stations
+                                      markers: _exercise.stations
                                           .where((e) => e.position != null)
                                           .map(
                                             (e) => (i++, e.name, e.position!),
@@ -259,7 +264,7 @@ class _StationScreenState extends State<StationScreen> {
                                           builder: (BuildContext context) {
                                             return _buildBottomSheet(
                                               event,
-                                              _current.stations[on.$1],
+                                              _exercise.stations[on.$1],
                                               isPortrait,
                                             );
                                           },
@@ -349,24 +354,16 @@ class _StationScreenState extends State<StationScreen> {
         const SizedBox(height: 8),
         Expanded(
           child: ListView.builder(
-            itemCount: _current.schedule.length,
+            itemCount: _exercise.schedule.length,
             itemBuilder: (context, index) {
-              final teamIndex = _current.teamIndex(widget.stationIndex, index);
+              final teamIndex = _exercise.teamIndex(widget.stationIndex, index);
               final none = teamIndex == -1;
               final title =
                   '${AppLocalizations.of(context)!.team(1)} '
                   '${none ? '×' : teamIndex + 1}';
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: PhaseTile(
-                    event: event,
-                    title: title,
-                    roundIndex: index,
-                    exercise: _current,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    decoration: none ? TextDecoration.lineThrough : null,
-                  ),
+                child: GestureDetector(
                   onTap: none
                       ? null
                       : () {
@@ -374,13 +371,24 @@ class _StationScreenState extends State<StationScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => TeamScreen(
+                              builder: (context) => TeamExerciseScreen(
                                 teamIndex: teamIndex,
-                                exercise: _current,
+                                exercise: _exercise,
                               ),
                             ),
                           );
                         },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: PhaseTile(
+                      event: event,
+                      title: title,
+                      roundIndex: index,
+                      exercise: _exercise,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      decoration: none ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
                 ),
               );
             },
@@ -392,30 +400,33 @@ class _StationScreenState extends State<StationScreen> {
 
   ExerciseEvent _initialData() {
     final last = _exerciseService.last;
-    if (last?.exercise == widget.exercise) return last!;
-    return ExerciseEvent.pending(widget.exercise);
+    if (last?.exercise.uuid == widget.uuid) return last!;
+    return ExerciseEvent.pending(_exercise);
   }
 
   /// Function to handle editing the exercise
   void _editStation(BuildContext context) async {
-    final stations = _current.stations.toList();
+    final stations = _exercise.stations.toList();
 
     // Navigate to the edit exercise screen
     final newStation = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            StationFormScreen(station: stations[widget.stationIndex]),
+        builder: (context) => StationFormScreen(
+          station: stations[widget.stationIndex],
+          markers: _programService.getLocations(),
+        ),
       ),
     );
-    if (newStation != _current) {
+    if (context.mounted && newStation != _exercise) {
       stations[widget.stationIndex] = newStation;
-      final prefs = await SharedPreferences.getInstance();
-      final repo = ExerciseRepository(prefs);
-      final newExercise = _current.copyWith(stations: stations);
-      await repo.addExercise(newExercise, true);
+      final newExercise = _exercise.copyWith(stations: stations);
+      await _programService.saveExercise(
+        AppLocalizations.of(context)!,
+        newExercise,
+      );
       setState(() {
-        _current = newExercise;
+        _exercise = newExercise;
       });
     }
   }

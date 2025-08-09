@@ -386,6 +386,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Station} =1{Station} other{Stations}}'**
   String station(num count);
 
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'No stations created'**
+  String get notStationsCreated;
+
   /// Label
   ///
   /// In en, this message translates to:
@@ -560,6 +566,12 @@ abstract class AppLocalizations {
   /// **'SAVE'**
   String get save;
 
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE'**
+  String get delete;
+
   /// Label
   ///
   /// In en, this message translates to:
@@ -577,6 +589,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop Exercise'**
   String get stopExercise;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Exercise'**
+  String get deleteExercise;
 
   /// Message
   ///
@@ -653,7 +671,7 @@ abstract class AppLocalizations {
   /// Parameterized message
   ///
   /// In en, this message translates to:
-  /// **'Must be equal to or less than Number of {name}'**
+  /// **'Must be equal or less than {name}'**
   String mustBeEqualToOrLessThanNumberOf(Object name);
 
   /// Message

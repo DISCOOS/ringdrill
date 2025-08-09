@@ -4,9 +4,10 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
 class ExerciseFormScreen extends StatefulWidget {
-  const ExerciseFormScreen({super.key, this.exercise});
+  const ExerciseFormScreen({super.key, this.exercise, this.numberOfTeams});
 
   final Exercise? exercise;
+  final int? numberOfTeams;
 
   @override
   State<ExerciseFormScreen> createState() => _ExerciseFormScreenState();
@@ -49,7 +50,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     if (e != null) {
       _startTime = e.startTime;
       _nameController.text = e.name;
-      _numberOfTeamsController.text = e.numberOfTeams.toString();
+      _numberOfTeamsController.text = (widget.numberOfTeams ?? e.numberOfTeams)
+          .toString();
       _numberOfRoundsController.text = e.numberOfRounds.toString();
       _executionTimeController.text = e.executionTime.toString();
       _evaluationTimeController.text = e.evaluationTime.toString();
@@ -81,108 +83,167 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              // Exercise Name
-              TextFormField(
-                autofocus: true,
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: localizations.exerciseName,
-                ),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? localizations.pleaseEnterAName
-                    : null,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Exercise Name
+                  Expanded(
+                    child: TextFormField(
+                      autofocus: true,
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        labelText: localizations.exerciseName,
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? localizations.pleaseEnterAName
+                          : null,
+                    ),
+                  ),
+
+                  SizedBox(width: 16.0),
+
+                  // Start Time Picker
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _pickStartTime,
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          isDense: true,
+                          isCollapsed: true,
+                          contentPadding: EdgeInsets.only(top: 8),
+                          label: Text(localizations.startTime),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                _startTime.formal(),
+                                style: TextStyle(fontSize: 16.0),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.access_time),
+                              onPressed: _pickStartTime,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
-              // Start Time Picker
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(localizations.startTime),
-                subtitle: Text(_startTime.formal()),
-                onTap: _pickStartTime,
-                trailing: IconButton(
-                  icon: const Icon(Icons.access_time),
-                  onPressed: _pickStartTime,
-                ),
+              SizedBox(height: 16.0),
+
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Execution Time
+                  Expanded(
+                    child: TextFormField(
+                      controller: _executionTimeController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: localizations.executionTime,
+                      ),
+                      validator: (value) => _isValidNumber(value)
+                          ? null
+                          : localizations.pleaseEnterAValidTime,
+                    ),
+                  ),
+
+                  SizedBox(width: 16.0),
+
+                  // Evaluation Time
+                  Expanded(
+                    child: TextFormField(
+                      controller: _evaluationTimeController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: localizations.evaluationTime,
+                      ),
+                      validator: (value) => _isValidNumber(value)
+                          ? null
+                          : localizations.pleaseEnterAValidTime,
+                    ),
+                  ),
+
+                  SizedBox(width: 16.0),
+
+                  // Rotation Time
+                  Expanded(
+                    child: TextFormField(
+                      controller: _rotationTimeController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: localizations.rotationTime,
+                      ),
+                      validator: (value) => _isValidNumber(value)
+                          ? null
+                          : localizations.pleaseEnterAValidTime,
+                    ),
+                  ),
+                ],
               ),
 
-              // Number of Teams
-              TextFormField(
-                controller: _numberOfTeamsController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.numberOfTeams,
-                ),
-                validator: (value) {
-                  if (_isValidNumber(value)) {
-                    if (_isValidNumber(_numberOfRoundsController.text)) {
-                      return int.parse(_numberOfRoundsController.text) <
-                              int.parse(value!)
-                          ? localizations.mustBeEqualToOrLessThanNumberOf(
-                              localizations.round(2),
-                            )
-                          : null;
-                    }
-                  }
-                  return localizations.pleaseEnterAValidNumber;
-                },
-              ),
+              SizedBox(height: 16.0),
 
-              // Number of Rounds
-              TextFormField(
-                controller: _numberOfRoundsController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.numberOfRounds,
-                ),
-                validator: (value) {
-                  if (_isValidNumber(value)) {
-                    if (_isValidNumber(_numberOfTeamsController.text)) {
-                      return int.parse(_numberOfTeamsController.text) >
-                              int.parse(value!)
-                          ? localizations.mustBeEqualToOrLessThanNumberOf(
-                              localizations.team(2),
-                            )
-                          : null;
-                    }
-                  }
-                  return localizations.pleaseEnterAValidNumber;
-                },
-              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Number of Rounds
+                  Expanded(
+                    child: TextFormField(
+                      controller: _numberOfRoundsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: localizations.numberOfRounds,
+                      ),
+                      validator: (value) {
+                        if (_isValidNumber(value)) {
+                          if (_isValidNumber(_numberOfTeamsController.text)) {
+                            return int.parse(_numberOfTeamsController.text) >
+                                    int.parse(value!)
+                                ? localizations.mustBeEqualToOrLessThanNumberOf(
+                                    localizations.team(2).toLowerCase(),
+                                  )
+                                : null;
+                          }
+                        }
+                        return localizations.pleaseEnterAValidNumber;
+                      },
+                    ),
+                  ),
 
-              // Execution Time
-              TextFormField(
-                controller: _executionTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.executionTime,
-                ),
-                validator: (value) => _isValidNumber(value)
-                    ? null
-                    : localizations.pleaseEnterAValidTime,
-              ),
+                  SizedBox(width: 16.0),
 
-              // Evaluation Time
-              TextFormField(
-                controller: _evaluationTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.evaluationTime,
-                ),
-                validator: (value) => _isValidNumber(value)
-                    ? null
-                    : localizations.pleaseEnterAValidTime,
-              ),
-
-              // Rotation Time
-              TextFormField(
-                controller: _rotationTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.rotationTime,
-                ),
-                validator: (value) => _isValidNumber(value)
-                    ? null
-                    : localizations.pleaseEnterAValidTime,
+                  // Number of Teams
+                  Expanded(
+                    child: TextFormField(
+                      controller: _numberOfTeamsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: localizations.numberOfTeams,
+                      ),
+                      validator: (value) {
+                        if (_isValidNumber(value)) {
+                          if (_isValidNumber(_numberOfRoundsController.text)) {
+                            return int.parse(_numberOfRoundsController.text) <
+                                    int.parse(value!)
+                                ? localizations.mustBeEqualToOrLessThanNumberOf(
+                                    localizations.round(2).toLowerCase(),
+                                  )
+                                : null;
+                          }
+                        }
+                        return localizations.pleaseEnterAValidNumber;
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -213,8 +274,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       // Show an error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(validationError),
           showCloseIcon: true,
+          dismissDirection: DismissDirection.endToStart,
+          content: Text(validationError),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -224,7 +286,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       final name = _nameController.text.trim();
       final numberOfTeams = int.parse(_numberOfTeamsController.text);
-      final numberOfStations = int.parse(_numberOfRoundsController.text);
+      final numberOfRounds = int.parse(_numberOfRoundsController.text);
       final executionTime = int.parse(_executionTimeController.text);
       final evaluationTime = int.parse(_evaluationTimeController.text);
       final rotationTime = int.parse(_rotationTimeController.text);
@@ -235,10 +297,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         startTime: _startTime,
         uuid: widget.exercise?.uuid,
         numberOfTeams: numberOfTeams,
-        numberOfRounds: numberOfStations,
+        numberOfRounds: numberOfRounds,
         executionTime: executionTime,
         evaluationTime: evaluationTime,
         rotationTime: rotationTime,
+        stations: widget.exercise?.stations ?? [],
         localizations: AppLocalizations.of(context)!,
       );
 
