@@ -54,34 +54,31 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
     // Listen to ExerciseService state changes
     _subscriptions.add(
-      _exerciseService.events
-          .where((e) => _exerciseService.isStartedOn(_exercise!.uuid))
-          .listen((event) {
-            // Update the state based on the current event phase
-            if (mounted) {
-              final changed =
-                  _isStarted != (event.isRunning || event.isPending);
-              setState(() {
-                _isStarted = event.isRunning || event.isPending;
-              });
-              if (changed || event.isDone) {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    showCloseIcon: true,
-                    dismissDirection: DismissDirection.endToStart,
-                    content: Text(
-                      '${_exercise!.name} ${event.isRunning
-                          ? AppLocalizations.of(context)!.isRunning
-                          : event.isPending
-                          ? AppLocalizations.of(context)!.isPending
-                          : AppLocalizations.of(context)!.isDone}',
-                    ),
-                  ),
-                );
-              }
-            }
-          }),
+      _exerciseService.events.listen((event) {
+        // Update the state based on the current event phase
+        if (mounted) {
+          final changed = _isStarted != (event.isRunning || event.isPending);
+          setState(() {
+            _isStarted = event.isRunning || event.isPending;
+          });
+          if (changed || event.isDone) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                showCloseIcon: true,
+                dismissDirection: DismissDirection.endToStart,
+                content: Text(
+                  '${_exercise!.name} ${event.isRunning
+                      ? AppLocalizations.of(context)!.isRunning
+                      : event.isPending
+                      ? AppLocalizations.of(context)!.isPending
+                      : AppLocalizations.of(context)!.isDone}',
+                ),
+              ),
+            );
+          }
+        }
+      }),
     );
 
     // Listen to Notification Events
