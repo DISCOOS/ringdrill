@@ -230,6 +230,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportProgram => 'Export...';
 
   @override
+  String get shareProgram => 'Share...';
+
+  @override
   String get stationDescriptionHint =>
       'Give a description of how this station should be executed';
 

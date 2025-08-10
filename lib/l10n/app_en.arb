@@ -132,7 +132,6 @@
   "@sharedFileReceived": {
     "description": "Message"
   },
-
   "storage": "Storage",
   "@storage": {
     "description": "Label"
@@ -228,6 +227,10 @@
   },
   "exportProgram": "Export...",
   "@exportProgram": {
+    "description": "Label"
+  },
+  "shareProgram": "Share...",
+  "@shareProgram": {
     "description": "Label"
   },
   "stationDescriptionHint": "Give a description of how this station should be executed",

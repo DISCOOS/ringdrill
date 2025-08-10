@@ -243,6 +243,7 @@ class ExerciseCard extends StatelessWidget {
 
 class ProgramPageController extends ScreenController {
   final _programService = ProgramService();
+  final _exerciseService = ExerciseService();
 
   @override
   String title(BuildContext context) =>
@@ -279,17 +280,24 @@ class ProgramPageController extends ScreenController {
       PopupMenuButton<String>(
         onSelected: (value) => _handleMenuAction(context, constraints, value),
         itemBuilder: (context) => [
-          PopupMenuItem(value: 'open', child: Text(localizations.openProgram)),
+          PopupMenuItem(
+            value: 'open',
+            enabled: !_exerciseService.isStarted,
+            child: Text(localizations.openProgram),
+          ),
           PopupMenuItem(
             value: 'import',
+            enabled: !_exerciseService.isStarted,
             child: Text(localizations.importProgram),
           ),
           PopupMenuItem(
             value: 'export',
+            enabled: !_exerciseService.isStarted,
             child: Text(localizations.exportProgram),
           ),
           PopupMenuItem(
             value: 'share', // Add the new option
+            enabled: !_exerciseService.isStarted,
             child: Text('Share...'),
           ),
         ],
@@ -370,6 +378,7 @@ class ProgramPageController extends ScreenController {
           onSelect: (items) async {
             final selected = await _selectExercises(
               context,
+              localizations.importProgram,
               items.toList(),
               constraints,
               localizations,
@@ -401,6 +410,7 @@ class ProgramPageController extends ScreenController {
   ) async {
     final selected = await _selectExercises(
       context,
+      localizations.exportProgram,
       _programService.loadExercises(),
       constraints,
       localizations,
@@ -466,6 +476,7 @@ class ProgramPageController extends ScreenController {
 
     final selected = await _selectExercises(
       context,
+      localizations.shareProgram,
       _programService.loadExercises(),
       constraints,
       localizations,
@@ -594,6 +605,7 @@ class ProgramPageController extends ScreenController {
 
   static Future<List<String>> _selectExercises(
     BuildContext context,
+    String title,
     List<Exercise> exercises,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -638,7 +650,7 @@ class ProgramPageController extends ScreenController {
                     ),
                   ),
                   Text(
-                    localizations.selectExercises,
+                    title,
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),

@@ -443,6 +443,12 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
+  /// **'Share...'**
+  String get shareProgram;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
   /// **'Give a description of how this station should be executed'**
   String get stationDescriptionHint;
 

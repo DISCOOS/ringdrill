@@ -230,6 +230,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exportProgram => 'Eksporter...';
 
   @override
+  String get shareProgram => 'Share...';
+
+  @override
   String get stationDescriptionHint => 'Beskriv hvordan posten skal utføres';
 
   @override

@@ -12,6 +12,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_io/io.dart';
 
@@ -230,6 +231,7 @@ class ProgramService {
     try {
       final program = await _importFromLocalFile(file, onExtracting, onSelect);
       if (program != null) {
+        ExerciseService().stop();
         _controller.add(ProgramEvent.opened(program, file));
       }
 
@@ -250,6 +252,7 @@ class ProgramService {
   }) async {
     final program = await _importFromLocalFile(file, onExtracting, onSelect);
     if (program != null) {
+      ExerciseService().stop();
       _controller.add(ProgramEvent.imported(program, file));
     }
 

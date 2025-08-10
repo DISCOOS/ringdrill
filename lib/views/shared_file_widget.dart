@@ -40,7 +40,6 @@ class _SharedFileWidgetState extends State<SharedFileWidget> {
             builder: (context) => AlertDialog(
               title: Text('Drill File'),
               content: Text(localizations.sharedFileReceived),
-
               actions: [
                 TextButton(
                   onPressed: () async {
