@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:coordinate_converter/coordinate_converter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show Intl;
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -140,41 +140,40 @@ class _MapViewState<K> extends State<MapView<K>> {
                 widget.layers[_currentLayerIndex],
                 if (widget.markers.isNotEmpty)
                   MarkerLayer(
-                    markers: widget.markers
-                        .map(
-                          (e) => Marker(
-                            height: 52,
-                            width: 100,
-                            point: e.$3,
-                            alignment: Alignment.topCenter,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.deferToChild,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Material(
-                                    elevation: 2,
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(1.0),
-                                      child: Text(
-                                        e.$2,
-                                        style: TextStyle(fontSize: 12),
-                                      ),
-                                    ),
+                    markers: widget.markers.map((e) {
+                      final painter = TextPainter(
+                        text: TextSpan(text: e.$2),
+                        maxLines: 1,
+                        textDirection: TextDirection.ltr,
+                      )..layout();
+                      return Marker(
+                        height: 52,
+                        width: painter.width,
+                        point: e.$3,
+                        alignment: Alignment.topCenter,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.deferToChild,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Material(
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(1.0),
+                                  child: Text(
+                                    e.$2,
+                                    style: TextStyle(fontSize: 12),
                                   ),
-                                  Icon(
-                                    Icons.place,
-                                    color: Colors.green,
-                                    size: 32,
-                                  ),
-                                ],
+                                ),
                               ),
-                              onTap: () => widget.onMarkerTap?.call(e),
-                            ),
+                              Icon(Icons.place, color: Colors.green, size: 32),
+                            ],
                           ),
-                        )
-                        .toList(),
+                          onTap: () => widget.onMarkerTap?.call(e),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 SafeArea(child: Scalebar(alignment: Alignment.bottomLeft)),
               ],
