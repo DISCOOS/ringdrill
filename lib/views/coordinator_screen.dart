@@ -337,7 +337,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                           Padding(
                             padding: const EdgeInsets.only(right: 4),
                             child: Text(
-                              '${localizations.station(1)} ${stationIndex + 1}',
+                              _exercise!.stations[stationIndex].name,
                               style: const TextStyle(fontSize: 18),
                             ),
                           ),
