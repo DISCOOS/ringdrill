@@ -48,14 +48,20 @@ class _AboutPageState extends State<AboutPage> {
     setState(() {
       appVersion = packageInfo.version;
       buildNumber = packageInfo.buildNumber;
-      patchNumber = patch?.number.toString() ?? (kDebugMode ? '<debug>' : '?');
+      patchNumber = patch?.number.toString() ?? (kDebugMode ? '<debug>' : '0');
     });
   }
 
   Future<void> update() async {
     // Perform the update
     await updater.update();
+    patchStatus = await updater.checkForUpdate();
+    final patch = await updater.readCurrentPatch();
     if (mounted) {
+      setState(() {
+        patchNumber =
+            patch?.number.toString() ?? (kDebugMode ? '<debug>' : '0');
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           showCloseIcon: true,
@@ -137,11 +143,7 @@ class _AboutPageState extends State<AboutPage> {
                   '$appVersion (Build $buildNumber)',
                 ),
               },
-              trailing:
-                  [
-                    UpdateStatus.outdated,
-                    UpdateStatus.restartRequired,
-                  ].contains(patchStatus)
+              trailing: UpdateStatus.outdated == patchStatus
                   ? IconButton(onPressed: update, icon: Icon(Icons.update))
                   : null,
             ),
