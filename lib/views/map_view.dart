@@ -257,6 +257,7 @@ class _MapViewState<K> extends State<MapView<K>> {
 
   Widget _buildSearchTool(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
           height: 88,
