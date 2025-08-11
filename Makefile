@@ -12,6 +12,9 @@ watch:
 	echo "Watch for buildable changes..."
 	dart run build_runner watch --delete-conflicting-outputs
 
+web:
+	flutter build web --pwa-strategy=offline-first --release --web-renderer canvaskit
+
 release-android:
 	shorebird release android
 	#flutter build appbundle --obfuscate --split-debug-info=build/debug-info
@@ -20,3 +23,4 @@ release-android:
 
 patch-android:
 	shorebird patch android
+

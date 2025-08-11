@@ -1,7 +1,8 @@
 {
-    "name": "ringdrill",
-    "short_name": "ringdrill",
-    "start_url": ".",
+    "name": "RingDrill",
+    "short_name": "RingDrill",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#hexcode",
     "theme_color": "#hexcode",

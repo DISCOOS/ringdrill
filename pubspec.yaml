@@ -31,6 +31,8 @@ dependencies:
   sentry_flutter: ^9.6.0
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
 
   nanoid: ^1.0.0
   strings: ^3.1.2 # needed for flutter_map
@@ -61,6 +63,7 @@ dependencies:
   share_plus: ^11.0.0
   archive: ^4.0.7
   proj4dart: ^2.1.0
+  web: ^1.1.1
 
 dev_dependencies:
   sentry_dart_plugin: ^3.1.1

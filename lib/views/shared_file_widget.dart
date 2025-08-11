@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/services/shared_file_channel.dart';
+import 'package:universal_io/io.dart';
 
 class SharedFileWidget extends StatefulWidget {
   const SharedFileWidget({super.key, required this.child});

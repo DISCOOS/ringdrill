@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -10,6 +9,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:universal_io/io.dart';
 
 enum NotificationAction { exerciseStop, showSettings, promptReshow }
 
@@ -271,8 +271,8 @@ class NotificationService {
     _watchDog = Timer.periodic(Duration(seconds: 1), (_) async {
       final service = ExerciseService();
       if (service.isStarted) {
-        final ids =
-            await _flutterLocalNotificationsPlugin.getActiveNotifications();
+        final ids = await _flutterLocalNotificationsPlugin
+            .getActiveNotifications();
         if (ids.isEmpty) {
           _eventController.add(
             NotificationEvent(
@@ -337,14 +337,12 @@ class NotificationService {
       playSound: isUrgent ? _playSound : false,
       enableVibration: isUrgent ? _enableVibration : false,
       visibility: NotificationVisibility.public,
-      category:
-          isUrgent
-              ? AndroidNotificationCategory.alarm
-              : AndroidNotificationCategory.progress,
-      audioAttributesUsage:
-          isUrgent
-              ? AudioAttributesUsage.alarm
-              : AudioAttributesUsage.notification,
+      category: isUrgent
+          ? AndroidNotificationCategory.alarm
+          : AndroidNotificationCategory.progress,
+      audioAttributesUsage: isUrgent
+          ? AudioAttributesUsage.alarm
+          : AudioAttributesUsage.notification,
       actions: [
         AndroidNotificationAction(
           idActionStopExercise,

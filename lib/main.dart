@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
@@ -10,6 +11,7 @@ import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/main_screen.dart';
 import 'package:ringdrill/views/patch_alert_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
+import 'package:ringdrill/web/pwa_update_web.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
@@ -18,6 +20,10 @@ import 'l10n/app_localizations.dart' show AppLocalizations;
 
 Future<void> main() async {
   SentryWidgetsFlutterBinding.ensureInitialized();
+
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
   if (kDebugMode) {
     // Only call clearSavedSettings() during testing to reset internal values.
@@ -67,7 +73,21 @@ class RingDrillApp extends StatefulWidget {
 class _RingDrillAppState extends State<RingDrillApp> {
   @override
   void initState() {
-    _startNotificationService();
+    if (!kIsWeb) _startNotificationService();
+    if (kIsWeb) {
+      listenForPwaUpdates(() {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            showCloseIcon: true,
+            dismissDirection: DismissDirection.endToStart,
+            content: Text(
+              AppLocalizations.of(context)!.appUpdatedPleaseCloseAndOpen,
+            ),
+          ),
+        );
+      });
+    }
+
     super.initState();
   }
 
