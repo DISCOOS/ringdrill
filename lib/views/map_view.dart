@@ -4,10 +4,10 @@ import 'dart:math' as math;
 import 'package:coordinate_converter/coordinate_converter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:intl/intl.dart' show Intl;
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class MapConfig {
   static const int static = InteractiveFlag.none;
@@ -430,13 +430,12 @@ class _MapViewState<K> extends State<MapView<K>> {
 
       // Try geocoding via osm_nominatim
       final nominatim = Nominatim(userAgent: 'discoos.org/ringdrill');
-      final locale = Intl.getCurrentLocale();
       final results = await nominatim.searchByName(
         limit: 5,
         query: '${input.trim()},',
         nameDetails: true,
         addressDetails: true,
-        countryCodes: [locale.split('_')[1]],
+        viewBox: _createViewBoxFromLatLng(_mapController.camera.center, 1000),
       );
 
       setState(() {
@@ -449,20 +448,41 @@ class _MapViewState<K> extends State<MapView<K>> {
           );
         }
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (mounted) {
         setState(() {
           _isSearching = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            showCloseIcon: true,
-            dismissDirection: DismissDirection.endToStart,
-            content: Text(AppLocalizations.of(context)!.searchFailed(e)),
-          ),
-        );
+        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       }
     }
+  }
+
+  ViewBox _createViewBoxFromLatLng(LatLng center, double radiusInKm) {
+    const double earthRadiusKm = 6371.0; // Radius of the Earth in kilometers
+
+    // Convert latitude and longitude to radians
+    final double lat = center.latitude * pi / 180;
+    final double lng = center.longitude * pi / 180;
+
+    // Calculate degree offsets for the given radius
+    final double latOffset = radiusInKm / earthRadiusKm;
+    final double lngOffset = radiusInKm / (earthRadiusKm * math.cos(lat));
+
+    // Calculate raw ViewBox boundaries in degrees
+    double northLatitude = (lat + latOffset) * 180 / pi;
+    double southLatitude = (lat - latOffset) * 180 / pi;
+    double eastLongitude = (lng + lngOffset) * 180 / pi;
+    double westLongitude = (lng - lngOffset) * 180 / pi;
+
+    // Clamp latitudes and longitudes to valid range
+    northLatitude = northLatitude.clamp(-90.0, 90.0);
+    southLatitude = southLatitude.clamp(-90.0, 90.0);
+    eastLongitude = eastLongitude.clamp(-180.0, 180.0);
+    westLongitude = westLongitude.clamp(-180.0, 180.0);
+
+    // Return the bounding box (north, south, east, west)
+    return ViewBox(northLatitude, southLatitude, eastLongitude, westLongitude);
   }
 
   String _formatPlace(Place result) {
