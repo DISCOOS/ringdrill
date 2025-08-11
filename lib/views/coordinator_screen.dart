@@ -219,9 +219,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               ),
             ],
           ),
-          body: _exercise!.schedule.isEmpty
-              ? Center(child: Text(localizations.noRoundsScheduled))
-              : _buildBody(event),
+          body: SafeArea(
+            child: _exercise!.schedule.isEmpty
+                ? Center(child: Text(localizations.noRoundsScheduled))
+                : _buildBody(event),
+          ),
           floatingActionButton: ExerciseControlButton(
             exercise: _exercise!,
             service: _exerciseService,

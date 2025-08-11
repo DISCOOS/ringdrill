@@ -114,25 +114,24 @@ class _SettingsPageState extends State<SettingsPage> {
       // Show a confirmation message to the user
       showDialog(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: Text(
-                consent
-                    ? localization.analyticsEnabled
-                    : localization.analyticsDisabled,
-              ),
-              content: Text(
-                consent
-                    ? localization.analyticsIsAllowed
-                    : localization.analyticsIsDenied,
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(localization.ok),
-                ),
-              ],
+        builder: (context) => AlertDialog(
+          title: Text(
+            consent
+                ? localization.analyticsEnabled
+                : localization.analyticsDisabled,
+          ),
+          content: Text(
+            consent
+                ? localization.analyticsIsAllowed
+                : localization.analyticsIsDenied,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(localization.ok),
             ),
+          ],
+        ),
       );
     }
   }
@@ -156,13 +155,15 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.settings)),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          _buildAnalyticsConsentSection(),
-          const Divider(),
-          _buildNotificationSettingsSection(),
-        ],
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            _buildAnalyticsConsentSection(),
+            const Divider(),
+            _buildNotificationSettingsSection(),
+          ],
+        ),
       ),
     );
   }
@@ -250,15 +251,14 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           trailing: DropdownButton<int>(
             value: urgentNotificationThreshold,
-            items:
-                thresholdOptions
-                    .map(
-                      (minute) => DropdownMenuItem<int>(
-                        value: minute,
-                        child: Text(localizations.minute(minute)),
-                      ),
-                    )
-                    .toList(),
+            items: thresholdOptions
+                .map(
+                  (minute) => DropdownMenuItem<int>(
+                    value: minute,
+                    child: Text(localizations.minute(minute)),
+                  ),
+                )
+                .toList(),
             onChanged: (value) {
               if (value != null) {
                 _saveNotificationPreference(threshold: value);
@@ -270,12 +270,11 @@ class _SettingsPageState extends State<SettingsPage> {
         // Full-Screen Intent Toggle
         SwitchListTile(
           value: isFullScreenIntentEnabled,
-          onChanged:
-              isNotificationsEnabled
-                  ? (value) {
-                    _saveNotificationPreference(fullScreen: value);
-                  }
-                  : null, // Disable if notifications are off
+          onChanged: isNotificationsEnabled
+              ? (value) {
+                  _saveNotificationPreference(fullScreen: value);
+                }
+              : null, // Disable if notifications are off
           title: Text(localizations.fullScreenNotifications),
           subtitle: Text(localizations.fullScreenNotificationsDescription),
         ),
@@ -283,12 +282,11 @@ class _SettingsPageState extends State<SettingsPage> {
         // Play Sound Toggle
         SwitchListTile(
           value: playSound,
-          onChanged:
-              isNotificationsEnabled
-                  ? (value) {
-                    _saveNotificationPreference(sound: value);
-                  }
-                  : null, // Disable if notifications are off
+          onChanged: isNotificationsEnabled
+              ? (value) {
+                  _saveNotificationPreference(sound: value);
+                }
+              : null, // Disable if notifications are off
           title: Text(localizations.playSoundWhenUrgent),
           subtitle: Text(localizations.playSoundWhenUrgentDescription),
         ),
@@ -296,12 +294,11 @@ class _SettingsPageState extends State<SettingsPage> {
         // Vibrate Toggle
         SwitchListTile(
           value: vibrateEnabled,
-          onChanged:
-              isNotificationsEnabled
-                  ? (value) {
-                    _saveNotificationPreference(vibrate: value);
-                  }
-                  : null, // Disable if notifications are off
+          onChanged: isNotificationsEnabled
+              ? (value) {
+                  _saveNotificationPreference(vibrate: value);
+                }
+              : null, // Disable if notifications are off
           title: Text(localizations.vibrateWhenUrgent),
           subtitle: Text(localizations.vibrateWhenUrgentDescription),
         ),

@@ -102,46 +102,48 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           ),
         ],
       ),
-      body: StreamBuilder(
-        stream: _exerciseService.events,
-        initialData: _initialData(),
-        builder: (context, asyncSnapshot) {
-          return OrientationBuilder(
-            builder: (context, orientation) {
-              final isPortrait = orientation == Orientation.portrait;
-              final mode = (isPortrait ? Column.new : Row.new);
-              final event = asyncSnapshot.data!;
-              final station = _exercise.stations[widget.stationIndex];
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Team Info
-                    _buildStationStatus(station, event),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: mode(
-                        children: [
-                          Expanded(
-                            flex: isPortrait ? -1 : 1,
-                            child: _buildStationInfo(
-                              station,
-                              event,
-                              isPortrait,
+      body: SafeArea(
+        child: StreamBuilder(
+          stream: _exerciseService.events,
+          initialData: _initialData(),
+          builder: (context, asyncSnapshot) {
+            return OrientationBuilder(
+              builder: (context, orientation) {
+                final isPortrait = orientation == Orientation.portrait;
+                final mode = (isPortrait ? Column.new : Row.new);
+                final event = asyncSnapshot.data!;
+                final station = _exercise.stations[widget.stationIndex];
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Team Info
+                      _buildStationStatus(station, event),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: mode(
+                          children: [
+                            Expanded(
+                              flex: isPortrait ? -1 : 1,
+                              child: _buildStationInfo(
+                                station,
+                                event,
+                                isPortrait,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildTeamRotations(event)),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildTeamRotations(event)),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

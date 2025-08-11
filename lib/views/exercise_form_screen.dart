@@ -77,154 +77,160 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Exercise Name
-              TextFormField(
-                autofocus: true,
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: localizations.exerciseName,
-                ),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? localizations.pleaseEnterAName
-                    : null,
-              ),
-
-              SizedBox(height: 16.0),
-
-              // Start Time Picker
-              GestureDetector(
-                onTap: _pickStartTime,
-                child: InputDecorator(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                // Exercise Name
+                TextFormField(
+                  autofocus: true,
+                  controller: _nameController,
                   decoration: InputDecoration(
-                    isDense: true,
-                    isCollapsed: true,
-                    contentPadding: EdgeInsets.only(top: 8),
-                    label: Text(localizations.startTime),
+                    labelText: localizations.exerciseName,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          _startTime.formal(),
-                          style: TextStyle(fontSize: 16.0),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? localizations.pleaseEnterAName
+                      : null,
+                ),
+
+                SizedBox(height: 16.0),
+
+                // Start Time Picker
+                GestureDetector(
+                  onTap: _pickStartTime,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      isDense: true,
+                      isCollapsed: true,
+                      contentPadding: EdgeInsets.only(top: 8),
+                      label: Text(localizations.startTime),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            _startTime.formal(),
+                            style: TextStyle(fontSize: 16.0),
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.access_time),
-                        onPressed: _pickStartTime,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 16.0),
-
-              // Execution Time
-              TextFormField(
-                controller: _executionTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.executionTime,
-                ),
-                validator: (value) => _isValidNumber(value)
-                    ? null
-                    : localizations.pleaseEnterAValidTime,
-              ),
-
-              SizedBox(height: 16.0),
-
-              // Evaluation Time
-              TextFormField(
-                controller: _evaluationTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.evaluationTime,
-                ),
-                validator: (value) => _isValidNumber(value)
-                    ? null
-                    : localizations.pleaseEnterAValidTime,
-              ),
-
-              SizedBox(height: 16.0),
-
-              // Rotation Time
-              TextFormField(
-                controller: _rotationTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: localizations.rotationTime,
-                ),
-                validator: (value) => _isValidNumber(value)
-                    ? null
-                    : localizations.pleaseEnterAValidTime,
-              ),
-
-              SizedBox(height: 16.0),
-
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Number of Rounds
-                  Expanded(
-                    child: TextFormField(
-                      controller: _numberOfRoundsController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: localizations.numberOfRounds,
-                      ),
-                      validator: (value) {
-                        if (_isValidNumber(value)) {
-                          if (_isValidNumber(_numberOfTeamsController.text)) {
-                            return int.parse(_numberOfTeamsController.text) >
-                                    int.parse(value!)
-                                ? localizations.mustBeEqualToOrLessThanNumberOf(
-                                    localizations.team(2).toLowerCase(),
-                                  )
-                                : null;
-                          }
-                        }
-                        return localizations.pleaseEnterAValidNumber;
-                      },
+                        IconButton(
+                          icon: const Icon(Icons.access_time),
+                          onPressed: _pickStartTime,
+                        ),
+                      ],
                     ),
                   ),
+                ),
 
-                  SizedBox(width: 16.0),
+                SizedBox(height: 16.0),
 
-                  // Number of Teams
-                  Expanded(
-                    child: TextFormField(
-                      controller: _numberOfTeamsController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: localizations.numberOfTeams,
-                      ),
-                      validator: (value) {
-                        if (_isValidNumber(value)) {
-                          if (_isValidNumber(_numberOfRoundsController.text)) {
-                            return int.parse(_numberOfRoundsController.text) <
-                                    int.parse(value!)
-                                ? localizations.mustBeEqualToOrLessThanNumberOf(
-                                    localizations.round(2).toLowerCase(),
-                                  )
-                                : null;
-                          }
-                        }
-                        return localizations.pleaseEnterAValidNumber;
-                      },
-                    ),
+                // Execution Time
+                TextFormField(
+                  controller: _executionTimeController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: localizations.executionTime,
                   ),
-                ],
-              ),
-            ],
+                  validator: (value) => _isValidNumber(value)
+                      ? null
+                      : localizations.pleaseEnterAValidTime,
+                ),
+
+                SizedBox(height: 16.0),
+
+                // Evaluation Time
+                TextFormField(
+                  controller: _evaluationTimeController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: localizations.evaluationTime,
+                  ),
+                  validator: (value) => _isValidNumber(value)
+                      ? null
+                      : localizations.pleaseEnterAValidTime,
+                ),
+
+                SizedBox(height: 16.0),
+
+                // Rotation Time
+                TextFormField(
+                  controller: _rotationTimeController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: localizations.rotationTime,
+                  ),
+                  validator: (value) => _isValidNumber(value)
+                      ? null
+                      : localizations.pleaseEnterAValidTime,
+                ),
+
+                SizedBox(height: 16.0),
+
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Number of Rounds
+                    Expanded(
+                      child: TextFormField(
+                        controller: _numberOfRoundsController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.numberOfRounds,
+                        ),
+                        validator: (value) {
+                          if (_isValidNumber(value)) {
+                            if (_isValidNumber(_numberOfTeamsController.text)) {
+                              return int.parse(_numberOfTeamsController.text) >
+                                      int.parse(value!)
+                                  ? localizations
+                                        .mustBeEqualToOrLessThanNumberOf(
+                                          localizations.team(2).toLowerCase(),
+                                        )
+                                  : null;
+                            }
+                          }
+                          return localizations.pleaseEnterAValidNumber;
+                        },
+                      ),
+                    ),
+
+                    SizedBox(width: 16.0),
+
+                    // Number of Teams
+                    Expanded(
+                      child: TextFormField(
+                        controller: _numberOfTeamsController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.numberOfTeams,
+                        ),
+                        validator: (value) {
+                          if (_isValidNumber(value)) {
+                            if (_isValidNumber(
+                              _numberOfRoundsController.text,
+                            )) {
+                              return int.parse(_numberOfRoundsController.text) <
+                                      int.parse(value!)
+                                  ? localizations
+                                        .mustBeEqualToOrLessThanNumberOf(
+                                          localizations.round(2).toLowerCase(),
+                                        )
+                                  : null;
+                            }
+                          }
+                          return localizations.pleaseEnterAValidNumber;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

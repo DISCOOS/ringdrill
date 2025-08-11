@@ -79,138 +79,142 @@ class _AboutPageState extends State<AboutPage> {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(localizations.about)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // App Name and Icon
-            Row(
-              children: [
-                const Icon(
-                  Icons.info_outline_rounded,
-                  size: 40,
-                  color: Colors.blue,
-                ),
-                const SizedBox(width: 16.0),
-                Text(
-                  localizations.appName,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // App Name and Icon
+              Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 40,
+                    color: Colors.blue,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16.0),
-
-            // App Purpose or Description
-            Text(
-              localizations.appDescription,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 24.0),
-
-            // App Details Section
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.verified_outlined),
-              title: Text(localizations.version),
-              subtitle: switch (patchStatus) {
-                UpdateStatus.upToDate => Text(
-                  '$appVersion (Build $buildNumber, Patch $patchNumber)',
-                ),
-                UpdateStatus.outdated => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$appVersion (Build $buildNumber, Patch $patchNumber)',
+                  const SizedBox(width: 16.0),
+                  Text(
+                    localizations.appName,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    SizedBox(height: 8),
-                    Text(localizations.newPatchIsAvailable),
-                  ],
-                ),
-                UpdateStatus.restartRequired => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$appVersion (Build $buildNumber, Patch $patchNumber)',
-                    ),
-                    SizedBox(height: 8),
-                    Text(localizations.restartAppToApplyNewPatch),
-                  ],
-                ),
-                UpdateStatus.unavailable => Text(
-                  '$appVersion (Build $buildNumber)',
-                ),
-              },
-              trailing: UpdateStatus.outdated == patchStatus
-                  ? IconButton(onPressed: update, icon: Icon(Icons.update))
-                  : null,
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: Text(localizations.developedBy),
-              subtitle: const Text('DISCO Open Source'), // Your credits here
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.link_outlined),
-              title: Text(localizations.website),
-              subtitle: const Text(projectUrl), // Your website URL
-              onTap: () async {
-                if (!await launchUrl(Uri.parse(projectUrl))) {
-                  Sentry.captureException(
-                    Exception('Could not launch $projectUrl'),
-                  );
-                }
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.link_outlined),
-              title: Text(localizations.privacyPolicy),
-              subtitle: const Text('$projectUrl/privacy/'), // Your website URL
-              onTap: () async {
-                if (!await launchUrl(Uri.parse('$projectUrl/privacy/'))) {
-                  Sentry.captureException(
-                    Exception('Could not launch $projectUrl/privacy/'),
-                  );
-                }
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.link_outlined),
-              title: Text(localizations.termsOfService),
-              subtitle: const Text('$projectUrl/tos/'), // Your website URL
-              onTap: () async {
-                if (!await launchUrl(Uri.parse('$projectUrl/tos/'))) {
-                  Sentry.captureException(
-                    Exception('Could not launch $projectUrl/tos/'),
-                  );
-                }
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.mail_outline),
-              title: Text(localizations.contactSupport),
-              subtitle: const Text('support@discoos.org'),
-              onTap: () async {
-                if (!await launchUrl(
-                  Uri.parse(
-                    'mailto:support@discoos.org?subject=RingDrill Feedback',
                   ),
-                )) {
-                  Sentry.captureException(
-                    Exception('Could not open email client'),
-                  );
-                }
-              },
-            ),
-            const Divider(),
-          ],
+                ],
+              ),
+              const SizedBox(height: 16.0),
+
+              // App Purpose or Description
+              Text(
+                localizations.appDescription,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 24.0),
+
+              // App Details Section
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.verified_outlined),
+                title: Text(localizations.version),
+                subtitle: switch (patchStatus) {
+                  UpdateStatus.upToDate => Text(
+                    '$appVersion (Build $buildNumber, Patch $patchNumber)',
+                  ),
+                  UpdateStatus.outdated => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$appVersion (Build $buildNumber, Patch $patchNumber)',
+                      ),
+                      SizedBox(height: 8),
+                      Text(localizations.newPatchIsAvailable),
+                    ],
+                  ),
+                  UpdateStatus.restartRequired => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$appVersion (Build $buildNumber, Patch $patchNumber)',
+                      ),
+                      SizedBox(height: 8),
+                      Text(localizations.restartAppToApplyNewPatch),
+                    ],
+                  ),
+                  UpdateStatus.unavailable => Text(
+                    '$appVersion (Build $buildNumber)',
+                  ),
+                },
+                trailing: UpdateStatus.outdated == patchStatus
+                    ? IconButton(onPressed: update, icon: Icon(Icons.update))
+                    : null,
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: Text(localizations.developedBy),
+                subtitle: const Text('DISCO Open Source'), // Your credits here
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.link_outlined),
+                title: Text(localizations.website),
+                subtitle: const Text(projectUrl), // Your website URL
+                onTap: () async {
+                  if (!await launchUrl(Uri.parse(projectUrl))) {
+                    Sentry.captureException(
+                      Exception('Could not launch $projectUrl'),
+                    );
+                  }
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.link_outlined),
+                title: Text(localizations.privacyPolicy),
+                subtitle: const Text(
+                  '$projectUrl/privacy/',
+                ), // Your website URL
+                onTap: () async {
+                  if (!await launchUrl(Uri.parse('$projectUrl/privacy/'))) {
+                    Sentry.captureException(
+                      Exception('Could not launch $projectUrl/privacy/'),
+                    );
+                  }
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.link_outlined),
+                title: Text(localizations.termsOfService),
+                subtitle: const Text('$projectUrl/tos/'), // Your website URL
+                onTap: () async {
+                  if (!await launchUrl(Uri.parse('$projectUrl/tos/'))) {
+                    Sentry.captureException(
+                      Exception('Could not launch $projectUrl/tos/'),
+                    );
+                  }
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.mail_outline),
+                title: Text(localizations.contactSupport),
+                subtitle: const Text('support@discoos.org'),
+                onTap: () async {
+                  if (!await launchUrl(
+                    Uri.parse(
+                      'mailto:support@discoos.org?subject=RingDrill Feedback',
+                    ),
+                  )) {
+                    Sentry.captureException(
+                      Exception('Could not open email client'),
+                    );
+                  }
+                },
+              ),
+              const Divider(),
+            ],
+          ),
         ),
       ),
     );

@@ -52,69 +52,73 @@ class _StationFormScreenState extends State<StationFormScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  // Exercise Name
-                  Expanded(
-                    child: TextFormField(
-                      autofocus: true,
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: localizations.stationName,
-                        hintText: localizations.stationNameHint,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // Exercise Name
+                    Expanded(
+                      child: TextFormField(
+                        autofocus: true,
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: localizations.stationName,
+                          hintText: localizations.stationNameHint,
+                        ),
+                        validator: (value) =>
+                            value != null && value.trim().isNotEmpty
+                            ? null
+                            : localizations.pleaseEnterAName,
                       ),
-                      validator: (value) =>
-                          value != null && value.trim().isNotEmpty
-                          ? null
-                          : localizations.pleaseEnterAName,
                     ),
-                  ),
 
-                  SizedBox(width: 8),
+                    SizedBox(width: 8),
 
-                  // Position
-                  SizedBox(
-                    width: 230,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: BoxBorder.all(color: Colors.grey.shade700),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0).copyWith(left: 8.0),
-                        child: PositionFormField(
-                          initialValue: _position,
-                          markers: widget.markers,
-                          onSaved: (position) => _position = position,
+                    // Position
+                    SizedBox(
+                      width: 230,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: BoxBorder.all(color: Colors.grey.shade700),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(
+                            4.0,
+                          ).copyWith(left: 8.0),
+                          child: PositionFormField(
+                            initialValue: _position,
+                            markers: widget.markers,
+                            onSaved: (position) => _position = position,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 16),
-
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                keyboardType: TextInputType.multiline,
-                minLines: 1,
-                maxLines: 15,
-                decoration: InputDecoration(
-                  labelText: localizations.stationDescription,
-                  hintText: localizations.stationDescriptionHint,
-                  hintMaxLines: 10,
-                  alignLabelWithHint: true,
+                  ],
                 ),
-              ),
-            ],
+
+                SizedBox(height: 16),
+
+                // Description
+                TextFormField(
+                  controller: _descriptionController,
+                  keyboardType: TextInputType.multiline,
+                  minLines: 1,
+                  maxLines: 15,
+                  decoration: InputDecoration(
+                    labelText: localizations.stationDescription,
+                    hintText: localizations.stationDescriptionHint,
+                    hintMaxLines: 10,
+                    alignLabelWithHint: true,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

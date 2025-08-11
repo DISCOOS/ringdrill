@@ -175,7 +175,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                       );
                     }).toList(),
                   ),
-                SafeArea(child: Scalebar(alignment: Alignment.bottomLeft)),
+                Scalebar(alignment: Alignment.bottomLeft),
               ],
             ),
             if (widget.withCross)
@@ -217,16 +217,14 @@ class _MapViewState<K> extends State<MapView<K>> {
                 ),
               ),
             if (widget.withCenter)
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.bottomRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: FloatingActionButton(
-                      heroTag: 'center',
-                      onPressed: _toggleCenter,
-                      child: Icon(Icons.center_focus_strong_rounded),
-                    ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: FloatingActionButton(
+                    heroTag: 'center',
+                    onPressed: _toggleCenter,
+                    child: Icon(Icons.center_focus_strong_rounded),
                   ),
                 ),
               ),

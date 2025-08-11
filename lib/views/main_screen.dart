@@ -124,7 +124,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           ),
-          body: _pages[_currentTab],
+          body: SafeArea(child: _pages[_currentTab]),
           floatingActionButton: page.controller.buildFAB.call(
             context,
             constraints,

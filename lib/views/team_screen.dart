@@ -33,39 +33,41 @@ class _TeamScreenState extends State<TeamScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(team!.name)),
-      body: StreamBuilder(
-        stream: ExerciseService().events,
-        initialData: ExerciseService().last,
-        builder: (context, asyncSnapshot) {
-          final event = asyncSnapshot.data;
-          currentIndex = asyncSnapshot.hasData
-              ? event!.exercise.stationIndex(
-                  widget.teamIndex,
-                  event.currentRound,
-                )
-              : 0;
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Team Info
-                _buildTeamStatus(event),
-                const SizedBox(height: 8),
-                // Schedule Details
-                PhaseHeaders(
-                  expand: true,
-                  titleWidth: 78,
-                  title: AppLocalizations.of(context)!.schedule,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                ),
-                const SizedBox(height: 4),
-                Expanded(child: _buildStationList(event)),
-              ],
-            ),
-          );
-        },
+      body: SafeArea(
+        child: StreamBuilder(
+          stream: ExerciseService().events,
+          initialData: ExerciseService().last,
+          builder: (context, asyncSnapshot) {
+            final event = asyncSnapshot.data;
+            currentIndex = asyncSnapshot.hasData
+                ? event!.exercise.stationIndex(
+                    widget.teamIndex,
+                    event.currentRound,
+                  )
+                : 0;
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Team Info
+                  _buildTeamStatus(event),
+                  const SizedBox(height: 8),
+                  // Schedule Details
+                  PhaseHeaders(
+                    expand: true,
+                    titleWidth: 78,
+                    title: AppLocalizations.of(context)!.schedule,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                  ),
+                  const SizedBox(height: 4),
+                  Expanded(child: _buildStationList(event)),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

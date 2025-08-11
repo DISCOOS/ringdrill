@@ -39,17 +39,19 @@ class _MapScreenState<K> extends State<MapScreen<K>> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
-      body: MapView<K>(
-        key: _mapKey,
-        withCross: widget.withCross,
-        withSearch: widget.withSearch,
-        withCenter: widget.withCenter,
-        initialZoom: widget.initialZoom,
-        initialCenter: widget.initialCenter,
-        interactionFlags: MapConfig.interactive,
-        layers: MapConfig.layers,
-        markers: widget.markers,
-        onMarkerTap: widget.onMarkerTap,
+      body: SafeArea(
+        child: MapView<K>(
+          key: _mapKey,
+          withCross: widget.withCross,
+          withSearch: widget.withSearch,
+          withCenter: widget.withCenter,
+          initialZoom: widget.initialZoom,
+          initialCenter: widget.initialCenter,
+          interactionFlags: MapConfig.interactive,
+          layers: MapConfig.layers,
+          markers: widget.markers,
+          onMarkerTap: widget.onMarkerTap,
+        ),
       ),
     );
   }
