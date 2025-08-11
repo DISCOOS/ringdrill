@@ -5,7 +5,7 @@ import 'package:ringdrill/utils/projection.dart';
 void main() {
   group('projectGlobalUtm - CRS & zone selection', () {
     test('Europe uses ETRS89 / UTM (EPSG:258xx): Bergen', () {
-      final u = projectGlobalUtm(60.39, 5.32); // Bergen
+      final u = projectGlobalUtm(60.39, 5.32, useETRS89: true); // Bergen
       expect(u.crs, 'EPSG:25832'); // 32V exception area
       expect(u.zone, 32);
       expect(u.band, isNot('Z'));
@@ -14,7 +14,7 @@ void main() {
     });
 
     test('Europe uses ETRS89 / UTM (EPSG:258xx): Oslo', () {
-      final u = projectGlobalUtm(59.9139, 10.7522); // Oslo
+      final u = projectGlobalUtm(59.9139, 10.7522, useETRS89: true); // Oslo
       // Oslo is in UTM zone 32 as well (10.75E)
       expect(u.crs, 'EPSG:25832');
       expect(u.zone, 32);
@@ -52,39 +52,39 @@ void main() {
 
   group('Norway 32V and Svalbard exceptions', () {
     test('Norway 32V extension triggers (56–64N, 3–12E)', () {
-      final u = projectGlobalUtm(60.0, 5.0); // west coast
+      final u = projectGlobalUtm(60.0, 5.0, useETRS89: true); // west coast
       expect(u.zone, 32);
       expect(u.crs, startsWith('EPSG:258')); // Europe -> ETRS89
     });
 
     test('Adjacent longitude outside 32V falls back to normal zone (33)', () {
-      final u = projectGlobalUtm(60.0, 13.0);
+      final u = projectGlobalUtm(60.0, 13.0, useETRS89: true);
       expect(u.zone, 33);
       expect(u.crs, 'EPSG:25833');
     });
 
     test('Svalbard 31X band region (0–9E)', () {
-      final u = projectGlobalUtm(78.0, 8.0);
+      final u = projectGlobalUtm(78.0, 8.0, useETRS89: true);
       expect(u.zone, 31);
       expect(u.band, anyOf('W', 'X')); // 72–84N => X; sharing tolerant check
       expect(u.crs, 'EPSG:25831');
     });
 
     test('Svalbard 33X band region (9–21E): Longyearbyen', () {
-      final u = projectGlobalUtm(78.22, 15.65); // Longyearbyen
+      final u = projectGlobalUtm(78.22, 15.65, useETRS89: true); // Longyearbyen
       expect(u.zone, 33);
       expect(u.crs, 'EPSG:25833');
       expect(u.band, anyOf('W', 'X')); // typically 'X'
     });
 
     test('Svalbard 35X band region (21–33E)', () {
-      final u = projectGlobalUtm(78.0, 22.0);
+      final u = projectGlobalUtm(78.0, 22.0, useETRS89: true);
       expect(u.zone, 35);
       expect(u.crs, 'EPSG:25835');
     });
 
     test('Svalbard 37X band region (33–42E)', () {
-      final u = projectGlobalUtm(78.0, 34.0);
+      final u = projectGlobalUtm(78.0, 34.0, useETRS89: true);
       expect(u.zone, 37);
       expect(u.crs, 'EPSG:25837');
     });
