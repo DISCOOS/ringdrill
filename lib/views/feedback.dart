@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
@@ -93,30 +92,16 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
 
   Future<Map<String, dynamic>> _collectAppContext() async {
     final updater = ShorebirdUpdater();
-    final pkg = await PackageInfo.fromPlatform();
     final status = await updater.checkForUpdate();
     final patch = await updater.readCurrentPatch();
 
     if (!mounted) return {};
-    final platform = Theme.of(context).platform.name;
-
-    Map<String, dynamic> device = {'platform': platform};
-    try {
-      // Best-effort; avoid lots of platform branching here.
-      device.addAll({'model': 'unknown'});
-    } catch (_) {}
 
     return {
-      'app': {
-        'name': pkg.appName,
-        'version': pkg.version,
-        'buildNumber': pkg.buildNumber,
-        'patchNumber': patch?.number,
+      'shorebird': {
         'patchStatus': status.name,
+        'patchNumber': patch?.number ?? 0,
       },
-      'device': device,
-      'locale': Localizations.localeOf(context).toLanguageTag(),
-      'timezone': DateTime.now().timeZoneName,
       'route': ModalRoute.of(context)?.settings.name,
       'context': widget.appContext,
     };
@@ -139,12 +124,9 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       final eventId = await Sentry.captureMessage(
         'user_feedback',
         withScope: (scope) async {
-          scope.setContexts('pkg', contextMap['app'] ?? {});
-          scope.setContexts('device', contextMap['device'] ?? {});
-          scope.setContexts('context', contextMap['context'] ?? {});
+          scope.setContexts('shorebird', contextMap['shorebird'] ?? {});
+          scope.setContexts('app_state', contextMap['context'] ?? {});
           scope.setContexts('logs', logs);
-          scope.setTag('locale', contextMap['locale'] ?? '');
-          scope.setTag('timezone', contextMap['timezone'] ?? '');
 
           if (screenshot != null) {
             scope.addAttachment(
