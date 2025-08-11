@@ -11,7 +11,8 @@ import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/main_screen.dart';
 import 'package:ringdrill/views/patch_alert_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
-import 'package:ringdrill/web/pwa_update_web.dart';
+import 'package:ringdrill/web/pwa_update_web.dart'
+    if (dart.library.io) 'package:ringdrill/web/pwa_update_stub.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';

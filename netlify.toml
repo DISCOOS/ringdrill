@@ -1,6 +1,14 @@
+[[plugins]]
+    package = "netlify-plugin-flutter"
+    [plugins.inputs]
+        channel = "stable"   # or "beta" if you really want that
+
 [build]
-    command = "flutter pub get && flutter build web --pwa-strategy=offline-first --web-renderer canvaskit"
+    command = "which flutter && flutter --version && flutter config --enable-web && flutter pub get && flutter build web --release --pwa-strategy=offline-first --web-renderer=canvaskit"
     publish = "build/web"
+
+[build.environment]
+    PUB_CACHE = "/opt/buildhome/.pub-cache"
 
 # Single Page App routing: deep links -> index.html
 [[redirects]]
