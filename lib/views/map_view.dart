@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coordinate_converter/coordinate_converter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/projection.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class MapConfig {
@@ -392,28 +392,12 @@ class _MapViewState<K> extends State<MapView<K>> {
       }
 
       // Try parsing UTM using coordinate_converter
-      final tokens = input.split(RegExp(r'[ ,]+'));
-      if (tokens.length == 4) {
-        final zone = int.tryParse(tokens[0].replaceAll(RegExp(r'[^0-9]'), ''));
-        final band = tokens[0].replaceAll(RegExp(r'[^A-Z]'), '');
-        final x = double.tryParse(tokens[2]);
-        final y = double.tryParse(tokens[3]);
-        if (zone != null && x != null && y != null) {
-          final isSouthern = band.codeUnitAt(0) < 'N'.codeUnitAt(0);
-          final utm = UTMCoordinates(
-            x: x,
-            y: y,
-            zoneNumber: zone,
-            isSouthernHemisphere: isSouthern,
-          );
-          final dd = utm.toDD();
-          final result = LatLng(dd.latitude, dd.longitude);
-          _mapController.move(result, _mapController.camera.zoom);
-          setState(() {
-            _isSearching = false;
-          });
-          return;
-        }
+      final result = input.toLatLngFromUtm();
+      if (result != null) {
+        _mapController.move(result, _mapController.camera.zoom);
+        setState(() {
+          _isSearching = false;
+        });
       }
 
       // Try markers
