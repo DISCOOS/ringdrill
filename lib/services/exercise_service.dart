@@ -71,6 +71,20 @@ class ExerciseEvent {
     required this.roundProgress,
     required this.totalProgress,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'exercise': exercise.toJson(),
+      'phase': phase,
+      'when': when.toIso8601String(),
+      'elapsedTime': elapsedTime,
+      'remainingTime': remainingTime,
+      'currentRound': currentRound,
+      'phaseProgress': phaseProgress,
+      'roundProgress': roundProgress,
+      'totalProgress': totalProgress,
+    };
+  }
 }
 
 class ExerciseService {

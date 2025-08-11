@@ -22,6 +22,7 @@ import 'package:universal_io/io.dart';
 
 import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
+import 'feedback.dart';
 
 class ProgramView extends StatefulWidget {
   const ProgramView({super.key});
@@ -296,10 +297,11 @@ class ProgramPageController extends ScreenController {
             child: Text(localizations.exportProgram),
           ),
           PopupMenuItem(
-            value: 'share', // Add the new option
+            value: 'share',
             enabled: !_exerciseService.isStarted,
             child: Text('Share...'),
           ),
+          PopupMenuItem(value: 'feedback', child: Text('Feedback...')),
         ],
       ),
     ];
@@ -321,9 +323,33 @@ class ProgramPageController extends ScreenController {
         return _export(context, constraints, localizations);
       case 'share':
         return _share(context, constraints, localizations);
+      case 'feedback':
+        return showFeedbackSheet(
+          context,
+          appState: {
+            '_exerciseService': {'lastEvent': _exerciseService.last?.toJson()},
+          },
+        );
       default:
         throw UnimplementedError('Action [$action] not implemented');
     }
+
+    /*
+    IconButton(
+  icon: const Icon(Icons.bug_report),
+  onPressed: () => showFeedbackSheet(
+    context,
+    ringContext: {
+      'exerciseId': current.exerciseId,
+      'phase': current.phase.name,
+      'stationIndex': current.stationIndex,
+      'roundIndex': current.roundIndex,
+      'teamCount': current.teamCount,
+      'stationCount': current.stationCount,
+    },
+  ),
+)
+     */
   }
 
   Future<void> _open(

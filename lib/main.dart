@@ -6,6 +6,7 @@ import 'package:intl/intl_browser.dart'
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
+import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/main_screen.dart';
 import 'package:ringdrill/views/patch_alert_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
@@ -42,8 +43,11 @@ Future<void> main() async {
     // Run app with Sentry on consent
     await SentryFlutter.init(
       SentryConfig.apply,
-      appRunner: () =>
-          runApp(SentryWidget(child: RingDrillApp(isFirstLaunch: false))),
+      appRunner: () => runApp(
+        FeedbackBoundary(
+          child: SentryWidget(child: RingDrillApp(isFirstLaunch: false)),
+        ),
+      ),
     );
   } else {
     // Run app without Sentry if no consent
