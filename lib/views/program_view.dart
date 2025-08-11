@@ -641,6 +641,8 @@ class ProgramPageController extends ScreenController {
 
     await showModalBottomSheet(
       context: context,
+      useSafeArea: true,
+      showDragHandle: true,
       isScrollControlled: extended,
       constraints: extended
           ? constraints
@@ -661,39 +663,48 @@ class ProgramPageController extends ScreenController {
                 top: 16.0,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 16.0,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2.0),
-                        color: Colors.grey[400],
-                      ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8.0),
-                  Expanded(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: exercises.length,
-                      itemBuilder: (context, index) {
-                        final uuid = exercises[index].uuid;
-                        final markers = exercises[index].getLocations(false);
-                        return extended
-                            ? ExerciseCard(
-                                exercise: exercises[index],
-                                localizations: localizations,
-                                markers: markers,
-                                trailing: Switch(
+                    const SizedBox(height: 8.0),
+                    Expanded(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: exercises.length,
+                        itemBuilder: (context, index) {
+                          final uuid = exercises[index].uuid;
+                          final markers = exercises[index].getLocations(false);
+                          return extended
+                              ? ExerciseCard(
+                                  exercise: exercises[index],
+                                  localizations: localizations,
+                                  markers: markers,
+                                  trailing: Switch(
+                                    value: selected.contains(uuid),
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          selected.add(uuid);
+                                        } else {
+                                          selected.remove(uuid);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                )
+                              : SwitchListTile(
+                                  title: Text(
+                                    exercises[index].name,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleLarge,
+                                  ),
                                   value: selected.contains(uuid),
                                   onChanged: (bool? value) {
                                     setState(() {
@@ -704,50 +715,34 @@ class ProgramPageController extends ScreenController {
                                       }
                                     });
                                   },
-                                ),
-                              )
-                            : SwitchListTile(
-                                title: Text(
-                                  exercises[index].name,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                value: selected.contains(uuid),
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      selected.add(uuid);
-                                    } else {
-                                      selected.remove(uuid);
-                                    }
-                                  });
-                                },
-                              );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context, null);
+                                );
                         },
-                        child: Text(localizations.cancel),
                       ),
-                      const SizedBox(width: 8.0),
-                      ElevatedButton(
-                        onPressed: selected.isEmpty
-                            ? null
-                            : () {
-                                Navigator.pop(context, selected);
-                              },
-                        child: Text(localizations.confirm),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16.0),
-                ],
+                    ),
+                    const SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context, null);
+                          },
+                          child: Text(localizations.cancel),
+                        ),
+                        const SizedBox(width: 8.0),
+                        ElevatedButton(
+                          onPressed: selected.isEmpty
+                              ? null
+                              : () {
+                                  Navigator.pop(context, selected);
+                                },
+                          child: Text(localizations.confirm),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16.0),
+                  ],
+                ),
               ),
             );
           },
@@ -766,6 +761,8 @@ class ProgramPageController extends ScreenController {
 
     await showModalBottomSheet(
       context: context,
+      useSafeArea: true,
+      showDragHandle: true,
       isScrollControlled: true, // Allows the bottom sheet to resize properly
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
@@ -782,54 +779,45 @@ class ProgramPageController extends ScreenController {
             top: 16.0,
             bottom: MediaQuery.of(context).viewInsets.bottom + 16.0,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2.0),
-                    color: Colors.grey[400],
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  localizations.enterFileName,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 8.0),
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: localizations.fileNameHint,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
-              ),
-              Text(
-                localizations.enterFileName,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8.0),
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: localizations.fileNameHint,
-                  border: const OutlineInputBorder(),
+                const SizedBox(height: 16.0),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context, null);
+                      },
+                      child: Text(localizations.cancel),
+                    ),
+                    const SizedBox(width: 8.0),
+                    ElevatedButton(
+                      onPressed: () {
+                        fileName = controller.text.trim();
+                        Navigator.pop(context, fileName);
+                      },
+                      child: Text(localizations.confirm),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context, null);
-                    },
-                    child: Text(localizations.cancel),
-                  ),
-                  const SizedBox(width: 8.0),
-                  ElevatedButton(
-                    onPressed: () {
-                      fileName = controller.text.trim();
-                      Navigator.pop(context, fileName);
-                    },
-                    child: Text(localizations.confirm),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16.0),
-            ],
+                const SizedBox(height: 16.0),
+              ],
+            ),
           ),
         );
       },

@@ -263,6 +263,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                                       onMarkerTap: (on) {
                                         showModalBottomSheet(
                                           context: context,
+                                          useSafeArea: true,
+                                          showDragHandle: true,
                                           builder: (BuildContext context) {
                                             return _buildBottomSheet(
                                               event,
@@ -331,14 +333,16 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   ) {
     return Container(
       padding: EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStationStatus(station, event),
-          Divider(),
-          _buildDescription(station, AppLocalizations.of(context)!),
-          Expanded(child: _buildTeamRotations(event)),
-        ],
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStationStatus(station, event),
+            Divider(),
+            _buildDescription(station, AppLocalizations.of(context)!),
+            Expanded(child: _buildTeamRotations(event)),
+          ],
+        ),
       ),
     );
   }
