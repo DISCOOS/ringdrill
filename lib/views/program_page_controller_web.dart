@@ -3,10 +3,12 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path;
 import 'package:path/path.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ProgramPageController extends ProgramPageControllerBase {
   @override
@@ -46,5 +48,31 @@ class ProgramPageController extends ProgramPageControllerBase {
     );
 
     return path == null;
+  }
+
+  @override
+  Future<bool> share(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    DrillFile drillFile,
+  ) async {
+    final xf = XFile.fromData(
+      Uint8List.fromList(drillFile.content),
+      name: drillFile.fileName,
+      mimeType: DrillFile.drillMimeType,
+    );
+
+    final params = ShareParams(
+      text: path.basenameWithoutExtension(drillFile.fileName),
+      files: [xf],
+    );
+
+    final result = await SharePlus.instance.share(params);
+    if (!context.mounted) {
+      return false;
+    }
+
+    return result.status == ShareResultStatus.success;
   }
 }

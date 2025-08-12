@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
-import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -16,7 +14,7 @@ import 'package:ringdrill/views/exercise_control_button.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:universal_io/io.dart';
 
 import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
@@ -295,11 +293,19 @@ abstract class ProgramPageControllerBase extends ScreenController {
             enabled: !exerciseService.isStarted,
             child: Text(localizations.importProgram),
           ),
-          PopupMenuItem(
-            value: 'export',
-            enabled: !exerciseService.isStarted,
-            child: Text(localizations.exportProgram),
-          ),
+
+          if (!Platform.isAndroid)
+            // On Android 10+ export (save as) does not make that much sense.
+            // Access to the file system is highly limited, in practice
+            // only “scoped storage” is available to this application for
+            // write operations, which is hard to find again. Most modern apps
+            // use SEND actions (share) instead, allowing the user decide which
+            // app on the mobile os that should receive it (could be Dropbox, SMS etc).
+            PopupMenuItem(
+              value: 'export',
+              enabled: !exerciseService.isStarted,
+              child: Text(localizations.exportProgram),
+            ),
           PopupMenuItem(
             value: 'share',
             enabled: !exerciseService.isStarted,
@@ -483,25 +489,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     BoxConstraints constraints,
     AppLocalizations localizations,
     DrillFile drillFile,
-  ) async {
-    final xf = XFile.fromData(
-      Uint8List.fromList(drillFile.content),
-      name: drillFile.fileName,
-      mimeType: DrillFile.drillMimeType,
-    );
-
-    final params = ShareParams(
-      text: path.basenameWithoutExtension(drillFile.fileName),
-      files: [xf],
-    );
-
-    final result = await SharePlus.instance.share(params);
-    if (!context.mounted) {
-      return false;
-    }
-
-    return result.status == ShareResultStatus.success;
-  }
+  );
 
   Future<void> _share(
     BuildContext context,

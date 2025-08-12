@@ -53,12 +53,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
-  filesystem_picker: ^4.1.0
   path_provider: ^2.1.5
   path: ^1.9.1
   universal_io: ^2.2.2
-  legalize: ^1.2.2
-  external_path: ^2.2.0
   share_plus: ^11.0.0
   archive: ^4.0.7
   proj4dart: ^2.1.0

@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:math';
 
-import 'package:external_path/external_path.dart';
-import 'package:filesystem_picker/filesystem_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:universal_io/io.dart';
 
 class ProgramPageController extends ProgramPageControllerBase {
@@ -18,15 +17,15 @@ class ProgramPageController extends ProgramPageControllerBase {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    String? filePath = await _pickFileOrDir(
-      context,
-      constraints,
-      localizations.selectFile,
-      FilesystemType.file,
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      dialogTitle: localizations.openProgram,
+      allowedExtensions: ['drill'],
     );
-    if (filePath == null) return null;
 
-    final file = File(filePath);
+    if (result == null) return null;
+
+    final file = File(result.files.first.xFile.path);
     return DrillFile.fromFile(file);
   }
 
@@ -37,16 +36,15 @@ class ProgramPageController extends ProgramPageControllerBase {
     AppLocalizations localizations,
     DrillFile drillFile,
   ) async {
-    String? dirPath = await _pickFileOrDir(
-      context,
-      constraints,
-      localizations.selectDirectory,
-      FilesystemType.folder,
+    final dirPath = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: localizations.selectAction,
     );
-    if (!context.mounted || dirPath == null) return false;
+
+    if (dirPath == null) return false;
 
     // Write content to local file system
-    Directory(dirPath).createSync(recursive: true);
+    final dir = Directory(dirPath);
+    if (!dir.existsSync()) Directory(dirPath).createSync(recursive: true);
     File(
       path.join(dirPath, drillFile.fileName),
     ).writeAsBytesSync(drillFile.content);
@@ -54,66 +52,37 @@ class ProgramPageController extends ProgramPageControllerBase {
     return true;
   }
 
-  static Future<String?> _pickFileOrDir(
+  @override
+  Future<bool> share(
     BuildContext context,
     BoxConstraints constraints,
-    String title,
-    FilesystemType type,
+    AppLocalizations localizations,
+    DrillFile drillFile,
   ) async {
-    final localizations = AppLocalizations.of(context)!;
-    final docsDirPath = await ExternalPath.getExternalStoragePublicDirectory(
-      ExternalPath.DIRECTORY_DOCUMENTS,
+    // Create a temp folder for export.
+    final String tempDirPath = path.join(
+      (await getTemporaryDirectory()).path,
+      'program_share',
     );
-    final downloadsDirPath =
-        await ExternalPath.getExternalStoragePublicDirectory(
-          ExternalPath.DIRECTORY_DOWNLOAD,
-        );
+    if (!context.mounted) return false;
 
-    final extDirs = Platform.isAndroid
-        ? await getExternalStorageDirectories()
-        : [];
+    final tempDir = Directory(tempDirPath);
+    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+    tempDir.createSync(recursive: true);
 
-    if (!context.mounted) return null;
+    final filePath = path.join(tempDirPath, drillFile.fileName);
+    File(filePath).writeAsBytesSync(drillFile.content);
 
-    int i = 1;
-    final result = await FilesystemPicker.openBottomSheet(
-      context: context,
-      title: title,
-      fsType: type,
-      showGoUp: true,
-      constraints: constraints.copyWith(
-        minHeight: 400,
-        maxHeight: max(400, constraints.maxHeight * 0.6),
-      ),
-      pickText: localizations.select,
-      rootName: localizations.storage,
-      fileTileSelectMode: FileTileSelectMode.wholeTile,
-      shortcuts: [
-        FilesystemPickerShortcut(
-          name: localizations.documents,
-          path: Directory(docsDirPath),
-          icon: Icons.folder,
-          isSelectable: false,
-        ),
-        FilesystemPickerShortcut(
-          name: localizations.downloads,
-          path: Directory(downloadsDirPath),
-          icon: Icons.folder,
-          isSelectable: false,
-        ),
-        if (extDirs != null)
-          ...extDirs.map(
-            (dir) => FilesystemPickerShortcut(
-              name:
-                  '${localizations.sdCard} ${i++} '
-                  '(${path.basenameWithoutExtension(dir.path)})',
-              path: dir,
-              icon: Icons.snippet_folder,
-              isSelectable: false,
-            ),
-          ),
-      ],
+    final params = ShareParams(
+      text: path.basenameWithoutExtension(drillFile.fileName),
+      files: [XFile(filePath, mimeType: drillFile.mimeType)],
     );
-    return result;
+
+    final result = await SharePlus.instance.share(params);
+    if (!context.mounted) {
+      return false;
+    }
+
+    return result.status == ShareResultStatus.success;
   }
 }
