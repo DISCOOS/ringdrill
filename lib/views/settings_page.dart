@@ -161,7 +161,7 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(16.0),
           children: [
             _buildAnalyticsConsentSection(),
-            if (kIsWeb) ...[
+            if (!kIsWeb) ...[
               const Divider(),
               _buildNotificationSettingsSection(),
             ],
