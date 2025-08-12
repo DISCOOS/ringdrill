@@ -42,8 +42,26 @@ void listenForPwaUpdates({required OnUpdateReady onUpdateReady}) {
       }).toJS,
     );
 
+    // --- periodic and visibility checks ---
+
     // 4) Proactively check for updates at startup
     reg.update();
+
+    // 5) Check when tab becomes visible again
+    web.document.addEventListener(
+      'visibilitychange',
+      (() {
+        if (web.document.visibilityState == 'visible') {
+          reg.update();
+        }
+      }).toJS,
+    );
+
+    // 6) Check every 6 hours
+    web.window.setInterval(
+      (() => reg.update()).toJS,
+      (6 * 60 * 60 * 1000).toJS,
+    );
   }
 
   // Ready returns a promise -> Future in Dart
