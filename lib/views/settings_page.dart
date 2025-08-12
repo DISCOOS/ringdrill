@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/notification_service.dart';
@@ -160,8 +161,10 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(16.0),
           children: [
             _buildAnalyticsConsentSection(),
-            const Divider(),
-            _buildNotificationSettingsSection(),
+            if (kIsWeb) ...[
+              const Divider(),
+              _buildNotificationSettingsSection(),
+            ],
           ],
         ),
       ),
