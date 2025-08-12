@@ -76,17 +76,18 @@ class _RingDrillAppState extends State<RingDrillApp> {
   void initState() {
     if (!kIsWeb) _startNotificationService();
     if (kIsWeb) {
-      listenForPwaUpdates(() {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            showCloseIcon: true,
-            dismissDirection: DismissDirection.endToStart,
-            content: Text(
-              AppLocalizations.of(context)!.appUpdatedPleaseCloseAndOpen,
+      listenForPwaUpdates(
+        onUpdateReady: (reloadNow) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              showCloseIcon: true,
+              dismissDirection: DismissDirection.endToStart,
+              content: Text(AppLocalizations.of(context)!.appUpdatedRestarting),
             ),
-          ),
-        );
-      });
+          );
+          reloadNow();
+        },
+      );
     }
 
     super.initState();

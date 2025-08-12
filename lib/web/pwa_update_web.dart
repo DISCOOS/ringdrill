@@ -1,53 +1,51 @@
-// pwa_update_web.dart  (web-only)
-import 'dart:js_util' as js_util;
+// lib/web/pwa_update_web.dart
+import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
-/// Add a JS 'event' listener using allowInterop
-void _on(
-  web.EventTarget target,
-  String type,
-  void Function(web.Event) handler,
-) {
-  js_util.callMethod(target, 'addEventListener', [
-    type,
-    js_util.allowInterop(handler),
-  ]);
-}
+typedef OnUpdateReady = void Function(void Function() reloadNow);
 
-/// Call at startup on web; fires when a new SW is installed while a controller exists
-Future<void> listenForPwaUpdates(void Function() onUpdateReady) async {
-  final swc = web.window.navigator.serviceWorker;
+void listenForPwaUpdates({required OnUpdateReady onUpdateReady}) {
+  final swContainer = web.window.navigator.serviceWorker;
 
-  // Use the "ready" registration (Promise -> Future)
-  final reg = await js_util.promiseToFuture<web.ServiceWorkerRegistration>(
-    swc.ready,
-  );
+  void wire(web.ServiceWorkerRegistration reg) {
+    // 1) Detect a newly found SW
+    reg.addEventListener(
+      'updatefound',
+      ((web.Event _) {
+        final installing = reg.installing;
+        if (installing == null) return;
 
-  void watchSW(web.ServiceWorker sw) {
-    void maybeNotify() {
-      if (sw.state == 'installed' && swc.controller != null) {
-        onUpdateReady();
-      }
-    }
+        // 2) When its state hits 'installed' and there's a waiter, prompt to reload
+        installing.addEventListener(
+          'statechange',
+          ((web.Event _) {
+            if (installing.state == 'installed' && reg.waiting != null) {
+              onUpdateReady(() {
+                reg.waiting?.postMessage({'type': 'SKIP_WAITING'}.jsify());
+              });
+            }
+          }).toJS,
+        );
+      }).toJS,
+    );
 
-    // In case it's already installed
-    maybeNotify();
-    _on(sw, 'statechange', (_) => maybeNotify());
+    // 3) When the controller changes, the new SW is active => reload once
+    var reloaded = false;
+    swContainer.addEventListener(
+      'controllerchange',
+      ((web.Event _) {
+        if (!reloaded) {
+          reloaded = true;
+          web.window.location.reload();
+        }
+      }).toJS,
+    );
+
+    // 4) Proactively check for updates at startup
+    reg.update();
   }
 
-  // If there is already a waiting SW (page was backgrounded), watch it
-  final waiting = reg.waiting;
-  if (waiting != null) watchSW(waiting);
-
-  // When a new one is found, watch the installing worker
-  _on(reg, 'updatefound', (_) {
-    final installing = reg.installing;
-    if (installing != null) watchSW(installing);
-  });
-
-  // Optional: nudge the browser to check when window regains focus
-  _on(web.window, 'focus', (_) {
-    js_util.callMethod(reg, 'update', const []);
-  });
+  // Ready returns a promise -> Future in Dart
+  swContainer.ready.toDart.then(wire);
 }
