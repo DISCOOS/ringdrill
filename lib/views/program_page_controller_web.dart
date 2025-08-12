@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/program_view.dart';
@@ -16,13 +17,17 @@ class ProgramPageController extends ProgramPageControllerBase {
   ) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: [DrillFile.drillMimeType],
+      dialogTitle: localizations.openProgram,
+      allowedExtensions: [DrillFile.drillExtension],
     );
 
     if (result == null) return null;
 
     final content = await result.files.first.xFile.readAsBytes();
-    return DrillFile.fromBytes(result.files.first.name, content);
+    return DrillFile.fromBytes(
+      basename(result.files.first.xFile.path),
+      content,
+    );
   }
 
   @override
@@ -37,7 +42,7 @@ class ProgramPageController extends ProgramPageControllerBase {
       type: FileType.custom,
       fileName: drillFile.fileName,
       bytes: Uint8List.fromList(drillFile.content),
-      allowedExtensions: [DrillFile.drillMimeType],
+      allowedExtensions: [DrillFile.drillExtension],
     );
 
     return path == null;
