@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -333,23 +334,6 @@ class ProgramPageController extends ScreenController {
       default:
         throw UnimplementedError('Action [$action] not implemented');
     }
-
-    /*
-    IconButton(
-  icon: const Icon(Icons.bug_report),
-  onPressed: () => showFeedbackSheet(
-    context,
-    ringContext: {
-      'exerciseId': current.exerciseId,
-      'phase': current.phase.name,
-      'stationIndex': current.stationIndex,
-      'roundIndex': current.roundIndex,
-      'teamCount': current.teamCount,
-      'stationCount': current.stationCount,
-    },
-  ),
-)
-     */
   }
 
   Future<void> _open(
@@ -368,10 +352,13 @@ class ProgramPageController extends ScreenController {
       final file = File(filePath);
 
       try {
-        final program = await _programService.openFromLocalFile(file);
+        final drillFile = DrillFile.fromFile(file);
+        final program = await _programService.openProgram(
+          DrillFile.fromFile(file),
+        );
         if (program == null) return;
         if (context.mounted) {
-          _showSnackBar(context, localizations.openSuccess(program.name));
+          _showSnackBar(context, localizations.openSuccess(drillFile.fileName));
         }
       } catch (e, stackTrace) {
         if (context.mounted) {
@@ -399,8 +386,9 @@ class ProgramPageController extends ScreenController {
       final file = File(filePath);
 
       try {
-        final program = await _programService.importFromLocalFile(
-          file,
+        final drillFile = DrillFile.fromFile(file);
+        final program = await _programService.importProgram(
+          drillFile,
           onSelect: (items) async {
             final selected = await _selectExercises(
               context,
@@ -418,7 +406,10 @@ class ProgramPageController extends ScreenController {
         if (program == null) return;
 
         if (context.mounted) {
-          _showSnackBar(context, localizations.importSuccess(program.name));
+          _showSnackBar(
+            context,
+            localizations.importSuccess(drillFile.fileName),
+          );
         }
       } catch (e, stackTrace) {
         if (context.mounted) {
@@ -467,7 +458,7 @@ class ProgramPageController extends ScreenController {
           );
           if (!context.mounted) return;
           if (file != null) {
-            _showSnackBar(context, localizations.exportSuccess(file.path));
+            _showSnackBar(context, localizations.exportSuccess(file.fileName));
           }
         } on Exception catch (e, stackTrace) {
           if (context.mounted) {
@@ -515,25 +506,27 @@ class ProgramPageController extends ScreenController {
 
     if (fileName != null) {
       try {
-        final file = await _exportToLocal(
+        final drillFile = await _exportToLocal(
           context,
           localizations,
           fileName,
-          tempDir.path,
+          tempDirPath,
           selected,
         );
 
-        if (file != null) {
+        if (drillFile != null) {
+          final filePath = path.join(tempDirPath, drillFile.fileName);
+
           final params = ShareParams(
-            text: path.basenameWithoutExtension(file.path),
-            files: [XFile(file.path, mimeType: drillMimeType)],
+            text: path.basenameWithoutExtension(drillFile.fileName),
+            files: [XFile(filePath, mimeType: drillFile.mimeType)],
           );
 
           final result = await SharePlus.instance.share(params);
           if (!context.mounted) return;
 
           if (result.status == ShareResultStatus.success) {
-            _showSnackBar(context, localizations.shareSuccess(file.path));
+            _showSnackBar(context, localizations.shareSuccess(filePath));
           }
         }
       } on Exception catch (e, stackTrace) {
@@ -546,7 +539,7 @@ class ProgramPageController extends ScreenController {
     tempDir.deleteSync(recursive: true);
   }
 
-  Future<File?> _exportToLocal(
+  Future<DrillFile?> _exportToLocal(
     BuildContext context,
     AppLocalizations localizations,
     String fileName,
@@ -554,12 +547,19 @@ class ProgramPageController extends ScreenController {
     List<String> exercises,
   ) async {
     if (fileName.isNotEmpty) {
-      return await _programService.exportToLocalFile(
+      final drillFile = await _programService.exportProgram(
         nanoid(10),
         fileName,
-        Directory(dirPath),
         exercises,
       );
+
+      // Write content to local file system
+      Directory(dirPath).createSync(recursive: true);
+      File(
+        path.join(dirPath, drillFile.fileName),
+      ).writeAsBytesSync(drillFile.content);
+
+      return drillFile;
     } else {
       _showSnackBar(context, localizations.invalidFileName);
     }

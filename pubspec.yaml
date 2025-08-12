@@ -54,7 +54,6 @@ dependencies:
     sdk: flutter
   intl: any
   filesystem_picker: ^4.1.0
-  flutter_archive: ^6.0.3
   path_provider: ^2.1.5
   path: ^1.9.1
   universal_io: ^2.2.2

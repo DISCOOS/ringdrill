@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/services/shared_file_channel.dart';
@@ -64,10 +65,12 @@ class _SharedFileWidgetState extends State<SharedFileWidget> {
           );
           switch (action) {
             case 'open':
-              unawaited(ProgramService().openFromLocalFile(file));
+              unawaited(ProgramService().openProgram(DrillFile.fromFile(file)));
               break;
             case 'import':
-              unawaited(ProgramService().importFromLocalFile(file));
+              unawaited(
+                ProgramService().importProgram(DrillFile.fromFile(file)),
+              );
               break;
           }
         });

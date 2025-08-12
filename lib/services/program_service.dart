@@ -1,12 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter_archive/flutter_archive.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:legalize/legalize.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/program_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -14,9 +9,6 @@ import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:universal_io/io.dart';
-
-const drillMimeType = 'application/x-drill';
 
 typedef OnSelectExercises =
     Future<Iterable<Exercise>?> Function(Iterable<Exercise> items);
@@ -30,7 +22,7 @@ enum ProgramEventType {
 }
 
 class ProgramEvent {
-  final File? file;
+  final DrillFile? file;
   final Program program;
   final Exercise? exercise;
   final ProgramEventType type;
@@ -47,13 +39,13 @@ class ProgramEvent {
         exercise: exercise,
       );
 
-  factory ProgramEvent.opened(Program program, File file) =>
+  factory ProgramEvent.opened(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programOpened, program, file: file);
 
-  factory ProgramEvent.imported(Program program, File file) =>
+  factory ProgramEvent.imported(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programImported, program, file: file);
 
-  factory ProgramEvent.exported(Program program, File file) =>
+  factory ProgramEvent.exported(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programExported, program, file: file);
 }
 
@@ -137,99 +129,28 @@ class ProgramService {
   }
 
   /// Exports a Program instance into a .drill file
-  Future<File> exportToLocalFile(
+  Future<DrillFile> exportProgram(
     String uuid,
     String fileName,
-    Directory destinationDir,
     List<String> exercises,
   ) async {
     final program = createProgram(uuid: uuid, name: fileName);
-    // Create a temp folder for export
-    final String tempDirPath = path.join(
-      (await getTemporaryDirectory()).path,
-      'program_export',
-    );
-    final tempDir = Directory(tempDirPath);
-    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
-    tempDir.createSync(recursive: true);
 
-    // Serialize Program's metadata
-    File(
-      path.join(tempDirPath, 'metadata.json'),
-    ).writeAsStringSync(jsonEncode(program.metadata.toJson()));
+    final drillFile = DrillFile.fromProgram(program, fileName);
 
-    // Serialize Exercises
-    final exercisesDir = Directory(path.join(tempDirPath, 'exercises'));
-    exercisesDir.createSync();
-    for (var exercise in program.exercises.where(
-      (e) => exercises.contains(e.uuid),
-    )) {
-      File(
-        path.join(exercisesDir.path, '${exercise.uuid}.json'),
-      ).writeAsStringSync(jsonEncode(exercise.toJson()));
-    }
+    _controller.add(ProgramEvent.exported(program, drillFile));
 
-    // Serialize Teams
-    final teamsDir = Directory(path.join(tempDirPath, 'teams'));
-    teamsDir.createSync();
-    for (var team in program.teams) {
-      File(
-        path.join(teamsDir.path, '${team.uuid}.json'),
-      ).writeAsStringSync(jsonEncode(team.toJson()));
-    }
-
-    // Serialize Sessions
-    final sessionsDir = Directory(path.join(tempDirPath, 'sessions'));
-    sessionsDir.createSync();
-    for (var session in program.sessions) {
-      File(
-        path.join(sessionsDir.path, '${session.uuid}.json'),
-      ).writeAsStringSync(jsonEncode(session.toJson()));
-    }
-
-    // Serialize Program itself (without nested objects)
-    File(path.join(tempDirPath, 'program.json')).writeAsStringSync(
-      jsonEncode(
-        program
-            .copyWith(
-              teams: [],
-              sessions: [], // Exclude sessions: handled as separate files
-              exercises: [], // Exclude exercises: handled as separate files
-            )
-            .toJson(),
-      ),
-    );
-
-    // Zip the files into a .drill file
-    final zipFile = File(
-      path.join(destinationDir.path, '${legalizeFilename(program.name)}.drill'),
-    );
-    if (zipFile.existsSync()) {
-      zipFile.deleteSync();
-    }
-
-    await ZipFile.createFromDirectory(
-      sourceDir: tempDir,
-      zipFile: zipFile,
-      recurseSubDirs: true,
-    );
-
-    tempDir.deleteSync(recursive: true);
-
-    _controller.add(ProgramEvent.exported(program, zipFile));
-
-    return zipFile;
+    return drillFile;
   }
 
   /// Clears current and open Program from a .drill file
-  Future<Program?> openFromLocalFile(
-    File file, {
-    OnExtracting? onExtracting,
+  Future<Program?> openProgram(
+    DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
     final deleted = await _repo.deleteAllExercises();
     try {
-      final program = await _importFromLocalFile(file, onExtracting, onSelect);
+      final program = await _importProgram(file, onSelect);
       if (program != null) {
         ExerciseService().stop();
         _controller.add(ProgramEvent.opened(program, file));
@@ -245,12 +166,11 @@ class ProgramService {
   }
 
   /// Imports a Program from a .drill file
-  Future<Program?> importFromLocalFile(
-    File file, {
-    OnExtracting? onExtracting,
+  Future<Program?> importProgram(
+    DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
-    final program = await _importFromLocalFile(file, onExtracting, onSelect);
+    final program = await _importProgram(file, onSelect);
     if (program != null) {
       ExerciseService().stop();
       _controller.add(ProgramEvent.imported(program, file));
@@ -259,107 +179,25 @@ class ProgramService {
     return program;
   }
 
-  Future<Program?> _importFromLocalFile(
-    File file,
-    OnExtracting? onExtracting,
+  Future<Program?> _importProgram(
+    DrillFile file,
     OnSelectExercises? onSelect,
   ) async {
-    const numberOfDirsInDrillFileFormat = 3;
-    final t = (await getTemporaryDirectory()).path;
-    final String tempDirPath = path.join(t, 'program_import');
-    final tempDir = Directory(tempDirPath);
-    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
-    tempDir.createSync(recursive: true);
-
-    final unzippedDirs = <String>[];
-
-    // Extract files from archive
-    await ZipFile.extractToDirectory(
-      zipFile: file,
-      onExtracting: (zipEntry, progress) {
-        // HACK: I do not know why, but when unzipping a shared file
-        // the project file name (which is not part of the file url) is
-        // created first before files are unzipped into i. When opening
-        // a file from local storage this does not happen
-        if (zipEntry.isDirectory) {
-          unzippedDirs.add(zipEntry.name);
-        }
-        return onExtracting != null
-            ? onExtracting(zipEntry, progress)
-            : ZipFileOperation.includeItem;
-      },
-      destinationDir: tempDir,
-    );
-
-    for (final it in tempDir.listSync()) {
-      debugPrint(it.toString());
-    }
-
-    if (unzippedDirs.isEmpty) {
-      throw Exception('[IMPORT] ${file.path} contains no data');
-    }
-
-    // Assume the extra folder i the root folder of unzipped files
-    final unzippedDirPath = unzippedDirs.length > numberOfDirsInDrillFileFormat
-        ? path.join(tempDirPath, unzippedDirs.first)
-        : tempDirPath;
-
-    // Deserialize Program
-    final programJson = jsonDecode(
-      File(path.join(unzippedDirPath, 'program.json')).readAsStringSync(),
-    );
-    final program = Program.fromJson(programJson);
-
-    // Populate Exercises
-    final exercises = Directory(path.join(unzippedDirPath, 'exercises'))
-        .listSync()
-        .where((e) => e.path.endsWith('.json'))
-        .map(
-          (file) =>
-              Exercise.fromJson(jsonDecode(File(file.path).readAsStringSync())),
-        )
-        .toList();
+    final program = file.program();
 
     final selected = onSelect == null
-        ? exercises
-        : await onSelect.call(exercises);
+        ? program.exercises
+        : await onSelect.call(program.exercises);
 
     // User canceled
     if (selected == null) return null;
 
-    // Populate Teams
-    final teams = Directory(path.join(unzippedDirPath, 'teams'))
-        .listSync()
-        .where((e) => e.path.endsWith('.json'))
-        .map(
-          (file) =>
-              Team.fromJson(jsonDecode(File(file.path).readAsStringSync())),
-        )
-        .toList();
-
-    // Populate Sessions
-    final sessions = Directory(path.join(unzippedDirPath, 'sessions'))
-        .listSync()
-        .where((e) => e.path.endsWith('.json'))
-        .map(
-          (file) =>
-              Session.fromJson(jsonDecode(File(file.path).readAsStringSync())),
-        )
-        .toList();
-
-    // Reconstruct the Program with nested objects
-    final fullProgram = program.copyWith(
-      teams: teams,
-      sessions: sessions,
-      exercises: selected.toList(),
-    );
-
-    tempDir.deleteSync(recursive: true);
-
-    for (final it in fullProgram.exercises) {
+    for (final it in selected) {
       _repo.saveExercise(it);
     }
-    return fullProgram;
+
+    // Reconstruct the Program with nested objects
+    return program.copyWith(exercises: selected.toList());
   }
 
   List<Team> loadTeams() {
