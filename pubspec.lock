@@ -281,6 +281,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  file_picker:
+    dependency: "direct main"
+    description:
+      name: file_picker
+      sha256: ef7d2a085c1b1d69d17b6842d0734aad90156de08df6bd3c12496d0bd6ddf8e2
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.3.1"
   filesystem_picker:
     dependency: "direct main"
     description:
@@ -371,6 +379,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.6"
+  flutter_plugin_android_lifecycle:
+    dependency: transitive
+    description:
+      name: flutter_plugin_android_lifecycle
+      sha256: "6382ce712ff69b0f719640ce957559dde459e55ecd433c767e06d139ddf16cab"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.29"
   flutter_test:
     dependency: "direct dev"
     description: flutter

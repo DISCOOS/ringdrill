@@ -13,7 +13,7 @@ import 'package:ringdrill/views/team_exercise_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 
-import 'exercise_controll_button.dart';
+import 'exercise_control_button.dart';
 import 'exercise_form_screen.dart';
 
 class CoordinatorScreen extends StatefulWidget {

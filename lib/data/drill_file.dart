@@ -7,10 +7,10 @@ import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:universal_io/io.dart';
 
-const drillVersion1_0 = '1.0';
-const drillMimeType = 'application/x-drill';
-
 class DrillFile {
+  static const drillVersion1_0 = '1.0';
+  static const drillMimeType = 'application/x-drill';
+
   DrillFile({
     required this.version,
     required this.fileName,
@@ -71,6 +71,15 @@ class DrillFile {
     return DrillFile(
       content: content,
       fileName: path.basename(file.path),
+      version: drillVersion1_0,
+      mimeType: drillMimeType,
+    );
+  }
+
+  static DrillFile fromBytes(String fileName, List<int> content) {
+    return DrillFile(
+      content: content,
+      fileName: fileName,
       version: drillVersion1_0,
       mimeType: drillMimeType,
     );

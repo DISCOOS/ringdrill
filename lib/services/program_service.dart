@@ -78,16 +78,20 @@ class ProgramService {
     required String uuid,
     required String name,
     String description = '',
+    List<String> exercises = const [],
   }) {
     final now = DateTime.now();
+    final all = _repo.loadExercises();
     return Program(
       uuid: uuid,
       name: name,
       description: description,
       metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
-      sessions: [],
+      sessions: const [],
       teams: _repo.loadTeams(),
-      exercises: _repo.loadExercises(),
+      exercises: exercises.isEmpty
+          ? all
+          : all.where((e) => exercises.contains(e.uuid)).toList(),
     );
   }
 
@@ -119,11 +123,12 @@ class ProgramService {
   }
 
   Future<void> deleteExercise(String uuid, [bool replace = false]) async {
+    final program = createProgram(uuid: uuid, name: uuid);
     final deleted = await _repo.deleteExercise(uuid);
     if (deleted != null) {
       _controller.add(
         // TODO: Make Program persistent
-        ProgramEvent.deleted(createProgram(uuid: uuid, name: uuid), deleted),
+        ProgramEvent.deleted(program, deleted),
       );
     }
   }
@@ -132,7 +137,7 @@ class ProgramService {
   Future<DrillFile> exportProgram(
     String uuid,
     String fileName,
-    List<String> exercises,
+    List<String> selected,
   ) async {
     final program = createProgram(uuid: uuid, name: fileName);
 

@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
-import 'package:external_path/external_path.dart';
-import 'package:filesystem_picker/filesystem_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -14,16 +12,18 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/exercise_controll_button.dart';
+import 'package:ringdrill/views/exercise_control_button.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:universal_io/io.dart';
 
 import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
 import 'feedback.dart';
+
+export 'program_page_controller_web.dart'
+    if (dart.library.io) 'program_page_controller_native.dart';
 
 class ProgramView extends StatefulWidget {
   const ProgramView({super.key});
@@ -243,9 +243,12 @@ class ExerciseCard extends StatelessWidget {
   }
 }
 
-class ProgramPageController extends ScreenController {
-  final _programService = ProgramService();
-  final _exerciseService = ExerciseService();
+abstract class ProgramPageControllerBase extends ScreenController {
+  @protected
+  final programService = ProgramService();
+
+  @protected
+  final exerciseService = ExerciseService();
 
   @override
   String title(BuildContext context) =>
@@ -268,7 +271,7 @@ class ProgramPageController extends ScreenController {
 
     if (context.mounted && newExercise != null) {
       // Add the new exercise and reload the list
-      await _programService.saveExercise(
+      await programService.saveExercise(
         AppLocalizations.of(context)!,
         newExercise,
       );
@@ -284,22 +287,22 @@ class ProgramPageController extends ScreenController {
         itemBuilder: (context) => [
           PopupMenuItem(
             value: 'open',
-            enabled: !_exerciseService.isStarted,
+            enabled: !exerciseService.isStarted,
             child: Text(localizations.openProgram),
           ),
           PopupMenuItem(
             value: 'import',
-            enabled: !_exerciseService.isStarted,
+            enabled: !exerciseService.isStarted,
             child: Text(localizations.importProgram),
           ),
           PopupMenuItem(
             value: 'export',
-            enabled: !_exerciseService.isStarted,
+            enabled: !exerciseService.isStarted,
             child: Text(localizations.exportProgram),
           ),
           PopupMenuItem(
             value: 'share',
-            enabled: !_exerciseService.isStarted,
+            enabled: !exerciseService.isStarted,
             child: Text('Share...'),
           ),
           PopupMenuItem(value: 'feedback', child: Text('Feedback...')),
@@ -328,7 +331,7 @@ class ProgramPageController extends ScreenController {
         return showFeedbackSheet(
           context,
           appState: {
-            '_exerciseService': {'lastEvent': _exerciseService.last?.toJson()},
+            '_exerciseService': {'lastEvent': exerciseService.last?.toJson()},
           },
         );
       default:
@@ -336,33 +339,31 @@ class ProgramPageController extends ScreenController {
     }
   }
 
+  @protected
+  Future<DrillFile?> open(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+  );
+
   Future<void> _open(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    String? filePath = await _pickFileOrDir(
-      context,
-      constraints,
-      localizations.selectFile,
-      FilesystemType.file,
-    );
+    final drillFile = await open(context, constraints, localizations);
+    if (!context.mounted) return;
 
-    if (filePath != null) {
-      final file = File(filePath);
-
+    if (drillFile != null) {
       try {
-        final drillFile = DrillFile.fromFile(file);
-        final program = await _programService.openProgram(
-          DrillFile.fromFile(file),
-        );
+        final program = await programService.openProgram(drillFile);
         if (program == null) return;
         if (context.mounted) {
           _showSnackBar(context, localizations.openSuccess(drillFile.fileName));
         }
       } catch (e, stackTrace) {
         if (context.mounted) {
-          _showSnackBar(context, localizations.openFailure(filePath));
+          _showSnackBar(context, localizations.openFailure(drillFile.fileName));
         }
         unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       }
@@ -374,20 +375,12 @@ class ProgramPageController extends ScreenController {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    String? filePath = await _pickFileOrDir(
-      context,
-      constraints,
-      localizations.selectFile,
-      FilesystemType.file,
-    );
+    final drillFile = await open(context, constraints, localizations);
     if (!context.mounted) return;
 
-    if (filePath != null) {
-      final file = File(filePath);
-
+    if (drillFile != null) {
       try {
-        final drillFile = DrillFile.fromFile(file);
-        final program = await _programService.importProgram(
+        final program = await programService.importProgram(
           drillFile,
           onSelect: (items) async {
             final selected = await _selectExercises(
@@ -413,12 +406,23 @@ class ProgramPageController extends ScreenController {
         }
       } catch (e, stackTrace) {
         if (context.mounted) {
-          _showSnackBar(context, localizations.importFailure(file.path));
+          _showSnackBar(
+            context,
+            localizations.importFailure(drillFile.fileName),
+          );
         }
         unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       }
     }
   }
+
+  @protected
+  Future<bool> save(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    DrillFile drillFile,
+  );
 
   Future<void> _export(
     BuildContext context,
@@ -428,51 +432,75 @@ class ProgramPageController extends ScreenController {
     final selected = await _selectExercises(
       context,
       localizations.exportProgram,
-      _programService.loadExercises(),
+      programService.loadExercises(),
       constraints,
       localizations,
       false,
     );
     if (selected.isEmpty || !context.mounted) return;
 
+    // Ask the user for the file name
     final fileName = await _promptFileName(context, localizations);
     if (!context.mounted) return;
 
     if (fileName != null) {
-      String? dirPath = await _pickFileOrDir(
-        context,
-        constraints,
-        localizations.selectDirectory,
-        FilesystemType.folder,
+      final drillFile = await programService.exportProgram(
+        nanoid(10),
+        fileName,
+        selected,
       );
-      if (!context.mounted) return;
-      if (dirPath != null) {
-        // Ask the user for the file name
-        try {
-          final file = await _exportToLocal(
+      try {
+        if (!context.mounted) return;
+
+        final result = await save(
+          context,
+          constraints,
+          localizations,
+          drillFile,
+        );
+        if (!context.mounted) return;
+        if (result) {
+          _showSnackBar(
             context,
-            localizations,
-            fileName,
-            dirPath,
-            selected,
+            localizations.exportSuccess(drillFile.fileName),
           );
-          if (!context.mounted) return;
-          if (file != null) {
-            _showSnackBar(context, localizations.exportSuccess(file.fileName));
-          }
-        } on Exception catch (e, stackTrace) {
-          if (context.mounted) {
-            _showSnackBar(
-              context,
-              localizations.exportFailure(
-                path.join(dirPath, '$fileName.drill'),
-              ),
-            );
-          }
-          unawaited(Sentry.captureException(e, stackTrace: stackTrace));
         }
+      } on Exception catch (e, stackTrace) {
+        if (context.mounted) {
+          _showSnackBar(
+            context,
+            localizations.exportFailure(drillFile.fileName),
+          );
+        }
+        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       }
     }
+  }
+
+  @protected
+  Future<bool> share(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    DrillFile drillFile,
+  ) async {
+    final xf = XFile.fromData(
+      Uint8List.fromList(drillFile.content),
+      name: drillFile.fileName,
+      mimeType: DrillFile.drillMimeType,
+    );
+
+    final params = ShareParams(
+      text: path.basenameWithoutExtension(drillFile.fileName),
+      files: [xf],
+    );
+
+    final result = await SharePlus.instance.share(params);
+    if (!context.mounted) {
+      return false;
+    }
+
+    return result.status == ShareResultStatus.success;
   }
 
   Future<void> _share(
@@ -480,153 +508,53 @@ class ProgramPageController extends ScreenController {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    // Create a temp folder for export
-    final String tempDirPath = path.join(
-      (await getTemporaryDirectory()).path,
-      'program_share',
-    );
-    if (!context.mounted) return;
-
-    final tempDir = Directory(tempDirPath);
-    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
-    tempDir.createSync(recursive: true);
-
     final selected = await _selectExercises(
       context,
       localizations.shareProgram,
-      _programService.loadExercises(),
+      programService.loadExercises(),
       constraints,
       localizations,
       false,
     );
     if (selected.isEmpty || !context.mounted) return;
 
+    // Ask the user for the file name
     final fileName = await _promptFileName(context, localizations);
     if (!context.mounted) return;
 
     if (fileName != null) {
+      final drillFile = await programService.exportProgram(
+        nanoid(10),
+        fileName,
+        selected,
+      );
       try {
-        final drillFile = await _exportToLocal(
+        if (!context.mounted) return;
+
+        final result = await share(
           context,
+          constraints,
           localizations,
-          fileName,
-          tempDirPath,
-          selected,
+          drillFile,
         );
 
-        if (drillFile != null) {
-          final filePath = path.join(tempDirPath, drillFile.fileName);
-
-          final params = ShareParams(
-            text: path.basenameWithoutExtension(drillFile.fileName),
-            files: [XFile(filePath, mimeType: drillFile.mimeType)],
+        if (!context.mounted) return;
+        if (result) {
+          _showSnackBar(
+            context,
+            localizations.shareSuccess(drillFile.fileName),
           );
-
-          final result = await SharePlus.instance.share(params);
-          if (!context.mounted) return;
-
-          if (result.status == ShareResultStatus.success) {
-            _showSnackBar(context, localizations.shareSuccess(filePath));
-          }
         }
       } on Exception catch (e, stackTrace) {
         if (context.mounted) {
-          _showSnackBar(context, localizations.shareFailure(fileName));
+          _showSnackBar(
+            context,
+            localizations.shareFailure(drillFile.fileName),
+          );
         }
         unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       }
     }
-    tempDir.deleteSync(recursive: true);
-  }
-
-  Future<DrillFile?> _exportToLocal(
-    BuildContext context,
-    AppLocalizations localizations,
-    String fileName,
-    String dirPath,
-    List<String> exercises,
-  ) async {
-    if (fileName.isNotEmpty) {
-      final drillFile = await _programService.exportProgram(
-        nanoid(10),
-        fileName,
-        exercises,
-      );
-
-      // Write content to local file system
-      Directory(dirPath).createSync(recursive: true);
-      File(
-        path.join(dirPath, drillFile.fileName),
-      ).writeAsBytesSync(drillFile.content);
-
-      return drillFile;
-    } else {
-      _showSnackBar(context, localizations.invalidFileName);
-    }
-    return null;
-  }
-
-  static Future<String?> _pickFileOrDir(
-    BuildContext context,
-    BoxConstraints constraints,
-    String title,
-    FilesystemType type,
-  ) async {
-    final localizations = AppLocalizations.of(context)!;
-    final docsDirPath = await ExternalPath.getExternalStoragePublicDirectory(
-      ExternalPath.DIRECTORY_DOCUMENTS,
-    );
-    final downloadsDirPath =
-        await ExternalPath.getExternalStoragePublicDirectory(
-          ExternalPath.DIRECTORY_DOWNLOAD,
-        );
-
-    final extDirs = Platform.isAndroid
-        ? await getExternalStorageDirectories()
-        : [];
-
-    if (!context.mounted) return null;
-
-    int i = 1;
-    final result = await FilesystemPicker.openBottomSheet(
-      context: context,
-      title: title,
-      fsType: type,
-      showGoUp: true,
-      constraints: constraints.copyWith(
-        minHeight: 400,
-        maxHeight: max(400, constraints.maxHeight * 0.6),
-      ),
-      pickText: localizations.select,
-      rootName: localizations.storage,
-      fileTileSelectMode: FileTileSelectMode.wholeTile,
-      shortcuts: [
-        FilesystemPickerShortcut(
-          name: localizations.documents,
-          path: Directory(docsDirPath),
-          icon: Icons.folder,
-          isSelectable: false,
-        ),
-        FilesystemPickerShortcut(
-          name: localizations.downloads,
-          path: Directory(downloadsDirPath),
-          icon: Icons.folder,
-          isSelectable: false,
-        ),
-        if (extDirs != null)
-          ...extDirs.map(
-            (dir) => FilesystemPickerShortcut(
-              name:
-                  '${localizations.sdCard} ${i++} '
-                  '(${path.basenameWithoutExtension(dir.path)})',
-              path: dir,
-              icon: Icons.snippet_folder,
-              isSelectable: false,
-            ),
-          ),
-      ],
-    );
-    return result;
   }
 
   static Future<List<String>> _selectExercises(
