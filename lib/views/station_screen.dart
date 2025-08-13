@@ -101,6 +101,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                 : localizations.editExercise,
           ),
         ],
+        actionsPadding: EdgeInsets.only(right: 16.0),
       ),
       body: SafeArea(
         child: StreamBuilder(

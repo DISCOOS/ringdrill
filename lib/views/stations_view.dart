@@ -41,15 +41,18 @@ class _StationsViewState extends State<StationsView> {
       });
     }
 
+    final fit = markers.fit();
+    final center = fit == null ? markers.average() : MapConfig.initialCenter;
+
     return MapView<(String, int)>(
       key: _mapKey,
       withCross: true,
       withSearch: true,
       withCenter: true,
       withToggle: true,
+      initialCenter: center,
+      initialFit: markers.fit(EdgeInsets.all(72).copyWith(top: 150)),
       controller: _mapController,
-      initialFit: markers.fit(),
-      initialCenter: markers.average(),
       interactionFlags: MapConfig.interactive,
       layers: MapConfig.layers,
       markers: markers,

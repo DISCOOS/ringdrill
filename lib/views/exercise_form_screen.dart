@@ -76,6 +76,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
             child: Text(localizations.save),
           ),
         ],
+        actionsPadding: EdgeInsets.only(right: 16.0),
       ),
       body: SafeArea(
         child: Padding(

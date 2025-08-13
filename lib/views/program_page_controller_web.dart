@@ -27,7 +27,7 @@ class ProgramPageController extends ProgramPageControllerBase {
 
     final content = await result.files.first.xFile.readAsBytes();
     return DrillFile.fromBytes(
-      basename(result.files.first.xFile.path),
+      basename(result.files.first.xFile.name),
       content,
     );
   }

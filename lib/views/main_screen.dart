@@ -14,6 +14,12 @@ import 'package:ringdrill/views/teams_view.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class Destination {
+  const Destination({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+}
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key, required this.isFirstLaunch});
   final bool isFirstLaunch;
@@ -31,14 +37,18 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentTab = 0;
+  static final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+
+  final List<StreamSubscription> _subscriptions = [];
   final List<PageWidget> _pages = [
     PageWidget(controller: ProgramPageController(), child: ProgramView()),
     PageWidget(controller: StationsPageController(), child: StationsView()),
     PageWidget(controller: TeamsPageController(), child: TeamsView()),
     //TeamsPage(),
   ];
-  final List<StreamSubscription> _subscriptions = [];
+
+  int _currentTab = 0;
+  bool _wideScreen = false;
 
   @override
   void initState() {
@@ -56,6 +66,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final double width = MediaQuery.sizeOf(context).width;
+    _wideScreen = width > 600;
+  }
+
+  @override
   void dispose() {
     super.dispose();
     for (var e in _subscriptions) {
@@ -70,92 +88,180 @@ class _MainScreenState extends State<MainScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Scaffold(
-          appBar: AppBar(
-            title: Text(page.controller.title(context)),
-            actions: page.controller.buildActions.call(context, constraints),
-          ),
-          drawer: Drawer(
-            child: SafeArea(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  Container(
-                    color: Theme.of(context).appBarTheme.backgroundColor,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 15.0,
-                      horizontal: 16.0,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          localizations.appName,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize:
-                                20.0, // Smaller font size than DrawerHeader
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16.0),
-                  ListTile(
-                    leading: const Icon(Icons.settings),
-                    title: Text(localizations.settings),
-                    onTap: () {
-                      MainScreen.showSettings(context, true);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.info),
-                    title: Text(localizations.about),
-                    onTap: () {
-                      Navigator.pop(context); // Close the drawer
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AboutPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          body: SafeArea(child: _pages[_currentTab]),
-          floatingActionButton: page.controller.buildFAB.call(
-            context,
-            constraints,
-          ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _currentTab,
-            onTap: _onBottomNavTapped,
-            items: [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.fitness_center),
-                label: localizations.exercise(2),
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.location_on),
-                label: localizations.station(2),
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.group),
-                label: localizations.team(2),
-              ),
-            ],
-          ),
+          key: _scaffoldKey,
+          extendBody: true,
+          extendBodyBehindAppBar: true,
+          drawerEnableOpenDragGesture: true,
+          appBar: _wideScreen ? null : _buildAppBar(context, constraints, page),
+          drawer: _buildDrawer(context, localizations),
+          body: _wideScreen
+              ? _buildNavRail(context, constraints, localizations, page)
+              : SafeArea(child: page),
+          floatingActionButton: _wideScreen
+              ? null
+              : page.controller.buildFAB(context, constraints),
+          bottomNavigationBar: _buildNavBar(localizations),
         );
       },
     );
   }
 
-  void _onBottomNavTapped(int tab) {
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    BoxConstraints constraints,
+    PageWidget<ScreenController> page,
+  ) {
+    return AppBar(
+      title: Text(page.controller.title(context)),
+      leading: _wideScreen ? SizedBox(width: 24) : null,
+      actions: page.controller.buildActions(context, constraints),
+      actionsPadding: EdgeInsets.only(right: 16.0),
+    );
+  }
+
+  Widget? _buildDrawer(BuildContext context, AppLocalizations localizations) {
+    return NavigationDrawer(
+      elevation: 8,
+      children: [
+        Container(
+          color: Theme.of(context).appBarTheme.backgroundColor,
+          padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 16.0),
+          child: Row(
+            children: [
+              Text(
+                localizations.appName,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.0, // Smaller font size than DrawerHeader
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16.0),
+        ListTile(
+          leading: const Icon(Icons.settings),
+          title: Text(localizations.settings),
+          onTap: () {
+            MainScreen.showSettings(context, true);
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.info),
+          title: Text(localizations.about),
+          onTap: () {
+            Navigator.pop(context); // Close the drawer
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AboutPage()),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  void _onDestinationSelected(int tab) {
     setState(() {
       _currentTab = tab;
     });
+  }
+
+  List<Destination> _buildDestinations(AppLocalizations localizations) {
+    return [
+      Destination(icon: Icons.fitness_center, label: localizations.exercise(2)),
+      Destination(icon: Icons.location_on, label: localizations.station(2)),
+      Destination(icon: Icons.group, label: localizations.team(2)),
+    ];
+  }
+
+  Widget? _buildNavBar(AppLocalizations localizations) {
+    if (_wideScreen) return null;
+    return NavigationBar(
+      selectedIndex: _currentTab,
+      onDestinationSelected: _onDestinationSelected,
+      destinations: _buildDestinations(localizations)
+          .map<NavigationDestination>((d) {
+            return NavigationDestination(icon: Icon(d.icon), label: d.label);
+          })
+          .toList(),
+    );
+  }
+
+  Widget _buildNavRail(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    PageWidget page,
+  ) {
+    final mq = MediaQuery.of(context);
+    final isLandscape = mq.orientation == Orientation.landscape;
+    final isCupertino = Theme.of(context).platform == TargetPlatform.iOS;
+
+    final removeForRail = isCupertino && isLandscape;
+
+    final fab = page.controller.buildFAB(context, constraints);
+    final rail = MediaQuery.removePadding(
+      context: context,
+      removeTop: false,
+      removeBottom: false,
+      removeLeft: removeForRail,
+      removeRight: removeForRail,
+      child: ColoredBox(
+        color: Theme.of(context).colorScheme.surface, // rail bg
+        child: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: NavigationRail(
+            selectedIndex: _currentTab,
+            onDestinationSelected: _onDestinationSelected,
+            leading: Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                ),
+              ],
+            ),
+            destinations: _buildDestinations(localizations)
+                .map<NavigationRailDestination>((d) {
+                  return NavigationRailDestination(
+                    icon: Icon(d.icon),
+                    label: Text(d.label),
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                  );
+                })
+                .toList(),
+            trailing: fab != null
+                ? Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [fab, SizedBox(height: 16)],
+                    ),
+                  )
+                : SizedBox(height: 16),
+          ),
+        ),
+      ),
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        rail,
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildAppBar(context, constraints, page),
+              Expanded(child: page),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   void _showConsentDialog() {
@@ -166,8 +272,8 @@ class _MainScreenState extends State<MainScreen> {
         final consent =
             await showDialog(
                   context: context,
-                  barrierDismissible:
-                      false, // Prevent closing without taking action
+                  // Prevent closing without taking action
+                  barrierDismissible: false,
                   builder: (context) => AlertDialog(
                     title: Text(localizations.appAnalyticsConsent),
                     content: Text(

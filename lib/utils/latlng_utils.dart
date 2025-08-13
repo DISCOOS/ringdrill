@@ -22,13 +22,10 @@ extension LatlngListX on Iterable<LatLng> {
     return LatLng(averageLat, averageLng);
   }
 
-  CameraFit? fit() {
+  CameraFit? fit([EdgeInsets padding = const EdgeInsets.all(72)]) {
     return length < 2
         ? null
-        : CameraFit.coordinates(
-            padding: EdgeInsets.all(72),
-            coordinates: toList(),
-          );
+        : CameraFit.coordinates(padding: padding, coordinates: toList());
   }
 }
 
@@ -37,7 +34,7 @@ extension StationLocationX on Iterable<StationLocation> {
     return map((e) => e.$3).average(initialCenter);
   }
 
-  CameraFit? fit() {
-    return map((e) => e.$3).fit();
+  CameraFit? fit([EdgeInsets padding = const EdgeInsets.all(72)]) {
+    return map((e) => e.$3).fit(padding);
   }
 }

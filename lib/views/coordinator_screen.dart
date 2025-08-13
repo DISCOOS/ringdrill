@@ -185,7 +185,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             ExerciseEvent.pending(_programService.getExercise(widget.uuid)!);
         return Scaffold(
           appBar: AppBar(
-            actionsPadding: const EdgeInsets.all(8.0),
             title: Text(
               _exercise!.name,
             ), // Dynamic title shows the exercise's name
@@ -218,6 +217,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 onPressed: _isStarted ? null : () => _editExercise(context),
               ),
             ],
+            actionsPadding: EdgeInsets.only(right: 16.0),
           ),
           body: SafeArea(
             child: _exercise!.schedule.isEmpty

@@ -51,6 +51,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
             child: Text(localizations.save),
           ),
         ],
+        actionsPadding: EdgeInsets.only(right: 16.0),
       ),
       body: SafeArea(
         child: Padding(

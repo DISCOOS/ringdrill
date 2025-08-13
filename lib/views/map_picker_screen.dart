@@ -69,6 +69,7 @@ class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
             onPressed: () => Navigator.pop(context, _selected),
           ),
         ],
+        actionsPadding: EdgeInsets.only(right: 16.0),
       ),
       body: SafeArea(
         child: MapView<K>(

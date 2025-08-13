@@ -362,7 +362,10 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
     if (drillFile != null) {
       try {
-        final program = await programService.openProgram(drillFile);
+        final program = await programService.openProgram(
+          localizations,
+          drillFile,
+        );
         if (program == null) return;
         if (context.mounted) {
           _showSnackBar(context, localizations.openSuccess(drillFile.fileName));
@@ -387,6 +390,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     if (drillFile != null) {
       try {
         final program = await programService.importProgram(
+          localizations,
           drillFile,
           onSelect: (items) async {
             final selected = await _selectExercises(

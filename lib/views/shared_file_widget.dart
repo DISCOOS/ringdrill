@@ -65,11 +65,19 @@ class _SharedFileWidgetState extends State<SharedFileWidget> {
           );
           switch (action) {
             case 'open':
-              unawaited(ProgramService().openProgram(DrillFile.fromFile(file)));
+              unawaited(
+                ProgramService().openProgram(
+                  localizations,
+                  DrillFile.fromFile(file),
+                ),
+              );
               break;
             case 'import':
               unawaited(
-                ProgramService().importProgram(DrillFile.fromFile(file)),
+                ProgramService().importProgram(
+                  localizations,
+                  DrillFile.fromFile(file),
+                ),
               );
               break;
           }

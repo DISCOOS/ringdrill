@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/data/drill_file.dart';
@@ -61,14 +62,14 @@ class ProgramService {
 
   bool _isReady = false;
   late final ProgramRepository _repo;
-  late final SharedPreferences _prefs;
+  //late final SharedPreferences _prefs;
 
   Stream<ProgramEvent> get events => _controller.stream;
 
   Future<List<Exercise>> init() async {
     if (!_isReady) {
-      _prefs = await SharedPreferences.getInstance();
-      _repo = ProgramRepository(_prefs);
+      final prefs = await SharedPreferences.getInstance();
+      _repo = ProgramRepository(prefs);
       _isReady = true;
     }
     return _repo.loadExercises();
@@ -150,12 +151,13 @@ class ProgramService {
 
   /// Clears current and open Program from a .drill file
   Future<Program?> openProgram(
+    AppLocalizations localizations,
     DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
     final deleted = await _repo.deleteAllExercises();
     try {
-      final program = await _importProgram(file, onSelect);
+      final program = await _importProgram(localizations, file, onSelect);
       if (program != null) {
         ExerciseService().stop();
         _controller.add(ProgramEvent.opened(program, file));
@@ -172,10 +174,11 @@ class ProgramService {
 
   /// Imports a Program from a .drill file
   Future<Program?> importProgram(
+    AppLocalizations localizations,
     DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
-    final program = await _importProgram(file, onSelect);
+    final program = await _importProgram(localizations, file, onSelect);
     if (program != null) {
       ExerciseService().stop();
       _controller.add(ProgramEvent.imported(program, file));
@@ -185,6 +188,7 @@ class ProgramService {
   }
 
   Future<Program?> _importProgram(
+    AppLocalizations localizations,
     DrillFile file,
     OnSelectExercises? onSelect,
   ) async {
@@ -197,9 +201,13 @@ class ProgramService {
     // User canceled
     if (selected == null) return null;
 
+    int maxNumberOfTeams = 0;
     for (final it in selected) {
       _repo.saveExercise(it);
+      maxNumberOfTeams = max(maxNumberOfTeams, it.numberOfTeams);
     }
+
+    await ensureTeams(localizations, maxNumberOfTeams);
 
     // Reconstruct the Program with nested objects
     return program.copyWith(exercises: selected.toList());
