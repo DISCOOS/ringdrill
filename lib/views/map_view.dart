@@ -106,6 +106,16 @@ class _MapViewState<K> extends State<MapView<K>> {
       }
       if (widget.initialCenter != oldWidget.initialCenter) {
         _initCurrentIndex();
+        _mapController.move(widget.initialCenter, _mapController.camera.zoom);
+      }
+      if (widget.initialZoom != oldWidget.initialZoom) {
+        _initCurrentIndex();
+        _mapController.move(_mapController.camera.center, widget.initialZoom);
+      }
+      if (widget.initialFit != null &&
+          widget.initialFit != oldWidget.initialFit) {
+        _initCurrentIndex();
+        _mapController.fitCamera(widget.initialFit!);
       }
     }
     super.didUpdateWidget(oldWidget);
@@ -122,8 +132,8 @@ class _MapViewState<K> extends State<MapView<K>> {
               mapController: _mapController,
               options: MapOptions(
                 initialZoom: widget.initialZoom,
-                initialCameraFit: widget.initialFit,
                 initialCenter: widget.initialCenter,
+                initialCameraFit: widget.initialFit,
                 interactionOptions: InteractionOptions(
                   flags: widget.interactionFlags,
                 ),
