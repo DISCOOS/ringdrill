@@ -1,0 +1,9 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "org.discoos.ringdrill",
+    "sha256_cert_fingerprints":
+    ["C7:FC:F2:6B:24:A9:2B:6A:80:65:1E:D2:65:B1:05:38:89:22:63:D3:7A:5B:99:B6:03:35:0F:3F:E3:F6:F4:7E"]
+  }
+}]

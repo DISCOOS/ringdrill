@@ -96,6 +96,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+            <!-- 📄 Support deep linking -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                        android:scheme="https"
+                        android:host="ringdrill.app"
+                        android:pathPattern="/.*" />
+            </intent-filter>
+
             <!-- 📄 Support opening .drill files (e.g. from file manager or download) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
