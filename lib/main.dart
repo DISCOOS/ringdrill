@@ -5,12 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
 import 'package:ringdrill/services/notification_service.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/main_screen.dart';
-import 'package:ringdrill/views/patch_alert_widget.dart';
-import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/web/pwa_update_web.dart'
     if (dart.library.io) 'package:ringdrill/web/pwa_update_stub.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -39,6 +38,12 @@ Future<void> main() async {
 
   // Ensure system locale is set
   await findSystemLocale();
+
+  // TODO: Make a widget that does this with progress
+  //  indicator until all services are initialized and
+  //  MainScreen is shown
+  // Initialize services
+  await ProgramService().init();
 
   if (isFirstLaunch) {
     // Set default "analyticsConsent" to false (opt-out by default)
@@ -74,10 +79,17 @@ class RingDrillApp extends StatefulWidget {
 class _RingDrillAppState extends State<RingDrillApp> {
   @override
   void initState() {
-    if (!kIsWeb) _startNotificationService();
+    _startNotificationService();
+    _startPwaUpdatesListener();
+
+    super.initState();
+  }
+
+  void _startPwaUpdatesListener() {
     if (kIsWeb) {
       listenForPwaUpdates(
         onUpdateReady: (reloadNow) {
+          // TODO: Add option for user to not reload
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               showCloseIcon: true,
@@ -89,48 +101,48 @@ class _RingDrillAppState extends State<RingDrillApp> {
         },
       );
     }
-
-    super.initState();
   }
 
   Future<void> _startNotificationService() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isNotificationsEnabled =
-        prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
-    if (isNotificationsEnabled) {
-      final playSound =
-          prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
-      final vibrateEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
-      final isFullScreenIntentEnabled =
-          prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
-          false;
-      final threshold =
-          prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
-      final service = NotificationService();
+    if (!kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      final isNotificationsEnabled =
+          prefs.getBool(AppConfig.keyIsNotificationsEnabled) ?? true;
+      if (isNotificationsEnabled) {
+        final playSound =
+            prefs.getBool(AppConfig.keyNotificationPlaySound) ?? true;
+        final vibrateEnabled =
+            prefs.getBool(AppConfig.keyIsNotificationVibrateEnabled) ?? true;
+        final isFullScreenIntentEnabled =
+            prefs.getBool(AppConfig.keyIsNotificationFullScreenIntentEnabled) ??
+            false;
+        final threshold =
+            prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
+        final service = NotificationService();
 
-      final init = await service.init(
-        playSound: playSound,
-        enableVibration: vibrateEnabled,
-        fullScreenIntent: isFullScreenIntentEnabled,
-        urgentThreshold: threshold,
-      );
+        final init = await service.init(
+          playSound: playSound,
+          enableVibration: vibrateEnabled,
+          fullScreenIntent: isFullScreenIntentEnabled,
+          urgentThreshold: threshold,
+        );
 
-      if (!init) {
-        if (Sentry.isEnabled) {
-          await Sentry.captureMessage(
-            'NotificationService failed to initialize',
-          );
+        if (!init) {
+          if (Sentry.isEnabled) {
+            await Sentry.captureMessage(
+              'NotificationService failed to initialize',
+            );
+          }
+          return;
         }
-        return;
+        service.start();
       }
-      service.start();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'RingDrill',
       theme: ringDrillTheme,
       darkTheme: ringDrillDarkTheme,
@@ -138,29 +150,7 @@ class _RingDrillAppState extends State<RingDrillApp> {
       debugShowCheckedModeBanner: false,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      // ---------------------------------
-      // Upgrader
-      // ---------------------------------
-      // On Android, the default behavior will be to use
-      // the Google Play Store version of the app.
-      // On iOS, the default behavior will be to use the
-      // App Store version of the app, so update the
-      // Bundle Identifier in example/ios/Runner with a
-      // valid identifier already in the App Store.
-      home: UpgradeAlert(
-        // ---------------------------------
-        // Shorebird patch upgrades
-        // ---------------------------------
-        // Notifies user of new patch when app is running
-        child: PatchAlertWidget(
-          // ---------------------------------
-          // Handle incoming files from OS
-          // ---------------------------------
-          child: SharedFileWidget(
-            child: MainScreen(isFirstLaunch: widget.isFirstLaunch),
-          ),
-        ),
-      ),
+      routerConfig: buildRouter(widget.isFirstLaunch),
     );
   }
 }

@@ -1,18 +1,86 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/patch_alert_widget.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/settings_page.dart';
+import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:upgrader/upgrader.dart';
+
+GoRouter buildRouter(bool isFirstLaunch) {
+  return GoRouter(
+    initialLocation: '/program', // The default tab
+    routes: [
+      ShellRoute(
+        builder: (BuildContext context, GoRouterState state, Widget child) {
+          return // ---------------------------------
+          // Upgrader
+          // ---------------------------------
+          // On Android, the default behavior will be to use
+          // the Google Play Store version of the app.
+          // On iOS, the default behavior will be to use the
+          // App Store version of the app, so update the
+          // Bundle Identifier in example/ios/Runner with a
+          // valid identifier already in the App Store.
+          UpgradeAlert(
+            // ---------------------------------
+            // Shorebird patch upgrades
+            // ---------------------------------
+            // Notifies user of new patch when app is running
+            child: PatchAlertWidget(
+              // ---------------------------------
+              // Handle incoming files from OS
+              // ---------------------------------
+              child: SharedFileWidget(
+                child: MainScreen(
+                  isFirstLaunch: isFirstLaunch,
+                  router: GoRouter.of(context),
+                  routes: ['/program', '/stations', '/teams'],
+                ),
+              ),
+            ),
+          );
+        },
+        routes: [
+          GoRoute(
+            path: '/program',
+            builder: (BuildContext context, GoRouterState state) => PageWidget(
+              controller: ProgramPageController(),
+              child: const ProgramView(),
+            ),
+          ),
+          GoRoute(
+            path: '/stations',
+            builder: (BuildContext context, GoRouterState state) =>
+                const PageWidget(
+                  controller: StationsPageController(),
+                  child: StationsView(),
+                ),
+          ),
+          GoRoute(
+            path: '/teams',
+            builder: (BuildContext context, GoRouterState state) =>
+                const PageWidget(
+                  controller: TeamsPageController(),
+                  child: TeamsView(),
+                ),
+          ),
+        ],
+      ),
+    ],
+  );
+}
 
 class Destination {
   const Destination({required this.icon, required this.label});
@@ -21,8 +89,16 @@ class Destination {
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key, required this.isFirstLaunch});
+  const MainScreen({
+    super.key,
+    required this.router,
+    required this.routes,
+    required this.isFirstLaunch,
+  });
+
   final bool isFirstLaunch;
+  final GoRouter router;
+  final List<String> routes;
 
   static void showSettings(BuildContext context, [bool pop = false]) {
     if (pop) Navigator.pop(context);
@@ -37,6 +113,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  static final GlobalKey _indexedTabsKey = GlobalKey();
   static final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   final List<StreamSubscription> _subscriptions = [];
@@ -96,7 +173,16 @@ class _MainScreenState extends State<MainScreen> {
           drawer: _buildDrawer(context, localizations),
           body: _wideScreen
               ? _buildNavRail(context, constraints, localizations, page)
-              : SafeArea(child: page),
+              : SafeArea(
+                  child:
+                      // Keep all tabs in memory allowing
+                      // state to persist between tab switches
+                      IndexedStack(
+                        key: _indexedTabsKey,
+                        index: _currentTab,
+                        children: _pages,
+                      ),
+                ),
           floatingActionButton: _wideScreen
               ? null
               : page.controller.buildFAB(context, constraints),
@@ -166,6 +252,7 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _currentTab = tab;
     });
+    widget.router.go(widget.routes[tab]);
   }
 
   List<Destination> _buildDestinations(AppLocalizations localizations) {
@@ -256,7 +343,16 @@ class _MainScreenState extends State<MainScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildAppBar(context, constraints, page),
-              Expanded(child: page),
+              Expanded(
+                child:
+                    // Keep all tabs in memory allowing
+                    // state to persist between tab switches
+                    IndexedStack(
+                      key: _indexedTabsKey,
+                      index: _currentTab,
+                      children: _pages,
+                    ),
+              ),
             ],
           ),
         ),

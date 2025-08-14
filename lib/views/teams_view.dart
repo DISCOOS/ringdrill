@@ -61,6 +61,7 @@ class _TeamsViewState extends State<TeamsView> {
 }
 
 class TeamsPageController extends ScreenController {
+  const TeamsPageController() : super();
   @override
   String title(BuildContext context) {
     return AppLocalizations.of(context)!.team(2);

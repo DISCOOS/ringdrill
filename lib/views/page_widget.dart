@@ -22,6 +22,8 @@ class _PageWidgetState<T extends ScreenController>
 }
 
 abstract class ScreenController {
+  const ScreenController();
+
   String title(BuildContext context);
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
     return null;

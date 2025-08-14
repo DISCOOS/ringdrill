@@ -155,12 +155,8 @@ class _ProgramViewState extends State<ProgramView> {
           );
   }
 
-  Future<void> _initExercises() async {
-    final exercises = await _programService.init();
-
-    setState(() {
-      _exercises = exercises;
-    });
+  void _initExercises() {
+    _exercises = _programService.loadExercises();
   }
 
   // Delete an exercise and refresh the list
