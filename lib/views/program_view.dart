@@ -305,9 +305,14 @@ abstract class ProgramPageControllerBase extends ScreenController {
           PopupMenuItem(
             value: 'share',
             enabled: !exerciseService.isStarted,
-            child: Text('Share...'),
+            child: Text(localizations.shareProgram),
           ),
-          PopupMenuItem(value: 'feedback', child: Text('Feedback...')),
+          PopupMenuItem(
+            value: 'send_to',
+            enabled: !exerciseService.isStarted,
+            child: Text(localizations.sendToProgram),
+          ),
+          PopupMenuItem(value: 'feedback', child: Text(localizations.feedback)),
         ],
       ),
     ];
@@ -327,6 +332,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
         return _import(context, constraints, localizations);
       case 'export':
         return _export(context, constraints, localizations);
+      case 'send_to':
+        return _sendTo(context, constraints, localizations);
       case 'share':
         return _share(context, constraints, localizations);
       case 'feedback':
@@ -476,6 +483,68 @@ abstract class ProgramPageControllerBase extends ScreenController {
           _showSnackBar(
             context,
             localizations.exportFailure(drillFile.fileName),
+          );
+        }
+        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+      }
+    }
+  }
+
+  @protected
+  Future<bool> sendTo(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    DrillFile drillFile,
+  );
+
+  Future<void> _sendTo(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+  ) async {
+    final selected = await _selectExercises(
+      context,
+      localizations.sendToProgram,
+      programService.loadExercises(),
+      constraints,
+      localizations,
+      false,
+    );
+    if (selected.isEmpty || !context.mounted) return;
+
+    // Ask the user for the file name
+    final fileName = await _promptFileName(context, localizations);
+    if (!context.mounted) return;
+
+    if (fileName != null) {
+      final drillFile = await programService.exportProgram(
+        nanoid(10),
+        fileName,
+        selected,
+      );
+      try {
+        if (!context.mounted) return;
+
+        final result = await sendTo(
+          context,
+          constraints,
+          localizations,
+          drillFile,
+        );
+
+        if (!context.mounted) return;
+        if (result) {
+          _showSnackBar(
+            context,
+            localizations.sendToSuccess(drillFile.fileName),
+          );
+        }
+      } on Exception catch (e, stackTrace) {
+        if (context.mounted) {
+          _showSnackBar(
+            context,
+            localizations.sendToFailure(drillFile.fileName),
           );
         }
         unawaited(Sentry.captureException(e, stackTrace: stackTrace));

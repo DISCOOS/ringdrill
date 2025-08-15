@@ -341,6 +341,18 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
+  /// **'Sent \"{name}\" successfully!'**
+  String sendToSuccess(Object name);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Sending \"{name}\" failed. Please try again.'**
+  String sendToFailure(Object name);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
   /// **'Shared \"{name}\" successfully!'**
   String shareSuccess(Object name);
 
@@ -503,8 +515,20 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
+  /// **'Send to...'**
+  String get sendToProgram;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
   /// **'Share...'**
   String get shareProgram;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback...'**
+  String get feedback;
 
   /// Label
   ///

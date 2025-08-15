@@ -48,3 +48,21 @@
     [headers.values]
         Cache-Control = "no-cache"
 
+[[edge_functions]]
+    path = "/d/*"
+    function = "deep-link"
+
+[[redirects]]
+    from = "/api/drills/upload"
+    to = "/.netlify/functions/drills-upload"
+    status = 200
+
+[[redirects]]
+    from = "/api/drills/head/*"
+    to = "/.netlify/functions/drills-head/:splat"
+    status = 200
+
+[[redirects]]
+    from = "/api/market/feed"
+    to = "/.netlify/functions/market-feed"
+    status = 200

@@ -145,6 +145,16 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String sendToSuccess(Object name) {
+    return 'Sending av \"$name\" var vellykket!';
+  }
+
+  @override
+  String sendToFailure(Object name) {
+    return 'Sending av \"$name\" mislyktes. Prøv igjen.';
+  }
+
+  @override
   String shareSuccess(Object name) {
     return 'Deling av \"$name\" var vellykket!';
   }
@@ -262,7 +272,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exportProgram => 'Eksport...';
 
   @override
+  String get sendToProgram => 'Send til...';
+
+  @override
   String get shareProgram => 'Del...';
+
+  @override
+  String get feedback => 'Tilbakemelding...';
 
   @override
   String get stationDescriptionHint => 'Beskriv hvordan posten skal utføres';
@@ -428,7 +444,7 @@ class AppLocalizationsNb extends AppLocalizations {
       'Start appen på nytt for ny oppdatering';
 
   @override
-  String get appUpdateAvailable => 'An update is available';
+  String get appUpdateAvailable => 'En oppdatering er tilgjengelig';
 
   @override
   String get appUpdatedRestarting => 'Appen er oppdatert, starter på nytt...';

@@ -145,6 +145,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String sendToSuccess(Object name) {
+    return 'Sent \"$name\" successfully!';
+  }
+
+  @override
+  String sendToFailure(Object name) {
+    return 'Sending \"$name\" failed. Please try again.';
+  }
+
+  @override
   String shareSuccess(Object name) {
     return 'Shared \"$name\" successfully!';
   }
@@ -262,7 +272,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportProgram => 'Export...';
 
   @override
+  String get sendToProgram => 'Send to...';
+
+  @override
   String get shareProgram => 'Share...';
+
+  @override
+  String get feedback => 'Feedback...';
 
   @override
   String get stationDescriptionHint =>

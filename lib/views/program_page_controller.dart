@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/data/drill_upload.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:share_plus/share_plus.dart';
@@ -53,7 +54,7 @@ class ProgramPageController extends ProgramPageControllerBase {
   }
 
   @override
-  Future<bool> share(
+  Future<bool> sendTo(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -62,7 +63,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     // Create a temp folder for export.
     final String tempDirPath = path.join(
       (await getTemporaryDirectory()).path,
-      'program_share',
+      'program_send_to',
     );
     if (!context.mounted) return false;
 
@@ -84,5 +85,33 @@ class ProgramPageController extends ProgramPageControllerBase {
     }
 
     return result.status == ShareResultStatus.success;
+  }
+
+  @override
+  Future<bool> share(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    DrillFile drillFile,
+  ) async {
+    final fileName = drillFile.fileName;
+    final version = drillFile.version;
+
+    final result = await uploadDrillFile(
+      version: version,
+      fileName: fileName,
+      bytes: drillFile.content,
+      // TODO: Make baseUrl a parameter
+      base: Uri.parse('https://ringdrill.app/api/upload'),
+      tags: const [], // TODO: Let user choose tags in bottom sheet
+      published: true, // TODO: Let user toggle in bottom sheet
+    );
+
+    // TODO: Store upload metadata for later use
+    debugPrint(
+      "{slug:${result.slug},etag:${result.etag},url:${result.versioned}}",
+    );
+
+    return true;
   }
 }

@@ -160,6 +160,14 @@
   "@exportFailure": {
     "description": "Message"
   },
+  "sendToSuccess": "Sent \"{name}\" successfully!",
+  "@sendToSuccess": {
+    "description": "Message"
+  },
+  "sendToFailure": "Sending \"{name}\" failed. Please try again.",
+  "@sendToFailure": {
+    "description": "Message"
+  },
   "shareSuccess": "Shared \"{name}\" successfully!",
   "@shareSuccess": {
     "description": "Message"
@@ -269,8 +277,16 @@
   "@exportProgram": {
     "description": "Label"
   },
+  "sendToProgram": "Send to...",
+  "@sendToProgram": {
+    "description": "Label"
+  },
   "shareProgram": "Share...",
   "@shareProgram": {
+    "description": "Label"
+  },
+  "feedback": "Feedback...",
+  "@feedback": {
     "description": "Label"
   },
   "stationDescriptionHint": "Give a description of how this station should be executed",

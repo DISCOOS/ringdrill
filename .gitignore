@@ -46,3 +46,6 @@ app.*.map.json
 
 sentry.properties
 /lib/l10n/untranslated-messages.json
+
+# Local Netlify folder
+.netlify
