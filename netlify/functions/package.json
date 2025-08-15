@@ -1,6 +1,5 @@
 {
   "type": "module",
-  "dependencies": {
-    "@netlify/blobs": "^6.0.0"
-  }
+  "engines": { "node": ">=20.12.2" },
+  "dependencies": { "@netlify/blobs": "^6.0.0" }
 }

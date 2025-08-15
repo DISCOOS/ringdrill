@@ -48,9 +48,10 @@
     [headers.values]
         Cache-Control = "no-cache"
 
-[[edge_functions]]
-    path = "/d/*"
-    function = "deep-link"
+[[redirects]]
+    from = "/d/*"
+    to   = "/.netlify/functions/deep-link/:splat"
+    status = 200
 
 [[redirects]]
     from = "/api/drills/upload"
