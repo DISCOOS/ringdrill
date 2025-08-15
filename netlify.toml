@@ -10,12 +10,6 @@
 [build.environment]
     PUB_CACHE = "/opt/buildhome/.pub-cache"
 
-# Single Page App routing: deep links -> index.html
-[[redirects]]
-    from = "/*"
-    to = "/index.html"
-    status = 200
-
 # Cache policy: keep index fresh, fingerprinted assets long-lived
 [[headers]]
     for = "/index.html"
@@ -69,4 +63,10 @@
 [[redirects]]
     from = "/api/market/feed"
     to  = "/.netlify/functions/market-feed"
+    status = 200
+
+# Single Page App routing: deep links -> index.html
+[[redirects]]
+    from = "/*"
+    to = "/index.html"
     status = 200
