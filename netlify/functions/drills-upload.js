@@ -2,6 +2,29 @@ import { MIME_DRILL, keysFor, writeBlob, writeJson, readJson,
     getSlugRecord, setSlugRecord, sanitizeSlug,
     sha256Hex, toStrongEtag, nowIso } from "./_shared.js";
 
+/** --- body decoding: accept base64 OR raw (utf8/latin1) */
+function decodeBody(event) {
+    if (!event || typeof event.body !== 'string') {
+        throw new Error('Missing request body');
+    }
+    if (event.isBase64Encoded) {
+        return Buffer.from(event.body, 'base64');
+    }
+
+    // If client intentionally sends base64 text (e.g., via curl), detect & decode.
+    const s = event.body.trim();
+    const looksBase64 = /^[A-Za-z0-9+/=\r\n]+$/.test(s) && s.length % 4 === 0;
+    if (looksBase64) {
+        try { return Buffer.from(s, 'base64'); } catch (_) { /* fall through */ }
+    }
+
+    // Fallbacks for raw text bodies:
+    // If your .drill is JSON text this is fine (utf8).
+    // If it's zipped/binary, latin1 preserves bytes 0–255.
+    const ct = (event.headers?.['content-type'] || event.headers?.['Content-Type'] || '').toLowerCase();
+    return Buffer.from(event.body, ct.includes('json') ? 'utf8' : 'latin1');
+}
+
 /**
  * Upload endpoint
  * POST /api/drills/upload?name=&slug=&programId=&version=&ownerId=&published=true|false&tags=tag1,tag2
@@ -13,11 +36,7 @@ export async function handler(event) {
             return { statusCode: 405, body: "Method Not Allowed" };
         }
 
-        // decode raw body (binary). Netlify sets isBase64Encoded for binary bodies.
-        if (!event.isBase64Encoded) {
-            return { statusCode: 400, body: "Expected binary body (base64Encoded)" };
-        }
-        const bytes = Buffer.from(event.body, "base64");
+        const bytes = decodeBody(event);   //
 
         const headers = event.headers || {};
         const ct = (headers["content-type"] || headers["Content-Type"] || "").toLowerCase();
