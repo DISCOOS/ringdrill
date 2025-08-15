@@ -764,11 +764,23 @@ abstract class AppLocalizations {
   /// **'Update required'**
   String get updateRequired;
 
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'RESTART'**
+  String get restartNow;
+
   /// Message
   ///
   /// In en, this message translates to:
   /// **'Restart app to apply new patch'**
   String get restartAppToApplyNewPatch;
+
+  /// No description provided for @appUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'An update is available'**
+  String get appUpdateAvailable;
 
   /// Message
   ///

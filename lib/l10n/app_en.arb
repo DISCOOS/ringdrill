@@ -445,8 +445,16 @@
   "@updateRequired": {
     "description": "Message"
   },
+  "restartNow": "RESTART",
+  "@restartNow": {
+    "description": "Button"
+  },
   "restartAppToApplyNewPatch": "Restart app to apply new patch",
   "@restartAppToApplyNewPatch": {
+    "description": "Message"
+  },
+  "appUpdateAvailable": "An update is available",
+  "@appUpdated": {
     "description": "Message"
   },
   "appUpdatedRestarting": "App updated, restarting...",

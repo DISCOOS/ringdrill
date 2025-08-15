@@ -89,15 +89,17 @@ class _RingDrillAppState extends State<RingDrillApp> {
     if (kIsWeb) {
       listenForPwaUpdates(
         onUpdateReady: (reloadNow) {
-          // TODO: Add option for user to not reload
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               showCloseIcon: true,
+              content: Text(AppLocalizations.of(context)!.appUpdateAvailable),
               dismissDirection: DismissDirection.endToStart,
-              content: Text(AppLocalizations.of(context)!.appUpdatedRestarting),
+              action: SnackBarAction(
+                label: AppLocalizations.of(context)!.restartNow,
+                onPressed: reloadNow,
+              ),
             ),
           );
-          reloadNow();
         },
       );
     }
