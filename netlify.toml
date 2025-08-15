@@ -48,10 +48,8 @@
     [headers.values]
         Cache-Control = "no-cache"
 
-[[redirects]]
-    from = "/d/*"
-    to   = "/.netlify/functions/deep-link/:splat"
-    status = 200
+[functions]
+    directory = "netlify/functions"
 
 [[redirects]]
     from = "/api/drills/upload"
@@ -64,6 +62,11 @@
     status = 200
 
 [[redirects]]
+    from = "/d/*"
+    to = "/.netlify/functions/deep-link/:splat"
+    status = 200
+
+[[redirects]]
     from = "/api/market/feed"
-    to = "/.netlify/functions/market-feed"
+    to  = "/.netlify/functions/market-feed"
     status = 200
