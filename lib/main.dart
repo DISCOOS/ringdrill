@@ -57,7 +57,9 @@ Future<void> main() async {
       SentryConfig.apply,
       appRunner: () => runApp(
         FeedbackBoundary(
-          child: SentryWidget(child: RingDrillApp(isFirstLaunch: false)),
+          child: SentryWidget(
+            child: RingDrillApp(isFirstLaunch: isFirstLaunch),
+          ),
         ),
       ),
     );

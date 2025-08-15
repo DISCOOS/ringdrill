@@ -177,11 +177,36 @@ class _MainScreenState extends State<MainScreen> {
     BoxConstraints constraints,
     PageWidget<ScreenController> page,
   ) {
-    return AppBar(
-      title: Text(page.controller.title(context)),
-      leading: _wideScreen ? SizedBox(width: 24) : null,
-      actions: page.controller.buildActions(context, constraints),
-      actionsPadding: EdgeInsets.only(right: 16.0),
+    final isCupertino = Theme.of(context).platform == TargetPlatform.iOS;
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: _removePadding(
+        context: context,
+        paddingLeft: 0,
+        child: AppBar(
+          title: Text(page.controller.title(context)),
+          leadingWidth: _wideScreen ? 84 : null,
+          leading: _wideScreen
+              ? Padding(
+                  padding: EdgeInsets.only(left: isCupertino ? 32.0 : 20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.menu),
+                        onPressed: () {
+                          _scaffoldKey.currentState?.openDrawer();
+                        },
+                      ),
+                    ],
+                  ),
+                )
+              : null,
+          actions: page.controller.buildActions(context, constraints),
+          actionsPadding: EdgeInsets.only(right: 16.0),
+        ),
+      ),
     );
   }
 
@@ -256,20 +281,17 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildNavRail(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-    PageWidget page,
-  ) {
+  Widget _removePadding({
+    required BuildContext context,
+    required Widget child,
+    double paddingLeft = 12,
+  }) {
     final mq = MediaQuery.of(context);
     final isLandscape = mq.orientation == Orientation.landscape;
     final isCupertino = Theme.of(context).platform == TargetPlatform.iOS;
 
     final removeForRail = isCupertino && isLandscape;
-
-    final fab = page.controller.buildFAB(context, constraints);
-    final rail = MediaQuery.removePadding(
+    return MediaQuery.removePadding(
       context: context,
       removeTop: false,
       removeBottom: false,
@@ -279,52 +301,55 @@ class _MainScreenState extends State<MainScreen> {
         color: Theme.of(context).colorScheme.surface, // rail bg
         child: Padding(
           padding: removeForRail
-              ? const EdgeInsets.only(left: 12.0)
+              ? EdgeInsets.only(left: paddingLeft)
               : EdgeInsets.zero,
-          child: NavigationRail(
-            selectedIndex: _currentTab,
-            onDestinationSelected: _onDestinationSelected,
-            leading: Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () {
-                    _scaffoldKey.currentState?.openDrawer();
-                  },
-                ),
-              ],
-            ),
-            destinations: _buildDestinations(localizations)
-                .map<NavigationRailDestination>((d) {
-                  return NavigationRailDestination(
-                    icon: Icon(d.icon),
-                    label: Text(d.label),
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                  );
-                })
-                .toList(),
-            trailing: fab != null
-                ? Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [fab, SizedBox(height: 16)],
-                    ),
-                  )
-                : SizedBox(height: 16),
-          ),
+          child: child,
         ),
       ),
     );
+  }
 
-    return Row(
+  Widget _buildNavRail(
+    BuildContext context,
+    BoxConstraints constraints,
+    AppLocalizations localizations,
+    PageWidget page,
+  ) {
+    final fab = page.controller.buildFAB(context, constraints);
+    final rail = _removePadding(
+      context: context,
+      child: NavigationRail(
+        selectedIndex: _currentTab,
+        onDestinationSelected: _onDestinationSelected,
+        destinations: _buildDestinations(localizations)
+            .map<NavigationRailDestination>((d) {
+              return NavigationRailDestination(
+                icon: Icon(d.icon),
+                label: Text(d.label),
+                padding: EdgeInsets.symmetric(vertical: 8),
+              );
+            })
+            .toList(),
+        trailing: fab != null
+            ? Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [fab, SizedBox(height: 16)],
+                ),
+              )
+            : SizedBox(height: 16),
+      ),
+    );
+
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        rail,
+        _buildAppBar(context, constraints, page),
         Expanded(
-          child: Column(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildAppBar(context, constraints, page),
+              rail,
               Expanded(
                 child:
                     // Keep all tabs in memory allowing
