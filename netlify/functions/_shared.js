@@ -3,44 +3,61 @@ import { getStore } from "@netlify/blobs";
 
 export const NS = {
     DRILLS: "drills",      // blob store namespace
-    SLUG_INDEX: "slug-index"
+    SLUG_INDEX: "slug-index",
 };
 
 export const MIME_DRILL = "application/vnd.ringdrill+json";
 export const DRILL_EXT = ".drill";
 
-const drills = getStore(NS.DRILLS);
-const slugIdx = getStore(NS.SLUG_INDEX);
+// ---- Lazy store getters (avoid module-scope initialization) ----
+let _drillsStore;
+let _slugIndexStore;
+
+export function getDrillsStore() {
+    // Lazily created at invocation time (first call per cold start)
+    _drillsStore ||= getStore(NS.DRILLS);
+    return _drillsStore;
+}
+
+export function getSlugIndexStore() {
+    _slugIndexStore ||= getStore(NS.SLUG_INDEX);
+    return _slugIndexStore;
+}
 
 // -------- Blob helpers (v6 API via getStore) --------
 export async function readBinary(key) {
-    // returns Buffer|null
+    const drills = getDrillsStore();
     const ab = await drills.get(key, { type: "arrayBuffer" }); // null if missing
     return ab ? Buffer.from(ab) : null;
 }
 
 export async function writeBinary(key, bytes, contentType) {
+    const drills = getDrillsStore();
     await drills.set(key, bytes, { contentType });
     return { ok: true };
 }
 
 export async function readJson(key, fallback = null) {
+    const drills = getDrillsStore();
     const obj = await drills.get(key, { type: "json" });
     return obj ?? fallback;
 }
 
 export async function writeJson(key, data) {
+    const drills = getDrillsStore();
     await drills.set(key, JSON.stringify(data), { contentType: "application/json" });
     return { ok: true };
 }
 
 // -------- Slug index stored as small JSON docs --------
 export async function getSlugRecord(slug) {
+    const slugIdx = getSlugIndexStore();
     const rec = await slugIdx.get(slug, { type: "json" });
     return rec ?? null;
 }
 
 export async function setSlugRecord(slug, record) {
+    const slugIdx = getSlugIndexStore();
     await slugIdx.set(slug, JSON.stringify(record), { contentType: "application/json" });
 }
 
