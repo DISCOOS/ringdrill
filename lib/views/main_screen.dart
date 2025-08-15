@@ -278,7 +278,9 @@ class _MainScreenState extends State<MainScreen> {
       child: ColoredBox(
         color: Theme.of(context).colorScheme.surface, // rail bg
         child: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
+          padding: removeForRail
+              ? const EdgeInsets.only(left: 12.0)
+              : EdgeInsets.zero,
           child: NavigationRail(
             selectedIndex: _currentTab,
             onDestinationSelected: _onDestinationSelected,
