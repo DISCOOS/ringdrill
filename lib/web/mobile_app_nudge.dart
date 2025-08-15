@@ -35,11 +35,10 @@ class MobileAppNudgeController {
 
     if (WebEnv.getFlag(_kDismissKey) == _kDismissValue) return false;
 
-    if (!WebEnv.isMobile) return false;
     if (!showOniOS && WebEnv.isiOS) return false;
     if (!showOnAndroid && WebEnv.isAndroid) return false;
-    if (!showOnDesktop && WebEnv.isDesktop) return false;
     if (WebEnv.isStandalone && hideInPwa) return false;
+    if (!showOnDesktop && WebEnv.isDesktop) return false;
 
     // Show if notifications are not robust on this platform
     final perm = WebEnv.notifPermission; // granted/denied/default/unsupported
