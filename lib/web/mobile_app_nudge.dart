@@ -276,7 +276,9 @@ class _MobileAppNudgeBannerState extends State<MobileAppNudgeBanner> {
 
   void _getOnAndroid() {
     // One click: app if installed, else Play Store (via fallback)
-    final url = widget.intentUrlBuilder();
+    final url = WebEnv.isAndroid
+        ? widget.intentUrlBuilder()
+        : widget.playStoreUrl;
     _launch(url);
     // no further logic needed; Chrome handles the fallback
   }
