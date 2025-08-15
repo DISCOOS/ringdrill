@@ -1,79 +1,89 @@
 import crypto from "node:crypto";
-import { getBlob, setBlob, listBlobs } from "@netlify/blobs";
+import { getStore } from "@netlify/blobs";
 
-// Namespaces/keys
 export const NS = {
-    SLUG_INDEX: "slug-index", // key: slug -> { ownerId, programId }
+    DRILLS: "drills",      // blob store namespace
+    SLUG_INDEX: "slug-index"
 };
 
 export const MIME_DRILL = "application/vnd.ringdrill+json";
 export const DRILL_EXT = ".drill";
 
-// -------- Blobs helpers --------
-export async function readBlob(key) {
-    const res = await getBlob({ key });
-    if (!res) return null;
-    // getBlob returns { body, contentType, etag } in modern SDKs
-    return res;
+const drills = getStore(NS.DRILLS);
+const slugIdx = getStore(NS.SLUG_INDEX);
+
+// -------- Blob helpers (v6 API via getStore) --------
+export async function readBinary(key) {
+    // returns Buffer|null
+    const ab = await drills.get(key, { type: "arrayBuffer" }); // null if missing
+    return ab ? Buffer.from(ab) : null;
 }
 
-export async function writeBlob(key, bytes, contentType) {
-    // setBlob returns { etag } (and may expose url in newer SDKs)
-    const res = await setBlob({ key, data: bytes, contentType });
-    return res;
+export async function writeBinary(key, bytes, contentType) {
+    await drills.set(key, bytes, { contentType });
+    return { ok: true };
 }
 
 export async function readJson(key, fallback = null) {
-    const res = await readBlob(key);
-    if (!res?.body) return fallback;
-    return JSON.parse(Buffer.from(res.body).toString("utf8"));
+    const obj = await drills.get(key, { type: "json" });
+    return obj ?? fallback;
 }
 
-export async function writeJson(key, obj) {
-    const bytes = Buffer.from(JSON.stringify(obj, null, 2), "utf8");
-    return await writeBlob(key, bytes, "application/json");
+export async function writeJson(key, data) {
+    await drills.set(key, JSON.stringify(data), { contentType: "application/json" });
+    return { ok: true };
 }
 
-// -------- Slug index --------
+// -------- Slug index stored as small JSON docs --------
 export async function getSlugRecord(slug) {
-    const key = `${NS.SLUG_INDEX}/${slug}.json`;
-    return await readJson(key, null);
+    const rec = await slugIdx.get(slug, { type: "json" });
+    return rec ?? null;
 }
 
 export async function setSlugRecord(slug, record) {
-    const key = `${NS.SLUG_INDEX}/${slug}.json`;
-    await writeJson(key, record);
+    await slugIdx.set(slug, JSON.stringify(record), { contentType: "application/json" });
 }
 
-// -------- Program keys --------
 export function keysFor({ ownerId, programId, version }) {
     return {
         versioned: `drills/${ownerId}/${programId}/${version}${DRILL_EXT}`,
-        latest: `drills/${ownerId}/${programId}/latest${DRILL_EXT}`,
-        meta: `drills/${ownerId}/${programId}/meta.json`
+        latest:    `drills/${ownerId}/${programId}/latest${DRILL_EXT}`,
+        meta:      `drills/${ownerId}/${programId}/meta.json`,
     };
 }
 
-// -------- ETag / hashing --------
+// -------- Hash / ETag helpers --------
 export function sha256Hex(buf) {
     return crypto.createHash("sha256").update(buf).digest("hex");
 }
-
 export function toStrongEtag(hex) {
     return `"${hex}"`;
 }
 
-// -------- Utilities --------
+// -------- Misc --------
 export function sanitizeSlug(s) {
     return (s || "")
-        .toLowerCase()
-        .trim()
+        .toLowerCase().trim()
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9\-]/g, "-")
         .replace(/\-+/g, "-")
         .replace(/^\-|\-$/g, "");
 }
+export function nowIso() { return new Date().toISOString(); }
+export function absoluteOrigin(event) {
+    const h = event.headers || {};
+    const proto = h["x-forwarded-proto"] || "https";
+    const host  = h["x-forwarded-host"]  || h["host"];
+    return `${proto}://${host}`;
+}
 
-export function nowIso() {
-    return new Date().toISOString();
+// Accept base64 or raw string (utf8/json or latin1 for arbitrary bytes)
+export function decodeBody(event) {
+    if (!event || typeof event.body !== "string") throw new Error("Missing body");
+    if (event.isBase64Encoded) return Buffer.from(event.body, "base64");
+    const ct = (event.headers?.["content-type"] || event.headers?.["Content-Type"] || "").toLowerCase();
+    const s = event.body;
+    const looksB64 = /^[A-Za-z0-9+/=\r\n]+$/.test(s.trim()) && s.trim().length % 4 === 0;
+    if (looksB64) { try { return Buffer.from(s, "base64"); } catch { /* ignore */ } }
+    return Buffer.from(s, ct.includes("json") ? "utf8" : "latin1");
 }
