@@ -32,7 +32,8 @@ export async function handler(event) {
         await writeBinary(latest,    bytes, MIME_DRILL);
 
         let metaDoc = await readJson(meta, {
-            programId, slug, name, ownerId, description: "", published: false, tags: [], versions: []
+            programId, slug, name, ownerId,
+            description: "", published: false, tags: [], versions: []
         });
 
         const etag = toStrongEtag(sha256Hex(bytes));

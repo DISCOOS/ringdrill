@@ -17,7 +17,6 @@ export async function handler(event) {
         const m = await readJson(meta, null);
         if (!m) return { statusCode: 404, body: "Not found" };
 
-        // pick version info
         let vinfo = null;
         if (verMaybe) {
             vinfo = (m.versions || []).find(v => v.v === verMaybe) || null;
@@ -36,7 +35,6 @@ export async function handler(event) {
             "Content-Length": String(vinfo.size || 0),
             "Last-Modified": vinfo.updatedAt ? new Date(vinfo.updatedAt).toUTCString() : undefined,
         };
-        // remove undefined
         Object.keys(headers).forEach(k => headers[k] === undefined && delete headers[k]);
 
         return { statusCode: 200, headers, body: "" };

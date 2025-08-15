@@ -4,7 +4,7 @@
     "node": ">=20.12.2"
   },
   "dependencies": {
-    "@netlify/blobs": "^6.5.0"
+    "@netlify/blobs": "^10.0.8"
   },
   "name": "functions",
   "version": "1.0.0",
