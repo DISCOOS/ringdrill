@@ -424,7 +424,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateRequired => 'Update required';
 
   @override
+  String get restartNow => 'RESTART';
+
+  @override
   String get restartAppToApplyNewPatch => 'Restart app to apply new patch';
+
+  @override
+  String get appUpdateAvailable => 'An update is available';
 
   @override
   String get appUpdatedRestarting => 'App updated, restarting...';

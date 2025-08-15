@@ -421,8 +421,14 @@ class AppLocalizationsNb extends AppLocalizations {
   String get updateRequired => 'Oppdater';
 
   @override
+  String get restartNow => 'RESTART';
+
+  @override
   String get restartAppToApplyNewPatch =>
       'Start appen på nytt for ny oppdatering';
+
+  @override
+  String get appUpdateAvailable => 'An update is available';
 
   @override
   String get appUpdatedRestarting => 'Appen er oppdatert, starter på nytt...';
