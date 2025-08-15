@@ -98,6 +98,87 @@
       document.body.style.background = "transparent";
     }
   </script>
+  <!-- Prompt users to use native apps on mobile OS -->
+  <script>
+    (function () {
+      const ua = navigator.userAgent || "";
+      let deferredInstallPrompt = null;
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+      });
+
+      function setFlag(key, value, days) {
+        try {
+          const exp = Date.now() + days * 24 * 60 * 60 * 1000;
+          localStorage.setItem(key, JSON.stringify({ v: value, exp }));
+        } catch {}
+      }
+      function getFlag(key) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) return null;
+          const obj = JSON.parse(raw);
+          if (!obj || typeof obj.exp !== "number" || Date.now() > obj.exp) {
+            localStorage.removeItem(key);
+            return null;
+          }
+          return obj.v;
+        } catch {
+          return null;
+        }
+      }
+
+      function isIpadOS() {
+        // iPad pretending to be macOS in Safari ("MacIntel" + touch)
+        return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+      }
+
+      window.ringdrillEnv = {
+        isMobile: () => /Android|iPhone|iPad|iPod/i.test(ua),
+        isAndroid: () => /Android/i.test(ua),
+        isiOS: () => /iPhone|iPad|iPod/i.test(ua),
+        isStandalone: () =>
+                window.matchMedia?.("(display-mode: standalone)")?.matches ||
+                window.navigator.standalone === true,
+        isDesktop: () => {
+          const uad = navigator.userAgentData;
+          if (uad && typeof uad.mobile === "boolean") {
+            // Chromium: 'mobile' already tells us
+            if (uad.mobile) return false;
+          }
+          const isMobileUA = /Android|iPhone|iPad|iPod/i.test(ua);
+          const finePointer = matchMedia("(pointer: fine)").matches;
+          const hoverCapable = matchMedia("(hover: hover)").matches;
+          // Treat iPadOS (desktop UA) as NOT desktop
+          if (isIpadOS()) return false;
+          return !isMobileUA && (finePointer || hoverCapable);
+        },
+        notifPermission: () => {
+          if (!("Notification" in window)) return "unsupported";
+          try {
+            return Notification.permission || "default";
+          } catch {
+            return "default";
+          }
+        },
+        hasInstallPrompt: () => !!deferredInstallPrompt,
+        promptInstall: async () => {
+          if (!deferredInstallPrompt) return false;
+          try {
+            await deferredInstallPrompt.prompt();
+            deferredInstallPrompt = null;
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        setFlag,
+        getFlag,
+      };
+    })();
+  </script>
 </head>
 
 <body>

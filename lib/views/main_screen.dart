@@ -8,15 +8,15 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/page_widget.dart';
-import 'package:ringdrill/views/patch_alert_widget.dart';
 import 'package:ringdrill/views/program_view.dart';
-import 'package:ringdrill/views/settings_page.dart';
-import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
+import 'package:ringdrill/web/platform_widget.dart'
+    if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
+import 'package:ringdrill/web/settings_page.dart'
+    if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:upgrader/upgrader.dart';
 
 GoRouter buildRouter(bool isFirstLaunch) {
   return GoRouter(
@@ -24,31 +24,11 @@ GoRouter buildRouter(bool isFirstLaunch) {
     routes: [
       ShellRoute(
         builder: (BuildContext context, GoRouterState state, Widget child) {
-          return // ---------------------------------
-          // Upgrader
-          // ---------------------------------
-          // On Android, the default behavior will be to use
-          // the Google Play Store version of the app.
-          // On iOS, the default behavior will be to use the
-          // App Store version of the app, so update the
-          // Bundle Identifier in example/ios/Runner with a
-          // valid identifier already in the App Store.
-          UpgradeAlert(
-            // ---------------------------------
-            // Shorebird patch upgrades
-            // ---------------------------------
-            // Notifies user of new patch when app is running
-            child: PatchAlertWidget(
-              // ---------------------------------
-              // Handle incoming files from OS
-              // ---------------------------------
-              child: SharedFileWidget(
-                child: MainScreen(
-                  isFirstLaunch: isFirstLaunch,
-                  router: GoRouter.of(context),
-                  routes: ['/program', '/stations', '/teams'],
-                ),
-              ),
+          return PlatformWidget(
+            child: MainScreen(
+              isFirstLaunch: isFirstLaunch,
+              router: GoRouter.of(context),
+              routes: ['/program', '/stations', '/teams'],
             ),
           );
         },

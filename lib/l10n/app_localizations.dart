@@ -185,8 +185,68 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
+  /// **'Get reliable notifications'**
+  String get getReliableNotifications;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Local notifications aren’t fully supported on the web. Browsers can’t run our code in the background to trigger precise alerts, so timing and reliability are limited. For dependable alerts, use the RingDrill mobile app.'**
+  String get noReliableNotificationsReason;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Use the RingDrill app for the best notification support.'**
+  String get useMobileAppNudge;
+
+  /// No description provided for @getOnAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'On Android'**
+  String get getOnAndroid;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'On iOS'**
+  String get getOniOS;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'On Desktop'**
+  String get getOnDesktop;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Open the app'**
+  String get openInApp;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Install web app'**
+  String get installWebApp;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Continue on web'**
+  String get continueOnWeb;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
   /// **'CONFIRM'**
   String get confirm;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'DISMISS'**
+  String get dismiss;
 
   /// Message
   ///

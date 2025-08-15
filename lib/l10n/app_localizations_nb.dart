@@ -56,7 +56,39 @@ class AppLocalizationsNb extends AppLocalizations {
       'Aktiver innsamling av analyser og krasjrapporter. Disse dataene er knyttet til enheten din, men ikke identiteten din.';
 
   @override
+  String get getReliableNotifications => 'Få pålitelige varsler';
+
+  @override
+  String get noReliableNotificationsReason =>
+      'Lokale varsler er ikke fullt støttet på web. Nettlesere kan ikke kjøre koden vår i bakgrunnen for å utløse presise varsler, så timing og pålitelighet er begrenset. For pålitelige varsler, bruk RingDrill-appen.';
+
+  @override
+  String get useMobileAppNudge =>
+      'Bruk RingDrill-appen for best mulig varslingsstøtte.';
+
+  @override
+  String get getOnAndroid => 'På Android';
+
+  @override
+  String get getOniOS => 'På iOS';
+
+  @override
+  String get getOnDesktop => 'På Desktop';
+
+  @override
+  String get openInApp => 'Åpne i app';
+
+  @override
+  String get installWebApp => 'Installer nett-app';
+
+  @override
+  String get continueOnWeb => 'Fortsett på nett';
+
+  @override
   String get confirm => 'BEKREFT';
+
+  @override
+  String get dismiss => 'AVVIS';
 
   @override
   String get confirmDeleteExercise =>
@@ -224,13 +256,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get openProgram => 'Åpne...';
 
   @override
-  String get importProgram => 'Importer...';
+  String get importProgram => 'Import...';
 
   @override
-  String get exportProgram => 'Eksporter...';
+  String get exportProgram => 'Eksport...';
 
   @override
-  String get shareProgram => 'Share...';
+  String get shareProgram => 'Del...';
 
   @override
   String get stationDescriptionHint => 'Beskriv hvordan posten skal utføres';

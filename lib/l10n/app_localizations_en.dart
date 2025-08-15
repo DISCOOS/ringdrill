@@ -56,7 +56,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable collection of analytics and crash reports. This data is linked to your device, but not your identity.';
 
   @override
+  String get getReliableNotifications => 'Get reliable notifications';
+
+  @override
+  String get noReliableNotificationsReason =>
+      'Local notifications aren’t fully supported on the web. Browsers can’t run our code in the background to trigger precise alerts, so timing and reliability are limited. For dependable alerts, use the RingDrill mobile app.';
+
+  @override
+  String get useMobileAppNudge =>
+      'Use the RingDrill app for the best notification support.';
+
+  @override
+  String get getOnAndroid => 'On Android';
+
+  @override
+  String get getOniOS => 'On iOS';
+
+  @override
+  String get getOnDesktop => 'On Desktop';
+
+  @override
+  String get openInApp => 'Open the app';
+
+  @override
+  String get installWebApp => 'Install web app';
+
+  @override
+  String get continueOnWeb => 'Continue on web';
+
+  @override
   String get confirm => 'CONFIRM';
+
+  @override
+  String get dismiss => 'DISMISS';
 
   @override
   String get confirmDeleteExercise =>

@@ -20,8 +20,8 @@ import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
 import 'feedback.dart';
 
-export 'program_page_controller_web.dart'
-    if (dart.library.io) 'program_page_controller_native.dart';
+export '../web/program_page_controller.dart'
+    if (dart.library.io) 'program_page_controller.dart';
 
 class ProgramView extends StatefulWidget {
   const ProgramView({super.key});

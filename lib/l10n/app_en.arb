@@ -55,8 +55,48 @@
   "@allowAppAnalyticsMessage": {
     "description": "Message"
   },
+  "getReliableNotifications": "Get reliable notifications",
+  "@getReliableNotifications": {
+    "description": "Label"
+  },
+  "noReliableNotificationsReason": "Local notifications aren’t fully supported on the web. Browsers can’t run our code in the background to trigger precise alerts, so timing and reliability are limited. For dependable alerts, use the RingDrill mobile app.",
+  "@noReliableNotificationsReason": {
+    "description": "Message"
+  },
+  "useMobileAppNudge": "Use the RingDrill app for the best notification support.",
+  "@useMobileAppNudge": {
+    "description": "Message"
+  },
+  "getOnAndroid": "On Android",
+  "@getAndroid": {
+    "description": "Label"
+  },
+  "getOniOS": "On iOS",
+  "@getOniOS": {
+    "description": "Label"
+  },
+  "getOnDesktop": "On Desktop",
+  "@getOnDesktop": {
+    "description": "Label"
+  },
+  "openInApp": "Open the app",
+  "@openInApp": {
+    "description": "Label"
+  },
+  "installWebApp": "Install web app",
+  "@installWebApp": {
+    "description": "Label"
+  },
+  "continueOnWeb": "Continue on web",
+  "@continueOnWeb": {
+    "description": "Label"
+  },
   "confirm": "CONFIRM",
   "@confirm": {
+    "description": "Label"
+  },
+  "dismiss": "DISMISS",
+  "@dismiss": {
     "description": "Label"
   },
   "confirmDeleteExercise": "This will delete the exercise. Do you want to continue?",
