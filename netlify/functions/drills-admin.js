@@ -16,15 +16,14 @@ export default async function (request) {
         if (!ok) return json({ error: "Unauthorized" }, 401);
 
         const url = new URL(request.url);
-        const actionRaw = (url.searchParams.get("action") || "").toLowerCase();
-        const action = actionRaw === "list-all" ? "listall" : actionRaw; // alias
+        const action = (url.searchParams.get("action") || "").toLowerCase();
         const slug = url.searchParams.get("slug");
         const version = url.searchParams.get("version");
 
         // Actions that DO require a slug:
         const needsSlug = new Set(["unpublish", "publish", "deleteversion", "deleteall", "list"]);
         if (needsSlug.has(action) && !slug) {
-            return json({ error: "Missing slug" }, 400);
+            return json({ error: "Missing slug for action: " + action }, 400);
         }
 
         switch (action) {

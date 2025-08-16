@@ -75,65 +75,32 @@ Future<void> main(List<String> argv) async {
         out = _toJson(await client.deleteAll(args[0], adminToken: token));
         break;
 
+      case 'list-versions':
+        {
+          // list <slug>
+          if (args.length != 1) _fail('Usage: list <slug>');
+          final item = await client.listVersions(
+            adminToken: token,
+            slug: args[0],
+          );
+          _printListOne(item, jsonOut);
+          break;
+        }
+
       case 'list-all':
         {
+          // listall [limit] [cursor]
           final limit = args.isNotEmpty ? int.tryParse(args[0]) ?? 50 : 50;
           final cursor = args.length > 1 ? args[1] : null;
-          final prefix = args.length > 2 ? args[2] : null;
-
           final page = await client.listAll(
             adminToken: token,
             limit: limit,
             cursor: cursor,
-            prefix: prefix,
           );
-
-          if (jsonOut) {
-            stdout.writeln(
-              jsonEncode({
-                'items': page.items
-                    .map(
-                      (i) => {
-                        'slug': i.slug,
-                        'ownerId': i.ownerId,
-                        'programId': i.programId,
-                        'published': i.published,
-                        'versions': i.versions,
-                        'latest': i.latest,
-                        'updatedAt': i.updatedAt?.toIso8601String(),
-                      },
-                    )
-                    .toList(),
-                if (page.nextCursor != null) 'nextCursor': page.nextCursor,
-                if (page.generatedAt != null)
-                  'generatedAt': page.generatedAt!.toIso8601String(),
-              }),
-            );
-          } else {
-            stdout.writeln('✔ ${page.items.length} items');
-            for (final i in page.items) {
-              stdout.writeln('  slug: ${i.slug}  published: ${i.published}');
-              stdout.writeln('    programId: ${i.programId}');
-              if (i.latest != null) {
-                stdout.writeln(
-                  '    latest: v=${i.latest!['v']} etag=${i.latest!['etag']}',
-                );
-              }
-              stdout.writeln(
-                '    versions: ${i.versions.map((v) => v['v']).join(', ')}',
-              );
-              if (i.updatedAt != null) {
-                stdout.writeln(
-                  '    updatedAt: ${i.updatedAt!.toIso8601String()}',
-                );
-              }
-            }
-            if (page.nextCursor != null) {
-              stdout.writeln('nextCursor: ${page.nextCursor}');
-            }
-          }
+          _printListPage(page, jsonOut);
           break;
         }
+
       default:
         _printUsage(parser);
         exit(64); // EX_USAGE
@@ -184,12 +151,13 @@ USAGE:
   ringdrill [global options] <command> [args]
 
 COMMANDS:
-  list-all [limit] [cursor] [prefix]  List all slugs (admin, paginated)
-  publish <slug>                      Publish a drill
-  unpublish <slug>                    Unpublish a drill
-  delete-version <slug> <ver>         Delete a version
-  delete-all <slug>                   Delete all versions for a slug
-
+  list-versions <slug>            List versions for a slug (admin action=list)
+  list-all [limit] [cursor]       List all slugs (admin action=listall)
+  publish <slug>                  Publish a drill
+  unpublish <slug>                Unpublish a drill
+  delete-version <slug> <ver>     Delete a version
+  delete-all <slug>               Delete all versions for a slug
+  
 GLOBAL OPTIONS:
 ${parser.usage}
 
@@ -202,6 +170,79 @@ ENV:
 Never _fail(String msg) {
   stderr.writeln(msg);
   exit(64); // EX_USAGE
+}
+
+void _printListOne(AdminListItem i, bool jsonOut) {
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'slug': i.slug,
+        'ownerId': i.ownerId,
+        'programId': i.programId,
+        'published': i.published,
+        'versionCount': i.versionCount,
+        if (i.latest != null) 'latest': i.latest,
+        if (i.versions != null) 'versions': i.versions,
+      }),
+    );
+    return;
+  }
+  final pub = i.published == true
+      ? ' (published)'
+      : i.published == false
+      ? ' (unpublished)'
+      : '';
+  stdout.writeln('✔ ${i.slug}$pub');
+  stdout.writeln('  programId: ${i.programId}');
+  stdout.writeln('  versions : ${i.versionCount ?? 0}');
+  if (i.latest != null) {
+    stdout.writeln(
+      '  latest   : v=${i.latest!['v']} etag=${i.latest!['etag']} size=${i.latest!['size']} updatedAt=${i.latest!['updatedAt']}',
+    );
+  }
+  if (i.versions != null && i.versions!.isNotEmpty) {
+    for (final v in i.versions!) {
+      stdout.writeln(
+        '    - v=${v['v']} etag=${v['etag']} size=${v['size']} updatedAt=${v['updatedAt']}',
+      );
+    }
+  }
+}
+
+void _printListPage(AdminListPageResponse page, bool jsonOut) {
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'items': page.items
+            .map(
+              (i) => {
+                'slug': i.slug,
+                'ownerId': i.ownerId,
+                'programId': i.programId,
+                'published': i.published,
+                'versionCount': i.versionCount,
+                if (i.latest != null) 'latest': i.latest,
+              },
+            )
+            .toList(),
+        if (page.nextCursor != null) 'nextCursor': page.nextCursor,
+      }),
+    );
+    return;
+  }
+  stdout.writeln('✔ ${page.items.length} items');
+  for (final i in page.items) {
+    final pub = i.published == true
+        ? ' (published)'
+        : i.published == false
+        ? ' (unpublished)'
+        : '';
+    final latest = i.latest != null ? ' v=${i.latest!['v']}' : '';
+    stdout.writeln('  ${i.slug}$pub  versions=${i.versionCount ?? 0}$latest');
+  }
+  if (page.nextCursor != null) {
+    stdout.writeln('nextCursor: ${page.nextCursor}');
+  }
 }
 
 void _printResult(Map<String, dynamic> jsonMap, bool jsonOut) {
