@@ -549,14 +549,14 @@ class DrillClient {
     String version, {
     required String adminToken,
   }) => _adminAction(
-    'deleteVersion',
+    'deleteversion',
     slug: slug,
     version: version,
     adminToken: adminToken,
   );
 
   Future<AdminResult> deleteAll(String slug, {required String adminToken}) =>
-      _adminAction('deleteAll', slug: slug, adminToken: adminToken);
+      _adminAction('deleteall', slug: slug, adminToken: adminToken);
 
   // -------------------------------
   // Helpers

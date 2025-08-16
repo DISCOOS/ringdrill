@@ -16,9 +16,11 @@ export default async function (request) {
         if (!ok) return json({ error: "Unauthorized" }, 401);
 
         const url = new URL(request.url);
-        const action = url.searchParams.get("action");
-        const slug = (url.searchParams.get("slug") || "").trim();
-        const version = url.searchParams.get("version");
+
+        // normalize: lowercase + trim only
+        let action = (url.searchParams.get("action") ?? "").toLowerCase().trim();
+        let slug = (url.searchParams.get("slug") ?? "").trim();
+        let version = (url.searchParams.get("version") ?? "").trim();
 
         switch (action) {
             // ---------- READ-ONLY ADMIN ----------
@@ -77,7 +79,7 @@ export default async function (request) {
                 if (!slug) return json({ error: "Missing slug for action: versions" }, 400);
 
                 const rec = await getSlugRecord(slug);
-                if (!rec) return json({ error: "Unknown slug" }, 404);
+                if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
                 const { meta } = keysFor({ ownerId, programId, version: "latest" });
@@ -105,7 +107,7 @@ export default async function (request) {
                 if (!slug) return json({ error: `Missing slug for action: ${action}` }, 400);
 
                 const rec = await getSlugRecord(slug);
-                if (!rec) return json({ error: "Unknown slug" }, 404);
+                if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
                 const { meta } = keysFor({ ownerId, programId, version: "latest" });
@@ -123,11 +125,11 @@ export default async function (request) {
             }
 
             case "deleteversion": {
-                if (!slug) return json({ error: "Missing slug for action: deleteVersion" }, 400);
+                if (!slug) return json({ error: "Missing slug for action: deleteversion" }, 400);
                 if (!version) return json({ error: "Missing version" }, 400);
 
                 const rec = await getSlugRecord(slug);
-                if (!rec) return json({ error: "Unknown slug" }, 404);
+                if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
 
                 const { ownerId, programId } = rec;
                 const { latest, meta } = keysFor({ ownerId, programId, version: "latest" });
@@ -179,10 +181,10 @@ export default async function (request) {
             }
 
             case "deleteall": {
-                if (!slug) return json({ error: "Missing slug for action: deleteAll" }, 400);
+                if (!slug) return json({ error: "Missing slug for action: deleteall" }, 400);
 
                 const rec = await getSlugRecord(slug);
-                if (!rec) return json({ error: "Unknown slug" }, 404);
+                if (!rec) return json({ error: "Unknown slug: " + slug }, 404);
                 const { ownerId, programId } = rec;
 
                 const prefix = `drills/${ownerId}/${programId}/`;
@@ -202,7 +204,7 @@ export default async function (request) {
 
             default:
                 return json({
-                    error: "Invalid action: " + action + "." +
+                    error: "Invalid action: " + action + ". " +
                             "Use: listall | versions | unpublish | publish | deleteversion | deleteall"
                     }, 400
                 );

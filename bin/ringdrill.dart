@@ -61,6 +61,7 @@ Future<void> main(List<String> argv) async {
       case 'unpublish':
         if (args.length != 1) _fail('Usage: unpublish <slug>');
         out = _toJson(await client.unpublish(args[0], adminToken: token));
+        _printResult(out, jsonOut);
         break;
 
       case 'delete-version':
@@ -68,11 +69,13 @@ Future<void> main(List<String> argv) async {
         out = _toJson(
           await client.deleteVersion(args[0], args[1], adminToken: token),
         );
+        _printResult(out, jsonOut);
         break;
 
       case 'delete-all':
         if (args.length != 1) _fail('Usage: delete-all <slug>');
         out = _toJson(await client.deleteAll(args[0], adminToken: token));
+        _printResult(out, jsonOut);
         break;
 
       case 'list-versions':
@@ -102,8 +105,6 @@ Future<void> main(List<String> argv) async {
         _printUsage(parser);
         exit(64); // EX_USAGE
     }
-
-    _printResult(out, jsonOut);
   } on DrillApiException catch (e) {
     if (jsonOut && e.body != null && e.body!.isNotEmpty) {
       try {
