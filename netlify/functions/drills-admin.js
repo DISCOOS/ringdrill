@@ -16,41 +16,12 @@ export default async function (request) {
         if (!ok) return json({ error: "Unauthorized" }, 401);
 
         const url = new URL(request.url);
-        const action = (url.searchParams.get("action") || "").toLowerCase();
-        const slug = url.searchParams.get("slug");
+        const action = url.searchParams.get("action");
+        const slug = (url.searchParams.get("slug") || "").trim();
         const version = url.searchParams.get("version");
-
-        // Actions that DO require a slug:
-        const needsSlug = new Set(["unpublish", "publish", "deleteversion", "deleteall", "list"]);
-        if (needsSlug.has(action) && !slug) {
-            return json({ error: "Missing slug for action: " + action }, 400);
-        }
 
         switch (action) {
             // ---------- READ-ONLY ADMIN ----------
-            case "list": {
-                const rec = await getSlugRecord(slug);
-                if (!rec) return json({ error: "Unknown slug" }, 404);
-
-                const { ownerId, programId } = rec;
-                const { meta } = keysFor({ ownerId, programId, version: "latest" });
-                const m = await readJson(meta, null);
-                if (!m) return json({ slug, ownerId, programId, versions: [], published: false });
-
-                const versions = Array.isArray(m.versions) ? m.versions.slice()
-                    .sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})) : [];
-                const latest = versions[versions.length - 1] || null;
-
-                return json({
-                    slug, ownerId, programId,
-                    name: m.name, tags: m.tags || [],
-                    published: !!m.published,
-                    versionCount: versions.length,
-                    latest: latest ? { v: latest.v, etag: latest.etag, size: latest.size, updatedAt: latest.updatedAt } : null,
-                    versions
-                });
-            }
-
             case "listall": {
                 const limit  = clampInt(url.searchParams.get("limit"), 1, 200, 50);
                 let cursor = url.searchParams.get("cursor") || undefined;
@@ -76,8 +47,9 @@ export default async function (request) {
                             name = m.name;
                             tags = m.tags || [];
                             published = !!m.published;
-                            const versions = Array.isArray(m.versions) ? m.versions.slice()
-                                .sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})) : [];
+                            const versions = Array.isArray(m.versions)
+                                ? m.versions.slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true}))
+                                : [];
                             versionCount = versions.length;
                             latest = versions[versions.length - 1] || null;
                         }
@@ -102,9 +74,37 @@ export default async function (request) {
                 return json(nextCursor ? { items, nextCursor } : { items });
             }
 
-            // ---------- MUTATING ADMIN (unchanged semantics, guarded with ETags) ----------
+            case "list": {
+                if (!slug) return json({ error: "Missing slug for action: list" }, 400);
+
+                const rec = await getSlugRecord(slug);
+                if (!rec) return json({ error: "Unknown slug" }, 404);
+
+                const { ownerId, programId } = rec;
+                const { meta } = keysFor({ ownerId, programId, version: "latest" });
+                const m = await readJson(meta, null);
+                if (!m) return json({ slug, ownerId, programId, versions: [], published: false });
+
+                const versions = Array.isArray(m.versions)
+                    ? m.versions.slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true}))
+                    : [];
+                const latest = versions[versions.length - 1] || null;
+
+                return json({
+                    slug, ownerId, programId,
+                    name: m.name, tags: m.tags || [],
+                    published: !!m.published,
+                    versionCount: versions.length,
+                    latest: latest ? { v: latest.v, etag: latest.etag, size: latest.size, updatedAt: latest.updatedAt } : null,
+                    versions
+                });
+            }
+
+            // ---------- MUTATING ADMIN (guarded with ETags) ----------
             case "unpublish":
             case "publish": {
+                if (!slug) return json({ error: `Missing slug for action: ${action}` }, 400);
+
                 const rec = await getSlugRecord(slug);
                 if (!rec) return json({ error: "Unknown slug" }, 404);
 
@@ -124,6 +124,9 @@ export default async function (request) {
             }
 
             case "deleteversion": {
+                if (!slug) return json({ error: "Missing slug for action: deleteVersion" }, 400);
+                if (!version) return json({ error: "Missing version" }, 400);
+
                 const rec = await getSlugRecord(slug);
                 if (!rec) return json({ error: "Unknown slug" }, 404);
 
@@ -177,6 +180,8 @@ export default async function (request) {
             }
 
             case "deleteall": {
+                if (!slug) return json({ error: "Missing slug for action: deleteAll" }, 400);
+
                 const rec = await getSlugRecord(slug);
                 if (!rec) return json({ error: "Unknown slug" }, 404);
                 const { ownerId, programId } = rec;
