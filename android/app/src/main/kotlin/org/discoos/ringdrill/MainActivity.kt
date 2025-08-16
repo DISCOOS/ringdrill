@@ -68,6 +68,7 @@ class MainActivity : FlutterActivity() {
                     // Some providers require typed access; try InputStream first, then typed AFD
                     val inputStream = contentResolver.openInputStream(uri)
                         ?: contentResolver.openTypedAssetFileDescriptor(uri, "application/x-drill", null)?.createInputStream()
+                        ?: contentResolver.openTypedAssetFileDescriptor(uri, "application/vnd.ringdrill+zip", null)?.createInputStream()
 
                     if (inputStream == null) {
                         Log.e("RingDrillShare", "Unable to open stream for $uri")

@@ -81,6 +81,8 @@
               </array>
               <key>public.mime-type</key>
               <string>application/x-drill</string>
+              <key>public.mime-type</key>
+              <string>application/vnd.ringdrill+zip</string>
             </dict>
           </dict>
         </array>

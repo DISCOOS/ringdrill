@@ -10,8 +10,7 @@ import 'package:universal_io/io.dart';
 class DrillFile {
   static const drillSchema1_0 = '1.0';
   // TODO: Change to iana format for custom mime type
-  // static const drillMimeType = 'application/vnd.ringdrill+zip';
-  static const drillMimeType = 'application/x-drill';
+  static const drillMimeType = 'application/vnd.ringdrill+zip';
   static const drillExtension = 'drill';
 
   DrillFile({

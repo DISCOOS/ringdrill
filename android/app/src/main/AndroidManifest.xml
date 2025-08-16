@@ -119,6 +119,7 @@
 
                 <!-- Match content:// URIs for .drill -->
                 <data android:scheme="content" android:mimeType="application/x-drill" />
+                <data android:scheme="content" android:mimeType="application/vnd.ringdrill+zip" />
                 <data android:scheme="content" android:mimeType="application/octet-stream" />
                 <data android:scheme="content" android:mimeType="*/*" />
             </intent-filter>
@@ -130,6 +131,7 @@
 
                 <!-- MIME types you want to accept -->
                 <data android:mimeType="application/x-drill" />
+                <data android:mimeType="application/vnd.ringdrill+zip" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="*/*" />
             </intent-filter>
