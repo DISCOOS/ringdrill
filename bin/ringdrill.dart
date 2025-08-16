@@ -51,7 +51,7 @@ Future<void> main(List<String> argv) async {
   final client = DrillClient(baseUrl: baseUrl);
 
   try {
-    Map<String, dynamic> out;
+    Map<String, dynamic> out = {};
     switch (cmd) {
       case 'publish':
         if (args.length != 1) _fail('Usage: publish <slug>');
@@ -75,6 +75,65 @@ Future<void> main(List<String> argv) async {
         out = _toJson(await client.deleteAll(args[0], adminToken: token));
         break;
 
+      case 'list-all':
+        {
+          final limit = args.isNotEmpty ? int.tryParse(args[0]) ?? 50 : 50;
+          final cursor = args.length > 1 ? args[1] : null;
+          final prefix = args.length > 2 ? args[2] : null;
+
+          final page = await client.listAll(
+            adminToken: token,
+            limit: limit,
+            cursor: cursor,
+            prefix: prefix,
+          );
+
+          if (jsonOut) {
+            stdout.writeln(
+              jsonEncode({
+                'items': page.items
+                    .map(
+                      (i) => {
+                        'slug': i.slug,
+                        'ownerId': i.ownerId,
+                        'programId': i.programId,
+                        'published': i.published,
+                        'versions': i.versions,
+                        'latest': i.latest,
+                        'updatedAt': i.updatedAt?.toIso8601String(),
+                      },
+                    )
+                    .toList(),
+                if (page.nextCursor != null) 'nextCursor': page.nextCursor,
+                if (page.generatedAt != null)
+                  'generatedAt': page.generatedAt!.toIso8601String(),
+              }),
+            );
+          } else {
+            stdout.writeln('✔ ${page.items.length} items');
+            for (final i in page.items) {
+              stdout.writeln('  slug: ${i.slug}  published: ${i.published}');
+              stdout.writeln('    programId: ${i.programId}');
+              if (i.latest != null) {
+                stdout.writeln(
+                  '    latest: v=${i.latest!['v']} etag=${i.latest!['etag']}',
+                );
+              }
+              stdout.writeln(
+                '    versions: ${i.versions.map((v) => v['v']).join(', ')}',
+              );
+              if (i.updatedAt != null) {
+                stdout.writeln(
+                  '    updatedAt: ${i.updatedAt!.toIso8601String()}',
+                );
+              }
+            }
+            if (page.nextCursor != null) {
+              stdout.writeln('nextCursor: ${page.nextCursor}');
+            }
+          }
+          break;
+        }
       default:
         _printUsage(parser);
         exit(64); // EX_USAGE
@@ -125,10 +184,11 @@ USAGE:
   ringdrill [global options] <command> [args]
 
 COMMANDS:
-  publish <slug>               Publish a drill
-  unpublish <slug>             Unpublish a drill
-  delete-version <slug> <ver>  Delete a version
-  delete-all <slug>            Delete all versions for a slug
+  list [limit] [cursor] [prefix]  List all slugs (admin, paginated)
+  publish <slug>                  Publish a drill
+  unpublish <slug>                Unpublish a drill
+  delete-version <slug> <ver>     Delete a version
+  delete-all <slug>               Delete all versions for a slug
 
 GLOBAL OPTIONS:
 ${parser.usage}

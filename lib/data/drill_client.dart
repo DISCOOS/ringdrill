@@ -153,6 +153,65 @@ class MarketFeedPageResponse {
       );
 }
 
+@immutable
+class AdminListItem {
+  final String slug;
+  final String ownerId;
+  final String programId;
+  final bool published;
+  final List<Map<String, dynamic>> versions; // {v, etag, size, updatedAt}
+  final Map<String, dynamic>? latest; // {v, etag}
+  final DateTime? updatedAt;
+
+  const AdminListItem({
+    required this.slug,
+    required this.ownerId,
+    required this.programId,
+    required this.published,
+    required this.versions,
+    required this.latest,
+    required this.updatedAt,
+  });
+
+  factory AdminListItem.fromJson(Map<String, dynamic> j) => AdminListItem(
+    slug: j['slug'] as String,
+    ownerId: j['ownerId'] as String,
+    programId: j['programId'] as String,
+    published: j['published'] == true,
+    versions: (j['versions'] as List<dynamic>? ?? const [])
+        .map((e) => (e as Map).map((k, v) => MapEntry(k.toString(), v)))
+        .toList(),
+    latest: (j['latest'] as Map?)?.map((k, v) => MapEntry(k.toString(), v)),
+    updatedAt: j['updatedAt'] == null
+        ? null
+        : DateTime.tryParse(j['updatedAt'] as String),
+  );
+}
+
+@immutable
+class AdminListPageResponse {
+  final List<AdminListItem> items;
+  final String? nextCursor;
+  final DateTime? generatedAt;
+
+  const AdminListPageResponse({
+    required this.items,
+    this.nextCursor,
+    this.generatedAt,
+  });
+
+  factory AdminListPageResponse.fromJson(Map<String, dynamic> j) =>
+      AdminListPageResponse(
+        items: (j['items'] as List<dynamic>? ?? const [])
+            .map((e) => AdminListItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        nextCursor: j['nextCursor'] as String?,
+        generatedAt: j['generatedAt'] == null
+            ? null
+            : DateTime.tryParse(j['generatedAt'] as String),
+      );
+}
+
 /// Admin operation result (publish/unpublish/deleteVersion/deleteAll).
 @immutable
 class AdminResult {
@@ -421,6 +480,41 @@ class DrillClient {
   // --------------------------------------------
   // Admin (drills-admin) — GET + Authorization
   // --------------------------------------------
+  Future<AdminListPageResponse> listAll({
+    required String adminToken,
+    int limit = 50,
+    String? cursor,
+    String? prefix,
+  }) async {
+    final uri = _buildFnUri(
+      'drills-admin',
+      query: {
+        'action': 'list',
+        'limit': limit.toString(),
+        if (cursor != null) 'cursor': cursor,
+        if (prefix != null && prefix.isNotEmpty) 'prefix': prefix,
+      },
+    );
+
+    final res = await _http.get(
+      uri,
+      headers: {
+        'authorization': 'Bearer $adminToken',
+        'accept': 'application/json',
+      },
+    );
+
+    if (res.statusCode != 200) {
+      throw DrillApiException(
+        'List failed',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
+    final j = jsonDecode(res.body) as Map<String, dynamic>;
+    return AdminListPageResponse.fromJson(j);
+  }
+
   Future<AdminResult> publish(String slug, {required String adminToken}) =>
       _adminAction('publish', slug: slug, adminToken: adminToken);
 
