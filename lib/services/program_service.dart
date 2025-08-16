@@ -302,7 +302,9 @@ class ProgramService {
       numberOfTeams: numberOfTeams,
       numberOfRounds: numberOfRounds,
       stations: ensureStations(localizations, numberOfRounds, stations),
-      schedule: List.unmodifiable(schedule),
+      schedule: List.unmodifiable(
+        schedule.map((e) => e.map((e) => e.toSimple()).toList()),
+      ),
       endTime: endTime.toSimple(),
     );
   }
