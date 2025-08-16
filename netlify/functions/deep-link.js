@@ -1,14 +1,14 @@
 // netlify/functions/deep-link.js
 import {
-    readBinary,
-    getSlugRecord,
-    keysFor,
-    MIME_DRILL, // "application/vnd.ringdrill+zip"
+    MIME_DRILL,
+    readBinary, readJson,
+    getSlugRecord, keysFor,
+    sha256Hex, toStrongEtag
 } from "./_shared.js";
 
-export async function handler(event) {
+export default async function (request) {
     try {
-        const url = new URL(event.rawUrl ?? buildUrlFromEvent(event));
+        const url = new URL(request.url);
         const originalPath = url.pathname;
 
         // Normalize tail: accept both /.netlify/functions/deep-link/... and /d/...
@@ -16,81 +16,108 @@ export async function handler(event) {
             .replace(/^.*\/\.netlify\/functions\/deep-link\//, "")
             .replace(/^\/d\//, "")
             .replace(/^\/+/, "");
-        if (!tail) return { statusCode: 404, body: "Not found" };
+
+        if (!tail) return new Response("Not found", { status: 404 });
 
         try { tail = decodeURIComponent(tail); } catch {}
 
-        // Extract version from query if provided
-        const queryVersion = (url.searchParams.get("version") || "").trim();
+        // Detect any ".drill" presence
+        const hasDrillExt = /\.drill(?:$|[/?#@])/i.test(tail);
 
-        // Detect if request already has ".drill" (any placement)
-        const hasDrillExt = /\.drill(?:$|[/?#])/i.test(tail);
-
-        // Normalize tail by removing .drill wherever it appears (end or after @ver)
-        // e.g., "slug.drill@1.2.3" -> "slug@1.2.3", "slug@1.2.3.drill" -> "slug@1.2.3"
+        // Normalize .drill position:
+        //  - "slug.drill@1.2.3"  -> "slug@1.2.3"
+        //  - "slug@1.2.3.drill"  -> "slug@1.2.3"
+        //  - "slug.drill"        -> "slug"
         tail = tail
-            .replace(/\.drill(@[^/]+)?$/i, (_m, ver) => ver ?? "")   // ... .drill[@ver] at end
-            .replace(/(@[^/]+)\.drill$/i, "$1");                     // ... @ver.drill at end
+            .replace(/\.drill(@[^/]+)?$/i, (_m, ver) => ver ?? "")
+            .replace(/(@[^/]+)\.drill$/i, "$1")
+            .replace(/\.drill@/i, "@");
 
         // Parse "<slug>" or "<slug>@<version>"
         const m = tail.match(/^([^@/]+)(?:@([^/]+))?$/);
-        if (!m) return { statusCode: 404, body: "Not found" };
+        if (!m) return new Response("Not found", { status: 404 });
 
         const slug = m[1];
-        const version = (m[2] || queryVersion || "").trim() || null;
+        const version = (m[2] || "").trim() || null;
 
-        // If the original path did NOT include ".drill", redirect to the canonical .drill URL
+        // If original path did NOT include ".drill", redirect to canonical .drill URL (no query params)
         if (!hasDrillExt) {
             const canonical = `/d/${slug}${version ? `@${version}` : ""}.drill`;
-            url.pathname = canonical;
-            url.search = ""; // strip query once canonicalized
-            return {
-                statusCode: 301,
-                headers: { Location: url.toString() },
-                body: "",
-            };
+            const u = new URL(request.url);
+            u.pathname = canonical;
+            u.search = ""; // ensure no query params
+            return new Response(null, { status: 301, headers: { Location: u.toString() } });
         }
 
-        // Already a .drill URL -> serve the file (attachment)
+        // Serve the file (attachment)
         const rec = await getSlugRecord(slug);
-        if (!rec) return { statusCode: 404, body: "Unknown slug" };
+        if (!rec) return new Response("Unknown slug", { status: 404 });
 
-        const { versioned, latest } = keysFor({
+        const { meta, versioned, latest } = keysFor({
             ownerId: rec.ownerId,
             programId: rec.programId,
             version: version || "latest",
         });
+
+        const metaDoc = await readJson(meta, null);
+        let vinfo = null;
+        if (metaDoc && Array.isArray(metaDoc.versions)) {
+            if (version) {
+                vinfo = metaDoc.versions.find(v => v.v === version) || null;
+            } else {
+                vinfo = metaDoc.versions
+                    .slice()
+                    .sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true }))
+                    .pop() || null;
+            }
+        }
+
+        const cacheHeader = version
+            ? "public, max-age=31536000, immutable"
+            : "public, max-age=0, must-revalidate";
+
+        // Conditional GET via ETag
+        const inm = request.headers.get("if-none-match");
+        if (vinfo?.etag && inm && etagMatches(inm, vinfo.etag)) {
+            const h304 = new Headers({
+                "ETag": vinfo.etag,
+                "Cache-Control": cacheHeader,
+            });
+            if (vinfo?.updatedAt) h304.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
+            return new Response(null, { status: 304, headers: h304 });
+        }
+
         const key = version ? versioned : latest;
-
         const buf = await readBinary(key);
-        if (!buf) return { statusCode: 404, body: "Not found" };
+        if (!buf) return new Response("Not found", { status: 404 });
 
-        const filename = `${slug}${version ? `@${version}` : ""}.drill`;
-        const headers = {
-            "Content-Type": MIME_DRILL, // application/vnd.ringdrill+zip
-            "Content-Disposition": `attachment; filename="${filename}"`,
+        const etag = vinfo?.etag ?? toStrongEtag(sha256Hex(buf));
+        const lastMod = vinfo?.updatedAt ? new Date(vinfo.updatedAt).toUTCString() : undefined;
+
+        const headers = new Headers({
+            "Content-Type": MIME_DRILL,
             "Content-Length": String(buf.length),
-            "Cache-Control": version
-                ? "public, max-age=31536000, immutable"
-                : "public, max-age=0, must-revalidate",
-        };
+            "Content-Disposition": `attachment; filename="${slug}${version ? `@${version}` : ""}.drill"`,
+            "ETag": etag,
+            "Cache-Control": cacheHeader,
+        });
+        if (lastMod) headers.set("Last-Modified", lastMod);
 
-        return {
-            statusCode: 200,
-            isBase64Encoded: true,
-            headers,
-            body: buf.toString("base64"),
-        };
+        if (request.method === "HEAD") {
+            return new Response(null, { status: 200, headers });
+        }
+        return new Response(buf, { status: 200, headers });
     } catch (e) {
-        return { statusCode: 500, body: `Resolve error: ${e.message || e}` };
+        return new Response(`Resolve error: ${e.message || e}`, { status: 500 });
     }
 }
 
 /* ------------ helpers ------------ */
-function buildUrlFromEvent(event) {
-    const h = event.headers || {};
-    const proto = h["x-forwarded-proto"] || "https";
-    const host  = h["x-forwarded-host"]  || h["host"];
-    const qs    = event.rawQuery ? `?${event.rawQuery}` : "";
-    return `${proto}://${host}${event.path}${qs}`;
+// Accepts one or many ETags per RFC 7232 (comma-separated list). Matches strong or weak validators.
+function etagMatches(ifNoneMatchHeader, currentEtag) {
+    const raw = (ifNoneMatchHeader || "").trim();
+    if (!raw) return false;
+    if (raw === "*") return true;
+    const tokens = raw.split(",").map(t => t.trim());
+    return tokens.some(t => t === currentEtag || t === `W/${currentEtag}`);
 }
