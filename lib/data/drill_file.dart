@@ -18,7 +18,7 @@ class DrillFile {
     required this.content,
     required this.fileName,
     required this.mimeType,
-    this.version = 1,
+    this.version = 0,
   });
 
   final int version;
