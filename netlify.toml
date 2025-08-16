@@ -65,6 +65,11 @@
     to  = "/.netlify/functions/market-feed"
     status = 200
 
+[[redirects]]
+    from = "/api/admin"
+    to  = "/.netlify/functions/drills-admin"
+    status = 200
+
 # Single Page App routing: deep links -> index.html
 [[redirects]]
     from = "/*"

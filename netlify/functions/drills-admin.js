@@ -74,8 +74,8 @@ export default async function (request) {
                 return json(nextCursor ? { items, nextCursor } : { items });
             }
 
-            case "list": {
-                if (!slug) return json({ error: "Missing slug for action: list" }, 400);
+            case "versions": {
+                if (!slug) return json({ error: "Missing slug for action: versions" }, 400);
 
                 const rec = await getSlugRecord(slug);
                 if (!rec) return json({ error: "Unknown slug" }, 404);
@@ -202,7 +202,7 @@ export default async function (request) {
             }
 
             default:
-                return json({ error: "Invalid action. Use: list | listAll | unpublish | publish | deleteVersion | deleteAll" }, 400);
+                return json({ error: "Invalid action. Use: listall | versions | unpublish | publish | deleteversion | deleteall" }, 400);
         }
     } catch (e) {
         return json({ error: String(e?.message || e) }, 500);

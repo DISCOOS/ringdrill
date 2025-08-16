@@ -79,10 +79,7 @@ Future<void> main(List<String> argv) async {
         {
           // list <slug>
           if (args.length != 1) _fail('Usage: list <slug>');
-          final item = await client.listVersions(
-            adminToken: token,
-            slug: args[0],
-          );
+          final item = await client.versions(adminToken: token, slug: args[0]);
           _printListOne(item, jsonOut);
           break;
         }

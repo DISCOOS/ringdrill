@@ -480,13 +480,13 @@ class DrillClient {
   // Admin (drills-admin) — GET + Authorization
   // --------------------------------------------
   // list versions for a given slug (admin action=list)
-  Future<AdminListItem> listVersions({
+  Future<AdminListItem> versions({
     required String adminToken,
     required String slug,
   }) async {
     final uri = _buildFnUri(
       'drills-admin',
-      query: {'action': 'list', 'slug': slug},
+      query: {'action': 'versions', 'slug': slug},
     );
     final res = await _http.get(
       uri,
@@ -529,7 +529,7 @@ class DrillClient {
     );
     if (res.statusCode != 200) {
       throw DrillApiException(
-        'List-all failed',
+        'List All failed',
         status: res.statusCode,
         body: res.body,
       );
