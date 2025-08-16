@@ -65,7 +65,7 @@ export default async function (request) {
         const headers = new Headers({
             "Content-Type": MIME_DRILL,
             "Content-Length": String(buf.length),
-            "Content-Disposition": `inline; filename="${verMaybe ? `${slug}@${verMaybe}.drill` : `${slug}.drill`}"`,
+            "Content-Disposition": `attachment; filename="${verMaybe ? `${slug}@${verMaybe}.drill` : `${slug}.drill`}"`,
             "ETag": etag,
             "Cache-Control": cacheHeader,
         });

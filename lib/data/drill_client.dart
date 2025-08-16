@@ -9,7 +9,7 @@ import 'package:ringdrill/data/drill_file.dart';
 
 /// MIME used by download endpoints (deep-link/head).
 /// TODO: Replace with DrillFile
-const drillMime = 'application/vnd.ringdrill+json';
+const drillMime = 'application/vnd.ringdrill+zip';
 
 /// Thin error type that preserves HTTP context.
 class DrillApiException implements Exception {

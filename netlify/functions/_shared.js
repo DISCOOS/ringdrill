@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
 export const NS = { DRILLS: "drills", SLUG_INDEX: "slug-index" };
-export const MIME_DRILL = "application/vnd.ringdrill+json";
+export const MIME_DRILL = "application/vnd.ringdrill+zip";
 export const DRILL_EXT = ".drill";
 
 let _drillsStore, _slugIndexStore;
