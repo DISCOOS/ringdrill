@@ -62,6 +62,10 @@ dependencies:
   web: ^1.1.1
   file_picker: ^10.3.1
   go_router: ^16.1.0
+  http: ^1.5.0
+  meta: ^1.16.0
+  http_parser: ^4.1.2
+  args: ^2.7.0
 
 dev_dependencies:
   sentry_dart_plugin: ^3.1.1
@@ -126,3 +130,6 @@ sentry:
   project: ringdrill
   org: discoos
   log_level: debug
+
+executables:
+  ringdrill: ringdrill

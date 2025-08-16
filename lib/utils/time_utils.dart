@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
+
+extension SimpleTimeOfDayX on SimpleTimeOfDay {
+  TimeOfDay toMaterial() => TimeOfDay(hour: hour, minute: minute);
+}
 
 extension DateTimeX on DateTime {
   static DateTime fromMinutes(int minutes) {
@@ -47,6 +52,8 @@ extension DateTimeX on DateTime {
 }
 
 extension TimeOfDayX on TimeOfDay {
+  SimpleTimeOfDay toSimple() => SimpleTimeOfDay(hour: hour, minute: minute);
+
   static TimeOfDay fromMinutes(int minutes) {
     return TimeOfDay.fromDateTime(
       DateTime.now().add(Duration(minutes: minutes)),

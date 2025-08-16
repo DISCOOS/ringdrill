@@ -8,22 +8,28 @@ import 'package:ringdrill/models/team.dart';
 import 'package:universal_io/io.dart';
 
 class DrillFile {
-  static const drillVersion1_0 = '1.0';
+  static const drillSchema1_0 = '1.0';
   // TODO: Change to iana format for custom mime type
   // static const drillMimeType = 'application/vnd.ringdrill+zip';
   static const drillMimeType = 'application/x-drill';
   static const drillExtension = 'drill';
 
   DrillFile({
-    required this.version,
+    required this.schema,
+    required this.content,
     required this.fileName,
     required this.mimeType,
-    required this.content,
+    this.version = 1,
   });
-  final String version;
+
+  final int version;
+  final String schema;
   final String mimeType;
   final String fileName;
   final List<int> content;
+
+  String get slug => path.basenameWithoutExtension(fileName);
+  String get versionedSlug => sanitizeSlug('$slug@$version');
 
   Program program() {
     final teams = <Team>[];
@@ -74,7 +80,7 @@ class DrillFile {
     return DrillFile(
       content: content,
       fileName: path.basename(file.path),
-      version: drillVersion1_0,
+      schema: drillSchema1_0,
       mimeType: drillMimeType,
     );
   }
@@ -83,7 +89,7 @@ class DrillFile {
     return DrillFile(
       content: content,
       fileName: fileName,
-      version: drillVersion1_0,
+      schema: drillSchema1_0,
       mimeType: drillMimeType,
     );
   }
@@ -137,10 +143,20 @@ class DrillFile {
     archive.addFile(ArchiveFile('program.json', json.length, json));
 
     return DrillFile(
+      schema: drillSchema1_0,
       mimeType: drillMimeType,
-      version: drillVersion1_0,
       fileName: '$fileName.drill',
       content: encoder.encode(archive),
     );
   }
+}
+
+String sanitizeSlug(String s) {
+  return s
+      .toLowerCase()
+      .trim()
+      .replaceAll(RegExp(r'\s+'), '-')
+      .replaceAll(RegExp(r'[^a-z0-9\-]'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
 }

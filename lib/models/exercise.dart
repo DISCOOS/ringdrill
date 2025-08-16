@@ -1,10 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:nanoid/nanoid.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/utils/time_utils.dart';
 
 part 'exercise.freezed.dart';
 part 'exercise.g.dart';
@@ -17,15 +13,15 @@ sealed class Exercise with _$Exercise {
   const factory Exercise({
     required String uuid,
     required String name,
-    @TimeOfDayConverter() required TimeOfDay startTime,
+    required SimpleTimeOfDay startTime,
     required int numberOfTeams,
     required int numberOfRounds,
     required int executionTime,
     required int evaluationTime,
     required int rotationTime,
     required List<Station> stations,
-    @TimeOfDayConverter() required List<List<TimeOfDay>> schedule,
-    @TimeOfDayConverter() required TimeOfDay endTime,
+    required List<List<SimpleTimeOfDay>> schedule,
+    required SimpleTimeOfDay endTime,
     ExerciseMetadata? metadata,
   }) = _Exercise;
 
@@ -45,93 +41,6 @@ extension ExerciseX on Exercise {
       ));
     }
     return markers;
-  }
-
-  /// Static factory extension to generate a schedule and return an Exercise instance
-  static Exercise generateSchedule({
-    String? uuid,
-    required String name,
-    required TimeOfDay startTime,
-    required int numberOfTeams,
-    required int numberOfRounds,
-    required int executionTime,
-    required int evaluationTime,
-    required int rotationTime,
-    required AppLocalizations localizations,
-    bool calcFromTimes = true,
-    List<Station> stations = const [],
-  }) {
-    assert(
-      numberOfTeams <= numberOfRounds,
-      '<numberOfTeams> must be less or equal to <numberOfRounds>',
-    );
-    // Generate the schedule matrix
-    final schedule = List<List<TimeOfDay>>.generate(numberOfRounds, (
-      stationIndex,
-    ) {
-      TimeOfDay currentStartTime = _addMinutesToTime(
-        startTime,
-        stationIndex * (executionTime + evaluationTime + rotationTime),
-      );
-
-      return List.generate(3, (phaseIndex) {
-        final phaseDuration = switch (phaseIndex) {
-          0 => calcFromTimes ? 0 : executionTime,
-          1 => calcFromTimes ? executionTime : evaluationTime,
-          2 => calcFromTimes ? evaluationTime : rotationTime,
-          _ => throw UnimplementedError(),
-        };
-        phaseIndex == 0
-            ? executionTime
-            : (phaseIndex == 1 ? evaluationTime : rotationTime);
-        final phaseTime = _addMinutesToTime(currentStartTime, phaseDuration);
-
-        // Update currentStartTime to the end of the current phase
-        currentStartTime = phaseTime;
-        return phaseTime;
-      });
-    });
-
-    // Compute the endTime from the last phase of the last round
-    final lastRound = schedule.last;
-    final lastPhase = lastRound.last;
-    final endTime = calcFromTimes
-        ? TimeOfDay.fromDateTime(
-            lastPhase.toDateTime().add(Duration(minutes: rotationTime)),
-          )
-        : lastPhase; // End time is when the last phase ends
-
-    // Return a new Exercise instance
-    return Exercise(
-      name: name,
-      uuid: uuid ?? nanoid(8),
-      startTime: startTime,
-      executionTime: executionTime,
-      evaluationTime: evaluationTime,
-      rotationTime: rotationTime,
-      numberOfTeams: numberOfTeams,
-      numberOfRounds: numberOfRounds,
-      stations: ensureStations(localizations, numberOfRounds, stations),
-      schedule: List.unmodifiable(schedule),
-      endTime: endTime,
-    );
-  }
-
-  static List<Station> ensureStations(
-    AppLocalizations localizations,
-    int numberOfRounds,
-    List<Station> stations,
-  ) {
-    return List.unmodifiable(
-      List<Station>.generate(numberOfRounds, (index) {
-        return index < stations.length
-            ? stations[index]
-            : Station(
-                index: index,
-                name: '${localizations.station(1)} ${index + 1}',
-              );
-      }),
-    );
   }
 
   /// Sanitizes and validates the exercise name.
@@ -155,27 +64,6 @@ extension ExerciseX on Exercise {
 
     // If all checks pass, return null (indicating the name is valid)
     return null;
-  }
-
-  /// Check if the current time falls within the exercise time range
-  bool isActiveNow(TimeOfDay currentTime) {
-    final nowMinutes = currentTime.hour * 60 + currentTime.minute;
-    final startMinutes = startTime.hour * 60 + startTime.minute;
-    final endMinutes = endTime.hour * 60 + endTime.minute;
-
-    return nowMinutes >= startMinutes && nowMinutes <= endMinutes;
-  }
-
-  /// Helper function: Add a duration (in minutes) to a TimeOfDay
-  static TimeOfDay _addMinutesToTime(TimeOfDay time, int minutesToAdd) {
-    final totalMinutes = time.hour * 60 + time.minute + minutesToAdd;
-    final addedHours = totalMinutes ~/ 60;
-    final addedMinutes = totalMinutes % 60;
-
-    return TimeOfDay(
-      hour: addedHours % 24, // Wrap around 24-hour clock
-      minute: addedMinutes,
-    );
   }
 
   int teamIndex(int stationIndex, int roundIndex) {
@@ -207,21 +95,6 @@ extension ExerciseX on Exercise {
   }
 }
 
-class TimeOfDayConverter
-    implements JsonConverter<TimeOfDay, Map<String, dynamic>> {
-  const TimeOfDayConverter();
-
-  @override
-  TimeOfDay fromJson(Map<String, dynamic> json) {
-    return TimeOfDay(hour: json['hour']!, minute: json['minute']!);
-  }
-
-  @override
-  Map<String, dynamic> toJson(TimeOfDay object) {
-    return {'hour': object.hour, 'minute': object.minute};
-  }
-}
-
 /// Represents an immutable drill program metadata
 @freezed
 sealed class ExerciseMetadata with _$ExerciseMetadata {
@@ -229,4 +102,35 @@ sealed class ExerciseMetadata with _$ExerciseMetadata {
 
   factory ExerciseMetadata.fromJson(Map<String, dynamic> json) =>
       _$ExerciseMetadataFromJson(json);
+}
+
+/// Pure-Dart replacement for Flutter's [TimeOfDay].
+/// Stores hours (0–23) and minutes (0–59).
+@freezed
+sealed class SimpleTimeOfDay with _$SimpleTimeOfDay {
+  const SimpleTimeOfDay._();
+
+  const factory SimpleTimeOfDay({required int hour, required int minute}) =
+      _SimpleTimeOfDay;
+
+  /// Create from total minutes since midnight
+  factory SimpleTimeOfDay.fromMinutes(int minutes) {
+    final h = (minutes ~/ 60) % 24;
+    final m = minutes % 60;
+    return SimpleTimeOfDay(hour: h, minute: m);
+  }
+
+  factory SimpleTimeOfDay.fromJson(Map<String, dynamic> json) =>
+      _$SimpleTimeOfDayFromJson(json);
+
+  /// Minutes since midnight
+  int get inMinutes => hour * 60 + minute;
+
+  /// Format as "HH:mm" (24h)
+  @override
+  String toString() =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  /// Compare times (earlier < later)
+  int compareTo(SimpleTimeOfDay other) => inMinutes.compareTo(other.inMinutes);
 }

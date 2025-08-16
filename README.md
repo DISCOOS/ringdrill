@@ -56,3 +56,13 @@ To get started with developing for RingDrill using Flutter, follow these steps:
    ```bash
    flutter run
    ```
+   
+9. **Run the Admin CLI**:
+   To activate: 
+    ```bash
+   dart pub global activate -s path .
+    ```
+   See usage for additional information:
+    ```bash
+   ringdrill -h
+    ```

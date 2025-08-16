@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/program_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef OnSelectExercises =
@@ -226,14 +230,127 @@ class ProgramService {
     AppLocalizations localizations,
     int numberOfTeams,
   ) async {
-    final teams = ProgramX.ensureTeams(
-      localizations,
-      numberOfTeams,
-      loadTeams(),
-    );
+    final teams = _ensureTeams(localizations, numberOfTeams, loadTeams());
     for (final it in teams.where((e) => !_repo.containsTeam(e.uuid))) {
       await _repo.addTeam(it);
     }
     return teams;
+  }
+
+  /// Static factory extension to generate a schedule and return an Exercise instance
+  static Exercise generateSchedule({
+    String? uuid,
+    required String name,
+    required TimeOfDay startTime,
+    required int numberOfTeams,
+    required int numberOfRounds,
+    required int executionTime,
+    required int evaluationTime,
+    required int rotationTime,
+    required AppLocalizations localizations,
+    bool calcFromTimes = true,
+    List<Station> stations = const [],
+  }) {
+    assert(
+      numberOfTeams <= numberOfRounds,
+      '<numberOfTeams> must be less or equal to <numberOfRounds>',
+    );
+    // Generate the schedule matrix
+    final schedule = List<List<TimeOfDay>>.generate(numberOfRounds, (
+      stationIndex,
+    ) {
+      TimeOfDay currentStartTime = _addMinutesToTime(
+        startTime,
+        stationIndex * (executionTime + evaluationTime + rotationTime),
+      );
+
+      return List.generate(3, (phaseIndex) {
+        final phaseDuration = switch (phaseIndex) {
+          0 => calcFromTimes ? 0 : executionTime,
+          1 => calcFromTimes ? executionTime : evaluationTime,
+          2 => calcFromTimes ? evaluationTime : rotationTime,
+          _ => throw UnimplementedError(),
+        };
+        phaseIndex == 0
+            ? executionTime
+            : (phaseIndex == 1 ? evaluationTime : rotationTime);
+        final phaseTime = _addMinutesToTime(currentStartTime, phaseDuration);
+
+        // Update currentStartTime to the end of the current phase
+        currentStartTime = phaseTime;
+        return phaseTime;
+      });
+    });
+
+    // Compute the endTime from the last phase of the last round
+    final lastRound = schedule.last;
+    final lastPhase = lastRound.last;
+    final endTime = calcFromTimes
+        ? TimeOfDay.fromDateTime(
+            lastPhase.toDateTime().add(Duration(minutes: rotationTime)),
+          )
+        : lastPhase; // End time is when the last phase ends
+
+    // Return a new Exercise instance
+    return Exercise(
+      name: name,
+      uuid: uuid ?? nanoid(8),
+      startTime: startTime.toSimple(),
+      executionTime: executionTime,
+      evaluationTime: evaluationTime,
+      rotationTime: rotationTime,
+      numberOfTeams: numberOfTeams,
+      numberOfRounds: numberOfRounds,
+      stations: ensureStations(localizations, numberOfRounds, stations),
+      schedule: List.unmodifiable(schedule),
+      endTime: endTime.toSimple(),
+    );
+  }
+
+  static List<Station> ensureStations(
+    AppLocalizations localizations,
+    int numberOfRounds,
+    List<Station> stations,
+  ) {
+    return List.unmodifiable(
+      List<Station>.generate(numberOfRounds, (index) {
+        return index < stations.length
+            ? stations[index]
+            : Station(
+                index: index,
+                name: '${localizations.station(1)} ${index + 1}',
+              );
+      }),
+    );
+  }
+
+  static List<Team> _ensureTeams(
+    AppLocalizations localizations,
+    int numberOfTeams,
+    List<Team> teams,
+  ) {
+    return List.unmodifiable(
+      List<Team>.generate(max(numberOfTeams, teams.length), (index) {
+        return index < teams.length
+            ? teams[index]
+            : Team(
+                uuid: nanoid(8),
+                index: index,
+                name: '${localizations.team(1)} ${index + 1}',
+              );
+      }),
+    );
+  }
+
+  /// Helper function: Add a duration (in minutes) to a TimeOfDay
+  static TimeOfDay _addMinutesToTime(TimeOfDay time, int minutesToAdd) {
+    final totalMinutes = time.hour * 60 + time.minute + minutesToAdd;
+    final addedHours = totalMinutes ~/ 60;
+    final addedMinutes = totalMinutes % 60;
+
+    return TimeOfDay(
+      hour: addedHours % 24, // Wrap around 24-hour clock
+      minute: addedMinutes,
+    );
   }
 }

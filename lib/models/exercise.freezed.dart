@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Exercise {
 
- String get uuid; String get name;@TimeOfDayConverter() TimeOfDay get startTime; int get numberOfTeams; int get numberOfRounds; int get executionTime; int get evaluationTime; int get rotationTime; List<Station> get stations;@TimeOfDayConverter() List<List<TimeOfDay>> get schedule;@TimeOfDayConverter() TimeOfDay get endTime; ExerciseMetadata? get metadata;
+ String get uuid; String get name; SimpleTimeOfDay get startTime; int get numberOfTeams; int get numberOfRounds; int get executionTime; int get evaluationTime; int get rotationTime; List<Station> get stations; List<List<SimpleTimeOfDay>> get schedule; SimpleTimeOfDay get endTime; ExerciseMetadata? get metadata;
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,11 +48,11 @@ abstract mixin class $ExerciseCopyWith<$Res>  {
   factory $ExerciseCopyWith(Exercise value, $Res Function(Exercise) _then) = _$ExerciseCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String name,@TimeOfDayConverter() TimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations,@TimeOfDayConverter() List<List<TimeOfDay>> schedule,@TimeOfDayConverter() TimeOfDay endTime, ExerciseMetadata? metadata
+ String uuid, String name, SimpleTimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations, List<List<SimpleTimeOfDay>> schedule, SimpleTimeOfDay endTime, ExerciseMetadata? metadata
 });
 
 
-$ExerciseMetadataCopyWith<$Res>? get metadata;
+$SimpleTimeOfDayCopyWith<$Res> get startTime;$SimpleTimeOfDayCopyWith<$Res> get endTime;$ExerciseMetadataCopyWith<$Res>? get metadata;
 
 }
 /// @nodoc
@@ -70,19 +70,37 @@ class _$ExerciseCopyWithImpl<$Res>
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
-as TimeOfDay,numberOfTeams: null == numberOfTeams ? _self.numberOfTeams : numberOfTeams // ignore: cast_nullable_to_non_nullable
+as SimpleTimeOfDay,numberOfTeams: null == numberOfTeams ? _self.numberOfTeams : numberOfTeams // ignore: cast_nullable_to_non_nullable
 as int,numberOfRounds: null == numberOfRounds ? _self.numberOfRounds : numberOfRounds // ignore: cast_nullable_to_non_nullable
 as int,executionTime: null == executionTime ? _self.executionTime : executionTime // ignore: cast_nullable_to_non_nullable
 as int,evaluationTime: null == evaluationTime ? _self.evaluationTime : evaluationTime // ignore: cast_nullable_to_non_nullable
 as int,rotationTime: null == rotationTime ? _self.rotationTime : rotationTime // ignore: cast_nullable_to_non_nullable
 as int,stations: null == stations ? _self.stations : stations // ignore: cast_nullable_to_non_nullable
 as List<Station>,schedule: null == schedule ? _self.schedule : schedule // ignore: cast_nullable_to_non_nullable
-as List<List<TimeOfDay>>,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
-as TimeOfDay,metadata: freezed == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
+as List<List<SimpleTimeOfDay>>,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
+as SimpleTimeOfDay,metadata: freezed == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
 as ExerciseMetadata?,
   ));
 }
 /// Create a copy of Exercise
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SimpleTimeOfDayCopyWith<$Res> get startTime {
+  
+  return $SimpleTimeOfDayCopyWith<$Res>(_self.startTime, (value) {
+    return _then(_self.copyWith(startTime: value));
+  });
+}/// Create a copy of Exercise
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SimpleTimeOfDayCopyWith<$Res> get endTime {
+  
+  return $SimpleTimeOfDayCopyWith<$Res>(_self.endTime, (value) {
+    return _then(_self.copyWith(endTime: value));
+  });
+}/// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -173,7 +191,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name, @TimeOfDayConverter()  TimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations, @TimeOfDayConverter()  List<List<TimeOfDay>> schedule, @TimeOfDayConverter()  TimeOfDay endTime,  ExerciseMetadata? metadata)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Exercise() when $default != null:
 return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata);case _:
@@ -194,7 +212,7 @@ return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name, @TimeOfDayConverter()  TimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations, @TimeOfDayConverter()  List<List<TimeOfDay>> schedule, @TimeOfDayConverter()  TimeOfDay endTime,  ExerciseMetadata? metadata)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata)  $default,) {final _that = this;
 switch (_that) {
 case _Exercise():
 return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata);}
@@ -211,7 +229,7 @@ return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name, @TimeOfDayConverter()  TimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations, @TimeOfDayConverter()  List<List<TimeOfDay>> schedule, @TimeOfDayConverter()  TimeOfDay endTime,  ExerciseMetadata? metadata)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata)?  $default,) {final _that = this;
 switch (_that) {
 case _Exercise() when $default != null:
 return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata);case _:
@@ -226,12 +244,12 @@ return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.
 @JsonSerializable()
 
 class _Exercise implements Exercise {
-  const _Exercise({required this.uuid, required this.name, @TimeOfDayConverter() required this.startTime, required this.numberOfTeams, required this.numberOfRounds, required this.executionTime, required this.evaluationTime, required this.rotationTime, required final  List<Station> stations, @TimeOfDayConverter() required final  List<List<TimeOfDay>> schedule, @TimeOfDayConverter() required this.endTime, this.metadata}): _stations = stations,_schedule = schedule;
+  const _Exercise({required this.uuid, required this.name, required this.startTime, required this.numberOfTeams, required this.numberOfRounds, required this.executionTime, required this.evaluationTime, required this.rotationTime, required final  List<Station> stations, required final  List<List<SimpleTimeOfDay>> schedule, required this.endTime, this.metadata}): _stations = stations,_schedule = schedule;
   factory _Exercise.fromJson(Map<String, dynamic> json) => _$ExerciseFromJson(json);
 
 @override final  String uuid;
 @override final  String name;
-@override@TimeOfDayConverter() final  TimeOfDay startTime;
+@override final  SimpleTimeOfDay startTime;
 @override final  int numberOfTeams;
 @override final  int numberOfRounds;
 @override final  int executionTime;
@@ -244,14 +262,14 @@ class _Exercise implements Exercise {
   return EqualUnmodifiableListView(_stations);
 }
 
- final  List<List<TimeOfDay>> _schedule;
-@override@TimeOfDayConverter() List<List<TimeOfDay>> get schedule {
+ final  List<List<SimpleTimeOfDay>> _schedule;
+@override List<List<SimpleTimeOfDay>> get schedule {
   if (_schedule is EqualUnmodifiableListView) return _schedule;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_schedule);
 }
 
-@override@TimeOfDayConverter() final  TimeOfDay endTime;
+@override final  SimpleTimeOfDay endTime;
 @override final  ExerciseMetadata? metadata;
 
 /// Create a copy of Exercise
@@ -287,11 +305,11 @@ abstract mixin class _$ExerciseCopyWith<$Res> implements $ExerciseCopyWith<$Res>
   factory _$ExerciseCopyWith(_Exercise value, $Res Function(_Exercise) _then) = __$ExerciseCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String name,@TimeOfDayConverter() TimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations,@TimeOfDayConverter() List<List<TimeOfDay>> schedule,@TimeOfDayConverter() TimeOfDay endTime, ExerciseMetadata? metadata
+ String uuid, String name, SimpleTimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations, List<List<SimpleTimeOfDay>> schedule, SimpleTimeOfDay endTime, ExerciseMetadata? metadata
 });
 
 
-@override $ExerciseMetadataCopyWith<$Res>? get metadata;
+@override $SimpleTimeOfDayCopyWith<$Res> get startTime;@override $SimpleTimeOfDayCopyWith<$Res> get endTime;@override $ExerciseMetadataCopyWith<$Res>? get metadata;
 
 }
 /// @nodoc
@@ -309,20 +327,38 @@ class __$ExerciseCopyWithImpl<$Res>
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
-as TimeOfDay,numberOfTeams: null == numberOfTeams ? _self.numberOfTeams : numberOfTeams // ignore: cast_nullable_to_non_nullable
+as SimpleTimeOfDay,numberOfTeams: null == numberOfTeams ? _self.numberOfTeams : numberOfTeams // ignore: cast_nullable_to_non_nullable
 as int,numberOfRounds: null == numberOfRounds ? _self.numberOfRounds : numberOfRounds // ignore: cast_nullable_to_non_nullable
 as int,executionTime: null == executionTime ? _self.executionTime : executionTime // ignore: cast_nullable_to_non_nullable
 as int,evaluationTime: null == evaluationTime ? _self.evaluationTime : evaluationTime // ignore: cast_nullable_to_non_nullable
 as int,rotationTime: null == rotationTime ? _self.rotationTime : rotationTime // ignore: cast_nullable_to_non_nullable
 as int,stations: null == stations ? _self._stations : stations // ignore: cast_nullable_to_non_nullable
 as List<Station>,schedule: null == schedule ? _self._schedule : schedule // ignore: cast_nullable_to_non_nullable
-as List<List<TimeOfDay>>,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
-as TimeOfDay,metadata: freezed == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
+as List<List<SimpleTimeOfDay>>,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
+as SimpleTimeOfDay,metadata: freezed == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
 as ExerciseMetadata?,
   ));
 }
 
 /// Create a copy of Exercise
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SimpleTimeOfDayCopyWith<$Res> get startTime {
+  
+  return $SimpleTimeOfDayCopyWith<$Res>(_self.startTime, (value) {
+    return _then(_self.copyWith(startTime: value));
+  });
+}/// Create a copy of Exercise
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SimpleTimeOfDayCopyWith<$Res> get endTime {
+  
+  return $SimpleTimeOfDayCopyWith<$Res>(_self.endTime, (value) {
+    return _then(_self.copyWith(endTime: value));
+  });
+}/// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -588,6 +624,258 @@ class __$ExerciseMetadataCopyWithImpl<$Res>
   return _then(_ExerciseMetadata(
 copyOfUuid: freezed == copyOfUuid ? _self.copyOfUuid : copyOfUuid // ignore: cast_nullable_to_non_nullable
 as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SimpleTimeOfDay {
+
+ int get hour; int get minute;
+/// Create a copy of SimpleTimeOfDay
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SimpleTimeOfDayCopyWith<SimpleTimeOfDay> get copyWith => _$SimpleTimeOfDayCopyWithImpl<SimpleTimeOfDay>(this as SimpleTimeOfDay, _$identity);
+
+  /// Serializes this SimpleTimeOfDay to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SimpleTimeOfDay&&(identical(other.hour, hour) || other.hour == hour)&&(identical(other.minute, minute) || other.minute == minute));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,hour,minute);
+
+
+
+}
+
+/// @nodoc
+abstract mixin class $SimpleTimeOfDayCopyWith<$Res>  {
+  factory $SimpleTimeOfDayCopyWith(SimpleTimeOfDay value, $Res Function(SimpleTimeOfDay) _then) = _$SimpleTimeOfDayCopyWithImpl;
+@useResult
+$Res call({
+ int hour, int minute
+});
+
+
+
+
+}
+/// @nodoc
+class _$SimpleTimeOfDayCopyWithImpl<$Res>
+    implements $SimpleTimeOfDayCopyWith<$Res> {
+  _$SimpleTimeOfDayCopyWithImpl(this._self, this._then);
+
+  final SimpleTimeOfDay _self;
+  final $Res Function(SimpleTimeOfDay) _then;
+
+/// Create a copy of SimpleTimeOfDay
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? hour = null,Object? minute = null,}) {
+  return _then(_self.copyWith(
+hour: null == hour ? _self.hour : hour // ignore: cast_nullable_to_non_nullable
+as int,minute: null == minute ? _self.minute : minute // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SimpleTimeOfDay].
+extension SimpleTimeOfDayPatterns on SimpleTimeOfDay {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SimpleTimeOfDay value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SimpleTimeOfDay() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SimpleTimeOfDay value)  $default,){
+final _that = this;
+switch (_that) {
+case _SimpleTimeOfDay():
+return $default(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SimpleTimeOfDay value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SimpleTimeOfDay() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int hour,  int minute)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SimpleTimeOfDay() when $default != null:
+return $default(_that.hour,_that.minute);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int hour,  int minute)  $default,) {final _that = this;
+switch (_that) {
+case _SimpleTimeOfDay():
+return $default(_that.hour,_that.minute);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int hour,  int minute)?  $default,) {final _that = this;
+switch (_that) {
+case _SimpleTimeOfDay() when $default != null:
+return $default(_that.hour,_that.minute);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SimpleTimeOfDay extends SimpleTimeOfDay {
+  const _SimpleTimeOfDay({required this.hour, required this.minute}): super._();
+  factory _SimpleTimeOfDay.fromJson(Map<String, dynamic> json) => _$SimpleTimeOfDayFromJson(json);
+
+@override final  int hour;
+@override final  int minute;
+
+/// Create a copy of SimpleTimeOfDay
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SimpleTimeOfDayCopyWith<_SimpleTimeOfDay> get copyWith => __$SimpleTimeOfDayCopyWithImpl<_SimpleTimeOfDay>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SimpleTimeOfDayToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SimpleTimeOfDay&&(identical(other.hour, hour) || other.hour == hour)&&(identical(other.minute, minute) || other.minute == minute));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,hour,minute);
+
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SimpleTimeOfDayCopyWith<$Res> implements $SimpleTimeOfDayCopyWith<$Res> {
+  factory _$SimpleTimeOfDayCopyWith(_SimpleTimeOfDay value, $Res Function(_SimpleTimeOfDay) _then) = __$SimpleTimeOfDayCopyWithImpl;
+@override @useResult
+$Res call({
+ int hour, int minute
+});
+
+
+
+
+}
+/// @nodoc
+class __$SimpleTimeOfDayCopyWithImpl<$Res>
+    implements _$SimpleTimeOfDayCopyWith<$Res> {
+  __$SimpleTimeOfDayCopyWithImpl(this._self, this._then);
+
+  final _SimpleTimeOfDay _self;
+  final $Res Function(_SimpleTimeOfDay) _then;
+
+/// Create a copy of SimpleTimeOfDay
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? hour = null,Object? minute = null,}) {
+  return _then(_SimpleTimeOfDay(
+hour: null == hour ? _self.hour : hour // ignore: cast_nullable_to_non_nullable
+as int,minute: null == minute ? _self.minute : minute // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

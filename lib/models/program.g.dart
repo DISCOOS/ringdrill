@@ -41,7 +41,7 @@ _Session _$SessionFromJson(Map<String, dynamic> json) => _Session(
       ? null
       : DateTime.parse(json['endedAt'] as String),
   exerciseUuid: json['exerciseUuid'] as String,
-  startTime: const TimeOfDayConverter().fromJson(
+  startTime: SimpleTimeOfDay.fromJson(
     json['startTime'] as Map<String, dynamic>,
   ),
 );
@@ -51,7 +51,7 @@ Map<String, dynamic> _$SessionToJson(_Session instance) => <String, dynamic>{
   'startedAt': instance.startedAt?.toIso8601String(),
   'endedAt': instance.endedAt?.toIso8601String(),
   'exerciseUuid': instance.exerciseUuid,
-  'startTime': const TimeOfDayConverter().toJson(instance.startTime),
+  'startTime': instance.startTime,
 };
 
 _ProgramMetadata _$ProgramMetadataFromJson(Map<String, dynamic> json) =>

@@ -326,7 +326,7 @@ $ProgramMetadataCopyWith<$Res> get metadata {
 /// @nodoc
 mixin _$Session {
 
- String get uuid; DateTime? get startedAt; DateTime? get endedAt; String get exerciseUuid;@TimeOfDayConverter() TimeOfDay get startTime;
+ String get uuid; DateTime? get startedAt; DateTime? get endedAt; String get exerciseUuid; SimpleTimeOfDay get startTime;
 /// Create a copy of Session
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -359,11 +359,11 @@ abstract mixin class $SessionCopyWith<$Res>  {
   factory $SessionCopyWith(Session value, $Res Function(Session) _then) = _$SessionCopyWithImpl;
 @useResult
 $Res call({
- String uuid, DateTime? startedAt, DateTime? endedAt, String exerciseUuid,@TimeOfDayConverter() TimeOfDay startTime
+ String uuid, DateTime? startedAt, DateTime? endedAt, String exerciseUuid, SimpleTimeOfDay startTime
 });
 
 
-
+$SimpleTimeOfDayCopyWith<$Res> get startTime;
 
 }
 /// @nodoc
@@ -383,10 +383,19 @@ as String,startedAt: freezed == startedAt ? _self.startedAt : startedAt // ignor
 as DateTime?,endedAt: freezed == endedAt ? _self.endedAt : endedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,exerciseUuid: null == exerciseUuid ? _self.exerciseUuid : exerciseUuid // ignore: cast_nullable_to_non_nullable
 as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
-as TimeOfDay,
+as SimpleTimeOfDay,
   ));
 }
-
+/// Create a copy of Session
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SimpleTimeOfDayCopyWith<$Res> get startTime {
+  
+  return $SimpleTimeOfDayCopyWith<$Res>(_self.startTime, (value) {
+    return _then(_self.copyWith(startTime: value));
+  });
+}
 }
 
 
@@ -465,7 +474,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  DateTime? startedAt,  DateTime? endedAt,  String exerciseUuid, @TimeOfDayConverter()  TimeOfDay startTime)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  DateTime? startedAt,  DateTime? endedAt,  String exerciseUuid,  SimpleTimeOfDay startTime)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Session() when $default != null:
 return $default(_that.uuid,_that.startedAt,_that.endedAt,_that.exerciseUuid,_that.startTime);case _:
@@ -486,7 +495,7 @@ return $default(_that.uuid,_that.startedAt,_that.endedAt,_that.exerciseUuid,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  DateTime? startedAt,  DateTime? endedAt,  String exerciseUuid, @TimeOfDayConverter()  TimeOfDay startTime)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  DateTime? startedAt,  DateTime? endedAt,  String exerciseUuid,  SimpleTimeOfDay startTime)  $default,) {final _that = this;
 switch (_that) {
 case _Session():
 return $default(_that.uuid,_that.startedAt,_that.endedAt,_that.exerciseUuid,_that.startTime);}
@@ -503,7 +512,7 @@ return $default(_that.uuid,_that.startedAt,_that.endedAt,_that.exerciseUuid,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  DateTime? startedAt,  DateTime? endedAt,  String exerciseUuid, @TimeOfDayConverter()  TimeOfDay startTime)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  DateTime? startedAt,  DateTime? endedAt,  String exerciseUuid,  SimpleTimeOfDay startTime)?  $default,) {final _that = this;
 switch (_that) {
 case _Session() when $default != null:
 return $default(_that.uuid,_that.startedAt,_that.endedAt,_that.exerciseUuid,_that.startTime);case _:
@@ -518,14 +527,14 @@ return $default(_that.uuid,_that.startedAt,_that.endedAt,_that.exerciseUuid,_tha
 @JsonSerializable()
 
 class _Session implements Session {
-  const _Session({required this.uuid, required this.startedAt, required this.endedAt, required this.exerciseUuid, @TimeOfDayConverter() required this.startTime});
+  const _Session({required this.uuid, required this.startedAt, required this.endedAt, required this.exerciseUuid, required this.startTime});
   factory _Session.fromJson(Map<String, dynamic> json) => _$SessionFromJson(json);
 
 @override final  String uuid;
 @override final  DateTime? startedAt;
 @override final  DateTime? endedAt;
 @override final  String exerciseUuid;
-@override@TimeOfDayConverter() final  TimeOfDay startTime;
+@override final  SimpleTimeOfDay startTime;
 
 /// Create a copy of Session
 /// with the given fields replaced by the non-null parameter values.
@@ -560,11 +569,11 @@ abstract mixin class _$SessionCopyWith<$Res> implements $SessionCopyWith<$Res> {
   factory _$SessionCopyWith(_Session value, $Res Function(_Session) _then) = __$SessionCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, DateTime? startedAt, DateTime? endedAt, String exerciseUuid,@TimeOfDayConverter() TimeOfDay startTime
+ String uuid, DateTime? startedAt, DateTime? endedAt, String exerciseUuid, SimpleTimeOfDay startTime
 });
 
 
-
+@override $SimpleTimeOfDayCopyWith<$Res> get startTime;
 
 }
 /// @nodoc
@@ -584,11 +593,20 @@ as String,startedAt: freezed == startedAt ? _self.startedAt : startedAt // ignor
 as DateTime?,endedAt: freezed == endedAt ? _self.endedAt : endedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,exerciseUuid: null == exerciseUuid ? _self.exerciseUuid : exerciseUuid // ignore: cast_nullable_to_non_nullable
 as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
-as TimeOfDay,
+as SimpleTimeOfDay,
   ));
 }
 
-
+/// Create a copy of Session
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SimpleTimeOfDayCopyWith<$Res> get startTime {
+  
+  return $SimpleTimeOfDayCopyWith<$Res>(_self.startTime, (value) {
+    return _then(_self.copyWith(startTime: value));
+  });
+}
 }
 
 

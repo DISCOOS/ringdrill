@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
 class ExerciseFormScreen extends StatefulWidget {
@@ -48,7 +49,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   void initState() {
     final e = widget.exercise;
     if (e != null) {
-      _startTime = e.startTime;
+      _startTime = e.startTime.toMaterial();
       _nameController.text = e.name;
       _numberOfTeamsController.text = (widget.numberOfTeams ?? e.numberOfTeams)
           .toString();
@@ -278,7 +279,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       final rotationTime = int.parse(_rotationTimeController.text);
 
       // Generate exercise with user input
-      final newExercise = ExerciseX.generateSchedule(
+      final newExercise = ProgramService.generateSchedule(
         name: name,
         startTime: _startTime,
         uuid: widget.exercise?.uuid,

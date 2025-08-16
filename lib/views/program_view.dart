@@ -185,6 +185,8 @@ class ExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final st = exercise.startTime.toMaterial();
+    final et = exercise.endTime.toMaterial();
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
@@ -200,11 +202,8 @@ class ExerciseCard extends StatelessWidget {
                   ),
                   subtitle: Text(
                     [
-                      '${exercise.startTime.formal()} - ${exercise.endTime.formal()}',
-                      exercise.endTime.toDateTime().formal(
-                        localizations,
-                        exercise.startTime.toDateTime(),
-                      ),
+                      '${st.formal()} - ${et.formal()}',
+                      et.toDateTime().formal(localizations, st.toDateTime()),
                       '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
                       '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
                     ].join(' | '),

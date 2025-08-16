@@ -9,7 +9,7 @@ part of 'exercise.dart';
 _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   uuid: json['uuid'] as String,
   name: json['name'] as String,
-  startTime: const TimeOfDayConverter().fromJson(
+  startTime: SimpleTimeOfDay.fromJson(
     json['startTime'] as Map<String, dynamic>,
   ),
   numberOfTeams: (json['numberOfTeams'] as num).toInt(),
@@ -23,17 +23,11 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   schedule: (json['schedule'] as List<dynamic>)
       .map(
         (e) => (e as List<dynamic>)
-            .map(
-              (e) => const TimeOfDayConverter().fromJson(
-                e as Map<String, dynamic>,
-              ),
-            )
+            .map((e) => SimpleTimeOfDay.fromJson(e as Map<String, dynamic>))
             .toList(),
       )
       .toList(),
-  endTime: const TimeOfDayConverter().fromJson(
-    json['endTime'] as Map<String, dynamic>,
-  ),
+  endTime: SimpleTimeOfDay.fromJson(json['endTime'] as Map<String, dynamic>),
   metadata: json['metadata'] == null
       ? null
       : ExerciseMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
@@ -42,17 +36,15 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
 Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'uuid': instance.uuid,
   'name': instance.name,
-  'startTime': const TimeOfDayConverter().toJson(instance.startTime),
+  'startTime': instance.startTime,
   'numberOfTeams': instance.numberOfTeams,
   'numberOfRounds': instance.numberOfRounds,
   'executionTime': instance.executionTime,
   'evaluationTime': instance.evaluationTime,
   'rotationTime': instance.rotationTime,
   'stations': instance.stations,
-  'schedule': instance.schedule
-      .map((e) => e.map(const TimeOfDayConverter().toJson).toList())
-      .toList(),
-  'endTime': const TimeOfDayConverter().toJson(instance.endTime),
+  'schedule': instance.schedule,
+  'endTime': instance.endTime,
   'metadata': instance.metadata,
 };
 
@@ -61,3 +53,12 @@ _ExerciseMetadata _$ExerciseMetadataFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ExerciseMetadataToJson(_ExerciseMetadata instance) =>
     <String, dynamic>{'copyOfUuid': instance.copyOfUuid};
+
+_SimpleTimeOfDay _$SimpleTimeOfDayFromJson(Map<String, dynamic> json) =>
+    _SimpleTimeOfDay(
+      hour: (json['hour'] as num).toInt(),
+      minute: (json['minute'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$SimpleTimeOfDayToJson(_SimpleTimeOfDay instance) =>
+    <String, dynamic>{'hour': instance.hour, 'minute': instance.minute};

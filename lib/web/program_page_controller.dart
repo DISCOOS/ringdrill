@@ -5,8 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path/path.dart';
+import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
-import 'package:ringdrill/data/drill_upload.dart' show uploadDrillFile;
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:share_plus/share_plus.dart';
@@ -84,22 +84,19 @@ class ProgramPageController extends ProgramPageControllerBase {
     AppLocalizations localizations,
     DrillFile drillFile,
   ) async {
-    final fileName = drillFile.fileName;
-    final version = drillFile.version;
+    // Empty url use same-origin in web builds
+    final client = DrillClient(baseUrl: '');
 
-    final result = await uploadDrillFile(
-      version: version,
-      fileName: fileName,
-      bytes: drillFile.content,
-      // TODO: Make baseUrl a parameter
-      base: Uri.parse('https://ringdrill.app/api/upload'),
-      tags: const [], // TODO: Let user choose tags in bottom sheet
-      published: true, // TODO: Let user toggle in bottom sheet
-    );
+    final result = await client.upload(drillFile);
 
     // TODO: Store upload metadata for later use
     debugPrint(
-      "{slug:${result.slug},etag:${result.etag},url:${result.versioned}}",
+      {
+        "slug": result.slug,
+        "etag": result.etag,
+        "version": result.version,
+        "versionedUrl": result.versionedUrl,
+      }.toString(),
     );
 
     return true;

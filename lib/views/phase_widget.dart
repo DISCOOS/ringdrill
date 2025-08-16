@@ -32,10 +32,9 @@ class PhasesWidget extends StatelessWidget {
     final isComplete = isCurrentRound && event.phase.index > phaseIndex + 1;
     final textStyle = TextStyle(
       fontSize: 18,
-      fontWeight:
-          isCurrentRound
-              ? FontWeight.bold
-              : FontWeight.normal, // Emphasize current round
+      fontWeight: isCurrentRound
+          ? FontWeight.bold
+          : FontWeight.normal, // Emphasize current round
       color: isCurrentRound ? Colors.white : null, // Contrast for visibility
       decoration: decoration,
     );
@@ -55,17 +54,15 @@ class PhasesWidget extends StatelessWidget {
             child: Container(
               alignment: Alignment.centerLeft,
               decoration: BoxDecoration(
-                color:
-                    isCurrentRound
-                        ? Theme.of(context).colorScheme.secondary
-                        : Colors.transparent,
-                borderRadius:
-                    phaseIndex == 2
-                        ? BorderRadius.only(
-                          topRight: Radius.circular(4),
-                          bottomRight: Radius.circular(4),
-                        )
-                        : null,
+                color: isCurrentRound
+                    ? Theme.of(context).colorScheme.secondary
+                    : Colors.transparent,
+                borderRadius: phaseIndex == 2
+                    ? BorderRadius.only(
+                        topRight: Radius.circular(4),
+                        bottomRight: Radius.circular(4),
+                      )
+                    : null,
               ),
             ),
           ),
@@ -73,24 +70,23 @@ class PhasesWidget extends StatelessWidget {
             height: 32,
             width: width,
             child: FractionallySizedBox(
-              widthFactor:
-                  isComplete
-                      ? 1.0
-                      : isCurrentPhase
-                      ? event.phaseProgress
-                      : 0.0,
+              widthFactor: isComplete
+                  ? 1.0
+                  : isCurrentPhase
+                  ? event.phaseProgress
+                  : 0.0,
               alignment: Alignment.centerLeft,
               child: Container(
                 decoration: BoxDecoration(
-                  color:
-                      isCurrentRound ? Colors.blueAccent : Colors.transparent,
-                  borderRadius:
-                      phaseIndex == 2
-                          ? BorderRadius.only(
-                            topRight: Radius.circular(4),
-                            bottomRight: Radius.circular(4),
-                          )
-                          : null,
+                  color: isCurrentRound
+                      ? Colors.blueAccent
+                      : Colors.transparent,
+                  borderRadius: phaseIndex == 2
+                      ? BorderRadius.only(
+                          topRight: Radius.circular(4),
+                          bottomRight: Radius.circular(4),
+                        )
+                      : null,
                 ),
               ),
             ),
@@ -102,7 +98,7 @@ class PhasesWidget extends StatelessWidget {
             width: width,
             child: Center(
               child: Text(
-                exercise.schedule[roundIndex][phaseIndex].formal(),
+                exercise.schedule[roundIndex][phaseIndex].toMaterial().formal(),
                 style: textStyle,
               ),
             ),
