@@ -18,7 +18,7 @@ export default async function (request) {
         const slug    = url.searchParams.get("slug");
         const version = url.searchParams.get("version"); // required for deleteVersion
 
-        if (!slug) return json({ error: "Missing slug" }, 400);
+        if (action!=="list-all" && !slug) return json({ error: "Missing slug" }, 400);
 
         const rec = await getSlugRecord(slug);
         if (!rec) return json({ error: "Unknown slug" }, 404);
@@ -29,7 +29,7 @@ export default async function (request) {
 
         switch (action) {
             /* ---------------- list all slugs (admin) ---------------- */
-            case "list": {
+            case "list-all": {
                 const limit  = clampInt(url.searchParams.get("limit"), 1, 100, 50);
                 const prefix = (url.searchParams.get("prefix") || "").trim();
                 let cursor   = url.searchParams.get("cursor") || undefined;

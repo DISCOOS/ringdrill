@@ -184,11 +184,11 @@ USAGE:
   ringdrill [global options] <command> [args]
 
 COMMANDS:
-  list [limit] [cursor] [prefix]  List all slugs (admin, paginated)
-  publish <slug>                  Publish a drill
-  unpublish <slug>                Unpublish a drill
-  delete-version <slug> <ver>     Delete a version
-  delete-all <slug>               Delete all versions for a slug
+  list-all [limit] [cursor] [prefix]  List all slugs (admin, paginated)
+  publish <slug>                      Publish a drill
+  unpublish <slug>                    Unpublish a drill
+  delete-version <slug> <ver>         Delete a version
+  delete-all <slug>                   Delete all versions for a slug
 
 GLOBAL OPTIONS:
 ${parser.usage}

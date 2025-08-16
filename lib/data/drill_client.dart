@@ -489,7 +489,7 @@ class DrillClient {
     final uri = _buildFnUri(
       'drills-admin',
       query: {
-        'action': 'list',
+        'action': 'list-all',
         'limit': limit.toString(),
         if (cursor != null) 'cursor': cursor,
         if (prefix != null && prefix.isNotEmpty) 'prefix': prefix,
