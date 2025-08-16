@@ -1,164 +1,187 @@
+// netlify/functions/drills-admin.js
 import {
-    getDrillsStore, getSlugRecord, deleteSlugRecord,
-    keysFor, readJson, writeJsonConditional,
-    readBinary, writeBinaryConditional, getBlobEtag,
-    nowIso, getSlugIndexStore
+    getSlugRecord, deleteSlugRecord, getSlugIndexStore,
+    keysFor, readJson, readBinary,
+    writeJsonConditional, writeBinaryConditional, getBlobEtag,
+    nowIso
 } from "./_shared.js";
+import { getDrillsStore } from "./_shared.js";
 
 export default async function (request) {
     try {
-        // Auth
+        // ---- Auth (Bearer ADMIN_TOKEN) ----
         const token = (process.env.ADMIN_TOKEN || "").trim();
         const auth  = request.headers.get("authorization") || "";
         const ok = token && auth.toLowerCase().startsWith("bearer ") && auth.slice(7).trim() === token;
         if (!ok) return json({ error: "Unauthorized" }, 401);
 
         const url = new URL(request.url);
-        const action  = (url.searchParams.get("action") || "").toLowerCase();
-        const slug    = url.searchParams.get("slug");
-        const version = url.searchParams.get("version"); // required for deleteVersion
+        const actionRaw = (url.searchParams.get("action") || "").toLowerCase();
+        const action = actionRaw === "list-all" ? "listall" : actionRaw; // alias
+        const slug = url.searchParams.get("slug");
+        const version = url.searchParams.get("version");
 
-        if (action!=="list-all" && !slug) return json({ error: "Missing slug" }, 400);
-
-        const rec = await getSlugRecord(slug);
-        if (!rec) return json({ error: "Unknown slug" }, 404);
-
-        const { ownerId, programId } = rec;
-        const { latest, meta } = keysFor({ ownerId, programId, version: "latest" });
-        const metaDoc = await readJson(meta, null);
+        // Actions that DO require a slug:
+        const needsSlug = new Set(["unpublish", "publish", "deleteversion", "deleteall", "list"]);
+        if (needsSlug.has(action) && !slug) {
+            return json({ error: "Missing slug" }, 400);
+        }
 
         switch (action) {
-            /* ---------------- list all slugs (admin) ---------------- */
-            case "list-all": {
-                const limit  = clampInt(url.searchParams.get("limit"), 1, 100, 50);
-                const prefix = (url.searchParams.get("prefix") || "").trim();
-                let cursor   = url.searchParams.get("cursor") || undefined;
+            // ---------- READ-ONLY ADMIN ----------
+            case "list": {
+                const rec = await getSlugRecord(slug);
+                if (!rec) return json({ error: "Unknown slug" }, 404);
 
-                const slugIndex = getSlugIndexStore();
-                const drills    = getDrillsStore();
+                const { ownerId, programId } = rec;
+                const { meta } = keysFor({ ownerId, programId, version: "latest" });
+                const m = await readJson(meta, null);
+                if (!m) return json({ slug, ownerId, programId, versions: [], published: false });
 
+                const versions = Array.isArray(m.versions) ? m.versions.slice()
+                    .sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})) : [];
+                const latest = versions[versions.length - 1] || null;
+
+                return json({
+                    slug, ownerId, programId,
+                    name: m.name, tags: m.tags || [],
+                    published: !!m.published,
+                    versionCount: versions.length,
+                    latest: latest ? { v: latest.v, etag: latest.etag, size: latest.size, updatedAt: latest.updatedAt } : null,
+                    versions
+                });
+            }
+
+            case "listall": {
+                const limit  = clampInt(url.searchParams.get("limit"), 1, 200, 50);
+                let cursor = url.searchParams.get("cursor") || undefined;
+
+                const idx = getSlugIndexStore();
                 const items = [];
                 let nextCursor;
 
-                // Iterate over slug-index in pages until we fill 'limit'
                 while (items.length < limit) {
-                    const page = await slugIndex.list({ cursor, prefix: prefix || undefined });
-                    // page.blobs: [{ key, size, uploadedAt, ... }]
-                    for (const b of page.blobs) {
-                        // key is typically the slug name in the index store
-                        const slug = b.key;
+                    const page = await idx.list({ cursor, limit: Math.min(200, limit) });
+                    cursor = page.cursor; // may be undefined at end
 
-                        // Resolve ownerId/programId from the slug-index record
-                        const rec = await readJson(keysFor({ slug }).slugIndex); // fallback if getSlugRecord not desired here
-                        // If your existing getSlugRecord(slug) returns the same shape, you can use:
-                        // const rec = await getSlugRecord(slug);
+                    for (const b of (page.blobs || [])) {
+                        const s = b.key; // slug key
+                        const rec = await idx.get(s, { type: "json" });
                         if (!rec) continue;
 
-                        const { ownerId, programId } = rec;
-                        const { meta } = keysFor({ ownerId, programId });
-                        const metaJson = await readJson(meta);
-                        const versions = Array.isArray(metaJson?.versions) ? metaJson.versions : [];
-                        const latest   = versions.length
-                            ? versions.slice().sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true })).pop()
-                            : null;
+                        const { meta } = keysFor({ ownerId: rec.ownerId, programId: rec.programId, version: "latest" });
+                        const m = await readJson(meta, null);
+
+                        let latest = null, versionCount = 0, published = false, name, tags;
+                        if (m) {
+                            name = m.name;
+                            tags = m.tags || [];
+                            published = !!m.published;
+                            const versions = Array.isArray(m.versions) ? m.versions.slice()
+                                .sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})) : [];
+                            versionCount = versions.length;
+                            latest = versions[versions.length - 1] || null;
+                        }
 
                         items.push({
-                            slug,
-                            ownerId,
-                            programId,
-                            published: !!metaJson?.published,
-                            versions: versions.map(v => ({ v: v.v, etag: v.etag, size: v.size, updatedAt: v.updatedAt })),
-                            latest: latest ? { v: latest.v, etag: latest.etag } : null,
-                            updatedAt: metaJson?.updatedAt || null,
+                            slug: s,
+                            ownerId: rec.ownerId,
+                            programId: rec.programId,
+                            name, tags,
+                            published,
+                            versionCount,
+                            latest: latest ? { v: latest.v, etag: latest.etag, size: latest.size, updatedAt: latest.updatedAt } : null,
+                            createdAt: rec.createdAt || null
                         });
 
                         if (items.length >= limit) break;
                     }
 
-                    if (items.length >= limit || !page.cursor) {
-                        nextCursor = page.cursor || undefined;
-                        break;
-                    }
-                    cursor = page.cursor;
+                    if (!cursor || items.length >= limit) { nextCursor = cursor; break; }
                 }
 
-                return json(
-                    nextCursor ? { items, nextCursor, generatedAt: nowIso() } : { items, generatedAt: nowIso() },
-                    200
-                );
+                return json(nextCursor ? { items, nextCursor } : { items });
             }
 
-            /* ---------------- publish and unpublish existing (admin) ---------------- */
-            case "publish":
-            case "unpublish": {
-                if (!metaDoc) return json({ error: "No meta for slug" }, 404);
+            // ---------- MUTATING ADMIN (unchanged semantics, guarded with ETags) ----------
+            case "unpublish":
+            case "publish": {
+                const rec = await getSlugRecord(slug);
+                if (!rec) return json({ error: "Unknown slug" }, 404);
+
+                const { ownerId, programId } = rec;
+                const { meta } = keysFor({ ownerId, programId, version: "latest" });
+                const m = await readJson(meta, null);
+                if (!m) return json({ error: "No meta for slug" }, 404);
+
                 const metaEtag = await getBlobEtag(meta);
-                metaDoc.published = action === "publish";
-                if (action === "publish") metaDoc.publishedAt = nowIso();
-                else metaDoc.unpublishedAt = nowIso();
+                m.published = action === "publish";
+                if (action === "publish") m.publishedAt = nowIso();
+                else m.unpublishedAt = nowIso();
 
-                const { modified } = await writeJsonConditional(meta, metaDoc, { onlyIfMatch: metaEtag });
+                const { modified } = await writeJsonConditional(meta, m, { onlyIfMatch: metaEtag });
                 if (!modified) return json({ error: "Precondition failed (meta changed)" }, 412);
-
-                return json({ ok: true, slug, published: metaDoc.published });
+                return json({ ok: true, slug, published: m.published });
             }
 
             case "deleteversion": {
-                if (!version) return json({ error: "Missing version" }, 400);
-                if (!metaDoc?.versions?.length) return json({ error: "No versions to delete" }, 404);
+                const rec = await getSlugRecord(slug);
+                if (!rec) return json({ error: "Unknown slug" }, 404);
 
-                // Remove versioned blob
+                const { ownerId, programId } = rec;
+                const { latest, meta } = keysFor({ ownerId, programId, version: "latest" });
+                const m = await readJson(meta, null);
+                if (!m?.versions?.length) return json({ error: "No versions to delete" }, 404);
+
+                // Delete the versioned blob
                 const { versioned } = keysFor({ ownerId, programId, version });
                 await getDrillsStore().delete(versioned);
 
-                // Update meta (guarded)
-                const metaEtag1 = await getBlobEtag(meta);
-                const remaining = metaDoc.versions.filter(v => v.v !== version);
-                metaDoc.versions = remaining;
-
+                // Update meta
+                const remaining = m.versions.filter(v => v.v !== version);
                 if (remaining.length === 0) {
-                    // Delete latest + meta + slug record
+                    // Clean everything
                     const latestEtag = await getBlobEtag(latest);
                     try { if (latestEtag) await getDrillsStore().delete(latest); } catch {}
-                    try { if (metaEtag1)   await getDrillsStore().delete(meta); } catch {}
+                    try { await getDrillsStore().delete(meta); } catch {}
                     try { await deleteSlugRecord(slug); } catch {}
                     return json({ ok: true, slug, deletedVersion: version, remainingVersions: [], cleaned: true });
                 }
 
-                // New latest is the highest version string
+                // Recompute latest
                 const newLatest = remaining.slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})).pop();
-
-                // Repoint latest guarded by its current ETag (or create if missing)
-                const latestEtag = await getBlobEtag(latest);
                 const { versioned: newLatestKey } = keysFor({ ownerId, programId, version: newLatest.v });
-                const newBytes = await readBinary(newLatestKey);
-                if (!newBytes) return json({ error: "New latest bytes not found" }, 500);
+                const buf = await readBinary(newLatestKey);
+                if (!buf) return json({ error: "New latest bytes not found" }, 500);
 
+                // Guard latest pointer
+                const latestEtag = await getBlobEtag(latest);
                 const lRes = await writeBinaryConditional(
                     latest,
-                    newBytes,
+                    buf,
                     latestEtag ? { onlyIfMatch: latestEtag } : { onlyIfNew: true }
                 );
-                if (!lRes.modified && latestEtag) {
-                    // Someone else changed latest during the operation
-                    return json({ error: "Precondition failed (latest changed)" }, 412);
-                }
+                if (!lRes.modified && latestEtag) return json({ error: "Precondition failed (latest changed)" }, 412);
 
-                // Persist updated meta guarded by latest-known ETag
+                // Guard meta write
                 const metaEtag2 = await getBlobEtag(meta);
-                const mRes = await writeJsonConditional(meta, metaDoc, { onlyIfMatch: metaEtag2 });
+                m.versions = remaining;
+                const mRes = await writeJsonConditional(meta, m, { onlyIfMatch: metaEtag2 });
                 if (!mRes.modified) return json({ error: "Precondition failed (meta changed)" }, 412);
 
                 return json({
-                    ok: true,
-                    slug,
+                    ok: true, slug,
                     deletedVersion: version,
                     newLatest: newLatest.v,
-                    remainingVersions: remaining.map(v => v.v),
+                    remainingVersions: remaining.map(v => v.v)
                 });
             }
 
             case "deleteall": {
+                const rec = await getSlugRecord(slug);
+                if (!rec) return json({ error: "Unknown slug" }, 404);
+                const { ownerId, programId } = rec;
+
                 const prefix = `drills/${ownerId}/${programId}/`;
                 const s = getDrillsStore();
                 let cursor, deleted = 0;
@@ -169,12 +192,13 @@ export default async function (request) {
                     await Promise.all(keys.map(k => s.delete(k)));
                     deleted += keys.length;
                 } while (cursor);
+
                 try { await deleteSlugRecord(slug); } catch {}
                 return json({ ok: true, slug, deletedKeys: deleted });
             }
 
             default:
-                return json({ error: "Invalid action. Use: unpublish | deleteVersion | deleteAll | publish" }, 400);
+                return json({ error: "Invalid action. Use: list | listAll | unpublish | publish | deleteVersion | deleteAll" }, 400);
         }
     } catch (e) {
         return json({ error: String(e?.message || e) }, 500);
@@ -186,4 +210,10 @@ function json(obj, status = 200) {
         status,
         headers: { "content-type": "application/json" },
     });
+}
+
+function clampInt(v, min, max, dflt) {
+    const n = Number.parseInt(v ?? "", 10);
+    if (Number.isNaN(n)) return dflt;
+    return Math.min(max, Math.max(min, n));
 }
