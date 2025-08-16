@@ -28,8 +28,69 @@ export default async function (request) {
         const metaDoc = await readJson(meta, null);
 
         switch (action) {
-            case "unpublish":
-            case "publish": {
+            /* ---------------- list all slugs (admin) ---------------- */
+            case "list": {
+                const limit  = clampInt(url.searchParams.get("limit"), 1, 100, 50);
+                const prefix = (url.searchParams.get("prefix") || "").trim();
+                let cursor   = url.searchParams.get("cursor") || undefined;
+
+                const slugIndex = getSlugIndexStore();
+                const drills    = getDrillsStore();
+
+                const items = [];
+                let nextCursor;
+
+                // Iterate over slug-index in pages until we fill 'limit'
+                while (items.length < limit) {
+                    const page = await slugIndex.list({ cursor, prefix: prefix || undefined });
+                    // page.blobs: [{ key, size, uploadedAt, ... }]
+                    for (const b of page.blobs) {
+                        // key is typically the slug name in the index store
+                        const slug = b.key;
+
+                        // Resolve ownerId/programId from the slug-index record
+                        const rec = await readJson(keysFor({ slug }).slugIndex); // fallback if getSlugRecord not desired here
+                        // If your existing getSlugRecord(slug) returns the same shape, you can use:
+                        // const rec = await getSlugRecord(slug);
+                        if (!rec) continue;
+
+                        const { ownerId, programId } = rec;
+                        const { meta } = keysFor({ ownerId, programId });
+                        const metaJson = await readJson(meta);
+                        const versions = Array.isArray(metaJson?.versions) ? metaJson.versions : [];
+                        const latest   = versions.length
+                            ? versions.slice().sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true })).pop()
+                            : null;
+
+                        items.push({
+                            slug,
+                            ownerId,
+                            programId,
+                            published: !!metaJson?.published,
+                            versions: versions.map(v => ({ v: v.v, etag: v.etag, size: v.size, updatedAt: v.updatedAt })),
+                            latest: latest ? { v: latest.v, etag: latest.etag } : null,
+                            updatedAt: metaJson?.updatedAt || null,
+                        });
+
+                        if (items.length >= limit) break;
+                    }
+
+                    if (items.length >= limit || !page.cursor) {
+                        nextCursor = page.cursor || undefined;
+                        break;
+                    }
+                    cursor = page.cursor;
+                }
+
+                return json(
+                    nextCursor ? { items, nextCursor, generatedAt: nowIso() } : { items, generatedAt: nowIso() },
+                    200
+                );
+            }
+
+            /* ---------------- publish and unpublish existing (admin) ---------------- */
+            case "publish":
+            case "unpublish": {
                 if (!metaDoc) return json({ error: "No meta for slug" }, 404);
                 const metaEtag = await getBlobEtag(meta);
                 metaDoc.published = action === "publish";
