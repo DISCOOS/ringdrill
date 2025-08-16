@@ -14,7 +14,6 @@ import 'package:ringdrill/views/exercise_control_button.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:universal_io/io.dart';
 
 import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
@@ -236,12 +235,18 @@ class ExerciseCard extends StatelessWidget {
   }
 }
 
+enum ProgramPageAction { open, import, export, sendTo, share, feedback }
+
 abstract class ProgramPageControllerBase extends ScreenController {
+  ProgramPageControllerBase(this.actions);
+
   @protected
   final programService = ProgramService();
 
   @protected
   final exerciseService = ExerciseService();
+
+  final List<ProgramPageAction> actions;
 
   @override
   String title(BuildContext context) =>
@@ -278,40 +283,41 @@ abstract class ProgramPageControllerBase extends ScreenController {
       PopupMenuButton<String>(
         onSelected: (value) => _handleMenuAction(context, constraints, value),
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'open',
-            enabled: !exerciseService.isStarted,
-            child: Text(localizations.openProgram),
-          ),
-          PopupMenuItem(
-            value: 'import',
-            enabled: !exerciseService.isStarted,
-            child: Text(localizations.importProgram),
-          ),
-
-          if (!Platform.isAndroid)
-            // On Android 10+ export (save as) does not make that much sense.
-            // Access to the file system is highly limited, in practice
-            // only “scoped storage” is available to this application for
-            // write operations, which is hard to find again. Most modern apps
-            // use SEND actions (share) instead, allowing the user decide which
-            // app on the mobile os that should receive it (could be Dropbox, SMS etc).
+          if (actions.contains(ProgramPageAction.open))
+            PopupMenuItem(
+              value: 'open',
+              enabled: !exerciseService.isStarted,
+              child: Text(localizations.openProgram),
+            ),
+          if (actions.contains(ProgramPageAction.import))
+            PopupMenuItem(
+              value: 'import',
+              enabled: !exerciseService.isStarted,
+              child: Text(localizations.importProgram),
+            ),
+          if (actions.contains(ProgramPageAction.export))
             PopupMenuItem(
               value: 'export',
               enabled: !exerciseService.isStarted,
               child: Text(localizations.exportProgram),
             ),
-          PopupMenuItem(
-            value: 'share',
-            enabled: !exerciseService.isStarted,
-            child: Text(localizations.shareProgram),
-          ),
-          PopupMenuItem(
-            value: 'send_to',
-            enabled: !exerciseService.isStarted,
-            child: Text(localizations.sendToProgram),
-          ),
-          PopupMenuItem(value: 'feedback', child: Text(localizations.feedback)),
+          if (actions.contains(ProgramPageAction.share))
+            PopupMenuItem(
+              value: 'share',
+              enabled: !exerciseService.isStarted,
+              child: Text(localizations.shareProgram),
+            ),
+          if (actions.contains(ProgramPageAction.sendTo))
+            PopupMenuItem(
+              value: 'send_to',
+              enabled: !exerciseService.isStarted,
+              child: Text(localizations.sendToProgram),
+            ),
+          if (actions.contains(ProgramPageAction.feedback))
+            PopupMenuItem(
+              value: 'feedback',
+              child: Text(localizations.feedback),
+            ),
         ],
       ),
     ];

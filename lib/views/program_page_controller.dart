@@ -14,6 +14,23 @@ import 'package:universal_io/io.dart';
 const String baseUrl = 'https://ringdrill.app';
 
 class ProgramPageController extends ProgramPageControllerBase {
+  ProgramPageController()
+    : super([
+        ProgramPageAction.open,
+        ProgramPageAction.import,
+        ProgramPageAction.sendTo,
+        ProgramPageAction.share,
+        ProgramPageAction.feedback,
+        if (!Platform.isAndroid)
+          // On Android 10+ export (save as) does not make that much sense.
+          // Access to the file system is highly limited, in practice
+          // only “scoped storage” is available to this application for
+          // write operations, which is hard to find again. Most modern apps
+          // use SEND actions (share) instead, allowing the user decide which
+          // app on the mobile os that should receive it (could be Dropbox, SMS etc).
+          ProgramPageAction.export,
+      ]);
+
   @override
   Future<DrillFile?> open(
     BuildContext context,

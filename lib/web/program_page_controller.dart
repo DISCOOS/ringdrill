@@ -9,9 +9,27 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/web/web_env.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ProgramPageController extends ProgramPageControllerBase {
+  ProgramPageController()
+    : super([
+        ProgramPageAction.open,
+        ProgramPageAction.import,
+        ProgramPageAction.sendTo,
+        ProgramPageAction.share,
+        ProgramPageAction.feedback,
+        if (WebEnv.isAndroid)
+          // On Android 10+ export (save as) does not make that much sense.
+          // Access to the file system is highly limited, in practice
+          // only “scoped storage” is available to this application for
+          // write operations, which is hard to find again. Most modern apps
+          // use SEND actions (share) instead, allowing the user decide which
+          // app on the mobile os that should receive it (could be Dropbox, SMS etc).
+          ProgramPageAction.export,
+      ]);
+
   @override
   Future<DrillFile?> open(
     BuildContext context,
