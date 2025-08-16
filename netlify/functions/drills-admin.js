@@ -2,7 +2,7 @@ import {
     getDrillsStore, getSlugRecord, deleteSlugRecord,
     keysFor, readJson, writeJsonConditional,
     readBinary, writeBinaryConditional, getBlobEtag,
-    nowIso
+    nowIso, getSlugIndexStore
 } from "./_shared.js";
 
 export default async function (request) {
