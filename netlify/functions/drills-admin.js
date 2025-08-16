@@ -73,7 +73,6 @@ export default async function (request) {
 
                 return json(nextCursor ? { items, nextCursor } : { items });
             }
-
             case "versions": {
                 if (!slug) return json({ error: "Missing slug for action: versions" }, 400);
 
@@ -202,7 +201,11 @@ export default async function (request) {
             }
 
             default:
-                return json({ error: "Invalid action. Use: listall | versions | unpublish | publish | deleteversion | deleteall" }, 400);
+                return json({
+                    error: "Invalid action: " + action + "." +
+                            "Use: listall | versions | unpublish | publish | deleteversion | deleteall"
+                    }, 400
+                );
         }
     } catch (e) {
         return json({ error: String(e?.message || e) }, 500);
