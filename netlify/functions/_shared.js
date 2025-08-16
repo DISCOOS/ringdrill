@@ -35,16 +35,21 @@ export async function getBlobEtag(key) {
 }
 
 // Conditional JSON write (optimistic concurrency)
-export async function writeJsonConditional(key, obj, { onlyIfMatch, onlyIfNew } = {}) {
+export async function writeJsonConditional(key, obj, opts = {}) {
     const s = getDrillsStore();
-    const { modified, etag } = await s.set(key, JSON.stringify(obj), { onlyIfMatch, onlyIfNew });
+    const cond = {};
+    if (opts.onlyIfMatch != null) cond.onlyIfMatch = opts.onlyIfMatch;
+    else if (opts.onlyIfNew === true) cond.onlyIfNew = true;
+    const { modified, etag } = await s.set(key, JSON.stringify(obj), cond);
     return { modified, etag };
 }
-
 // Conditional binary write
-export async function writeBinaryConditional(key, bytes, { onlyIfMatch, onlyIfNew } = {}) {
+export async function writeBinaryConditional(key, bytes, opts = {}) {
     const s = getDrillsStore();
-    const { modified, etag } = await s.set(key, bytes, { onlyIfMatch, onlyIfNew });
+    const cond = {};
+    if (opts.onlyIfMatch != null) cond.onlyIfMatch = opts.onlyIfMatch;
+    else if (opts.onlyIfNew === true) cond.onlyIfNew = true;
+    const { modified, etag } = await s.set(key, bytes, cond);
     return { modified, etag };
 }
 
