@@ -1,4 +1,4 @@
-import { getSlugRecord, keysFor, readJson, MIME_DRILL } from "./_shared.js";
+import { MIME_DRILL, getSlugRecord, keysFor, readJson } from "./_shared.js";
 
 export default async function (request) {
     try {

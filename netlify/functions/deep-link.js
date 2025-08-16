@@ -1,6 +1,6 @@
 import {
-    readBinary, readJson, getSlugRecord, keysFor, MIME_DRILL,
-    sha256Hex, toStrongEtag
+    MIME_DRILL, getSlugRecord, keysFor,
+    readBinary, readJson, sha256Hex, toStrongEtag
 } from "./_shared.js";
 
 export default async function (request) {

@@ -1,25 +1,21 @@
-// Functions v2 (ESM)
 import {
-    MIME_DRILL,
-    getSlugRecord, setSlugRecord, deleteSlugRecord,
-    keysFor, readJson, writeJson, readBinary, deleteBlob, copyBlob,
-    nowIso, originFromRequest
+    getDrillsStore, getSlugRecord, deleteSlugRecord,
+    keysFor, readJson, writeJsonConditional,
+    readBinary, writeBinaryConditional, getBlobEtag,
+    nowIso
 } from "./_shared.js";
-import { getDrillsStore } from "./_shared.js";
 
 export default async function (request) {
     try {
-        // --- Auth (Bearer ADMIN_TOKEN) ---
+        // Auth
         const token = (process.env.ADMIN_TOKEN || "").trim();
         const auth  = request.headers.get("authorization") || "";
         const ok = token && auth.toLowerCase().startsWith("bearer ") && auth.slice(7).trim() === token;
-        if (!ok) {
-            return json({ error: "Unauthorized" }, 401);
-        }
+        if (!ok) return json({ error: "Unauthorized" }, 401);
 
         const url = new URL(request.url);
-        const action = (url.searchParams.get("action") || "").toLowerCase();
-        const slug   = url.searchParams.get("slug");
+        const action  = (url.searchParams.get("action") || "").toLowerCase();
+        const slug    = url.searchParams.get("slug");
         const version = url.searchParams.get("version"); // required for deleteVersion
 
         if (!slug) return json({ error: "Missing slug" }, 400);
@@ -29,88 +25,90 @@ export default async function (request) {
 
         const { ownerId, programId } = rec;
         const { latest, meta } = keysFor({ ownerId, programId, version: "latest" });
-
-        // Load meta (may not exist if nothing uploaded yet)
         const metaDoc = await readJson(meta, null);
 
         switch (action) {
-            case "unpublish": {
+            case "unpublish":
+            case "publish": {
                 if (!metaDoc) return json({ error: "No meta for slug" }, 404);
-                if (metaDoc.published === false) return json({ ok: true, slug, published: false, note: "already unpublished" });
-                metaDoc.published = false;
-                metaDoc.unpublishedAt = nowIso();
-                await writeJson(meta, metaDoc);
-                return json({ ok: true, slug, published: false });
-            }
+                const metaEtag = await getBlobEtag(meta);
+                metaDoc.published = action === "publish";
+                if (action === "publish") metaDoc.publishedAt = nowIso();
+                else metaDoc.unpublishedAt = nowIso();
 
-            case "publish": { // optional, handy during testing
-                if (!metaDoc) return json({ error: "No meta for slug" }, 404);
-                metaDoc.published = true;
-                metaDoc.publishedAt = nowIso();
-                await writeJson(meta, metaDoc);
-                return json({ ok: true, slug, published: true });
+                const { modified } = await writeJsonConditional(meta, metaDoc, { onlyIfMatch: metaEtag });
+                if (!modified) return json({ error: "Precondition failed (meta changed)" }, 412);
+
+                return json({ ok: true, slug, published: metaDoc.published });
             }
 
             case "deleteversion": {
                 if (!version) return json({ error: "Missing version" }, 400);
-                if (!metaDoc || !Array.isArray(metaDoc.versions) || metaDoc.versions.length === 0) {
-                    return json({ error: "No versions to delete" }, 404);
-                }
+                if (!metaDoc?.versions?.length) return json({ error: "No versions to delete" }, 404);
 
-                // Remove the versioned blob
+                // Remove versioned blob
                 const { versioned } = keysFor({ ownerId, programId, version });
-                await deleteBlob(versioned);
+                await getDrillsStore().delete(versioned);
 
-                // Update meta
+                // Update meta (guarded)
+                const metaEtag1 = await getBlobEtag(meta);
                 const remaining = metaDoc.versions.filter(v => v.v !== version);
                 metaDoc.versions = remaining;
 
                 if (remaining.length === 0) {
-                    // Clean up everything: latest + meta + slugIndex
-                    await safeDelete(latest);
-                    await deleteBlob(meta);  // meta.json key is under /drills/.../meta.json
-                    await deleteSlugRecord(slug);
+                    // Delete latest + meta + slug record
+                    const latestEtag = await getBlobEtag(latest);
+                    try { if (latestEtag) await getDrillsStore().delete(latest); } catch {}
+                    try { if (metaEtag1)   await getDrillsStore().delete(meta); } catch {}
+                    try { await deleteSlugRecord(slug); } catch {}
                     return json({ ok: true, slug, deletedVersion: version, remainingVersions: [], cleaned: true });
                 }
 
-                // Compute new latest (highest semver-like string)
-                const newLatest = remaining
-                    .slice()
-                    .sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true }))
-                    .pop();
+                // New latest is the highest version string
+                const newLatest = remaining.slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true})).pop();
 
-                // Copy the new latest content into latest key
+                // Repoint latest guarded by its current ETag (or create if missing)
+                const latestEtag = await getBlobEtag(latest);
                 const { versioned: newLatestKey } = keysFor({ ownerId, programId, version: newLatest.v });
-                const copied = await copyBlob(newLatestKey, latest, MIME_DRILL);
+                const newBytes = await readBinary(newLatestKey);
+                if (!newBytes) return json({ error: "New latest bytes not found" }, 500);
 
-                // Persist updated meta
-                await writeJson(meta, metaDoc);
+                const lRes = await writeBinaryConditional(
+                    latest,
+                    newBytes,
+                    latestEtag ? { onlyIfMatch: latestEtag } : { onlyIfNew: true }
+                );
+                if (!lRes.modified && latestEtag) {
+                    // Someone else changed latest during the operation
+                    return json({ error: "Precondition failed (latest changed)" }, 412);
+                }
+
+                // Persist updated meta guarded by latest-known ETag
+                const metaEtag2 = await getBlobEtag(meta);
+                const mRes = await writeJsonConditional(meta, metaDoc, { onlyIfMatch: metaEtag2 });
+                if (!mRes.modified) return json({ error: "Precondition failed (meta changed)" }, 412);
 
                 return json({
                     ok: true,
                     slug,
                     deletedVersion: version,
-                    newLatest: copied ? newLatest.v : null,
+                    newLatest: newLatest.v,
                     remainingVersions: remaining.map(v => v.v),
                 });
             }
 
             case "deleteall": {
-                // Delete all under drills/{ownerId}/{programId}/
                 const prefix = `drills/${ownerId}/${programId}/`;
-                const drills = getDrillsStore();
-                let cursor;
-                let deleted = 0;
+                const s = getDrillsStore();
+                let cursor, deleted = 0;
                 do {
-                    const page = await drills.list({ prefix, limit: 1000, cursor });
+                    const page = await s.list({ prefix, limit: 1000, cursor });
                     cursor = page.cursor;
                     const keys = (page.blobs || []).map(b => b.key);
-                    await Promise.all(keys.map(k => drills.delete(k)));
+                    await Promise.all(keys.map(k => s.delete(k)));
                     deleted += keys.length;
                 } while (cursor);
-
-                await deleteSlugRecord(slug);
-
+                try { await deleteSlugRecord(slug); } catch {}
                 return json({ ok: true, slug, deletedKeys: deleted });
             }
 
@@ -120,10 +118,6 @@ export default async function (request) {
     } catch (e) {
         return json({ error: String(e?.message || e) }, 500);
     }
-}
-
-async function safeDelete(key) {
-    try { await deleteBlob(key); } catch { /* ignore */ }
 }
 
 function json(obj, status = 200) {
