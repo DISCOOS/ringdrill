@@ -70,6 +70,19 @@
     to  = "/.netlify/functions/drills-admin"
     status = 200
 
+# Serve .well-known files as-is (before the SPA catch-all)
+[[redirects]]
+    from = "/.well-known/*"
+    to = "/.well-known/:splat"
+    status = 200
+
+# Optional but recommended: ensure correct headers
+[[headers]]
+    for = "/.well-known/assetlinks.json"
+    [headers.values]
+        Content-Type = "application/json; charset=utf-8"
+        Cache-Control = "public, max-age=3600"
+
 # Single Page App routing: deep links -> index.html
 [[redirects]]
     from = "/*"
