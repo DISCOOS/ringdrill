@@ -4,10 +4,10 @@
         channel = "stable"   # or "beta" if you really want that
 
 [build]
-    command = """flutter pub get
-        && flutter build web --release --pwa-strategy=offline-first
-        && mkdir -p build/web/.well-known
-        && cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json"""
+    command = """flutter pub get && \
+        flutter build web --release --pwa-strategy=offline-first && \
+        mkdir -p build/web/.well-known && \
+        cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json"""
     publish = "build/web"
 
 [build.environment]
