@@ -11,17 +11,19 @@ export default async function (request) {
         const url = new URL(request.url);
         const originalPath = url.pathname;
 
-        // Normalize tail: accept both /.netlify/functions/deep-link/... and /d/...
+        // Recognize /o/ (App Link) or /d/
+        const isOpenMode = /^\/o\//i.test(originalPath);
+
+        // Normalize tail
         let tail = originalPath
             .replace(/^.*\/\.netlify\/functions\/deep-link\//, "")
-            .replace(/^\/d\//, "")
+            .replace(/^\/d\//i, "")
+            .replace(/^\/o\//i, "")
             .replace(/^\/+/, "");
 
         if (!tail) return new Response("Not found", { status: 404 });
-
         try { tail = decodeURIComponent(tail); } catch {}
 
-        // Detect any ".drill" presence
         const hasDrillExt = /\.drill(?:$|[/?#@])/i.test(tail);
 
         // Normalize .drill position:
@@ -36,11 +38,19 @@ export default async function (request) {
         // Parse "<slug>" or "<slug>@<version>"
         const m = tail.match(/^([^@/]+)(?:@([^/]+))?$/);
         if (!m) return new Response("Not found", { status: 404 });
-
         const slug = m[1];
         const version = (m[2] || "").trim() || null;
 
-        // If original path did NOT include ".drill", redirect to canonical .drill URL (no query params)
+        // ---------- /o/ behavior ----------
+        if (isOpenMode) {
+            const canonical = `/d/${slug}${version ? `@${version}` : ""}.drill`;
+            const u = new URL(request.url);
+            u.pathname = canonical;
+            u.search = "";
+            return new Response(null, { status: 302, headers: { Location: u.toString() } });
+        }
+
+        // ---------- /d/ behavior ----------
         if (!hasDrillExt) {
             const canonical = `/d/${slug}${version ? `@${version}` : ""}.drill`;
             const u = new URL(request.url);
@@ -49,7 +59,6 @@ export default async function (request) {
             return new Response(null, { status: 301, headers: { Location: u.toString() } });
         }
 
-        // Serve the file (attachment)
         const rec = await getSlugRecord(slug);
         if (!rec) return new Response("Unknown slug", { status: 404 });
 
@@ -76,7 +85,7 @@ export default async function (request) {
             ? "public, max-age=31536000, immutable"
             : "public, max-age=0, must-revalidate";
 
-        // Conditional GET via ETag
+        // Conditional GET
         const inm = request.headers.get("if-none-match");
         if (vinfo?.etag && inm && etagMatches(inm, vinfo.etag)) {
             const h304 = new Headers({
@@ -113,7 +122,6 @@ export default async function (request) {
 }
 
 /* ------------ helpers ------------ */
-// Accepts one or many ETags per RFC 7232 (comma-separated list). Matches strong or weak validators.
 function etagMatches(ifNoneMatchHeader, currentEtag) {
     const raw = (ifNoneMatchHeader || "").trim();
     if (!raw) return false;
