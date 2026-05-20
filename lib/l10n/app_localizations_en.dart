@@ -328,6 +328,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get teamNoExercises => 'This team isn\'t part of any exercise yet.';
+
+  @override
   String notification(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

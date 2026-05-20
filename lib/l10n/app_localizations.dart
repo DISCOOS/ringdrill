@@ -566,6 +566,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{member} =1{member} other{members}}'**
   String member(num count);
 
+  /// Empty state shown on TeamScreen when the team is not in any exercise
+  ///
+  /// In en, this message translates to:
+  /// **'This team isn\'t part of any exercise yet.'**
+  String get teamNoExercises;
+
   /// Parameterized message
   ///
   /// In en, this message translates to:

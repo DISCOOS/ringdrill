@@ -313,6 +313,10 @@
   "@member": {
     "description": "Team member, lowercase for use inline (e.g. '5 members')"
   },
+  "teamNoExercises": "This team isn't part of any exercise yet.",
+  "@teamNoExercises": {
+    "description": "Empty state shown on TeamScreen when the team is not in any exercise"
+  },
   "notification": "{count, plural, =0{Notification} =1{Notification} other{Notifications}}",
   "@notification": {
     "description": "Parameterized message"
