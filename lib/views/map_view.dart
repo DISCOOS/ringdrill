@@ -187,7 +187,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                               // text together; the pin underneath stays
                               // fully opaque.
                               Opacity(
-                                opacity: 0.75,
+                                opacity: 0.55,
                                 child: Material(
                                   elevation: 2,
                                   borderRadius: BorderRadius.circular(4),
@@ -336,10 +336,11 @@ class _MapViewState<K> extends State<MapView<K>> {
     // dropdown so the results never push past the bottom of the map.
     const double searchFieldHeight = 88;
     const double bottomGutter = 24;
-    final double maxResultsHeight = (constraints.maxHeight -
-            searchFieldHeight -
-            bottomGutter)
-        .clamp(120.0, double.infinity);
+    final double maxResultsHeight =
+        (constraints.maxHeight - searchFieldHeight - bottomGutter).clamp(
+          120.0,
+          double.infinity,
+        );
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -420,10 +421,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                     final hasPosition = result.points.isNotEmpty;
                     final chipText = chipLabel == null
                         ? null
-                        : Text(
-                            chipLabel,
-                            style: const TextStyle(fontSize: 12),
-                          );
+                        : Text(chipLabel, style: const TextStyle(fontSize: 12));
                     return ListTile(
                       onTap: () => _onResultTap(result),
                       title: Text(
@@ -560,8 +558,7 @@ class _MapViewState<K> extends State<MapView<K>> {
         final found = widget.searchTargets.where((t) {
           if (t.name.toLowerCase().contains(needle)) return true;
           final kind = t.kind;
-          return kind != null &&
-              kind.label(l).toLowerCase().contains(needle);
+          return kind != null && kind.label(l).toLowerCase().contains(needle);
         }).toList();
         if (found.isNotEmpty) {
           setState(() {
