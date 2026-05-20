@@ -672,6 +672,17 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalogBadge => 'Fra nett-bibliotek';
 
   @override
+  String get planStatusLocal => 'Lokal';
+
+  @override
+  String get planStatusLocalTooltip =>
+      'Denne planen ligger bare på enheten din';
+
+  @override
+  String get planStatusOnlineTooltip =>
+      'Denne planen er koblet til nett-biblioteket';
+
+  @override
   String get librarySourceLocal => 'Lokal';
 
   @override

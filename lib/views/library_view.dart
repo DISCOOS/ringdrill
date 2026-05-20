@@ -6,6 +6,7 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
@@ -57,22 +58,27 @@ class _LibraryBody extends StatefulWidget {
 class _LibraryBodyState extends State<_LibraryBody>
     with SingleTickerProviderStateMixin {
   final _programService = ProgramService();
+  final _catalogStatus = CatalogStatusService();
   late final TabController _tabController;
   late Future<MarketFeedPageResponse> _feed;
-  _CatalogServiceState _catalogServiceState = _CatalogServiceState.checking;
-  String? _catalogServiceTooltip;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _catalogStatus.listenable.addListener(_onCatalogStatusChanged);
     _feed = _loadFeed();
   }
 
   @override
   void dispose() {
+    _catalogStatus.listenable.removeListener(_onCatalogStatusChanged);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onCatalogStatusChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -204,10 +210,9 @@ class _LibraryBodyState extends State<_LibraryBody>
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (_catalogServiceState ==
-                        _CatalogServiceState.unavailable ||
-                    _catalogServiceState ==
-                        _CatalogServiceState.corsBlocked) {
+                final currentState = _catalogStatus.value.state;
+                if (currentState == CatalogServiceState.unavailable ||
+                    currentState == CatalogServiceState.corsBlocked) {
                   return ListView(
                     children: [
                       const SizedBox(height: 80),
@@ -259,8 +264,7 @@ class _LibraryBodyState extends State<_LibraryBody>
         _TabFooter(
           subtitle: localizations.libraryOnlineSubtitle,
           trailing: _CatalogStatusIndicator(
-            state: _catalogServiceState,
-            tooltip: _catalogServiceTooltip,
+            status: _catalogStatus.value,
             onRefresh: () {
               setState(() {
                 _feed = _loadFeed();
@@ -312,36 +316,21 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 
   Future<MarketFeedPageResponse> _loadFeed() async {
-    _setCatalogServiceState(_CatalogServiceState.checking);
+    _catalogStatus.setStatus(CatalogServiceState.checking);
     try {
       final feed = await DrillClient(baseUrl: _catalogBaseUrl()).marketFeed();
-      _setCatalogServiceState(_CatalogServiceState.online);
+      _catalogStatus.setStatus(CatalogServiceState.online);
       return feed;
     } catch (error) {
       final isCorsBlocked = _isLikelyCorsBlocked(error);
-      _setCatalogServiceState(
+      _catalogStatus.setStatus(
         isCorsBlocked
-            ? _CatalogServiceState.corsBlocked
-            : _CatalogServiceState.unavailable,
+            ? CatalogServiceState.corsBlocked
+            : CatalogServiceState.unavailable,
         tooltip: _catalogErrorTooltip(error, isCorsBlocked: isCorsBlocked),
       );
       return const MarketFeedPageResponse(items: []);
     }
-  }
-
-  void _setCatalogServiceState(_CatalogServiceState state, {String? tooltip}) {
-    if (_catalogServiceState == state && _catalogServiceTooltip == tooltip) {
-      return;
-    }
-    if (!mounted) {
-      _catalogServiceState = state;
-      _catalogServiceTooltip = tooltip;
-      return;
-    }
-    setState(() {
-      _catalogServiceState = state;
-      _catalogServiceTooltip = tooltip;
-    });
   }
 
   String _catalogBaseUrl() {
@@ -598,8 +587,6 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 }
 
-enum _CatalogServiceState { checking, online, unavailable, corsBlocked }
-
 class _TabFooter extends StatelessWidget {
   const _TabFooter({required this.subtitle, this.trailing});
 
@@ -666,41 +653,19 @@ class _EmptyState extends StatelessWidget {
 
 class _CatalogStatusIndicator extends StatelessWidget {
   const _CatalogStatusIndicator({
-    required this.state,
+    required this.status,
     required this.onRefresh,
-    this.tooltip,
   });
 
-  final _CatalogServiceState state;
-  final String? tooltip;
+  final CatalogStatus status;
   final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
-    final (icon, label) = switch (state) {
-      _CatalogServiceState.checking => (
-        Icons.cloud_sync,
-        localizations.catalogServiceChecking,
-      ),
-      _CatalogServiceState.online => (
-        Icons.cloud_done,
-        localizations.catalogServiceOnline,
-      ),
-      _CatalogServiceState.unavailable => (
-        Icons.cloud_off,
-        localizations.catalogServiceUnavailable,
-      ),
-      _CatalogServiceState.corsBlocked => (
-        Icons.policy,
-        localizations.catalogServiceCorsBlocked,
-      ),
-    };
-    final isError =
-        state == _CatalogServiceState.unavailable ||
-        state == _CatalogServiceState.corsBlocked;
-    final color = isError
+    final visual = catalogStatusVisual(status.state, localizations);
+    final color = visual.isError
         ? theme.colorScheme.error
         : theme.colorScheme.onSurfaceVariant;
 
@@ -708,20 +673,20 @@ class _CatalogStatusIndicator extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Tooltip(
-          message: tooltip ?? label,
+          message: status.tooltip ?? visual.label,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 160),
                 child: Text(
-                  label,
+                  visual.label,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(color: color),
                 ),
               ),
               const SizedBox(width: 6),
-              Icon(icon, size: 18, color: color),
+              Icon(visual.icon, size: 18, color: color),
             ],
           ),
         ),
@@ -735,4 +700,51 @@ class _CatalogStatusIndicator extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Helper that maps a [CatalogServiceState] to icon, label, and error flag.
+/// Lives here so the AppBar plan badge can reuse the same mapping.
+class CatalogStatusVisual {
+  const CatalogStatusVisual({
+    required this.icon,
+    required this.label,
+    required this.isError,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isError;
+}
+
+CatalogStatusVisual catalogStatusVisual(
+  CatalogServiceState state,
+  AppLocalizations localizations,
+) {
+  return switch (state) {
+    CatalogServiceState.unknown => CatalogStatusVisual(
+      icon: Icons.cloud_queue,
+      label: localizations.catalogServiceChecking,
+      isError: false,
+    ),
+    CatalogServiceState.checking => CatalogStatusVisual(
+      icon: Icons.cloud_sync,
+      label: localizations.catalogServiceChecking,
+      isError: false,
+    ),
+    CatalogServiceState.online => CatalogStatusVisual(
+      icon: Icons.cloud_done,
+      label: localizations.catalogServiceOnline,
+      isError: false,
+    ),
+    CatalogServiceState.unavailable => CatalogStatusVisual(
+      icon: Icons.cloud_off,
+      label: localizations.catalogServiceUnavailable,
+      isError: true,
+    ),
+    CatalogServiceState.corsBlocked => CatalogStatusVisual(
+      icon: Icons.policy,
+      label: localizations.catalogServiceCorsBlocked,
+      isError: true,
+    ),
+  };
 }

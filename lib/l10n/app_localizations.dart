@@ -1118,6 +1118,24 @@ abstract class AppLocalizations {
   /// **'From online library'**
   String get libraryCatalogBadge;
 
+  /// No description provided for @planStatusLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get planStatusLocal;
+
+  /// No description provided for @planStatusLocalTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan lives only on your device'**
+  String get planStatusLocalTooltip;
+
+  /// No description provided for @planStatusOnlineTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan is linked to the online library'**
+  String get planStatusOnlineTooltip;
+
   /// No description provided for @librarySourceLocal.
   ///
   /// In en, this message translates to:

@@ -14,6 +14,7 @@ import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
@@ -295,7 +296,10 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 )
               : null,
-          actions: page.controller.buildActions(context, constraints),
+          actions: [
+            const PlanStatusBadge(),
+            ...?page.controller.buildActions(context, constraints),
+          ],
           actionsPadding: EdgeInsets.only(right: 16.0),
         ),
       ),

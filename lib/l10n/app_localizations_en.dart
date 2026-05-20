@@ -677,6 +677,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryCatalogBadge => 'From online library';
 
   @override
+  String get planStatusLocal => 'Local';
+
+  @override
+  String get planStatusLocalTooltip => 'This plan lives only on your device';
+
+  @override
+  String get planStatusOnlineTooltip =>
+      'This plan is linked to the online library';
+
+  @override
   String get librarySourceLocal => 'Local';
 
   @override
