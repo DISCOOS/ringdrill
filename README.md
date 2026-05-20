@@ -3,6 +3,13 @@
 Efficient station-based training. Organize, run and track drills with ease.
 
 [![Google Play](https://playbadges.pavi2410.me/badge/full?id=org.discoos.ringdrill)](https://play.google.com/store/apps/details?id=org.discoos.ringdrill)
+
+## Documentation
+
+* [`docs/architecture.md`](docs/architecture.md): project overview, tech stack, repo layout, conventions, backend contract, and where to look first when navigating the code.
+* [`AGENTS.md`](AGENTS.md): operating guide for AI coding agents (Claude Code, Codex, Cursor, etc.) and a quick orientation for human contributors. Read this before letting an agent change code.
+* [`CLAUDE.md`](CLAUDE.md): short pointer file read by Claude Code on startup, defers to `AGENTS.md`.
+
 ## Getting Started
 To get started with developing for RingDrill using Flutter, follow these steps:
 
