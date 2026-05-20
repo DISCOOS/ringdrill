@@ -15,6 +15,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0005 | [The Dart CLI must remain free of Flutter imports](./0005-cli-must-remain-flutter-free.md)               | Accepted |
 | ADR-0006 | [Sentry telemetry is gated behind opt-in analytics consent](./0006-sentry-behind-consent-gate.md)        | Accepted |
 | ADR-0007 | [.drill files are versioned ZIP archives of JSON parts](./0007-drill-file-format.md)                     | Accepted |
+| ADR-0008 | [Persistent program library with active plan and shared catalog](./0008-persistent-program-library-and-catalog.md) | Accepted |
 
 ## When to write an ADR
 
