@@ -83,7 +83,7 @@ Future<void> installPickedPlanFile(BuildContext context) async {
       activate: true,
     );
     if (context.mounted) {
-      _showSnackBar(context, localizations.installedAndActivated(program.name));
+      _showSnackBar(context, localizations.openedAndActivated(program.name));
     }
   } catch (e, stackTrace) {
     if (context.mounted) {

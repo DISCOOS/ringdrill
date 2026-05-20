@@ -108,7 +108,7 @@ class OpenFileWidget extends StatelessWidget {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(localizations.installedAndActivated(program.name)),
+            content: Text(localizations.openedAndActivated(program.name)),
             dismissDirection: DismissDirection.endToStart,
             showCloseIcon: true,
           ),

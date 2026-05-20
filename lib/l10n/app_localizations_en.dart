@@ -651,6 +651,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryCatalog => 'Catalog';
 
   @override
+  String get libraryOnlineTab => 'Online';
+
+  @override
+  String get libraryMyPlansSubtitle => 'Pick a saved plan to continue';
+
+  @override
+  String get libraryOnlineSubtitle =>
+      'Get a plan from the shared online library';
+
+  @override
+  String get libraryFromFileSubtitle => 'Import a .drill file from your device';
+
+  @override
+  String get libraryEmptyMyPlans =>
+      'You have no saved plans. Browse \'Online\' or \'New from file\' to get started.';
+
+  @override
+  String get libraryFromFilePickAction => 'Choose file';
+
+  @override
+  String get libraryFromFileHint => 'Pick a .drill file from your device';
+
+  @override
   String get librarySourceLocal => 'Local';
 
   @override
@@ -667,10 +690,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryActive => 'Active';
 
   @override
-  String get libraryInstalled => 'Installed';
+  String get libraryInstalled => 'In library';
 
   @override
-  String get libraryInstall => 'Install';
+  String get libraryInstall => 'Open';
 
   @override
   String get libraryRefresh => 'Refresh from catalog';
@@ -685,10 +708,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDelete => 'Delete';
 
   @override
-  String get libraryEmptyCatalog => 'Catalog is empty';
+  String get libraryEmptyCatalog => 'Nothing online yet';
 
   @override
-  String get libraryErrorLoad => 'Could not load library';
+  String get libraryErrorLoad => 'Could not load online plans';
 
   @override
   String get libraryRetry => 'Retry';
@@ -713,7 +736,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create => 'Create';
 
   @override
-  String get fromFileAction => 'From file';
+  String get fromFileAction => 'New from file';
 
   @override
   String get addExercisesAction => 'Add exercises from...';
@@ -758,6 +781,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String installedAndActivated(Object name) {
     return 'Installed and activated $name';
+  }
+
+  @override
+  String openedAndActivated(Object name) {
+    return 'Opened $name';
   }
 
   @override

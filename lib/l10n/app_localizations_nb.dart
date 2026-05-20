@@ -647,6 +647,31 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryCatalog => 'Katalog';
 
   @override
+  String get libraryOnlineTab => 'På nett';
+
+  @override
+  String get libraryMyPlansSubtitle => 'Velg en lagret plan for å fortsette';
+
+  @override
+  String get libraryOnlineSubtitle => 'Hent en plan fra bibliotek på nett';
+
+  @override
+  String get libraryFromFileSubtitle => 'Importer en .drill-fil fra enheten';
+
+  @override
+  String get libraryEmptyMyPlans =>
+      'Du har ingen lagrede planer. Bla i «På nett» eller «Ny fra fil» for å komme i gang.';
+
+  @override
+  String get libraryFromFilePickAction => 'Velg fil';
+
+  @override
+  String get libraryFromFileHint => 'Velg en .drill-fil fra enheten din';
+
+  @override
+  String get libraryCatalogBadge => 'Fra nett-bibliotek';
+
+  @override
   String get librarySourceLocal => 'Lokal';
 
   @override
@@ -663,10 +688,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryActive => 'Aktiv';
 
   @override
-  String get libraryInstalled => 'Installert';
+  String get libraryInstalled => 'I bibliotek';
 
   @override
-  String get libraryInstall => 'Installer';
+  String get libraryInstall => 'Åpne';
 
   @override
   String get libraryRefresh => 'Oppdater fra katalog';
@@ -681,10 +706,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryDelete => 'Slett';
 
   @override
-  String get libraryEmptyCatalog => 'Katalogen er tom';
+  String get libraryEmptyCatalog => 'Ingen planer på nett ennå';
 
   @override
-  String get libraryErrorLoad => 'Kunne ikke laste biblioteket';
+  String get libraryErrorLoad => 'Kunne ikke laste planer fra nett';
 
   @override
   String get libraryRetry => 'Prøv igjen';
@@ -709,7 +734,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get create => 'Opprett';
 
   @override
-  String get fromFileAction => 'Fra fil';
+  String get fromFileAction => 'Ny fra fil';
 
   @override
   String get addExercisesAction => 'Legg til øvelser fra...';
@@ -754,6 +779,11 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String installedAndActivated(Object name) {
     return 'Installert og aktivert $name';
+  }
+
+  @override
+  String openedAndActivated(Object name) {
+    return 'Åpnet $name';
   }
 
   @override

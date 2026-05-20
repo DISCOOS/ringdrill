@@ -22,9 +22,9 @@ Future<void> showOpenPlanDialog(BuildContext context) {
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: 760,
-            maxHeight: 680,
-            minWidth: 520,
+            maxWidth: 560,
+            maxHeight: 560,
+            minWidth: 460,
           ),
           child: const _LibraryBody(),
         ),
@@ -65,7 +65,7 @@ class _LibraryBodyState extends State<_LibraryBody>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _feed = _loadFeed();
   }
 
@@ -83,53 +83,23 @@ class _LibraryBodyState extends State<_LibraryBody>
         backgroundColor: Colors.transparent,
         body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 8, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      localizations.openPlan,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  _CatalogStatusAction(
-                    state: _catalogServiceState,
-                    tooltip: _catalogServiceTooltip,
-                  ),
-                  IconButton(
-                    tooltip: localizations.newPlanAction,
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: () => _createNewPlan(context),
-                  ),
-                  IconButton(
-                    tooltip: localizations.fromFileAction,
-                    icon: const Icon(Icons.upload_file),
-                    onPressed: () => _installFromFile(context),
-                  ),
-                  IconButton(
-                    tooltip: localizations.libraryRetry,
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () {
-                      setState(() {
-                        _feed = _loadFeed();
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 8),
             TabBar(
               controller: _tabController,
               tabs: [
                 Tab(text: localizations.libraryMyPlans),
-                Tab(text: localizations.libraryCatalog),
+                Tab(text: localizations.libraryOnlineTab),
+                Tab(text: localizations.fromFileAction),
               ],
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [_buildMyPlans(context), _buildCatalog(context)],
+                children: [
+                  _buildMyPlans(context),
+                  _buildCatalog(context),
+                  _buildFromFile(context),
+                ],
               ),
             ),
           ],
@@ -141,10 +111,26 @@ class _LibraryBodyState extends State<_LibraryBody>
   Widget _buildMyPlans(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final programs = _programService.listPrograms();
-    if (programs.isEmpty) {
-      return Center(child: Text(localizations.noExercisesYet));
-    }
+    return Column(
+      children: [
+        Expanded(
+          child: programs.isEmpty
+              ? _EmptyState(
+                  icon: Icons.folder_open_outlined,
+                  text: localizations.libraryEmptyMyPlans,
+                )
+              : _buildMyPlansList(context, localizations, programs),
+        ),
+        _TabFooter(subtitle: localizations.libraryMyPlansSubtitle),
+      ],
+    );
+  }
 
+  Widget _buildMyPlansList(
+    BuildContext context,
+    AppLocalizations localizations,
+    List<Program> programs,
+  ) {
     return ListView.builder(
       itemCount: programs.length,
       itemBuilder: (context, index) {
@@ -185,70 +171,126 @@ class _LibraryBodyState extends State<_LibraryBody>
 
   Widget _buildCatalog(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() {
-          _feed = _loadFeed();
-        });
-        await _feed;
-      },
-      child: FutureBuilder<MarketFeedPageResponse>(
-        future: _feed,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (_catalogServiceState == _CatalogServiceState.unavailable ||
-              _catalogServiceState == _CatalogServiceState.corsBlocked) {
-            return ListView(
-              children: [
-                const SizedBox(height: 120),
-                Center(child: Text(localizations.libraryErrorLoad)),
-                const SizedBox(height: 12),
-                Center(
-                  child: FilledButton(
-                    onPressed: () {
-                      setState(() {
-                        _feed = _loadFeed();
-                      });
-                    },
-                    child: Text(localizations.libraryRetry),
-                  ),
-                ),
-              ],
-            );
-          }
-          final items = snapshot.data?.items ?? const <MarketFeedItem>[];
-          if (items.isEmpty) {
-            return ListView(
-              children: [
-                const SizedBox(height: 120),
-                Center(child: Text(localizations.libraryEmptyCatalog)),
-              ],
-            );
-          }
-          final installedSlugs = _installedCatalogSlugs();
-          return ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final installed = installedSlugs.contains(item.slug);
-              return ListTile(
-                title: Text(item.name),
-                subtitle: Text(item.tags.join(', ')),
-                trailing: FilledButton(
-                  onPressed: installed ? null : () => _installCatalog(item),
-                  child: Text(
-                    installed
-                        ? localizations.libraryInstalled
-                        : localizations.libraryInstall,
-                  ),
-                ),
-              );
+    return Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _feed = _loadFeed();
+              });
+              await _feed;
             },
-          );
-        },
-      ),
+            child: FutureBuilder<MarketFeedPageResponse>(
+              future: _feed,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (_catalogServiceState ==
+                        _CatalogServiceState.unavailable ||
+                    _catalogServiceState ==
+                        _CatalogServiceState.corsBlocked) {
+                  return ListView(
+                    children: [
+                      const SizedBox(height: 80),
+                      _EmptyState(
+                        icon: Icons.cloud_off,
+                        text: localizations.libraryErrorLoad,
+                      ),
+                    ],
+                  );
+                }
+                final items =
+                    snapshot.data?.items ?? const <MarketFeedItem>[];
+                if (items.isEmpty) {
+                  return ListView(
+                    children: [
+                      const SizedBox(height: 80),
+                      _EmptyState(
+                        icon: Icons.cloud_outlined,
+                        text: localizations.libraryEmptyCatalog,
+                      ),
+                    ],
+                  );
+                }
+                final installedSlugs = _installedCatalogSlugs();
+                return ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final installed = installedSlugs.contains(item.slug);
+                    return ListTile(
+                      title: Text(item.name),
+                      subtitle: Text(item.tags.join(', ')),
+                      trailing: FilledButton(
+                        onPressed:
+                            installed ? null : () => _installCatalog(item),
+                        child: Text(
+                          installed
+                              ? localizations.libraryInstalled
+                              : localizations.libraryInstall,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+        _TabFooter(
+          subtitle: localizations.libraryOnlineSubtitle,
+          trailing: _CatalogStatusIndicator(
+            state: _catalogServiceState,
+            tooltip: _catalogServiceTooltip,
+            onRefresh: () {
+              setState(() {
+                _feed = _loadFeed();
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFromFile(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.upload_file_outlined,
+                    size: 64,
+                    color: colors.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    localizations.libraryFromFileHint,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.folder_open),
+                    label: Text(localizations.libraryFromFilePickAction),
+                    onPressed: () => _installFromFile(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        _TabFooter(subtitle: localizations.libraryFromFileSubtitle),
+      ],
     );
   }
 
@@ -346,16 +388,6 @@ class _LibraryBodyState extends State<_LibraryBody>
     } on StateError {
       if (!context.mounted) return;
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
-    }
-  }
-
-  Future<void> _createNewPlan(BuildContext context) async {
-    final before = _programService.activeProgramUuid;
-    await active_actions.createNewPlan(context);
-    if (!context.mounted) return;
-    if (_programService.activeProgramUuid != null &&
-        _programService.activeProgramUuid != before) {
-      Navigator.pop(context);
     }
   }
 
@@ -551,14 +583,84 @@ class _LibraryBodyState extends State<_LibraryBody>
 
 enum _CatalogServiceState { checking, online, unavailable, corsBlocked }
 
-class _CatalogStatusAction extends StatelessWidget {
-  const _CatalogStatusAction({required this.state, this.tooltip});
+class _TabFooter extends StatelessWidget {
+  const _TabFooter({required this.subtitle, this.trailing});
 
-  final _CatalogServiceState state;
-  final String? tooltip;
+  final String subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final mutedColor = theme.colorScheme.onSurfaceVariant;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 4, trailing == null ? 16 : 4, 4),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 18, color: mutedColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(color: mutedColor),
+            ),
+          ),
+          if (trailing != null) trailing!,
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 56, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CatalogStatusIndicator extends StatelessWidget {
+  const _CatalogStatusIndicator({
+    required this.state,
+    required this.onRefresh,
+    this.tooltip,
+  });
+
+  final _CatalogServiceState state;
+  final String? tooltip;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
     final (icon, label) = switch (state) {
       _CatalogServiceState.checking => (
@@ -578,37 +680,42 @@ class _CatalogStatusAction extends StatelessWidget {
         localizations.catalogServiceCorsBlocked,
       ),
     };
-    final color =
+    final isError =
         state == _CatalogServiceState.unavailable ||
-            state == _CatalogServiceState.corsBlocked
-        ? Theme.of(context).colorScheme.error
-        : Theme.of(context).appBarTheme.foregroundColor;
-    final shouldShowLabel = MediaQuery.sizeOf(context).width >= 360;
+        state == _CatalogServiceState.corsBlocked;
+    final color = isError
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurfaceVariant;
 
-    return Tooltip(
-      message: tooltip ?? label,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (shouldShowLabel) ...[
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(
+          message: tooltip ?? label,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 180),
+                constraints: const BoxConstraints(maxWidth: 160),
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: color),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: color),
                 ),
               ),
               const SizedBox(width: 6),
+              Icon(icon, size: 18, color: color),
             ],
-            Icon(icon, size: 20, color: color),
-          ],
+          ),
         ),
-      ),
+        IconButton(
+          tooltip: localizations.libraryRetry,
+          icon: const Icon(Icons.refresh),
+          iconSize: 20,
+          visualDensity: VisualDensity.compact,
+          onPressed: onRefresh,
+        ),
+      ],
     );
   }
 }

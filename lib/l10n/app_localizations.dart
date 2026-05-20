@@ -1070,6 +1070,48 @@ abstract class AppLocalizations {
   /// **'Catalog'**
   String get libraryCatalog;
 
+  /// No description provided for @libraryOnlineTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get libraryOnlineTab;
+
+  /// No description provided for @libraryMyPlansSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a saved plan to continue'**
+  String get libraryMyPlansSubtitle;
+
+  /// No description provided for @libraryOnlineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a plan from the shared online library'**
+  String get libraryOnlineSubtitle;
+
+  /// No description provided for @libraryFromFileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a .drill file from your device'**
+  String get libraryFromFileSubtitle;
+
+  /// No description provided for @libraryEmptyMyPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no saved plans. Browse \'Online\' or \'New from file\' to get started.'**
+  String get libraryEmptyMyPlans;
+
+  /// No description provided for @libraryFromFilePickAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get libraryFromFilePickAction;
+
+  /// No description provided for @libraryFromFileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a .drill file from your device'**
+  String get libraryFromFileHint;
+
   /// No description provided for @librarySourceLocal.
   ///
   /// In en, this message translates to:
@@ -1097,13 +1139,13 @@ abstract class AppLocalizations {
   /// No description provided for @libraryInstalled.
   ///
   /// In en, this message translates to:
-  /// **'Installed'**
+  /// **'In library'**
   String get libraryInstalled;
 
   /// No description provided for @libraryInstall.
   ///
   /// In en, this message translates to:
-  /// **'Install'**
+  /// **'Open'**
   String get libraryInstall;
 
   /// No description provided for @libraryRefresh.
@@ -1133,13 +1175,13 @@ abstract class AppLocalizations {
   /// No description provided for @libraryEmptyCatalog.
   ///
   /// In en, this message translates to:
-  /// **'Catalog is empty'**
+  /// **'Nothing online yet'**
   String get libraryEmptyCatalog;
 
   /// No description provided for @libraryErrorLoad.
   ///
   /// In en, this message translates to:
-  /// **'Could not load library'**
+  /// **'Could not load online plans'**
   String get libraryErrorLoad;
 
   /// No description provided for @libraryRetry.
@@ -1187,7 +1229,7 @@ abstract class AppLocalizations {
   /// No description provided for @fromFileAction.
   ///
   /// In en, this message translates to:
-  /// **'From file'**
+  /// **'New from file'**
   String get fromFileAction;
 
   /// No description provided for @addExercisesAction.
@@ -1273,6 +1315,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Installed and activated {name}'**
   String installedAndActivated(Object name);
+
+  /// No description provided for @openedAndActivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened {name}'**
+  String openedAndActivated(Object name);
 
   /// No description provided for @catalogConflictTitle.
   ///
