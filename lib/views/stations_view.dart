@@ -24,6 +24,21 @@ class StationsView extends StatefulWidget {
   State<StationsView> createState() => _StationsViewState();
 }
 
+/// Pending position-pick state. Held while the user is in the inline
+/// pick-mode banner, between picking a station from search and pressing
+/// either Save or Cancel.
+class _PendingPick {
+  final String exerciseUuid;
+  final int stationIndex;
+  final String label;
+
+  const _PendingPick({
+    required this.exerciseUuid,
+    required this.stationIndex,
+    required this.label,
+  });
+}
+
 class _StationsViewState extends State<StationsView> {
   final _mapController = MapController();
   final _programService = ProgramService();
@@ -31,6 +46,7 @@ class _StationsViewState extends State<StationsView> {
   StreamSubscription<ProgramEvent>? _programSubscription;
 
   bool _notified = false;
+  _PendingPick? _pickFor;
 
   @override
   void initState() {
@@ -75,7 +91,17 @@ class _StationsViewState extends State<StationsView> {
   @override
   Widget build(BuildContext context) {
     final markers = _programService.getLocations();
-    if (markers.isEmpty && !_notified) {
+    // Only nag about "no stations created" when the active program genuinely
+    // has no stations anywhere. `markers.isEmpty` is not a safe proxy because
+    // getLocations() filters by `position != null`, so exercises whose
+    // stations exist but lack coordinates would otherwise trip this snackbar
+    // incorrectly (e.g. when the user reactivates an exercise from the
+    // program tab, which fires programActivated and rebuilds this view in
+    // the background even though it is not visible).
+    final hasAnyStation = _programService
+        .loadExercises()
+        .any((e) => e.stations.isNotEmpty);
+    if (!hasAnyStation && !_notified) {
       _notified = true;
       scheduleMicrotask(() {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -94,22 +120,139 @@ class _StationsViewState extends State<StationsView> {
         ? MapConfig.initialCenter
         : markers.average();
 
-    return MapView<(String, int)>(
-      key: _mapKey,
-      withCross: true,
-      withSearch: true,
-      withCenter: true,
-      withToggle: true,
-      withZoom: true,
-      initialCenter: center,
-      initialFit: markers.fit(EdgeInsets.all(72).copyWith(top: 150)),
-      controller: _mapController,
-      interactionFlags: MapConfig.interactive,
-      layers: MapConfig.layers,
-      markers: markers,
-      searchTargets: _buildSearchTargets(context),
-      onMarkerTap: onMarkerTap,
+    return Column(
+      children: [
+        if (_pickFor != null) _buildPickBanner(context, _pickFor!),
+        Expanded(
+          child: MapView<(String, int)>(
+            key: _mapKey,
+            withCross: true,
+            withSearch: true,
+            withCenter: true,
+            withToggle: true,
+            withZoom: true,
+            initialCenter: center,
+            initialFit: markers.fit(EdgeInsets.all(72).copyWith(top: 150)),
+            controller: _mapController,
+            interactionFlags: MapConfig.interactive,
+            layers: MapConfig.layers,
+            markers: markers,
+            searchTargets: _buildSearchTargets(context),
+            onMarkerTap: onMarkerTap,
+          ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildPickBanner(BuildContext context, _PendingPick pick) {
+    final localizations = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Material(
+      elevation: 4,
+      color: theme.colorScheme.surface,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  localizations.setPositionFor(pick.label),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: _cancelPick,
+                child: Text(localizations.cancel),
+              ),
+              const SizedBox(width: 4),
+              ElevatedButton(
+                onPressed: _savePickedPosition,
+                child: Text(localizations.save),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _startPickPosition({
+    required String exerciseUuid,
+    required int stationIndex,
+    required String label,
+  }) {
+    setState(() {
+      _pickFor = _PendingPick(
+        exerciseUuid: exerciseUuid,
+        stationIndex: stationIndex,
+        label: label,
+      );
+    });
+    // Drop the user near the other stations of the same exercise so they
+    // do not have to pan in from far away. If no sibling has a position,
+    // leave the camera where it is.
+    final exercise = _programService.getExercise(exerciseUuid);
+    if (exercise == null) return;
+    final siblingPoints = exercise.stations
+        .where((s) => s.position != null && s.index != stationIndex)
+        .map((s) => s.position!)
+        .toList(growable: false);
+    if (siblingPoints.isEmpty) return;
+    final fit = siblingPoints.centroidFit();
+    if (fit != null) {
+      _mapController.fitCamera(fit);
+    } else {
+      _mapController.move(
+        siblingPoints.first,
+        _mapController.camera.zoom,
+      );
+    }
+  }
+
+  Future<void> _savePickedPosition() async {
+    final pick = _pickFor;
+    if (pick == null) return;
+    final localizations = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+
+    final exercise = _programService.getExercise(pick.exerciseUuid);
+    if (exercise == null || pick.stationIndex >= exercise.stations.length) {
+      setState(() => _pickFor = null);
+      messenger.showSnackBar(
+        SnackBar(content: Text(localizations.stationGone)),
+      );
+      return;
+    }
+
+    final picked = _mapController.camera.center;
+    final updatedStations = [...exercise.stations];
+    updatedStations[pick.stationIndex] = updatedStations[pick.stationIndex]
+        .copyWith(position: picked);
+    final updatedExercise = exercise.copyWith(stations: updatedStations);
+
+    await _programService.saveExercise(localizations, updatedExercise);
+    if (!mounted) return;
+    setState(() => _pickFor = null);
+    messenger.showSnackBar(
+      SnackBar(
+        showCloseIcon: true,
+        dismissDirection: DismissDirection.endToStart,
+        content: Text(localizations.positionSaved),
+      ),
+    );
+  }
+
+  void _cancelPick() {
+    setState(() => _pickFor = null);
   }
 
   List<SearchResult> _buildSearchTargets(BuildContext context) {
@@ -132,19 +275,35 @@ class _StationsViewState extends State<StationsView> {
       );
 
       // Per-station entries – present even when the station has no
-      // position, so the user can find them by name.
+      // position, so the user can find them by name. Row tap:
+      // stations with a position fall back to the default
+      // move-to-location behaviour; stations without a position open
+      // the inline pick-mode banner. Chip tap (onTagTap) always
+      // navigates to the station detail page, regardless of whether
+      // the station has a position.
       for (final station in exercise.stations) {
-        final points = station.position == null
-            ? const <LatLng>[]
-            : <LatLng>[station.position!];
+        final hasPosition = station.position != null;
+        final points = hasPosition
+            ? <LatLng>[station.position!]
+            : const <LatLng>[];
         final exerciseUuid = exercise.uuid;
         final stationIndex = station.index;
+        final label = '${exercise.name} | ${station.name}';
         targets.add(
           SearchResult.points(
-            '${exercise.name} | ${station.name}',
+            label,
             points,
             kind: SearchResultKind.station,
-            onSelect: (_) {
+            onSelect: hasPosition
+                ? null
+                : (_) {
+                    _startPickPosition(
+                      exerciseUuid: exerciseUuid,
+                      stationIndex: stationIndex,
+                      label: label,
+                    );
+                  },
+            onTagTap: (_) {
               context.push('$routeStations/$exerciseUuid/$stationIndex');
             },
           ),

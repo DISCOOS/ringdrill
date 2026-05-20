@@ -523,6 +523,17 @@ class AppLocalizationsNb extends AppLocalizations {
   String get searchHintPlace => 'Sted';
 
   @override
+  String setPositionFor(String name) {
+    return 'Sett posisjon for $name';
+  }
+
+  @override
+  String get positionSaved => 'Posisjon lagret';
+
+  @override
+  String get stationGone => 'Fant ikke posten — den kan ha blitt fjernet.';
+
+  @override
   String get selectAction => 'Velg';
 
   @override

@@ -405,6 +405,13 @@ class _MapViewState<K> extends State<MapView<K>> {
                     final chipLabel = kind?.label(
                       AppLocalizations.of(context)!,
                     );
+                    final hasPosition = result.points.isNotEmpty;
+                    final chipText = chipLabel == null
+                        ? null
+                        : Text(
+                            chipLabel,
+                            style: const TextStyle(fontSize: 12),
+                          );
                     return ListTile(
                       onTap: () => _onResultTap(result),
                       title: Text(
@@ -415,23 +422,40 @@ class _MapViewState<K> extends State<MapView<K>> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (chipLabel != null) ...[
-                            Chip(
-                              label: Text(
-                                chipLabel,
-                                style: const TextStyle(fontSize: 12),
+                          if (chipText != null) ...[
+                            if (result.onTagTap != null)
+                              ActionChip(
+                                label: chipText,
+                                onPressed: () => result.onTagTap!(result),
+                                padding: EdgeInsets.zero,
+                                labelPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              )
+                            else
+                              Chip(
+                                label: chipText,
+                                padding: EdgeInsets.zero,
+                                labelPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
                               ),
-                              padding: EdgeInsets.zero,
-                              labelPadding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                            ),
                             const SizedBox(width: 8),
                           ],
-                          const Icon(Icons.location_on),
+                          Icon(
+                            hasPosition
+                                ? Icons.location_on
+                                : Icons.location_off,
+                            color: hasPosition
+                                ? null
+                                : Theme.of(context).colorScheme.outline,
+                          ),
                         ],
                       ),
                     );
@@ -711,18 +735,32 @@ class SearchResult {
   /// result. When provided, the default move/fit behaviour is skipped.
   final void Function(SearchResult result)? onSelect;
 
+  /// Optional callback invoked when the user taps the chip itself
+  /// (rather than the row). Lets the parent attach a separate action
+  /// to the type — e.g. always opening the station detail page from
+  /// the "Post" chip, regardless of what the row tap does.
+  final void Function(SearchResult result)? onTagTap;
+
   SearchResult(
     String name,
     LatLng location, {
     SearchResultKind? kind,
     void Function(SearchResult)? onSelect,
-  }) : this.points(name, [location], kind: kind, onSelect: onSelect);
+    void Function(SearchResult)? onTagTap,
+  }) : this.points(
+         name,
+         [location],
+         kind: kind,
+         onSelect: onSelect,
+         onTagTap: onTagTap,
+       );
 
   const SearchResult.points(
     this.name,
     this.points, {
     this.kind,
     this.onSelect,
+    this.onTagTap,
   });
 
   LatLng? get location => points.isEmpty ? null : points.first;

@@ -914,6 +914,24 @@ abstract class AppLocalizations {
   /// **'Place'**
   String get searchHintPlace;
 
+  /// Banner heading shown while picking a position for a station from the map
+  ///
+  /// In en, this message translates to:
+  /// **'Set position for {name}'**
+  String setPositionFor(String name);
+
+  /// Snackbar shown after a station's position is saved via the map picker
+  ///
+  /// In en, this message translates to:
+  /// **'Position saved'**
+  String get positionSaved;
+
+  /// Snackbar shown when saving a picked position fails because the station no longer exists
+  ///
+  /// In en, this message translates to:
+  /// **'Could not find the station — it may have been removed.'**
+  String get stationGone;
+
   /// Label
   ///
   /// In en, this message translates to:

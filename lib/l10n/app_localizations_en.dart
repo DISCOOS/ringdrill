@@ -525,6 +525,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchHintPlace => 'Place';
 
   @override
+  String setPositionFor(String name) {
+    return 'Set position for $name';
+  }
+
+  @override
+  String get positionSaved => 'Position saved';
+
+  @override
+  String get stationGone =>
+      'Could not find the station — it may have been removed.';
+
+  @override
   String get selectAction => 'Select';
 
   @override

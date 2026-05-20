@@ -545,6 +545,21 @@
   "@searchHintPlace": {
     "description": "Chip label shown next to geocoder hits in search results"
   },
+  "setPositionFor": "Set position for {name}",
+  "@setPositionFor": {
+    "description": "Banner heading shown while picking a position for a station from the map",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "positionSaved": "Position saved",
+  "@positionSaved": {
+    "description": "Snackbar shown after a station's position is saved via the map picker"
+  },
+  "stationGone": "Could not find the station — it may have been removed.",
+  "@stationGone": {
+    "description": "Snackbar shown when saving a picked position fails because the station no longer exists"
+  },
   "selectAction": "Select",
   "@selectAction": {
     "description": "Label"

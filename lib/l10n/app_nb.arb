@@ -135,6 +135,14 @@
   "searchHintStation": "Post",
   "searchHintExercise": "Øvelse",
   "searchHintPlace": "Sted",
+  "setPositionFor": "Sett posisjon for {name}",
+  "@setPositionFor": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "positionSaved": "Posisjon lagret",
+  "stationGone": "Fant ikke posten — den kan ha blitt fjernet.",
   "selectAction": "Velg",
   "analyticsEnabled": "Appanalyse er aktivert",
   "analyticsDisabled": "Appanalyse er deaktivert",
