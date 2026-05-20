@@ -4,6 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.database.Cursor
+import android.content.ContentResolver
+import android.provider.OpenableColumns
 import androidx.core.net.toFile
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -16,15 +19,49 @@ class MainActivity : FlutterActivity() {
     private val channel = "ringdrill/shared_file"
     private lateinit var methodChannel: MethodChannel
 
-    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        super.configureFlutterEngine(flutterEngine)
-        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
-        handleSharedFile(intent)
+    // NEW: stash a copy of the incoming VIEW intent (with its data intact)
+    private var pendingFileIntent: Intent? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Capture + scrub BEFORE super so Flutter won’t see content://
+        captureAndScrub(intent)
+        super.onCreate(savedInstanceState)
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handleSharedFile(intent)
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+
+        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
+        methodChannel.setMethodCallHandler { call, result ->
+            if (call.method == "processIntentFile") {
+                // Use your original handler
+                handleSharedFile(pendingFileIntent ?: intent)
+                // clear once processed
+                pendingFileIntent = null
+                result.success(null)
+            }
+        }
+
+        // Cold start path: process any captured file once channel exists
+        if (pendingFileIntent != null) {
+            handleSharedFile(pendingFileIntent)
+            pendingFileIntent = null
+        }
+    }
+
+    override fun onNewIntent(newIntent: Intent) {
+        // Capture + scrub BEFORE super so Flutter/go_router never sees content://
+        captureAndScrub(newIntent)
+        super.onNewIntent(newIntent)
+        setIntent(newIntent)
+
+        // Warm start path: engine is alive, channel ready — call your handler
+        if (pendingFileIntent != null) {
+            handleSharedFile(pendingFileIntent)
+            pendingFileIntent = null
+        } else {
+            handleSharedFile(newIntent) // fallback (e.g., SEND with no data scrubbed)
+        }
     }
 
     private fun handleSharedFile(intent: Intent?) {
@@ -53,7 +90,7 @@ class MainActivity : FlutterActivity() {
         }
 
         // Best-effort filename
-        val filename = (uri.lastPathSegment?.substringAfterLast('/') ?: "shared.drill")
+        val filename = getFileNameFromUri(contentResolver, uri)
         Log.d("RingDrillShare", "filename guess: $filename")
 
         // Optional: accept only .drill
@@ -96,6 +133,46 @@ class MainActivity : FlutterActivity() {
             Log.e("RingDrillShare", "Error handling shared file", e)
             methodChannel.invokeMethod("onSharedFileError", e.message ?: "Unknown error")
         }
+    }
+
+    // Helper: copy the intent (to keep data), then scrub the Activity intent
+    private fun captureAndScrub(src: Intent?) {
+        if (src?.action == Intent.ACTION_VIEW) {
+            val scheme = src.data?.scheme
+            if (scheme == "content" || scheme == "file") {
+                // Make a copy we will process later with your unchanged handler
+                if (pendingFileIntent == null) {
+                    pendingFileIntent = Intent(src) // shallow copy keeps data/clipData/type
+                }
+                // Scrub so Flutter/go_router doesn’t treat it as an initial route
+                src.data = null
+                src.clipData = null
+            }
+        }
+    }
+
+    private fun getFileNameFromUri(contentResolver: ContentResolver, uri: Uri): String {
+        // Verify if the URI is a content URI
+        if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            val cursor: Cursor? = contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val columnIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (columnIndex != -1) {
+                        return it.getString(columnIndex)
+                    }
+                }
+            }
+        }
+
+        // Fallback to #selection content you already provided
+        return uri.lastPathSegment?.substringAfterLast('/') ?: "shared.drill"
     }
 
 }

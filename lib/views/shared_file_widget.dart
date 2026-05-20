@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:ringdrill/data/drill_file.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as path;
 import 'package:ringdrill/services/shared_file_channel.dart';
 import 'package:universal_io/io.dart';
 
@@ -17,6 +14,7 @@ class SharedFileWidget extends StatefulWidget {
 }
 
 class _SharedFileWidgetState extends State<SharedFileWidget> {
+  final handled = <File>[];
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
@@ -30,59 +28,14 @@ class _SharedFileWidgetState extends State<SharedFileWidget> {
     );
   }
 
-  Future<void> _handleDrillFile(File file) async {
+  void _handleDrillFile(File file) {
     if (file.path.endsWith('.drill')) {
-      if (mounted) {
-        final localizations = AppLocalizations.of(context)!;
-        scheduleMicrotask(() async {
-          final action = await showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              title: Text('Drill File'),
-              content: Text(localizations.sharedFileReceived),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                  },
-                  child: Text(localizations.cancel),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context, 'import');
-                  },
-                  child: Text(localizations.import),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context, 'open');
-                  },
-                  child: Text(localizations.open),
-                ),
-              ],
-            ),
-          );
-          switch (action) {
-            case 'open':
-              unawaited(
-                ProgramService().openProgram(
-                  localizations,
-                  DrillFile.fromFile(file),
-                ),
-              );
-              break;
-            case 'import':
-              unawaited(
-                ProgramService().importProgram(
-                  localizations,
-                  DrillFile.fromFile(file),
-                ),
-              );
-              break;
-          }
-        });
-      }
+      if (handled.contains(file)) return;
+      handled.add(file);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Show bottom sheet for remote file
+        GoRouter.of(context).go(path.normalize('/o/${file.path}'));
+      });
     }
   }
 }

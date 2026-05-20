@@ -317,7 +317,7 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Open failed. Please try again.'**
+  /// **'Open \"{name}\" failed. Please try again.'**
   String openFailure(Object name);
 
   /// Label
@@ -440,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Failed to import \"{name}\". Please try again.'**
   String importFailure(Object name);
 
+  /// Program with plurals
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Program} =1{Program} other{Programs}}'**
+  String program(num count);
+
   /// Exercise with plurals
   ///
   /// In en, this message translates to:
@@ -493,6 +499,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Station Description'**
   String get stationDescription;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Program file'**
+  String get programFile;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to open the program, or import exercises into current program?'**
+  String get openProgramHint;
 
   /// Label
   ///

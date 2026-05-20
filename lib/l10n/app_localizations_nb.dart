@@ -209,6 +209,18 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String program(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Programmer',
+      one: 'Program',
+      zero: 'Program',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String exercise(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -261,6 +273,13 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get stationDescription => 'Postbeskrivelse';
+
+  @override
+  String get programFile => 'Programfil';
+
+  @override
+  String get openProgramHint =>
+      'Vil du åpne programmet, eller importere øvelser inn i nåværende?';
 
   @override
   String get openProgram => 'Åpne...';

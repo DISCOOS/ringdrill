@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/data/drill_file.dart';
@@ -13,13 +14,14 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/exercise_control_button.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
 import 'feedback.dart';
 
-export '../web/program_page_controller.dart'
+export 'package:ringdrill/web/program_page_controller.dart'
     if (dart.library.io) 'program_page_controller.dart';
 
 class ProgramView extends StatefulWidget {
@@ -71,7 +73,7 @@ class _ProgramViewState extends State<ProgramView> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    return _exercises.isEmpty
+    final programs = _exercises.isEmpty
         ? Center(child: Text(localizations.noExercisesYet))
         : Padding(
             padding: const EdgeInsets.only(top: 4.0),
@@ -152,6 +154,7 @@ class _ProgramViewState extends State<ProgramView> {
               },
             ),
           );
+    return kIsWeb ? programs : SharedFileWidget(child: programs);
   }
 
   void _initExercises() {
@@ -401,7 +404,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
           localizations,
           drillFile,
           onSelect: (items) async {
-            final selected = await _selectExercises(
+            final selected = await selectExercises(
               context,
               localizations.importProgram,
               items.toList(),
@@ -447,7 +450,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    final selected = await _selectExercises(
+    final selected = await selectExercises(
       context,
       localizations.exportProgram,
       programService.loadExercises(),
@@ -508,7 +511,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    final selected = await _selectExercises(
+    final selected = await selectExercises(
       context,
       localizations.sendToProgram,
       programService.loadExercises(),
@@ -570,7 +573,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    final selected = await _selectExercises(
+    final selected = await selectExercises(
       context,
       localizations.shareProgram,
       programService.loadExercises(),
@@ -619,7 +622,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     }
   }
 
-  static Future<List<String>> _selectExercises(
+  static Future<List<String>> selectExercises(
     BuildContext context,
     String title,
     List<Exercise> exercises,

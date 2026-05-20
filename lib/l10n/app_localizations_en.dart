@@ -128,7 +128,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String openFailure(Object name) {
-    return 'Open failed. Please try again.';
+    return 'Open \"$name\" failed. Please try again.';
   }
 
   @override
@@ -209,6 +209,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String program(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Programs',
+      one: 'Program',
+      zero: 'Program',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String exercise(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -261,6 +273,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stationDescription => 'Station Description';
+
+  @override
+  String get programFile => 'Program file';
+
+  @override
+  String get openProgramHint =>
+      'Do you want to open the program, or import exercises into current program?';
 
   @override
   String get openProgram => 'Open...';

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -7,6 +8,7 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
@@ -17,31 +19,63 @@ import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:universal_io/io.dart';
+
+const String routeProgram = '/program';
+const String routeStations = '/stations';
+const String routeTeams = '/teams';
 
 GoRouter buildRouter(bool isFirstLaunch) {
+  final key = GlobalKey<NavigatorState>();
   return GoRouter(
-    initialLocation: '/program', // The default tab
+    navigatorKey: key,
+    debugLogDiagnostics: kDebugMode,
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      debugPrint('[$GoRouter] redirect >> $location');
+      if (location.startsWith('/o/')) {
+        final filePath = Uri.decodeComponent(location.replaceFirst('/o', ''));
+        // Show bottom sheet for remote file
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showOpenFileBottomSheet(
+            key.currentContext!,
+            filePath: filePath,
+            location: routeProgram,
+          );
+        });
+        // OpenFileWidget requires a
+        // ProgramPageController instance
+        // to exist in widget tree. Always
+        // redirect to programs page!
+        return routeProgram;
+      }
+      return location;
+    },
     routes: [
       ShellRoute(
         builder: (BuildContext context, GoRouterState state, Widget child) {
           return PlatformWidget(
             child: MainScreen(
+              navigatorKey: key,
               isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
-              routes: ['/program', '/stations', '/teams'],
+              location: state.matchedLocation,
+              routes: [routeProgram, routeStations, routeTeams],
             ),
           );
         },
         routes: [
+          GoRoute(path: '/', redirect: (_, _) => routeProgram),
           GoRoute(
-            path: '/program',
+            path: routeProgram,
+            redirect: (context, state) => state.path,
             builder: (BuildContext context, GoRouterState state) => PageWidget(
               controller: ProgramPageController(),
               child: const ProgramView(),
             ),
           ),
           GoRoute(
-            path: '/stations',
+            path: routeStations,
             builder: (BuildContext context, GoRouterState state) =>
                 const PageWidget(
                   controller: StationsPageController(),
@@ -49,7 +83,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
                 ),
           ),
           GoRoute(
-            path: '/teams',
+            path: routeTeams,
             builder: (BuildContext context, GoRouterState state) =>
                 const PageWidget(
                   controller: TeamsPageController(),
@@ -59,6 +93,32 @@ GoRouter buildRouter(bool isFirstLaunch) {
         ],
       ),
     ],
+  );
+}
+
+void _showOpenFileBottomSheet(
+  BuildContext context, {
+  required String location,
+  required String filePath,
+}) {
+  showModalBottomSheet(
+    context: context,
+    useSafeArea: true,
+    showDragHandle: true,
+    isScrollControlled: true, // Allows the bottom sheet to resize properly
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+    ),
+    builder: (context) {
+      // REMEMBER! OpenFileWidget
+      // requires a ProgramPageController
+      // instance to exist in the widget tree
+      return OpenFileWidget(
+        file: File(filePath),
+        location: location,
+        isOnline: false,
+      );
+    },
   );
 }
 
@@ -73,12 +133,16 @@ class MainScreen extends StatefulWidget {
     super.key,
     required this.router,
     required this.routes,
+    required this.location,
+    required this.navigatorKey,
     required this.isFirstLaunch,
   });
 
-  final bool isFirstLaunch;
   final GoRouter router;
+  final String location;
+  final bool isFirstLaunch;
   final List<String> routes;
+  final GlobalKey<NavigatorState> navigatorKey;
 
   static void showSettings(BuildContext context, [bool pop = false]) {
     if (pop) Navigator.pop(context);
@@ -110,7 +174,12 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    _initTab();
     if (widget.isFirstLaunch) _showConsentDialog();
+    assert(
+      _currentTab > -1,
+      'Location ${widget.location} not found in ${widget.routes}',
+    );
     _subscriptions.add(
       NotificationService().events.listen((event) {
         if (event.action == NotificationAction.showSettings) {
@@ -120,6 +189,18 @@ class _MainScreenState extends State<MainScreen> {
         }
       }),
     );
+  }
+
+  void _initTab() {
+    _currentTab = widget.routes.indexOf(widget.location);
+  }
+
+  @override
+  void didUpdateWidget(covariant MainScreen oldWidget) {
+    if (oldWidget.location != widget.location) {
+      _initTab();
+    }
+    super.didUpdateWidget(oldWidget);
   }
 
   @override

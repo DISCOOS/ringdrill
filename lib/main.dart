@@ -79,11 +79,13 @@ class RingDrillApp extends StatefulWidget {
 }
 
 class _RingDrillAppState extends State<RingDrillApp> {
+  late final RouterConfig<Object> router;
   @override
   void initState() {
     _startNotificationService();
     _startPwaUpdatesListener();
-
+    // Create exactly one router instance and keep it stable.
+    router = buildRouter(widget.isFirstLaunch);
     super.initState();
   }
 
@@ -154,7 +156,7 @@ class _RingDrillAppState extends State<RingDrillApp> {
       debugShowCheckedModeBanner: false,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      routerConfig: buildRouter(widget.isFirstLaunch),
+      routerConfig: router,
     );
   }
 }

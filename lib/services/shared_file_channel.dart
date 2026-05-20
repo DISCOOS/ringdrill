@@ -12,6 +12,8 @@ class SharedFileChannel {
 
   factory SharedFileChannel() => _instance;
 
+  bool receivedFileIntent = false;
+
   SharedFileChannel._internal() {
     _platform.setMethodCallHandler((call) async {
       debugPrint(
@@ -27,6 +29,7 @@ class SharedFileChannel {
             );
             return;
           }
+          receivedFileIntent = true;
 
           _controller.add(file);
 

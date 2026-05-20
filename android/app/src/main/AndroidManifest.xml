@@ -60,13 +60,6 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
 
-    <!--
-    Needed for import and export
-    -->
-    <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
     <application
         android:label="RingDrill"
         android:name="${applicationName}"
@@ -82,6 +75,7 @@
             android:windowSoftInputMode="adjustResize"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
+            android:grantUriPermissions="true"
         >
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
@@ -100,7 +94,6 @@
             <meta-data
                 android:name="flutter_deeplinking_enabled"
                 android:value="true"
-
             />
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -109,24 +102,33 @@
                 <data
                     android:scheme="https"
                     android:host="ringdrill.app"
-                    android:pathPattern="/.*" />
+                    android:pathPattern="/o" />
             </intent-filter>
 
-            <!-- 📄 Support opening .drill files (e.g. from file manager or download) -->
+            <!-- 📄 Open .drill files from file managers / downloads -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <category android:name="android.intent.category.OPENABLE" />
 
-                <!-- Match file:// URIs for .drill -->
-                <data android:scheme="file" android:host="*" android:pathPattern=".*\\.drill" />
+                <!-- Prefer matching by MIME type -->
+                <data android:mimeType="application/vnd.ringdrill+zip" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-drill" />
 
-                <!-- Match content:// URIs for .drill -->
-                <data android:scheme="content" android:mimeType="application/x-drill" />
-                <data android:scheme="content" android:mimeType="application/vnd.ringdrill+zip" />
-                <data android:scheme="content" android:mimeType="application/octet-stream" />
-                <data android:scheme="content" android:mimeType="*/*" />
+                <!-- Fallback: if a provider reports */* but keeps the .drill suffix -->
+                <data android:mimeType="*/*" android:scheme="content" android:pathPattern=".*\\.drill" />
+            </intent-filter>
+
+            <!-- Optional legacy support for file:// -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" android:pathPattern=".*\\.drill" />
             </intent-filter>
 
             <!-- 📤 Support receiving .drill files via share (ACTION_SEND) -->
@@ -135,9 +137,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <!-- MIME types you want to accept -->
-                <data android:mimeType="application/x-drill" />
                 <data android:mimeType="application/vnd.ringdrill+zip" />
+                <data android:mimeType="application/zip" />
                 <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-drill" />
                 <data android:mimeType="*/*" />
             </intent-filter>
 

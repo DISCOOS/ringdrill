@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/views/patch_alert_widget.dart';
-import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:upgrader/upgrader.dart';
 
 class PlatformWidget extends StatelessWidget {
@@ -25,10 +24,11 @@ class PlatformWidget extends StatelessWidget {
       // ---------------------------------
       // Notifies user of new patch when app is running
       child: PatchAlertWidget(
+        child: child,
         // ---------------------------------
         // Handle incoming files from OS
         // ---------------------------------
-        child: SharedFileWidget(child: child),
+        //child: SharedFileWidget(child: child),
       ),
     );
   }
