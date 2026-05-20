@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# 0002. Use freezed + json_serializable, with extensions for behavior
+# ADR-0002: Use freezed + json_serializable, with extensions for behavior
 
 ## Context and problem statement
 
@@ -69,6 +69,6 @@ Concretely:
 
 ## Links
 
-* Related ADRs: [0003](./0003-simple-time-of-day.md), [0005](./0005-cli-must-remain-flutter-free.md)
+* Related ADRs: [ADR-0003](./0003-simple-time-of-day.md), [ADR-0005](./0005-cli-must-remain-flutter-free.md)
 * Related code: `lib/models/*.dart`
 * Build target: `make build` (see [`Makefile`](../../Makefile))

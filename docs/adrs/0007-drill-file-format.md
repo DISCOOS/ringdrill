@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# 0007. `.drill` files are versioned ZIP archives of JSON parts
+# ADR-0007: `.drill` files are versioned ZIP archives of JSON parts
 
 ## Context and problem statement
 

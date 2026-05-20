@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# 0005. The Dart CLI must remain free of Flutter imports
+# ADR-0005: The Dart CLI must remain free of Flutter imports
 
 ## Context and problem statement
 
@@ -65,5 +65,5 @@ Revisit this option if the Flutter-free layer grows much larger or if we want to
 ## Links
 
 * Related code: `bin/ringdrill.dart`, `lib/data/drill_client.dart`
-* Related ADRs: [0003](./0003-simple-time-of-day.md)
+* Related ADRs: [ADR-0003](./0003-simple-time-of-day.md)
 * Operating rule (in [`AGENTS.md`](../../AGENTS.md)): "CLI must stay Flutter-free."

@@ -6,15 +6,15 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 
 ## Index
 
-| #    | Title                                                    | Status   |
-|------|----------------------------------------------------------|----------|
-| 0001 | [Record architecture decisions](./0001-record-architecture-decisions.md) | Accepted |
-| 0002 | [Use freezed + json_serializable, with extensions for behavior](./0002-freezed-models-with-extensions.md) | Accepted |
-| 0003 | [Use a pure-Dart SimpleTimeOfDay for serializable time values](./0003-simple-time-of-day.md) | Accepted |
-| 0004 | [Do not adopt a third-party state-management library](./0004-no-third-party-state-management.md) | Accepted |
-| 0005 | [The Dart CLI must remain free of Flutter imports](./0005-cli-must-remain-flutter-free.md) | Accepted |
-| 0006 | [Sentry telemetry is gated behind opt-in analytics consent](./0006-sentry-behind-consent-gate.md) | Accepted |
-| 0007 | [.drill files are versioned ZIP archives of JSON parts](./0007-drill-file-format.md) | Accepted |
+| ID       | Title                                                                                                    | Status   |
+|----------|----------------------------------------------------------------------------------------------------------|----------|
+| ADR-0001 | [Record architecture decisions](./0001-record-architecture-decisions.md)                                 | Accepted |
+| ADR-0002 | [Use freezed + json_serializable, with extensions for behavior](./0002-freezed-models-with-extensions.md) | Accepted |
+| ADR-0003 | [Use a pure-Dart SimpleTimeOfDay for serializable time values](./0003-simple-time-of-day.md)             | Accepted |
+| ADR-0004 | [Do not adopt a third-party state-management library](./0004-no-third-party-state-management.md)         | Accepted |
+| ADR-0005 | [The Dart CLI must remain free of Flutter imports](./0005-cli-must-remain-flutter-free.md)               | Accepted |
+| ADR-0006 | [Sentry telemetry is gated behind opt-in analytics consent](./0006-sentry-behind-consent-gate.md)        | Accepted |
+| ADR-0007 | [.drill files are versioned ZIP archives of JSON parts](./0007-drill-file-format.md)                     | Accepted |
 
 ## When to write an ADR
 
@@ -35,14 +35,14 @@ You do not need an ADR for routine refactors, bug fixes, dependency upgrades tha
 4. Update the index table above.
 5. Link related ADRs from the new file's `## Links` section.
 
-When an ADR is replaced, mark the old one `status: superseded by [NNNN](./NNNN-...)` and leave the file in place. Never delete an ADR.
+When an ADR is replaced, mark the old one `status: superseded by ADR-NNNN` and link to the replacement in its `## Links` section. Leave the old file in place. Never delete an ADR.
 
 ## Status values
 
 * `proposed` -- under discussion, not yet binding.
 * `accepted` -- in force.
 * `deprecated` -- no longer recommended, but not actively replaced.
-* `superseded by NNNN` -- replaced by another ADR.
+* `superseded by ADR-NNNN` -- replaced by another ADR.
 
 ## Agents
 

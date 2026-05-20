@@ -44,7 +44,7 @@ These are non-negotiable unless the maintainer says otherwise.
 
 ## Architecture Decision Records
 
-Before introducing a new pattern, check [`docs/adrs/`](./docs/adrs/) for an existing decision that already covers it. If one exists and your change conflicts with it, do not silently work around it. Either follow the decision, or propose a new ADR that supersedes it (set the old one's status to `superseded by NNNN` in the same change). See [ADR-0001](./docs/adrs/0001-record-architecture-decisions.md) for the process.
+Before introducing a new pattern, check [`docs/adrs/`](./docs/adrs/) for an existing decision that already covers it. If one exists and your change conflicts with it, do not silently work around it. Either follow the decision, or propose a new ADR that supersedes it (set the old one's status to `superseded by ADR-NNNN` in the same change). See [ADR-0001](./docs/adrs/0001-record-architecture-decisions.md) for the process.
 
 ## Where to look first
 

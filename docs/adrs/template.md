@@ -1,12 +1,12 @@
 ---
-status: proposed            # proposed | accepted | deprecated | superseded by NNNN
+status: proposed            # proposed | accepted | deprecated | superseded by ADR-NNNN
 date: YYYY-MM-DD            # date of the decision
 deciders: ["name1", "name2"]  # who signed off
 consulted: []               # who was asked for input
 informed: []                # who was kept in the loop
 ---
 
-# NNNN. Short title in imperative form
+# ADR-NNNN: Short title in imperative form
 
 ## Context and problem statement
 
@@ -51,6 +51,6 @@ Chosen option: **Option X**, because [main reason in one sentence].
 
 ## Links
 
-* Related ADRs: [NNNN](./NNNN-...md)
+* Related ADRs: [ADR-NNNN](./NNNN-...md)
 * Related code: `lib/...`
 * External references: ...

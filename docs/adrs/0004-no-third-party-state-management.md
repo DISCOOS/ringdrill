@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# 0004. Do not adopt a third-party state-management library
+# ADR-0004: Do not adopt a third-party state-management library
 
 ## Context and problem statement
 
@@ -65,4 +65,4 @@ This is a deliberate non-adoption decision, not a "we haven't gotten around to i
 ## Links
 
 * Related code: `lib/services/*.dart`, `lib/main.dart` (service bootstrapping)
-* Related ADRs: [0002](./0002-freezed-models-with-extensions.md) (models are immutable freezed values, which removes most "reactive shared state" pressure)
+* Related ADRs: [ADR-0002](./0002-freezed-models-with-extensions.md) (models are immutable freezed values, which removes most "reactive shared state" pressure)

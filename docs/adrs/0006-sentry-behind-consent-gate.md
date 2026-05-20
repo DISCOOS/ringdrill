@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# 0006. Sentry telemetry is gated behind opt-in analytics consent
+# ADR-0006: Sentry telemetry is gated behind opt-in analytics consent
 
 ## Context and problem statement
 

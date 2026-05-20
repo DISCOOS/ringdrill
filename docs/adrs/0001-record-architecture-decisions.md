@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# 0001. Record architecture decisions
+# ADR-0001: Record architecture decisions
 
 ## Context and problem statement
 

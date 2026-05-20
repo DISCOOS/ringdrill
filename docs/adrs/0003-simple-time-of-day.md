@@ -6,7 +6,7 @@ consulted: []
 informed: []
 ---
 
-# 0003. Use a pure-Dart `SimpleTimeOfDay` for serializable time values
+# ADR-0003: Use a pure-Dart `SimpleTimeOfDay` for serializable time values
 
 ## Context and problem statement
 
@@ -71,5 +71,5 @@ The type carries `hour` (0-23) and `minute` (0-59), provides `inMinutes`, `fromM
 
 ## Links
 
-* Related ADRs: [0002](./0002-freezed-models-with-extensions.md), [0005](./0005-cli-must-remain-flutter-free.md)
+* Related ADRs: [ADR-0002](./0002-freezed-models-with-extensions.md), [ADR-0005](./0005-cli-must-remain-flutter-free.md)
 * Related code: `lib/models/exercise.dart` (`SimpleTimeOfDay`), `lib/utils/time_utils.dart` (`TimeOfDayX`)
