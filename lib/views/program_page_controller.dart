@@ -14,25 +14,11 @@ import 'package:universal_io/io.dart';
 const String baseUrl = 'https://ringdrill.app';
 
 class ProgramPageController extends ProgramPageControllerBase {
-  ProgramPageController()
-    : super([
-        ProgramPageAction.open,
-        ProgramPageAction.import,
-        ProgramPageAction.sendTo,
-        ProgramPageAction.share,
-        ProgramPageAction.feedback,
-        if (!Platform.isAndroid)
-          // On Android 10+ export (save as) does not make that much sense.
-          // Access to the file system is highly limited, in practice
-          // only “scoped storage” is available to this application for
-          // write operations, which is hard to find again. Most modern apps
-          // use SEND actions (share) instead, allowing the user decide which
-          // app on the mobile os that should receive it (could be Dropbox, SMS etc).
-          ProgramPageAction.export,
-      ]);
+  ProgramPageController();
 
-  @override
-  Future<DrillFile?> open(
+  static bool get canSaveDrillFile => !Platform.isAndroid;
+
+  static Future<DrillFile?> pickOpenFile(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -49,8 +35,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     return DrillFile.fromFile(file);
   }
 
-  @override
-  Future<bool> save(
+  static Future<bool> saveDrillFile(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -72,8 +57,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     return true;
   }
 
-  @override
-  Future<bool> sendTo(
+  static Future<bool> sendDrillFileTo(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -106,8 +90,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     return result.status == ShareResultStatus.success;
   }
 
-  @override
-  Future<bool> share(
+  static Future<bool> shareDrillFile(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,

@@ -1166,6 +1166,96 @@ abstract class AppLocalizations {
   /// **'Open plan'**
   String get openPlanTooltip;
 
+  /// No description provided for @newPlanAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New plan'**
+  String get newPlanAction;
+
+  /// No description provided for @newPlanNamePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Name your new plan'**
+  String get newPlanNamePrompt;
+
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// No description provided for @fromFileAction.
+  ///
+  /// In en, this message translates to:
+  /// **'From file'**
+  String get fromFileAction;
+
+  /// No description provided for @addExercisesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add exercises from...'**
+  String get addExercisesAction;
+
+  /// No description provided for @addFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'From file'**
+  String get addFromFile;
+
+  /// No description provided for @addFromAnotherPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'From another of my plans'**
+  String get addFromAnotherPlan;
+
+  /// No description provided for @pickFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick file...'**
+  String get pickFile;
+
+  /// No description provided for @confirmChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm changes'**
+  String get confirmChangesTitle;
+
+  /// No description provided for @apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// No description provided for @noOtherLocalPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'No other local plans yet'**
+  String get noOtherLocalPlans;
+
+  /// No description provided for @requiresActivePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Open or create a plan first'**
+  String get requiresActivePlan;
+
+  /// No description provided for @shareActivePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Share active plan'**
+  String get shareActivePlan;
+
+  /// No description provided for @sendToAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to...'**
+  String get sendToAction;
+
+  /// No description provided for @exportAsDrill.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as .drill'**
+  String get exportAsDrill;
+
   /// No description provided for @defaultPlanName.
   ///
   /// In en, this message translates to:

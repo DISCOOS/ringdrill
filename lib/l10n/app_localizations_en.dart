@@ -704,6 +704,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openPlanTooltip => 'Open plan';
 
   @override
+  String get newPlanAction => 'New plan';
+
+  @override
+  String get newPlanNamePrompt => 'Name your new plan';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get fromFileAction => 'From file';
+
+  @override
+  String get addExercisesAction => 'Add exercises from...';
+
+  @override
+  String get addFromFile => 'From file';
+
+  @override
+  String get addFromAnotherPlan => 'From another of my plans';
+
+  @override
+  String get pickFile => 'Pick file...';
+
+  @override
+  String get confirmChangesTitle => 'Confirm changes';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get noOtherLocalPlans => 'No other local plans yet';
+
+  @override
+  String get requiresActivePlan => 'Open or create a plan first';
+
+  @override
+  String get shareActivePlan => 'Share active plan';
+
+  @override
+  String get sendToAction => 'Send to...';
+
+  @override
+  String get exportAsDrill => 'Export as .drill';
+
+  @override
   String get defaultPlanName => 'Default plan';
 
   @override

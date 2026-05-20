@@ -4,11 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
+import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/program_view.dart';
@@ -191,6 +194,11 @@ class _MainScreenState extends State<MainScreen> {
         }
       }),
     );
+    _subscriptions.add(
+      ProgramService().events.listen((event) {
+        if (mounted) setState(() {});
+      }),
+    );
   }
 
   void _initTab() {
@@ -306,7 +314,7 @@ class _MainScreenState extends State<MainScreen> {
       message: localizations.openPlanTooltip,
       child: InkWell(
         borderRadius: BorderRadius.circular(4),
-        onTap: () => controller.openPlan(context),
+        onTap: () => active_actions.openPlan(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: title,
@@ -316,6 +324,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget? _buildDrawer(BuildContext context, AppLocalizations localizations) {
+    final hasActivePlan = ProgramService().activeProgramUuid != null;
     return NavigationDrawer(
       elevation: 8,
       children: [
@@ -336,26 +345,126 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         const SizedBox(height: 16.0),
-        ListTile(
-          leading: const Icon(Icons.settings),
-          title: Text(localizations.settings),
-          onTap: () {
-            MainScreen.showSettings(context, true);
+        _drawerTile(
+          context,
+          icon: Icons.folder_open,
+          title: localizations.openPlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.openPlan(context);
           },
         ),
-        ListTile(
-          leading: const Icon(Icons.info),
-          title: Text(localizations.about),
+        _drawerTile(
+          context,
+          icon: Icons.add_circle_outline,
+          title: localizations.newPlanAction,
+          enabled: hasActivePlan,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.createNewPlan(context);
+          },
+        ),
+        _drawerTile(
+          context,
+          icon: Icons.playlist_add,
+          title: localizations.addExercisesAction,
+          enabled: hasActivePlan,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.addExercises(context);
+          },
+        ),
+        const Divider(),
+        _drawerTile(
+          context,
+          icon: Icons.ios_share,
+          title: localizations.shareActivePlan,
+          enabled: hasActivePlan,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.shareActivePlan(context);
+          },
+        ),
+        _drawerTile(
+          context,
+          icon: Icons.send,
+          title: localizations.sendToAction,
+          enabled: hasActivePlan,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.sendActivePlanTo(context);
+          },
+        ),
+        _drawerTile(
+          context,
+          icon: Icons.download,
+          title: localizations.exportAsDrill,
+          enabled: hasActivePlan && ProgramPageController.canSaveDrillFile,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.exportActivePlan(context);
+          },
+        ),
+        const Divider(),
+        _drawerTile(
+          context,
+          icon: Icons.settings,
+          title: localizations.settings,
+          onTap: () => MainScreen.showSettings(context, true),
+        ),
+        _drawerTile(
+          context,
+          icon: Icons.info,
+          title: localizations.about,
           onTap: () {
-            Navigator.pop(context); // Close the drawer
+            Navigator.pop(context);
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const AboutPage()),
             );
           },
         ),
+        _drawerTile(
+          context,
+          icon: Icons.feedback,
+          title: localizations.feedback,
+          onTap: () {
+            Navigator.pop(context);
+            showFeedbackSheet(
+              context,
+              appState: {
+                '_exerciseService': {
+                  'lastEvent': ExerciseService().last?.toJson(),
+                },
+              },
+            );
+          },
+        ),
       ],
     );
+  }
+
+  Widget _drawerTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool enabled = true,
+    String? disabledTooltip,
+  }) {
+    final tile = ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      enabled: enabled,
+      onTap: enabled ? onTap : null,
+    );
+    if (enabled || disabledTooltip == null) return tile;
+    return Tooltip(message: disabledTooltip, child: tile);
   }
 
   void _onDestinationSelected(int tab) {

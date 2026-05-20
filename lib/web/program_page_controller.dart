@@ -13,25 +13,11 @@ import 'package:ringdrill/web/web_env.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ProgramPageController extends ProgramPageControllerBase {
-  ProgramPageController()
-    : super([
-        ProgramPageAction.open,
-        ProgramPageAction.import,
-        ProgramPageAction.sendTo,
-        ProgramPageAction.share,
-        ProgramPageAction.feedback,
-        if (WebEnv.isAndroid)
-          // On Android 10+ export (save as) does not make that much sense.
-          // Access to the file system is highly limited, in practice
-          // only “scoped storage” is available to this application for
-          // write operations, which is hard to find again. Most modern apps
-          // use SEND actions (share) instead, allowing the user decide which
-          // app on the mobile os that should receive it (could be Dropbox, SMS etc).
-          ProgramPageAction.export,
-      ]);
+  ProgramPageController();
 
-  @override
-  Future<DrillFile?> open(
+  static bool get canSaveDrillFile => WebEnv.isAndroid;
+
+  static Future<DrillFile?> pickOpenFile(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -51,8 +37,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     );
   }
 
-  @override
-  Future<bool> save(
+  static Future<bool> saveDrillFile(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -69,8 +54,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     return path == null;
   }
 
-  @override
-  Future<bool> sendTo(
+  static Future<bool> sendDrillFileTo(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,
@@ -95,8 +79,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     return result.status == ShareResultStatus.success;
   }
 
-  @override
-  Future<bool> share(
+  static Future<bool> shareDrillFile(
     BuildContext context,
     BoxConstraints constraints,
     AppLocalizations localizations,

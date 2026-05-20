@@ -3,8 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:nanoid/nanoid.dart';
-import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -12,15 +10,12 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/exercise_control_button.dart';
-import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
-import 'feedback.dart';
 
 export 'package:ringdrill/web/program_page_controller.dart'
     if (dart.library.io) 'program_page_controller.dart';
@@ -239,18 +234,11 @@ class ExerciseCard extends StatelessWidget {
   }
 }
 
-enum ProgramPageAction { open, import, export, sendTo, share, feedback }
-
 abstract class ProgramPageControllerBase extends ScreenController {
-  ProgramPageControllerBase(this.actions);
+  ProgramPageControllerBase();
 
   @protected
   final programService = ProgramService();
-
-  @protected
-  final exerciseService = ExerciseService();
-
-  final List<ProgramPageAction> actions;
 
   @override
   String title(BuildContext context) =>
@@ -283,362 +271,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
-    final localizations = AppLocalizations.of(context)!;
-    return [
-      PopupMenuButton<String>(
-        onSelected: (value) => _handleMenuAction(context, constraints, value),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'open_plan',
-            child: Text(localizations.openPlan),
-          ),
-          if (actions.contains(ProgramPageAction.open))
-            PopupMenuItem(
-              value: 'open',
-              enabled: !exerciseService.isStarted,
-              child: Text(localizations.openProgram),
-            ),
-          if (actions.contains(ProgramPageAction.import))
-            PopupMenuItem(
-              value: 'import',
-              enabled: !exerciseService.isStarted,
-              child: Text(localizations.importProgram),
-            ),
-          if (actions.contains(ProgramPageAction.export))
-            PopupMenuItem(
-              value: 'export',
-              enabled: !exerciseService.isStarted,
-              child: Text(localizations.exportProgram),
-            ),
-          if (actions.contains(ProgramPageAction.share))
-            PopupMenuItem(
-              value: 'share',
-              enabled: !exerciseService.isStarted,
-              child: Text(localizations.shareProgram),
-            ),
-          if (actions.contains(ProgramPageAction.sendTo))
-            PopupMenuItem(
-              value: 'send_to',
-              enabled: !exerciseService.isStarted,
-              child: Text(localizations.sendToProgram),
-            ),
-          if (actions.contains(ProgramPageAction.feedback))
-            PopupMenuItem(
-              value: 'feedback',
-              child: Text(localizations.feedback),
-            ),
-        ],
-      ),
-    ];
-  }
-
-  void _handleMenuAction(
-    BuildContext context,
-    BoxConstraints constraints,
-    String action,
-  ) async {
-    final localizations = AppLocalizations.of(context)!;
-
-    switch (action) {
-      case 'open_plan':
-        return openPlan(context);
-      case 'open':
-        return _open(context, constraints, localizations);
-      case 'import':
-        return _import(context, constraints, localizations);
-      case 'export':
-        return _export(context, constraints, localizations);
-      case 'send_to':
-        return _sendTo(context, constraints, localizations);
-      case 'share':
-        return _share(context, constraints, localizations);
-      case 'feedback':
-        return showFeedbackSheet(
-          context,
-          appState: {
-            '_exerciseService': {'lastEvent': exerciseService.last?.toJson()},
-          },
-        );
-      default:
-        throw UnimplementedError('Action [$action] not implemented');
-    }
-  }
-
-  Future<void> openPlan(BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
-    if (exerciseService.isStarted) {
-      _showSnackBar(context, localizations.libraryCannotSwitchRunning);
-      return;
-    }
-    await showOpenPlanDialog(context);
-  }
-
-  @protected
-  Future<DrillFile?> open(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-  );
-
-  Future<void> _open(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-  ) async {
-    final drillFile = await open(context, constraints, localizations);
-    if (!context.mounted) return;
-
-    if (drillFile != null) {
-      try {
-        final program = await programService.installFromFile(
-          drillFile,
-          activate: true,
-        );
-        if (context.mounted) {
-          _showSnackBar(
-            context,
-            localizations.installedAndActivated(program.name),
-          );
-        }
-      } catch (e, stackTrace) {
-        if (context.mounted) {
-          _showSnackBar(context, localizations.openFailure(drillFile.fileName));
-        }
-        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
-      }
-    }
-  }
-
-  Future<void> _import(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-  ) async {
-    final drillFile = await open(context, constraints, localizations);
-    if (!context.mounted) return;
-
-    if (drillFile != null) {
-      try {
-        final program = await programService.importProgram(
-          localizations,
-          drillFile,
-          onSelect: (items) async {
-            final selected = await selectExercises(
-              context,
-              localizations.importProgram,
-              items.toList(),
-              constraints,
-              localizations,
-              true,
-            );
-            return selected.isEmpty
-                ? null
-                : items.where((e) => selected.contains(e.uuid));
-          },
-        );
-        if (program == null) return;
-
-        if (context.mounted) {
-          _showSnackBar(
-            context,
-            localizations.importSuccess(drillFile.fileName),
-          );
-        }
-      } catch (e, stackTrace) {
-        if (context.mounted) {
-          _showSnackBar(
-            context,
-            localizations.importFailure(drillFile.fileName),
-          );
-        }
-        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
-      }
-    }
-  }
-
-  @protected
-  Future<bool> save(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-    DrillFile drillFile,
-  );
-
-  Future<void> _export(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-  ) async {
-    final selected = await selectExercises(
-      context,
-      localizations.exportProgram,
-      programService.loadExercises(),
-      constraints,
-      localizations,
-      false,
-    );
-    if (selected.isEmpty || !context.mounted) return;
-
-    // Ask the user for the file name
-    final fileName = await _promptFileName(context, localizations);
-    if (!context.mounted) return;
-
-    if (fileName != null) {
-      final drillFile = await programService.exportProgram(
-        nanoid(10),
-        fileName,
-        selected,
-      );
-      try {
-        if (!context.mounted) return;
-
-        final result = await save(
-          context,
-          constraints,
-          localizations,
-          drillFile,
-        );
-        if (!context.mounted) return;
-        if (result) {
-          _showSnackBar(
-            context,
-            localizations.exportSuccess(drillFile.fileName),
-          );
-        }
-      } on Exception catch (e, stackTrace) {
-        if (context.mounted) {
-          _showSnackBar(
-            context,
-            localizations.exportFailure(drillFile.fileName),
-          );
-        }
-        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
-      }
-    }
-  }
-
-  @protected
-  Future<bool> sendTo(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-    DrillFile drillFile,
-  );
-
-  Future<void> _sendTo(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-  ) async {
-    final selected = await selectExercises(
-      context,
-      localizations.sendToProgram,
-      programService.loadExercises(),
-      constraints,
-      localizations,
-      false,
-    );
-    if (selected.isEmpty || !context.mounted) return;
-
-    // Ask the user for the file name
-    final fileName = await _promptFileName(context, localizations);
-    if (!context.mounted) return;
-
-    if (fileName != null) {
-      final drillFile = await programService.exportProgram(
-        nanoid(10),
-        fileName,
-        selected,
-      );
-      try {
-        if (!context.mounted) return;
-
-        final result = await sendTo(
-          context,
-          constraints,
-          localizations,
-          drillFile,
-        );
-
-        if (!context.mounted) return;
-        if (result) {
-          _showSnackBar(
-            context,
-            localizations.sendToSuccess(drillFile.fileName),
-          );
-        }
-      } on Exception catch (e, stackTrace) {
-        if (context.mounted) {
-          _showSnackBar(
-            context,
-            localizations.sendToFailure(drillFile.fileName),
-          );
-        }
-        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
-      }
-    }
-  }
-
-  @protected
-  Future<bool> share(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-    DrillFile drillFile,
-  );
-
-  Future<void> _share(
-    BuildContext context,
-    BoxConstraints constraints,
-    AppLocalizations localizations,
-  ) async {
-    final selected = await selectExercises(
-      context,
-      localizations.shareProgram,
-      programService.loadExercises(),
-      constraints,
-      localizations,
-      false,
-    );
-    if (selected.isEmpty || !context.mounted) return;
-
-    // Ask the user for the file name
-    final fileName = await _promptFileName(context, localizations);
-    if (!context.mounted) return;
-
-    if (fileName != null) {
-      final drillFile = await programService.exportProgram(
-        nanoid(10),
-        fileName,
-        selected,
-      );
-      try {
-        if (!context.mounted) return;
-
-        final result = await share(
-          context,
-          constraints,
-          localizations,
-          drillFile,
-        );
-
-        if (!context.mounted) return;
-        if (result) {
-          _showSnackBar(
-            context,
-            localizations.shareSuccess(drillFile.fileName),
-          );
-        }
-      } on Exception catch (e, stackTrace) {
-        if (context.mounted) {
-          _showSnackBar(
-            context,
-            localizations.shareFailure(drillFile.fileName),
-          );
-        }
-        unawaited(Sentry.captureException(e, stackTrace: stackTrace));
-      }
-    }
+    return null;
   }
 
   static Future<List<String>> selectExercises(
@@ -765,7 +398,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     return selected;
   }
 
-  static Future<String?> _promptFileName(
+  static Future<String?> promptFileName(
     BuildContext context,
     AppLocalizations localizations,
   ) async {
@@ -836,15 +469,5 @@ abstract class ProgramPageControllerBase extends ScreenController {
     );
 
     return fileName;
-  }
-
-  static void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        showCloseIcon: true,
-        dismissDirection: DismissDirection.endToStart,
-        content: Text(message),
-      ),
-    );
   }
 }

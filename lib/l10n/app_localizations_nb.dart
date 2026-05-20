@@ -700,6 +700,51 @@ class AppLocalizationsNb extends AppLocalizations {
   String get openPlanTooltip => 'Åpne plan';
 
   @override
+  String get newPlanAction => 'Ny plan';
+
+  @override
+  String get newPlanNamePrompt => 'Gi den nye planen et navn';
+
+  @override
+  String get create => 'Opprett';
+
+  @override
+  String get fromFileAction => 'Fra fil';
+
+  @override
+  String get addExercisesAction => 'Legg til øvelser fra...';
+
+  @override
+  String get addFromFile => 'Fra fil';
+
+  @override
+  String get addFromAnotherPlan => 'Fra en annen av mine planer';
+
+  @override
+  String get pickFile => 'Velg fil...';
+
+  @override
+  String get confirmChangesTitle => 'Bekreft endringer';
+
+  @override
+  String get apply => 'Bruk';
+
+  @override
+  String get noOtherLocalPlans => 'Ingen andre lokale planer enda';
+
+  @override
+  String get requiresActivePlan => 'Åpne eller opprett en plan først';
+
+  @override
+  String get shareActivePlan => 'Del aktiv plan';
+
+  @override
+  String get sendToAction => 'Send til...';
+
+  @override
+  String get exportAsDrill => 'Eksporter som .drill';
+
+  @override
   String get defaultPlanName => 'Standardplan';
 
   @override

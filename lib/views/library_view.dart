@@ -8,6 +8,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:share_plus/share_plus.dart';
@@ -95,6 +96,16 @@ class _LibraryBodyState extends State<_LibraryBody>
                   _CatalogStatusAction(
                     state: _catalogServiceState,
                     tooltip: _catalogServiceTooltip,
+                  ),
+                  IconButton(
+                    tooltip: localizations.newPlanAction,
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () => _createNewPlan(context),
+                  ),
+                  IconButton(
+                    tooltip: localizations.fromFileAction,
+                    icon: const Icon(Icons.upload_file),
+                    onPressed: () => _installFromFile(context),
                   ),
                   IconButton(
                     tooltip: localizations.libraryRetry,
@@ -335,6 +346,26 @@ class _LibraryBodyState extends State<_LibraryBody>
     } on StateError {
       if (!context.mounted) return;
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
+    }
+  }
+
+  Future<void> _createNewPlan(BuildContext context) async {
+    final before = _programService.activeProgramUuid;
+    await active_actions.createNewPlan(context);
+    if (!context.mounted) return;
+    if (_programService.activeProgramUuid != null &&
+        _programService.activeProgramUuid != before) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _installFromFile(BuildContext context) async {
+    final before = _programService.activeProgramUuid;
+    await active_actions.installPickedPlanFile(context);
+    if (!context.mounted) return;
+    if (_programService.activeProgramUuid != null &&
+        _programService.activeProgramUuid != before) {
+      Navigator.pop(context);
     }
   }
 

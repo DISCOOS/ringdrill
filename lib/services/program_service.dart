@@ -85,6 +85,9 @@ class ProgramEvent {
   factory ProgramEvent.imported(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programImported, program, file: file);
 
+  factory ProgramEvent.importedProgram(Program program) =>
+      ProgramEvent(ProgramEventType.programImported, program);
+
   factory ProgramEvent.exported(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programExported, program, file: file);
 }
@@ -273,6 +276,34 @@ class ProgramService {
       _controller.add(ProgramEvent.imported(program, file));
     }
     return program?.copyWith(exercises: selected.toList());
+  }
+
+  Future<Program?> mergeFromProgram(
+    AppLocalizations localizations,
+    Program source,
+    List<String> selectedExerciseUuids,
+  ) async {
+    await _ensureActiveProgram(localizations.defaultPlanName);
+    final selected = source.exercises
+        .where((exercise) => selectedExerciseUuids.contains(exercise.uuid))
+        .toList();
+    if (selected.isEmpty) return null;
+
+    var maxNumberOfTeams = 0;
+    for (final exercise in selected) {
+      await _repo.saveExercise(exercise);
+      maxNumberOfTeams = max(maxNumberOfTeams, exercise.numberOfTeams);
+    }
+    for (final team in source.teams) {
+      await _repo.saveTeam(team);
+    }
+    await ensureTeams(localizations, maxNumberOfTeams);
+
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent.importedProgram(program));
+    }
+    return program?.copyWith(exercises: selected);
   }
 
   Future<Program> installFromFile(
