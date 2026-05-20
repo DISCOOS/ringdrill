@@ -8,7 +8,7 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/station_screen.dart';
 
-import '../services/program_service.dart' show ProgramService;
+import '../services/program_service.dart' show ProgramEvent, ProgramService;
 import 'map_view.dart';
 
 class StationsView extends StatefulWidget {
@@ -22,8 +22,25 @@ class _StationsViewState extends State<StationsView> {
   final _mapController = MapController();
   final _programService = ProgramService();
   final _mapKey = GlobalKey<_StationsViewState>();
+  StreamSubscription<ProgramEvent>? _programSubscription;
 
   bool _notified = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild when the active program or its stations change. The parent
+    // MainScreen keeps tabs alive in an IndexedStack with identical widget
+    // instances, so its own setState does not propagate here. See
+    // active_plan_actions.dart and ProgramService.setActive/installFromFile.
+    _programSubscription = _programService.events.listen((_) {
+      if (mounted) {
+        setState(() {
+          _notified = false;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +94,7 @@ class _StationsViewState extends State<StationsView> {
 
   @override
   void dispose() {
+    _programSubscription?.cancel();
     _mapController.dispose();
     super.dispose();
   }

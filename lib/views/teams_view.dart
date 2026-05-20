@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -14,6 +16,25 @@ class TeamsView extends StatefulWidget {
 
 class _TeamsViewState extends State<TeamsView> {
   final _programService = ProgramService();
+  StreamSubscription<ProgramEvent>? _programSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild when the active program or its teams change. The parent
+    // MainScreen keeps tabs alive in an IndexedStack with identical widget
+    // instances, so its own setState does not propagate here. See
+    // active_plan_actions.dart and ProgramService.setActive/installFromFile.
+    _programSubscription = _programService.events.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _programSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
