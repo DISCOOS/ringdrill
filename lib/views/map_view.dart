@@ -181,18 +181,30 @@ class _MapViewState<K> extends State<MapView<K>> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Material(
-                                elevation: 2,
-                                borderRadius: BorderRadius.circular(4),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(1.0),
-                                  child: Text(
-                                    e.$2,
-                                    style: TextStyle(fontSize: 12),
+                              // Slightly translucent so the label does
+                              // not dominate when multiple markers sit
+                              // close together. Affects background and
+                              // text together; the pin underneath stays
+                              // fully opaque.
+                              Opacity(
+                                opacity: 0.75,
+                                child: Material(
+                                  elevation: 2,
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(1.0),
+                                    child: Text(
+                                      e.$2,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
                                   ),
                                 ),
                               ),
-                              Icon(Icons.place, color: Colors.green, size: 32),
+                              const Icon(
+                                Icons.place,
+                                color: Colors.green,
+                                size: 32,
+                              ),
                             ],
                           ),
                           onTap: () => widget.onMarkerTap?.call(e),
