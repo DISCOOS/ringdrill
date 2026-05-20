@@ -82,6 +82,6 @@ class TeamsPageController extends ScreenController {
   const TeamsPageController() : super();
   @override
   String title(BuildContext context) {
-    return AppLocalizations.of(context)!.team(2);
+    return AppLocalizations.of(context)!.teamsOverview;
   }
 }

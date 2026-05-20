@@ -329,6 +329,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get teamNoExercises => 'Laget er ikke med i noen øvelser ennå.';
 
   @override
+  String get teamsOverview => 'Lagsoversikt';
+
+  @override
   String notification(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

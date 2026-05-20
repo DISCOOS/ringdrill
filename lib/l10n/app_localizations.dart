@@ -572,6 +572,12 @@ abstract class AppLocalizations {
   /// **'This team isn\'t part of any exercise yet.'**
   String get teamNoExercises;
 
+  /// AppBar title for the Teams tab
+  ///
+  /// In en, this message translates to:
+  /// **'Teams'**
+  String get teamsOverview;
+
   /// Parameterized message
   ///
   /// In en, this message translates to:
