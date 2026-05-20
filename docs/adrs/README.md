@@ -9,6 +9,12 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | #    | Title                                                    | Status   |
 |------|----------------------------------------------------------|----------|
 | 0001 | [Record architecture decisions](./0001-record-architecture-decisions.md) | Accepted |
+| 0002 | [Use freezed + json_serializable, with extensions for behavior](./0002-freezed-models-with-extensions.md) | Accepted |
+| 0003 | [Use a pure-Dart SimpleTimeOfDay for serializable time values](./0003-simple-time-of-day.md) | Accepted |
+| 0004 | [Do not adopt a third-party state-management library](./0004-no-third-party-state-management.md) | Accepted |
+| 0005 | [The Dart CLI must remain free of Flutter imports](./0005-cli-must-remain-flutter-free.md) | Accepted |
+| 0006 | [Sentry telemetry is gated behind opt-in analytics consent](./0006-sentry-behind-consent-gate.md) | Accepted |
+| 0007 | [.drill files are versioned ZIP archives of JSON parts](./0007-drill-file-format.md) | Accepted |
 
 ## When to write an ADR
 
