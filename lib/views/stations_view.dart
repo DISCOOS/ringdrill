@@ -77,8 +77,14 @@ class _StationsViewState extends State<StationsView> {
     }
     // Prefer centroid-centred bounds so the camera lands on the geometric
     // mean of all stations, not on the bounding-box midpoint (which
-    // drifts toward outliers).
-    final padding = EdgeInsets.all(72).copyWith(top: 150);
+    // drifts toward outliers). Padding matches the MapView overlays
+    // (search field at top, FAB column at bottom) so the centroid sits
+    // in the visible centre rather than under the FABs.
+    final padding = MapConfig.fitPadding(
+      withSearch: true,
+      withZoom: true,
+      withCenter: true,
+    );
     final points = markers.map((m) => m.$3);
     final fit = points.centroidFit(padding) ?? markers.fit(padding);
     if (fit != null) {
@@ -120,6 +126,12 @@ class _StationsViewState extends State<StationsView> {
         ? MapConfig.initialCenter
         : markers.average();
 
+    final fitPadding = MapConfig.fitPadding(
+      withSearch: true,
+      withZoom: true,
+      withCenter: true,
+    );
+
     return Column(
       children: [
         if (_pickFor != null) _buildPickBanner(context, _pickFor!),
@@ -132,7 +144,7 @@ class _StationsViewState extends State<StationsView> {
             withToggle: true,
             withZoom: true,
             initialCenter: center,
-            initialFit: markers.fit(EdgeInsets.all(72).copyWith(top: 150)),
+            initialFit: markers.fit(fitPadding),
             controller: _mapController,
             interactionFlags: MapConfig.interactive,
             layers: MapConfig.layers,
@@ -207,7 +219,12 @@ class _StationsViewState extends State<StationsView> {
         .map((s) => s.position!)
         .toList(growable: false);
     if (siblingPoints.isEmpty) return;
-    final fit = siblingPoints.centroidFit();
+    final padding = MapConfig.fitPadding(
+      withSearch: true,
+      withZoom: true,
+      withCenter: true,
+    );
+    final fit = siblingPoints.centroidFit(padding);
     if (fit != null) {
       _mapController.fitCamera(fit);
     } else {

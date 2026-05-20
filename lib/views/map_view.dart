@@ -23,6 +23,26 @@ class MapConfig {
 
   static const LatLng initialCenter = LatLng(59.91, 10.75);
 
+  /// Padding used when calling [MapController.fitCamera] so the fit
+  /// honours the on-map overlays. Because [MapController.fitCamera]
+  /// places the bounds *center* into the centre of the padded area,
+  /// asymmetric padding directly shifts where the centroid lands on
+  /// screen: a larger bottom padding pulls the camera so the centroid
+  /// appears higher in the visible area, compensating for the FAB
+  /// column at the bottom-right of the map.
+  static EdgeInsets fitPadding({
+    bool withSearch = false,
+    bool withZoom = false,
+    bool withCenter = false,
+  }) {
+    return EdgeInsets.fromLTRB(
+      24,
+      withSearch ? 112 : 24,
+      24,
+      (withZoom || withCenter) ? 200 : 24,
+    );
+  }
+
   // Important! TileLayers are widgets! We need to get new layers
   // each time since we can not share them across multiple
   // FlutterMap instances (map may not show correctly)
@@ -668,11 +688,18 @@ class _MapViewState<K> extends State<MapView<K>> {
     } else if (result.points.length >= 2) {
       // Centre on the geometric mean (centroid) of all the points, while
       // still zooming out enough to include every point. Falls back to
-      // the bounding-box fit if the points happen to coincide.
+      // the bounding-box fit if the points happen to coincide. Padding
+      // is overlay-aware so the centroid does not land underneath the
+      // bottom FAB column.
+      final padding = MapConfig.fitPadding(
+        withSearch: widget.withSearch,
+        withZoom: widget.withZoom,
+        withCenter: widget.withCenter,
+      );
       final fit =
-          result.points.centroidFit() ??
+          result.points.centroidFit(padding) ??
           CameraFit.coordinates(
-            padding: const EdgeInsets.all(72),
+            padding: padding,
             coordinates: result.points,
           );
       _mapController.fitCamera(fit);
