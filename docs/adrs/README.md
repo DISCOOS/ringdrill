@@ -16,7 +16,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0006 | [Sentry telemetry is gated behind opt-in analytics consent](./0006-sentry-behind-consent-gate.md)        | Accepted |
 | ADR-0007 | [.drill files are versioned ZIP archives of JSON parts](./0007-drill-file-format.md)                     | Accepted |
 | ADR-0008 | [Persistent program library with active plan and shared catalog](./0008-persistent-program-library-and-catalog.md) | Accepted |
-| ADR-0009 | [Short polling with CDN-cached status objects as live transport](./0009-realtime-transport-and-session-model.md) | Proposed |
+| ADR-0009 | [Short polling with CDN-cached session status as live transport](./0009-realtime-transport-and-session-model.md) | Accepted |
 
 ## When to write an ADR
 
