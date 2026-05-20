@@ -96,20 +96,14 @@ class _LibraryBodyState extends State<_LibraryBody>
                     state: _catalogServiceState,
                     tooltip: _catalogServiceTooltip,
                   ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'refresh_catalog') {
-                        setState(() {
-                          _feed = _loadFeed();
-                        });
-                      }
+                  IconButton(
+                    tooltip: localizations.libraryRetry,
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {
+                      setState(() {
+                        _feed = _loadFeed();
+                      });
                     },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'refresh_catalog',
-                        child: Text(localizations.libraryRetry),
-                      ),
-                    ],
                   ),
                 ],
               ),
