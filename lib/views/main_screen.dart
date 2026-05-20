@@ -11,12 +11,17 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
+import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/stations_view.dart';
+import 'package:ringdrill/views/team_exercise_screen.dart';
+import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
@@ -25,10 +30,6 @@ import 'package:ringdrill/web/settings_page.dart'
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_io/io.dart';
-
-const String routeProgram = '/program';
-const String routeStations = '/stations';
-const String routeTeams = '/teams';
 
 GoRouter buildRouter(bool isFirstLaunch) {
   final key = GlobalKey<NavigatorState>();
@@ -54,7 +55,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
         // redirect to programs page!
         return routeProgram;
       }
-      return location;
+      return null;
     },
     routes: [
       ShellRoute(
@@ -73,11 +74,54 @@ GoRouter buildRouter(bool isFirstLaunch) {
           GoRoute(path: '/', redirect: (_, _) => routeProgram),
           GoRoute(
             path: routeProgram,
-            redirect: (context, state) => state.path,
             builder: (BuildContext context, GoRouterState state) => PageWidget(
               controller: ProgramPageController(),
               child: const ProgramView(),
             ),
+            routes: [
+              GoRoute(
+                path: ':exerciseId',
+                parentNavigatorKey: key,
+                builder: (BuildContext context, GoRouterState state) =>
+                    CoordinatorScreen(
+                      uuid: state.pathParameters['exerciseId']!,
+                    ),
+                routes: [
+                  GoRoute(
+                    path: 'station/:stationIndex',
+                    parentNavigatorKey: key,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        StationExerciseScreen(
+                          uuid: state.pathParameters['exerciseId']!,
+                          stationIndex: int.parse(
+                            state.pathParameters['stationIndex']!,
+                          ),
+                        ),
+                  ),
+                  GoRoute(
+                    path: 'team/:teamIndex',
+                    parentNavigatorKey: key,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final uuid = state.pathParameters['exerciseId']!;
+                      final teamIndex = int.parse(
+                        state.pathParameters['teamIndex']!,
+                      );
+                      final exercise = ProgramService().getExercise(uuid);
+                      if (exercise == null) {
+                        return Scaffold(
+                          appBar: AppBar(),
+                          body: const Center(child: Text('Not found')),
+                        );
+                      }
+                      return TeamExerciseScreen(
+                        teamIndex: teamIndex,
+                        exercise: exercise,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
           GoRoute(
             path: routeStations,
@@ -86,6 +130,19 @@ GoRouter buildRouter(bool isFirstLaunch) {
                   controller: StationsPageController(),
                   child: StationsView(),
                 ),
+            routes: [
+              GoRoute(
+                path: ':exerciseId/:stationIndex',
+                parentNavigatorKey: key,
+                builder: (BuildContext context, GoRouterState state) =>
+                    StationExerciseScreen(
+                      uuid: state.pathParameters['exerciseId']!,
+                      stationIndex: int.parse(
+                        state.pathParameters['stationIndex']!,
+                      ),
+                    ),
+              ),
+            ],
           ),
           GoRoute(
             path: routeTeams,
@@ -94,6 +151,16 @@ GoRouter buildRouter(bool isFirstLaunch) {
                   controller: TeamsPageController(),
                   child: TeamsView(),
                 ),
+            routes: [
+              GoRoute(
+                path: ':teamIndex',
+                parentNavigatorKey: key,
+                builder: (BuildContext context, GoRouterState state) =>
+                    TeamScreen(
+                      teamIndex: int.parse(state.pathParameters['teamIndex']!),
+                    ),
+              ),
+            ],
           ),
         ],
       ),
@@ -182,10 +249,6 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _initTab();
     if (widget.isFirstLaunch) _showConsentDialog();
-    assert(
-      _currentTab > -1,
-      'Location ${widget.location} not found in ${widget.routes}',
-    );
     _subscriptions.add(
       NotificationService().events.listen((event) {
         if (event.action == NotificationAction.showSettings) {
@@ -203,7 +266,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _initTab() {
-    _currentTab = widget.routes.indexOf(widget.location);
+    final loc = widget.location;
+    // Match either an exact tab path (/program) or any nested
+    // detail path (/program/<exerciseId>/...). This keeps the
+    // correct tab selected when a detail screen is on top.
+    _currentTab = widget.routes.indexWhere(
+      (r) => loc == r || loc.startsWith('$r/'),
+    );
+    if (_currentTab < 0) _currentTab = 0;
   }
 
   @override

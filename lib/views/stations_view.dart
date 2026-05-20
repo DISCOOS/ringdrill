@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
-import 'package:ringdrill/views/station_screen.dart';
 
 import '../services/program_service.dart' show ProgramEvent, ProgramService;
 import 'map_view.dart';
@@ -80,15 +81,7 @@ class _StationsViewState extends State<StationsView> {
   void onMarkerTap(((String, int), String, LatLng) value) {
     final exercise = _programService.getExercise(value.$1.$1);
     if (exercise != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StationExerciseScreen(
-            stationIndex: value.$1.$2,
-            uuid: exercise.uuid,
-          ),
-        ),
-      );
+      context.push('$routeStations/${exercise.uuid}/${value.$1.$2}');
     }
   }
 

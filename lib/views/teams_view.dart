@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
-import 'package:ringdrill/views/team_screen.dart';
 
 class TeamsView extends StatefulWidget {
   const TeamsView({super.key});
@@ -63,12 +64,7 @@ class _TeamsViewState extends State<TeamsView> {
               ),
               subtitle: Text(parts.join(' · ')),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TeamScreen(teamIndex: t.index),
-                  ),
-                );
+                context.push('$routeTeams/${t.index}');
               },
             ),
           );

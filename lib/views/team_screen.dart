@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
-import 'package:ringdrill/views/station_screen.dart';
 
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key, required this.teamIndex});
@@ -63,14 +64,8 @@ class _TeamScreenState extends State<TeamScreen> {
                           initiallyExpanded: isLive,
                           isLive: isLive,
                           onStationTap: (stationIndex) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => StationExerciseScreen(
-                                  stationIndex: stationIndex,
-                                  uuid: exercise.uuid,
-                                ),
-                              ),
+                            context.push(
+                              '$routeProgram/${exercise.uuid}/station/$stationIndex',
                             );
                           },
                         );

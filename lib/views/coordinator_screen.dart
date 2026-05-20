@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
-import 'package:ringdrill/views/station_screen.dart';
-import 'package:ringdrill/views/team_exercise_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 
@@ -385,14 +385,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                       ),
                     ),
                     onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => StationExerciseScreen(
-                            stationIndex: stationIndex,
-                            uuid: _exercise!.uuid,
-                          ),
-                        ),
+                      await context.push(
+                        '$routeProgram/${_exercise!.uuid}/station/$stationIndex',
                       );
                     },
                   ),
@@ -485,14 +479,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     ),
                     onTap: () {
                       // Navigate to SupervisorViewScreen, starting from the selected station
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TeamExerciseScreen(
-                            teamIndex: teamIndex,
-                            exercise: _exercise!,
-                          ),
-                        ),
+                      context.push(
+                        '$routeProgram/${_exercise!.uuid}/team/$teamIndex',
                       );
                     },
                   ),

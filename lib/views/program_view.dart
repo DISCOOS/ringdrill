@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -10,11 +11,11 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/exercise_control_button.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 
-import 'coordinator_screen.dart';
 import 'exercise_form_screen.dart';
 
 export 'package:ringdrill/web/program_page_controller.dart'
@@ -82,13 +83,7 @@ class _ProgramViewState extends State<ProgramView> {
                 return GestureDetector(
                   onTap: () async {
                     // Navigate to CoordinatorViewScreen with the selected exercise
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            CoordinatorScreen(uuid: exercise.uuid),
-                      ),
-                    );
+                    await context.push('$routeProgram/${exercise.uuid}');
                   },
                   child: Dismissible(
                     key: ValueKey(exercise.name),

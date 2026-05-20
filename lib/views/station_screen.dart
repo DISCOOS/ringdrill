@@ -1,18 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-import 'package:ringdrill/views/team_exercise_screen.dart';
 
 import 'map_screen.dart';
 
@@ -375,14 +376,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                       ? null
                       : () {
                           Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TeamExerciseScreen(
-                                teamIndex: teamIndex,
-                                exercise: _exercise,
-                              ),
-                            ),
+                          context.push(
+                            '$routeProgram/${_exercise.uuid}/team/$teamIndex',
                           );
                         },
                   child: Padding(

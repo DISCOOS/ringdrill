@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:go_router/go_router.dart' show GoRouter;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
@@ -22,6 +23,7 @@ Future<void> main() async {
   SentryWidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
+    GoRouter.optionURLReflectsImperativeAPIs = true;
     usePathUrlStrategy();
   }
 
