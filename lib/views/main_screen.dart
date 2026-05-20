@@ -9,7 +9,6 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
-import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/program_view.dart';
@@ -26,7 +25,6 @@ import 'package:universal_io/io.dart';
 const String routeProgram = '/program';
 const String routeStations = '/stations';
 const String routeTeams = '/teams';
-const String routeLibrary = '/library';
 
 GoRouter buildRouter(bool isFirstLaunch) {
   final key = GlobalKey<NavigatorState>();
@@ -55,11 +53,6 @@ GoRouter buildRouter(bool isFirstLaunch) {
       return location;
     },
     routes: [
-      GoRoute(
-        path: routeLibrary,
-        builder: (BuildContext context, GoRouterState state) =>
-            const LibraryView(),
-      ),
       ShellRoute(
         builder: (BuildContext context, GoRouterState state, Widget child) {
           return PlatformWidget(
@@ -275,7 +268,7 @@ class _MainScreenState extends State<MainScreen> {
         context: context,
         paddingLeft: 0,
         child: AppBar(
-          title: Text(page.controller.title(context)),
+          title: _buildAppBarTitle(context, page),
           leadingWidth: _wideScreen ? 84 : null,
           leading: _wideScreen
               ? Padding(
@@ -296,6 +289,27 @@ class _MainScreenState extends State<MainScreen> {
               : null,
           actions: page.controller.buildActions(context, constraints),
           actionsPadding: EdgeInsets.only(right: 16.0),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBarTitle(
+    BuildContext context,
+    PageWidget<ScreenController> page,
+  ) {
+    final title = Text(page.controller.title(context));
+    final controller = page.controller;
+    if (controller is! ProgramPageControllerBase) return title;
+    final localizations = AppLocalizations.of(context)!;
+    return Tooltip(
+      message: localizations.openPlanTooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(4),
+        onTap: () => controller.openPlan(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: title,
         ),
       ),
     );
@@ -322,14 +336,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         const SizedBox(height: 16.0),
-        ListTile(
-          leading: const Icon(Icons.library_books),
-          title: Text(localizations.library),
-          onTap: () {
-            Navigator.pop(context);
-            widget.router.go(routeLibrary);
-          },
-        ),
         ListTile(
           leading: const Icon(Icons.settings),
           title: Text(localizations.settings),

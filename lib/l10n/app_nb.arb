@@ -175,6 +175,8 @@
   "libraryErrorLoad": "Kunne ikke laste biblioteket",
   "libraryRetry": "Prøv igjen",
   "libraryCannotSwitchRunning": "Stopp øvelsen som kjører før du endrer planer.",
+  "openPlan": "Åpne plan...",
+  "openPlanTooltip": "Åpne plan",
   "defaultPlanName": "Standardplan",
   "libraryMigrationNotice": "Bibliotek og katalog er nytt. Den eksisterende planen din er flyttet til Standardplan og er fortsatt aktiv.",
   "installedAndActivated": "Installert og aktivert {name}",

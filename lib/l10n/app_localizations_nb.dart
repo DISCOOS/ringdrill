@@ -694,6 +694,12 @@ class AppLocalizationsNb extends AppLocalizations {
       'Stopp øvelsen som kjører før du endrer planer.';
 
   @override
+  String get openPlan => 'Åpne plan...';
+
+  @override
+  String get openPlanTooltip => 'Åpne plan';
+
+  @override
   String get defaultPlanName => 'Standardplan';
 
   @override

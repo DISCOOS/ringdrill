@@ -12,6 +12,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/exercise_control_button.dart';
+import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
@@ -287,6 +288,10 @@ abstract class ProgramPageControllerBase extends ScreenController {
       PopupMenuButton<String>(
         onSelected: (value) => _handleMenuAction(context, constraints, value),
         itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'open_plan',
+            child: Text(localizations.openPlan),
+          ),
           if (actions.contains(ProgramPageAction.open))
             PopupMenuItem(
               value: 'open',
@@ -335,6 +340,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
     final localizations = AppLocalizations.of(context)!;
 
     switch (action) {
+      case 'open_plan':
+        return openPlan(context);
       case 'open':
         return _open(context, constraints, localizations);
       case 'import':
@@ -355,6 +362,15 @@ abstract class ProgramPageControllerBase extends ScreenController {
       default:
         throw UnimplementedError('Action [$action] not implemented');
     }
+  }
+
+  Future<void> openPlan(BuildContext context) async {
+    final localizations = AppLocalizations.of(context)!;
+    if (exerciseService.isStarted) {
+      _showSnackBar(context, localizations.libraryCannotSwitchRunning);
+      return;
+    }
+    await showOpenPlanDialog(context);
   }
 
   @protected

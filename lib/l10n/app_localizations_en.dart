@@ -698,6 +698,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stop the running exercise before changing plans.';
 
   @override
+  String get openPlan => 'Open plan...';
+
+  @override
+  String get openPlanTooltip => 'Open plan';
+
+  @override
   String get defaultPlanName => 'Default plan';
 
   @override

@@ -1154,6 +1154,18 @@ abstract class AppLocalizations {
   /// **'Stop the running exercise before changing plans.'**
   String get libraryCannotSwitchRunning;
 
+  /// No description provided for @openPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Open plan...'**
+  String get openPlan;
+
+  /// No description provided for @openPlanTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open plan'**
+  String get openPlanTooltip;
+
   /// No description provided for @defaultPlanName.
   ///
   /// In en, this message translates to:

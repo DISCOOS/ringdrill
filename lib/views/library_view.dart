@@ -12,14 +12,48 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 
-class LibraryView extends StatefulWidget {
-  const LibraryView({super.key});
+Future<void> showOpenPlanDialog(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  if (width > 600) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 760,
+            maxHeight: 680,
+            minWidth: 520,
+          ),
+          child: const _LibraryBody(),
+        ),
+      ),
+    );
+  }
 
-  @override
-  State<LibraryView> createState() => _LibraryViewState();
+  return showModalBottomSheet<void>(
+    context: context,
+    useSafeArea: true,
+    showDragHandle: true,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+    ),
+    builder: (context) => SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.88,
+      child: const _LibraryBody(),
+    ),
+  );
 }
 
-class _LibraryViewState extends State<LibraryView>
+class _LibraryBody extends StatefulWidget {
+  const _LibraryBody();
+
+  @override
+  State<_LibraryBody> createState() => _LibraryBodyState();
+}
+
+class _LibraryBodyState extends State<_LibraryBody>
     with SingleTickerProviderStateMixin {
   final _programService = ProgramService();
   late final TabController _tabController;
@@ -43,41 +77,58 @@ class _LibraryViewState extends State<LibraryView>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.library),
-        actions: [
-          _CatalogStatusAction(
-            state: _catalogServiceState,
-            tooltip: _catalogServiceTooltip,
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'refresh_catalog') {
-                setState(() {
-                  _feed = _loadFeed();
-                });
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'refresh_catalog',
-                child: Text(localizations.libraryRetry),
+    return ScaffoldMessenger(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 8, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      localizations.openPlan,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  _CatalogStatusAction(
+                    state: _catalogServiceState,
+                    tooltip: _catalogServiceTooltip,
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'refresh_catalog') {
+                        setState(() {
+                          _feed = _loadFeed();
+                        });
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'refresh_catalog',
+                        child: Text(localizations.libraryRetry),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: localizations.libraryMyPlans),
-            Tab(text: localizations.libraryCatalog),
+            ),
+            TabBar(
+              controller: _tabController,
+              tabs: [
+                Tab(text: localizations.libraryMyPlans),
+                Tab(text: localizations.libraryCatalog),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [_buildMyPlans(context), _buildCatalog(context)],
+              ),
+            ),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildMyPlans(context), _buildCatalog(context)],
       ),
     );
   }
@@ -119,7 +170,7 @@ class _LibraryViewState extends State<LibraryView>
             trailing: isActive
                 ? Chip(label: Text(localizations.libraryActive))
                 : null,
-            onTap: () => _activate(context, program.uuid),
+            onTap: () => _activate(context, program.uuid, closeOnSuccess: true),
             onLongPress: () => _showPlanActions(context, program),
           ),
         );
@@ -142,7 +193,8 @@ class _LibraryViewState extends State<LibraryView>
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (_catalogServiceState == _CatalogServiceState.unavailable) {
+          if (_catalogServiceState == _CatalogServiceState.unavailable ||
+              _catalogServiceState == _CatalogServiceState.corsBlocked) {
             return ListView(
               children: [
                 const SizedBox(height: 120),
@@ -276,11 +328,16 @@ class _LibraryViewState extends State<LibraryView>
     ].join(' · ');
   }
 
-  Future<void> _activate(BuildContext context, String uuid) async {
+  Future<void> _activate(
+    BuildContext context,
+    String uuid, {
+    bool closeOnSuccess = false,
+  }) async {
     final localizations = AppLocalizations.of(context)!;
     try {
       await _programService.setActive(uuid);
       if (mounted) setState(() {});
+      if (closeOnSuccess && context.mounted) Navigator.pop(context);
     } on StateError {
       if (!context.mounted) return;
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
@@ -442,13 +499,14 @@ class _LibraryViewState extends State<LibraryView>
   Future<void> _installCatalog(MarketFeedItem item) async {
     final localizations = AppLocalizations.of(context)!;
     try {
-      final program = await _programService.installFromCatalog(
+      await _programService.installFromCatalog(
         item,
         DrillClient(baseUrl: _catalogBaseUrl()),
+        activate: true,
       );
       if (!mounted) return;
       setState(() {});
-      _showSnackBar(context, localizations.importSuccess(program.name));
+      if (context.mounted) Navigator.pop(context);
     } catch (_) {
       if (!mounted) return;
       _showSnackBar(context, localizations.libraryErrorLoad);
@@ -500,7 +558,7 @@ class _CatalogStatusAction extends StatelessWidget {
             state == _CatalogServiceState.corsBlocked
         ? Theme.of(context).colorScheme.error
         : Theme.of(context).appBarTheme.foregroundColor;
-    final showLabel = MediaQuery.sizeOf(context).width >= 520;
+    final shouldShowLabel = MediaQuery.sizeOf(context).width >= 360;
 
     return Tooltip(
       message: tooltip ?? label,
@@ -509,7 +567,7 @@ class _CatalogStatusAction extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (showLabel) ...[
+            if (shouldShowLabel) ...[
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 180),
                 child: Text(
