@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/notification_service.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/program_view.dart';
@@ -24,6 +26,7 @@ import 'package:universal_io/io.dart';
 const String routeProgram = '/program';
 const String routeStations = '/stations';
 const String routeTeams = '/teams';
+const String routeLibrary = '/library';
 
 GoRouter buildRouter(bool isFirstLaunch) {
   final key = GlobalKey<NavigatorState>();
@@ -52,6 +55,11 @@ GoRouter buildRouter(bool isFirstLaunch) {
       return location;
     },
     routes: [
+      GoRoute(
+        path: routeLibrary,
+        builder: (BuildContext context, GoRouterState state) =>
+            const LibraryView(),
+      ),
       ShellRoute(
         builder: (BuildContext context, GoRouterState state, Widget child) {
           return PlatformWidget(
@@ -170,6 +178,7 @@ class _MainScreenState extends State<MainScreen> {
 
   int _currentTab = 0;
   bool _wideScreen = false;
+  bool _migrationSnackBarChecked = false;
 
   @override
   void initState() {
@@ -209,6 +218,7 @@ class _MainScreenState extends State<MainScreen> {
 
     final double width = MediaQuery.sizeOf(context).width;
     _wideScreen = width > 600;
+    _showMigrationSnackBarOnce();
   }
 
   @override
@@ -312,6 +322,14 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         const SizedBox(height: 16.0),
+        ListTile(
+          leading: const Icon(Icons.library_books),
+          title: Text(localizations.library),
+          onTap: () {
+            Navigator.pop(context);
+            widget.router.go(routeLibrary);
+          },
+        ),
         ListTile(
           leading: const Icon(Icons.settings),
           title: Text(localizations.settings),
@@ -491,6 +509,27 @@ class _MainScreenState extends State<MainScreen> {
           await SentryFlutter.init(SentryConfig.apply);
         }
       }
+    });
+  }
+
+  void _showMigrationSnackBarOnce() {
+    if (_migrationSnackBarChecked) return;
+    _migrationSnackBarChecked = true;
+    if (!ProgramService().librarySchemaJustMigrated) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final localizations = AppLocalizations.of(context)!;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+          .showSnackBar(
+            SnackBar(
+              showCloseIcon: true,
+              content: Text(localizations.libraryMigrationNotice),
+              dismissDirection: DismissDirection.endToStart,
+            ),
+          )
+          .closed
+          .then((_) => ProgramService().clearLibrarySchemaJustMigrated());
     });
   }
 }

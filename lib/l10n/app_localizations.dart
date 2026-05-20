@@ -1051,6 +1051,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{time} next'**
   String timeToNext(Object time);
+
+  /// No description provided for @library.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get library;
+
+  /// No description provided for @libraryMyPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'My plans'**
+  String get libraryMyPlans;
+
+  /// No description provided for @libraryCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog'**
+  String get libraryCatalog;
+
+  /// No description provided for @librarySourceLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get librarySourceLocal;
+
+  /// No description provided for @librarySourceImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported from {fileName}'**
+  String librarySourceImported(Object fileName);
+
+  /// No description provided for @librarySourceCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'From catalog · {slug}'**
+  String librarySourceCatalog(Object slug);
+
+  /// No description provided for @libraryActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get libraryActive;
+
+  /// No description provided for @libraryInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get libraryInstalled;
+
+  /// No description provided for @libraryInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get libraryInstall;
+
+  /// No description provided for @libraryRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh from catalog'**
+  String get libraryRefresh;
+
+  /// No description provided for @libraryRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get libraryRename;
+
+  /// No description provided for @libraryExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as .drill'**
+  String get libraryExport;
+
+  /// No description provided for @libraryDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get libraryDelete;
+
+  /// No description provided for @libraryEmptyCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog is empty'**
+  String get libraryEmptyCatalog;
+
+  /// No description provided for @libraryErrorLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load library'**
+  String get libraryErrorLoad;
+
+  /// No description provided for @libraryRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get libraryRetry;
+
+  /// No description provided for @libraryCannotSwitchRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the running exercise before changing plans.'**
+  String get libraryCannotSwitchRunning;
+
+  /// No description provided for @defaultPlanName.
+  ///
+  /// In en, this message translates to:
+  /// **'Default plan'**
+  String get defaultPlanName;
+
+  /// No description provided for @libraryMigrationNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Library and catalog are new. Your existing plan has been moved to Default plan and is still active.'**
+  String get libraryMigrationNotice;
+
+  /// No description provided for @installedAndActivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed and activated {name}'**
+  String installedAndActivated(Object name);
+
+  /// No description provided for @catalogConflictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog update conflict'**
+  String get catalogConflictTitle;
+
+  /// No description provided for @catalogConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This catalog plan has local changes. Review the differences before choosing how to continue.'**
+  String get catalogConflictBody;
+
+  /// No description provided for @catalogConflictCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get catalogConflictCancel;
+
+  /// No description provided for @catalogConflictOverwrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite local'**
+  String get catalogConflictOverwrite;
+
+  /// No description provided for @catalogConflictPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish my changes'**
+  String get catalogConflictPublish;
+
+  /// No description provided for @catalogConflictFork.
+  ///
+  /// In en, this message translates to:
+  /// **'Fork as local plan'**
+  String get catalogConflictFork;
+
+  /// No description provided for @catalogDiffAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get catalogDiffAdded;
+
+  /// No description provided for @catalogDiffRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get catalogDiffRemoved;
+
+  /// No description provided for @catalogDiffModified.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get catalogDiffModified;
+
+  /// No description provided for @catalogDiffExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises'**
+  String get catalogDiffExercises;
+
+  /// No description provided for @catalogDiffTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'Teams'**
+  String get catalogDiffTeams;
+
+  /// No description provided for @catalogDiffSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get catalogDiffSessions;
+
+  /// No description provided for @catalogServiceChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get catalogServiceChecking;
+
+  /// No description provided for @catalogServiceOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get catalogServiceOnline;
+
+  /// No description provided for @catalogServiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get catalogServiceUnavailable;
+
+  /// No description provided for @catalogServiceCorsBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'CORS blocked'**
+  String get catalogServiceCorsBlocked;
+
+  /// No description provided for @catalogServiceCorsBlockedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser blocked the catalog request because the Netlify function does not allow this local origin. Use the deployed web app or enable CORS on the function for local web development.'**
+  String get catalogServiceCorsBlockedTooltip;
 }
 
 class _AppLocalizationsDelegate

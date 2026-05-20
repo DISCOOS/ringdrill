@@ -636,4 +636,125 @@ class AppLocalizationsNb extends AppLocalizations {
   String timeToNext(Object time) {
     return '$time neste';
   }
+
+  @override
+  String get library => 'Bibliotek';
+
+  @override
+  String get libraryMyPlans => 'Mine planer';
+
+  @override
+  String get libraryCatalog => 'Katalog';
+
+  @override
+  String get librarySourceLocal => 'Lokal';
+
+  @override
+  String librarySourceImported(Object fileName) {
+    return 'Importert fra $fileName';
+  }
+
+  @override
+  String librarySourceCatalog(Object slug) {
+    return 'Fra katalog · $slug';
+  }
+
+  @override
+  String get libraryActive => 'Aktiv';
+
+  @override
+  String get libraryInstalled => 'Installert';
+
+  @override
+  String get libraryInstall => 'Installer';
+
+  @override
+  String get libraryRefresh => 'Oppdater fra katalog';
+
+  @override
+  String get libraryRename => 'Gi nytt navn';
+
+  @override
+  String get libraryExport => 'Eksporter som .drill';
+
+  @override
+  String get libraryDelete => 'Slett';
+
+  @override
+  String get libraryEmptyCatalog => 'Katalogen er tom';
+
+  @override
+  String get libraryErrorLoad => 'Kunne ikke laste biblioteket';
+
+  @override
+  String get libraryRetry => 'Prøv igjen';
+
+  @override
+  String get libraryCannotSwitchRunning =>
+      'Stopp øvelsen som kjører før du endrer planer.';
+
+  @override
+  String get defaultPlanName => 'Standardplan';
+
+  @override
+  String get libraryMigrationNotice =>
+      'Bibliotek og katalog er nytt. Den eksisterende planen din er flyttet til Standardplan og er fortsatt aktiv.';
+
+  @override
+  String installedAndActivated(Object name) {
+    return 'Installert og aktivert $name';
+  }
+
+  @override
+  String get catalogConflictTitle => 'Konflikt ved katalogoppdatering';
+
+  @override
+  String get catalogConflictBody =>
+      'Denne katalogplanen har lokale endringer. Se gjennom forskjellene før du velger hvordan du vil fortsette.';
+
+  @override
+  String get catalogConflictCancel => 'Avbryt';
+
+  @override
+  String get catalogConflictOverwrite => 'Overskriv lokalt';
+
+  @override
+  String get catalogConflictPublish => 'Publiser mine endringer';
+
+  @override
+  String get catalogConflictFork => 'Lag lokal kopi';
+
+  @override
+  String get catalogDiffAdded => 'Lagt til';
+
+  @override
+  String get catalogDiffRemoved => 'Fjernet';
+
+  @override
+  String get catalogDiffModified => 'Endret';
+
+  @override
+  String get catalogDiffExercises => 'Øvelser';
+
+  @override
+  String get catalogDiffTeams => 'Lag';
+
+  @override
+  String get catalogDiffSessions => 'Økter';
+
+  @override
+  String get catalogServiceChecking => 'Sjekker';
+
+  @override
+  String get catalogServiceOnline => 'Online';
+
+  @override
+  String get catalogServiceUnavailable => 'Utilgjengelig';
+
+  @override
+  String get catalogServiceCorsBlocked => 'CORS blokkert';
+
+  @override
+  String get catalogServiceCorsBlockedTooltip =>
+      'Nettleseren blokkerte katalogforespørselen fordi Netlify-funksjonen ikke tillater denne lokale opprinnelsen. Bruk den publiserte webappen eller aktiver CORS på funksjonen for lokal webutvikling.';
 }

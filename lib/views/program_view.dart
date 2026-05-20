@@ -253,6 +253,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   String title(BuildContext context) =>
+      programService.activeProgram?.name ??
       AppLocalizations.of(context)!.exercise(2);
 
   @override
@@ -373,13 +374,15 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
     if (drillFile != null) {
       try {
-        final program = await programService.openProgram(
-          localizations,
+        final program = await programService.installFromFile(
           drillFile,
+          activate: true,
         );
-        if (program == null) return;
         if (context.mounted) {
-          _showSnackBar(context, localizations.openSuccess(drillFile.fileName));
+          _showSnackBar(
+            context,
+            localizations.installedAndActivated(program.name),
+          );
         }
       } catch (e, stackTrace) {
         if (context.mounted) {

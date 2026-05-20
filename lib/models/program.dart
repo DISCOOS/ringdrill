@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
@@ -13,6 +16,8 @@ sealed class Program with _$Program {
     required String name,
     required String description,
     required ProgramMetadata metadata,
+    @Default(ProgramSource.local()) ProgramSource source,
+    String? contentHash,
     required List<Team> teams,
     required List<Session> sessions,
     required List<Exercise> exercises,
@@ -20,6 +25,144 @@ sealed class Program with _$Program {
 
   factory Program.fromJson(Map<String, dynamic> json) =>
       _$ProgramFromJson(json);
+}
+
+@freezed
+sealed class ProgramSource with _$ProgramSource {
+  const factory ProgramSource.local() = _Local;
+
+  const factory ProgramSource.imported({required String fileName}) = _Imported;
+
+  const factory ProgramSource.catalog({
+    required String slug,
+    required String latestEtag,
+    DateTime? installedAt,
+  }) = _Catalog;
+
+  factory ProgramSource.fromJson(Map<String, dynamic> json) =>
+      _$ProgramSourceFromJson(json);
+}
+
+@freezed
+sealed class ProgramDiff with _$ProgramDiff {
+  const factory ProgramDiff({
+    @Default([]) List<String> addedExercises,
+    @Default([]) List<String> removedExercises,
+    @Default([]) List<String> modifiedExercises,
+    @Default([]) List<String> addedTeams,
+    @Default([]) List<String> removedTeams,
+    @Default([]) List<String> modifiedTeams,
+    @Default([]) List<String> addedSessions,
+    @Default([]) List<String> removedSessions,
+    @Default([]) List<String> modifiedSessions,
+  }) = _ProgramDiff;
+
+  factory ProgramDiff.fromJson(Map<String, dynamic> json) =>
+      _$ProgramDiffFromJson(json);
+}
+
+extension ProgramX on Program {
+  String computeContentHash() {
+    final canonical = {
+      'exercises': _sortedCanonical(exercises, (e) => e.uuid),
+      'teams': _sortedCanonical(teams, (e) => e.uuid),
+      'sessions': _sortedCanonical(sessions, (e) => e.uuid),
+    };
+    return sha256
+        .convert(utf8.encode(jsonEncode(_canonicalize(canonical))))
+        .toString();
+  }
+}
+
+ProgramDiff diffPrograms(Program local, Program remote) {
+  final exerciseDiff = _diffNamed(
+    local.exercises,
+    remote.exercises,
+    (e) => e.uuid,
+    (e) => e.name,
+  );
+  final teamDiff = _diffNamed(
+    local.teams,
+    remote.teams,
+    (e) => e.uuid,
+    (e) => e.name,
+  );
+  final sessionDiff = _diffNamed(
+    local.sessions,
+    remote.sessions,
+    (e) => e.uuid,
+    (e) => e.uuid,
+  );
+
+  return ProgramDiff(
+    addedExercises: exerciseDiff.added,
+    removedExercises: exerciseDiff.removed,
+    modifiedExercises: exerciseDiff.modified,
+    addedTeams: teamDiff.added,
+    removedTeams: teamDiff.removed,
+    modifiedTeams: teamDiff.modified,
+    addedSessions: sessionDiff.added,
+    removedSessions: sessionDiff.removed,
+    modifiedSessions: sessionDiff.modified,
+  );
+}
+
+List<Map<String, dynamic>> _sortedCanonical<T>(
+  Iterable<T> items,
+  String Function(T item) uuid,
+) {
+  final sorted = items.toList()..sort((a, b) => uuid(a).compareTo(uuid(b)));
+  return sorted
+      .map(
+        (item) =>
+            _canonicalize((item as dynamic).toJson()) as Map<String, dynamic>,
+      )
+      .toList();
+}
+
+Object? _canonicalize(Object? value) {
+  if (value is Map) {
+    final keys = value.keys.map((e) => e.toString()).toList()..sort();
+    return {for (final key in keys) key: _canonicalize(value[key])};
+  }
+  if (value is List) {
+    return value.map(_canonicalize).toList();
+  }
+  return value;
+}
+
+({List<String> added, List<String> removed, List<String> modified})
+_diffNamed<T>(
+  List<T> local,
+  List<T> remote,
+  String Function(T item) uuid,
+  String Function(T item) name,
+) {
+  final localById = {for (final item in local) uuid(item): item};
+  final remoteById = {for (final item in remote) uuid(item): item};
+  final added = <String>[];
+  final removed = <String>[];
+  final modified = <String>[];
+
+  for (final entry in remoteById.entries) {
+    final localItem = localById[entry.key];
+    if (localItem == null) {
+      added.add(name(entry.value));
+    } else if (jsonEncode(_canonicalize((localItem as dynamic).toJson())) !=
+        jsonEncode(_canonicalize((entry.value as dynamic).toJson()))) {
+      modified.add(name(entry.value));
+    }
+  }
+  for (final entry in localById.entries) {
+    if (!remoteById.containsKey(entry.key)) {
+      removed.add(name(entry.value));
+    }
+  }
+
+  added.sort();
+  removed.sort();
+  modified.sort();
+  return (added: added, removed: removed, modified: modified);
 }
 
 /// Represents an immutable drill session

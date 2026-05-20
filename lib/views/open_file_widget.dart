@@ -100,15 +100,15 @@ class OpenFileWidget extends StatelessWidget {
       ),
     );
     try {
-      final program = await ProgramService().openProgram(
-        localizations,
+      final program = await ProgramService().installFromFile(
         DrillFile.fromFile(file),
+        activate: true,
       );
-      if (context.mounted && program != null) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(localizations.openSuccess(name)),
+            content: Text(localizations.installedAndActivated(program.name)),
             dismissDirection: DismissDirection.endToStart,
             showCloseIcon: true,
           ),

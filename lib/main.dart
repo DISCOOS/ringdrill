@@ -53,14 +53,10 @@ Future<void> main() async {
 
   if (analyticsConsent) {
     // Run app with Sentry on consent
-    await SentryFlutter.init(
-      SentryConfig.apply,
-      appRunner: () => runApp(
-        FeedbackBoundary(
-          child: SentryWidget(
-            child: RingDrillApp(isFirstLaunch: isFirstLaunch),
-          ),
-        ),
+    await SentryFlutter.init(SentryConfig.apply);
+    runApp(
+      FeedbackBoundary(
+        child: SentryWidget(child: RingDrillApp(isFirstLaunch: isFirstLaunch)),
       ),
     );
   } else {

@@ -465,6 +465,7 @@ class DrillClient {
     );
     final res = await _http.get(uri);
 
+    final contentType = res.headers['content-type'] ?? '';
     if (res.statusCode != 200) {
       throw DrillApiException(
         'Feed failed',
@@ -472,8 +473,36 @@ class DrillClient {
         body: res.body,
       );
     }
-    final j = jsonDecode(res.body) as Map<String, dynamic>;
-    return MarketFeedPageResponse.fromJson(j);
+    if (!contentType.contains('application/json')) {
+      throw DrillApiException(
+        'Feed returned non-JSON content',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(res.body);
+    } on FormatException catch (e) {
+      throw DrillApiException(
+        'Feed returned invalid JSON: ${e.message}',
+        status: res.statusCode,
+        body: res.body,
+      );
+    }
+    return switch (decoded) {
+      final Map<String, dynamic> j => MarketFeedPageResponse.fromJson(j),
+      final List<dynamic> items => MarketFeedPageResponse(
+        items: items
+            .map((e) => MarketFeedItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      ),
+      _ => throw DrillApiException(
+        'Feed returned an unexpected JSON shape',
+        status: res.statusCode,
+        body: res.body,
+      ),
+    };
   }
 
   // --------------------------------------------

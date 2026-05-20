@@ -640,4 +640,125 @@ class AppLocalizationsEn extends AppLocalizations {
   String timeToNext(Object time) {
     return '$time next';
   }
+
+  @override
+  String get library => 'Library';
+
+  @override
+  String get libraryMyPlans => 'My plans';
+
+  @override
+  String get libraryCatalog => 'Catalog';
+
+  @override
+  String get librarySourceLocal => 'Local';
+
+  @override
+  String librarySourceImported(Object fileName) {
+    return 'Imported from $fileName';
+  }
+
+  @override
+  String librarySourceCatalog(Object slug) {
+    return 'From catalog · $slug';
+  }
+
+  @override
+  String get libraryActive => 'Active';
+
+  @override
+  String get libraryInstalled => 'Installed';
+
+  @override
+  String get libraryInstall => 'Install';
+
+  @override
+  String get libraryRefresh => 'Refresh from catalog';
+
+  @override
+  String get libraryRename => 'Rename';
+
+  @override
+  String get libraryExport => 'Export as .drill';
+
+  @override
+  String get libraryDelete => 'Delete';
+
+  @override
+  String get libraryEmptyCatalog => 'Catalog is empty';
+
+  @override
+  String get libraryErrorLoad => 'Could not load library';
+
+  @override
+  String get libraryRetry => 'Retry';
+
+  @override
+  String get libraryCannotSwitchRunning =>
+      'Stop the running exercise before changing plans.';
+
+  @override
+  String get defaultPlanName => 'Default plan';
+
+  @override
+  String get libraryMigrationNotice =>
+      'Library and catalog are new. Your existing plan has been moved to Default plan and is still active.';
+
+  @override
+  String installedAndActivated(Object name) {
+    return 'Installed and activated $name';
+  }
+
+  @override
+  String get catalogConflictTitle => 'Catalog update conflict';
+
+  @override
+  String get catalogConflictBody =>
+      'This catalog plan has local changes. Review the differences before choosing how to continue.';
+
+  @override
+  String get catalogConflictCancel => 'Cancel';
+
+  @override
+  String get catalogConflictOverwrite => 'Overwrite local';
+
+  @override
+  String get catalogConflictPublish => 'Publish my changes';
+
+  @override
+  String get catalogConflictFork => 'Fork as local plan';
+
+  @override
+  String get catalogDiffAdded => 'Added';
+
+  @override
+  String get catalogDiffRemoved => 'Removed';
+
+  @override
+  String get catalogDiffModified => 'Modified';
+
+  @override
+  String get catalogDiffExercises => 'Exercises';
+
+  @override
+  String get catalogDiffTeams => 'Teams';
+
+  @override
+  String get catalogDiffSessions => 'Sessions';
+
+  @override
+  String get catalogServiceChecking => 'Checking';
+
+  @override
+  String get catalogServiceOnline => 'Online';
+
+  @override
+  String get catalogServiceUnavailable => 'Unavailable';
+
+  @override
+  String get catalogServiceCorsBlocked => 'CORS blocked';
+
+  @override
+  String get catalogServiceCorsBlockedTooltip =>
+      'The browser blocked the catalog request because the Netlify function does not allow this local origin. Use the deployed web app or enable CORS on the function for local web development.';
 }

@@ -11,6 +11,10 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
   name: json['name'] as String,
   description: json['description'] as String,
   metadata: ProgramMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
+  source: json['source'] == null
+      ? const ProgramSource.local()
+      : ProgramSource.fromJson(json['source'] as Map<String, dynamic>),
+  contentHash: json['contentHash'] as String?,
   teams: (json['teams'] as List<dynamic>)
       .map((e) => Team.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -27,10 +31,106 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'name': instance.name,
   'description': instance.description,
   'metadata': instance.metadata,
+  'source': instance.source,
+  'contentHash': instance.contentHash,
   'teams': instance.teams,
   'sessions': instance.sessions,
   'exercises': instance.exercises,
 };
+
+_Local _$LocalFromJson(Map<String, dynamic> json) =>
+    _Local($type: json['runtimeType'] as String?);
+
+Map<String, dynamic> _$LocalToJson(_Local instance) => <String, dynamic>{
+  'runtimeType': instance.$type,
+};
+
+_Imported _$ImportedFromJson(Map<String, dynamic> json) => _Imported(
+  fileName: json['fileName'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$ImportedToJson(_Imported instance) => <String, dynamic>{
+  'fileName': instance.fileName,
+  'runtimeType': instance.$type,
+};
+
+_Catalog _$CatalogFromJson(Map<String, dynamic> json) => _Catalog(
+  slug: json['slug'] as String,
+  latestEtag: json['latestEtag'] as String,
+  installedAt: json['installedAt'] == null
+      ? null
+      : DateTime.parse(json['installedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$CatalogToJson(_Catalog instance) => <String, dynamic>{
+  'slug': instance.slug,
+  'latestEtag': instance.latestEtag,
+  'installedAt': instance.installedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+_ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
+  addedExercises:
+      (json['addedExercises'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  removedExercises:
+      (json['removedExercises'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  modifiedExercises:
+      (json['modifiedExercises'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  addedTeams:
+      (json['addedTeams'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  removedTeams:
+      (json['removedTeams'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  modifiedTeams:
+      (json['modifiedTeams'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  addedSessions:
+      (json['addedSessions'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  removedSessions:
+      (json['removedSessions'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  modifiedSessions:
+      (json['modifiedSessions'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+);
+
+Map<String, dynamic> _$ProgramDiffToJson(_ProgramDiff instance) =>
+    <String, dynamic>{
+      'addedExercises': instance.addedExercises,
+      'removedExercises': instance.removedExercises,
+      'modifiedExercises': instance.modifiedExercises,
+      'addedTeams': instance.addedTeams,
+      'removedTeams': instance.removedTeams,
+      'modifiedTeams': instance.modifiedTeams,
+      'addedSessions': instance.addedSessions,
+      'removedSessions': instance.removedSessions,
+      'modifiedSessions': instance.modifiedSessions,
+    };
 
 _Session _$SessionFromJson(Map<String, dynamic> json) => _Session(
   uuid: json['uuid'] as String,

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/program_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -24,6 +25,40 @@ enum ProgramEventType {
   programOpened,
   programImported,
   programExported,
+  programCreated,
+  programDeleted,
+  programActivated,
+  programInstalled,
+  programRefreshed,
+}
+
+enum CatalogConflictChoice {
+  cancel,
+  overwriteLocal,
+  publishMyChanges,
+  forkAsLocal,
+}
+
+enum CatalogRefreshKind {
+  upToDate,
+  updatedSilently,
+  updatedAfterPrompt,
+  cancelled,
+  published,
+  forked,
+  failed,
+}
+
+class CatalogRefreshOutcome {
+  const CatalogRefreshOutcome({
+    required this.kind,
+    required this.programUuid,
+    this.diff,
+  });
+
+  final CatalogRefreshKind kind;
+  final String programUuid;
+  final ProgramDiff? diff;
 }
 
 class ProgramEvent {
@@ -66,7 +101,6 @@ class ProgramService {
 
   bool _isReady = false;
   late final ProgramRepository _repo;
-  //late final SharedPreferences _prefs;
 
   Stream<ProgramEvent> get events => _controller.stream;
 
@@ -74,35 +108,88 @@ class ProgramService {
     if (!_isReady) {
       final prefs = await SharedPreferences.getInstance();
       _repo = ProgramRepository(prefs);
+      await _repo.init();
       _isReady = true;
     }
-    return _repo.loadExercises();
+    return activeProgram == null ? const [] : _repo.loadExercises();
   }
 
-  Program createProgram({
-    required String uuid,
+  List<Program> listPrograms() => _isReady ? _repo.listPrograms() : const [];
+
+  Program? loadProgram(String uuid) =>
+      _isReady ? _repo.loadProgram(uuid) : null;
+
+  Program? get activeProgram {
+    if (!_isReady) return null;
+    final uuid = _repo.activeProgramUuid;
+    if (uuid == null) return null;
+    return _repo.loadProgram(uuid);
+  }
+
+  String? get activeProgramUuid => _isReady ? _repo.activeProgramUuid : null;
+
+  bool get librarySchemaJustMigrated =>
+      _isReady && _repo.librarySchemaJustMigrated;
+
+  Future<void> clearLibrarySchemaJustMigrated() =>
+      _isReady ? _repo.clearLibrarySchemaJustMigrated() : Future.value();
+
+  Future<Program> createProgram({
     required String name,
     String description = '',
-    List<String> exercises = const [],
-  }) {
+  }) async {
     final now = DateTime.now();
-    final all = _repo.loadExercises();
-    return Program(
-      uuid: uuid,
+    final emptyProgram = Program(
+      uuid: nanoid(10),
       name: name,
       description: description,
       metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+      source: const ProgramSource.local(),
+      teams: const [],
       sessions: const [],
-      teams: _repo.loadTeams(),
-      exercises: exercises.isEmpty
-          ? all
-          : all.where((e) => exercises.contains(e.uuid)).toList(),
+      exercises: const [],
     );
+    final program = emptyProgram.copyWith(
+      contentHash: emptyProgram.computeContentHash(),
+    );
+    await _repo.saveProgramShell(program);
+    _controller.add(ProgramEvent(ProgramEventType.programCreated, program));
+    return program;
+  }
+
+  Future<void> setActive(String uuid) async {
+    if (ExerciseService().isStarted) {
+      throw StateError('Cannot switch active program while an exercise runs.');
+    }
+    await _repo.setActiveProgramUuid(uuid);
+    final program = _repo.loadProgram(uuid);
+    if (program != null) {
+      _controller.add(ProgramEvent(ProgramEventType.programActivated, program));
+    }
+  }
+
+  Future<void> deleteProgram(String uuid) async {
+    if (_repo.activeProgramUuid == uuid && ExerciseService().isStarted) {
+      throw StateError('Cannot delete active program while an exercise runs.');
+    }
+    final program = _repo.loadProgram(uuid);
+    await _repo.deleteProgram(uuid);
+    if (program != null) {
+      _controller.add(ProgramEvent(ProgramEventType.programDeleted, program));
+    }
+  }
+
+  Future<void> replaceProgram(Program program) async {
+    await _repo.saveProgram(program);
+    _controller.add(ProgramEvent(ProgramEventType.programRefreshed, program));
   }
 
   Exercise? getExercise(String uuid) => _repo.getExercise(uuid);
 
-  List<Exercise> loadExercises() => _repo.loadExercises();
+  List<Exercise> loadExercises() {
+    if (activeProgramUuid == null) return const [];
+    return _repo.loadExercises();
+  }
 
   List<StationLocation> getLocations() {
     final markers = <((String, int), String, LatLng)>[];
@@ -116,108 +203,234 @@ class ProgramService {
     AppLocalizations localizations,
     Exercise exercise,
   ) async {
+    await _ensureActiveProgram(localizations.defaultPlanName);
     await ensureTeams(localizations, exercise.numberOfTeams);
     await _repo.saveExercise(exercise);
-    _controller.add(
-      ProgramEvent.added(
-        // TODO: Make Program persistent
-        createProgram(uuid: exercise.uuid, name: exercise.uuid),
-        exercise,
-      ),
-    );
-  }
-
-  Future<void> deleteExercise(String uuid, [bool replace = false]) async {
-    final program = createProgram(uuid: uuid, name: uuid);
-    final deleted = await _repo.deleteExercise(uuid);
-    if (deleted != null) {
-      _controller.add(
-        // TODO: Make Program persistent
-        ProgramEvent.deleted(program, deleted),
-      );
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent.added(program, exercise));
     }
   }
 
-  /// Exports a Program instance into a .drill file
+  Future<void> deleteExercise(String uuid, [bool replace = false]) async {
+    final program = activeProgram;
+    if (program == null) return;
+    final deleted = await _repo.deleteExercise(uuid);
+    if (deleted != null) {
+      _controller.add(ProgramEvent.deleted(program, deleted));
+    }
+  }
+
   Future<DrillFile> exportProgram(
     String uuid,
     String fileName,
     List<String> selected,
   ) async {
-    final program = createProgram(uuid: uuid, name: fileName);
-
+    final program = _programForExport(
+      uuid: uuid,
+      name: fileName,
+      selected: selected,
+    );
     final drillFile = DrillFile.fromProgram(program, fileName);
-
     _controller.add(ProgramEvent.exported(program, drillFile));
-
     return drillFile;
   }
 
-  /// Clears current and open Program from a .drill file
   Future<Program?> openProgram(
     AppLocalizations localizations,
     DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
-    final deleted = await _repo.deleteAllExercises();
-    try {
-      final program = await _importProgram(localizations, file, onSelect);
-      if (program != null) {
-        ExerciseService().stop();
-        _controller.add(ProgramEvent.opened(program, file));
-      }
-
-      return program;
-    } catch (e) {
-      for (final it in deleted) {
-        _repo.addExercise(it);
-      }
-      rethrow;
-    }
+    final program = await installFromFile(file, activate: true);
+    _controller.add(ProgramEvent.opened(program, file));
+    return program;
   }
 
-  /// Imports a Program from a .drill file
   Future<Program?> importProgram(
     AppLocalizations localizations,
     DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
-    final program = await _importProgram(localizations, file, onSelect);
-    if (program != null) {
-      ExerciseService().stop();
-      _controller.add(ProgramEvent.imported(program, file));
-    }
-
-    return program;
-  }
-
-  Future<Program?> _importProgram(
-    AppLocalizations localizations,
-    DrillFile file,
-    OnSelectExercises? onSelect,
-  ) async {
-    final program = file.program();
-
+    await _ensureActiveProgram(localizations.defaultPlanName);
+    final incoming = file.program();
     final selected = onSelect == null
-        ? program.exercises
-        : await onSelect.call(program.exercises);
-
-    // User canceled
+        ? incoming.exercises
+        : await onSelect.call(incoming.exercises);
     if (selected == null) return null;
 
-    int maxNumberOfTeams = 0;
-    for (final it in selected) {
-      _repo.saveExercise(it);
-      maxNumberOfTeams = max(maxNumberOfTeams, it.numberOfTeams);
+    var maxNumberOfTeams = 0;
+    for (final exercise in selected) {
+      await _repo.saveExercise(exercise);
+      maxNumberOfTeams = max(maxNumberOfTeams, exercise.numberOfTeams);
     }
-
+    for (final team in incoming.teams) {
+      await _repo.saveTeam(team);
+    }
     await ensureTeams(localizations, maxNumberOfTeams);
 
-    // Reconstruct the Program with nested objects
-    return program.copyWith(exercises: selected.toList());
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent.imported(program, file));
+    }
+    return program?.copyWith(exercises: selected.toList());
+  }
+
+  Future<Program> installFromFile(
+    DrillFile file, {
+    bool activate = false,
+  }) async {
+    final incoming = file.program();
+    var uuid = incoming.uuid;
+    if (_repo.loadProgram(uuid) != null) {
+      uuid = nanoid(10);
+    }
+    final now = DateTime.now();
+    final installed = incoming.copyWith(
+      uuid: uuid,
+      source: ProgramSource.imported(fileName: file.fileName),
+      metadata: incoming.metadata.copyWith(updated: now),
+      contentHash: incoming.computeContentHash(),
+    );
+    await _repo.saveProgram(installed);
+    if (activate) {
+      await _repo.setActiveProgramUuid(installed.uuid);
+      ExerciseService().stop();
+    }
+    _controller.add(
+      ProgramEvent(ProgramEventType.programInstalled, installed, file: file),
+    );
+    return installed;
+  }
+
+  Future<Program> installFromCatalog(
+    MarketFeedItem item,
+    DrillClient client, {
+    bool activate = false,
+  }) async {
+    final download = await client.download(item.slug);
+    final installed = await installFromFile(download.file, activate: activate);
+    final catalogProgram = installed.copyWith(
+      source: ProgramSource.catalog(
+        slug: item.slug,
+        latestEtag: download.etag ?? '',
+        installedAt: DateTime.now(),
+      ),
+      contentHash: _repo.loadProgram(installed.uuid)?.computeContentHash(),
+    );
+    await _repo.saveProgramShell(catalogProgram);
+    _controller.add(
+      ProgramEvent(ProgramEventType.programInstalled, catalogProgram),
+    );
+    return _repo.loadProgram(catalogProgram.uuid) ?? catalogProgram;
+  }
+
+  Future<CatalogRefreshOutcome> refreshCatalogItem(
+    String programUuid,
+    DrillClient client, {
+    required Future<CatalogConflictChoice> Function(
+      ProgramDiff diff, {
+      required bool ownedSlug,
+    })
+    onConflict,
+  }) async {
+    final local = _repo.loadProgram(programUuid);
+    final source = local?.source;
+    final catalogSource = source?.whenOrNull(
+      catalog: (slug, latestEtag, installedAt) =>
+          (slug: slug, storedEtag: latestEtag, installedAt: installedAt),
+    );
+    if (local == null || catalogSource == null) {
+      return CatalogRefreshOutcome(
+        kind: CatalogRefreshKind.failed,
+        programUuid: programUuid,
+      );
+    }
+    final (:slug, :storedEtag, :installedAt) = catalogSource;
+
+    final head = await client.head(slug, ifNoneMatch: storedEtag);
+    if (head.notModified) {
+      return CatalogRefreshOutcome(
+        kind: CatalogRefreshKind.upToDate,
+        programUuid: programUuid,
+      );
+    }
+
+    final download = await client.download(slug);
+    final remote = download.file.program();
+    final diff = diffPrograms(local, remote);
+    final latestEtag = download.etag ?? head.etag ?? storedEtag;
+    final localHash = local.computeContentHash();
+    final hasLocalChanges =
+        local.contentHash != null && localHash != local.contentHash;
+
+    if (!hasLocalChanges) {
+      await _overwriteCatalogProgram(local, remote, slug, latestEtag);
+      return CatalogRefreshOutcome(
+        kind: CatalogRefreshKind.updatedSilently,
+        programUuid: programUuid,
+        diff: diff,
+      );
+    }
+
+    final ownedSlug = _repo.ownsCatalogSlug(slug);
+    final choice = await onConflict(diff, ownedSlug: ownedSlug);
+    switch (choice) {
+      case CatalogConflictChoice.cancel:
+        return CatalogRefreshOutcome(
+          kind: CatalogRefreshKind.cancelled,
+          programUuid: programUuid,
+          diff: diff,
+        );
+      case CatalogConflictChoice.overwriteLocal:
+        await _overwriteCatalogProgram(local, remote, slug, latestEtag);
+        return CatalogRefreshOutcome(
+          kind: CatalogRefreshKind.updatedAfterPrompt,
+          programUuid: programUuid,
+          diff: diff,
+        );
+      case CatalogConflictChoice.publishMyChanges:
+        final upload = await client.upload(
+          DrillFile.fromProgram(local, slug),
+          ifMatchEtag: storedEtag,
+          published: true,
+        );
+        await _repo.setOwnsCatalogSlug(slug, true);
+        final published = local.copyWith(
+          source: ProgramSource.catalog(
+            slug: slug,
+            latestEtag: upload.etag,
+            installedAt: installedAt,
+          ),
+          contentHash: local.computeContentHash(),
+        );
+        await _repo.saveProgramShell(published);
+        _controller.add(
+          ProgramEvent(ProgramEventType.programRefreshed, published),
+        );
+        return CatalogRefreshOutcome(
+          kind: CatalogRefreshKind.published,
+          programUuid: programUuid,
+          diff: diff,
+        );
+      case CatalogConflictChoice.forkAsLocal:
+        final fork = local.copyWith(
+          uuid: nanoid(10),
+          name: '${local.name} copy',
+          source: const ProgramSource.local(),
+          contentHash: local.computeContentHash(),
+        );
+        await _repo.saveProgram(fork);
+        _controller.add(ProgramEvent(ProgramEventType.programCreated, fork));
+        return CatalogRefreshOutcome(
+          kind: CatalogRefreshKind.forked,
+          programUuid: fork.uuid,
+          diff: diff,
+        );
+    }
   }
 
   List<Team> loadTeams() {
+    if (activeProgramUuid == null) return const [];
     return _repo.loadTeams();
   }
 
@@ -237,7 +450,56 @@ class ProgramService {
     return teams;
   }
 
-  /// Static factory extension to generate a schedule and return an Exercise instance
+  Program _programForExport({
+    required String uuid,
+    required String name,
+    required List<String> selected,
+  }) {
+    final now = DateTime.now();
+    final current = activeProgram;
+    final exercises = loadExercises()
+        .where((exercise) => selected.contains(exercise.uuid))
+        .toList();
+    return Program(
+      uuid: uuid,
+      name: name,
+      description: current?.description ?? '',
+      metadata:
+          current?.metadata.copyWith(updated: now) ??
+          ProgramMetadata(created: now, updated: now, version: '1.0'),
+      source: current?.source ?? const ProgramSource.local(),
+      teams: loadTeams(),
+      sessions: current?.sessions ?? const [],
+      exercises: exercises,
+    );
+  }
+
+  Future<void> _ensureActiveProgram(String defaultPlanName) async {
+    if (activeProgramUuid != null) return;
+    final program = await createProgram(name: defaultPlanName);
+    await _repo.setActiveProgramUuid(program.uuid);
+  }
+
+  Future<void> _overwriteCatalogProgram(
+    Program local,
+    Program remote,
+    String slug,
+    String latestEtag,
+  ) async {
+    final merged = remote.copyWith(
+      uuid: local.uuid,
+      name: remote.name,
+      source: ProgramSource.catalog(
+        slug: slug,
+        latestEtag: latestEtag,
+        installedAt: DateTime.now(),
+      ),
+      contentHash: remote.computeContentHash(),
+    );
+    await _repo.saveProgram(merged);
+    _controller.add(ProgramEvent(ProgramEventType.programRefreshed, merged));
+  }
+
   static Exercise generateSchedule({
     String? uuid,
     required String name,
@@ -255,7 +517,6 @@ class ProgramService {
       numberOfTeams <= numberOfRounds,
       '<numberOfTeams> must be less or equal to <numberOfRounds>',
     );
-    // Generate the schedule matrix
     final schedule = List<List<TimeOfDay>>.generate(numberOfRounds, (
       stationIndex,
     ) {
@@ -276,22 +537,19 @@ class ProgramService {
             : (phaseIndex == 1 ? evaluationTime : rotationTime);
         final phaseTime = _addMinutesToTime(currentStartTime, phaseDuration);
 
-        // Update currentStartTime to the end of the current phase
         currentStartTime = phaseTime;
         return phaseTime;
       });
     });
 
-    // Compute the endTime from the last phase of the last round
     final lastRound = schedule.last;
     final lastPhase = lastRound.last;
     final endTime = calcFromTimes
         ? TimeOfDay.fromDateTime(
             lastPhase.toDateTime().add(Duration(minutes: rotationTime)),
           )
-        : lastPhase; // End time is when the last phase ends
+        : lastPhase;
 
-    // Return a new Exercise instance
     return Exercise(
       name: name,
       uuid: uuid ?? nanoid(8),
@@ -344,15 +602,11 @@ class ProgramService {
     );
   }
 
-  /// Helper function: Add a duration (in minutes) to a TimeOfDay
   static TimeOfDay _addMinutesToTime(TimeOfDay time, int minutesToAdd) {
     final totalMinutes = time.hour * 60 + time.minute + minutesToAdd;
     final addedHours = totalMinutes ~/ 60;
     final addedMinutes = totalMinutes % 60;
 
-    return TimeOfDay(
-      hour: addedHours % 24, // Wrap around 24-hour clock
-      minute: addedMinutes,
-    );
+    return TimeOfDay(hour: addedHours % 24, minute: addedMinutes);
   }
 }
