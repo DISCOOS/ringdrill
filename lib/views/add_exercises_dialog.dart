@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/program_diff_widgets.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -17,9 +18,9 @@ Future<void> showAddExercisesDialog(BuildContext context) {
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: 760,
-            maxHeight: 680,
-            minWidth: 520,
+            maxWidth: 560,
+            maxHeight: 560,
+            minWidth: 460,
           ),
           child: const _AddExercisesBody(),
         ),
@@ -108,35 +109,18 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
         backgroundColor: Colors.transparent,
         body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 8, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      localizations.addExercisesAction,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: localizations.cancel,
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 8),
             TabBar(
               controller: _tabController,
               tabs: [
+                Tab(text: localizations.libraryMyPlans),
                 Tab(text: localizations.addFromFile),
-                Tab(text: localizations.addFromAnotherPlan),
               ],
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [_buildFromFile(context), _buildFromPlans(context)],
+                children: [_buildFromPlans(context), _buildFromFile(context)],
               ),
             ),
           ],
@@ -147,14 +131,39 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 
   Widget _buildFromFile(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    return ListView(
-      padding: const EdgeInsets.all(24),
+    final colors = Theme.of(context).colorScheme;
+    return Column(
       children: [
-        FilledButton.icon(
-          onPressed: () => _mergeFromFile(context),
-          icon: const Icon(Icons.upload_file),
-          label: Text(localizations.pickFile),
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.upload_file_outlined,
+                    size: 64,
+                    color: colors.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    localizations.libraryFromFileHint,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.folder_open),
+                    label: Text(localizations.libraryFromFilePickAction),
+                    onPressed: () => _mergeFromFile(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
+        TabFooter(subtitle: localizations.addExercisesFromFileSubtitle),
       ],
     );
   }
@@ -166,21 +175,31 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
         .listPrograms()
         .where((program) => program.uuid != activeUuid)
         .toList();
-    if (programs.isEmpty) {
-      return Center(child: Text(localizations.noOtherLocalPlans));
-    }
 
-    return ListView.builder(
-      itemCount: programs.length,
-      itemBuilder: (context, index) {
-        final program = programs[index];
-        final loaded = _programService.loadProgram(program.uuid) ?? program;
-        return ListTile(
-          title: Text(program.name),
-          subtitle: Text(_programSubtitle(localizations, loaded)),
-          onTap: () => _mergeIntoActivePlan(context, loaded),
-        );
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: programs.isEmpty
+              ? EmptyState(
+                  icon: Icons.folder_open_outlined,
+                  text: localizations.addExercisesEmptyMyPlans,
+                )
+              : ListView.builder(
+                  itemCount: programs.length,
+                  itemBuilder: (context, index) {
+                    final program = programs[index];
+                    final loaded =
+                        _programService.loadProgram(program.uuid) ?? program;
+                    return ListTile(
+                      title: Text(program.name),
+                      subtitle: Text(_programSubtitle(localizations, loaded)),
+                      onTap: () => _mergeIntoActivePlan(context, loaded),
+                    );
+                  },
+                ),
+        ),
+        TabFooter(subtitle: localizations.addExercisesMyPlansSubtitle),
+      ],
     );
   }
 

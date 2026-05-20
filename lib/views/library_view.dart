@@ -12,6 +12,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
 Future<void> showOpenPlanDialog(BuildContext context) {
@@ -121,13 +122,13 @@ class _LibraryBodyState extends State<_LibraryBody>
       children: [
         Expanded(
           child: programs.isEmpty
-              ? _EmptyState(
+              ? EmptyState(
                   icon: Icons.folder_open_outlined,
                   text: localizations.libraryEmptyMyPlans,
                 )
               : _buildMyPlansList(context, localizations, programs),
         ),
-        _TabFooter(subtitle: localizations.libraryMyPlansSubtitle),
+        TabFooter(subtitle: localizations.libraryMyPlansSubtitle),
       ],
     );
   }
@@ -216,7 +217,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                   return ListView(
                     children: [
                       const SizedBox(height: 80),
-                      _EmptyState(
+                      EmptyState(
                         icon: Icons.cloud_off,
                         text: localizations.libraryErrorLoad,
                       ),
@@ -229,7 +230,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                   return ListView(
                     children: [
                       const SizedBox(height: 80),
-                      _EmptyState(
+                      EmptyState(
                         icon: Icons.cloud_outlined,
                         text: localizations.libraryEmptyCatalog,
                       ),
@@ -261,7 +262,7 @@ class _LibraryBodyState extends State<_LibraryBody>
             ),
           ),
         ),
-        _TabFooter(
+        TabFooter(
           subtitle: localizations.libraryOnlineSubtitle,
           trailing: _CatalogStatusIndicator(
             status: _catalogStatus.value,
@@ -310,7 +311,7 @@ class _LibraryBodyState extends State<_LibraryBody>
             ),
           ),
         ),
-        _TabFooter(subtitle: localizations.libraryFromFileSubtitle),
+        TabFooter(subtitle: localizations.libraryFromFileSubtitle),
       ],
     );
   }
@@ -582,70 +583,6 @@ class _LibraryBodyState extends State<_LibraryBody>
         content: Text(message),
         showCloseIcon: true,
         dismissDirection: DismissDirection.endToStart,
-      ),
-    );
-  }
-}
-
-class _TabFooter extends StatelessWidget {
-  const _TabFooter({required this.subtitle, this.trailing});
-
-  final String subtitle;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final mutedColor = theme.colorScheme.onSurfaceVariant;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 48),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: theme.dividerColor)),
-      ),
-      padding: EdgeInsets.fromLTRB(16, 4, trailing == null ? 16 : 4, 4),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, size: 18, color: mutedColor),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(color: mutedColor),
-            ),
-          ),
-          if (trailing != null) trailing!,
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 56, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

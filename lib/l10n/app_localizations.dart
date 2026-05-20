@@ -1136,6 +1136,24 @@ abstract class AppLocalizations {
   /// **'This plan is linked to the online library'**
   String get planStatusOnlineTooltip;
 
+  /// No description provided for @addExercisesMyPlansSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a plan to pull exercises from'**
+  String get addExercisesMyPlansSubtitle;
+
+  /// No description provided for @addExercisesFromFileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import exercises from a .drill file'**
+  String get addExercisesFromFileSubtitle;
+
+  /// No description provided for @addExercisesEmptyMyPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'No other plans to pull from yet'**
+  String get addExercisesEmptyMyPlans;
+
   /// No description provided for @librarySourceLocal.
   ///
   /// In en, this message translates to:

@@ -687,6 +687,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'This plan is linked to the online library';
 
   @override
+  String get addExercisesMyPlansSubtitle =>
+      'Pick a plan to pull exercises from';
+
+  @override
+  String get addExercisesFromFileSubtitle =>
+      'Import exercises from a .drill file';
+
+  @override
+  String get addExercisesEmptyMyPlans => 'No other plans to pull from yet';
+
+  @override
   String get librarySourceLocal => 'Local';
 
   @override

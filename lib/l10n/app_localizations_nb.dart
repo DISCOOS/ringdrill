@@ -683,6 +683,17 @@ class AppLocalizationsNb extends AppLocalizations {
       'Denne planen er koblet til nett-biblioteket';
 
   @override
+  String get addExercisesMyPlansSubtitle => 'Velg en plan å hente øvelser fra';
+
+  @override
+  String get addExercisesFromFileSubtitle =>
+      'Importer øvelser fra en .drill-fil';
+
+  @override
+  String get addExercisesEmptyMyPlans =>
+      'Du har ingen andre planer å hente fra ennå';
+
+  @override
   String get librarySourceLocal => 'Lokal';
 
   @override
