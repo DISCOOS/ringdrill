@@ -1,6 +1,6 @@
 # RingDrill Architecture
 
-Reference documentation for contributors. For agent rules and day-to-day commands, see [`AGENTS.md`](../AGENTS.md). For end-user information and how to clone/run the app, see [`README.md`](../README.md).
+Reference documentation for contributors. For agent rules and day-to-day commands, see [`AGENTS.md`](../AGENTS.md). For end-user information and how to clone/run the app, see [`README.md`](../README.md). For the rationale behind specific architectural choices, see the Architecture Decision Records in [`adrs/`](./adrs/).
 
 ## Project overview
 

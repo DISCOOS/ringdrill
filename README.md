@@ -7,6 +7,7 @@ Efficient station-based training. Organize, run and track drills with ease.
 ## Documentation
 
 * [`docs/architecture.md`](docs/architecture.md): project overview, tech stack, repo layout, conventions, backend contract, and where to look first when navigating the code.
+* [`docs/adrs/`](docs/adrs/): Architecture Decision Records (MADR format). Read these to understand why a non-obvious choice was made, and add a new one when you make such a choice.
 * [`AGENTS.md`](AGENTS.md): operating guide for AI coding agents (Claude Code, Codex, Cursor, etc.) and a quick orientation for human contributors. Read this before letting an agent change code.
 * [`CLAUDE.md`](CLAUDE.md): short pointer file read by Claude Code on startup, defers to `AGENTS.md`.
 

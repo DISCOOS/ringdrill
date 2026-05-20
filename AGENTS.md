@@ -40,6 +40,11 @@ These are non-negotiable unless the maintainer says otherwise.
 8. **Drill file format is versioned.** `DrillFile.drillSchema1_0` is the current schema. Bumping it requires updating the import code in `lib/data/drill_file.dart`, the Netlify upload handler, and a migration path for existing files. Do not change the schema string without coordinating.
 9. **Verify before claiming green.** Run `flutter analyze` and `flutter test` before reporting a task complete. `test/widget_test.dart` is the default Flutter counter-app template and is stale (it expects a `+` button that does not exist in `RingDrillApp`). Acknowledge it as known-broken rather than asserting all tests pass.
 10. **Match existing formatting.** This repo follows Dart's default `dart format` style and `flutter_lints`. Do not introduce new lint suppressions without a comment explaining why.
+11. **Propose an ADR when you change architecture.** If your change introduces, replaces or contradicts an architectural assumption (new dependency category, new file format, new release channel, new backend endpoint, new persistence mechanism, new state-management approach, removal of an existing pattern), add an ADR file under [`docs/adrs/`](./docs/adrs/) in the same change set. Use the next free number and follow [`docs/adrs/template.md`](./docs/adrs/template.md). Update the index in [`docs/adrs/README.md`](./docs/adrs/README.md). Default status is `proposed`. Only set the status to `accepted` when the user explicitly instructs you to do so in the same conversation; otherwise leave it `proposed` for maintainer review.
+
+## Architecture Decision Records
+
+Before introducing a new pattern, check [`docs/adrs/`](./docs/adrs/) for an existing decision that already covers it. If one exists and your change conflicts with it, do not silently work around it. Either follow the decision, or propose a new ADR that supersedes it (set the old one's status to `superseded by NNNN` in the same change). See [ADR-0001](./docs/adrs/0001-record-architecture-decisions.md) for the process.
 
 ## Where to look first
 
