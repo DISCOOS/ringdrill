@@ -139,6 +139,20 @@ class _LibraryBodyState extends State<_LibraryBody>
             ? _programService.activeProgram
             : program;
         final isActive = _programService.activeProgramUuid == program.uuid;
+        final isCatalog = program.source.toJson()['runtimeType'] == 'catalog';
+        final trailingChildren = <Widget>[
+          if (isCatalog)
+            Tooltip(
+              message: localizations.libraryCatalogBadge,
+              child: Icon(
+                Icons.cloud_outlined,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          if (isCatalog && isActive) const SizedBox(width: 8),
+          if (isActive) Chip(label: Text(localizations.libraryActive)),
+        ];
         return Dismissible(
           key: ValueKey(program.uuid),
           direction: DismissDirection.endToStart,
@@ -158,9 +172,12 @@ class _LibraryBodyState extends State<_LibraryBody>
             ),
             title: Text(program.name),
             subtitle: Text(_programSubtitle(localizations, loaded ?? program)),
-            trailing: isActive
-                ? Chip(label: Text(localizations.libraryActive))
-                : null,
+            trailing: trailingChildren.isEmpty
+                ? null
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: trailingChildren,
+                  ),
             onTap: () => _activate(context, program.uuid, closeOnSuccess: true),
             onLongPress: () => _showPlanActions(context, program),
           ),

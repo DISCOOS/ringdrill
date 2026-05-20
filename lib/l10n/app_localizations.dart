@@ -1112,6 +1112,12 @@ abstract class AppLocalizations {
   /// **'Pick a .drill file from your device'**
   String get libraryFromFileHint;
 
+  /// No description provided for @libraryCatalogBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'From online library'**
+  String get libraryCatalogBadge;
+
   /// No description provided for @librarySourceLocal.
   ///
   /// In en, this message translates to:

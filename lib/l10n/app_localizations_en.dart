@@ -674,6 +674,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryFromFileHint => 'Pick a .drill file from your device';
 
   @override
+  String get libraryCatalogBadge => 'From online library';
+
+  @override
   String get librarySourceLocal => 'Local';
 
   @override
