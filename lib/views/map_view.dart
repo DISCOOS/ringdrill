@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/projection.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -54,8 +55,12 @@ class MapView<K> extends StatefulWidget {
     this.withSearch = false,
     this.withCenter = false,
     this.withToggle = true,
+    this.withZoom = false,
     this.initialZoom = 15,
+    this.minZoom = 2,
+    this.maxZoom = 19,
     this.markers = const [],
+    this.searchTargets = const [],
     this.initialFit,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
@@ -67,7 +72,10 @@ class MapView<K> extends StatefulWidget {
   final bool withSearch;
   final bool withCenter;
   final bool withToggle;
+  final bool withZoom;
   final double initialZoom;
+  final double minZoom;
+  final double maxZoom;
   final LatLng initialCenter;
   final int interactionFlags;
   final CameraFit? initialFit;
@@ -75,6 +83,12 @@ class MapView<K> extends StatefulWidget {
   final MapController? controller;
   final List<TileLayer> layers;
   final List<(K, String, LatLng)> markers;
+
+  /// Extra named locations available to the search field. Each target may
+  /// have zero, one, or many points (e.g. an exercise that aggregates the
+  /// positions of its stations) and may override the tap behaviour with
+  /// [SearchResult.onSelect].
+  final List<SearchResult> searchTargets;
   final ValueSetter<(K, String, LatLng)>? onMarkerTap;
 
   @override
@@ -84,6 +98,7 @@ class MapView<K> extends StatefulWidget {
 class _MapViewState<K> extends State<MapView<K>> {
   late MapController _mapController;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _resultsScrollController = ScrollController();
   final Set<SearchResult> _searchResults = {};
 
   Timer? _throttleTimer;
@@ -207,7 +222,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                 alignment: Alignment.topLeft,
                 child: SizedBox(
                   width: constraints.maxWidth - (withToggle ? 66 : 0),
-                  child: _buildSearchTool(context),
+                  child: _buildSearchTool(context, constraints),
                 ),
               ),
             if (withToggle)
@@ -226,15 +241,38 @@ class _MapViewState<K> extends State<MapView<K>> {
                   ),
                 ),
               ),
-            if (widget.withCenter)
+            if (widget.withCenter || widget.withZoom)
               Align(
                 alignment: Alignment.bottomRight,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: FloatingActionButton(
-                    heroTag: 'center',
-                    onPressed: _toggleCenter,
-                    child: Icon(Icons.center_focus_strong_rounded),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (widget.withZoom) ...[
+                        FloatingActionButton(
+                          heroTag: 'zoomIn',
+                          tooltip: AppLocalizations.of(context)!.zoomIn,
+                          onPressed: _zoomIn,
+                          child: const Icon(Icons.add),
+                        ),
+                        const SizedBox(height: 8),
+                        FloatingActionButton(
+                          heroTag: 'zoomOut',
+                          tooltip: AppLocalizations.of(context)!.zoomOut,
+                          onPressed: _zoomOut,
+                          child: const Icon(Icons.remove),
+                        ),
+                        if (widget.withCenter) const SizedBox(height: 12),
+                      ],
+                      if (widget.withCenter)
+                        FloatingActionButton(
+                          heroTag: 'center',
+                          onPressed: _toggleCenter,
+                          child: const Icon(Icons.center_focus_strong_rounded),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -242,6 +280,22 @@ class _MapViewState<K> extends State<MapView<K>> {
         );
       },
     );
+  }
+
+  void _zoomIn() {
+    final next = (_mapController.camera.zoom + 1).clamp(
+      widget.minZoom,
+      widget.maxZoom,
+    );
+    _mapController.move(_mapController.camera.center, next);
+  }
+
+  void _zoomOut() {
+    final next = (_mapController.camera.zoom - 1).clamp(
+      widget.minZoom,
+      widget.maxZoom,
+    );
+    _mapController.move(_mapController.camera.center, next);
   }
 
   void _toggleCenter() {
@@ -265,12 +319,20 @@ class _MapViewState<K> extends State<MapView<K>> {
     _mapController.move(point, _mapController.camera.zoom);
   }
 
-  Widget _buildSearchTool(BuildContext context) {
+  Widget _buildSearchTool(BuildContext context, BoxConstraints constraints) {
+    // Leave room for the search field itself (88) and a small gap below the
+    // dropdown so the results never push past the bottom of the map.
+    const double searchFieldHeight = 88;
+    const double bottomGutter = 24;
+    final double maxResultsHeight = (constraints.maxHeight -
+            searchFieldHeight -
+            bottomGutter)
+        .clamp(120.0, double.infinity);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: 88,
+          height: searchFieldHeight,
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(8.0).copyWith(left: 8, top: 12),
@@ -326,18 +388,56 @@ class _MapViewState<K> extends State<MapView<K>> {
           ),
         ),
         if (_searchResults.isNotEmpty)
-          Card(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _searchResults.length,
-              itemBuilder: (context, index) {
-                final result = _searchResults.toList()[index];
-                return ListTile(
-                  onTap: () => _onResultTap(result),
-                  title: Text(result.name),
-                  trailing: const Icon(Icons.location_on),
-                );
-              },
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxResultsHeight),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: Scrollbar(
+                controller: _resultsScrollController,
+                child: ListView.builder(
+                  controller: _resultsScrollController,
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _searchResults.length,
+                  itemBuilder: (context, index) {
+                    final result = _searchResults.toList()[index];
+                    final kind = result.kind;
+                    final chipLabel = kind?.label(
+                      AppLocalizations.of(context)!,
+                    );
+                    return ListTile(
+                      onTap: () => _onResultTap(result),
+                      title: Text(
+                        result.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (chipLabel != null) ...[
+                            Chip(
+                              label: Text(
+                                chipLabel,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              padding: EdgeInsets.zero,
+                              labelPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          const Icon(Icons.location_on),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
       ],
@@ -375,6 +475,9 @@ class _MapViewState<K> extends State<MapView<K>> {
   }
 
   Future<void> _searchLocation(String value) async {
+    // Capture localized strings up front: the nominatim call awaits, and
+    // BuildContext is not safe to use across async gaps.
+    final l = AppLocalizations.of(context)!;
     setState(() {
       _searchResults.clear();
     });
@@ -410,12 +513,20 @@ class _MapViewState<K> extends State<MapView<K>> {
         });
       }
 
-      // Try markers
-      if (widget.markers.isNotEmpty) {
-        final found = widget.markers
-            .where((e) => e.$2.contains(input.trim()))
-            .map((e) => SearchResult(e.$2, e.$3))
-            .toList();
+      // Try search targets supplied by the parent (e.g. stations and
+      // exercises). Targets may not have a position; they are still
+      // surfaced so the user can find them by name. The semantic kind
+      // is matched via its localized label in the active locale, so
+      // typing the chip text ("Post" / "Øvelse" in nb, "Station" /
+      // "Exercise" in en) yields every result of that kind.
+      if (widget.searchTargets.isNotEmpty) {
+        final needle = input.trim().toLowerCase();
+        final found = widget.searchTargets.where((t) {
+          if (t.name.toLowerCase().contains(needle)) return true;
+          final kind = t.kind;
+          return kind != null &&
+              kind.label(l).toLowerCase().contains(needle);
+        }).toList();
         if (found.isNotEmpty) {
           setState(() {
             _searchResults.addAll(found);
@@ -438,7 +549,11 @@ class _MapViewState<K> extends State<MapView<K>> {
         if (results.isNotEmpty) {
           _searchResults.addAll(
             results.map(
-              (r) => SearchResult(_formatPlace(r), LatLng(r.lat, r.lon)),
+              (r) => SearchResult(
+                _formatPlace(r),
+                LatLng(r.lat, r.lon),
+                kind: SearchResultKind.place,
+              ),
             ),
           );
         }
@@ -513,7 +628,34 @@ class _MapViewState<K> extends State<MapView<K>> {
   }
 
   void _onResultTap(SearchResult result) {
-    _mapController.move(result.location, _mapController.camera.zoom);
+    // Parent-provided behaviour wins; fall back to the default move/fit.
+    final onSelect = result.onSelect;
+    if (onSelect != null) {
+      onSelect(result);
+    } else if (result.points.length >= 2) {
+      // Centre on the geometric mean (centroid) of all the points, while
+      // still zooming out enough to include every point. Falls back to
+      // the bounding-box fit if the points happen to coincide.
+      final fit =
+          result.points.centroidFit() ??
+          CameraFit.coordinates(
+            padding: const EdgeInsets.all(72),
+            coordinates: result.points,
+          );
+      _mapController.fitCamera(fit);
+    } else if (result.location != null) {
+      _mapController.move(result.location!, _mapController.camera.zoom);
+    } else {
+      // No location available – let the user know rather than silently
+      // doing nothing.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          showCloseIcon: true,
+          dismissDirection: DismissDirection.endToStart,
+          content: Text(AppLocalizations.of(context)!.noLocation),
+        ),
+      );
+    }
     setState(() {
       _searchResults.clear();
       _searchController.text = result.name;
@@ -523,20 +665,71 @@ class _MapViewState<K> extends State<MapView<K>> {
   @override
   void dispose() {
     _throttleTimer?.cancel();
+    _resultsScrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 }
 
-// Helper class to represent search results
+// Helper class to represent search results.
+//
+// A result may have:
+//   * one point – classic place/coordinate match (panned to)
+//   * many points – e.g. an exercise's stations (the camera fits them)
+//   * no points – named entity without coordinates (a snackbar is shown
+//     unless the parent provides [onSelect] to handle the tap)
+/// Semantic type of a [SearchResult]. The rendered chip label and the
+/// text used for matching are both derived from the active locale via
+/// [label] – callers never embed localized strings into the search
+/// model itself.
+enum SearchResultKind {
+  exercise,
+  station,
+  place;
+
+  String label(AppLocalizations l) => switch (this) {
+    SearchResultKind.exercise => l.searchHintExercise,
+    SearchResultKind.station => l.searchHintStation,
+    SearchResultKind.place => l.searchHintPlace,
+  };
+}
+
 class SearchResult {
   final String name;
-  final LatLng location;
 
-  SearchResult(this.name, this.location);
+  /// Semantic type of the result. When non-null, the chip rendered in
+  /// the result row uses the localized label for [kind] and the search
+  /// matcher checks the needle against that same localized label in the
+  /// active locale.
+  final SearchResultKind? kind;
+
+  /// Zero or more points associated with the result. Empty when the
+  /// underlying entity has no known location.
+  final List<LatLng> points;
+
+  /// Optional override for what should happen when the user taps the
+  /// result. When provided, the default move/fit behaviour is skipped.
+  final void Function(SearchResult result)? onSelect;
+
+  SearchResult(
+    String name,
+    LatLng location, {
+    SearchResultKind? kind,
+    void Function(SearchResult)? onSelect,
+  }) : this.points(name, [location], kind: kind, onSelect: onSelect);
+
+  const SearchResult.points(
+    this.name,
+    this.points, {
+    this.kind,
+    this.onSelect,
+  });
+
+  LatLng? get location => points.isEmpty ? null : points.first;
 
   @override
   String toString() {
-    return 'SearchResult{name: $name}';
+    return 'SearchResult{name: $name, points: ${points.length}, kind: $kind}';
   }
 
   @override
@@ -545,8 +738,17 @@ class SearchResult {
       other is SearchResult &&
           runtimeType == other.runtimeType &&
           name == other.name &&
-          location == other.location;
+          kind == other.kind &&
+          _listEquals(points, other.points);
 
   @override
-  int get hashCode => name.hashCode ^ location.hashCode;
+  int get hashCode => Object.hash(name, kind, Object.hashAll(points));
+
+  static bool _listEquals(List<LatLng> a, List<LatLng> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 }

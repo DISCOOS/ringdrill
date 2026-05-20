@@ -884,6 +884,36 @@ abstract class AppLocalizations {
   /// **'Switch to Topo'**
   String get switchToTopo;
 
+  /// Tooltip for zoom in button on the map
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get zoomIn;
+
+  /// Tooltip for zoom out button on the map
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get zoomOut;
+
+  /// Prefix shown next to station name in search results
+  ///
+  /// In en, this message translates to:
+  /// **'Station'**
+  String get searchHintStation;
+
+  /// Prefix shown next to exercise name in search results
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise'**
+  String get searchHintExercise;
+
+  /// Chip label shown next to geocoder hits in search results
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get searchHintPlace;
+
   /// Label
   ///
   /// In en, this message translates to:

@@ -525,6 +525,26 @@
   "@switchToTopo": {
     "description": "Label"
   },
+  "zoomIn": "Zoom in",
+  "@zoomIn": {
+    "description": "Tooltip for zoom in button on the map"
+  },
+  "zoomOut": "Zoom out",
+  "@zoomOut": {
+    "description": "Tooltip for zoom out button on the map"
+  },
+  "searchHintStation": "Station",
+  "@searchHintStation": {
+    "description": "Prefix shown next to station name in search results"
+  },
+  "searchHintExercise": "Exercise",
+  "@searchHintExercise": {
+    "description": "Prefix shown next to exercise name in search results"
+  },
+  "searchHintPlace": "Place",
+  "@searchHintPlace": {
+    "description": "Chip label shown next to geocoder hits in search results"
+  },
   "selectAction": "Select",
   "@selectAction": {
     "description": "Label"

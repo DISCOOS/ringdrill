@@ -508,6 +508,21 @@ class AppLocalizationsNb extends AppLocalizations {
   String get switchToTopo => 'Bytt til Topo';
 
   @override
+  String get zoomIn => 'Zoom inn';
+
+  @override
+  String get zoomOut => 'Zoom ut';
+
+  @override
+  String get searchHintStation => 'Post';
+
+  @override
+  String get searchHintExercise => 'Øvelse';
+
+  @override
+  String get searchHintPlace => 'Sted';
+
+  @override
   String get selectAction => 'Velg';
 
   @override

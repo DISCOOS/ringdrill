@@ -546,6 +546,12 @@ class _MainScreenState extends State<MainScreen> {
       _currentTab = tab;
     });
     widget.router.go(widget.routes[tab]);
+    // The StationsView is kept alive inside the IndexedStack, so its map
+    // does not re-fit on tab switch on its own. Nudge it via the reselect
+    // tick whenever the Stations tab is (re)activated.
+    if (widget.routes[tab] == routeStations) {
+      stationsTabReselectTick.value = stationsTabReselectTick.value + 1;
+    }
   }
 
   List<Destination> _buildDestinations(AppLocalizations localizations) {

@@ -510,6 +510,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get switchToTopo => 'Switch to Topo';
 
   @override
+  String get zoomIn => 'Zoom in';
+
+  @override
+  String get zoomOut => 'Zoom out';
+
+  @override
+  String get searchHintStation => 'Station';
+
+  @override
+  String get searchHintExercise => 'Exercise';
+
+  @override
+  String get searchHintPlace => 'Place';
+
+  @override
   String get selectAction => 'Select';
 
   @override
