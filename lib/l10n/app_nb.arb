@@ -52,6 +52,7 @@
   "station": "{count, plural, =0{Post} =1{Post} other{Poster}}",
   "notStationsCreated": "Ingen poster opprettet",
   "team": "{count, plural, =0{Lag} other{Lag}}",
+  "member": "{count, plural, =0{medlem} =1{medlem} other{medlemmer}}",
   "teamRotations": "Lagrulleringer",
   "stationRotations": "Postrulleringer",
   "createExercise": "Opprett øvelse",

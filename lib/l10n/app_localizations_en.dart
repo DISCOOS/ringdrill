@@ -316,6 +316,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String member(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'members',
+      one: 'member',
+      zero: 'member',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notification(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

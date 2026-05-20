@@ -5,7 +5,6 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/team_screen.dart';
-import 'package:ringdrill/views/vertical_divider_widget.dart';
 
 class TeamsView extends StatefulWidget {
   const TeamsView({super.key});
@@ -38,15 +37,23 @@ class _TeamsViewState extends State<TeamsView> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     final teams = _programService.loadTeams();
     final exercises = _programService.loadExercises();
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ListView(
         children: teams.map((t) {
-          final actual = exercises
+          final exerciseCount = exercises
               .where((e) => e.numberOfTeams > t.index)
-              .toList();
+              .length;
+          final parts = <String>[
+            if ((t.numberOfMembers ?? 0) > 0)
+              '${t.numberOfMembers} '
+                  '${localizations.member(t.numberOfMembers!).toLowerCase()}',
+            '$exerciseCount '
+                '${localizations.exercise(exerciseCount).toLowerCase()}',
+          ];
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4),
             child: ListTile(
@@ -54,17 +61,7 @@ class _TeamsViewState extends State<TeamsView> {
                 t.name,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              subtitle: Row(
-                children: List.generate(actual.length, (index) {
-                  return Row(
-                    children: [
-                      Text(actual[index].name),
-                      if (index < actual.length - 1)
-                        VerticalDividerWidget(width: 16),
-                    ],
-                  );
-                }),
-              ),
+              subtitle: Text(parts.join(' · ')),
               onTap: () {
                 Navigator.push(
                   context,

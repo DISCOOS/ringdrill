@@ -309,6 +309,10 @@
   "@team": {
     "description": "Team doing the exercise"
   },
+  "member": "{count, plural, =0{member} =1{member} other{members}}",
+  "@member": {
+    "description": "Team member, lowercase for use inline (e.g. '5 members')"
+  },
   "notification": "{count, plural, =0{Notification} =1{Notification} other{Notifications}}",
   "@notification": {
     "description": "Parameterized message"

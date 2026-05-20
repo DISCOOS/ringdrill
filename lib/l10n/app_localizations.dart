@@ -560,6 +560,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Team} =1{Team} other{Teams}}'**
   String team(num count);
 
+  /// Team member, lowercase for use inline (e.g. '5 members')
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{member} =1{member} other{members}}'**
+  String member(num count);
+
   /// Parameterized message
   ///
   /// In en, this message translates to:
