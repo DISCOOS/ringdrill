@@ -197,7 +197,11 @@ class ProgramService {
   List<StationLocation> getLocations() {
     final markers = <((String, int), String, LatLng)>[];
     for (final e in loadExercises()) {
-      markers.addAll(e.getLocations());
+      // Map markers show the station name only. Exercise context is
+      // available via the search-result chip and the station detail
+      // screen, so prefixing the label with the exercise name just
+      // crowds the marker.
+      markers.addAll(e.getLocations(false));
     }
     return markers;
   }
