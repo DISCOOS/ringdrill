@@ -21,6 +21,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0011 | [Synchronized exercise control with coordinator-driven state](./0011-synchronized-exercise-control.md) | Accepted |
 | ADR-0012 | [Position sharing](./0012-position-sharing-and-team-aggregation.md) | Accepted |
 | ADR-0013 | [Local end-to-end catalog testing via netlify dev, CLI seeding and a build-time base URL](./0013-local-catalog-testing.md) | Accepted |
+| ADR-0014 | [Server-controlled drill upload contract](./0014-server-assigned-drill-version.md) | Accepted |
 
 ## When to write an ADR
 

@@ -13,6 +13,7 @@ import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/publish_plan_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 
 Future<void> showOpenPlanDialog(BuildContext context) {
@@ -484,6 +485,16 @@ class _LibraryBodyState extends State<_LibraryBody>
               onTap: () => Navigator.pop(context, 'export'),
             ),
             ListTile(
+              leading: const Icon(Icons.cloud_upload_outlined),
+              title: Text(localizations.libraryPublish),
+              onTap: () => Navigator.pop(context, 'publish'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_sync_outlined),
+              title: Text(localizations.libraryPublishAs),
+              onTap: () => Navigator.pop(context, 'publishAs'),
+            ),
+            ListTile(
               leading: const Icon(Icons.delete),
               title: Text(localizations.libraryDelete),
               onTap: () => Navigator.pop(context, 'delete'),
@@ -500,6 +511,10 @@ class _LibraryBodyState extends State<_LibraryBody>
         await _refreshProgram(context, program);
       case 'export':
         await _exportProgram(context, program);
+      case 'publish':
+        await _publishProgram(context, program);
+      case 'publishAs':
+        await _publishProgramAs(context, program);
       case 'delete':
         if (await _confirmDelete(context, program)) {
           await _deleteProgram(program);
@@ -574,6 +589,60 @@ class _LibraryBodyState extends State<_LibraryBody>
       ],
     );
     await SharePlus.instance.share(params);
+  }
+
+  Future<void> _publishProgram(BuildContext context, Program program) async {
+    final loaded = _programService.loadProgram(program.uuid);
+    if (loaded == null) return;
+    final currentSlug = loaded.source.whenOrNull(
+      catalog: (slug, latestEtag, installedAt) => slug,
+    );
+    if (currentSlug != null) {
+      // Already published — push a new version silently without a dialog.
+      await runPublishProgram(
+        context,
+        programUuid: loaded.uuid,
+        slug: currentSlug,
+        tags: const [],
+        client: _buildCatalogClient(),
+      );
+      if (mounted) setState(() {});
+      return;
+    }
+    // First-time publish — show the dialog so the user can pick slug + tags.
+    final input = await showPublishPlanDialog(
+      context,
+      program: loaded,
+      mode: PublishDialogMode.firstTime,
+    );
+    if (input == null || !context.mounted) return;
+    await runPublishProgram(
+      context,
+      programUuid: loaded.uuid,
+      slug: input.slug,
+      tags: input.tags,
+      client: _buildCatalogClient(),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _publishProgramAs(BuildContext context, Program program) async {
+    final loaded = _programService.loadProgram(program.uuid);
+    if (loaded == null) return;
+    final input = await showPublishPlanDialog(
+      context,
+      program: loaded,
+      mode: PublishDialogMode.publishAs,
+    );
+    if (input == null || !context.mounted) return;
+    await runPublishProgramAs(
+      context,
+      programUuid: loaded.uuid,
+      slug: input.slug,
+      tags: input.tags,
+      client: _buildCatalogClient(),
+    );
+    if (mounted) setState(() {});
   }
 
   Future<void> _installCatalog(MarketFeedItem item) async {

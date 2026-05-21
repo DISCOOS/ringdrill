@@ -484,6 +484,28 @@ class _MainScreenState extends State<MainScreen> {
             await active_actions.exportActivePlan(context);
           },
         ),
+        _drawerTile(
+          context,
+          icon: Icons.cloud_upload_outlined,
+          title: localizations.publishActivePlan,
+          enabled: hasActivePlan,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.publishActivePlan(context);
+          },
+        ),
+        _drawerTile(
+          context,
+          icon: Icons.cloud_sync_outlined,
+          title: localizations.publishAsActivePlan,
+          enabled: hasActivePlan,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.publishAsActivePlan(context);
+          },
+        ),
         const Divider(),
         _drawerTile(
           context,

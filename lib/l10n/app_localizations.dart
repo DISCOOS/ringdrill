@@ -1274,6 +1274,18 @@ abstract class AppLocalizations {
   /// **'Export as .drill'**
   String get libraryExport;
 
+  /// No description provided for @libraryPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get libraryPublish;
+
+  /// No description provided for @libraryPublishAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish as…'**
+  String get libraryPublishAs;
+
   /// No description provided for @libraryDelete.
   ///
   /// In en, this message translates to:
@@ -1406,6 +1418,18 @@ abstract class AppLocalizations {
   /// **'Export as .drill'**
   String get exportAsDrill;
 
+  /// No description provided for @publishActivePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get publishActivePlan;
+
+  /// No description provided for @publishAsActivePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish as...'**
+  String get publishAsActivePlan;
+
   /// No description provided for @defaultPlanName.
   ///
   /// In en, this message translates to:
@@ -1531,6 +1555,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The browser blocked the catalog request because the Netlify function does not allow this local origin. Use the deployed web app or enable CORS on the function for local web development.'**
   String get catalogServiceCorsBlockedTooltip;
+
+  /// No description provided for @libraryPublishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish plan'**
+  String get libraryPublishTitle;
+
+  /// No description provided for @libraryPublishAsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish as'**
+  String get libraryPublishAsTitle;
+
+  /// No description provided for @libraryPublishBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This plan will be added to the public catalog. Anyone can install it, and anyone who has it can publish updates.'**
+  String get libraryPublishBody;
+
+  /// No description provided for @libraryPublishAsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a slug for this version. If you change the slug on an already-published plan, a local copy will be created that tracks the new slug — the original stays linked to its current slug.'**
+  String get libraryPublishAsBody;
+
+  /// No description provided for @libraryPublishSlugLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Slug'**
+  String get libraryPublishSlugLabel;
+
+  /// No description provided for @libraryPublishSlugHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowercase letters, digits and hyphens only.'**
+  String get libraryPublishSlugHelper;
+
+  /// No description provided for @libraryPublishTagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags (comma separated)'**
+  String get libraryPublishTagsLabel;
+
+  /// No description provided for @libraryPublishSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get libraryPublishSubmit;
+
+  /// No description provided for @libraryPublishSlugTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Slug \'{slug}\' is already in use by an unrelated plan. Choose a different slug.'**
+  String libraryPublishSlugTaken(Object slug);
+
+  /// No description provided for @libraryPublishConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone updated this plan first. Try again.'**
+  String get libraryPublishConflict;
+
+  /// No description provided for @libraryPublishSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Published {name}'**
+  String libraryPublishSuccess(Object name);
+
+  /// No description provided for @libraryPublishFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not publish plan'**
+  String get libraryPublishFailed;
 }
 
 class _AppLocalizationsDelegate

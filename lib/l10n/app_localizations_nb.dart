@@ -769,6 +769,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryExport => 'Eksporter som .drill';
 
   @override
+  String get libraryPublish => 'Publiser';
+
+  @override
+  String get libraryPublishAs => 'Publiser som…';
+
+  @override
   String get libraryDelete => 'Slett';
 
   @override
@@ -834,6 +840,12 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get exportAsDrill => 'Eksporter som .drill';
+
+  @override
+  String get publishActivePlan => 'Publiser';
+
+  @override
+  String get publishAsActivePlan => 'Publiser som...';
 
   @override
   String get defaultPlanName => 'Standardplan';
@@ -904,4 +916,48 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get catalogServiceCorsBlockedTooltip =>
       'Nettleseren blokkerte katalogforespørselen fordi Netlify-funksjonen ikke tillater denne lokale opprinnelsen. Bruk den publiserte webappen eller aktiver CORS på funksjonen for lokal webutvikling.';
+
+  @override
+  String get libraryPublishTitle => 'Publiser plan';
+
+  @override
+  String get libraryPublishAsTitle => 'Publiser som';
+
+  @override
+  String get libraryPublishBody =>
+      'Planen blir lagt til i den åpne katalogen. Alle kan installere den, og alle som har den kan publisere oppdateringer.';
+
+  @override
+  String get libraryPublishAsBody =>
+      'Velg en slug for denne versjonen. Hvis du endrer slug på en allerede publisert plan, lages det en lokal kopi som peker på den nye slug-en — originalen forblir koblet til sin nåværende slug.';
+
+  @override
+  String get libraryPublishSlugLabel => 'Slug';
+
+  @override
+  String get libraryPublishSlugHelper =>
+      'Kun små bokstaver, tall og bindestrek.';
+
+  @override
+  String get libraryPublishTagsLabel => 'Tagger (kommaseparert)';
+
+  @override
+  String get libraryPublishSubmit => 'Publiser';
+
+  @override
+  String libraryPublishSlugTaken(Object slug) {
+    return 'Slug «$slug» er allerede i bruk av en urelatert plan. Velg en annen slug.';
+  }
+
+  @override
+  String get libraryPublishConflict =>
+      'Noen oppdaterte denne planen først. Prøv igjen.';
+
+  @override
+  String libraryPublishSuccess(Object name) {
+    return 'Publiserte $name';
+  }
+
+  @override
+  String get libraryPublishFailed => 'Kunne ikke publisere planen';
 }

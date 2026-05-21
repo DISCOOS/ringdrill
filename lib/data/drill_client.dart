@@ -322,7 +322,11 @@ class DrillClient {
     final qs = <String, String>{
       'ownerId': ownerId,
       'programId': program.uuid,
-      'version': (file.version + 1).toString(),
+      // Send an explicit version only when the caller has actually set one on
+      // the DrillFile (file.version > 0 means "I uploaded version N before, so
+      // tag this one N+1"). When unset, let the backend auto-bump to the next
+      // free integer based on the meta's existing versions.
+      if (file.version > 0) 'version': (file.version + 1).toString(),
       'slug': file.slug,
       // TODO: Add name to Drill Program
       'name': file.fileName,

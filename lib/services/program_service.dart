@@ -315,13 +315,15 @@ class ProgramService {
     bool activate = false,
   }) async {
     final incoming = file.program();
-    var uuid = incoming.uuid;
-    if (_repo.loadProgram(uuid) != null) {
-      uuid = nanoid(10);
-    }
+    // Always preserve the incoming uuid. The catalog wiki model relies on
+    // Program.uuid being stable across opens so the backend ownership check
+    // (ownerId, programId) lines up when the same plan is published again
+    // from a different device or after reinstall. Regenerating on collision
+    // here would silently break that link. If the user re-opens a plan they
+    // already have, the existing local copy is overwritten — which matches
+    // the "this is the same plan" semantic.
     final now = DateTime.now();
     final installed = incoming.copyWith(
-      uuid: uuid,
       source: ProgramSource.imported(fileName: file.fileName),
       metadata: incoming.metadata.copyWith(updated: now),
       contentHash: incoming.computeContentHash(),
@@ -462,6 +464,140 @@ class ProgramService {
           diff: diff,
         );
     }
+  }
+
+  /// Publish a program to the catalog.
+  ///
+  /// Handles both first-time publish (when [Program.source] is [_Local] or
+  /// [_Imported]) and updates of an already-published plan (when the source is
+  /// [_Catalog]).
+  ///
+  /// For first-time publish the caller supplies the desired [slug]; it is run
+  /// through [sanitizeSlug] before use. For updates the existing slug is reused
+  /// and [slug] is ignored — the catalog model treats `slug` as identity.
+  ///
+  /// Throws [DrillApiException] with `status == 409` when the slug is in use by
+  /// an unrelated plan, and with `status == 412` when a concurrent update raced
+  /// ahead. Other errors are rethrown unchanged.
+  Future<Program> publishProgram(
+    String programUuid, {
+    required String slug,
+    required List<String> tags,
+    required DrillClient client,
+  }) async {
+    final local = _repo.loadProgram(programUuid);
+    if (local == null) {
+      throw StateError('Program $programUuid not found');
+    }
+
+    final catalogSource = local.source.whenOrNull(
+      catalog: (existingSlug, latestEtag, installedAt) =>
+          (slug: existingSlug, etag: latestEtag, installedAt: installedAt),
+    );
+    final String effectiveSlug;
+    final String? ifMatch;
+    final DateTime? existingInstalledAt;
+    if (catalogSource != null) {
+      effectiveSlug = catalogSource.slug;
+      ifMatch =
+          catalogSource.etag.isNotEmpty ? catalogSource.etag : null;
+      existingInstalledAt = catalogSource.installedAt;
+    } else {
+      effectiveSlug = sanitizeSlug(slug);
+      ifMatch = null;
+      existingInstalledAt = null;
+    }
+    if (effectiveSlug.isEmpty) {
+      throw ArgumentError('Slug cannot be empty after sanitization');
+    }
+
+    final file = DrillFile.fromProgram(local, effectiveSlug);
+    final upload = await client.upload(
+      file,
+      ifMatchEtag: ifMatch,
+      published: true,
+      tags: tags,
+    );
+    await _repo.setOwnsCatalogSlug(effectiveSlug, true);
+
+    final published = local.copyWith(
+      source: ProgramSource.catalog(
+        slug: effectiveSlug,
+        latestEtag: upload.etag,
+        installedAt: existingInstalledAt ?? DateTime.now(),
+      ),
+      contentHash: local.computeContentHash(),
+    );
+    await _repo.saveProgramShell(published);
+    _controller.add(
+      ProgramEvent(ProgramEventType.programRefreshed, published),
+    );
+    return _repo.loadProgram(published.uuid) ?? published;
+  }
+
+  /// Publish a program to the catalog under a specific [slug], forking the
+  /// local plan if the slug differs from its current catalog slug.
+  ///
+  /// Behaviour depends on the program's current source:
+  ///   - Source is local / imported: identical to [publishProgram] (first-time
+  ///     publish at the requested slug).
+  ///   - Source is catalog and [slug] equals the current slug: delegates to
+  ///     [publishProgram] — pure update, no fork.
+  ///   - Source is catalog and [slug] differs from the current slug: a local
+  ///     fork is created (new [Program.uuid]) tracking the new slug, and the
+  ///     fork is published. The original local plan is left untouched and
+  ///     continues to track its existing slug.
+  ///
+  /// Returns the published [Program] (the fork, when a fork was created).
+  ///
+  /// Throws the same exceptions as [publishProgram].
+  Future<Program> publishProgramAs(
+    String programUuid, {
+    required String slug,
+    required List<String> tags,
+    required DrillClient client,
+  }) async {
+    final local = _repo.loadProgram(programUuid);
+    if (local == null) {
+      throw StateError('Program $programUuid not found');
+    }
+    final cleanSlug = sanitizeSlug(slug);
+    if (cleanSlug.isEmpty) {
+      throw ArgumentError('Slug cannot be empty after sanitization');
+    }
+
+    final currentSlug = local.source.whenOrNull(
+      catalog: (existingSlug, latestEtag, installedAt) => existingSlug,
+    );
+    if (currentSlug == null || currentSlug == cleanSlug) {
+      // First-time publish, or update in place under the same slug. No fork.
+      return publishProgram(
+        programUuid,
+        slug: cleanSlug,
+        tags: tags,
+        client: client,
+      );
+    }
+
+    // Fork: clone the plan locally with a fresh uuid and a local source,
+    // then publish the fork at the new slug. The original keeps its
+    // catalog(currentSlug) source.
+    final now = DateTime.now();
+    final fork = local.copyWith(
+      uuid: nanoid(10),
+      source: const ProgramSource.local(),
+      metadata: local.metadata.copyWith(updated: now),
+      contentHash: local.computeContentHash(),
+    );
+    await _repo.saveProgram(fork);
+    _controller.add(ProgramEvent(ProgramEventType.programCreated, fork));
+
+    return publishProgram(
+      fork.uuid,
+      slug: cleanSlug,
+      tags: tags,
+      client: client,
+    );
   }
 
   List<Team> loadTeams() {

@@ -774,6 +774,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryExport => 'Export as .drill';
 
   @override
+  String get libraryPublish => 'Publish';
+
+  @override
+  String get libraryPublishAs => 'Publish as…';
+
+  @override
   String get libraryDelete => 'Delete';
 
   @override
@@ -839,6 +845,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportAsDrill => 'Export as .drill';
+
+  @override
+  String get publishActivePlan => 'Publish';
+
+  @override
+  String get publishAsActivePlan => 'Publish as...';
 
   @override
   String get defaultPlanName => 'Default plan';
@@ -909,4 +921,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get catalogServiceCorsBlockedTooltip =>
       'The browser blocked the catalog request because the Netlify function does not allow this local origin. Use the deployed web app or enable CORS on the function for local web development.';
+
+  @override
+  String get libraryPublishTitle => 'Publish plan';
+
+  @override
+  String get libraryPublishAsTitle => 'Publish as';
+
+  @override
+  String get libraryPublishBody =>
+      'This plan will be added to the public catalog. Anyone can install it, and anyone who has it can publish updates.';
+
+  @override
+  String get libraryPublishAsBody =>
+      'Choose a slug for this version. If you change the slug on an already-published plan, a local copy will be created that tracks the new slug — the original stays linked to its current slug.';
+
+  @override
+  String get libraryPublishSlugLabel => 'Slug';
+
+  @override
+  String get libraryPublishSlugHelper =>
+      'Lowercase letters, digits and hyphens only.';
+
+  @override
+  String get libraryPublishTagsLabel => 'Tags (comma separated)';
+
+  @override
+  String get libraryPublishSubmit => 'Publish';
+
+  @override
+  String libraryPublishSlugTaken(Object slug) {
+    return 'Slug \'$slug\' is already in use by an unrelated plan. Choose a different slug.';
+  }
+
+  @override
+  String get libraryPublishConflict =>
+      'Someone updated this plan first. Try again.';
+
+  @override
+  String libraryPublishSuccess(Object name) {
+    return 'Published $name';
+  }
+
+  @override
+  String get libraryPublishFailed => 'Could not publish plan';
 }

@@ -1,14 +1,19 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/publish_plan_dialog.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> openPlan(BuildContext context) => showOpenPlanDialog(context);
@@ -57,6 +62,79 @@ Future<void> exportActivePlan(BuildContext context) async {
     onSave: ProgramPageController.saveDrillFile,
     onSuccess: (localizations, file) => localizations.exportSuccess(file),
     onFailure: (localizations, file) => localizations.exportFailure(file),
+  );
+}
+
+Future<void> publishActivePlan(BuildContext context) async {
+  final localizations = AppLocalizations.of(context)!;
+  final programService = ProgramService();
+  final program = programService.activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  final currentSlug = program.source.whenOrNull(
+    catalog: (slug, latestEtag, installedAt) => slug,
+  );
+  if (currentSlug != null) {
+    // Already published — silent update.
+    await runPublishProgram(
+      context,
+      programUuid: program.uuid,
+      slug: currentSlug,
+      tags: const [],
+      client: _buildPublishClient(),
+    );
+    return;
+  }
+  // First-time publish — show the dialog.
+  final input = await showPublishPlanDialog(
+    context,
+    program: program,
+    mode: PublishDialogMode.firstTime,
+  );
+  if (input == null || !context.mounted) return;
+  await runPublishProgram(
+    context,
+    programUuid: program.uuid,
+    slug: input.slug,
+    tags: input.tags,
+    client: _buildPublishClient(),
+  );
+}
+
+Future<void> publishAsActivePlan(BuildContext context) async {
+  final localizations = AppLocalizations.of(context)!;
+  final programService = ProgramService();
+  final program = programService.activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  final input = await showPublishPlanDialog(
+    context,
+    program: program,
+    mode: PublishDialogMode.publishAs,
+  );
+  if (input == null || !context.mounted) return;
+  await runPublishProgramAs(
+    context,
+    programUuid: program.uuid,
+    slug: input.slug,
+    tags: input.tags,
+    client: _buildPublishClient(),
+  );
+}
+
+DrillClient _buildPublishClient() {
+  final baseUrl = AppConfig.catalogBaseUrl(
+    isWeb: kIsWeb,
+    isRelease: kReleaseMode,
+    isDebug: kDebugMode,
+  );
+  return DrillClient(
+    baseUrl: baseUrl,
+    deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
   );
 }
 
