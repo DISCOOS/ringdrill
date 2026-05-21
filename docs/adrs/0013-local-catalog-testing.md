@@ -64,7 +64,7 @@ SEED_DRILL        ?= test/fixtures/test-7x.drill
 
 netlify-dev:
     npm install
-    ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) npx netlify dev
+    ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) npx netlify functions:serve --port 8888
 
 catalog-seed:
     @test -f $(SEED_DRILL) || { echo "Seed file $(SEED_DRILL) not found. Set SEED_DRILL=<path>"; exit 1; }
@@ -83,6 +83,12 @@ catalog-reset:
 The default `SEED_DRILL` points at the checked-in fixture at `test/fixtures/test-7x.drill`. This is a synthetic `.drill` archive used as the canonical seed for local catalog testing. The `SEED_DRILL` variable is overridable so a contributor can point at any local `.drill` file without editing the Makefile. The same applies to `LOCAL_BASE_URL` and `LOCAL_ADMIN_TOKEN`.
 
 Real planning files in the repository root (such as the existing `Ovingsplan-2026-Eidene.drill`) are explicitly not used as defaults. They are contributor-specific artifacts, not test fixtures, and tying the workflow to them would couple the developer setup to whatever happens to be checked in.
+
+### Note on `netlify dev` vs `netlify functions:serve`
+
+The `netlify-dev` Makefile target uses `netlify functions:serve` rather than the more general `netlify dev` command. The reason is that `netlify dev` sets up an Edge Functions runtime (Deno) even when the project has no edge functions, and that setup fails to install reliably on some macOS hosts (an unhandled exception terminates the CLI shortly after the static server comes up). We do not use edge functions, so `functions:serve` is sufficient and stable.
+
+The trade-off: `functions:serve` does not apply the redirects from `netlify.toml`, so the `/api/*` and `/d/*` aliases are not available locally. `DrillClient` already calls `/.netlify/functions/*` directly, so `upload`, `feed`, `list-all`, `publish` and friends all work. `ringdrill download <slug>` uses `/d/<slug>` and will return 404 in this mode. If a contributor needs the deep-link path locally, they can either install Deno globally (`brew install deno`) and switch the target to `netlify dev`, or use an explicit `/.netlify/functions/deep-link/<slug>` URL.
 
 ### App configuration
 
@@ -109,6 +115,21 @@ static String catalogBaseUrl({
 `LibraryView._catalogBaseUrl()` and any future call site delegate to `AppConfig.catalogBaseUrl(...)`. The previous branch (`kIsWeb && kReleaseMode` → same-origin, otherwise production) is preserved as the default. The override only takes effect when both conditions hold: a debug build, and a non-empty `RINGDRILL_LOCAL_BASE_URL` was passed at build time.
 
 `String.fromEnvironment` is resolved at compile time, so a release `.aab` or PWA cannot be coerced into talking to a localhost backend at runtime. This matters because a misconfigured app pointed at `localhost:8888` from a user device would silently fail and could leak local data.
+
+### CORS
+
+The PWA in production is served same-origin with the functions (both under `ringdrill.netlify.app`), so CORS is not needed there. Local dev has the Flutter dev server on `http://localhost:<random>` and the function host on `http://localhost:8888`, which are different origins and trigger CORS preflight.
+
+The functions opt in to CORS via an explicit origin allowlist in `netlify/functions/_shared.js`:
+
+* `https://ringdrill.netlify.app` (production)
+* `https://ringdrill.app` (custom domain)
+* `https://<id>--ringdrill.netlify.app` (Netlify deploy previews / branch deploys)
+* `http://localhost:<port>` and `http://127.0.0.1:<port>` (local dev, any port)
+
+`Access-Control-Allow-Origin: *` is intentionally avoided. The API endpoints are otherwise public, so `*` would not weaken authentication (admin endpoints are token-gated, upload is anonymous-by-design), but the allowlist keeps defense in depth: if a future change adds an endpoint that should not be readable cross-origin, the model already restricts it.
+
+`withCors(request, response)` and `corsPreflight(request)` helpers in `_shared.js` add the headers when the request's `Origin` matches the allowlist, and pass the response through unchanged otherwise. Non-browser clients (the CLI, native mobile apps, curl) do not send an `Origin` header and are unaffected.
 
 ### Developer workflow
 

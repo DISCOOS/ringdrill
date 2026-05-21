@@ -1,6 +1,9 @@
-import { MIME_DRILL, getSlugRecord, keysFor, readJson } from "./_shared.js";
+import { MIME_DRILL, getSlugRecord, keysFor, readJson, corsPreflight, withCors } from "./_shared.js";
 
 export default async function (request) {
+    const preflight = corsPreflight(request);
+    if (preflight) return preflight;
+
     try {
         const { pathname } = new URL(request.url);
         // Support both direct function path and /api redirect
@@ -8,15 +11,15 @@ export default async function (request) {
             .replace(/^.*\/\.netlify\/functions\/drills-head\//, "")
             .replace(/^.*\/api\/drills\/head\//, "");
 
-        if (!tail) return new Response("Missing slug", { status: 404 });
+        if (!tail) return withCors(request, new Response("Missing slug", { status: 404 }));
         const [slug, verMaybe] = tail.split("@");
 
         const rec = await getSlugRecord(slug);
-        if (!rec) return new Response("Unknown slug", { status: 404 });
+        if (!rec) return withCors(request, new Response("Unknown slug", { status: 404 }));
 
         const { meta } = keysFor({ ownerId: rec.ownerId, programId: rec.programId, version: "latest" });
         const m = await readJson(meta, null);
-        if (!m) return new Response("Not found", { status: 404 });
+        if (!m) return withCors(request, new Response("Not found", { status: 404 }));
 
         // Pick version info
         let vinfo = null;
@@ -26,7 +29,7 @@ export default async function (request) {
             const sorted = (m.versions || []).slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true}));
             vinfo = sorted.pop() || null;
         }
-        if (!vinfo) return new Response("No version", { status: 404 });
+        if (!vinfo) return withCors(request, new Response("No version", { status: 404 }));
 
         // --- NEW: If-None-Match support -> 304 Not Modified
         const inm = request.headers.get("if-none-match");
@@ -39,7 +42,7 @@ export default async function (request) {
             });
             if (vinfo.updatedAt) h304.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
             // For HEAD/GET, 304 must not include a body
-            return new Response(null, { status: 304, headers: h304 });
+            return withCors(request, new Response(null, { status: 304, headers: h304 }));
         }
 
         // Normal 200 response for HEAD (empty body)
@@ -54,9 +57,9 @@ export default async function (request) {
         );
         if (vinfo.updatedAt) headers.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
 
-        return new Response("", { status: 200, headers });
+        return withCors(request, new Response("", { status: 200, headers }));
     } catch (e) {
-        return new Response(`HEAD error: ${e.message || e}`, { status: 500 });
+        return withCors(request, new Response(`HEAD error: ${e.message || e}`, { status: 500 }));
     }
 }
 

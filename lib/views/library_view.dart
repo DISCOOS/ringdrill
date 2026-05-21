@@ -335,7 +335,11 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 
   String _catalogBaseUrl() {
-    return kIsWeb && kReleaseMode ? '' : AppConfig.ringDrillBaseUrl;
+    return AppConfig.catalogBaseUrl(
+      isWeb: kIsWeb,
+      isRelease: kReleaseMode,
+      isDebug: kDebugMode,
+    );
   }
 
   bool _isLikelyCorsBlocked(Object error) {

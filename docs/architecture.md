@@ -116,7 +116,7 @@ The CLI in `bin/ringdrill.dart` talks to these endpoints using `RINGDRILL_ADMIN_
 
 ### Running the backend locally
 
-The full Netlify stack (functions plus an emulated blob store) can be run on a contributor machine without touching production. The intended workflow and the architectural rationale are captured in [ADR-0013](./adrs/0013-local-catalog-testing.md). The short version follows.
+The full Netlify stack (functions plus an emulated blob store) can be run on a contributor machine without touching production. The architectural rationale is in [ADR-0013](./adrs/0013-local-catalog-testing.md).
 
 Prerequisites: Node 20+ and the [Netlify CLI](https://docs.netlify.com/cli/get-started/) (`npx netlify` will fetch it on first use).
 
@@ -124,14 +124,27 @@ Start the backend:
 ```bash
 make netlify-dev
 ```
-The target runs `npm install` and `ADMIN_TOKEN=dev-token npx netlify dev`. Override the token with `make netlify-dev LOCAL_ADMIN_TOKEN=<token>`. Functions are now reachable at `http://localhost:8888`. The blob store is emulated under `.netlify/blobs-serve/`.
+The target runs `npm install` and `ADMIN_TOKEN=dev-token npx netlify functions:serve --port 8888`. Override the token with `make netlify-dev LOCAL_ADMIN_TOKEN=<token>`. Functions are now reachable at `http://localhost:8888/.netlify/functions/<name>`. The blob store is emulated under `.netlify/blobs-serve/`.
 
-Verify the catalog responds:
+The target uses `netlify functions:serve` instead of `netlify dev` because the latter sets up an Edge Functions runtime that fails to install reliably on some macOS hosts. We do not use edge functions, so `functions:serve` is sufficient.
+
+Caveat: the redirects defined in `netlify.toml` (`/api/*` and `/d/*`) are not applied by `functions:serve`. `DrillClient` already calls `/.netlify/functions/*` directly, so the CLI commands `upload`, `feed`, `list-all`, `publish` and friends all work. `ringdrill download <slug>` uses the `/d/<slug>` deep-link path and will return 404 in this mode.
+
+Seed the catalog, inspect the feed, or reset the blob store:
 ```bash
-curl http://localhost:8888/api/market/feed
+make catalog-seed     # uploads $(SEED_DRILL) and publishes it
+make catalog-feed     # lists /.netlify/functions/market-feed
+make catalog-reset    # clears .netlify/blobs-serve (with the backend stopped)
 ```
+`SEED_DRILL` defaults to `test/fixtures/test-7x.drill`. Override with `make catalog-seed SEED_DRILL=path/to/other.drill` to publish a different file.
 
-The admin CLI honors `RINGDRILL_BASE_URL`, so the same binary works against the local backend without rebuilding:
+Under the hood these targets shell out to `dart run bin/ringdrill.dart`, which gained three public commands (no admin token required):
+```bash
+ringdrill upload <file.drill> [--published] [--tags=a,b,c] [--owner=<id>]
+ringdrill feed [--limit=N] [--cursor=C]
+ringdrill download <slug> [--out=<file>] [--version=N]
+```
+The CLI honors `RINGDRILL_BASE_URL`, so the same binary works against the local backend without rebuilding:
 ```bash
 export RINGDRILL_BASE_URL=http://localhost:8888
 export RINGDRILL_ADMIN_TOKEN=dev-token
@@ -139,18 +152,11 @@ ringdrill list-all
 ringdrill publish <slug>
 ```
 
-Clear the local blob store and start fresh (with the backend stopped):
-```bash
-rm -rf .netlify/blobs-serve
-```
-
-The polished workflow described in ADR-0013 (Makefile targets `catalog-seed`, `catalog-feed`, `catalog-reset` building on `netlify-dev`, CLI commands `upload` / `feed` / `download`, and a `--dart-define=RINGDRILL_LOCAL_BASE_URL=...` switch on the Flutter side) is the target state. Those targets and CLI subcommands will be added as the implementation lands. The fixture used for `catalog-seed` is at `test/fixtures/test-7x.drill`. Override with `SEED_DRILL=<path>` to publish a different file.
-
-Pointing the Flutter app at the local backend (once the `--dart-define` switch is implemented):
+Point the Flutter app at the local backend using a compile-time `--dart-define`:
 ```bash
 flutter run -d macos --dart-define=RINGDRILL_LOCAL_BASE_URL=http://localhost:8888
 ```
-The override only takes effect in debug builds. Release builds cannot be coerced into talking to localhost.
+The override is resolved at compile time (via `String.fromEnvironment` in `AppConfig.localBaseUrl`) and only takes effect in debug builds. Release builds cannot be coerced into talking to localhost.
 
 ## Drill file format
 

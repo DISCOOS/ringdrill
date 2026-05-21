@@ -1,10 +1,21 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:http/http.dart' as http;
 import 'package:ringdrill/data/drill_client.dart';
+import 'package:ringdrill/data/drill_file.dart';
+import 'package:universal_io/io.dart';
 
 const _defaultBaseUrl = 'https://ringdrill.netlify.app';
+
+const _adminCommands = <String>{
+  'publish',
+  'unpublish',
+  'delete-version',
+  'delete-all',
+  'list-versions',
+  'list-all',
+};
 
 Future<void> main(List<String> argv) async {
   final parser = ArgParser()
@@ -17,7 +28,8 @@ Future<void> main(List<String> argv) async {
     ..addOption(
       'token',
       abbr: 't',
-      help: 'Admin bearer token (env: RINGDRILL_ADMIN_TOKEN).',
+      help: 'Admin bearer token (env: RINGDRILL_ADMIN_TOKEN). '
+          'Only required for admin commands.',
       defaultsTo: Platform.environment['RINGDRILL_ADMIN_TOKEN'],
     )
     ..addFlag(
@@ -26,9 +38,52 @@ Future<void> main(List<String> argv) async {
       help: 'Print raw JSON only.',
       defaultsTo: false,
     )
-    ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage.');
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage.')
+    // upload
+    ..addFlag(
+      'published',
+      negatable: false,
+      help: 'Upload as published (upload command).',
+    )
+    ..addOption(
+      'tags',
+      help: 'Comma-separated tags (upload command).',
+      defaultsTo: '',
+    )
+    ..addOption(
+      'owner',
+      help: 'Owner id (upload command). Default: anon.',
+      defaultsTo: 'anon',
+    )
+    // feed
+    ..addOption(
+      'limit',
+      help: 'Page size (feed/list-all command). Default: 50.',
+      defaultsTo: '50',
+    )
+    ..addOption(
+      'cursor',
+      help: 'Pagination cursor (feed/list-all command).',
+    )
+    // download
+    ..addOption(
+      'out',
+      help: 'Output path (download command). Default: <slug>.drill.',
+    )
+    ..addOption(
+      'version',
+      help: 'Specific version (download command). Default: latest.',
+    );
 
-  final res = parser.parse(argv);
+  late final ArgResults res;
+  try {
+    res = parser.parse(argv);
+  } on FormatException catch (e) {
+    stderr.writeln('Error: ${e.message}');
+    _printUsage(parser);
+    exit(64); // EX_USAGE
+  }
+
   if (res['help'] == true || res.rest.isEmpty) {
     _printUsage(parser);
     exit(0);
@@ -44,62 +99,78 @@ Future<void> main(List<String> argv) async {
   final cmd = res.rest.first;
   final args = res.rest.skip(1).toList();
 
-  if (token.isEmpty) {
-    _fail('Missing admin token. Use --token or set RINGDRILL_ADMIN_TOKEN.');
+  if (_adminCommands.contains(cmd) && token.isEmpty) {
+    _fail(
+      'Missing admin token for "$cmd". Use --token or set RINGDRILL_ADMIN_TOKEN.',
+    );
   }
 
   final client = DrillClient(baseUrl: baseUrl);
 
   try {
-    Map<String, dynamic> out = {};
     switch (cmd) {
+      case 'upload':
+        await _runUpload(client, args, res, jsonOut);
+        break;
+
+      case 'feed':
+        await _runFeed(client, res, jsonOut);
+        break;
+
+      case 'download':
+        await _runDownload(client, args, res, jsonOut);
+        break;
+
       case 'publish':
         if (args.length != 1) _fail('Usage: publish <slug>');
-        out = _toJson(await client.publish(args[0], adminToken: token));
+        _printResult(
+          _toJson(await client.publish(args[0], adminToken: token)),
+          jsonOut,
+        );
         break;
 
       case 'unpublish':
         if (args.length != 1) _fail('Usage: unpublish <slug>');
-        out = _toJson(await client.unpublish(args[0], adminToken: token));
-        _printResult(out, jsonOut);
+        _printResult(
+          _toJson(await client.unpublish(args[0], adminToken: token)),
+          jsonOut,
+        );
         break;
 
       case 'delete-version':
         if (args.length != 2) _fail('Usage: delete-version <slug> <version>');
-        out = _toJson(
-          await client.deleteVersion(args[0], args[1], adminToken: token),
+        _printResult(
+          _toJson(
+            await client.deleteVersion(args[0], args[1], adminToken: token),
+          ),
+          jsonOut,
         );
-        _printResult(out, jsonOut);
         break;
 
       case 'delete-all':
         if (args.length != 1) _fail('Usage: delete-all <slug>');
-        out = _toJson(await client.deleteAll(args[0], adminToken: token));
-        _printResult(out, jsonOut);
+        _printResult(
+          _toJson(await client.deleteAll(args[0], adminToken: token)),
+          jsonOut,
+        );
         break;
 
       case 'list-versions':
-        {
-          // list <slug>
-          if (args.length != 1) _fail('Usage: list <slug>');
-          final item = await client.versions(adminToken: token, slug: args[0]);
-          _printListOne(item, jsonOut);
-          break;
-        }
+        if (args.length != 1) _fail('Usage: list-versions <slug>');
+        final item = await client.versions(adminToken: token, slug: args[0]);
+        _printListOne(item, jsonOut);
+        break;
 
       case 'list-all':
-        {
-          // listall [limit] [cursor]
-          final limit = args.isNotEmpty ? int.tryParse(args[0]) ?? 50 : 50;
-          final cursor = args.length > 1 ? args[1] : null;
-          final page = await client.listAll(
-            adminToken: token,
-            limit: limit,
-            cursor: cursor,
-          );
-          _printListPage(page, jsonOut);
-          break;
-        }
+        final limit = int.tryParse(res['limit'] as String) ?? 50;
+        final cursor = res['cursor'] as String?;
+        final page = await client.listAll(
+          adminToken: token,
+          limit: limit,
+          cursor: cursor,
+        );
+        _printListPage(page, jsonOut);
+        break;
 
       default:
         _printUsage(parser);
@@ -122,6 +193,12 @@ Future<void> main(List<String> argv) async {
       }
     }
     exitCode = 1;
+  } on http.ClientException catch (e) {
+    _printNetworkError(baseUrl, e.message, jsonOut);
+    exitCode = 3;
+  } on SocketException catch (e) {
+    _printNetworkError(baseUrl, e.message, jsonOut);
+    exitCode = 3;
   } catch (e) {
     stderr.writeln('Unexpected error: $e');
     exitCode = 2;
@@ -129,6 +206,105 @@ Future<void> main(List<String> argv) async {
     client.close();
   }
 }
+
+void _printNetworkError(String baseUrl, String detail, bool jsonOut) {
+  final isLocal =
+      baseUrl.contains('localhost') || baseUrl.contains('127.0.0.1');
+  if (jsonOut) {
+    stderr.writeln(
+      jsonEncode({
+        'error': 'network',
+        'baseUrl': baseUrl,
+        'detail': detail,
+        if (isLocal) 'hint': 'Start the local backend with: make netlify-dev',
+      }),
+    );
+    return;
+  }
+  stderr.writeln('Network error talking to $baseUrl: $detail');
+  if (isLocal) {
+    stderr.writeln(
+      'The local backend does not appear to be running. '
+      'Start it in another terminal with:',
+    );
+    stderr.writeln('  make netlify-dev');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Command implementations
+// ---------------------------------------------------------------------------
+
+Future<void> _runUpload(
+  DrillClient client,
+  List<String> args,
+  ArgResults res,
+  bool jsonOut,
+) async {
+  if (args.length != 1) {
+    _fail(
+      'Usage: upload <file.drill> '
+      '[--published] [--tags=a,b,c] [--owner=<id>]',
+    );
+  }
+  final path = args[0];
+  final file = File(path);
+  if (!file.existsSync()) {
+    _fail('File not found: $path');
+  }
+  final drillFile = DrillFile.fromFile(file);
+  final tagsStr = (res['tags'] as String).trim();
+  final tags = tagsStr.isEmpty
+      ? const <String>[]
+      : tagsStr
+            .split(',')
+            .map((t) => t.trim())
+            .where((t) => t.isNotEmpty)
+            .toList();
+  final response = await client.upload(
+    drillFile,
+    published: res['published'] as bool,
+    tags: tags,
+    ownerId: res['owner'] as String,
+  );
+  _printUpload(response, jsonOut);
+}
+
+Future<void> _runFeed(
+  DrillClient client,
+  ArgResults res,
+  bool jsonOut,
+) async {
+  final limit = int.tryParse(res['limit'] as String) ?? 50;
+  final cursor = res['cursor'] as String?;
+  final page = await client.marketFeed(limit: limit, cursor: cursor);
+  _printFeed(page, jsonOut);
+}
+
+Future<void> _runDownload(
+  DrillClient client,
+  List<String> args,
+  ArgResults res,
+  bool jsonOut,
+) async {
+  if (args.length != 1) {
+    _fail('Usage: download <slug> [--out=<file>] [--version=N]');
+  }
+  final slug = args[0];
+  final versionStr = res['version'] as String?;
+  final version = versionStr == null ? null : int.tryParse(versionStr);
+  if (versionStr != null && version == null) {
+    _fail('Invalid --version: $versionStr');
+  }
+  final outPath = (res['out'] as String?) ?? '$slug.${DrillFile.drillExtension}';
+  final response = await client.download(slug, version: version);
+  File(outPath).writeAsBytesSync(response.bytes);
+  _printDownload(slug, outPath, response, jsonOut);
+}
+
+// ---------------------------------------------------------------------------
+// Printers
+// ---------------------------------------------------------------------------
 
 Map<String, dynamic> _toJson(AdminResult res) => {
   'ok': res.ok,
@@ -141,21 +317,120 @@ Map<String, dynamic> _toJson(AdminResult res) => {
   if (res.cleaned != null) 'cleaned': res.cleaned,
 };
 
+void _printUpload(DrillUploadResponse r, bool jsonOut) {
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'slug': r.slug,
+        'programId': r.programId,
+        'version': r.version,
+        'etag': r.etag,
+        'latest': r.latestUrl.toString(),
+        'versioned': r.versionedUrl.toString(),
+        if (r.note != null) 'note': r.note,
+      }),
+    );
+    return;
+  }
+  stdout.writeln('✔ uploaded ${r.slug}');
+  stdout.writeln('  programId : ${r.programId}');
+  stdout.writeln('  version   : ${r.version}');
+  stdout.writeln('  etag      : ${r.etag}');
+  stdout.writeln('  latest    : ${r.latestUrl}');
+  stdout.writeln('  versioned : ${r.versionedUrl}');
+  if (r.note != null && r.note!.isNotEmpty) {
+    stdout.writeln('  note      : ${r.note}');
+  }
+}
+
+void _printFeed(MarketFeedPageResponse page, bool jsonOut) {
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'items': page.items
+            .map(
+              (i) => {
+                'programId': i.programId,
+                'slug': i.slug,
+                'name': i.name,
+                'tags': i.tags,
+                'latestUrl': i.latestUrl.toString(),
+                if (i.updatedAt != null)
+                  'updatedAt': i.updatedAt!.toIso8601String(),
+              },
+            )
+            .toList(),
+        if (page.nextCursor != null) 'nextCursor': page.nextCursor,
+      }),
+    );
+    return;
+  }
+  stdout.writeln('✔ ${page.items.length} items');
+  for (final i in page.items) {
+    final tags = i.tags.isEmpty ? '' : ' [${i.tags.join(', ')}]';
+    final updated = i.updatedAt == null
+        ? ''
+        : ' updated=${i.updatedAt!.toIso8601String()}';
+    stdout.writeln('  ${i.slug}  ${i.name}$tags$updated');
+  }
+  if (page.nextCursor != null) {
+    stdout.writeln('nextCursor: ${page.nextCursor}');
+  }
+}
+
+void _printDownload(
+  String slug,
+  String outPath,
+  DrillDownloadResponse r,
+  bool jsonOut,
+) {
+  if (jsonOut) {
+    stdout.writeln(
+      jsonEncode({
+        'slug': slug,
+        'out': outPath,
+        'size': r.bytes.length,
+        if (r.etag != null) 'etag': r.etag,
+        if (r.contentType != null) 'contentType': r.contentType,
+        if (r.lastModified != null)
+          'lastModified': r.lastModified!.toIso8601String(),
+      }),
+    );
+    return;
+  }
+  stdout.writeln('✔ downloaded $slug → $outPath (${r.bytes.length} bytes)');
+  if (r.etag != null) stdout.writeln('  etag         : ${r.etag}');
+  if (r.contentType != null) {
+    stdout.writeln('  contentType  : ${r.contentType}');
+  }
+  if (r.lastModified != null) {
+    stdout.writeln('  lastModified : ${r.lastModified}');
+  }
+}
+
 void _printUsage(ArgParser parser) {
   stdout.writeln('''
-ringdrill — CLI using DrillClient for RingDrill admin API
+ringdrill — CLI for the RingDrill Netlify backend
 
 USAGE:
   ringdrill [global options] <command> [args]
 
-COMMANDS:
-  list-versions <slug>            List versions for a slug (admin action=list)
-  list-all [limit] [cursor]       List all slugs (admin action=listall)
+PUBLIC COMMANDS (no admin token required):
+  upload <file.drill>             Upload a .drill file
+                                    [--published] [--tags=a,b,c] [--owner=<id>]
+  feed                            Show the public market feed
+                                    [--limit=N] [--cursor=C]
+  download <slug>                 Download a .drill to disk
+                                    [--out=<file>] [--version=N]
+
+ADMIN COMMANDS (RINGDRILL_ADMIN_TOKEN or --token required):
+  list-versions <slug>            List versions for a slug
+  list-all                        List all slugs [--limit=N] [--cursor=C]
   publish <slug>                  Publish a drill
   unpublish <slug>                Unpublish a drill
   delete-version <slug> <ver>     Delete a version
   delete-all <slug>               Delete all versions for a slug
-  
+
 GLOBAL OPTIONS:
 ${parser.usage}
 

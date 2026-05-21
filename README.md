@@ -76,8 +76,14 @@ To get started with developing for RingDrill using Flutter, follow these steps:
     ```
 
 10. **Run the Netlify backend locally**:
-    Start the full Netlify stack (functions plus emulated blob store) on your machine:
+    Start the Netlify function host (with emulated blob store) on your machine:
     ```bash
     make netlify-dev
     ```
-    Functions are now reachable at `http://localhost:8888`. See [`docs/architecture.md`](docs/architecture.md#running-the-backend-locally) for verification, CLI usage and the polished workflow proposed in [ADR-0013](docs/adrs/0013-local-catalog-testing.md).
+    Seed it with a sample drill, list the feed, or reset the local store:
+    ```bash
+    make catalog-seed     # uploads test/fixtures/test-7x.drill and publishes it
+    make catalog-feed     # lists the market feed
+    make catalog-reset    # clears .netlify/blobs-serve (with the backend stopped)
+    ```
+    See [`docs/architecture.md`](docs/architecture.md#running-the-backend-locally) for the full workflow (including how to point the Flutter app at the local backend) and the known limitation around the `/d/<slug>` deep-link path. The rationale is in [ADR-0013](docs/adrs/0013-local-catalog-testing.md).

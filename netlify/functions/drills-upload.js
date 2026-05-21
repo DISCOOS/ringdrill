@@ -2,12 +2,16 @@ import {
     keysFor, readJson, sanitizeSlug,
     getSlugRecord, claimSlug, sha256Hex,
     toStrongEtag, nowIso, originFromRequest, readDrillBytes,
-    writeBinaryConditional, writeJsonConditional, getBlobEtag
+    writeBinaryConditional, writeJsonConditional, getBlobEtag,
+    corsPreflight, withCors
 } from "./_shared.js";
 
 export default async function (request) {
+    const preflight = corsPreflight(request);
+    if (preflight) return preflight;
+
     try {
-        if (request.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+        if (request.method !== "POST") return withCors(request, new Response("Method Not Allowed", { status: 405 }));
 
         const url = new URL(request.url);
         const qs = url.searchParams;
@@ -41,13 +45,13 @@ export default async function (request) {
                 // someone else created between our read and write → verify ownership
                 const now = await getSlugRecord(slug);
                 if (!now || now.ownerId !== ownerId || now.programId !== programId) {
-                    return new Response(`Slug '${slug}' already in use`, { status: 409 });
+                    return withCors(request, new Response(`Slug '${slug}' already in use`, { status: 409 }));
                 }
             }
         } else {
             // Slug exists — enforce same mapping unless caller explicitly changed it
             if (existing.ownerId !== ownerId || existing.programId !== programId) {
-                return new Response(`Slug '${slug}' already in use`, { status: 409 });
+                return withCors(request, new Response(`Slug '${slug}' already in use`, { status: 409 }));
             }
         }
 
@@ -56,7 +60,7 @@ export default async function (request) {
         // 1) Write versioned blob only if new
         const vRes = await writeBinaryConditional(versioned, bytes, { onlyIfNew: true });
         if (!vRes.modified) {
-            return new Response(`Version '${version}' already exists`, { status: 409 });
+            return withCors(request, new Response(`Version '${version}' already exists`, { status: 409 }));
         }
 
         // 2) Update latest guarded (or create if missing)
@@ -91,17 +95,17 @@ export default async function (request) {
             metaEtag ? { onlyIfMatch: metaEtag } : { onlyIfNew: true }
         );
         if (!mRes.modified && metaEtag) {
-            return new Response("Precondition failed (meta changed)", { status: 412 });
+            return withCors(request, new Response("Precondition failed (meta changed)", { status: 412 }));
         }
 
         const origin = originFromRequest(request);
-        return new Response(JSON.stringify({
+        return withCors(request, new Response(JSON.stringify({
             slug, programId, version, etag,
             latest:    `${origin}/d/${slug}`,
             versioned: `${origin}/d/${slug}@${version}`,
-        }), { status: 200, headers: { "content-type": "application/json" } });
+        }), { status: 200, headers: { "content-type": "application/json" } }));
 
     } catch (e) {
-        return new Response(`Upload error: ${e.message || e}`, { status: 500 });
+        return withCors(request, new Response(`Upload error: ${e.message || e}`, { status: 500 }));
     }
 }

@@ -1,8 +1,11 @@
-import {getDrillsStore, nowIso} from "./_shared.js";
+import {getDrillsStore, nowIso, corsPreflight, withCors} from "./_shared.js";
 
 export default async function (request) {
+    const preflight = corsPreflight(request);
+    if (preflight) return preflight;
+
     try {
-        if (request.method !== "GET") return new Response("Method Not Allowed", {status: 405});
+        if (request.method !== "GET") return withCors(request, new Response("Method Not Allowed", {status: 405}));
 
         const url = new URL(request.url);
         const limit = clampInt(url.searchParams.get("limit"), 1, 100, 50);
@@ -42,16 +45,16 @@ export default async function (request) {
 
         items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
 
-        return new Response(JSON.stringify(nextCursor ? {items, nextCursor} : {items}, null, 2), {
+        return withCors(request, new Response(JSON.stringify(nextCursor ? {items, nextCursor} : {items}, null, 2), {
             status: 200,
             headers: {
                 "content-type": "application/json",
                 "cache-control": "public, max-age=30",
                 "x-generated-at": nowIso(),
             },
-        });
+        }));
     } catch (e) {
-        return new Response(`feed error: ${e.message || e}`, {status: 500});
+        return withCors(request, new Response(`feed error: ${e.message || e}`, {status: 500}));
     }
 }
 

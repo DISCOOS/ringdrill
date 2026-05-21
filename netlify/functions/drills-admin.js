@@ -3,11 +3,22 @@ import {
     getSlugRecord, deleteSlugRecord, getSlugIndexStore,
     keysFor, readJson, readBinary,
     writeJsonConditional, writeBinaryConditional, getBlobEtag,
-    nowIso
+    nowIso,
+    corsPreflight, withCors
 } from "./_shared.js";
 import { getDrillsStore } from "./_shared.js";
 
 export default async function (request) {
+    const preflight = corsPreflight(request);
+    if (preflight) return preflight;
+
+    // Bind request-scoped json() helper so admin responses get CORS headers
+    // when the call comes from an allowlisted browser origin.
+    const json = (obj, status = 200) => withCors(request, new Response(
+        JSON.stringify(obj, null, 2),
+        { status, headers: { "content-type": "application/json" } },
+    ));
+
     try {
         // ---- Auth (Bearer ADMIN_TOKEN) ----
         const token = (process.env.ADMIN_TOKEN || "").trim();
@@ -212,13 +223,6 @@ export default async function (request) {
     } catch (e) {
         return json({ error: String(e?.message || e) }, 500);
     }
-}
-
-function json(obj, status = 200) {
-    return new Response(JSON.stringify(obj, null, 2), {
-        status,
-        headers: { "content-type": "application/json" },
-    });
 }
 
 function clampInt(v, min, max, dflt) {

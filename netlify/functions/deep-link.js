@@ -3,10 +3,14 @@ import {
     MIME_DRILL,
     readBinary, readJson,
     getSlugRecord, keysFor,
-    sha256Hex, toStrongEtag
+    sha256Hex, toStrongEtag,
+    corsPreflight, withCors
 } from "./_shared.js";
 
 export default async function (request) {
+    const preflight = corsPreflight(request);
+    if (preflight) return preflight;
+
     try {
         const url = new URL(request.url);
         const originalPath = url.pathname;
@@ -21,7 +25,7 @@ export default async function (request) {
             .replace(/^\/o\//i, "")
             .replace(/^\/+/, "");
 
-        if (!tail) return new Response("Not found", { status: 404 });
+        if (!tail) return withCors(request, new Response("Not found", { status: 404 }));
         try { tail = decodeURIComponent(tail); } catch {}
 
         const hasDrillExt = /\.drill(?:$|[/?#@])/i.test(tail);
@@ -37,7 +41,7 @@ export default async function (request) {
 
         // Parse "<slug>" or "<slug>@<version>"
         const m = tail.match(/^([^@/]+)(?:@([^/]+))?$/);
-        if (!m) return new Response("Not found", { status: 404 });
+        if (!m) return withCors(request, new Response("Not found", { status: 404 }));
         const slug = m[1];
         const version = (m[2] || "").trim() || null;
 
@@ -47,7 +51,7 @@ export default async function (request) {
             const u = new URL(request.url);
             u.pathname = canonical;
             u.search = "";
-            return new Response(null, { status: 302, headers: { Location: u.toString() } });
+            return withCors(request, new Response(null, { status: 302, headers: { Location: u.toString() } }));
         }
 
         // ---------- /d/ behavior ----------
@@ -56,11 +60,11 @@ export default async function (request) {
             const u = new URL(request.url);
             u.pathname = canonical;
             u.search = ""; // ensure no query params
-            return new Response(null, { status: 301, headers: { Location: u.toString() } });
+            return withCors(request, new Response(null, { status: 301, headers: { Location: u.toString() } }));
         }
 
         const rec = await getSlugRecord(slug);
-        if (!rec) return new Response("Unknown slug", { status: 404 });
+        if (!rec) return withCors(request, new Response("Unknown slug", { status: 404 }));
 
         const { meta, versioned, latest } = keysFor({
             ownerId: rec.ownerId,
@@ -93,12 +97,12 @@ export default async function (request) {
                 "Cache-Control": cacheHeader,
             });
             if (vinfo?.updatedAt) h304.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
-            return new Response(null, { status: 304, headers: h304 });
+            return withCors(request, new Response(null, { status: 304, headers: h304 }));
         }
 
         const key = version ? versioned : latest;
         const buf = await readBinary(key);
-        if (!buf) return new Response("Not found", { status: 404 });
+        if (!buf) return withCors(request, new Response("Not found", { status: 404 }));
 
         const etag = vinfo?.etag ?? toStrongEtag(sha256Hex(buf));
         const lastMod = vinfo?.updatedAt ? new Date(vinfo.updatedAt).toUTCString() : undefined;
@@ -113,11 +117,11 @@ export default async function (request) {
         if (lastMod) headers.set("Last-Modified", lastMod);
 
         if (request.method === "HEAD") {
-            return new Response(null, { status: 200, headers });
+            return withCors(request, new Response(null, { status: 200, headers }));
         }
-        return new Response(buf, { status: 200, headers });
+        return withCors(request, new Response(buf, { status: 200, headers }));
     } catch (e) {
-        return new Response(`Resolve error: ${e.message || e}`, { status: 500 });
+        return withCors(request, new Response(`Resolve error: ${e.message || e}`, { status: 500 }));
     }
 }
 
