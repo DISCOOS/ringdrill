@@ -22,7 +22,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     BoxConstraints constraints,
     AppLocalizations localizations,
   ) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       dialogTitle: localizations.openProgram,
       allowedExtensions: [DrillFile.drillExtension],
@@ -43,7 +43,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     AppLocalizations localizations,
     DrillFile drillFile,
   ) async {
-    final path = await FilePicker.platform.saveFile(
+    final path = await FilePicker.saveFile(
       dialogTitle: localizations.save,
       type: FileType.custom,
       fileName: drillFile.fileName,

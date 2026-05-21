@@ -167,7 +167,7 @@ class NotificationService {
         );
 
     final bool? success = await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
       onDidReceiveBackgroundNotificationResponse:
           _onDidReceiveBackgroundNotificationResponse,
@@ -365,10 +365,10 @@ class NotificationService {
 
     // Display or update the notification
     await _flutterLocalNotificationsPlugin.show(
-      idExerciseNotification,
-      event.exercise.name,
-      _format(event),
-      platformNotificationDetails,
+      id: idExerciseNotification,
+      title: event.exercise.name,
+      body: _format(event),
+      notificationDetails: platformNotificationDetails,
     );
   }
 

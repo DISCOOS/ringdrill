@@ -336,7 +336,7 @@ class DrillClient {
       headers: {
         // Server accepts raw binary or base64. We send raw.
         'content-type': 'application/octet-stream',
-        if (ifMatchEtag != null) 'if-match': ifMatchEtag,
+        'if-match': ?ifMatchEtag,
       },
       body: file.content,
     );
@@ -379,10 +379,7 @@ class DrillClient {
   }) async {
     final path = _slugVerPath(slug, version);
     final uri = _buildFnUri('drills-head/$path');
-    final res = await _http.head(
-      uri,
-      headers: {if (ifNoneMatch != null) 'if-none-match': ifNoneMatch},
-    );
+    final res = await _http.head(uri, headers: {'if-none-match': ?ifNoneMatch});
 
     if (res.statusCode == 304) {
       return const DrillHeadResponse(exists: true, notModified: true);
@@ -422,10 +419,7 @@ class DrillClient {
     final uri = _buildDeepUri(path);
     final res = await _http.get(
       uri,
-      headers: {
-        if (ifNoneMatch != null) 'if-none-match': ifNoneMatch,
-        'accept': drillMime,
-      },
+      headers: {'if-none-match': ?ifNoneMatch, 'accept': drillMime},
     );
 
     if (res.statusCode == 304) {
@@ -461,7 +455,7 @@ class DrillClient {
   }) async {
     final uri = _buildFnUri(
       'market-feed',
-      query: {'limit': limit.toString(), if (cursor != null) 'cursor': cursor},
+      query: {'limit': limit.toString(), 'cursor': ?cursor},
     );
     final res = await _http.get(uri);
 
@@ -598,11 +592,7 @@ class DrillClient {
   }) async {
     final uri = _buildFnUri(
       'drills-admin',
-      query: {
-        'action': action,
-        'slug': slug,
-        if (version != null) 'version': version,
-      },
+      query: {'action': action, 'slug': slug, 'version': ?version},
     );
     final res = await _http.get(
       uri,
