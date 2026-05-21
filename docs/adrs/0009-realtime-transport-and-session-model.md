@@ -46,14 +46,15 @@ Chosen option: **short polling with CDN-cached session status and patch-style wr
 
 ### Session model
 
-A session is the unit of "everyone currently coordinating on the same plan." Sessions are implicit and exist as long as a status object exists for their key.
+A session is the unit of "everyone currently coordinating on the same plan." Sessions only exist for **published catalog plans**. Local plans are single-device by definition and are not synchronized through this transport.
+
+The session key is derived from the catalog slug:
 
 ```
-catalog:<slug>           Catalog plan, owner-published
-plan:<programUuid>       Local plan, ad-hoc session
+catalog:<slug>
 ```
 
-Catalog plans share a key derived from the slug. Followers automatically poll when the plan is opened, subject to consent. Local plans need a join code that maps to `programUuid` plus a session secret. The UX for the join code belongs to ADR-0011.
+Followers automatically poll when a catalog plan is opened, subject to consent.
 
 Each device gets a participant ID, a nanoid persisted under `app:participantId:v1`. The ID is per-device, stable across restarts, and used both as the writer identity on patches and as the slot key in the `participants` map.
 
@@ -82,7 +83,7 @@ sealed class SessionStatus with _$SessionStatus {
     @Default({}) Map<String, SessionParticipant> participants,
 
     /// Latest raw position per broadcasting participant, keyed by participantId.
-    /// Each entry carries the teamId the participant contributes to.
+    /// Each entry carries the teamUuid the participant contributes to.
     /// Multiple participants checked in to the same team each get their own
     /// slot here. Aggregation into a single "team position" (centroid,
     /// staleness filtering, outlier rejection) is defined by ADR-0012.
@@ -95,14 +96,26 @@ sealed class SessionStatus with _$SessionStatus {
 sealed class SessionParticipant with _$SessionParticipant {
   const factory SessionParticipant({
     required String participantId,
+
+    /// User-provided name shown to other participants in the UI. Optional.
+    /// Set at check-in (or left null) and can be edited any time by
+    /// patching one's own slot. Falls back to "Anonym" or similar in
+    /// the UI when null.
     String? displayName,
 
-    /// Role at check-in time. A teamId means "checked in as a member of
-    /// that team, broadcasting team_position for it." A null value means
-    /// "checked in as observer (staff/instructor), no position broadcast."
-    /// There is no third state. The check-in UX always requires a role
-    /// choice up front. Switching role is done by patching this field.
-    String? checkedInTeamId,
+    /// Team membership, by the local `Team.uuid` value. A teamUuid means
+    /// "checked in as a member of that team, broadcasting
+    /// participant_position for it." Null means "no team membership
+    /// (observer or pure coordinator)." Independent of isCoordinator:
+    /// a team member can also be a coordinator.
+    String? checkedInTeamUuid,
+
+    /// Coordinator role. When true, this device is authorized to write
+    /// the `exercise` and `teams` slots. Self-declared by patching one's
+    /// own participant slot. Multiple coordinators may exist in the same
+    /// session. Trust model matches the rest of the patch protocol: the
+    /// app trusts participants to self-select honestly.
+    @Default(false) bool isCoordinator,
 
     /// When this participant joined the session. Client-supplied on the
     /// check-in patch, never changes after.
@@ -121,12 +134,14 @@ sealed class ParticipantPosition with _$ParticipantPosition {
   const factory ParticipantPosition({
     required String participantId,
 
-    /// The team this participant contributes a position for. Must match
-    /// participants[participantId].checkedInTeamId at write time. Captured
-    /// here so readers do not have to cross-reference the participants map
-    /// to know which team a position belongs to (and so historical data
-    /// remains interpretable if the participant later switches role).
-    required String teamId,
+    /// The team this participant contributes a position for, by the
+    /// local `Team.uuid` value. Must match
+    /// participants[participantId].checkedInTeamUuid at write time.
+    /// Captured here so readers do not have to cross-reference the
+    /// participants map to know which team a position belongs to (and
+    /// so historical data remains interpretable if the participant later
+    /// switches role).
+    required String teamUuid,
 
     required double latitude,
     required double longitude,
@@ -146,27 +161,29 @@ Writes are slot-scoped patches. A patch addresses one slot and is rejected if th
 {
   "patch": "participant",
   "participantId": "abc123",
-  "data": { "displayName": "Bravo team", "checkedInTeamId": "t-04", "lastSeenAt": "2026-05-20T12:34:56Z" }
+  "data": { "displayName": "Bravo", "checkedInTeamUuid": "t_aB3kZ", "lastSeenAt": "2026-05-20T12:34:56Z" }
 }
 ```
 
 | Patch kind          | Targets                       | Authorized writer                                          |
 |---------------------|-------------------------------|-------------------------------------------------------------|
-| `participant`       | `participants[participantId]` | The device whose `participantId` matches the patch. The first such patch is the check-in, and it must carry a role (teamId or null for observer). Subsequent patches update display name or switch role. |
+| `participant`       | `participants[participantId]` | The device whose `participantId` matches the patch. The first such patch is the check-in (sets team role, optional `displayName`, and any other fields). Subsequent patches update `displayName`, team membership or coordinator role. A device can only patch its own slot. |
 | `participant_leave` | `participants[participantId]` (delete) | The device whose `participantId` matches the patch. Used for explicit check-out. |
-| `participant_position` | `positions[participantId]` | The device whose `participantId` matches the patch, provided their `participants[participantId].checkedInTeamId` is non-null. Multiple participants checked in to the same team each write their own `positions` slot. Aggregation into a single team position is defined by ADR-0012. |
-| `exercise`          | `exercise`                    | The session owner (bearer token from owner identity).      |
-| `teams`             | `teams`                       | The session owner.                                          |
+| `participant_position` | `positions[participantId]` | The device whose `participantId` matches the patch, provided their `participants[participantId].checkedInTeamUuid` is non-null. Multiple participants checked in to the same team each write their own `positions` slot. Aggregation into a single team position is defined by ADR-0012. |
+| `exercise`          | `exercise`                    | Any device whose `participants[writerId].isCoordinator == true`. Multiple coordinators may exist; conflicts are resolved last-writer-wins. |
+| `teams`             | `teams`                       | Any device whose `participants[writerId].isCoordinator == true`. |
 
 The server bumps `participants[writer].lastSeenAt = now` on every patch authored by `writer`, including `team_position` writes. Position broadcasts therefore double as a presence signal. There is no separate heartbeat patch.
 
 A device that closes the app or revokes consent sends a `participant_leave` patch to remove its slot cleanly. Devices that disappear without leaving (network loss, killed app, dead battery) are left in `participants` with a stale `lastSeenAt` until the daily cleanup or until they reconnect.
 
-**Check-in always picks a role.** The check-in UX asks the user up front whether they are joining as a member of a specific team or as an observer (staff or instructor). The role is encoded in the very first `participant` patch as `checkedInTeamId`. A team-member check-in immediately starts the `team_position` broadcast loop on the client. An observer check-in does not. There is no "joined session but undecided" state in the data model or in the UI.
+**Check-in always picks a team role and optionally a name.** The check-in UX asks the user up front whether they are joining as a member of a specific team or as an observer, and lets them enter a display name (or leave blank). The team role is encoded in the first `participant` patch as `checkedInTeamUuid` and the name as `displayName`. A team-member check-in immediately starts the `participant_position` broadcast loop on the client. An observer check-in does not. Both name and team can be changed later by patching one's own slot.
 
-Switching role mid-session (e.g., observer takes over as Bravo team leader) is a normal `participant` patch updating `checkedInTeamId`. The client stops or starts the position broadcaster as needed when this happens. The participant's own `positions[participantId]` slot reflects the new team on the next position write, and the staleness rules in ADR-0012 handle the brief window where the slot still carries the previous teamId.
+**Coordinator role is independent and opt-in.** Any participant can flip their own `isCoordinator` flag at any time by patching their own slot. Coordinators are authorized to write the `exercise` and `teams` slots. Multiple coordinators may exist concurrently. The UX surfaces who currently holds the role so participants can stay aware of each other's actions.
 
-`participant` and `team_position` patches are validated at face value (the writer claims its identity). `exercise` and `teams` require `Authorization: Bearer <ownerToken>`. The token is generated when the drill is created (ADR-0011 owns the issuance flow) and stored server-side as a hash on the blob.
+Switching roles mid-session (observer takes over as Bravo team leader, or a team member takes the coordinator role) is a normal `participant` patch. The client stops or starts the position broadcaster as needed.
+
+All slot-scoped patches are validated at face value (the writer claims its identity) against the relevant participant slot. `exercise` and `teams` patches additionally require the writer's slot to have `isCoordinator == true`.
 
 Server-side merge:
 
@@ -217,7 +234,7 @@ Worst-case latency is three seconds (poll) plus purge propagation (≤ one secon
 abstract class LiveStatusClient {
   Stream<SessionStatus> watch(String sessionKey, {Duration interval});
 
-  /// Check in (first call, must include role via checkedInTeamId or null
+  /// Check in (first call, must include role via checkedInTeamUuid or null
   /// for observer) or update self (subsequent calls: change display name
   /// or switch role).
   Future<int> patchParticipant(String sessionKey, SessionParticipant participant);
@@ -226,16 +243,11 @@ abstract class LiveStatusClient {
   Future<int> leaveParticipant(String sessionKey, String participantId);
 
   Future<int> patchParticipantPosition(String sessionKey, ParticipantPosition position);
-  Future<int> patchExercise(
-    String sessionKey,
-    SessionExerciseState exercise, {
-    required String ownerToken,
-  });
-  Future<int> patchTeams(
-    String sessionKey,
-    List<SessionTeam> teams, {
-    required String ownerToken,
-  });
+
+  /// Authorized only when the device's own participant slot has
+  /// isCoordinator == true. The server validates against that slot.
+  Future<int> patchExercise(String sessionKey, SessionExerciseState exercise);
+  Future<int> patchTeams(String sessionKey, List<SessionTeam> teams);
 
   Future<void> disconnect();
 }
@@ -344,8 +356,7 @@ Status objects live in Netlify Blobs, namespace `ringdrill-sessions`. Keys are `
 
 ## Out of scope
 
-* The owner-token generation flow for local-plan sessions (ADR-0011).
-* The detailed shape of `SessionExerciseState` and `SessionTeam` (ADR-0011).
+* The detailed shape of `SessionExerciseState` and `SessionTeam`, and the coordinator role lifecycle (ADR-0011).
 * The UI for participant check-in, position broadcast and privacy controls (ADR-0012).
 * Aggregation rules from per-participant `positions` into a single per-team display position (centroid, staleness threshold, outlier rejection when reports diverge wildly). All defined by ADR-0012.
 * The alternative backend that takes over if Free-plan headroom is exhausted (ADR-0013, planned).

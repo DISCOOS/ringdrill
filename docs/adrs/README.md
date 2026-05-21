@@ -17,6 +17,9 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0007 | [.drill files are versioned ZIP archives of JSON parts](./0007-drill-file-format.md)                     | Accepted |
 | ADR-0008 | [Persistent program library with active plan and shared catalog](./0008-persistent-program-library-and-catalog.md) | Accepted |
 | ADR-0009 | [Short polling with CDN-cached session status as live transport](./0009-realtime-transport-and-session-model.md) | Accepted |
+| ADR-0010 | [Live catalog updates via HEAD polling with CDN cache](./0010-live-catalog-updates.md) | Accepted |
+| ADR-0011 | [Synchronized exercise control with coordinator-driven state](./0011-synchronized-exercise-control.md) | Accepted |
+| ADR-0011 | [Local end-to-end catalog testing via netlify dev, CLI seeding and a build-time base URL](./0011-local-catalog-testing.md) | Proposed |
 
 ## When to write an ADR
 
