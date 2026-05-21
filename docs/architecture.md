@@ -114,6 +114,44 @@ Endpoints (see `netlify.toml` for the redirect map):
 
 The CLI in `bin/ringdrill.dart` talks to these endpoints using `RINGDRILL_ADMIN_TOKEN` and `RINGDRILL_BASE_URL`.
 
+### Running the backend locally
+
+The full Netlify stack (functions plus an emulated blob store) can be run on a contributor machine without touching production. The intended workflow and the architectural rationale are captured in [ADR-0013](./adrs/0013-local-catalog-testing.md). The short version follows.
+
+Prerequisites: Node 20+ and the [Netlify CLI](https://docs.netlify.com/cli/get-started/) (`npx netlify` will fetch it on first use).
+
+Start the backend:
+```bash
+make netlify-dev
+```
+The target runs `npm install` and `ADMIN_TOKEN=dev-token npx netlify dev`. Override the token with `make netlify-dev LOCAL_ADMIN_TOKEN=<token>`. Functions are now reachable at `http://localhost:8888`. The blob store is emulated under `.netlify/blobs-serve/`.
+
+Verify the catalog responds:
+```bash
+curl http://localhost:8888/api/market/feed
+```
+
+The admin CLI honors `RINGDRILL_BASE_URL`, so the same binary works against the local backend without rebuilding:
+```bash
+export RINGDRILL_BASE_URL=http://localhost:8888
+export RINGDRILL_ADMIN_TOKEN=dev-token
+ringdrill list-all
+ringdrill publish <slug>
+```
+
+Clear the local blob store and start fresh (with the backend stopped):
+```bash
+rm -rf .netlify/blobs-serve
+```
+
+The polished workflow described in ADR-0013 (Makefile targets `catalog-seed`, `catalog-feed`, `catalog-reset` building on `netlify-dev`, CLI commands `upload` / `feed` / `download`, and a `--dart-define=RINGDRILL_LOCAL_BASE_URL=...` switch on the Flutter side) is the target state. Those targets and CLI subcommands will be added as the implementation lands. The fixture used for `catalog-seed` is at `test/fixtures/test-7x.drill`. Override with `SEED_DRILL=<path>` to publish a different file.
+
+Pointing the Flutter app at the local backend (once the `--dart-define` switch is implemented):
+```bash
+flutter run -d macos --dart-define=RINGDRILL_LOCAL_BASE_URL=http://localhost:8888
+```
+The override only takes effect in debug builds. Release builds cannot be coerced into talking to localhost.
+
 ## Drill file format
 
 `DrillFile` (in `lib/data/drill_file.dart`) is a versioned zip wrapper around the program JSON.

@@ -74,3 +74,10 @@ To get started with developing for RingDrill using Flutter, follow these steps:
     ```bash
    ringdrill -h
     ```
+
+10. **Run the Netlify backend locally**:
+    Start the full Netlify stack (functions plus emulated blob store) on your machine:
+    ```bash
+    make netlify-dev
+    ```
+    Functions are now reachable at `http://localhost:8888`. See [`docs/architecture.md`](docs/architecture.md#running-the-backend-locally) for verification, CLI usage and the polished workflow proposed in [ADR-0013](docs/adrs/0013-local-catalog-testing.md).

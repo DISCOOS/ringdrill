@@ -1,8 +1,11 @@
 .PHONY: \
-	build watch release
+	build watch release netlify-dev
 
 .SILENT: \
 	build watch release
+
+# Local Netlify dev server (functions + emulated blob store)
+LOCAL_ADMIN_TOKEN ?= dev-token
 
 build:
 	echo "Run code generation..."
@@ -23,4 +26,8 @@ release-android:
 
 patch-android:
 	shorebird patch android
+
+netlify-dev:
+	npm install
+	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) npx netlify dev
 
