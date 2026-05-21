@@ -319,7 +319,7 @@ class _LibraryBodyState extends State<_LibraryBody>
   Future<MarketFeedPageResponse> _loadFeed() async {
     _catalogStatus.setStatus(CatalogServiceState.checking);
     try {
-      final feed = await DrillClient(baseUrl: _catalogBaseUrl()).marketFeed();
+      final feed = await _buildCatalogClient().marketFeed();
       _catalogStatus.setStatus(CatalogServiceState.online);
       return feed;
     } catch (error) {
@@ -339,6 +339,18 @@ class _LibraryBodyState extends State<_LibraryBody>
       isWeb: kIsWeb,
       isRelease: kReleaseMode,
       isDebug: kDebugMode,
+    );
+  }
+
+  // Builds a DrillClient configured for the catalog endpoint. When the
+  // base URL points at a local `netlify functions:serve` (no /api/* or
+  // /d/* redirects), we route the deep-link calls directly at the
+  // function path. See ADR-0013.
+  DrillClient _buildCatalogClient() {
+    final baseUrl = _catalogBaseUrl();
+    return DrillClient(
+      baseUrl: baseUrl,
+      deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
     );
   }
 
@@ -527,7 +539,7 @@ class _LibraryBodyState extends State<_LibraryBody>
 
   Future<void> _refreshProgram(BuildContext context, Program program) async {
     final localizations = AppLocalizations.of(context)!;
-    final client = DrillClient(baseUrl: _catalogBaseUrl());
+    final client = _buildCatalogClient();
     try {
       await _programService.refreshCatalogItem(
         program.uuid,
@@ -569,7 +581,7 @@ class _LibraryBodyState extends State<_LibraryBody>
     try {
       await _programService.installFromCatalog(
         item,
-        DrillClient(baseUrl: _catalogBaseUrl()),
+        _buildCatalogClient(),
         activate: true,
       );
       if (!mounted) return;

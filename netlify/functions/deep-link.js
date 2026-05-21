@@ -17,6 +17,14 @@ export default async function (request) {
 
         // Recognize /o/ (App Link) or /d/
         const isOpenMode = /^\/o\//i.test(originalPath);
+        // Detect when the function was reached directly via its function
+        // path (typically only in local `netlify functions:serve`, since
+        // production routes everything through the /d/ and /o/ aliases).
+        // When this is the case we skip the `.drill` canonicalisation
+        // redirect, since the redirect target (`/d/<slug>.drill`) does not
+        // exist locally.
+        const isViaFunctionPath =
+            /^.*\/\.netlify\/functions\/deep-link\//.test(originalPath);
 
         // Normalize tail
         let tail = originalPath
@@ -55,7 +63,10 @@ export default async function (request) {
         }
 
         // ---------- /d/ behavior ----------
-        if (!hasDrillExt) {
+        // When the request was sent directly to the function path (local
+        // dev), serve the file directly. Otherwise produce a 301 to the
+        // canonical `/d/<slug>.drill` form, which is the public-facing URL.
+        if (!hasDrillExt && !isViaFunctionPath) {
             const canonical = `/d/${slug}${version ? `@${version}` : ""}.drill`;
             const u = new URL(request.url);
             u.pathname = canonical;

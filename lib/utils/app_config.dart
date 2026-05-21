@@ -47,6 +47,21 @@ class AppConfig {
     return isWeb && isRelease ? '' : ringDrillBaseUrl;
   }
 
+  /// Returns the deep-link base path the [DrillClient] should use for the
+  /// given [baseUrl]. In production the path is `/d` (the public deep-link
+  /// alias, served via the redirect in `netlify.toml`). When the backend
+  /// is a local `netlify functions:serve` instance the redirect is not
+  /// applied, so the client must call the function directly. See ADR-0013.
+  static String deepLinkBasePathFor(String baseUrl) {
+    if (_looksLocal(baseUrl)) return '/.netlify/functions/deep-link';
+    return '/d';
+  }
+
+  static bool _looksLocal(String baseUrl) {
+    final lower = baseUrl.toLowerCase();
+    return lower.contains('localhost') || lower.contains('127.0.0.1');
+  }
+
   static String catalogOwnershipKey(String slug) =>
       'app:catalogOwnership:$slug';
 }
