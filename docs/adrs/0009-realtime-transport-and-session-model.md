@@ -83,11 +83,8 @@ sealed class SessionStatus with _$SessionStatus {
     @Default({}) Map<String, SessionParticipant> participants,
 
     /// Latest raw position per broadcasting participant, keyed by participantId.
-    /// Each entry carries the teamUuid the participant contributes to.
-    /// Multiple participants checked in to the same team each get their own
-    /// slot here. Aggregation into a single "team position" (centroid,
-    /// staleness filtering, outlier rejection) is defined by ADR-0012.
-    /// Filled by ADR-0012.
+    /// The participant's current team is looked up at render time via
+    /// participants[participantId].checkedInTeamUuid. Filled by ADR-0012.
     @Default({}) Map<String, ParticipantPosition> positions,
   }) = _SessionStatus;
 }
@@ -134,15 +131,6 @@ sealed class ParticipantPosition with _$ParticipantPosition {
   const factory ParticipantPosition({
     required String participantId,
 
-    /// The team this participant contributes a position for, by the
-    /// local `Team.uuid` value. Must match
-    /// participants[participantId].checkedInTeamUuid at write time.
-    /// Captured here so readers do not have to cross-reference the
-    /// participants map to know which team a position belongs to (and
-    /// so historical data remains interpretable if the participant later
-    /// switches role).
-    required String teamUuid,
-
     required double latitude,
     required double longitude,
     double? accuracyMeters,
@@ -169,7 +157,7 @@ Writes are slot-scoped patches. A patch addresses one slot and is rejected if th
 |---------------------|-------------------------------|-------------------------------------------------------------|
 | `participant`       | `participants[participantId]` | The device whose `participantId` matches the patch. The first such patch is the check-in (sets team role, optional `displayName`, and any other fields). Subsequent patches update `displayName`, team membership or coordinator role. A device can only patch its own slot. |
 | `participant_leave` | `participants[participantId]` (delete) | The device whose `participantId` matches the patch. Used for explicit check-out. |
-| `participant_position` | `positions[participantId]` | The device whose `participantId` matches the patch, provided their `participants[participantId].checkedInTeamUuid` is non-null. Multiple participants checked in to the same team each write their own `positions` slot. Aggregation into a single team position is defined by ADR-0012. |
+| `participant_position` | `positions[participantId]` | The device whose `participantId` matches the patch, provided their `participants[participantId].checkedInTeamUuid` is non-null. Each broadcasting participant writes its own `positions` slot. Rendering as per-participant markers is defined by ADR-0012. |
 | `exercise`          | `exercise`                    | Any device whose `participants[writerId].isCoordinator == true`. Multiple coordinators may exist; conflicts are resolved last-writer-wins. |
 | `teams`             | `teams`                       | Any device whose `participants[writerId].isCoordinator == true`. |
 
@@ -304,7 +292,7 @@ Reads past cache (2 POPs × writes):                     58 200
                             Total invocations:          87 300
 ```
 
-The model assumes **one active broadcaster per team**, typically the team leader's device. Other team members and instructors who check in to the same team appear in `participants` but do not broadcast their own position. The transport allows multiple broadcasters per team (each writes its own `positions[participantId]` slot, and ADR-0012 aggregates them), but the app UX nudges only one device per team to enable broadcast. If both members of every team broadcast, position writes double to ~58 000 and the cost roughly doubles to ~175 000 invocations per weekend, which would not fit on Legacy Free. ADR-0012 documents the UX guardrail.
+The model assumes **one active broadcaster per team**, typically the team leader's device. Other team members and instructors who check in to the same team appear in `participants` but do not broadcast their own position. The transport allows multiple broadcasters per team (each writes its own `positions[participantId]` slot, rendered as separate markers on the map per ADR-0012), but the app UX nudges only one device per team to enable broadcast. If both members of every team broadcast, position writes double to ~58 000 and the cost roughly doubles to ~175 000 invocations per weekend, which would not fit on Legacy Free. ADR-0012 documents the UX guardrail.
 
 Bandwidth for the same weekend: ~45 MB. Negligible against the 100 GB cap.
 
@@ -358,7 +346,7 @@ Status objects live in Netlify Blobs, namespace `ringdrill-sessions`. Keys are `
 
 * The detailed shape of `SessionExerciseState` and `SessionTeam`, and the coordinator role lifecycle (ADR-0011).
 * The UI for participant check-in, position broadcast and privacy controls (ADR-0012).
-* Aggregation rules from per-participant `positions` into a single per-team display position (centroid, staleness threshold, outlier rejection when reports diverge wildly). All defined by ADR-0012.
+* Position capture, throttling, privacy controls and rendering as per-participant markers (ADR-0012).
 * The alternative backend that takes over if Free-plan headroom is exhausted (ADR-0013, planned).
 
 ## Where the code lives
