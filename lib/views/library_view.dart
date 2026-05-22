@@ -70,7 +70,16 @@ class _LibraryBodyState extends State<_LibraryBody>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _catalogStatus.listenable.addListener(_onCatalogStatusChanged);
-    _feed = _loadFeed();
+    // Defer the first catalog probe to a follow-up event loop task so the
+    // initial CatalogStatusService.setStatus(checking) call inside
+    // _loadFeed() runs after the surrounding frame has finished building.
+    // Calling setStatus synchronously from initState() notifies any
+    // ValueListenableBuilder<CatalogStatus> already in the tree (e.g. the
+    // appbar plan badge) while the framework is still in the build phase,
+    // which trips the "setState() or markNeedsBuild() called during build"
+    // assertion. FutureBuilder is fine with a future that completes a tick
+    // later — it just shows the progress indicator in the meantime.
+    _feed = Future<MarketFeedPageResponse>(_loadFeed);
   }
 
   @override
