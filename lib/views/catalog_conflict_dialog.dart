@@ -24,6 +24,16 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
             children: [
               Text(localizations.catalogConflictBody),
               const SizedBox(height: 16),
+              DiffField(
+                label: localizations.catalogDiffName,
+                local: diff.nameLocal,
+                remote: diff.nameRemote,
+              ),
+              DiffField(
+                label: localizations.catalogDiffDescription,
+                local: diff.descriptionLocal,
+                remote: diff.descriptionRemote,
+              ),
               DiffGroup(
                 title: localizations.catalogDiffExercises,
                 added: diff.addedExercises,
@@ -56,18 +66,20 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
               Navigator.pop(context, CatalogConflictChoice.overwriteLocal),
           child: Text(localizations.catalogConflictOverwrite),
         ),
-        if (ownedSlug)
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, CatalogConflictChoice.publishMyChanges),
-            child: Text(localizations.catalogConflictPublish),
-          )
-        else
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, CatalogConflictChoice.forkAsLocal),
-            child: Text(localizations.catalogConflictFork),
-          ),
+        TextButton(
+          onPressed: () =>
+              Navigator.pop(context, CatalogConflictChoice.forkAsLocal),
+          child: Text(localizations.catalogConflictFork),
+        ),
+        // Wiki model: anyone can publish updates. We previously hid this
+        // option behind ownsCatalogSlug, which broke the flow for users who
+        // had installed a plan and wanted to contribute back without ever
+        // having published it first.
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(context, CatalogConflictChoice.publishMyChanges),
+          child: Text(localizations.catalogConflictPublish),
+        ),
       ],
     ),
   );

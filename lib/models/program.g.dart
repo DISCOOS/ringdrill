@@ -72,6 +72,10 @@ Map<String, dynamic> _$CatalogToJson(_Catalog instance) => <String, dynamic>{
 };
 
 _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
+  nameLocal: json['nameLocal'] as String?,
+  nameRemote: json['nameRemote'] as String?,
+  descriptionLocal: json['descriptionLocal'] as String?,
+  descriptionRemote: json['descriptionRemote'] as String?,
   addedExercises:
       (json['addedExercises'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -121,6 +125,10 @@ _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
 
 Map<String, dynamic> _$ProgramDiffToJson(_ProgramDiff instance) =>
     <String, dynamic>{
+      'nameLocal': instance.nameLocal,
+      'nameRemote': instance.nameRemote,
+      'descriptionLocal': instance.descriptionLocal,
+      'descriptionRemote': instance.descriptionRemote,
       'addedExercises': instance.addedExercises,
       'removedExercises': instance.removedExercises,
       'modifiedExercises': instance.modifiedExercises,

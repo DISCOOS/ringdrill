@@ -239,6 +239,10 @@
   "catalogDiffAdded": "Lagt til",
   "catalogDiffRemoved": "Fjernet",
   "catalogDiffModified": "Endret",
+  "catalogDiffLocal": "Din versjon",
+  "catalogDiffRemote": "Katalogversjon",
+  "catalogDiffName": "Plannavn",
+  "catalogDiffDescription": "Beskrivelse",
   "catalogDiffExercises": "Øvelser",
   "catalogDiffTeams": "Lag",
   "catalogDiffSessions": "Økter",
@@ -258,5 +262,6 @@
   "libraryPublishSlugTaken": "Slug «{slug}» er allerede i bruk av en urelatert plan. Velg en annen slug.",
   "libraryPublishConflict": "Noen oppdaterte denne planen først. Prøv igjen.",
   "libraryPublishSuccess": "Publiserte {name}",
+  "libraryPublishNoChange": "Ingen endringer å publisere",
   "libraryPublishFailed": "Kunne ikke publisere planen"
 }

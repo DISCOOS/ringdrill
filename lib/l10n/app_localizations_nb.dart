@@ -893,6 +893,18 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogDiffModified => 'Endret';
 
   @override
+  String get catalogDiffLocal => 'Din versjon';
+
+  @override
+  String get catalogDiffRemote => 'Katalogversjon';
+
+  @override
+  String get catalogDiffName => 'Plannavn';
+
+  @override
+  String get catalogDiffDescription => 'Beskrivelse';
+
+  @override
   String get catalogDiffExercises => 'Øvelser';
 
   @override
@@ -957,6 +969,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String libraryPublishSuccess(Object name) {
     return 'Publiserte $name';
   }
+
+  @override
+  String get libraryPublishNoChange => 'Ingen endringer å publisere';
 
   @override
   String get libraryPublishFailed => 'Kunne ikke publisere planen';

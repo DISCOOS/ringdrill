@@ -399,8 +399,15 @@ class ProgramService {
     final localHash = local.computeContentHash();
     final hasLocalChanges =
         local.contentHash != null && localHash != local.contentHash;
+    debugPrint(
+      '[refreshCatalogItem] slug=$slug '
+      'storedContentHash=${local.contentHash} '
+      'localHash=$localHash '
+      'hasLocalChanges=$hasLocalChanges',
+    );
 
     if (!hasLocalChanges) {
+      debugPrint('[refreshCatalogItem] no local changes → overwriting local');
       await _overwriteCatalogProgram(local, remote, slug, latestEtag);
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.updatedSilently,
@@ -426,9 +433,13 @@ class ProgramService {
           diff: diff,
         );
       case CatalogConflictChoice.publishMyChanges:
+        // Use the *fresh* etag we just downloaded as If-Match. The user has
+        // seen the diff and chosen to overwrite the new remote with their
+        // local changes — sending the stale storedEtag would 412 against
+        // the server we just synced from.
         final upload = await client.upload(
           DrillFile.fromProgram(local, slug),
-          ifMatchEtag: storedEtag,
+          ifMatchEtag: latestEtag,
           published: true,
         );
         await _repo.setOwnsCatalogSlug(slug, true);
@@ -479,7 +490,7 @@ class ProgramService {
   /// Throws [DrillApiException] with `status == 409` when the slug is in use by
   /// an unrelated plan, and with `status == 412` when a concurrent update raced
   /// ahead. Other errors are rethrown unchanged.
-  Future<Program> publishProgram(
+  Future<({Program program, bool notModified})> publishProgram(
     String programUuid, {
     required String slug,
     required List<String> tags,
@@ -511,12 +522,20 @@ class ProgramService {
       throw ArgumentError('Slug cannot be empty after sanitization');
     }
 
+    debugPrint(
+      '[publishProgram] slug=$effectiveSlug name="${local.name}" '
+      'ifMatch=$ifMatch contentHash=${local.contentHash}',
+    );
     final file = DrillFile.fromProgram(local, effectiveSlug);
     final upload = await client.upload(
       file,
       ifMatchEtag: ifMatch,
       published: true,
       tags: tags,
+    );
+    debugPrint(
+      '[publishProgram] upload version=${upload.version} '
+      'newEtag=${upload.etag} notModified=${upload.notModified}',
     );
     await _repo.setOwnsCatalogSlug(effectiveSlug, true);
 
@@ -532,7 +551,10 @@ class ProgramService {
     _controller.add(
       ProgramEvent(ProgramEventType.programRefreshed, published),
     );
-    return _repo.loadProgram(published.uuid) ?? published;
+    return (
+      program: _repo.loadProgram(published.uuid) ?? published,
+      notModified: upload.notModified,
+    );
   }
 
   /// Publish a program to the catalog under a specific [slug], forking the
@@ -551,7 +573,7 @@ class ProgramService {
   /// Returns the published [Program] (the fork, when a fork was created).
   ///
   /// Throws the same exceptions as [publishProgram].
-  Future<Program> publishProgramAs(
+  Future<({Program program, bool notModified})> publishProgramAs(
     String programUuid, {
     required String slug,
     required List<String> tags,

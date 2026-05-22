@@ -127,7 +127,7 @@ function corsHeadersFor(request) {
         "access-control-allow-origin": origin,
         "access-control-allow-methods": "GET, POST, HEAD, OPTIONS",
         "access-control-allow-headers": "authorization, content-type, if-match, if-none-match, accept",
-        "access-control-expose-headers": "etag, content-type, content-disposition, last-modified, cache-control",
+        "access-control-expose-headers": "etag, content-type, content-disposition, last-modified, cache-control, x-conflict-kind, x-version, x-latest, x-versioned, x-program-id",
         "access-control-max-age": "600",
         "vary": "Origin",
     };

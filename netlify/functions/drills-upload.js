@@ -2,7 +2,7 @@ import {
     keysFor, readJson, sanitizeSlug,
     getSlugRecord, claimSlug, sha256Hex,
     toStrongEtag, nowIso, originFromRequest, readDrillBytes,
-    writeBinaryConditional, writeJsonConditional, getBlobEtag,
+    writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors
 } from "./_shared.js";
 
@@ -38,6 +38,10 @@ export default async function (request) {
         const bytes = await readDrillBytes(request);
 
         // ---- Slug claim / ownership check ----
+        const slugTakenResponse = () => withCors(request, new Response(
+            `Slug '${slug}' already in use`,
+            { status: 409, headers: { "x-conflict-kind": "slug" } }
+        ));
         if (!existing) {
             // Atomic create (onlyIfNew)
             const claimed = await claimSlug(slug, { ownerId, programId, createdAt: nowIso() });
@@ -45,117 +49,115 @@ export default async function (request) {
                 // someone else created between our read and write → verify ownership
                 const now = await getSlugRecord(slug);
                 if (!now || now.ownerId !== ownerId || now.programId !== programId) {
-                    return withCors(request, new Response(`Slug '${slug}' already in use`, { status: 409 }));
+                    return slugTakenResponse();
                 }
             }
         } else {
             // Slug exists — enforce same mapping unless caller explicitly changed it
             if (existing.ownerId !== ownerId || existing.programId !== programId) {
-                return withCors(request, new Response(`Slug '${slug}' already in use`, { status: 409 }));
+                return slugTakenResponse();
             }
         }
 
-        // The keys for `latest` and `meta` do not depend on version. We read
-        // them upfront so we can:
-        //   - validate the client's If-Match against the current `latest` etag
-        //     before we make any storage writes (full client-driven OCC), and
-        //   - know which version to assign when the client did not specify one
-        //     (auto-bump = max(meta.versions) + 1).
         const { latest, meta } = keysFor({ ownerId, programId, version: "_" });
-
-        let currentMeta = await readJson(meta, {
+        const currentMeta = await readJson(meta, {
             programId, slug, name, ownerId, description: "", published: false, tags: [], versions: []
         });
-        let metaEtag = await getBlobEtag(meta);
 
-        // OCC against the client's view. The client supplies an `If-Match`
-        // header that came from a previous HEAD/download/upload response —
-        // those carry the *content* etag (sha256 of the version bytes), not
-        // the storage etag. So we compare the client's etag with the most
-        // recent version's content etag from meta.
+        // Sort meta.versions once — used by the OCC check and the "is this a
+        // no-op?" check.
+        const sortedVersions = (currentMeta.versions || [])
+            .slice()
+            .sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true }));
+        const currentLatest = sortedVersions.length
+            ? sortedVersions[sortedVersions.length - 1]
+            : null;
+        const currentContentEtag = currentLatest?.etag ?? null;
+
+        // ---- Optimistic concurrency check ----
+        // The single OCC gate: the client's If-Match (a content etag = sha256
+        // of the bytes they last saw as "latest") must match the most recent
+        // version's content etag in meta. If yes, their view is fresh and we
+        // proceed. If no, state has moved on and we return 412 — the client
+        // should refresh + show a diff against the new remote state before
+        // retrying. Subsequent writes (latest, meta) are unconditional
+        // overwrites; we trust the gate above.
         const clientIfMatch = request.headers.get("if-match");
-        if (clientIfMatch) {
-            const sorted = (currentMeta.versions || [])
-                .slice()
-                .sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true }));
-            const currentContentEtag = sorted.length
-                ? sorted[sorted.length - 1].etag
-                : null;
-            if (clientIfMatch !== currentContentEtag) {
-                return withCors(request, new Response(
-                    "Precondition failed (latest changed since you last saw it)",
-                    { status: 412 }
-                ));
-            }
+        if (clientIfMatch && clientIfMatch !== currentContentEtag) {
+            return withCors(request, new Response(
+                "Precondition failed (latest changed since you last saw it)",
+                { status: 412 }
+            ));
         }
 
-        // 1) Write versioned blob.
-        // For explicit version: try once, 409 on collision (legacy behaviour).
-        // For auto-bump: retry on collision against a re-read meta, bounded.
-        // The retry is necessary because two concurrent uploads can both read
-        // the same `max(meta.versions)` and try to claim the same next version.
-        const maxVersionRetries = 5;
+        // ---- No-op check ----
+        // If the bytes the client is uploading are byte-identical to the
+        // current latest version, there's nothing to publish. Return 304 with
+        // the existing etag/version — no new versioned blob, no meta change.
+        // (Without this, repeated publishes of the same content accumulate
+        // duplicate versioned blobs with the same content etag.)
+        const incomingEtag = toStrongEtag(sha256Hex(bytes));
+        if (currentLatest && currentLatest.etag === incomingEtag) {
+            const origin = originFromRequest(request);
+            return withCors(request, new Response(null, {
+                status: 304,
+                headers: {
+                    "etag": incomingEtag,
+                    "x-version": String(currentLatest.v),
+                    "x-latest": `${origin}/d/${slug}`,
+                    "x-versioned": `${origin}/d/${slug}@${currentLatest.v}`,
+                    "x-program-id": String(programId),
+                },
+            }));
+        }
+
+        // ---- Write versioned blob ----
+        // Auto-bump version: start at max(meta.versions) + 1, walk forward on
+        // collision (orphan versioned blobs from previous failed uploads can
+        // leave gaps where storage has the slot but meta does not). Bounded
+        // retry. Explicit-version callers get the legacy "409 if taken"
+        // behaviour without walking.
+        const maxVersionRetries = 16;
         let version;
         let versioned;
         let vRes;
+        let attemptVersion = explicitVersion
+            ? null
+            : (currentMeta.versions || []).reduce((acc, v) => {
+                  const n = parseInt(v.v, 10);
+                  return Number.isFinite(n) ? Math.max(acc, n) : acc;
+              }, 0) + 1;
         for (let attempt = 0; ; attempt++) {
-            if (explicitVersion) {
-                version = explicitVersion;
-            } else {
-                const maxV = (currentMeta.versions || []).reduce((acc, v) => {
-                    const n = parseInt(v.v, 10);
-                    return Number.isFinite(n) ? Math.max(acc, n) : acc;
-                }, 0);
-                version = String(maxV + 1);
-            }
+            version = explicitVersion ?? String(attemptVersion);
             versioned = keysFor({ ownerId, programId, version }).versioned;
             vRes = await writeBinaryConditional(versioned, bytes, { onlyIfNew: true });
             if (vRes.modified) break;
             if (explicitVersion || attempt >= maxVersionRetries) {
                 return withCors(request, new Response(
-                    `Version '${version}' already exists`, { status: 409 }
+                    `Version '${version}' already exists`,
+                    { status: 409, headers: { "x-conflict-kind": "version" } }
                 ));
             }
-            // Race: another writer took our auto-assigned version. Re-read meta
-            // and try the next slot.
-            currentMeta = await readJson(meta, currentMeta);
-            metaEtag = await getBlobEtag(meta);
+            attemptVersion += 1;
         }
 
-        // 2) Update latest under storage-level OCC. The client's If-Match was
-        // already validated above against the content etag; here we guard
-        // against a server-internal race between our getBlobEtag read and the
-        // write by passing the storage etag we just observed.
-        const currentLatestStorageEtag = await getBlobEtag(latest);
-        const latestRes = currentLatestStorageEtag
-            ? await writeBinaryConditional(latest, bytes, { onlyIfMatch: currentLatestStorageEtag })
-            : await writeBinaryConditional(latest, bytes, { onlyIfNew: true });
-        if (!latestRes.modified) {
-            return withCors(request, new Response(
-                "Precondition failed (latest changed)", { status: 412 }
-            ));
-        }
+        // ---- Update latest (unconditional overwrite) ----
+        // The OCC gate above has already established that the client's view
+        // is fresh. We don't second-guess with another storage-level lock.
+        await writeBinaryConditional(latest, bytes, {});
 
+        // ---- Update meta (unconditional overwrite) ----
         const etag = toStrongEtag(sha256Hex(bytes));
         currentMeta.slug = slug;
         currentMeta.name = name;
         currentMeta.published = !!published;
         currentMeta.tags = Array.from(new Set([...(currentMeta.tags || []), ...tags]));
-
         const without = (currentMeta.versions || []).filter(v => v.v !== version);
         currentMeta.versions = [
             ...without,
             { v: version, etag, size: bytes.length, updatedAt: nowIso() }
         ].sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true }));
-
-        const mRes = await writeJsonConditional(
-            meta,
-            currentMeta,
-            metaEtag ? { onlyIfMatch: metaEtag } : { onlyIfNew: true }
-        );
-        if (!mRes.modified && metaEtag) {
-            return withCors(request, new Response("Precondition failed (meta changed)", { status: 412 }));
-        }
+        await writeJsonConditional(meta, currentMeta, {});
 
         const origin = originFromRequest(request);
         return withCors(request, new Response(JSON.stringify({

@@ -1508,6 +1508,30 @@ abstract class AppLocalizations {
   /// **'Modified'**
   String get catalogDiffModified;
 
+  /// No description provided for @catalogDiffLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Your version'**
+  String get catalogDiffLocal;
+
+  /// No description provided for @catalogDiffRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog version'**
+  String get catalogDiffRemote;
+
+  /// No description provided for @catalogDiffName.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan name'**
+  String get catalogDiffName;
+
+  /// No description provided for @catalogDiffDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get catalogDiffDescription;
+
   /// No description provided for @catalogDiffExercises.
   ///
   /// In en, this message translates to:
@@ -1621,6 +1645,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Published {name}'**
   String libraryPublishSuccess(Object name);
+
+  /// No description provided for @libraryPublishNoChange.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes to publish'**
+  String get libraryPublishNoChange;
 
   /// No description provided for @libraryPublishFailed.
   ///

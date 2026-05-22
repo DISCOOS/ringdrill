@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
@@ -9,8 +10,8 @@ import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
@@ -225,8 +226,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                     ],
                   );
                 }
-                final items =
-                    snapshot.data?.items ?? const <MarketFeedItem>[];
+                final items = snapshot.data?.items ?? const <MarketFeedItem>[];
                 if (items.isEmpty) {
                   return ListView(
                     children: [
@@ -248,8 +248,9 @@ class _LibraryBodyState extends State<_LibraryBody>
                       title: Text(item.name),
                       subtitle: Text(item.tags.join(', ')),
                       trailing: FilledButton(
-                        onPressed:
-                            installed ? null : () => _installCatalog(item),
+                        onPressed: installed
+                            ? null
+                            : () => _installCatalog(item),
                         child: Text(
                           installed
                               ? localizations.libraryInstalled

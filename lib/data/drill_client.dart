@@ -16,10 +16,19 @@ class DrillApiException implements Exception {
   final String message;
   final int? status;
   final String? body;
-  DrillApiException(this.message, {this.status, this.body});
+
+  /// Optional discriminator returned by the upload backend so the caller can
+  /// tell apart a slug-ownership 409 ("slug") from a version-collision 409
+  /// ("version"). Read from the `X-Conflict-Kind` response header. Null when
+  /// the server did not set it (older backends or non-conflict errors).
+  final String? conflictKind;
+
+  DrillApiException(this.message, {this.status, this.body, this.conflictKind});
+
   @override
   String toString() =>
-      'DrillApiException($message, status=$status, body=$body)';
+      'DrillApiException($message, status=$status, body=$body, '
+      'conflictKind=$conflictKind)';
 }
 
 /// Upload response from drills-upload.
@@ -32,6 +41,12 @@ class DrillUploadResponse {
   final Uri latestUrl;
   final Uri versionedUrl;
   final String? note;
+
+  /// True when the server returned 304 Not Modified — i.e. the uploaded
+  /// bytes were byte-identical to the current latest version and no new
+  /// version was created. The other fields point at the existing latest.
+  final bool notModified;
+
   const DrillUploadResponse({
     required this.slug,
     required this.programId,
@@ -40,6 +55,7 @@ class DrillUploadResponse {
     required this.latestUrl,
     required this.versionedUrl,
     this.note,
+    this.notModified = false,
   });
 
   factory DrillUploadResponse.fromJson(Map<String, dynamic> j) =>
@@ -276,40 +292,29 @@ class DrillClient {
   // -------------------------------
   // Upload (drills-upload) — POST
   // -------------------------------
+  /// Upload a [DrillFile] to the catalog.
+  ///
+  /// 412 (Precondition Failed) is propagated to the caller — we do NOT
+  /// silently HEAD + retry with a refreshed etag. That would defeat the
+  /// optimistic-concurrency contract: a 412 means the server has moved on
+  /// since the client last looked, and the local edits the caller is about
+  /// to publish are based on a stale view. The UI is the right place to
+  /// surface that, refresh, and let the user decide (overwrite, fork,
+  /// cancel) — not the transport layer.
   Future<DrillUploadResponse> upload(
     DrillFile file, {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
     List<String> tags = const [],
-    int maxRetries = 1,
-  }) async {
-    int attempt = 0;
-    String? currentIfMatch = ifMatchEtag;
-
-    while (true) {
-      try {
-        return await _uploadOnce(
-          file,
-          tags: tags,
-          ownerId: ownerId,
-          published: published,
-          ifMatchEtag: currentIfMatch,
-        );
-      } on DrillApiException catch (e) {
-        final isPrecondition = e.status == 412;
-        final canRetry = attempt < maxRetries;
-        if (!isPrecondition || !canRetry) rethrow;
-
-        // Refresh meta (HEAD) to pick up latest ETag, then retry once
-        final meta = await head(file.slug);
-        if (meta.etag == null) rethrow;
-        currentIfMatch = meta.etag;
-        attempt++;
-        // loop will retry
-      }
-    }
-  }
+  }) =>
+      _uploadOnce(
+        file,
+        tags: tags,
+        ownerId: ownerId,
+        published: published,
+        ifMatchEtag: ifMatchEtag,
+      );
 
   Future<DrillUploadResponse> _uploadOnce(
     DrillFile file, {
@@ -345,11 +350,37 @@ class DrillClient {
       body: file.content,
     );
 
+    if (res.statusCode == 304) {
+      // Server tells us "your bytes match the current latest — no new
+      // version was created". Build a synthetic response from the headers
+      // so the caller can update its source.latestEtag (it's a no-op for
+      // them but keeps the field non-stale) without special-casing the
+      // upload return type.
+      final etag = res.headers['etag'] ?? '';
+      final version = res.headers['x-version'] ?? '';
+      final latestUrl = res.headers['x-latest'];
+      final versionedUrl = res.headers['x-versioned'];
+      final programId = res.headers['x-program-id'] ?? '';
+      return DrillUploadResponse(
+        slug: file.slug,
+        programId: programId,
+        version: version,
+        etag: etag,
+        latestUrl: latestUrl != null ? Uri.parse(latestUrl) : uri,
+        versionedUrl: versionedUrl != null ? Uri.parse(versionedUrl) : uri,
+        notModified: true,
+      );
+    }
+
     if (res.statusCode == 409) {
+      final kind = res.headers['x-conflict-kind'];
       throw DrillApiException(
-        'Version already exists for slug=${file.slug}',
+        kind == 'version'
+            ? 'Version collision for slug=${file.slug}'
+            : 'Slug already in use: ${file.slug}',
         status: 409,
         body: res.body,
+        conflictKind: kind,
       );
     }
 

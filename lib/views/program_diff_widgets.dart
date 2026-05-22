@@ -42,3 +42,47 @@ class DiffGroup extends StatelessWidget {
     );
   }
 }
+
+/// Renders a single before/after field change (e.g. plan name, description).
+/// Renders nothing when both sides are null or equal.
+class DiffField extends StatelessWidget {
+  const DiffField({
+    super.key,
+    required this.label,
+    required this.local,
+    required this.remote,
+  });
+
+  final String label;
+  final String? local;
+  final String? remote;
+
+  @override
+  Widget build(BuildContext context) {
+    if (local == null && remote == null) return const SizedBox.shrink();
+    final localizations = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            '${localizations.catalogDiffLocal}: ${_present(local)}',
+          ),
+          Text(
+            '${localizations.catalogDiffRemote}: ${_present(remote)}',
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _present(String? value) {
+    if (value == null) return '—';
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? '—' : trimmed;
+  }
+}

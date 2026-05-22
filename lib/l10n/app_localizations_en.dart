@@ -898,6 +898,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogDiffModified => 'Modified';
 
   @override
+  String get catalogDiffLocal => 'Your version';
+
+  @override
+  String get catalogDiffRemote => 'Catalog version';
+
+  @override
+  String get catalogDiffName => 'Plan name';
+
+  @override
+  String get catalogDiffDescription => 'Description';
+
+  @override
   String get catalogDiffExercises => 'Exercises';
 
   @override
@@ -962,6 +974,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String libraryPublishSuccess(Object name) {
     return 'Published $name';
   }
+
+  @override
+  String get libraryPublishNoChange => 'No changes to publish';
 
   @override
   String get libraryPublishFailed => 'Could not publish plan';

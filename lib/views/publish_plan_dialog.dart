@@ -6,6 +6,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Modes the publish dialog adapts to. The dialog itself behaves the same in
@@ -163,6 +164,12 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
 
 /// Publish [programUuid] under its current slug (or [slug] for first-time
 /// publish) and show a snackbar describing the outcome.
+///
+/// On 412 (stale view) the function triggers a catalog refresh, shows the
+/// conflict dialog so the user can see the diff between their local edits
+/// and the new remote state, and acts on their choice (publish anyway,
+/// overwrite local, fork, or cancel). The caller therefore never has to
+/// handle 412 itself.
 Future<Program?> runPublishProgram(
   BuildContext context, {
   required String programUuid,
@@ -173,6 +180,8 @@ Future<Program?> runPublishProgram(
   return _runUpload(
     context,
     slug: slug,
+    programUuid: programUuid,
+    client: client,
     upload: () => ProgramService().publishProgram(
       programUuid,
       slug: slug,
@@ -195,6 +204,8 @@ Future<Program?> runPublishProgramAs(
   return _runUpload(
     context,
     slug: slug,
+    programUuid: programUuid,
+    client: client,
     upload: () => ProgramService().publishProgramAs(
       programUuid,
       slug: slug,
@@ -206,25 +217,40 @@ Future<Program?> runPublishProgramAs(
 
 Future<Program?> _runUpload(
   BuildContext context, {
-  required Future<Program> Function() upload,
+  required Future<({Program program, bool notModified})> Function() upload,
   required String slug,
+  required String programUuid,
+  required DrillClient client,
 }) async {
   final localizations = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
   try {
-    final published = await upload();
+    final result = await upload();
+    final message = result.notModified
+        ? localizations.libraryPublishNoChange
+        : localizations.libraryPublishSuccess(result.program.name);
     messenger.showSnackBar(
       SnackBar(
         showCloseIcon: true,
         dismissDirection: DismissDirection.endToStart,
-        content: Text(localizations.libraryPublishSuccess(published.name)),
+        content: Text(message),
       ),
     );
-    return published;
+    return result.program;
   } on DrillApiException catch (e, stackTrace) {
-    final message = switch (e.status) {
-      409 => localizations.libraryPublishSlugTaken(slug),
-      412 => localizations.libraryPublishConflict,
+    if (e.status == 412 && context.mounted) {
+      // Stale view — hand off to the catalog-conflict flow so the user can
+      // see the diff between their edits and the new remote state and pick
+      // overwrite / fork / publish-anyway / cancel.
+      return await _resolvePublishConflict(
+        context,
+        programUuid: programUuid,
+        client: client,
+      );
+    }
+    final message = switch ((e.status, e.conflictKind)) {
+      (409, 'version') => localizations.libraryPublishConflict,
+      (409, _) => localizations.libraryPublishSlugTaken(slug),
       _ => localizations.libraryPublishFailed,
     };
     messenger.showSnackBar(
@@ -237,6 +263,59 @@ Future<Program?> _runUpload(
     if (e.status == null || e.status! >= 500) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
     }
+    return null;
+  } catch (e, stackTrace) {
+    messenger.showSnackBar(
+      SnackBar(
+        showCloseIcon: true,
+        dismissDirection: DismissDirection.endToStart,
+        content: Text(localizations.libraryPublishFailed),
+      ),
+    );
+    unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+    return null;
+  }
+}
+
+/// Triggered after the upload returned 412. Refreshes the catalog state,
+/// shows the conflict dialog with a diff against the fresh remote, and acts
+/// on the user's choice. The refresh flow is the same one used by
+/// "Refresh from catalog" — the only difference is that we got here because
+/// the user already attempted to publish, so [CatalogConflictChoice
+/// .publishMyChanges] re-runs the upload with the fresh etag.
+Future<Program?> _resolvePublishConflict(
+  BuildContext context, {
+  required String programUuid,
+  required DrillClient client,
+}) async {
+  final localizations = AppLocalizations.of(context)!;
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    final outcome = await ProgramService().refreshCatalogItem(
+      programUuid,
+      client,
+      onConflict: (diff, {required ownedSlug}) => showCatalogConflictDialog(
+        context,
+        diff: diff,
+        ownedSlug: ownedSlug,
+      ),
+    );
+    if (outcome.kind == CatalogRefreshKind.published) {
+      final published = ProgramService().loadProgram(outcome.programUuid);
+      if (published != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            showCloseIcon: true,
+            dismissDirection: DismissDirection.endToStart,
+            content: Text(localizations.libraryPublishSuccess(published.name)),
+          ),
+        );
+      }
+      return published;
+    }
+    // cancelled, overwriteLocal, fork, upToDate, failed — the dialog (or
+    // silent refresh) is the user-visible feedback; we don't add a snackbar
+    // on top.
     return null;
   } catch (e, stackTrace) {
     messenger.showSnackBar(

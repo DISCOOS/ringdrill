@@ -46,6 +46,19 @@ sealed class ProgramSource with _$ProgramSource {
 @freezed
 sealed class ProgramDiff with _$ProgramDiff {
   const factory ProgramDiff({
+    /// Local name when it differs from remote. Null when names match.
+    String? nameLocal,
+
+    /// Remote name when it differs from local. Null when names match.
+    String? nameRemote,
+
+    /// Local description when it differs from remote. Null when descriptions
+    /// match.
+    String? descriptionLocal,
+
+    /// Remote description when it differs from local. Null when descriptions
+    /// match.
+    String? descriptionRemote,
     @Default([]) List<String> addedExercises,
     @Default([]) List<String> removedExercises,
     @Default([]) List<String> modifiedExercises,
@@ -62,8 +75,15 @@ sealed class ProgramDiff with _$ProgramDiff {
 }
 
 extension ProgramX on Program {
+  /// Stable fingerprint of the user-visible content. Used to detect whether
+  /// the local copy has unpublished edits when refreshing from the catalog.
+  /// Includes name and description so renames (the most common "small" edit)
+  /// are detected as local changes. Excludes uuid, source, contentHash and
+  /// metadata timestamps because those drift without being content changes.
   String computeContentHash() {
     final canonical = {
+      'name': name,
+      'description': description,
       'exercises': _sortedCanonical(exercises, (e) => e.uuid),
       'teams': _sortedCanonical(teams, (e) => e.uuid),
       'sessions': _sortedCanonical(sessions, (e) => e.uuid),
@@ -94,7 +114,14 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     (e) => e.uuid,
   );
 
+  final nameChanged = local.name != remote.name;
+  final descriptionChanged = local.description != remote.description;
+
   return ProgramDiff(
+    nameLocal: nameChanged ? local.name : null,
+    nameRemote: nameChanged ? remote.name : null,
+    descriptionLocal: descriptionChanged ? local.description : null,
+    descriptionRemote: descriptionChanged ? remote.description : null,
     addedExercises: exerciseDiff.added,
     removedExercises: exerciseDiff.removed,
     modifiedExercises: exerciseDiff.modified,

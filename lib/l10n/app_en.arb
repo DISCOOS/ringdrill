@@ -749,6 +749,10 @@
   "catalogDiffAdded": "Added",
   "catalogDiffRemoved": "Removed",
   "catalogDiffModified": "Modified",
+  "catalogDiffLocal": "Your version",
+  "catalogDiffRemote": "Catalog version",
+  "catalogDiffName": "Plan name",
+  "catalogDiffDescription": "Description",
   "catalogDiffExercises": "Exercises",
   "catalogDiffTeams": "Teams",
   "catalogDiffSessions": "Sessions",
@@ -768,5 +772,6 @@
   "libraryPublishSlugTaken": "Slug '{slug}' is already in use by an unrelated plan. Choose a different slug.",
   "libraryPublishConflict": "Someone updated this plan first. Try again.",
   "libraryPublishSuccess": "Published {name}",
+  "libraryPublishNoChange": "No changes to publish",
   "libraryPublishFailed": "Could not publish plan"
 }
