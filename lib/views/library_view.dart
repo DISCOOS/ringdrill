@@ -559,32 +559,7 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 
   Future<void> _renameProgram(BuildContext context, Program program) async {
-    final localizations = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: program.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.libraryRename),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(localizations.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(localizations.save),
-          ),
-        ],
-      ),
-    );
-    if (name == null || name.isEmpty) return;
-    final loaded = _programService.loadProgram(program.uuid);
-    final updated = (loaded ?? program).copyWith(
-      name: name,
-      metadata: program.metadata.copyWith(updated: DateTime.now()),
-    );
-    await _programService.replaceProgram(updated);
+    await active_actions.renamePlan(context, program);
     if (mounted) setState(() {});
   }
 

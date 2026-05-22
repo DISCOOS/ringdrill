@@ -385,10 +385,10 @@ class _MainScreenState extends State<MainScreen> {
     if (controller is! ProgramPageControllerBase) return title;
     final localizations = AppLocalizations.of(context)!;
     return Tooltip(
-      message: localizations.openPlanTooltip,
+      message: localizations.libraryRename,
       child: InkWell(
         borderRadius: BorderRadius.circular(4),
-        onTap: () => active_actions.openPlan(context),
+        onTap: () => active_actions.renameActivePlan(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: title,

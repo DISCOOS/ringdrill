@@ -18,6 +18,57 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> openPlan(BuildContext context) => showOpenPlanDialog(context);
 
+/// Show the rename dialog for [program] and persist the new name. Shared
+/// between the appbar title tap and the library dialog's plan actions so
+/// both surfaces use exactly the same prompt.
+Future<void> renamePlan(BuildContext context, Program program) async {
+  final localizations = AppLocalizations.of(context)!;
+  final controller = TextEditingController(text: program.name);
+  final name = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(localizations.libraryRename),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(localizations.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text.trim()),
+          child: Text(localizations.save),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  if (name == null || name.isEmpty) return;
+  final programService = ProgramService();
+  final loaded = programService.loadProgram(program.uuid) ?? program;
+  final updated = loaded.copyWith(
+    name: name,
+    metadata: program.metadata.copyWith(updated: DateTime.now()),
+  );
+  await programService.replaceProgram(updated);
+}
+
+/// Convenience wrapper that renames the currently active plan. Used by the
+/// appbar title tap; shows a snackbar when there is no active plan.
+Future<void> renameActivePlan(BuildContext context) async {
+  final localizations = AppLocalizations.of(context)!;
+  final program = ProgramService().activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  await renamePlan(context, program);
+}
+
 Future<void> createNewPlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
   if (ExerciseService().isStarted) {
