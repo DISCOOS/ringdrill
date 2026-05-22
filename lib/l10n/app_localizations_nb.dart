@@ -784,6 +784,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryErrorLoad => 'Kunne ikke laste planer fra nett';
 
   @override
+  String get installedFromLink => 'Plan lagt til fra delelenke';
+
+  @override
   String get libraryRetry => 'Prøv igjen';
 
   @override

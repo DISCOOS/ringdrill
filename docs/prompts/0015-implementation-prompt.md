@@ -83,16 +83,23 @@ Slug grammar: keep it permissive. `deep-link.js` validates as `[^@/]+(@<version>
 
 ### Step 4. Share URL builder
 
-Edit `lib/views/active_plan_actions.dart`. Change `_buildShareableUrl` to always return the canonical share URL:
+Edit `lib/views/active_plan_actions.dart`. `_buildShareableUrl` resolves to `https://ringdrill.app/i/<slug>` for every case except debug web builds using the `RINGDRILL_LOCAL_BASE_URL` escape hatch from ADR-0013. In that case it points at the current Flutter web origin so the dev loop can exercise the install link end-to-end while catalog API traffic still goes to the local Netlify function host:
 
 ```dart
-String _buildShareableUrl(String slug) =>
-    'https://ringdrill.app/i/$slug';
+String _buildShareableUrl(String slug) {
+  final baseUrl = AppConfig.catalogBaseUrl(
+    isWeb: kIsWeb,
+    isRelease: kReleaseMode,
+    isDebug: kDebugMode,
+  );
+  final lower = baseUrl.toLowerCase();
+  final isLocal = lower.contains('localhost') || lower.contains('127.0.0.1');
+  if (kIsWeb && isLocal) return '${Uri.base.origin}/i/$slug';
+  return 'https://ringdrill.app/i/$slug';
+}
 ```
 
-Remove the `catalogBaseUrl` / `deepLinkBasePathFor` resolution from this function — those still belong in `_buildPublishClient` for API traffic, but the share URL is intentionally decoupled per the ADR's "Canonical share host" section. Backend traffic continues to resolve per ADR-0013.
-
-Do not add a `kDebugMode` branch. A dev share link pointing at production is fine per the ADR.
+Do not point share links at `RINGDRILL_LOCAL_BASE_URL` directly. `make netlify-dev` runs `netlify functions:serve`, which serves functions but does not apply `netlify.toml` redirects or the SPA catch-all, so `http://localhost:8888/i/<slug>` returns 404. The `/i/<slug>` URL must hit the Flutter web dev server; the install handler then downloads the plan from `localhost:8888`.
 
 ### Step 5. Android intent filter
 

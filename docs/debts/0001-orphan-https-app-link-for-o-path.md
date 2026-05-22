@@ -1,8 +1,8 @@
 ---
-status: open
+status: resolved
 severity: low
 discovered: 2026-05-22
-resolved: null
+resolved: 2026-05-22
 related_adrs: ["ADR-0015"]
 ---
 
@@ -35,6 +35,13 @@ Two reasonable directions, pick one as part of a deliberate decision:
 * **Repurpose `/o` for a specific HTTPS entry point** (for example, an "open last shared file" or "open by code" surface). This needs a new ADR explaining what the path means, what GoRouter does with it, and how it relates to `/i/<slug>` from ADR-0015.
 
 Until one is done, leave the manifest alone and let this entry serve as the breadcrumb.
+
+## Resolution
+
+Resolved by the ADR-0015 implementation: the Android App-Link intent filter now
+uses `pathPrefix="/o/"` alongside the new `pathPrefix="/i/"`, so `/o/<path>`
+is delivered to the existing Flutter `/o/` route instead of leaving only the
+orphan exact `/o` URL captured.
 
 ## Links
 

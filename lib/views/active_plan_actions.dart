@@ -249,19 +249,21 @@ Future<void> shareActivePlan(BuildContext context) async {
   _showSnackBar(context, localizations.planUrlCopied);
 }
 
-/// Builds the absolute URL a recipient can paste into a browser. Mirrors
-/// [DrillClient]'s internal `_buildDeepUri`, but resolves the empty
-/// same-origin base used by web release builds to the canonical production
-/// host so the URL stays shareable outside the PWA.
+/// Builds the install URL a recipient can paste into a browser. Production
+/// links always use the canonical App-Link host. Debug web builds that point
+/// at a local catalog use the current Flutter web origin, because the local
+/// Netlify function host serves API calls only and does not apply the SPA
+/// `/i/<slug>` catch-all.
 String _buildShareableUrl(String slug) {
-  final configured = AppConfig.catalogBaseUrl(
+  final baseUrl = AppConfig.catalogBaseUrl(
     isWeb: kIsWeb,
     isRelease: kReleaseMode,
     isDebug: kDebugMode,
   );
-  final base = configured.isEmpty ? AppConfig.ringDrillBaseUrl : configured;
-  final path = AppConfig.deepLinkBasePathFor(base);
-  return '$base$path/$slug';
+  final lower = baseUrl.toLowerCase();
+  final isLocal = lower.contains('localhost') || lower.contains('127.0.0.1');
+  if (kIsWeb && isLocal) return '${Uri.base.origin}/i/$slug';
+  return 'https://ringdrill.app/i/$slug';
 }
 
 Future<void> sendActivePlanTo(BuildContext context) async {

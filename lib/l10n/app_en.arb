@@ -715,6 +715,7 @@
   "libraryDelete": "Delete",
   "libraryEmptyCatalog": "Nothing online yet",
   "libraryErrorLoad": "Could not load online plans",
+  "installedFromLink": "Plan installed from share link",
   "libraryRetry": "Retry",
   "libraryCannotSwitchRunning": "Stop the running exercise before changing plans.",
   "openPlan": "Open plan...",

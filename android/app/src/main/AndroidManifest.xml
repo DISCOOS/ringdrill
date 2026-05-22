@@ -102,7 +102,11 @@
                 <data
                     android:scheme="https"
                     android:host="ringdrill.app"
-                    android:pathPattern="/o" />
+                    android:pathPrefix="/i/" />
+                <data
+                    android:scheme="https"
+                    android:host="ringdrill.app"
+                    android:pathPrefix="/o/" />
             </intent-filter>
 
             <!-- 📄 Open .drill files from file managers / downloads -->

@@ -8,7 +8,7 @@ A debt entry is not an ADR. ADRs record decisions and their consequences. Debt e
 
 | ID        | Title                                                          | Severity | Status | Discovered |
 |-----------|----------------------------------------------------------------|----------|--------|------------|
-| DEBT-0001 | [Orphan HTTPS App-Link for `/o` path](./0001-orphan-https-app-link-for-o-path.md) | Low      | Open   | 2026-05-22 |
+| DEBT-0001 | [Orphan HTTPS App-Link for `/o` path](./0001-orphan-https-app-link-for-o-path.md) | Low      | Resolved | 2026-05-22 |
 
 ## When to write a debt entry
 

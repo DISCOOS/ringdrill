@@ -14,6 +14,7 @@ import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/feedback.dart';
+import 'package:ringdrill/views/install_link_handler.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
@@ -37,17 +38,30 @@ GoRouter buildRouter(bool isFirstLaunch) {
     navigatorKey: key,
     debugLogDiagnostics: kDebugMode,
     redirect: (context, state) {
-      final location = state.matchedLocation;
+      final location = state.uri.path;
       debugPrint('[$GoRouter] redirect >> $location');
+      if (location.startsWith('/i/')) {
+        final slug = Uri.decodeComponent(location.substring('/i/'.length));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final context = key.currentContext;
+          if (context != null) {
+            handleInstallLink(context, slug);
+          }
+        });
+        return routeProgram;
+      }
       if (location.startsWith('/o/')) {
         final filePath = Uri.decodeComponent(location.replaceFirst('/o', ''));
         // Show bottom sheet for remote file
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showOpenFileBottomSheet(
-            key.currentContext!,
-            filePath: filePath,
-            location: routeProgram,
-          );
+          final context = key.currentContext;
+          if (context != null) {
+            _showOpenFileBottomSheet(
+              context,
+              filePath: filePath,
+              location: routeProgram,
+            );
+          }
         });
         // OpenFileWidget requires a
         // ProgramPageController instance
@@ -58,6 +72,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
       return null;
     },
     routes: [
+      GoRoute(path: '/i/:slug', redirect: (_, _) => routeProgram),
       ShellRoute(
         builder: (BuildContext context, GoRouterState state, Widget child) {
           return PlatformWidget(

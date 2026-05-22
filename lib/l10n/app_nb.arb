@@ -205,6 +205,7 @@
   "libraryDelete": "Slett",
   "libraryEmptyCatalog": "Ingen planer på nett ennå",
   "libraryErrorLoad": "Kunne ikke laste planer fra nett",
+  "installedFromLink": "Plan lagt til fra delelenke",
   "libraryRetry": "Prøv igjen",
   "libraryCannotSwitchRunning": "Stopp øvelsen som kjører før du endrer planer.",
   "openPlan": "Åpne plan...",

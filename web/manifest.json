@@ -8,6 +8,10 @@
     "theme_color": "#hexcode",
     "description": "Plan, synchronize and execute station-based drills with teams and supervisors.",
     "orientation": "portrait-primary",
+    "handle_links": "preferred",
+    "launch_handler": {
+        "client_mode": "navigate-existing"
+    },
     "prefer_related_applications": false,
     "icons": [
         {

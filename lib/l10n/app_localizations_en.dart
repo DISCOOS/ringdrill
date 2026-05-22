@@ -789,6 +789,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryErrorLoad => 'Could not load online plans';
 
   @override
+  String get installedFromLink => 'Plan installed from share link';
+
+  @override
   String get libraryRetry => 'Retry';
 
   @override

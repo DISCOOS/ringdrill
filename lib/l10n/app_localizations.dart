@@ -1304,6 +1304,12 @@ abstract class AppLocalizations {
   /// **'Could not load online plans'**
   String get libraryErrorLoad;
 
+  /// No description provided for @installedFromLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan installed from share link'**
+  String get installedFromLink;
+
   /// No description provided for @libraryRetry.
   ///
   /// In en, this message translates to:

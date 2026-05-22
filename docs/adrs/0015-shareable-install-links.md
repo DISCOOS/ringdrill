@@ -36,9 +36,9 @@ Chosen option: **C — `ringdrill.app/i/<slug>`**, because it separates App-Link
 
 ### Canonical share host
 
-The canonical share host is **`ringdrill.app`**. `_buildShareableUrl` is changed to always emit `https://ringdrill.app/i/<slug>`, independent of what `AppConfig.catalogBaseUrl(...)` returns for backend traffic. Backend traffic still resolves per ADR-0013 (same-origin for the PWA, production for native, localhost for dev). The share URL is a separate concept from the API base URL.
+The canonical share host is **`ringdrill.app`**. `_buildShareableUrl` emits `https://ringdrill.app/i/<slug>` in every case *except* one: debug web builds whose catalog backend is local through `RINGDRILL_LOCAL_BASE_URL` emit the current Flutter web origin, for example `http://localhost:51742/i/<slug>`. The local Netlify function host on `localhost:8888` serves API calls only and does not apply the SPA catch-all, so `/i/<slug>` must be handled by the Flutter web dev server. Same-origin (empty base, release PWA) and the production fallback both resolve to `https://ringdrill.app`.
 
-Reasons: Android App Link verification is bound to one host, `assetlinks.json` is already verified there, and `.netlify.app` is a hosting artefact, not a brand identifier.
+Reasons: Android App Link verification is bound to one host, `assetlinks.json` is already verified there, and `.netlify.app` is a hosting artefact, not a brand identifier. The localhost branch is the same escape hatch ADR-0013 carves out for API traffic, but the share link itself must point at a frontend that serves the Flutter route.
 
 ### Routing roles
 
@@ -74,7 +74,7 @@ A new top-level `GoRoute('/i/:slug')` in `buildRouter` calls a helper that wraps
 * Good: native always wins on Android once App Link is verified, with no chooser.
 * Bad: `handle_links` and `launch_handler` are Chromium-only today. Firefox/Safari recipients see the PWA load inside a browser tab. Functional outcome is the same.
 * Bad: `ringdrill.app` becomes a hard runtime dependency for share links. If DNS for the custom domain breaks while Netlify keeps working, share links break.
-* Bad: dev builds running against `localhost` produce share links that point at production. Acceptable: a dev share link is rarely useful to a recipient.
+* Bad: `_buildShareableUrl` now branches on whether a debug web build is using ADR-0013's local backend escape hatch. Two code paths for one URL builder, but the cost is a single conditional and the dev loop benefit is real.
 
 ## Pros and cons of the options
 
@@ -98,7 +98,7 @@ A new top-level `GoRoute('/i/:slug')` in `buildRouter` calls a helper that wraps
 
 1. Add `handle_links` and `launch_handler` to `web/manifest.json`.
 2. Add the `/i/:slug` `GoRoute` in `lib/views/main_screen.dart`, calling a helper that wraps `installFromCatalog` and redirects to `routeProgram`.
-3. Change `_buildShareableUrl` in `lib/views/active_plan_actions.dart` to always return `https://ringdrill.app/i/<slug>`.
+3. Change `_buildShareableUrl` in `lib/views/active_plan_actions.dart` to return `https://ringdrill.app/i/<slug>` except when a debug web build is compiled with `RINGDRILL_LOCAL_BASE_URL`, where it should emit the current Flutter web origin plus `/i/<slug>` for local testing.
 4. Broaden the Android App Link intent filter in `android/app/src/main/AndroidManifest.xml` to `pathPrefix="/i/"` (and keep `/o/`).
 5. Manual QA: share from device A, open on device B (native), device C (PWA only), device D (browser only).
 
