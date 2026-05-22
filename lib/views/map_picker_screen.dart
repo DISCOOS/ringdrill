@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 
 class MapPickerScreen<K> extends StatefulWidget {
@@ -14,16 +13,20 @@ class MapPickerScreen<K> extends StatefulWidget {
     this.withSearch = true,
     this.withCenter = true,
     this.withToggle = true,
-    this.initialZoom = 13,
+    this.withZoom = true,
+    this.initialZoom = 16,
     this.markers = const [],
     this.initialCenter = MapConfig.initialCenter,
+    this.initialFit,
   });
 
+  final bool withZoom;
   final bool withCross;
   final bool withSearch;
   final bool withCenter;
   final bool withToggle;
   final double initialZoom;
+  final CameraFit? initialFit;
   final LatLng initialCenter;
   final List<(K, String, LatLng)> markers;
 
@@ -58,7 +61,6 @@ class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final points = widget.markers.map((e) => e.$3).toList();
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.pickALocation),
@@ -75,13 +77,13 @@ class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
         child: MapView<K>(
           key: _mapKey,
           controller: _mapController,
+          withZoom: widget.withZoom,
           withCross: widget.withCross,
           withSearch: widget.withCross,
           withCenter: widget.withCenter,
           withToggle: widget.withToggle,
           initialZoom: widget.initialZoom,
-          initialFit: points.fit(),
-          initialCenter: points.average(widget.initialCenter),
+          initialCenter: widget.initialCenter,
           interactionFlags: MapConfig.interactive,
           layers: MapConfig.layers,
           markers: widget.markers,

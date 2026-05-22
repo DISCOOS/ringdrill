@@ -42,6 +42,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final markers = widget.markers.where((e) => e.$3 == _position).toList();
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.editStation),
@@ -94,7 +95,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                           ).copyWith(left: 8.0),
                           child: PositionFormField(
                             initialValue: _position,
-                            markers: widget.markers,
+                            markers: markers,
                             onSaved: (position) => _position = position,
                           ),
                         ),

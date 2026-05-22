@@ -10,6 +10,7 @@ class MapScreen<K> extends StatefulWidget {
     this.withCross = false,
     this.withSearch = false,
     this.withCenter = true,
+    this.withZoom = true,
     this.initialZoom = 15,
     this.markers = const [],
     this.onMarkerTap,
@@ -18,6 +19,7 @@ class MapScreen<K> extends StatefulWidget {
   });
 
   final String title;
+  final bool withZoom;
   final bool withCross;
   final bool withSearch;
   final bool withCenter;
@@ -43,6 +45,7 @@ class _MapScreenState<K> extends State<MapScreen<K>> {
         child: MapView<K>(
           key: _mapKey,
           withCross: widget.withCross,
+          withZoom: widget.withZoom,
           withSearch: widget.withSearch,
           withCenter: widget.withCenter,
           initialZoom: widget.initialZoom,

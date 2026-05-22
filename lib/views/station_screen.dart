@@ -251,7 +251,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                                       title: station.name,
                                       withCross: true,
                                       withSearch: true,
-                                      initialZoom: 14,
+                                      withZoom: true,
+                                      initialZoom: 16,
                                       initialCenter:
                                           station.position ??
                                           MapConfig.initialCenter,

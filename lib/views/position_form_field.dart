@@ -41,8 +41,7 @@ class PositionFormField<K> extends FormField<LatLng> {
                          state.context,
                          MaterialPageRoute(
                            builder: (context) => MapPickerScreen(
-                             initialCenter:
-                                 state.value ?? MapConfig.initialCenter,
+                             initialCenter: position ?? MapConfig.initialCenter,
                              markers: markers,
                            ),
                          ),

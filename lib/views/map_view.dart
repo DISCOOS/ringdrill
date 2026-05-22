@@ -698,10 +698,7 @@ class _MapViewState<K> extends State<MapView<K>> {
       );
       final fit =
           result.points.centroidFit(padding) ??
-          CameraFit.coordinates(
-            padding: padding,
-            coordinates: result.points,
-          );
+          CameraFit.coordinates(padding: padding, coordinates: result.points);
       _mapController.fitCamera(fit);
     } else if (result.location != null) {
       _mapController.move(result.location!, _mapController.camera.zoom);
