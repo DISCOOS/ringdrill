@@ -31,8 +31,13 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
     super.initState();
     _scheduleProbeIfNeeded();
     // Re-evaluate when the active plan changes so switching to a fresh
-    // catalog plan kicks off an initial probe.
+    // catalog plan kicks off an initial probe. Also rebuild — the badge's
+    // build method reads program.source to choose between the local and
+    // online variants, so a publish that flips source from local to catalog
+    // must propagate through build, not just trigger a probe.
     _programEventsSub = ProgramService().events.listen((_) {
+      if (!mounted) return;
+      setState(() {});
       _scheduleProbeIfNeeded();
     });
   }
