@@ -30,16 +30,22 @@ class MapConfig {
   /// screen: a larger bottom padding pulls the camera so the centroid
   /// appears higher in the visible area, compensating for the FAB
   /// column at the bottom-right of the map.
+  ///
+  /// Horizontal padding stays the same regardless of overlays; it is
+  /// kept generous (64 px) on purpose so the outermost markers do not
+  /// hug the screen edges after a fit. A tighter value zoomed the
+  /// camera further than the data's natural extent warranted, which
+  /// made re-fits after toggling visibility feel cramped.
   static EdgeInsets fitPadding({
     bool withSearch = false,
     bool withZoom = false,
     bool withCenter = false,
   }) {
     return EdgeInsets.fromLTRB(
-      24,
-      withSearch ? 112 : 24,
-      24,
-      (withZoom || withCenter) ? 200 : 24,
+      64,
+      withSearch ? 112 : 48,
+      64,
+      (withZoom || withCenter) ? 200 : 48,
     );
   }
 
