@@ -456,10 +456,12 @@ class _MainScreenState extends State<MainScreen> {
         const Divider(),
         _drawerTile(
           context,
-          icon: Icons.ios_share,
+          icon: Icons.link,
           title: localizations.shareActivePlan,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
+          enabled: isCatalogActive,
+          disabledTooltip: hasActivePlan
+              ? localizations.planStatusLocalTooltip
+              : localizations.requiresActivePlan,
           onTap: () async {
             Navigator.pop(context);
             await active_actions.shareActivePlan(context);

@@ -1403,8 +1403,14 @@ abstract class AppLocalizations {
   /// No description provided for @shareActivePlan.
   ///
   /// In en, this message translates to:
-  /// **'Share active plan'**
+  /// **'Copy URL'**
   String get shareActivePlan;
+
+  /// No description provided for @planUrlCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'URL copied'**
+  String get planUrlCopied;
 
   /// No description provided for @sendToAction.
   ///

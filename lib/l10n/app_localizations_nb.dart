@@ -833,7 +833,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get requiresActivePlan => 'Åpne eller opprett en plan først';
 
   @override
-  String get shareActivePlan => 'Del aktiv plan';
+  String get shareActivePlan => 'Kopier URL';
+
+  @override
+  String get planUrlCopied => 'URL kopiert';
 
   @override
   String get sendToAction => 'Send til...';

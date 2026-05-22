@@ -838,7 +838,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requiresActivePlan => 'Open or create a plan first';
 
   @override
-  String get shareActivePlan => 'Share active plan';
+  String get shareActivePlan => 'Copy URL';
+
+  @override
+  String get planUrlCopied => 'URL copied';
 
   @override
   String get sendToAction => 'Send to...';

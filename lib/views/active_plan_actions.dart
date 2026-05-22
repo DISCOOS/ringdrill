@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
@@ -224,14 +225,42 @@ Future<void> createNewPlan(BuildContext context) async {
 Future<void> addExercises(BuildContext context) =>
     showAddExercisesDialog(context);
 
+/// Copies the catalog deep-link URL for the currently active plan to the
+/// clipboard. Requires the active plan to be catalog-published — the drawer
+/// tile is already gated on that via [isCatalogProgram], but we re-check here
+/// as a safety-net.
 Future<void> shareActivePlan(BuildContext context) async {
-  await _exportSelected(
-    context,
-    title: (localizations) => localizations.shareProgram,
-    onSave: ProgramPageController.shareDrillFile,
-    onSuccess: (localizations, file) => localizations.shareSuccess(file),
-    onFailure: (localizations, file) => localizations.shareFailure(file),
+  final localizations = AppLocalizations.of(context)!;
+  final program = ProgramService().activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  final slug = program.source.whenOrNull(
+    catalog: (slug, latestEtag, installedAt) => slug,
   );
+  if (slug == null) {
+    _showSnackBar(context, localizations.planStatusLocalTooltip);
+    return;
+  }
+  await Clipboard.setData(ClipboardData(text: _buildShareableUrl(slug)));
+  if (!context.mounted) return;
+  _showSnackBar(context, localizations.planUrlCopied);
+}
+
+/// Builds the absolute URL a recipient can paste into a browser. Mirrors
+/// [DrillClient]'s internal `_buildDeepUri`, but resolves the empty
+/// same-origin base used by web release builds to the canonical production
+/// host so the URL stays shareable outside the PWA.
+String _buildShareableUrl(String slug) {
+  final configured = AppConfig.catalogBaseUrl(
+    isWeb: kIsWeb,
+    isRelease: kReleaseMode,
+    isDebug: kDebugMode,
+  );
+  final base = configured.isEmpty ? AppConfig.ringDrillBaseUrl : configured;
+  final path = AppConfig.deepLinkBasePathFor(base);
+  return '$base$path/$slug';
 }
 
 Future<void> sendActivePlanTo(BuildContext context) async {
