@@ -248,24 +248,37 @@ class _LibraryBodyState extends State<_LibraryBody>
                   );
                 }
                 final installedSlugs = _installedCatalogSlugs();
+                final colors = Theme.of(context).colorScheme;
                 return ListView.builder(
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
                     final installed = installedSlugs.contains(item.slug);
-                    return ListTile(
-                      title: Text(item.name),
-                      subtitle: Text(item.tags.join(', ')),
-                      trailing: FilledButton(
-                        onPressed: installed
-                            ? null
-                            : () => _installCatalog(item),
-                        child: Text(
-                          installed
-                              ? localizations.libraryInstalled
-                              : localizations.libraryInstall,
+                    final trailingChildren = <Widget>[
+                      if (installed)
+                        Chip(label: Text(localizations.libraryInstalled))
+                      else
+                        FilledButton(
+                          onPressed: () => _installCatalog(item),
+                          child: Text(localizations.libraryInstall),
                         ),
+                    ];
+                    return ListTile(
+                      leading: Icon(
+                        installed
+                            ? Icons.cloud_done_outlined
+                            : Icons.cloud_outlined,
+                        color: colors.onSurfaceVariant,
                       ),
+                      title: Text(item.name),
+                      subtitle: Text(_catalogSubtitle(localizations, item)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: trailingChildren,
+                      ),
+                      onTap: installed
+                          ? null
+                          : () => _installCatalog(item),
                     );
                   },
                 );
@@ -407,6 +420,19 @@ class _LibraryBodyState extends State<_LibraryBody>
       '${program.exercises.length} ${localizations.exercise(program.exercises.length).toLowerCase()}',
       program.metadata.updated.toLocal().toString().split('.').first,
     ].join(' · ');
+  }
+
+  String _catalogSubtitle(
+    AppLocalizations localizations,
+    MarketFeedItem item,
+  ) {
+    final parts = <String>[
+      localizations.librarySourceCatalog(item.slug),
+      if (item.tags.isNotEmpty) item.tags.join(', '),
+      if (item.updatedAt != null)
+        item.updatedAt!.toLocal().toString().split('.').first,
+    ];
+    return parts.join(' · ');
   }
 
   Future<void> _activate(
