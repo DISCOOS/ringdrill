@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/models/lat_lng_converter.dart';
 
 part 'station.freezed.dart';
 part 'station.g.dart';
@@ -9,7 +10,7 @@ sealed class Station with _$Station {
   const factory Station({
     required int index,
     required String name,
-    LatLng? position,
+    @NullableLatLngJsonConverter() LatLng? position,
     String? description,
   }) = _Station;
 

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Station {
 
- int get index; String get name; LatLng? get position; String? get description;
+ int get index; String get name;@NullableLatLngJsonConverter() LatLng? get position; String? get description;
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $StationCopyWith<$Res>  {
   factory $StationCopyWith(Station value, $Res Function(Station) _then) = _$StationCopyWithImpl;
 @useResult
 $Res call({
- int index, String name, LatLng? position, String? description
+ int index, String name,@NullableLatLngJsonConverter() LatLng? position, String? description
 });
 
 
@@ -153,7 +153,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name,  LatLng? position,  String? description)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name, @NullableLatLngJsonConverter()  LatLng? position,  String? description)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
 return $default(_that.index,_that.name,_that.position,_that.description);case _:
@@ -174,7 +174,7 @@ return $default(_that.index,_that.name,_that.position,_that.description);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name,  LatLng? position,  String? description)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name, @NullableLatLngJsonConverter()  LatLng? position,  String? description)  $default,) {final _that = this;
 switch (_that) {
 case _Station():
 return $default(_that.index,_that.name,_that.position,_that.description);}
@@ -191,7 +191,7 @@ return $default(_that.index,_that.name,_that.position,_that.description);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name,  LatLng? position,  String? description)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name, @NullableLatLngJsonConverter()  LatLng? position,  String? description)?  $default,) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
 return $default(_that.index,_that.name,_that.position,_that.description);case _:
@@ -206,12 +206,12 @@ return $default(_that.index,_that.name,_that.position,_that.description);case _:
 @JsonSerializable()
 
 class _Station implements Station {
-  const _Station({required this.index, required this.name, this.position, this.description});
+  const _Station({required this.index, required this.name, @NullableLatLngJsonConverter() this.position, this.description});
   factory _Station.fromJson(Map<String, dynamic> json) => _$StationFromJson(json);
 
 @override final  int index;
 @override final  String name;
-@override final  LatLng? position;
+@override@NullableLatLngJsonConverter() final  LatLng? position;
 @override final  String? description;
 
 /// Create a copy of Station
@@ -247,7 +247,7 @@ abstract mixin class _$StationCopyWith<$Res> implements $StationCopyWith<$Res> {
   factory _$StationCopyWith(_Station value, $Res Function(_Station) _then) = __$StationCopyWithImpl;
 @override @useResult
 $Res call({
- int index, String name, LatLng? position, String? description
+ int index, String name,@NullableLatLngJsonConverter() LatLng? position, String? description
 });
 
 

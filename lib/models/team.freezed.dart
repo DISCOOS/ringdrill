@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Team {
 
- String get uuid; int get index; String get name; int? get numberOfMembers; LatLng? get position;
+ String get uuid; int get index; String get name; int? get numberOfMembers;@NullableLatLngJsonConverter() LatLng? get position;
 /// Create a copy of Team
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $TeamCopyWith<$Res>  {
   factory $TeamCopyWith(Team value, $Res Function(Team) _then) = _$TeamCopyWithImpl;
 @useResult
 $Res call({
- String uuid, int index, String name, int? numberOfMembers, LatLng? position
+ String uuid, int index, String name, int? numberOfMembers,@NullableLatLngJsonConverter() LatLng? position
 });
 
 
@@ -154,7 +154,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  int index,  String name,  int? numberOfMembers,  LatLng? position)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  int index,  String name,  int? numberOfMembers, @NullableLatLngJsonConverter()  LatLng? position)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Team() when $default != null:
 return $default(_that.uuid,_that.index,_that.name,_that.numberOfMembers,_that.position);case _:
@@ -175,7 +175,7 @@ return $default(_that.uuid,_that.index,_that.name,_that.numberOfMembers,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  int index,  String name,  int? numberOfMembers,  LatLng? position)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  int index,  String name,  int? numberOfMembers, @NullableLatLngJsonConverter()  LatLng? position)  $default,) {final _that = this;
 switch (_that) {
 case _Team():
 return $default(_that.uuid,_that.index,_that.name,_that.numberOfMembers,_that.position);}
@@ -192,7 +192,7 @@ return $default(_that.uuid,_that.index,_that.name,_that.numberOfMembers,_that.po
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  int index,  String name,  int? numberOfMembers,  LatLng? position)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  int index,  String name,  int? numberOfMembers, @NullableLatLngJsonConverter()  LatLng? position)?  $default,) {final _that = this;
 switch (_that) {
 case _Team() when $default != null:
 return $default(_that.uuid,_that.index,_that.name,_that.numberOfMembers,_that.position);case _:
@@ -207,14 +207,14 @@ return $default(_that.uuid,_that.index,_that.name,_that.numberOfMembers,_that.po
 @JsonSerializable()
 
 class _Team implements Team {
-  const _Team({required this.uuid, required this.index, required this.name, this.numberOfMembers, this.position});
+  const _Team({required this.uuid, required this.index, required this.name, this.numberOfMembers, @NullableLatLngJsonConverter() this.position});
   factory _Team.fromJson(Map<String, dynamic> json) => _$TeamFromJson(json);
 
 @override final  String uuid;
 @override final  int index;
 @override final  String name;
 @override final  int? numberOfMembers;
-@override final  LatLng? position;
+@override@NullableLatLngJsonConverter() final  LatLng? position;
 
 /// Create a copy of Team
 /// with the given fields replaced by the non-null parameter values.
@@ -249,7 +249,7 @@ abstract mixin class _$TeamCopyWith<$Res> implements $TeamCopyWith<$Res> {
   factory _$TeamCopyWith(_Team value, $Res Function(_Team) _then) = __$TeamCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, int index, String name, int? numberOfMembers, LatLng? position
+ String uuid, int index, String name, int? numberOfMembers,@NullableLatLngJsonConverter() LatLng? position
 });
 
 

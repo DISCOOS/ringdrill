@@ -11,9 +11,9 @@ _Team _$TeamFromJson(Map<String, dynamic> json) => _Team(
   index: (json['index'] as num).toInt(),
   name: json['name'] as String,
   numberOfMembers: (json['numberOfMembers'] as num?)?.toInt(),
-  position: json['position'] == null
-      ? null
-      : LatLng.fromJson(json['position'] as Map<String, dynamic>),
+  position: const NullableLatLngJsonConverter().fromJson(
+    json['position'] as Map<String, dynamic>?,
+  ),
 );
 
 Map<String, dynamic> _$TeamToJson(_Team instance) => <String, dynamic>{
@@ -21,5 +21,5 @@ Map<String, dynamic> _$TeamToJson(_Team instance) => <String, dynamic>{
   'index': instance.index,
   'name': instance.name,
   'numberOfMembers': instance.numberOfMembers,
-  'position': instance.position,
+  'position': const NullableLatLngJsonConverter().toJson(instance.position),
 };
