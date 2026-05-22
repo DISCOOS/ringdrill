@@ -398,7 +398,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget? _buildDrawer(BuildContext context, AppLocalizations localizations) {
-    final hasActivePlan = ProgramService().activeProgramUuid != null;
+    final activeProgram = ProgramService().activeProgram;
+    final hasActivePlan = activeProgram != null;
+    final isCatalogActive =
+        activeProgram != null && active_actions.isCatalogProgram(activeProgram);
     return NavigationDrawer(
       elevation: 8,
       children: [
@@ -504,6 +507,30 @@ class _MainScreenState extends State<MainScreen> {
           onTap: () async {
             Navigator.pop(context);
             await active_actions.publishAsActivePlan(context);
+          },
+        ),
+        _drawerTile(
+          context,
+          icon: Icons.refresh,
+          title: localizations.libraryRefresh,
+          enabled: isCatalogActive,
+          disabledTooltip: hasActivePlan
+              ? localizations.planStatusLocalTooltip
+              : localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.refreshActivePlanFromCatalog(context);
+          },
+        ),
+        _drawerTile(
+          context,
+          icon: Icons.delete,
+          title: localizations.libraryDelete,
+          enabled: hasActivePlan,
+          disabledTooltip: localizations.requiresActivePlan,
+          onTap: () async {
+            Navigator.pop(context);
+            await active_actions.deleteActivePlan(context);
           },
         ),
         const Divider(),

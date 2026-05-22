@@ -11,6 +11,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
+import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
@@ -68,6 +69,101 @@ Future<void> renameActivePlan(BuildContext context) async {
   }
   await renamePlan(context, program);
 }
+
+/// Show the delete-confirmation dialog for [program] and remove it from the
+/// library when confirmed. Refuses with a snackbar if the program is active
+/// and an exercise is currently running.
+Future<void> deletePlan(BuildContext context, Program program) async {
+  final localizations = AppLocalizations.of(context)!;
+  final programService = ProgramService();
+  if (programService.activeProgramUuid == program.uuid &&
+      ExerciseService().isStarted) {
+    _showSnackBar(context, localizations.libraryCannotSwitchRunning);
+    return;
+  }
+  final confirmed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      title: Text(localizations.confirm),
+      content: Text(localizations.confirmDeleteExercise),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(localizations.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(localizations.delete),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  await programService.deleteProgram(program.uuid);
+}
+
+/// Convenience wrapper that deletes the currently active plan. Used by the
+/// drawer's delete entry; shows a snackbar when there is no active plan.
+Future<void> deleteActivePlan(BuildContext context) async {
+  final localizations = AppLocalizations.of(context)!;
+  final program = ProgramService().activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  await deletePlan(context, program);
+}
+
+/// Pulls the latest version of a catalog-sourced [program] and merges it
+/// into the local copy via [ProgramService.refreshCatalogItem], using the
+/// shared catalog-conflict dialog to resolve any divergence. Shows a
+/// snackbar when the catalog service is unreachable.
+Future<void> refreshPlanFromCatalog(
+  BuildContext context,
+  Program program,
+) async {
+  final localizations = AppLocalizations.of(context)!;
+  final client = _buildPublishClient();
+  try {
+    await ProgramService().refreshCatalogItem(
+      program.uuid,
+      client,
+      onConflict: (diff, {required ownedSlug}) {
+        return showCatalogConflictDialog(
+          context,
+          diff: diff,
+          ownedSlug: ownedSlug,
+        );
+      },
+    );
+  } catch (_) {
+    if (!context.mounted) return;
+    _showSnackBar(context, localizations.catalogServiceUnavailable);
+  }
+}
+
+/// Convenience wrapper that refreshes the currently active plan from the
+/// catalog. Used by the drawer's refresh entry; shows a snackbar when
+/// there is no active plan, or when the active plan isn't catalog-sourced.
+Future<void> refreshActivePlanFromCatalog(BuildContext context) async {
+  final localizations = AppLocalizations.of(context)!;
+  final program = ProgramService().activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  if (!isCatalogProgram(program)) {
+    _showSnackBar(context, localizations.catalogServiceUnavailable);
+    return;
+  }
+  await refreshPlanFromCatalog(context, program);
+}
+
+/// True when [program] was installed from the online catalog (vs. local
+/// or imported). Drives drawer-entry enablement for catalog-only actions.
+bool isCatalogProgram(Program program) =>
+    program.source.toJson()['runtimeType'] == 'catalog';
 
 Future<void> createNewPlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
