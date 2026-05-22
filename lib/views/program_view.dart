@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -293,25 +292,23 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   /// Shows a bottom-sheet exercise picker.
   ///
-  /// The original positional contract (six positional arguments) is kept so
-  /// existing callers (`add_exercises_dialog.dart`, `open_file_widget.dart`)
-  /// don't need to change.
+  /// Each row renders the expandable [ExerciseCard] so the user can see start
+  /// and end time, rounds, teams, and tap the chevron to peek at a small map
+  /// of the exercise's stations before choosing whether to include it.
   ///
-  /// New named parameters drive the export flow:
-  /// - [confirmLabel] overrides the primary-button label (e.g. "Eksporter"
-  ///   instead of the generic "BEKREFT"). When omitted, falls back to
-  ///   [AppLocalizations.confirm].
-  /// - [preselectAll] starts with every exercise checked. The export flow uses
-  ///   this so the default "Velg øvelser" state is "everything on".
-  /// - [showSelectAllControls] adds a row with "Velg alle" / "Velg ingen"
-  ///   text buttons above the list, plus a "N of M selected" counter.
+  /// Named parameters drive the export/import flows:
+  /// - [confirmLabel] overrides the primary-button label (e.g. "EKSPORTER",
+  ///   "IMPORTER"). When omitted, falls back to [AppLocalizations.confirm].
+  /// - [preselectAll] starts with every exercise checked. The export/import
+  ///   flows use this so the default state is "everything on".
+  /// - [showSelectAllControls] adds a row with "VELG ALLE" / "VELG INGEN"
+  ///   text buttons above the list, plus a "N av M valgt" counter.
   static Future<List<String>> selectExercises(
     BuildContext context,
     String title,
     List<Exercise> exercises,
     BoxConstraints constraints,
-    AppLocalizations localizations,
-    bool extended, {
+    AppLocalizations localizations, {
     String? confirmLabel,
     bool preselectAll = false,
     bool showSelectAllControls = false,
@@ -320,37 +317,18 @@ abstract class ProgramPageControllerBase extends ScreenController {
         ? exercises.map((e) => e.uuid).toList()
         : <String>[];
     final allUuids = exercises.map((e) => e.uuid).toList();
-    // Slightly taller minHeight when the header row is shown so the list
-    // doesn't get squeezed.
-    final double effectiveMinHeight = showSelectAllControls ? 480 : 420;
-    // The compact (`extended: false`) layout used to cap the sheet at 60% of
-    // the screen, which doesn't scale when the user has many exercises. We
-    // now let the sheet grow as tall as it needs (up to the screen size)
-    // when the caller opts into the new export-style flow with select-all
-    // controls. The legacy compact callers (e.g. merge-from-another-plan)
-    // keep the original cap so existing screens don't suddenly take over
-    // the full viewport.
-    final bool useFullHeight = extended || showSelectAllControls;
 
     // We rely on the popped return value (not the mutated [selected] list) to
     // tell cancel from confirm. The list is pre-populated when
     // [preselectAll] is true, so reading it directly would treat a cancel
-    // as "everything selected" and trigger an unintended export.
+    // as "everything selected" and trigger an unintended export/import.
     final List<String>? popped =
         await showModalBottomSheet<List<String>?>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
-      isScrollControlled: useFullHeight,
-      constraints: useFullHeight
-          ? constraints
-          : constraints.copyWith(
-              minHeight: effectiveMinHeight,
-              maxHeight: max(
-                effectiveMinHeight,
-                constraints.maxHeight * 0.6,
-              ),
-            ),
+      isScrollControlled: true,
+      constraints: constraints,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
       ),
@@ -411,52 +389,19 @@ abstract class ProgramPageControllerBase extends ScreenController {
                     ] else
                       const SizedBox(height: 16.0),
                     Expanded(
-                      child: ListView.separated(
+                      child: ListView.builder(
                         shrinkWrap: true,
                         itemCount: exercises.length,
-                        separatorBuilder: (context, _) =>
-                            const SizedBox(height: 4.0),
                         itemBuilder: (context, index) {
                           final exercise = exercises[index];
                           final uuid = exercise.uuid;
-                          if (extended) {
-                            final markers = exercise.getLocations(false);
-                            return ExerciseCard(
-                              exercise: exercise,
-                              localizations: localizations,
-                              markers: markers,
-                              trailing: Switch(
-                                value: selected.contains(uuid),
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      selected.add(uuid);
-                                    } else {
-                                      selected.remove(uuid);
-                                    }
-                                  });
-                                },
-                              ),
-                            );
-                          }
-                          final st = exercise.startTime.toMaterial();
-                          final et = exercise.endTime.toMaterial();
-                          final isSelected = selected.contains(uuid);
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                              vertical: 4.0,
-                            ),
-                            title: Text(
-                              exercise.name,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              '${st.formal()} – ${et.formal()}',
-                            ),
+                          final markers = exercise.getLocations(false);
+                          return ExerciseCard(
+                            exercise: exercise,
+                            localizations: localizations,
+                            markers: markers,
                             trailing: Switch(
-                              value: isSelected,
+                              value: selected.contains(uuid),
                               onChanged: (bool? value) {
                                 setState(() {
                                   if (value == true) {
@@ -467,15 +412,6 @@ abstract class ProgramPageControllerBase extends ScreenController {
                                 });
                               },
                             ),
-                            onTap: () {
-                              setState(() {
-                                if (isSelected) {
-                                  selected.remove(uuid);
-                                } else {
-                                  selected.add(uuid);
-                                }
-                              });
-                            },
                           );
                         },
                       ),

@@ -155,7 +155,9 @@ class OpenFileWidget extends StatelessWidget {
             items.toList(),
             BoxConstraints.expand(),
             localizations,
-            true,
+            confirmLabel: localizations.importAction,
+            preselectAll: true,
+            showSelectAllControls: true,
           );
           return selected.isEmpty
               ? null

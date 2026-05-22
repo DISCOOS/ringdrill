@@ -856,6 +856,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportAction => 'EXPORT';
 
   @override
+  String get importAction => 'IMPORT';
+
+  @override
   String get selectExercisesAction => 'CHOOSE...';
 
   @override

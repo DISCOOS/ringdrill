@@ -163,7 +163,6 @@ Future<ExportPlanInput?> showExportPlanDialog(
       exercises,
       constraints,
       localizations,
-      false,
       confirmLabel: actionLabel,
       preselectAll: true,
       showSelectAllControls: true,

@@ -265,7 +265,9 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
       source.exercises,
       _constraintsFor(context),
       localizations,
-      true,
+      confirmLabel: localizations.importAction,
+      preselectAll: true,
+      showSelectAllControls: true,
     );
     if (!context.mounted || selectedUuids.isEmpty) return null;
 

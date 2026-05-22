@@ -227,6 +227,7 @@
   "sendToActionButton": "SEND TIL...",
   "exportAsDrill": "Eksporter som .drill",
   "exportAction": "EKSPORTER",
+  "importAction": "IMPORTER",
   "selectExercisesAction": "VELG...",
   "selectAll": "VELG ALLE",
   "selectNone": "VELG INGEN",

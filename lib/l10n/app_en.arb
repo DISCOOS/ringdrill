@@ -737,6 +737,7 @@
   "sendToActionButton": "SEND TO...",
   "exportAsDrill": "Export as .drill",
   "exportAction": "EXPORT",
+  "importAction": "IMPORT",
   "selectExercisesAction": "CHOOSE...",
   "selectAll": "SELECT ALL",
   "selectNone": "SELECT NONE",

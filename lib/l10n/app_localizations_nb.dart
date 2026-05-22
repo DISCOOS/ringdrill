@@ -851,6 +851,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exportAction => 'EKSPORTER';
 
   @override
+  String get importAction => 'IMPORTER';
+
+  @override
   String get selectExercisesAction => 'VELG...';
 
   @override

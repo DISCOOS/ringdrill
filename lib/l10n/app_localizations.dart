@@ -1436,6 +1436,12 @@ abstract class AppLocalizations {
   /// **'EXPORT'**
   String get exportAction;
 
+  /// No description provided for @importAction.
+  ///
+  /// In en, this message translates to:
+  /// **'IMPORT'**
+  String get importAction;
+
   /// No description provided for @selectExercisesAction.
   ///
   /// In en, this message translates to:
