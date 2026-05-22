@@ -340,23 +340,8 @@ class _LibraryBodyState extends State<_LibraryBody>
     );
   }
 
-  Future<MarketFeedPageResponse> _loadFeed() async {
-    _catalogStatus.setStatus(CatalogServiceState.checking);
-    try {
-      final feed = await _buildCatalogClient().marketFeed();
-      _catalogStatus.setStatus(CatalogServiceState.online);
-      return feed;
-    } catch (error) {
-      final isCorsBlocked = _isLikelyCorsBlocked(error);
-      _catalogStatus.setStatus(
-        isCorsBlocked
-            ? CatalogServiceState.corsBlocked
-            : CatalogServiceState.unavailable,
-        tooltip: _catalogErrorTooltip(error, isCorsBlocked: isCorsBlocked),
-      );
-      return const MarketFeedPageResponse(items: []);
-    }
-  }
+  Future<MarketFeedPageResponse> _loadFeed() =>
+      active_actions.probeCatalogService(context);
 
   String _catalogBaseUrl() {
     return AppConfig.catalogBaseUrl(
@@ -376,21 +361,6 @@ class _LibraryBodyState extends State<_LibraryBody>
       baseUrl: baseUrl,
       deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
     );
-  }
-
-  bool _isLikelyCorsBlocked(Object error) {
-    final message = error.toString();
-    return kIsWeb &&
-        message.contains('ClientException') &&
-        message.contains('Failed to fetch') &&
-        message.contains(AppConfig.ringDrillBaseUrl);
-  }
-
-  String _catalogErrorTooltip(Object error, {required bool isCorsBlocked}) {
-    final details = error.toString();
-    if (!isCorsBlocked || !mounted) return details;
-    final localizations = AppLocalizations.of(context)!;
-    return '${localizations.catalogServiceCorsBlockedTooltip}\n\n$details';
   }
 
   Set<String> _installedCatalogSlugs() {

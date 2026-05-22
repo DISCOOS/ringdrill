@@ -7,6 +7,7 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
@@ -164,6 +165,47 @@ Future<void> refreshActivePlanFromCatalog(BuildContext context) async {
 /// or imported). Drives drawer-entry enablement for catalog-only actions.
 bool isCatalogProgram(Program program) =>
     program.source.toJson()['runtimeType'] == 'catalog';
+
+/// Hits the catalog endpoint to update [CatalogStatusService] with a fresh
+/// reachability outcome (online / unavailable / corsBlocked). Returns the
+/// fetched feed when reachable, or an empty page otherwise so callers like
+/// the library "På nett"-tab can render an empty list without a try/catch.
+/// Both the library dialog and the appbar [PlanStatusBadge] use this so the
+/// state transitions stay consistent.
+Future<MarketFeedPageResponse> probeCatalogService(BuildContext context) async {
+  // Capture localizations up-front: we may finish after the caller's widget
+  // unmounts (e.g. the library dialog closes mid-fetch), in which case
+  // reading from context post-await would throw.
+  final localizations = AppLocalizations.of(context)!;
+  final status = CatalogStatusService();
+  status.setStatus(CatalogServiceState.checking);
+  try {
+    final feed = await _buildPublishClient().marketFeed();
+    status.setStatus(CatalogServiceState.online);
+    return feed;
+  } catch (error) {
+    final isCors = _isLikelyCatalogCorsBlocked(error);
+    final details = error.toString();
+    final tooltip = isCors
+        ? '${localizations.catalogServiceCorsBlockedTooltip}\n\n$details'
+        : details;
+    status.setStatus(
+      isCors
+          ? CatalogServiceState.corsBlocked
+          : CatalogServiceState.unavailable,
+      tooltip: tooltip,
+    );
+    return const MarketFeedPageResponse(items: []);
+  }
+}
+
+bool _isLikelyCatalogCorsBlocked(Object error) {
+  if (!kIsWeb) return false;
+  final message = error.toString();
+  return message.contains('ClientException') &&
+      message.contains('Failed to fetch') &&
+      message.contains(AppConfig.ringDrillBaseUrl);
+}
 
 Future<void> createNewPlan(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;

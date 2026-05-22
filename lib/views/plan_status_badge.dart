@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/library_view.dart';
 
 /// Compact status indicator for the AppBar showing whether the active plan
@@ -9,18 +12,65 @@ import 'package:ringdrill/views/library_view.dart';
 ///
 /// For catalog plans it surfaces the last observed catalog service state
 /// (online, checking, offline, blocked) via [CatalogStatusService]. The
-/// service is only updated when the library dialog actually talks to the
-/// catalog, so this badge reflects the most recent known state rather than
-/// doing live polling.
-class PlanStatusBadge extends StatelessWidget {
+/// badge auto-probes the catalog on first show (and whenever a catalog
+/// plan becomes active) while the status is still [CatalogServiceState.unknown],
+/// so users who never open the library dialog don't see the indicator
+/// permanently stuck on "Sjekker". Tapping the badge re-runs the probe.
+class PlanStatusBadge extends StatefulWidget {
   const PlanStatusBadge({super.key});
+
+  @override
+  State<PlanStatusBadge> createState() => _PlanStatusBadgeState();
+}
+
+class _PlanStatusBadgeState extends State<PlanStatusBadge> {
+  StreamSubscription<ProgramEvent>? _programEventsSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleProbeIfNeeded();
+    // Re-evaluate when the active plan changes so switching to a fresh
+    // catalog plan kicks off an initial probe.
+    _programEventsSub = ProgramService().events.listen((_) {
+      _scheduleProbeIfNeeded();
+    });
+  }
+
+  @override
+  void dispose() {
+    _programEventsSub?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleProbeIfNeeded() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final program = ProgramService().activeProgram;
+      if (program == null || !active_actions.isCatalogProgram(program)) {
+        return;
+      }
+      if (CatalogStatusService().value.state != CatalogServiceState.unknown) {
+        return;
+      }
+      active_actions.probeCatalogService(context);
+    });
+  }
+
+  Future<void> _onTap() async {
+    // Debounce while a probe is already in flight, otherwise re-run it.
+    if (CatalogStatusService().value.state == CatalogServiceState.checking) {
+      return;
+    }
+    await active_actions.probeCatalogService(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     final program = ProgramService().activeProgram;
     if (program == null) return const SizedBox.shrink();
 
-    final isCatalog = program.source.toJson()['runtimeType'] == 'catalog';
+    final isCatalog = active_actions.isCatalogProgram(program);
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final foreground =
@@ -53,6 +103,7 @@ class PlanStatusBadge extends StatelessWidget {
           label: visual.label,
           color: color,
           tooltip: tooltip,
+          onTap: _onTap,
         );
       },
     );
@@ -65,36 +116,43 @@ class _BadgeChip extends StatelessWidget {
     required this.label,
     required this.color,
     required this.tooltip,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color color;
   final String tooltip;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Tooltip(
-      message: tooltip,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 6),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(color: color),
-              ),
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(color: color),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 6),
+          Icon(icon, size: 18, color: color),
+        ],
       ),
     );
+    final wrapped = onTap == null
+        ? content
+        : InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(4),
+            child: content,
+          );
+    return Tooltip(message: tooltip, child: wrapped);
   }
 }
