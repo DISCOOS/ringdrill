@@ -1418,11 +1418,53 @@ abstract class AppLocalizations {
   /// **'Send to...'**
   String get sendToAction;
 
+  /// No description provided for @sendToActionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'SEND TO...'**
+  String get sendToActionButton;
+
   /// No description provided for @exportAsDrill.
   ///
   /// In en, this message translates to:
   /// **'Export as .drill'**
   String get exportAsDrill;
+
+  /// No description provided for @exportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'EXPORT'**
+  String get exportAction;
+
+  /// No description provided for @selectExercisesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'CHOOSE...'**
+  String get selectExercisesAction;
+
+  /// No description provided for @selectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'SELECT ALL'**
+  String get selectAll;
+
+  /// No description provided for @selectNone.
+  ///
+  /// In en, this message translates to:
+  /// **'SELECT NONE'**
+  String get selectNone;
+
+  /// No description provided for @exportAllExercisesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'All exercises are included. Tap \'CHOOSE...\' to pick specific ones.'**
+  String get exportAllExercisesHint;
+
+  /// No description provided for @selectedOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} selected'**
+  String selectedOfTotal(int selected, int total);
 
   /// No description provided for @publishActivePlan.
   ///

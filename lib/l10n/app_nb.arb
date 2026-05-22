@@ -224,7 +224,20 @@
   "shareActivePlan": "Kopier URL",
   "planUrlCopied": "URL kopiert",
   "sendToAction": "Send til...",
+  "sendToActionButton": "SEND TIL...",
   "exportAsDrill": "Eksporter som .drill",
+  "exportAction": "EKSPORTER",
+  "selectExercisesAction": "VELG...",
+  "selectAll": "VELG ALLE",
+  "selectNone": "VELG INGEN",
+  "exportAllExercisesHint": "Alle øvelser inkluderes. Trykk «VELG...» for å plukke selv.",
+  "selectedOfTotal": "{selected} av {total} valgt",
+  "@selectedOfTotal": {
+    "placeholders": {
+      "selected": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "publishActivePlan": "Publiser",
   "publishAsActivePlan": "Publiser som...",
   "defaultPlanName": "Standardplan",

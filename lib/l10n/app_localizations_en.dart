@@ -847,7 +847,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendToAction => 'Send to...';
 
   @override
+  String get sendToActionButton => 'SEND TO...';
+
+  @override
   String get exportAsDrill => 'Export as .drill';
+
+  @override
+  String get exportAction => 'EXPORT';
+
+  @override
+  String get selectExercisesAction => 'CHOOSE...';
+
+  @override
+  String get selectAll => 'SELECT ALL';
+
+  @override
+  String get selectNone => 'SELECT NONE';
+
+  @override
+  String get exportAllExercisesHint =>
+      'All exercises are included. Tap \'CHOOSE...\' to pick specific ones.';
+
+  @override
+  String selectedOfTotal(int selected, int total) {
+    return '$selected of $total selected';
+  }
 
   @override
   String get publishActivePlan => 'Publish';

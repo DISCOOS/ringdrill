@@ -14,6 +14,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
+import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
@@ -266,7 +267,8 @@ String _buildShareableUrl(String slug) {
 Future<void> sendActivePlanTo(BuildContext context) async {
   await _exportSelected(
     context,
-    title: (localizations) => localizations.sendToProgram,
+    title: (localizations) => localizations.sendToAction,
+    actionLabel: (localizations) => localizations.sendToActionButton,
     onSave: ProgramPageController.sendDrillFileTo,
     onSuccess: (localizations, file) => localizations.sendToSuccess(file),
     onFailure: (localizations, file) => localizations.sendToFailure(file),
@@ -276,7 +278,8 @@ Future<void> sendActivePlanTo(BuildContext context) async {
 Future<void> exportActivePlan(BuildContext context) async {
   await _exportSelected(
     context,
-    title: (localizations) => localizations.exportProgram,
+    title: (localizations) => localizations.exportAsDrill,
+    actionLabel: (localizations) => localizations.exportAction,
     onSave: ProgramPageController.saveDrillFile,
     onSuccess: (localizations, file) => localizations.exportSuccess(file),
     onFailure: (localizations, file) => localizations.exportFailure(file),
@@ -400,6 +403,7 @@ typedef _SaveDrillFile =
 Future<void> _exportSelected(
   BuildContext context, {
   required String Function(AppLocalizations localizations) title,
+  required String Function(AppLocalizations localizations) actionLabel,
   required _SaveDrillFile onSave,
   required String Function(AppLocalizations localizations, String fileName)
   onSuccess,
@@ -408,27 +412,33 @@ Future<void> _exportSelected(
 }) async {
   final localizations = AppLocalizations.of(context)!;
   final programService = ProgramService();
+  final program = programService.activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  final exercises = programService.loadExercises();
+  if (exercises.isEmpty) {
+    _showSnackBar(context, localizations.noExercisesYet);
+    return;
+  }
   final constraints = _constraintsFor(context);
-  final selected = await ProgramPageControllerBase.selectExercises(
-    context,
-    title(localizations),
-    programService.loadExercises(),
-    constraints,
-    localizations,
-    false,
-  );
-  if (selected.isEmpty || !context.mounted) return;
 
-  final fileName = await ProgramPageControllerBase.promptFileName(
+  final input = await showExportPlanDialog(
     context,
-    localizations,
+    program: program,
+    exercises: exercises,
+    constraints: constraints,
+    localizations: localizations,
+    title: title(localizations),
+    actionLabel: actionLabel(localizations),
   );
-  if (!context.mounted || fileName == null) return;
+  if (input == null || !context.mounted) return;
 
   final drillFile = await programService.exportProgram(
     nanoid(10),
-    fileName,
-    selected,
+    input.fileName,
+    input.selectedUuids,
   );
   try {
     if (!context.mounted) return;

@@ -734,7 +734,20 @@
   "shareActivePlan": "Copy URL",
   "planUrlCopied": "URL copied",
   "sendToAction": "Send to...",
+  "sendToActionButton": "SEND TO...",
   "exportAsDrill": "Export as .drill",
+  "exportAction": "EXPORT",
+  "selectExercisesAction": "CHOOSE...",
+  "selectAll": "SELECT ALL",
+  "selectNone": "SELECT NONE",
+  "exportAllExercisesHint": "All exercises are included. Tap 'CHOOSE...' to pick specific ones.",
+  "selectedOfTotal": "{selected} of {total} selected",
+  "@selectedOfTotal": {
+    "placeholders": {
+      "selected": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "publishActivePlan": "Publish",
   "publishAsActivePlan": "Publish as...",
   "defaultPlanName": "Default plan",

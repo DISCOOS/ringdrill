@@ -842,7 +842,31 @@ class AppLocalizationsNb extends AppLocalizations {
   String get sendToAction => 'Send til...';
 
   @override
+  String get sendToActionButton => 'SEND TIL...';
+
+  @override
   String get exportAsDrill => 'Eksporter som .drill';
+
+  @override
+  String get exportAction => 'EKSPORTER';
+
+  @override
+  String get selectExercisesAction => 'VELG...';
+
+  @override
+  String get selectAll => 'VELG ALLE';
+
+  @override
+  String get selectNone => 'VELG INGEN';
+
+  @override
+  String get exportAllExercisesHint =>
+      'Alle øvelser inkluderes. Trykk «VELG...» for å plukke selv.';
+
+  @override
+  String selectedOfTotal(int selected, int total) {
+    return '$selected av $total valgt';
+  }
 
   @override
   String get publishActivePlan => 'Publiser';
