@@ -10,7 +10,6 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/exercise_control_button.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
@@ -30,7 +29,6 @@ class ProgramView extends StatefulWidget {
 
 class _ProgramViewState extends State<ProgramView> {
   final _programService = ProgramService();
-  final _exerciseService = ExerciseService();
   final List<StreamSubscription> _subscriptions = [];
   List<Exercise> _exercises = [];
 
@@ -48,15 +46,10 @@ class _ProgramViewState extends State<ProgramView> {
       }),
     );
 
-    // Listen to ExerciseService state changes
-    _subscriptions.add(
-      _exerciseService.events.listen((event) {
-        // Update the state based on the current event phase
-        if (mounted) {
-          setState(() {});
-        }
-      }),
-    );
+    // The play/stop control used to live on each card and needed live
+    // ExerciseService updates here. Starting now happens from the exercise
+    // detail screen, so we no longer need to rebuild the program list on
+    // ExerciseService events.
   }
 
   @override
@@ -132,12 +125,6 @@ class _ProgramViewState extends State<ProgramView> {
                     child: ExerciseCard(
                       exercise: exercise,
                       localizations: localizations,
-                      trailing: ExerciseControlButton(
-                        isFAB: false,
-                        exercise: exercise,
-                        service: _exerciseService,
-                        localizations: localizations,
-                      ),
                       markers: markers,
                     ),
                   ),
@@ -162,7 +149,7 @@ class _ProgramViewState extends State<ProgramView> {
   }
 }
 
-class ExerciseCard extends StatelessWidget {
+class ExerciseCard extends StatefulWidget {
   const ExerciseCard({
     super.key,
     required this.exercise,
@@ -177,9 +164,25 @@ class ExerciseCard extends StatelessWidget {
   final List<StationLocation> markers;
 
   @override
+  State<ExerciseCard> createState() => _ExerciseCardState();
+}
+
+class _ExerciseCardState extends State<ExerciseCard> {
+  static const _animationDuration = Duration(milliseconds: 200);
+
+  bool _expanded = false;
+
+  void _toggleExpanded() => setState(() => _expanded = !_expanded);
+
+  @override
   Widget build(BuildContext context) {
+    final exercise = widget.exercise;
+    final localizations = widget.localizations;
+    final markers = widget.markers;
+    final hasMap = markers.isNotEmpty;
     final st = exercise.startTime.toMaterial();
     final et = exercise.endTime.toMaterial();
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
@@ -191,7 +194,7 @@ class ExerciseCard extends StatelessWidget {
                 child: ListTile(
                   title: Text(
                     exercise.name,
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
                     [
@@ -203,25 +206,44 @@ class ExerciseCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null)
+              if (hasMap)
                 Padding(
                   padding: const EdgeInsets.only(right: 8.0),
-                  child: trailing,
+                  child: IconButton(
+                    onPressed: _toggleExpanded,
+                    icon: AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: _animationDuration,
+                      child: const Icon(Icons.expand_more),
+                    ),
+                  ),
+                ),
+              if (widget.trailing != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: widget.trailing!,
                 ),
             ],
           ),
-          if (markers.isNotEmpty)
-            SizedBox(
-              height: 200,
-              child: IgnorePointer(
-                child: MapView(
-                  layers: MapConfig.layers,
-                  withToggle: false,
-                  markers: markers,
-                  initialFit: markers.fit(),
-                  initialCenter: markers.average(),
-                ),
-              ),
+          if (hasMap)
+            AnimatedSize(
+              duration: _animationDuration,
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: _expanded
+                  ? SizedBox(
+                      height: 200,
+                      child: IgnorePointer(
+                        child: MapView(
+                          layers: MapConfig.layers,
+                          withToggle: false,
+                          markers: markers,
+                          initialFit: markers.fit(),
+                          initialCenter: markers.average(),
+                        ),
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity, height: 0),
             ),
         ],
       ),
