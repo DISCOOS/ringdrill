@@ -158,8 +158,13 @@ class ExerciseService {
   void _progress(Exercise exercise, bool force) {
     if (_exercise != null) {
       final currentTimeOfDay = TimeOfDay.now();
-      // Only process each time a whole minute has passed
-      if (force || currentTimeOfDay.minute > _lastTimeOfDay.minute) {
+      // Only process each time a whole minute has passed.
+      // NOTE: Compare TimeOfDay by value, not by `.minute > .minute`.
+      // `TimeOfDay.now()` has minute granularity, so equality flips exactly
+      // once per minute. The previous `minute > minute` check failed at the
+      // hour boundary (e.g. 17:59 -> 18:00 gives 0 > 59 = false) and froze
+      // the timer permanently for the rest of the run.
+      if (force || currentTimeOfDay != _lastTimeOfDay) {
         _lastTimeOfDay = currentTimeOfDay;
 
         final totalRounds = exercise.numberOfRounds;
