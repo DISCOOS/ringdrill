@@ -422,13 +422,11 @@ Future<void> _exportSelected(
     _showSnackBar(context, localizations.noExercisesYet);
     return;
   }
-  final constraints = _constraintsFor(context);
 
   final input = await showExportPlanDialog(
     context,
     program: program,
     exercises: exercises,
-    constraints: constraints,
     localizations: localizations,
     title: title(localizations),
     actionLabel: actionLabel(localizations),
@@ -442,7 +440,12 @@ Future<void> _exportSelected(
   );
   try {
     if (!context.mounted) return;
-    final result = await onSave(context, constraints, localizations, drillFile);
+    final result = await onSave(
+      context,
+      _constraintsFor(context),
+      localizations,
+      drillFile,
+    );
     if (context.mounted && result) {
       _showSnackBar(context, onSuccess(localizations, drillFile.fileName));
     }

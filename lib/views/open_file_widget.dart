@@ -153,7 +153,6 @@ class OpenFileWidget extends StatelessWidget {
             context,
             localizations.importProgram,
             items.toList(),
-            BoxConstraints.expand(),
             localizations,
             confirmLabel: localizations.importAction,
             preselectAll: true,

@@ -1,5 +1,68 @@
 import 'package:flutter/material.dart';
 
+/// Shows [builder] either as a [Dialog] (wide form factor) or as a modal
+/// bottom sheet (narrow form factor).
+///
+/// Mirrors the responsive pattern used by `showOpenPlanDialog` so the
+/// library, export, send and import flows look consistent across phone,
+/// tablet and desktop. Pass [maximizeHeight] when the body has an
+/// `Expanded`/scrollable list that needs a bounded parent; leave it `false`
+/// for compact dialogs (e.g. file-name + buttons) so the surface shrinks to
+/// its content.
+Future<T?> showResponsiveSheetOrDialog<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool maximizeHeight = false,
+  double widthBreakpoint = 600.0,
+  double dialogMaxWidth = 560.0,
+  double dialogMinWidth = 460.0,
+  double dialogMaxHeight = 560.0,
+  double bottomSheetHeightFraction = 0.88,
+}) {
+  final mediaSize = MediaQuery.sizeOf(context);
+  if (mediaSize.width > widthBreakpoint) {
+    return showDialog<T>(
+      context: context,
+      builder: (context) {
+        final body = builder(context);
+        return Dialog(
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: dialogMaxWidth,
+              maxHeight: dialogMaxHeight,
+              minWidth: dialogMinWidth,
+            ),
+            child: maximizeHeight
+                ? SizedBox(height: dialogMaxHeight, child: body)
+                : body,
+          ),
+        );
+      },
+    );
+  }
+
+  return showModalBottomSheet<T>(
+    context: context,
+    useSafeArea: true,
+    showDragHandle: true,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+    ),
+    builder: (context) {
+      final body = builder(context);
+      if (maximizeHeight) {
+        return SizedBox(
+          height: mediaSize.height * bottomSheetHeightFraction,
+          child: body,
+        );
+      }
+      return body;
+    },
+  );
+}
+
 /// Footer row used at the bottom of a tab in modal dialogs.
 ///
 /// Shows an info icon plus a contextual description on the left. An optional

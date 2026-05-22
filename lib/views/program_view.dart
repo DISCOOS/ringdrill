@@ -10,6 +10,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
@@ -290,7 +291,9 @@ abstract class ProgramPageControllerBase extends ScreenController {
     return null;
   }
 
-  /// Shows a bottom-sheet exercise picker.
+  /// Shows the exercise picker as a bottom sheet on small form factors and as
+  /// a centered modal dialog on wide ones (same responsive behaviour as
+  /// `showOpenPlanDialog`).
   ///
   /// Each row renders the expandable [ExerciseCard] so the user can see start
   /// and end time, rounds, teams, and tap the chevron to peek at a small map
@@ -307,7 +310,6 @@ abstract class ProgramPageControllerBase extends ScreenController {
     BuildContext context,
     String title,
     List<Exercise> exercises,
-    BoxConstraints constraints,
     AppLocalizations localizations, {
     String? confirmLabel,
     bool preselectAll = false,
@@ -323,15 +325,9 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // [preselectAll] is true, so reading it directly would treat a cancel
     // as "everything selected" and trigger an unintended export/import.
     final List<String>? popped =
-        await showModalBottomSheet<List<String>?>(
-      context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      isScrollControlled: true,
-      constraints: constraints,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-      ),
+        await showResponsiveSheetOrDialog<List<String>>(
+      context,
+      maximizeHeight: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -348,7 +344,6 @@ abstract class ProgramPageControllerBase extends ScreenController {
               ),
               child: SafeArea(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     if (showSelectAllControls) ...[
                       const SizedBox(height: 8.0),

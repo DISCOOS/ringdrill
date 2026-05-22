@@ -263,7 +263,6 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
       context,
       localizations.importProgram,
       source.exercises,
-      _constraintsFor(context),
       localizations,
       confirmLabel: localizations.importAction,
       preselectAll: true,

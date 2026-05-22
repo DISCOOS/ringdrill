@@ -3,6 +3,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/program_view.dart';
 
 /// Result returned by [showExportPlanDialog].
@@ -42,7 +43,6 @@ Future<ExportPlanInput?> showExportPlanDialog(
   BuildContext context, {
   required Program program,
   required List<Exercise> exercises,
-  required BoxConstraints constraints,
   required AppLocalizations localizations,
   required String title,
   required String actionLabel,
@@ -58,14 +58,8 @@ Future<ExportPlanInput?> showExportPlanDialog(
   controller.addListener(onTextChanged);
 
   try {
-    final action = await showModalBottomSheet<_ExportSheetAction>(
-      context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-      ),
+    final action = await showResponsiveSheetOrDialog<_ExportSheetAction>(
+      context,
       builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.only(
@@ -161,7 +155,6 @@ Future<ExportPlanInput?> showExportPlanDialog(
       context,
       title,
       exercises,
-      constraints,
       localizations,
       confirmLabel: actionLabel,
       preselectAll: true,
