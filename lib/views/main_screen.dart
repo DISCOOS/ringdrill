@@ -465,28 +465,30 @@ class _MainScreenState extends State<MainScreen> {
             await active_actions.shareActivePlan(context);
           },
         ),
-        _drawerTile(
-          context,
-          icon: Icons.send,
-          title: localizations.sendToAction,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.sendActivePlanTo(context);
-          },
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.download,
-          title: localizations.exportAsDrill,
-          enabled: hasActivePlan && ProgramPageController.canSaveDrillFile,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.exportActivePlan(context);
-          },
-        ),
+        if (ProgramPageController.canSendDrillFile)
+          _drawerTile(
+            context,
+            icon: Icons.send,
+            title: localizations.sendToAction,
+            enabled: hasActivePlan,
+            disabledTooltip: localizations.requiresActivePlan,
+            onTap: () async {
+              Navigator.pop(context);
+              await active_actions.sendActivePlanTo(context);
+            },
+          ),
+        if (ProgramPageController.canSaveDrillFile)
+          _drawerTile(
+            context,
+            icon: Icons.download,
+            title: localizations.exportAsDrill,
+            enabled: hasActivePlan,
+            disabledTooltip: localizations.requiresActivePlan,
+            onTap: () async {
+              Navigator.pop(context);
+              await active_actions.exportActivePlan(context);
+            },
+          ),
         _drawerTile(
           context,
           icon: Icons.cloud_upload_outlined,

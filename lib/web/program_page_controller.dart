@@ -15,7 +15,17 @@ import 'package:share_plus/share_plus.dart';
 class ProgramPageController extends ProgramPageControllerBase {
   ProgramPageController();
 
-  static bool get canSaveDrillFile => WebEnv.isAndroid;
+  // FilePicker.saveFile with `bytes:` triggers the File System Access API on
+  // Chrome/Edge and falls back to a plain download elsewhere — both reliable
+  // enough for Android-mobile-web and any desktop-web browser. iOS Safari has
+  // historically been finicky here so iOS-web users still go through
+  // [canSendDrillFile] (Web Share API) instead.
+  static bool get canSaveDrillFile => WebEnv.isAndroid || WebEnv.isDesktop;
+
+  // Web Share API works well on mobile web (Android Chrome, iOS Safari) but
+  // is largely useless on desktop browsers, where there are no meaningful
+  // share targets — desktop-web users export instead.
+  static bool get canSendDrillFile => !WebEnv.isDesktop;
 
   static Future<DrillFile?> pickOpenFile(
     BuildContext context,

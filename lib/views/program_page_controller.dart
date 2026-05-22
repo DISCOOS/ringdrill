@@ -16,7 +16,16 @@ const String baseUrl = 'https://ringdrill.app';
 class ProgramPageController extends ProgramPageControllerBase {
   ProgramPageController();
 
+  // Direct-to-disk export via FilePicker.getDirectoryPath + dart:io. Disabled
+  // on Android because Storage Access Framework URIs returned there can't be
+  // written to with File.writeAsBytesSync — Android users go through
+  // [canSendDrillFile] (share intent) instead.
   static bool get canSaveDrillFile => !Platform.isAndroid;
+
+  // OS-level share / "send to another app" — always available on native
+  // platforms (Android intents, iOS share sheet, mac share menu, share_plus
+  // fallbacks on Windows/Linux).
+  static bool get canSendDrillFile => true;
 
   static Future<DrillFile?> pickOpenFile(
     BuildContext context,
