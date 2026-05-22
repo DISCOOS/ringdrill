@@ -22,6 +22,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0012 | [Position sharing](./0012-position-sharing-and-team-aggregation.md) | Accepted |
 | ADR-0013 | [Local end-to-end catalog testing via netlify dev, CLI seeding and a build-time base URL](./0013-local-catalog-testing.md) | Accepted |
 | ADR-0014 | [Server-controlled drill upload contract](./0014-server-assigned-drill-version.md) | Accepted |
+| ADR-0015 | [Shareable install links open the plan in the app via `ringdrill.app/i/<slug>`](./0015-shareable-install-links.md) | Accepted |
 
 ## When to write an ADR
 
