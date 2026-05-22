@@ -9,6 +9,7 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
 
+import '../models/exercise.dart' show Exercise, StationLocation;
 import '../services/program_service.dart' show ProgramEvent, ProgramService;
 import 'map_view.dart';
 
@@ -48,6 +49,10 @@ class _StationsViewState extends State<StationsView> {
   bool _notified = false;
   _PendingPick? _pickFor;
 
+  /// UUIDs of exercises the user has toggled off in the visibility sheet.
+  /// View-state only — does not survive a process restart by design.
+  final Set<String> _hiddenExercises = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -70,7 +75,7 @@ class _StationsViewState extends State<StationsView> {
 
   void _recenter() {
     if (!mounted) return;
-    final markers = _programService.getLocations();
+    final markers = _visibleLocations();
     if (markers.isEmpty) {
       _mapController.move(MapConfig.initialCenter, _mapController.camera.zoom);
       return;
@@ -94,9 +99,18 @@ class _StationsViewState extends State<StationsView> {
     }
   }
 
+  /// Markers that should currently be plotted — i.e. every station with a
+  /// position whose owning exercise has not been hidden via the
+  /// visibility sheet.
+  List<StationLocation> _visibleLocations() {
+    final all = _programService.getLocations();
+    if (_hiddenExercises.isEmpty) return all;
+    return all.where((m) => !_hiddenExercises.contains(m.$1.$1)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final markers = _programService.getLocations();
+    final markers = _visibleLocations();
     // Only nag about "no stations created" when the active program genuinely
     // has no stations anywhere. `markers.isEmpty` is not a safe proxy because
     // getLocations() filters by `position != null`, so exercises whose
@@ -132,6 +146,12 @@ class _StationsViewState extends State<StationsView> {
       withCenter: true,
     );
 
+    final allExercises = _programService.loadExercises();
+    final localizations = AppLocalizations.of(context)!;
+
+    final hiddenCount = _hiddenExercises.length;
+    final hasFilterActive = hiddenCount > 0;
+
     return Column(
       children: [
         if (_pickFor != null) _buildPickBanner(context, _pickFor!),
@@ -151,9 +171,198 @@ class _StationsViewState extends State<StationsView> {
             markers: markers,
             searchTargets: _buildSearchTargets(context),
             onMarkerTap: onMarkerTap,
+            topRightCommands: [
+              if (allExercises.isNotEmpty)
+                _buildVisibilityFab(
+                  context,
+                  localizations,
+                  allExercises,
+                  hiddenCount,
+                ),
+            ],
           ),
         ),
+        if (hasFilterActive)
+          _buildFilterBanner(
+            context,
+            shown: allExercises.length - hiddenCount,
+            total: allExercises.length,
+          ),
       ],
+    );
+  }
+
+  /// FAB with a Material [Badge] showing how many exercises are hidden.
+  /// When the filter is inactive the FAB looks like every other map
+  /// command so it does not visually shout for attention.
+  Widget _buildVisibilityFab(
+    BuildContext context,
+    AppLocalizations localizations,
+    List<Exercise> allExercises,
+    int hiddenCount,
+  ) {
+    final fab = FloatingActionButton(
+      heroTag: 'filterExercises',
+      tooltip: localizations.showExercises,
+      onPressed: () => _openVisibilitySheet(allExercises),
+      child: const Icon(Icons.tune),
+    );
+    if (hiddenCount == 0) return fab;
+    return Badge.count(count: hiddenCount, child: fab);
+  }
+
+  /// Slim banner shown above the map whenever the visibility filter
+  /// hides at least one exercise. Users tend to forget that they
+  /// toggled something off; the banner spells out "Showing X of N
+  /// exercises" (the same pattern used by the import/export selector)
+  /// and offers a one-tap "Show all" shortcut so the recovery path is
+  /// visible at all times, not buried inside the bottom sheet.
+  Widget _buildFilterBanner(
+    BuildContext context, {
+    required int shown,
+    required int total,
+  }) {
+    final localizations = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.secondaryContainer,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.filter_alt,
+                size: 18,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  localizations.exercisesShownOfTotal(shown, total),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(_hiddenExercises.clear);
+                  _recenter();
+                },
+                child: Text(localizations.showAll),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Opens a modal bottom sheet listing every exercise in the active
+  /// program with a toggle per row. Hidden exercises drop out of both
+  /// the marker layer and the search results. The sheet manages its own
+  /// transient state and pushes the result back via [setState] when the
+  /// user closes it.
+  Future<void> _openVisibilitySheet(List<Exercise> exercises) async {
+    final localizations = AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            void applyAndRefit() {
+              setState(() {});
+              _recenter();
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              // Same "shown of total" phrasing as the
+                              // banner above the map and the
+                              // import/export selector; rebuilt by
+                              // StatefulBuilder so the count tracks
+                              // toggles live.
+                              localizations.exercisesShownOfTotal(
+                                exercises.length - _hiddenExercises.length,
+                                exercises.length,
+                              ),
+                              style: Theme.of(sheetContext)
+                                  .textTheme
+                                  .titleMedium,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setSheetState(() {
+                                _hiddenExercises.clear();
+                              });
+                              applyAndRefit();
+                            },
+                            child: Text(localizations.showAll),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setSheetState(() {
+                                _hiddenExercises
+                                  ..clear()
+                                  ..addAll(exercises.map((e) => e.uuid));
+                              });
+                              applyAndRefit();
+                            },
+                            child: Text(localizations.hideAll),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: exercises.length,
+                        itemBuilder: (context, index) {
+                          final ex = exercises[index];
+                          final isVisible =
+                              !_hiddenExercises.contains(ex.uuid);
+                          return SwitchListTile(
+                            value: isVisible,
+                            title: Text(ex.name),
+                            onChanged: (value) {
+                              setSheetState(() {
+                                if (value) {
+                                  _hiddenExercises.remove(ex.uuid);
+                                } else {
+                                  _hiddenExercises.add(ex.uuid);
+                                }
+                              });
+                              applyAndRefit();
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -277,6 +486,11 @@ class _StationsViewState extends State<StationsView> {
     final targets = <SearchResult>[];
 
     for (final exercise in exercises) {
+      // Hidden exercises drop out of the search list entirely (both the
+      // exercise-level entry and every station underneath it). Keeping
+      // them searchable while invisible on the map would let users tap
+      // a result and pan to a marker that does not exist.
+      if (_hiddenExercises.contains(exercise.uuid)) continue;
       // Exercise-level entry: searching by exercise name should fit the
       // camera to every station that has a position.
       final exercisePoints = exercise.stations

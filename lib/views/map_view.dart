@@ -81,6 +81,7 @@ class MapView<K> extends StatefulWidget {
     this.maxZoom = 19,
     this.markers = const [],
     this.searchTargets = const [],
+    this.topRightCommands = const [],
     this.initialFit,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
@@ -109,6 +110,13 @@ class MapView<K> extends StatefulWidget {
   /// positions of its stations) and may override the tap behaviour with
   /// [SearchResult.onSelect].
   final List<SearchResult> searchTargets;
+
+  /// Caller-provided commands stacked under the built-in layer-toggle FAB
+  /// at the top-right corner of the map. Use this to hang feature-specific
+  /// FABs (e.g. an exercise-visibility filter) without coupling [MapView]
+  /// to a particular domain. Each widget should be sized like a
+  /// [FloatingActionButton] and carry a unique `heroTag`.
+  final List<Widget> topRightCommands;
   final ValueSetter<(K, String, LatLng)>? onMarkerTap;
 
   @override
@@ -159,6 +167,7 @@ class _MapViewState<K> extends State<MapView<K>> {
   @override
   Widget build(BuildContext context) {
     final withToggle = widget.withToggle && widget.layers.length > 1;
+    final hasTopRightColumn = withToggle || widget.topRightCommands.isNotEmpty;
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
@@ -253,23 +262,40 @@ class _MapViewState<K> extends State<MapView<K>> {
               Align(
                 alignment: Alignment.topLeft,
                 child: SizedBox(
-                  width: constraints.maxWidth - (withToggle ? 66 : 0),
+                  width:
+                      constraints.maxWidth - (hasTopRightColumn ? 66 : 0),
                   child: _buildSearchTool(context, constraints),
                 ),
               ),
-            if (withToggle)
+            if (hasTopRightColumn)
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
                   padding: const EdgeInsets.all(
                     10.0,
                   ).copyWith(top: 16.0), // Add some spacing
-                  child: FloatingActionButton(
-                    heroTag: 'layers',
-                    onPressed: _toggleLayer,
-                    child: const Icon(
-                      Icons.layers,
-                    ), // Layer icon for better context
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (withToggle)
+                        FloatingActionButton(
+                          heroTag: 'layers',
+                          onPressed: _toggleLayer,
+                          child: const Icon(
+                            Icons.layers,
+                          ), // Layer icon for better context
+                        ),
+                      for (
+                        var i = 0;
+                        i < widget.topRightCommands.length;
+                        i++
+                      ) ...[
+                        if (i > 0 || withToggle)
+                          const SizedBox(height: 8),
+                        widget.topRightCommands[i],
+                      ],
+                    ],
                   ),
                 ),
               ),

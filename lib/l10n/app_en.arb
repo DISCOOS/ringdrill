@@ -220,6 +220,26 @@
   "@selectExercises": {
     "description": "Message"
   },
+  "showExercises": "Show exercises",
+  "@showExercises": {
+    "description": "Tooltip for the map command that opens the exercise-visibility filter"
+  },
+  "showAll": "Show all",
+  "@showAll": {
+    "description": "Action that makes every exercise visible on the map"
+  },
+  "hideAll": "Hide all",
+  "@hideAll": {
+    "description": "Action that hides every exercise on the map"
+  },
+  "exercisesShownOfTotal": "Showing {shown} of {total} exercises",
+  "@exercisesShownOfTotal": {
+    "description": "Banner shown above the stations map when one or more exercises have been hidden via the visibility filter. Mirrors the selectedOfTotal pattern used in import/export.",
+    "placeholders": {
+      "shown": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "importSuccess": "Program \"{name}\" imported successfully!",
   "@importSuccess": {
     "description": "Message"

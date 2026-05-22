@@ -428,6 +428,30 @@ abstract class AppLocalizations {
   /// **'Select exercises'**
   String get selectExercises;
 
+  /// Tooltip for the map command that opens the exercise-visibility filter
+  ///
+  /// In en, this message translates to:
+  /// **'Show exercises'**
+  String get showExercises;
+
+  /// Action that makes every exercise visible on the map
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get showAll;
+
+  /// Action that hides every exercise on the map
+  ///
+  /// In en, this message translates to:
+  /// **'Hide all'**
+  String get hideAll;
+
+  /// Banner shown above the stations map when one or more exercises have been hidden via the visibility filter. Mirrors the selectedOfTotal pattern used in import/export.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total} exercises'**
+  String exercisesShownOfTotal(int shown, int total);
+
   /// Message
   ///
   /// In en, this message translates to:

@@ -199,6 +199,20 @@ class AppLocalizationsNb extends AppLocalizations {
   String get selectExercises => 'Velg øvelser';
 
   @override
+  String get showExercises => 'Vis øvelser';
+
+  @override
+  String get showAll => 'Vis alle';
+
+  @override
+  String get hideAll => 'Skjul alle';
+
+  @override
+  String exercisesShownOfTotal(int shown, int total) {
+    return 'Viser $shown av $total øvelser';
+  }
+
+  @override
   String importSuccess(Object name) {
     return 'Program \"$name\" ble importert.';
   }
