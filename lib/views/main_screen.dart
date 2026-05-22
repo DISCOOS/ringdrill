@@ -609,8 +609,8 @@ class _MainScreenState extends State<MainScreen> {
 
   List<Destination> _buildDestinations(AppLocalizations localizations) {
     return [
-      Destination(icon: Icons.fitness_center, label: localizations.exercise(2)),
-      Destination(icon: Icons.location_on, label: localizations.station(2)),
+      Destination(icon: Icons.update, label: localizations.exercise(2)),
+      Destination(icon: Icons.map, label: localizations.station(2)),
       Destination(icon: Icons.group, label: localizations.team(2)),
     ];
   }
