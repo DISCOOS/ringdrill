@@ -599,6 +599,20 @@ class AppLocalizationsNb extends AppLocalizations {
   String get done => 'Ferdig';
 
   @override
+  String get phaseNow => 'Fase nå';
+
+  @override
+  String get nextLabel => 'Neste';
+
+  @override
+  String phaseEndsAt(String time) {
+    return 'ferdig $time';
+  }
+
+  @override
+  String get remainingInPhase => 'Igjen av fasen';
+
+  @override
   String get wait => 'Vent';
 
   @override

@@ -604,6 +604,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get done => 'Done';
 
   @override
+  String get phaseNow => 'Phase now';
+
+  @override
+  String get nextLabel => 'Next';
+
+  @override
+  String phaseEndsAt(String time) {
+    return 'ends $time';
+  }
+
+  @override
+  String get remainingInPhase => 'Remaining in phase';
+
+  @override
   String get wait => 'Wait';
 
   @override

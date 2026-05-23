@@ -1058,6 +1058,30 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get done;
 
+  /// Label for the hero cell showing the current exercise phase
+  ///
+  /// In en, this message translates to:
+  /// **'Phase now'**
+  String get phaseNow;
+
+  /// Label for the hero cell showing upcoming phases
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get nextLabel;
+
+  /// Caption under the remaining time, showing wall-clock time when current phase ends
+  ///
+  /// In en, this message translates to:
+  /// **'ends {time}'**
+  String phaseEndsAt(String time);
+
+  /// Subtitle under the prominent remaining-time number in the Phase Now hero cell
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining in phase'**
+  String get remainingInPhase;
+
   /// Short for exercise is pending
   ///
   /// In en, this message translates to:

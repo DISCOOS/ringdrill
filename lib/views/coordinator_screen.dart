@@ -17,6 +17,12 @@ import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'exercise_control_button.dart';
 import 'exercise_form_screen.dart';
 
+/// Width of the combined hero card when it's used as a sidebar to the
+/// right of the round table. Below this the colour squares plus the
+/// label/time pair become hard to read, so the layout falls back to
+/// the stacked variant.
+const double _kHeroSidebarWidth = 150;
+
 class CoordinatorScreen extends StatefulWidget {
   final String uuid;
 
@@ -218,10 +224,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 : _buildBody(event),
           ),
           floatingActionButton: ExerciseControlButton(
+            // Stable identity so the Scaffold treats the play→stop swap as
+            // the same FAB and animates the position change instead of
+            // scaling the green FAB out and the red FAB in. Combined with
+            // [_SlideFloatingActionButtonAnimator] below this gives the
+            // hero-like glide from the corner to the centre of the status
+            // bar when the exercise is started, mirroring the player
+            // mockup in docs/design/mockups/coordinator-oversikt.html.
+            key: const ValueKey('coordinator-exercise-fab'),
             exercise: _exercise!,
             service: _exerciseService,
             localizations: localizations,
           ),
+          floatingActionButtonLocation: _isStarted
+              ? FloatingActionButtonLocation.centerDocked
+              : FloatingActionButtonLocation.endFloat,
+          floatingActionButtonAnimator:
+              const _SlideFloatingActionButtonAnimator(),
           bottomNavigationBar: _buildExerciseStatus(event),
         );
       },
@@ -230,16 +249,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   Widget _buildBody(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
+    // Hero row only makes sense once the coordinator has started (or is
+    // about to start) the exercise. The StreamBuilder above falls back to
+    // a synthetic `ExerciseEvent.pending` whenever no service event has
+    // arrived yet, so `event.isPending` is `true` even before the user
+    // presses play. Reading the service directly avoids that false
+    // positive and matches the gate used for `_buildExerciseStatus`.
+    final showHero = _exerciseService.isStartedOn(widget.uuid);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: _buildRoundTable(event, true),
-          ),
-          const SizedBox(height: 8),
+          _buildTopSection(event, showHero: showHero),
+          const SizedBox(height: 16),
           Center(
             child: SegmentedButton<_CoordinatorView>(
               segments: [
@@ -332,6 +355,257 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     );
   }
 
+  /// Top of the body. Layout depends on two things:
+  ///
+  /// * `showHero`: only true once the coordinator has started the
+  ///   exercise. Before start there's nothing to show "now / next" for
+  ///   and the round table claims the full width.
+  /// * Available width: when there's room for the round table at its
+  ///   natural width plus the [_kHeroSidebarWidth] sidebar next to it
+  ///   the combined hero card is placed to the right of the table. On
+  ///   narrower screens we stack the card above the table instead, so
+  ///   phone-portrait keeps working without horizontal scrolling.
+  Widget _buildTopSection(ExerciseEvent event, {required bool showHero}) {
+    if (!showHero) {
+      return Align(
+        alignment: Alignment.topCenter,
+        child: _buildRoundTable(event, true),
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Threshold leaves room for the round table (~280 px) + 12 px
+        // gap + sidebar. A slight buffer above the bare minimum avoids
+        // the 1.2 px overflow we saw at the edge case where Expanded
+        // pinned the table to a barely-too-narrow column.
+        final wideEnough =
+            constraints.maxWidth >= _kHeroSidebarWidth + 12 + 300;
+        if (wideEnough) {
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Round table keeps its natural width. We need
+                // IntrinsicWidth here because PhaseTile and
+                // PhaseHeaders are `Row` widgets with the default
+                // `MainAxisSize.max`, which would otherwise try to fill
+                // the unbounded width that Row gives non-flex children.
+                // IntrinsicWidth measures the table's natural width and
+                // supplies it as a tight constraint so those inner rows
+                // have something finite to fill.
+                IntrinsicWidth(child: _buildRoundTable(event, true)),
+                const SizedBox(width: 12),
+                // Fixed-width sidebar so the typography stays stable
+                // regardless of how wide the parent is. Any leftover
+                // horizontal space falls to the right of the card,
+                // which keeps the table-and-card group anchored to the
+                // left of the screen.
+                SizedBox(
+                  width: _kHeroSidebarWidth,
+                  child: _buildCombinedHeroCard(event, isSidebar: true),
+                ),
+              ],
+            ),
+          );
+        }
+        // Narrow fallback: the combined card stretches above the
+        // table. One full-width card reads cleaner than two
+        // half-width cards in the same horizontal strip.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildCombinedHeroCard(event, isSidebar: false),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.topCenter,
+              child: _buildRoundTable(event, true),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// One combined card that stacks the Phase Now and Next sections,
+  /// separated by a divider. Replaces the two-card layout we had before
+  /// so the sidebar reads as a single unit. See the user-supplied
+  /// design with the card placed to the right of the round table.
+  Widget _buildCombinedHeroCard(ExerciseEvent event, {bool isSidebar = false}) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [_buildPhaseNowSection(event, isSidebar: isSidebar)],
+        ),
+      ),
+    );
+  }
+
+  /// Top half of the combined hero card. Pure content (no Card or
+  /// padding) so it composes cleanly inside any container the layout
+  /// puts it in.
+  Widget _buildPhaseNowSection(ExerciseEvent event, {required bool isSidebar}) {
+    final localizations = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final phaseIdx = event.isPending ? -1 : event.phase.index - 1;
+    final isPending = phaseIdx < 0;
+    final caption = isPending
+        ? event.getState(localizations)
+        : localizations.remainingInPhase.toUpperCase();
+    final endTime = isPending
+        ? _exercise!.startTime
+        : _phaseEndTime(event.currentRound, phaseIdx);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _buildRemainingTime(event.remainingTime, theme, isSidebar: isSidebar),
+        const SizedBox(height: 6),
+        Text(
+          caption,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.outline,
+            letterSpacing: 0.5,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        if (endTime != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            localizations.phaseEndsAt(endTime.toString()),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Renders the dominant remaining-time element in the Phase Now
+  /// section. For short durations (< 60 min) we use "X" big plus
+  /// " min" small so the unit reads naturally; for longer durations —
+  /// which only happen during the pending state when the start time is
+  /// more than an hour away — we collapse to a timer-style "H:MM" so
+  /// the number stays compact instead of growing into something like
+  /// "826 min".
+  Widget _buildRemainingTime(
+    int minutes,
+    ThemeData theme, {
+    required bool isSidebar,
+  }) {
+    final bigStyle = theme.textTheme.displaySmall?.copyWith(
+      fontWeight: FontWeight.w500,
+      fontFeatures: const [FontFeature.tabularFigures()],
+      height: 1.0,
+    );
+    if (minutes < 60) {
+      return Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: '$minutes', style: bigStyle),
+            TextSpan(
+              text: ' min',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.outline,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+        textAlign: TextAlign.center,
+      );
+    }
+    final h = minutes ~/ 60;
+    final m = (minutes % 60).toString().padLeft(2, '0');
+    return Text('$h:$m', style: bigStyle, textAlign: TextAlign.center);
+  }
+
+  /// End time of a phase as a wall-clock value. For execution and
+  /// evaluation this is the start of the next phase in the same round.
+  /// For rotation (the last phase of a round) this is the start of the
+  /// next round's execution phase, or the exercise's [Exercise.endTime]
+  /// if we're already on the last round.
+  SimpleTimeOfDay? _phaseEndTime(int roundIndex, int phaseIndex) {
+    final schedule = _exercise!.schedule;
+    if (roundIndex < 0 || roundIndex >= schedule.length) return null;
+    if (phaseIndex < 0 || phaseIndex > 2) return null;
+    if (phaseIndex < 2) return schedule[roundIndex][phaseIndex + 1];
+    if (roundIndex + 1 < schedule.length) return schedule[roundIndex + 1][0];
+    return _exercise!.endTime;
+  }
+
+  String _phaseLabel(int phaseIndex, AppLocalizations l10n) {
+    return switch (phaseIndex) {
+      0 => l10n.drill,
+      1 => l10n.eval,
+      2 => l10n.roll,
+      _ => '',
+    }.toUpperCase();
+  }
+
+  /// Phase colour palette aligned with the player mockup at
+  /// `docs/design/mockups/coordinator-oversikt.html`. Drill is green,
+  /// eval is blue, roll is orange. These are hard-coded for now because
+  /// they don't map cleanly onto the Material colour scheme — when the
+  /// player view is extracted to its own widget tree this is a good
+  /// candidate to move into a shared theming layer.
+  Color _phaseColor(int phaseIndex) {
+    return switch (phaseIndex) {
+      0 => const Color(0xFF1D9E75),
+      1 => const Color(0xFF378ADD),
+      2 => const Color(0xFFBA7517),
+      _ => Colors.grey,
+    };
+  }
+
+  IconData _phaseIcon(int phaseIndex) {
+    return switch (phaseIndex) {
+      0 => Icons.local_fire_department,
+      1 => Icons.assignment_turned_in,
+      2 => Icons.swap_horiz,
+      _ => Icons.help_outline,
+    };
+  }
+
+  /// Returns up to [maxItems] phases that come after the [currentPhase]
+  /// of [currentRound], iterating first through the remaining phases of
+  /// the current round and then through phases of subsequent rounds.
+  /// Pass `-1` as [currentPhase] to start from the very first phase of
+  /// [currentRound] (used during the pending state, when no phase has
+  /// actually begun yet).
+  List<({int round, int phase})> _upcomingPhases(
+    int currentRound,
+    int currentPhase,
+    int maxItems,
+  ) {
+    final upcoming = <({int round, int phase})>[];
+    final lastRound = _exercise!.schedule.length - 1;
+    for (var p = currentPhase + 1; p < 3 && upcoming.length < maxItems; p++) {
+      upcoming.add((round: currentRound, phase: p));
+    }
+    for (
+      var r = currentRound + 1;
+      r <= lastRound && upcoming.length < maxItems;
+      r++
+    ) {
+      for (var p = 0; p < 3 && upcoming.length < maxItems; p++) {
+        upcoming.add((round: r, phase: p));
+      }
+    }
+    return upcoming;
+  }
+
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
     final localizations = AppLocalizations.of(context)!;
     return Container(
@@ -409,9 +683,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     // crashing at didChangeDependencies. Widget identity
                     // already keeps the expanded state stable across
                     // exercise-event rebuilds.
-                    key: ValueKey<String>(
-                      'coordinator-station-$stationIndex',
-                    ),
+                    key: ValueKey<String>('coordinator-station-$stationIndex'),
                     initiallyExpanded: isLive,
                     tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                     childrenPadding: EdgeInsets.zero,
@@ -614,9 +886,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     // isLive check would expand every row at once. Leave
                     // the team list collapsed and let the coordinator
                     // pick which team to focus on.
-                    key: ValueKey<String>(
-                      'coordinator-team-$teamIndex',
-                    ),
+                    key: ValueKey<String>('coordinator-team-$teamIndex'),
                     tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                     childrenPadding: EdgeInsets.zero,
                     subtitle: currentStationName == null
@@ -688,10 +958,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ...List<Widget>.generate(_exercise!.schedule.length, (roundIndex) {
-            final stationIndex = _exercise!.stationIndex(
-              teamIndex,
-              roundIndex,
-            );
+            final stationIndex = _exercise!.stationIndex(teamIndex, roundIndex);
             final none = stationIndex < 0;
             final title = none
                 ? '${localizations.station(1)} ×'
@@ -727,4 +994,68 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     }
     super.dispose();
   }
+}
+
+/// Coloured rounded square that fronts each row in the "Next" card on
+/// [CoordinatorScreen]. The colour comes from the mockup-aligned phase
+/// palette in [_CoordinatorScreenState._phaseColor]; the icon sits in
+/// the centre on a white-tinted surface so it stays legible regardless
+/// of theme. Mirrors the `width: 36; height: 36; background: …` squares
+/// in `docs/design/mockups/coordinator-oversikt.html`.
+class _PhaseIconSquare extends StatelessWidget {
+  const _PhaseIconSquare({
+    required this.color,
+    required this.icon,
+    this.size = 44.0,
+  });
+
+  final Color color;
+  final IconData icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, color: Colors.white, size: size * 24 / 44),
+    );
+  }
+}
+
+/// Animator that slides the [FloatingActionButton] between
+/// [FloatingActionButtonLocation]s instead of the default scale-out /
+/// scale-in. The position is interpolated with an ease-in-out curve and the
+/// scale is held at `1.0`, so the FAB visually glides from the previous
+/// location to the new one. This gives the same visual effect as a Hero
+/// transition, but inside the Scaffold instead of across routes.
+///
+/// Used on [CoordinatorScreen] so the play/stop FAB glides from the corner
+/// to the centre of the bottom status bar when an exercise starts (and back
+/// when it stops), matching the player-style design in
+/// `docs/design/mockups/coordinator-oversikt.html`.
+class _SlideFloatingActionButtonAnimator extends FloatingActionButtonAnimator {
+  const _SlideFloatingActionButtonAnimator();
+
+  @override
+  Offset getOffset({
+    required Offset begin,
+    required Offset end,
+    required double progress,
+  }) {
+    final eased = Curves.easeInOut.transform(progress);
+    return Offset.lerp(begin, end, eased)!;
+  }
+
+  @override
+  Animation<double> getScaleAnimation({required Animation<double> parent}) =>
+      const AlwaysStoppedAnimation<double>(1.0);
+
+  @override
+  Animation<double> getRotationAnimation({required Animation<double> parent}) =>
+      const AlwaysStoppedAnimation<double>(1.0);
 }

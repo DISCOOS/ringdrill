@@ -648,6 +648,25 @@
   "@done": {
     "description": "Short for rotate to exercise is completed"
   },
+  "phaseNow": "Phase now",
+  "@phaseNow": {
+    "description": "Label for the hero cell showing the current exercise phase"
+  },
+  "nextLabel": "Next",
+  "@nextLabel": {
+    "description": "Label for the hero cell showing upcoming phases"
+  },
+  "phaseEndsAt": "ends {time}",
+  "@phaseEndsAt": {
+    "description": "Caption under the remaining time, showing wall-clock time when current phase ends",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "remainingInPhase": "Remaining in phase",
+  "@remainingInPhase": {
+    "description": "Subtitle under the prominent remaining-time number in the Phase Now hero cell"
+  },
   "wait": "Wait",
   "@wait": {
     "description": "Short for exercise is pending"
