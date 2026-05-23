@@ -412,7 +412,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final stations = _exercise.stations.toList();
 
     // Navigate to the edit exercise screen
-    final newStation = await Navigator.push(
+    final newStation = await Navigator.push<Station>(
       context,
       MaterialPageRoute(
         builder: (context) => StationFormScreen(
@@ -421,16 +421,20 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         ),
       ),
     );
-    if (context.mounted && newStation != _exercise) {
-      stations[widget.stationIndex] = newStation;
-      final newExercise = _exercise.copyWith(stations: stations);
-      await _programService.saveExercise(
-        AppLocalizations.of(context)!,
-        newExercise,
-      );
-      setState(() {
-        _exercise = newExercise;
-      });
-    }
+    // The previous guard was `newStation != _exercise`, but those are
+    // two unrelated types (Station vs Exercise) so the comparison was
+    // always true. Backing out of the form (newStation == null) then
+    // ran `stations[i] = null` on a non-nullable list and crashed.
+    if (!context.mounted || newStation == null) return;
+    stations[widget.stationIndex] = newStation;
+    final newExercise = _exercise.copyWith(stations: stations);
+    await _programService.saveExercise(
+      AppLocalizations.of(context)!,
+      newExercise,
+    );
+    if (!mounted) return;
+    setState(() {
+      _exercise = newExercise;
+    });
   }
 }

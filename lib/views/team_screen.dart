@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/station_screen.dart';
 
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key, required this.teamIndex});
@@ -64,8 +63,27 @@ class _TeamScreenState extends State<TeamScreen> {
                           initiallyExpanded: isLive,
                           isLive: isLive,
                           onStationTap: (stationIndex) {
-                            context.push(
-                              '$routeProgram/${exercise.uuid}/station/$stationIndex',
+                            // Pure Navigator.push on purpose: routing the
+                            // station detail through `context.push` from
+                            // here crosses GoRouter branches (`/teams/...`
+                            // → `/program/<uuid>/station/...`), which in
+                            // go_router 17 builds the new IRM with pages
+                            // `[Shell, CoordinatorScreen, StationScreen]`
+                            // and drops TeamScreen from the stack. Popping
+                            // back across that branch boundary crashed the
+                            // app on /teams/<i> — see "bak > bak" splash
+                            // regression report. The detail screen does
+                            // not need its own bookmarkable URL when
+                            // reached from the team view; `/teams/<i>`
+                            // itself remains a deep link.
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => StationExerciseScreen(
+                                  stationIndex: stationIndex,
+                                  uuid: exercise.uuid,
+                                ),
+                              ),
                             );
                           },
                         );
