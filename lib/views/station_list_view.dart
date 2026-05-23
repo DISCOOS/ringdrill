@@ -8,10 +8,9 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
-import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/station_expansion_tile.dart';
-import 'package:ringdrill/views/widgets/station_mini_map.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 class StationListView extends StatefulWidget {
   const StationListView({super.key, required this.controller});
@@ -262,34 +261,18 @@ class _StationListViewState extends State<StationListView> {
           ),
           const SizedBox(height: 12),
         ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.place,
-              size: 18,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: station.position == null
-                  ? Text(
-                      localizations.noLocation,
-                      style: theme.textTheme.bodyMedium,
-                    )
-                  : PositionWidget(
-                      wrapped: false,
-                      format: PositionFormat.utm,
-                      position: station.position,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-            ),
-          ],
+        // Shared "Posisjon" label + pin/coords row + tappable mini-map
+        // (140 px tall to match the previous inline layout). Keeping the
+        // 140 px height — instead of falling back to the widget's 200 px
+        // default — preserves the compact look this list relies on.
+        StationPositionPanel(
+          exercise: exercise,
+          station: station,
+          mapHeight: 140,
+          miniMapKey: ValueKey<String>(
+            'stations-list-map-${exercise.uuid}-${station.index}',
+          ),
         ),
-        if (station.position != null) ...[
-          const SizedBox(height: 12),
-          StationMiniMap(exercise: exercise, station: station),
-        ],
       ],
     );
   }

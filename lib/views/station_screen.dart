@@ -11,9 +11,8 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
-import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-import 'package:ringdrill/views/widgets/station_mini_map.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
@@ -185,6 +184,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// Description + position + mini-map. Sized to its content (no
   /// inner scrollable) so the outer SingleChildScrollView in [build]
   /// owns the whole screen's scroll context.
+  ///
+  /// Uses the shared [StationPositionPanel] so the "Posisjon ... pin
+  /// coords" label row and the tap-to-open-bottom-sheet mini-map stay
+  /// consistent with the other station surfaces (coordinator screen
+  /// and the Stations tab).
   Widget _buildStationInfo(Station station) {
     final localizations = AppLocalizations.of(context)!;
     return Column(
@@ -197,46 +201,12 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           margin: const EdgeInsets.only(bottom: 16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.place,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: station.position == null
-                          ? Text(
-                              localizations.noLocation,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            )
-                          : PositionWidget(
-                              wrapped: false,
-                              format: PositionFormat.utm,
-                              position: station.position,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                    ),
-                  ],
-                ),
-                if (station.position != null) ...[
-                  const SizedBox(height: 12),
-                  // Uses the shared StationMiniMap so tap opens
-                  // the same bottom-sheet view as the Stations
-                  // tab. Single-station focus is intentional —
-                  // for plan-wide context the user switches to
-                  // the Map tab.
-                  StationMiniMap(
-                    exercise: _exercise,
-                    station: station,
-                    height: 200,
-                  ),
-                ],
-              ],
+            child: StationPositionPanel(
+              exercise: _exercise,
+              station: station,
+              miniMapKey: ValueKey<String>(
+                'station-screen-map-${_exercise.uuid}-${station.index}',
+              ),
             ),
           ),
         ),

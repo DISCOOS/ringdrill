@@ -9,12 +9,11 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
-import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 import 'exercise_control_button.dart';
 import 'exercise_form_screen.dart';
@@ -849,16 +848,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   /// Inline detail for a station row in the coordinator station list. Shown
   /// when the user expands the [ExpansionTile] for that station. Shows
-  /// description and a static map thumbnail centred on the station's
-  /// position. The round-by-round time table is intentionally NOT repeated
-  /// here — that information already lives in the round table above the
-  /// SegmentedButton.
+  /// description and a [StationPositionPanel] (label row + mini-map that
+  /// opens the interactive bottom sheet). The round-by-round time table
+  /// is intentionally NOT repeated here — that information already lives
+  /// in the round table above the SegmentedButton.
   Widget _buildStationDetail(int stationIndex) {
-    final localizations = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     final station = _exercise!.stations[stationIndex];
     final description = station.description;
-    final hasPosition = station.position != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: Column(
@@ -869,60 +865,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
               child: Text(description),
             ),
+          // Shared panel handles both the "Posisjon ... pin coords"
+          // label row and the tappable mini-map (which opens the
+          // interactive variant in a bottom sheet). The ValueKey on
+          // the embedded mini-map keeps each station's MapView state
+          // isolated — without it, expanding station A and then B
+          // would briefly share camera state. PageStorageKey would
+          // collide with SelectableText scroll-state, hence ValueKey.
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  hasPosition ? Icons.place : Icons.place_outlined,
-                  color: hasPosition
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.outline,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: hasPosition
-                      ? PositionWidget(
-                          wrapped: false,
-                          format: PositionFormat.utm,
-                          position: station.position,
-                          style: theme.textTheme.bodyMedium,
-                        )
-                      : Text(
-                          localizations.noLocation,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                ),
-              ],
-            ),
-          ),
-          if (hasPosition)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  height: 200,
-                  // ValueKey gives each station its own MapView instance so
-                  // expanding station A doesn't accidentally share map
-                  // state with station B. PageStorageKey would collide
-                  // with SelectableText scroll-state above — see the note
-                  // on the ExpansionTile key further up.
-                  child: MapView<int>(
-                    key: ValueKey<String>(
-                      'coordinator-station-map-$stationIndex',
-                    ),
-                    withCross: true,
-                    initialZoom: 16,
-                    initialCenter: station.position!,
-                    layers: MapConfig.layers,
-                    interactionFlags: MapConfig.static,
-                  ),
-                ),
+            child: StationPositionPanel(
+              exercise: _exercise!,
+              station: station,
+              miniMapKey: ValueKey<String>(
+                'coordinator-station-map-$stationIndex',
               ),
             ),
+          ),
         ],
       ),
     );
