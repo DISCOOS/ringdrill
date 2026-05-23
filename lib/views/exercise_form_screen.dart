@@ -32,6 +32,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   final TextEditingController _numberOfTeamsController = TextEditingController(
     text: "4",
   );
+  final TextEditingController _numberOfStationsController =
+      TextEditingController(text: "4");
   final TextEditingController _numberOfRoundsController = TextEditingController(
     text: "4",
   );
@@ -45,6 +47,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     text: "5",
   );
 
+  bool _stationsTracksTeams = true;
+
   @override
   void initState() {
     final e = widget.exercise;
@@ -53,10 +57,14 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       _nameController.text = e.name;
       _numberOfTeamsController.text = (widget.numberOfTeams ?? e.numberOfTeams)
           .toString();
+      _numberOfStationsController.text = e.stations.length.toString();
       _numberOfRoundsController.text = e.numberOfRounds.toString();
       _executionTimeController.text = e.executionTime.toString();
       _evaluationTimeController.text = e.evaluationTime.toString();
       _rotationTimeController.text = e.rotationTime.toString();
+      _stationsTracksTeams = false;
+    } else {
+      _numberOfStationsController.text = _numberOfTeamsController.text;
     }
     super.initState();
   }
@@ -173,64 +181,105 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
                 SizedBox(height: 16.0),
 
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Number of Rounds
-                    Expanded(
-                      child: TextFormField(
-                        controller: _numberOfRoundsController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: localizations.numberOfRounds,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final fieldWidth = constraints.maxWidth >= 560
+                        ? (constraints.maxWidth - 32) / 3
+                        : (constraints.maxWidth - 16) / 2;
+                    return Wrap(
+                      spacing: 16.0,
+                      runSpacing: 16.0,
+                      children: [
+                        // Number of Rounds
+                        SizedBox(
+                          width: fieldWidth,
+                          child: TextFormField(
+                            controller: _numberOfRoundsController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: localizations.numberOfRounds,
+                            ),
+                            onChanged: (_) => setState(() {}),
+                            validator: (value) => _isValidNumber(value)
+                                ? null
+                                : localizations.pleaseEnterAValidNumber,
+                          ),
                         ),
-                        validator: (value) {
-                          if (_isValidNumber(value)) {
-                            if (_isValidNumber(_numberOfTeamsController.text)) {
-                              return int.parse(_numberOfTeamsController.text) >
-                                      int.parse(value!)
-                                  ? localizations
-                                        .mustBeEqualToOrLessThanNumberOf(
-                                          localizations.team(2).toLowerCase(),
-                                        )
-                                  : null;
-                            }
-                          }
-                          return localizations.pleaseEnterAValidNumber;
-                        },
-                      ),
-                    ),
 
-                    SizedBox(width: 16.0),
-
-                    // Number of Teams
-                    Expanded(
-                      child: TextFormField(
-                        controller: _numberOfTeamsController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: localizations.numberOfTeams,
+                        // Number of Teams
+                        SizedBox(
+                          width: fieldWidth,
+                          child: TextFormField(
+                            controller: _numberOfTeamsController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: localizations.numberOfTeams,
+                            ),
+                            onChanged: (value) {
+                              if (_stationsTracksTeams) {
+                                _numberOfStationsController.text = value;
+                              }
+                              setState(() {});
+                            },
+                            validator: (value) {
+                              if (!_isValidNumber(value)) {
+                                return localizations.pleaseEnterAValidNumber;
+                              }
+                              if (_isValidNumber(
+                                    _numberOfStationsController.text,
+                                  ) &&
+                                  int.parse(value!) >
+                                      int.parse(
+                                        _numberOfStationsController.text,
+                                      )) {
+                                return localizations
+                                    .mustBeEqualToOrLessThanNumberOf(
+                                      localizations.station(2).toLowerCase(),
+                                    );
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        validator: (value) {
-                          if (_isValidNumber(value)) {
-                            if (_isValidNumber(
-                              _numberOfRoundsController.text,
-                            )) {
-                              return int.parse(_numberOfRoundsController.text) <
-                                      int.parse(value!)
-                                  ? localizations
-                                        .mustBeEqualToOrLessThanNumberOf(
-                                          localizations.round(2).toLowerCase(),
-                                        )
-                                  : null;
-                            }
-                          }
-                          return localizations.pleaseEnterAValidNumber;
-                        },
-                      ),
-                    ),
-                  ],
+
+                        // Number of Stations
+                        SizedBox(
+                          width: fieldWidth,
+                          child: TextFormField(
+                            controller: _numberOfStationsController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: localizations.numberOfStations,
+                            ),
+                            onChanged: (_) {
+                              _stationsTracksTeams = false;
+                              setState(() {});
+                            },
+                            validator: (value) {
+                              if (!_isValidNumber(value)) {
+                                return localizations.pleaseEnterAValidNumber;
+                              }
+                              if (_isValidNumber(
+                                    _numberOfTeamsController.text,
+                                  ) &&
+                                  int.parse(value!) <
+                                      int.parse(
+                                        _numberOfTeamsController.text,
+                                      )) {
+                                return localizations
+                                    .mustBeEqualToOrGreaterThanNumberOf(
+                                      localizations.team(2).toLowerCase(),
+                                    );
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
+                ?_buildStationsRoundNote(localizations),
               ],
             ),
           ),
@@ -252,7 +301,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   }
 
   // Validate and add the exercise
-  void _saveExercise() {
+  Future<void> _saveExercise() async {
     final String? validationError = ExerciseX.sanitizeExerciseName(
       _nameController.text,
     );
@@ -273,10 +322,12 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       final name = _nameController.text.trim();
       final numberOfTeams = int.parse(_numberOfTeamsController.text);
+      final numberOfStations = int.parse(_numberOfStationsController.text);
       final numberOfRounds = int.parse(_numberOfRoundsController.text);
       final executionTime = int.parse(_executionTimeController.text);
       final evaluationTime = int.parse(_evaluationTimeController.text);
       final rotationTime = int.parse(_rotationTimeController.text);
+      final localizations = AppLocalizations.of(context)!;
 
       // Generate exercise with user input
       final newExercise = ProgramService.generateSchedule(
@@ -284,13 +335,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         startTime: _startTime,
         uuid: widget.exercise?.uuid,
         numberOfTeams: numberOfTeams,
-        numberOfStations: int.parse(_numberOfTeamsController.text),
+        numberOfStations: numberOfStations,
         numberOfRounds: numberOfRounds,
         executionTime: executionTime,
         evaluationTime: evaluationTime,
         rotationTime: rotationTime,
         stations: widget.exercise?.stations ?? [],
-        localizations: AppLocalizations.of(context)!,
+        localizations: localizations,
       );
 
       // Return the exercise to the previous screen
@@ -302,10 +353,40 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     return value != null && int.tryParse(value) != null && int.parse(value) > 0;
   }
 
+  Widget? _buildStationsRoundNote(AppLocalizations localizations) {
+    final numberOfRounds = int.tryParse(_numberOfRoundsController.text);
+    final numberOfStations = int.tryParse(_numberOfStationsController.text);
+    if (numberOfRounds == null ||
+        numberOfStations == null ||
+        numberOfRounds <= 0 ||
+        numberOfStations <= 0 ||
+        numberOfRounds == numberOfStations) {
+      return null;
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final text = numberOfRounds > numberOfStations
+        ? localizations.stationsRevisitNote(numberOfRounds, numberOfStations)
+        : localizations.stationsUnderCoverageNote(
+            numberOfRounds,
+            numberOfStations,
+          );
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Text(
+        text,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: colorScheme.tertiary),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _numberOfRoundsController.dispose();
     _numberOfTeamsController.dispose();
+    _numberOfStationsController.dispose();
     _nameController.dispose();
     _evaluationTimeController.dispose();
     _rotationTimeController.dispose();

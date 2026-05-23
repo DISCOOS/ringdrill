@@ -495,8 +495,26 @@ class AppLocalizationsNb extends AppLocalizations {
   String get numberOfTeams => 'Antall lag';
 
   @override
+  String get numberOfStations => 'Antall poster';
+
+  @override
   String mustBeEqualToOrLessThanNumberOf(Object name) {
     return 'Må være mindre eller lik $name';
+  }
+
+  @override
+  String mustBeEqualToOrGreaterThanNumberOf(Object name) {
+    return 'Må være større eller lik $name';
+  }
+
+  @override
+  String stationsRevisitNote(int rounds, int stations) {
+    return 'Hvert lag besøker noen poster flere ganger. Med $rounds runder og $stations poster passerer hvert lag hver post omtrent $rounds/$stations ganger.';
+  }
+
+  @override
+  String stationsUnderCoverageNote(int rounds, int stations) {
+    return 'Hvert lag besøker bare $rounds av $stations poster under denne øvelsen.';
   }
 
   @override

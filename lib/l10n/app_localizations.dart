@@ -860,11 +860,35 @@ abstract class AppLocalizations {
   /// **'Number of Teams'**
   String get numberOfTeams;
 
+  /// Label for the number of stations field in the exercise setup form.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of stations'**
+  String get numberOfStations;
+
   /// Parameterized message
   ///
   /// In en, this message translates to:
   /// **'Must be equal or less than {name}'**
   String mustBeEqualToOrLessThanNumberOf(Object name);
+
+  /// Parameterized validation message shown when a numeric field must be at least another count.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be equal or greater than {name}'**
+  String mustBeEqualToOrGreaterThanNumberOf(Object name);
+
+  /// Informational note shown when an exercise has more rounds than stations.
+  ///
+  /// In en, this message translates to:
+  /// **'Each team will revisit some stations. With {rounds} rounds and {stations} stations every team passes through each station roughly {rounds}/{stations} times.'**
+  String stationsRevisitNote(int rounds, int stations);
+
+  /// Informational note shown when an exercise has fewer rounds than stations.
+  ///
+  /// In en, this message translates to:
+  /// **'Each team will only visit {rounds} of {stations} stations during this exercise.'**
+  String stationsUnderCoverageNote(int rounds, int stations);
 
   /// Message
   ///

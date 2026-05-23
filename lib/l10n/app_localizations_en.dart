@@ -498,8 +498,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get numberOfTeams => 'Number of Teams';
 
   @override
+  String get numberOfStations => 'Number of stations';
+
+  @override
   String mustBeEqualToOrLessThanNumberOf(Object name) {
     return 'Must be equal or less than $name';
+  }
+
+  @override
+  String mustBeEqualToOrGreaterThanNumberOf(Object name) {
+    return 'Must be equal or greater than $name';
+  }
+
+  @override
+  String stationsRevisitNote(int rounds, int stations) {
+    return 'Each team will revisit some stations. With $rounds rounds and $stations stations every team passes through each station roughly $rounds/$stations times.';
+  }
+
+  @override
+  String stationsUnderCoverageNote(int rounds, int stations) {
+    return 'Each team will only visit $rounds of $stations stations during this exercise.';
   }
 
   @override
