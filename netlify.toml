@@ -38,7 +38,22 @@
 [[headers]]
     for = "/main.dart.js"
     [headers.values]
-        Cache-Control = "public, max-age=31536000, immutable"
+        Cache-Control = "no-cache"
+
+[[headers]]
+    for = "/flutter_bootstrap.js"
+    [headers.values]
+        Cache-Control = "no-cache"
+
+[[headers]]
+    for = "/flutter.js"
+    [headers.values]
+        Cache-Control = "no-cache"
+
+[[headers]]
+    for = "/manifest.json"
+    [headers.values]
+        Cache-Control = "no-cache"
 
 [[headers]]
     for = "/flutter_service_worker.js"
