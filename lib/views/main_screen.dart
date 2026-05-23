@@ -82,7 +82,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
               isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
               location: state.matchedLocation,
-              routes: [routeProgram, routeMap, routeStations, routeTeams],
+              routes: [routeProgram, routeStations, routeTeams, routeMap],
             ),
           );
         },
