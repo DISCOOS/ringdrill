@@ -277,6 +277,27 @@ class AppLocalizationsNb extends AppLocalizations {
   String get notStationsCreated => 'Ingen poster opprettet';
 
   @override
+  String get mapTab => 'Kart';
+
+  @override
+  String get stationsTab => 'Poster';
+
+  @override
+  String get allExercises => 'Alle øvelser';
+
+  @override
+  String showingStationsIn(String name) {
+    return 'Viser poster i: $name';
+  }
+
+  @override
+  String get noStationsInExercise => 'Ingen poster i denne øvelsen.';
+
+  @override
+  String get noStationsYet =>
+      'Ingen poster ennå. Legg til en post fra Øvelser-fanen.';
+
+  @override
   String get stationName => 'Postnavn';
 
   @override

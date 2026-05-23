@@ -65,10 +65,10 @@ The route `/stations` moves from the Map tab to the new Stations list tab, becau
 │   AppBar:  Stations                  ⋮      │
 ├─────────────────────────────────────────────┤
 │                                             │
-│   A1 · Fire ignition                      ▸ │ ← tap row → opens station
+│   1.1 · Fire ignition                     ▸ │ ← tap row → opens station
 │   Exercise: Forest Fire 2026                │   tap ▸ → expand
 │                                             │   swipe ← → edit form
-│   A2 · First aid                          ▾ │
+│   1.2 · First aid                          ▾ │
 │   Exercise: Forest Fire 2026                │
 │   Description:                              │
 │    "Assess vitals, prioritize ..."         │
@@ -77,10 +77,10 @@ The route `/stations` moves from the Map tab to the new Stations list tab, becau
 │   │            mini map             │ ← tap │ → bottom sheet
 │   └─────────────────────────────────┘       │
 │                                             │
-│   A3 · Evacuation                         ▸ │
+│   1.3 · Evacuation                        ▸ │
 │   Exercise: Forest Fire 2026                │
 │                                             │
-│   B1 · Radio drill                        ▸ │
+│   2.1 · Radio drill                        ▸ │
 │   Exercise: Winter Exercise 2026            │
 │                                             │
 │                                       ┌───┐ │
@@ -116,7 +116,7 @@ Each row is an expandable tile.
 
 **Collapsed:**
 
-* Leading: compact station-code square (same style as `_buildStationList` in `CoordinatorScreen`), e.g. `A2`.
+* Leading: compact station-code square showing the 1-based `exerciseNumber.stationNumber`, e.g. `1.2` for the second station of the first exercise. The exercise number is the station's owner's position in the unfiltered exercises list, kept stable across filter toggles so codes do not jump when the user narrows the view.
 * Title: station name.
 * Subtitle: `Exercise: <name>`.
 * Trailing: chevron.

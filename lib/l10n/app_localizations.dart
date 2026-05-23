@@ -500,6 +500,42 @@ abstract class AppLocalizations {
   /// **'No stations created'**
   String get notStationsCreated;
 
+  /// Bottom-nav label for the Map tab (formerly Stations, renamed to reflect that it shows a map of the stations).
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get mapTab;
+
+  /// Bottom-nav label for the new Stations list tab introduced in DESIGN-002.
+  ///
+  /// In en, this message translates to:
+  /// **'Stations'**
+  String get stationsTab;
+
+  /// Default 'no filter' row at the top of the exercise picker on the Stations tab.
+  ///
+  /// In en, this message translates to:
+  /// **'All exercises'**
+  String get allExercises;
+
+  /// Banner shown above the bottom-nav when the Stations list tab is filtered to a single exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing stations in: {name}'**
+  String showingStationsIn(String name);
+
+  /// Empty-state shown in the Stations list when the active filter excludes every station.
+  ///
+  /// In en, this message translates to:
+  /// **'No stations in this exercise.'**
+  String get noStationsInExercise;
+
+  /// Empty-state shown in the Stations list when the active plan has no stations at all.
+  ///
+  /// In en, this message translates to:
+  /// **'No stations yet. Add a station from the Exercises tab.'**
+  String get noStationsYet;
+
   /// Label
   ///
   /// In en, this message translates to:

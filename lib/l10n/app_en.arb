@@ -272,6 +272,33 @@
   "@notStationsCreated": {
     "description": "Message"
   },
+  "mapTab": "Map",
+  "@mapTab": {
+    "description": "Bottom-nav label for the Map tab (formerly Stations, renamed to reflect that it shows a map of the stations)."
+  },
+  "stationsTab": "Stations",
+  "@stationsTab": {
+    "description": "Bottom-nav label for the new Stations list tab introduced in DESIGN-002."
+  },
+  "allExercises": "All exercises",
+  "@allExercises": {
+    "description": "Default 'no filter' row at the top of the exercise picker on the Stations tab."
+  },
+  "showingStationsIn": "Showing stations in: {name}",
+  "@showingStationsIn": {
+    "description": "Banner shown above the bottom-nav when the Stations list tab is filtered to a single exercise.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noStationsInExercise": "No stations in this exercise.",
+  "@noStationsInExercise": {
+    "description": "Empty-state shown in the Stations list when the active filter excludes every station."
+  },
+  "noStationsYet": "No stations yet. Add a station from the Exercises tab.",
+  "@noStationsYet": {
+    "description": "Empty-state shown in the Stations list when the active plan has no stations at all."
+  },
 
   "stationName": "Station Name",
   "@stationName": {

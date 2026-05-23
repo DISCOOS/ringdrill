@@ -9,13 +9,11 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
-import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-
-import 'map_screen.dart';
+import 'package:ringdrill/views/widgets/station_mini_map.dart';
 
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
@@ -37,7 +35,6 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   final _programService = ProgramService();
   final _exerciseService = ExerciseService();
   final _subscribers = <StreamSubscription>[];
-  final _mapKey = GlobalKey<_StationExerciseScreenState>();
 
   @override
   void initState() {
@@ -112,33 +109,35 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
             return OrientationBuilder(
               builder: (context, orientation) {
                 final isPortrait = orientation == Orientation.portrait;
-                final mode = (isPortrait ? Column.new : Row.new);
                 final event = asyncSnapshot.data!;
                 final station = _exercise.stations[widget.stationIndex];
-                return Padding(
+                final stationInfo = _buildStationInfo(station);
+                final rotations = _buildTeamRotations(event);
+                // One outer SingleChildScrollView so the screen has a
+                // single scroll context. Sub-sections (station info,
+                // team rotations) are non-scrolling Columns sized to
+                // their content and laid out side-by-side in landscape,
+                // stacked in portrait.
+                return SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Team Info
                       _buildStationStatus(station, event),
                       const SizedBox(height: 8),
-                      Expanded(
-                        child: mode(
+                      if (isPortrait) ...[
+                        stationInfo,
+                        const SizedBox(height: 8),
+                        rotations,
+                      ] else
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              flex: isPortrait ? -1 : 1,
-                              child: _buildStationInfo(
-                                station,
-                                event,
-                                isPortrait,
-                              ),
-                            ),
+                            Expanded(child: stationInfo),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildTeamRotations(event)),
+                            Expanded(child: rotations),
                           ],
                         ),
-                      ),
                     ],
                   ),
                 );
@@ -183,116 +182,65 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           );
   }
 
-  Widget _buildStationInfo(
-    Station station,
-    ExerciseEvent event,
-    bool isPortrait,
-  ) {
+  /// Description + position + mini-map. Sized to its content (no
+  /// inner scrollable) so the outer SingleChildScrollView in [build]
+  /// owns the whole screen's scroll context.
+  Widget _buildStationInfo(Station station) {
     final localizations = AppLocalizations.of(context)!;
-    final station = _exercise.stations[widget.stationIndex];
-    return LayoutBuilder(
-      builder: (context, BoxConstraints constraints) {
-        final size = station.position == null ? 150.0 : 350.0;
-        return SizedBox(
-          height: isPortrait ? size : null,
-          width: isPortrait ? null : size,
-          child: ListView(
-            children: [
-              _buildDescription(station, localizations),
-              Card(
-                elevation: 1,
-                margin: const EdgeInsets.only(bottom: 16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.place,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          if (station.position == null)
-                            Text(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildDescription(station, localizations),
+        Card(
+          elevation: 1,
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.place,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: station.position == null
+                          ? Text(
                               localizations.noLocation,
                               style: Theme.of(context).textTheme.bodyLarge,
                             )
-                          else
-                            PositionWidget(
+                          : PositionWidget(
                               wrapped: false,
                               format: PositionFormat.utm,
                               position: station.position,
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
-                        ],
-                      ),
-                      if (station.position != null) ...[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 200,
-                          width: constraints.maxWidth,
-                          child: MapView(
-                            key: _mapKey,
-                            withCross: true,
-                            initialZoom: 16,
-                            initialCenter:
-                                station.position ?? MapConfig.initialCenter,
-                            layers: MapConfig.layers,
-                            onTap: (_, _) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    int i = 0;
-                                    return MapScreen<int>(
-                                      title: station.name,
-                                      withCross: true,
-                                      withSearch: true,
-                                      withZoom: true,
-                                      initialZoom: 16,
-                                      initialCenter:
-                                          station.position ??
-                                          MapConfig.initialCenter,
-                                      interactionFlags: MapConfig.interactive,
-                                      markers: _exercise.stations
-                                          .where((e) => e.position != null)
-                                          .map(
-                                            (e) => (i++, e.name, e.position!),
-                                          )
-                                          .toList(),
-                                      onMarkerTap: (on) {
-                                        showModalBottomSheet(
-                                          context: context,
-                                          useSafeArea: true,
-                                          showDragHandle: true,
-                                          builder: (BuildContext context) {
-                                            return _buildBottomSheet(
-                                              event,
-                                              _exercise.stations[on.$1],
-                                              isPortrait,
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                if (station.position != null) ...[
+                  const SizedBox(height: 12),
+                  // Uses the shared StationMiniMap so tap opens
+                  // the same bottom-sheet view as the Stations
+                  // tab. Single-station focus is intentional —
+                  // for plan-wide context the user switches to
+                  // the Map tab.
+                  StationMiniMap(
+                    exercise: _exercise,
+                    station: station,
+                    height: 200,
+                  ),
+                ],
+              ],
+            ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -329,74 +277,52 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     );
   }
 
-  Container _buildBottomSheet(
-    ExerciseEvent event,
-    Station station,
-    bool isPortrait,
-  ) {
-    return Container(
-      padding: EdgeInsets.all(16.0),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStationStatus(station, event),
-            Divider(),
-            _buildDescription(station, AppLocalizations.of(context)!),
-            Expanded(child: _buildTeamRotations(event)),
-          ],
-        ),
-      ),
-    );
-  }
-
+  /// Per-round phase tiles. Sized to its content (no inner
+  /// scrollable) so the outer SingleChildScrollView in [build] owns
+  /// the whole screen's scroll context.
   Widget _buildTeamRotations(ExerciseEvent event) {
+    final localizations = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PhaseHeaders(
           expand: true,
           titleWidth: 78,
-          title: AppLocalizations.of(context)!.schedule,
+          title: localizations.schedule,
           mainAxisAlignment: MainAxisAlignment.start,
         ),
         const SizedBox(height: 8),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _exercise.schedule.length,
-            itemBuilder: (context, index) {
-              final teamIndex = _exercise.teamIndex(widget.stationIndex, index);
-              final none = teamIndex == -1;
-              final title =
-                  '${AppLocalizations.of(context)!.team(1)} '
-                  '${none ? '×' : teamIndex + 1}';
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: GestureDetector(
-                  onTap: none
-                      ? null
-                      : () {
-                          Navigator.pop(context);
-                          context.push(
-                            '$routeProgram/${_exercise.uuid}/team/$teamIndex',
-                          );
-                        },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: PhaseTile(
-                      event: event,
-                      title: title,
-                      roundIndex: index,
-                      exercise: _exercise,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      decoration: none ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
+        ...List.generate(_exercise.schedule.length, (index) {
+          final teamIndex = _exercise.teamIndex(widget.stationIndex, index);
+          final none = teamIndex == -1;
+          final title =
+              '${localizations.team(1)} '
+              '${none ? '×' : teamIndex + 1}';
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: none
+                  ? null
+                  : () {
+                      context.push(
+                        '$routeProgram/${_exercise.uuid}/team/$teamIndex',
+                      );
+                    },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: PhaseTile(
+                  event: event,
+                  title: title,
+                  roundIndex: index,
+                  exercise: _exercise,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  decoration: none ? TextDecoration.lineThrough : null,
                 ),
-              );
-            },
-          ),
-        ),
+              ),
+            ),
+          );
+        }),
       ],
     );
   }

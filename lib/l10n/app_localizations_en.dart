@@ -277,6 +277,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notStationsCreated => 'No stations created';
 
   @override
+  String get mapTab => 'Map';
+
+  @override
+  String get stationsTab => 'Stations';
+
+  @override
+  String get allExercises => 'All exercises';
+
+  @override
+  String showingStationsIn(String name) {
+    return 'Showing stations in: $name';
+  }
+
+  @override
+  String get noStationsInExercise => 'No stations in this exercise.';
+
+  @override
+  String get noStationsYet =>
+      'No stations yet. Add a station from the Exercises tab.';
+
+  @override
   String get stationName => 'Station Name';
 
   @override

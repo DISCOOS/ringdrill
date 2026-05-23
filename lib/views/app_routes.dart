@@ -4,5 +4,19 @@
 // would create cyclic imports back into the router setup).
 
 const String routeProgram = '/program';
+
+/// Map tab — formerly known as the "Stations" tab. The widget at this
+/// route is [StationsView], which renders every station with a
+/// position as a marker on a shared map. Per DESIGN-002 the path was
+/// moved off `/stations` so the canonical list of stations can take
+/// that URL.
+const String routeMap = '/map';
+
+/// Stations list tab — flat list of `(Exercise, Station)` pairs with
+/// expandable rows. The deep-link subpath
+/// `/stations/:exerciseUuid/:stationIndex` still resolves to
+/// [StationExerciseScreen] regardless of which tab the navigation
+/// started from.
 const String routeStations = '/stations';
+
 const String routeTeams = '/teams';

@@ -1,0 +1,476 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/position_widget.dart';
+import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/station_expansion_tile.dart';
+import 'package:ringdrill/views/widgets/station_mini_map.dart';
+
+class StationListView extends StatefulWidget {
+  const StationListView({super.key, required this.controller});
+
+  /// Owned by the parent (e.g. `_MainScreenState`). The view shares the
+  /// same instance with `PageWidget` so the FAB and the list react to
+  /// the same filter state. See the note in `_MainScreenState._pages`
+  /// for why this is a constructor parameter and not an InheritedWidget
+  /// lookup.
+  final StationListController controller;
+
+  @override
+  State<StationListView> createState() => _StationListViewState();
+}
+
+class _StationListViewState extends State<StationListView> {
+  final _programService = ProgramService();
+  StreamSubscription? _subscription;
+
+  int? _expandedRowIndex;
+
+  StationListController get _controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = _programService.events.listen((_) {
+      if (mounted) setState(() {});
+    });
+    _controller.filterExerciseUuid.addListener(_onFilterChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant StationListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.filterExerciseUuid.removeListener(_onFilterChanged);
+      widget.controller.filterExerciseUuid.addListener(_onFilterChanged);
+    }
+  }
+
+  void _onFilterChanged() {
+    if (!mounted) return;
+    setState(() {
+      _expandedRowIndex = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.filterExerciseUuid.removeListener(_onFilterChanged);
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  /// Builds a flat list of `(exerciseNumber, Exercise, Station)`
+  /// triples sorted by exercise order (matching the Exercises tab),
+  /// then by station index within the exercise. `exerciseNumber` is the
+  /// 1-based position in the unfiltered exercise list, kept stable
+  /// across filter toggles so badge codes do not jump when the user
+  /// narrows the view.
+  List<(int, Exercise, Station)> _collectRows() {
+    final exercises = _programService.loadExercises();
+    final filterUuid = _controller.filterExerciseUuid.value;
+    final rows = <(int, Exercise, Station)>[];
+    for (var i = 0; i < exercises.length; i++) {
+      final exercise = exercises[i];
+      if (filterUuid != null && exercise.uuid != filterUuid) continue;
+      final exerciseNumber = i + 1;
+      final stations = [...exercise.stations]
+        ..sort((a, b) => a.index.compareTo(b.index));
+      for (final station in stations) {
+        rows.add((exerciseNumber, exercise, station));
+      }
+    }
+    return rows;
+  }
+
+  Exercise? _filterExercise() {
+    final uuid = _controller.filterExerciseUuid.value;
+    if (uuid == null) return null;
+    return _programService.getExercise(uuid);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final allExercises = _programService.loadExercises();
+    final hasAnyStation = allExercises.any((e) => e.stations.isNotEmpty);
+
+    final rows = _collectRows();
+    final filterExercise = _filterExercise();
+
+    final Widget body;
+    if (!hasAnyStation) {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            localizations.noStationsYet,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    } else if (rows.isEmpty) {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            localizations.noStationsInExercise,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    } else {
+      body = ListView.builder(
+        padding: const EdgeInsets.only(top: 4, bottom: 96),
+        itemCount: rows.length,
+        itemBuilder: (context, index) {
+          final (exerciseNumber, exercise, station) = rows[index];
+          return _buildRow(
+            context,
+            localizations,
+            exerciseNumber: exerciseNumber,
+            exercise: exercise,
+            station: station,
+            rowIndex: index,
+          );
+        },
+      );
+    }
+
+    // The filter FAB lives inside the body Stack rather than on the
+    // Scaffold's floatingActionButton slot. That way the filter banner
+    // (rendered below the Stack) pushes the FAB up naturally instead of
+    // sitting on top of it. Mirrors the Map tab pattern where the
+    // visibility FAB is embedded in MapView's `topRightCommands` slot,
+    // not on the Scaffold.
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(child: body),
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: _buildFilterFab(context, localizations),
+              ),
+            ],
+          ),
+        ),
+        if (filterExercise != null)
+          _buildFilterBanner(context, localizations, filterExercise),
+      ],
+    );
+  }
+
+  Widget _buildFilterFab(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    return ValueListenableBuilder<String?>(
+      valueListenable: _controller.filterExerciseUuid,
+      builder: (context, active, _) {
+        final fab = FloatingActionButton(
+          heroTag: 'stationFilter',
+          tooltip: localizations.selectExercises,
+          onPressed: () => _controller.openFilterSheet(context),
+          child: const Icon(Icons.tune),
+        );
+        if (active == null) return fab;
+        return Badge.count(count: 1, child: fab);
+      },
+    );
+  }
+
+  Widget _buildRow(
+    BuildContext context,
+    AppLocalizations localizations, {
+    required int exerciseNumber,
+    required Exercise exercise,
+    required Station station,
+    required int rowIndex,
+  }) {
+    final expanded = _expandedRowIndex == rowIndex;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Dismissible(
+      key: ValueKey('station-row-${exercise.uuid}-${station.index}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: colorScheme.secondaryContainer,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              localizations.editStation,
+              style: TextStyle(color: colorScheme.onSecondaryContainer),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
+          ],
+        ),
+      ),
+      confirmDismiss: (_) async {
+        await _openStationForm(exercise, station);
+        return false;
+      },
+      child: StationExpansionTile(
+        leading: StationCodeBadge(
+          code: _stationCode(exerciseNumber, station),
+        ),
+        title: Text(station.name),
+        subtitle: Text(
+          '${localizations.exercise(1)}: ${exercise.name}',
+        ),
+        expanded: expanded,
+        onOpen: () => _openStation(exercise, station),
+        onToggle: () {
+          setState(() {
+            _expandedRowIndex = expanded ? null : rowIndex;
+          });
+        },
+        body: _buildExpandedBody(context, localizations, exercise, station),
+      ),
+    );
+  }
+
+  Widget _buildExpandedBody(
+    BuildContext context,
+    AppLocalizations localizations,
+    Exercise exercise,
+    Station station,
+  ) {
+    final hasDescription =
+        station.description != null && station.description!.trim().isNotEmpty;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasDescription) ...[
+          Text(
+            station.description!,
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+        ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.place,
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: station.position == null
+                  ? Text(
+                      localizations.noLocation,
+                      style: theme.textTheme.bodyMedium,
+                    )
+                  : PositionWidget(
+                      wrapped: false,
+                      format: PositionFormat.utm,
+                      position: station.position,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+            ),
+          ],
+        ),
+        if (station.position != null) ...[
+          const SizedBox(height: 12),
+          StationMiniMap(exercise: exercise, station: station),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFilterBanner(
+    BuildContext context,
+    AppLocalizations localizations,
+    Exercise exercise,
+  ) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.secondaryContainer,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.filter_alt,
+                size: 18,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  localizations.showingStationsIn(exercise.name),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _controller.filterExerciseUuid.value = null,
+                child: Text(localizations.showAll),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openStation(Exercise exercise, Station station) async {
+    await context.push(
+      '$routeStations/${exercise.uuid}/${station.index}',
+    );
+  }
+
+  Future<void> _openStationForm(Exercise exercise, Station station) async {
+    final localizations = AppLocalizations.of(context)!;
+    final newStation = await Navigator.push<Station>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StationFormScreen(
+          station: station,
+          markers: _programService.getLocations(),
+        ),
+      ),
+    );
+    if (!mounted || newStation == null) return;
+
+    // Persist the edited station back into its owning exercise.
+    final current = _programService.getExercise(exercise.uuid);
+    if (current == null) return;
+    final stations = [...current.stations];
+    final idxInList = stations.indexWhere((s) => s.index == station.index);
+    if (idxInList < 0) return;
+    stations[idxInList] = newStation;
+    await _programService.saveExercise(
+      localizations,
+      current.copyWith(stations: stations),
+    );
+  }
+
+  String _stationCode(int exerciseNumber, Station station) {
+    // Compact "exercise.station" label, both 1-based. Plans rarely have
+    // more than a handful of exercises with 10-25 stations each, so the
+    // string fits inside the 40 px badge even at the worst case.
+    return '$exerciseNumber.${station.index + 1}';
+  }
+}
+
+/// Owns the current "filter to one exercise" selection for the
+/// Stations tab. The notifier is shared between the controller's FAB
+/// (which renders the badge and opens the picker) and
+/// [StationListView] (which reads the filter when collecting rows).
+class StationListController extends ScreenController {
+  StationListController();
+
+  final ValueNotifier<String?> filterExerciseUuid = ValueNotifier<String?>(
+    null,
+  );
+
+  void dispose() {
+    filterExerciseUuid.dispose();
+  }
+
+  @override
+  String title(BuildContext context) =>
+      AppLocalizations.of(context)!.stationsTab;
+
+  // No Scaffold-level FAB: the view embeds its own filter FAB inside
+  // the body so the filter banner can push it up. See the layout in
+  // [StationListView.build].
+
+  Future<void> openFilterSheet(BuildContext context) async {
+    final localizations = AppLocalizations.of(context)!;
+    final exercises = ProgramService().loadExercises();
+    final current = filterExerciseUuid.value;
+    final selected = await showModalBottomSheet<_FilterChoice>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final groupValue = current == null
+            ? const _FilterChoice.all()
+            : _FilterChoice.one(current);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: RadioGroup<_FilterChoice>(
+              groupValue: groupValue,
+              onChanged: (choice) {
+                if (choice == null) return;
+                Navigator.pop(sheetContext, choice);
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Radio<_FilterChoice>(
+                      value: _FilterChoice.all(),
+                    ),
+                    title: Text(localizations.allExercises),
+                    onTap: () => Navigator.pop(
+                      sheetContext,
+                      const _FilterChoice.all(),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: exercises.length,
+                      itemBuilder: (context, index) {
+                        final ex = exercises[index];
+                        final choice = _FilterChoice.one(ex.uuid);
+                        return ListTile(
+                          leading: Radio<_FilterChoice>(value: choice),
+                          title: Text(ex.name),
+                          onTap: () => Navigator.pop(sheetContext, choice),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (selected != null) {
+      filterExerciseUuid.value = selected.uuid;
+    }
+  }
+}
+
+class _FilterChoice {
+  final String? uuid;
+  const _FilterChoice.all() : uuid = null;
+  const _FilterChoice.one(String this.uuid);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _FilterChoice && other.uuid == uuid;
+
+  @override
+  int get hashCode => uuid.hashCode;
+}

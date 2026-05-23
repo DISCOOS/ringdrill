@@ -19,6 +19,7 @@ import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/team_exercise_screen.dart';
@@ -81,7 +82,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
               isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
               location: state.matchedLocation,
-              routes: [routeProgram, routeStations, routeTeams],
+              routes: [routeProgram, routeMap, routeStations, routeTeams],
             ),
           );
         },
@@ -139,12 +140,23 @@ GoRouter buildRouter(bool isFirstLaunch) {
             ],
           ),
           GoRoute(
-            path: routeStations,
+            path: routeMap,
             builder: (BuildContext context, GoRouterState state) =>
                 const PageWidget(
                   controller: StationsPageController(),
                   child: StationsView(),
                 ),
+          ),
+          GoRoute(
+            path: routeStations,
+            // ShellRoute's `child` is ignored by MainScreen, which owns
+            // the visible widget tree via its `_pages` IndexedStack. The
+            // builder here exists so the path matches in routing, but
+            // the returned widget is never displayed. Returning a stub
+            // also avoids constructing a second StationListController
+            // that would never be reachable.
+            builder: (BuildContext context, GoRouterState state) =>
+                const SizedBox.shrink(),
             routes: [
               GoRoute(
                 path: ':exerciseId/:stationIndex',
@@ -248,11 +260,23 @@ class _MainScreenState extends State<MainScreen> {
   static final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   final List<StreamSubscription> _subscriptions = [];
-  final List<PageWidget> _pages = [
+
+  // Held as a field so the page and the view can share the same
+  // instance. Passing it through PageWidget's InheritedWidget only
+  // works when the static type argument matches exactly, and that
+  // gets erased to ScreenController by the List<PageWidget> context.
+  // A direct constructor handoff sidesteps the inference issue.
+  late final StationListController _stationListController =
+      StationListController();
+
+  late final List<PageWidget> _pages = [
     PageWidget(controller: ProgramPageController(), child: ProgramView()),
-    PageWidget(controller: StationsPageController(), child: StationsView()),
     PageWidget(controller: TeamsPageController(), child: TeamsView()),
-    //TeamsPage(),
+    PageWidget(
+      controller: _stationListController,
+      child: StationListView(controller: _stationListController),
+    ),
+    PageWidget(controller: StationsPageController(), child: StationsView()),
   ];
 
   int _currentTab = 0;
@@ -311,6 +335,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void dispose() {
     super.dispose();
+    _stationListController.dispose();
     for (var e in _subscriptions) {
       e.cancel();
     }
@@ -616,8 +641,8 @@ class _MainScreenState extends State<MainScreen> {
     widget.router.go(widget.routes[tab]);
     // The StationsView is kept alive inside the IndexedStack, so its map
     // does not re-fit on tab switch on its own. Nudge it via the reselect
-    // tick whenever the Stations tab is (re)activated.
-    if (widget.routes[tab] == routeStations) {
+    // tick whenever the Map tab is (re)activated.
+    if (widget.routes[tab] == routeMap) {
       stationsTabReselectTick.value = stationsTabReselectTick.value + 1;
     }
   }
@@ -625,8 +650,9 @@ class _MainScreenState extends State<MainScreen> {
   List<Destination> _buildDestinations(AppLocalizations localizations) {
     return [
       Destination(icon: Icons.update, label: localizations.exercise(2)),
-      Destination(icon: Icons.map, label: localizations.station(2)),
+      Destination(icon: Icons.place, label: localizations.stationsTab),
       Destination(icon: Icons.group, label: localizations.team(2)),
+      Destination(icon: Icons.map, label: localizations.mapTab),
     ];
   }
 

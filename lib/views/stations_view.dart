@@ -565,6 +565,6 @@ class StationsPageController extends ScreenController {
   const StationsPageController() : super();
   @override
   String title(BuildContext context) {
-    return AppLocalizations.of(context)!.station(2);
+    return AppLocalizations.of(context)!.mapTab;
   }
 }
