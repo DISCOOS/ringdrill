@@ -1060,4 +1060,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryPublishFailed => 'Could not publish plan';
+
+  @override
+  String get rotationShareEachRound => 'Each round';
+
+  @override
+  String get rotationShareLegendPhases => 'drill | eval | roll / inbound';
+
+  @override
+  String get rotationShareTitle => 'Rotation (time of day)';
+
+  @override
+  String get rotationShareNext => 'next';
+
+  @override
+  String get rotationShareReturn => 'return';
+
+  @override
+  String get rotationCopied => 'Rotation table copied to clipboard';
+
+  @override
+  String get rotationCopyTooltip => 'Copy rotation table';
 }

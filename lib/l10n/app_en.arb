@@ -851,5 +851,33 @@
   "libraryPublishConflict": "Someone updated this plan first. Try again.",
   "libraryPublishSuccess": "Published {name}",
   "libraryPublishNoChange": "No changes to publish",
-  "libraryPublishFailed": "Could not publish plan"
+  "libraryPublishFailed": "Could not publish plan",
+  "rotationShareEachRound": "Each round",
+  "@rotationShareEachRound": {
+    "description": "Prefix label in the shared rotation-table text, followed by the per-phase duration legend (e.g. '15 | 10 | 5 (drill | eval | roll / inbound)')."
+  },
+  "rotationShareLegendPhases": "drill | eval | roll / inbound",
+  "@rotationShareLegendPhases": {
+    "description": "Trailing legend in parentheses that explains what the three numbers in the rotation share text mean. Fixed phrase, do not parameterise."
+  },
+  "rotationShareTitle": "Rotation (time of day)",
+  "@rotationShareTitle": {
+    "description": "Header for the rotation block in the shared rotation-table text."
+  },
+  "rotationShareNext": "next",
+  "@rotationShareNext": {
+    "description": "Suffix in parentheses on every round except the last in the shared rotation-table text, indicating that the team moves to the next station after this round."
+  },
+  "rotationShareReturn": "return",
+  "@rotationShareReturn": {
+    "description": "Suffix in parentheses on the final round in the shared rotation-table text, indicating return/inbound transport after this round."
+  },
+  "rotationCopied": "Rotation table copied to clipboard",
+  "@rotationCopied": {
+    "description": "SnackBar shown after long-pressing the rotation table to copy it as text for sharing in Slack/Teams/Messenger."
+  },
+  "rotationCopyTooltip": "Copy rotation table",
+  "@rotationCopyTooltip": {
+    "description": "Tooltip on the small copy IconButton overlaid at the top-right of the rotation table on the coordinator screen."
+  }
 }

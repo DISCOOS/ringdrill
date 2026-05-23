@@ -292,5 +292,33 @@
   "libraryPublishConflict": "Noen oppdaterte denne planen først. Prøv igjen.",
   "libraryPublishSuccess": "Publiserte {name}",
   "libraryPublishNoChange": "Ingen endringer å publisere",
-  "libraryPublishFailed": "Kunne ikke publisere planen"
+  "libraryPublishFailed": "Kunne ikke publisere planen",
+  "rotationShareEachRound": "Generelt hver runde",
+  "@rotationShareEachRound": {
+    "description": "Prefix label in the shared rotation-table text, followed by the per-phase duration legend (e.g. '15 | 10 | 5 (drill | eval | roll / inbound)')."
+  },
+  "rotationShareLegendPhases": "øve | evaluere | rullere / inntransport",
+  "@rotationShareLegendPhases": {
+    "description": "Trailing legend in parentheses that explains what the three numbers in the rotation share text mean. Fixed phrase, do not parameterise."
+  },
+  "rotationShareTitle": "Rullering (klokkeslett)",
+  "@rotationShareTitle": {
+    "description": "Header for the rotation block in the shared rotation-table text."
+  },
+  "rotationShareNext": "neste",
+  "@rotationShareNext": {
+    "description": "Suffix in parentheses on every round except the last in the shared rotation-table text, indicating that the team moves to the next station after this round."
+  },
+  "rotationShareReturn": "retur",
+  "@rotationShareReturn": {
+    "description": "Suffix in parentheses on the final round in the shared rotation-table text, indicating return/inbound transport after this round."
+  },
+  "rotationCopied": "Rulleringstabell kopiert til utklippstavlen",
+  "@rotationCopied": {
+    "description": "SnackBar shown after long-pressing the rotation table to copy it as text for sharing in Slack/Teams/Messenger."
+  },
+  "rotationCopyTooltip": "Kopier rulleringstabell",
+  "@rotationCopyTooltip": {
+    "description": "Tooltip on the small copy IconButton overlaid at the top-right of the rotation table on the coordinator screen."
+  }
 }

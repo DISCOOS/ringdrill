@@ -1055,4 +1055,26 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get libraryPublishFailed => 'Kunne ikke publisere planen';
+
+  @override
+  String get rotationShareEachRound => 'Generelt hver runde';
+
+  @override
+  String get rotationShareLegendPhases =>
+      'øve | evaluere | rullere / inntransport';
+
+  @override
+  String get rotationShareTitle => 'Rullering (klokkeslett)';
+
+  @override
+  String get rotationShareNext => 'neste';
+
+  @override
+  String get rotationShareReturn => 'retur';
+
+  @override
+  String get rotationCopied => 'Rulleringstabell kopiert til utklippstavlen';
+
+  @override
+  String get rotationCopyTooltip => 'Kopier rulleringstabell';
 }

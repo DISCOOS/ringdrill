@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/rotation_share_format.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
@@ -658,29 +660,94 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
     final localizations = AppLocalizations.of(context)!;
-    return Container(
-      padding: EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          PhaseHeaders(
-            titleWidth: 90,
-            title: localizations.schedule,
-            mainAxisAlignment: MainAxisAlignment.center,
+    // Long-press copies the whole rotation table as plain text in the
+    // exact format observers already share manually in Slack/Teams/
+    // Messenger. The table is the only "rich" piece of the coordinator
+    // view observers ever ask to re-share verbatim, so we expose copy at
+    // the table level rather than per-row. `behavior: opaque` makes the
+    // gesture fire on the padded area too, not just on tile pixels.
+    //
+    // A small IconButton at the top-right corner duplicates the same
+    // affordance for users who don't discover the long-press gesture —
+    // common on web and desktop, where holding the mouse button is not a
+    // learned chat-app behaviour. The overlay sits in a Stack so it
+    // doesn't disturb the PhaseHeaders / PhaseTile layout, and is wrapped
+    // in a Tooltip so the action is named without taking horizontal
+    // space in the dense table.
+    return Stack(
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onLongPress: () => _copyRotationToClipboard(localizations),
+          child: Container(
+            padding: EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                PhaseHeaders(
+                  titleWidth: 90,
+                  title: localizations.schedule,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                ),
+                SizedBox(height: 8),
+                ...List<Widget>.generate(_exercise!.schedule.length, (
+                  roundIndex,
+                ) {
+                  // Determine whether this round is completed or current
+                  return PhaseTile(
+                    title:
+                        "${AppLocalizations.of(context)!.round(1)} "
+                        "${roundIndex + 1}",
+                    event: event,
+                    exercise: _exercise!,
+                    roundIndex: roundIndex,
+                    isPortrait: isPortrait,
+                  );
+                }),
+              ],
+            ),
           ),
-          SizedBox(height: 8),
-          ...List<Widget>.generate(_exercise!.schedule.length, (roundIndex) {
-            // Determine whether this round is completed or current
-            return PhaseTile(
-              title:
-                  "${AppLocalizations.of(context)!.round(1)} "
-                  "${roundIndex + 1}",
-              event: event,
-              exercise: _exercise!,
-              roundIndex: roundIndex,
-              isPortrait: isPortrait,
-            );
-          }),
-        ],
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Tooltip(
+            message: localizations.rotationCopyTooltip,
+            child: IconButton(
+              icon: const Icon(Icons.copy_all_outlined, size: 20),
+              // Tighten the default 48 px hit-box so the icon doesn't
+              // crowd the PHASE header row underneath it. 36 px is still
+              // above the 24 px MD3 minimum touch-target guidance for
+              // secondary actions, and the long-press gesture remains
+              // available as a forgiving fallback.
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _copyRotationToClipboard(localizations),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _copyRotationToClipboard(AppLocalizations localizations) async {
+    final exercise = _exercise;
+    if (exercise == null) return;
+    final text = formatRotationForShare(exercise, localizations);
+    await Clipboard.setData(ClipboardData(text: text));
+    // Light haptic so the user knows the long-press registered even when
+    // the SnackBar is hidden behind a soft keyboard or a sheet.
+    await HapticFeedback.selectionClick();
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(localizations.rotationCopied),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
       ),
     );
   }

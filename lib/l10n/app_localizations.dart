@@ -1795,6 +1795,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not publish plan'**
   String get libraryPublishFailed;
+
+  /// Prefix label in the shared rotation-table text, followed by the per-phase duration legend (e.g. '15 | 10 | 5 (drill | eval | roll / inbound)').
+  ///
+  /// In en, this message translates to:
+  /// **'Each round'**
+  String get rotationShareEachRound;
+
+  /// Trailing legend in parentheses that explains what the three numbers in the rotation share text mean. Fixed phrase, do not parameterise.
+  ///
+  /// In en, this message translates to:
+  /// **'drill | eval | roll / inbound'**
+  String get rotationShareLegendPhases;
+
+  /// Header for the rotation block in the shared rotation-table text.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation (time of day)'**
+  String get rotationShareTitle;
+
+  /// Suffix in parentheses on every round except the last in the shared rotation-table text, indicating that the team moves to the next station after this round.
+  ///
+  /// In en, this message translates to:
+  /// **'next'**
+  String get rotationShareNext;
+
+  /// Suffix in parentheses on the final round in the shared rotation-table text, indicating return/inbound transport after this round.
+  ///
+  /// In en, this message translates to:
+  /// **'return'**
+  String get rotationShareReturn;
+
+  /// SnackBar shown after long-pressing the rotation table to copy it as text for sharing in Slack/Teams/Messenger.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation table copied to clipboard'**
+  String get rotationCopied;
+
+  /// Tooltip on the small copy IconButton overlaid at the top-right of the rotation table on the coordinator screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy rotation table'**
+  String get rotationCopyTooltip;
 }
 
 class _AppLocalizationsDelegate
