@@ -256,7 +256,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     // presses play. Reading the service directly avoids that false
     // positive and matches the gate used for `_buildExerciseStatus`.
     final showHero = _exerciseService.isStartedOn(widget.uuid);
-    return Padding(
+    // The whole screen scrolls as one unit, so the round table, the
+    // segmented switch and the chosen list move together when the
+    // coordinator scrolls. Previously only the inner list scrolled, which
+    // pinned the round table to the top and forced the coordinator to
+    // scroll inside a small viewport.
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -291,11 +296,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(
-            child: _view == _CoordinatorView.stations
-                ? _buildStationList(event)
-                : _buildTeamList(event),
-          ),
+          _view == _CoordinatorView.stations
+              ? _buildStationList(event)
+              : _buildTeamList(event),
         ],
       ),
     );
@@ -637,129 +640,116 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   Widget _buildStationList(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
+    // The list is rendered as a plain Column instead of a ListView so it
+    // can take part in the parent SingleChildScrollView. Station counts
+    // are small (typically <20) so eager-building every card is cheaper
+    // than the indirection a nested-scroll ListView would add.
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _exercise!.stations.length,
-              itemBuilder: (context, stationIndex) {
-                final station = _exercise!.stations[stationIndex];
-                final colorScheme = Theme.of(context).colorScheme;
-                // A station is "live" when the current round assigns a team to
-                // it. Used to auto-expand the relevant row so the coordinator
-                // sees the active station's detail without an extra tap, and
-                // to highlight the card so the active station is recognisable
-                // even when collapsed. Mirrors the live styling used in
-                // TeamScreen._ExerciseSection.
-                final isLive =
-                    event.isRunning &&
-                    _exercise!.teamIndex(stationIndex, event.currentRound) >= 0;
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 2,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  color: isLive ? colorScheme.primaryContainer : null,
-                  shape: isLive
-                      ? RoundedRectangleBorder(
-                          side: BorderSide(
-                            color: colorScheme.primary,
-                            width: 1.5,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        )
-                      : null,
-                  child: ExpansionTile(
-                    // Do NOT use a PageStorageKey here: ExpansionTile would
-                    // write a bool into the PageStorageBucket, and any
-                    // SelectableText below (e.g. UtmWidget inside the
-                    // station detail) reads from the same bucket-path for
-                    // its scroll offset, casting the bool to double? and
-                    // crashing at didChangeDependencies. Widget identity
-                    // already keeps the expanded state stable across
-                    // exercise-event rebuilds.
-                    key: ValueKey<String>('coordinator-station-$stationIndex'),
-                    initiallyExpanded: isLive,
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    childrenPadding: EdgeInsets.zero,
-                    iconColor: isLive ? colorScheme.primary : null,
-                    collapsedIconColor: isLive ? colorScheme.primary : null,
-                    textColor: isLive ? colorScheme.onPrimaryContainer : null,
-                    collapsedTextColor: isLive
-                        ? colorScheme.onPrimaryContainer
-                        : null,
-                    leading: isLive
-                        ? Icon(
-                            Icons.play_circle_fill,
-                            color: colorScheme.primary,
-                          )
-                        : null,
-                    title: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Text(
-                            station.name,
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: VerticalDividerWidget(),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Text(
-                            localizations.team(1),
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                        ...List<Widget>.generate(_exercise!.schedule.length, (
-                          roundIndex,
-                        ) {
-                          final isCurrent =
-                              event.isRunning &&
-                              roundIndex == event.currentRound;
-                          final teamIndex =
-                              _exercise!.teamIndex(stationIndex, roundIndex) +
-                              1;
-                          final none = teamIndex == 0;
-                          return Container(
-                            padding: EdgeInsets.all(4),
-                            color: isCurrent
-                                ? none
-                                      ? Colors.grey
-                                      : Colors.blueAccent
-                                : Colors.transparent,
-                            child: Text(
-                              '${none ? '×' : teamIndex}',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: isCurrent
-                                    ? FontWeight.bold
-                                    : FontWeight
-                                          .normal, // Emphasize current round
-                                color: isCurrent ? Colors.white : null,
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
+        children: List<Widget>.generate(_exercise!.stations.length, (
+          stationIndex,
+        ) {
+          final station = _exercise!.stations[stationIndex];
+          final colorScheme = Theme.of(context).colorScheme;
+          // A station is "live" when the current round assigns a team to
+          // it. Used to auto-expand the relevant row so the coordinator
+          // sees the active station's detail without an extra tap, and
+          // to highlight the card so the active station is recognisable
+          // even when collapsed. Mirrors the live styling used in
+          // TeamScreen._ExerciseSection.
+          final isLive =
+              event.isRunning &&
+              _exercise!.teamIndex(stationIndex, event.currentRound) >= 0;
+          return Card(
+            elevation: 2,
+            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+            clipBehavior: Clip.antiAlias,
+            color: isLive ? colorScheme.primaryContainer : null,
+            shape: isLive
+                ? RoundedRectangleBorder(
+                    side: BorderSide(color: colorScheme.primary, width: 1.5),
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                : null,
+            child: ExpansionTile(
+              // Do NOT use a PageStorageKey here: ExpansionTile would
+              // write a bool into the PageStorageBucket, and any
+              // SelectableText below (e.g. UtmWidget inside the
+              // station detail) reads from the same bucket-path for
+              // its scroll offset, casting the bool to double? and
+              // crashing at didChangeDependencies. Widget identity
+              // already keeps the expanded state stable across
+              // exercise-event rebuilds.
+              key: ValueKey<String>('coordinator-station-$stationIndex'),
+              initiallyExpanded: isLive,
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: EdgeInsets.zero,
+              iconColor: isLive ? colorScheme.primary : null,
+              collapsedIconColor: isLive ? colorScheme.primary : null,
+              textColor: isLive ? colorScheme.onPrimaryContainer : null,
+              collapsedTextColor: isLive
+                  ? colorScheme.onPrimaryContainer
+                  : null,
+              leading: isLive
+                  ? Icon(Icons.play_circle_fill, color: colorScheme.primary)
+                  : null,
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      station.name,
+                      style: const TextStyle(fontSize: 18),
                     ),
-                    children: [_buildStationDetail(stationIndex)],
                   ),
-                );
-              },
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: VerticalDividerWidget(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      localizations.team(1),
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                  ),
+                  ...List<Widget>.generate(_exercise!.schedule.length, (
+                    roundIndex,
+                  ) {
+                    final isCurrent =
+                        event.isRunning && roundIndex == event.currentRound;
+                    final teamIndex =
+                        _exercise!.teamIndex(stationIndex, roundIndex) + 1;
+                    final none = teamIndex == 0;
+                    return Container(
+                      padding: EdgeInsets.all(4),
+                      color: isCurrent
+                          ? none
+                                ? Colors.grey
+                                : Colors.blueAccent
+                          : Colors.transparent,
+                      child: Text(
+                        '${none ? '×' : teamIndex}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: isCurrent
+                              ? FontWeight.bold
+                              : FontWeight.normal, // Emphasize current round
+                          color: isCurrent ? Colors.white : null,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              children: [_buildStationDetail(stationIndex)],
             ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
@@ -847,101 +837,94 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   Widget _buildTeamList(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
+    // See `_buildStationList`: rendered as a Column so the parent
+    // SingleChildScrollView owns the scrolling. Team counts are bounded
+    // by exercise configuration and stay small in practice.
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Expanded(
-            child: ListView.builder(
-              // Limit teams to number of teams
-              itemCount: event.exercise.numberOfTeams,
-              itemBuilder: (context, teamIndex) {
-                // The team's current station, in plain text. Shown as the
-                // ExpansionTile subtitle while the exercise is running so
-                // the coordinator can read off where each team is without
-                // scanning the rotation matrix column-by-column. The matrix
-                // already highlights the current round, but the subtitle is
-                // faster to read for exercises with many rounds.
-                final currentStationIndex = event.isRunning
-                    ? _exercise!.stationIndex(teamIndex, event.currentRound)
-                    : -1;
-                final currentStationName =
-                    (currentStationIndex >= 0 &&
-                        currentStationIndex < _exercise!.stations.length)
-                    ? _exercise!.stations[currentStationIndex].name
-                    : null;
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.symmetric(
-                    vertical: 5,
-                    horizontal: 2,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: ExpansionTile(
-                    // Use ValueKey (not PageStorageKey) — see the comment
-                    // on the station ExpansionTile above for the reason.
-                    // Teams are NOT auto-expanded on "live": every team
-                    // always has a station via the rotation, so a naive
-                    // isLive check would expand every row at once. Leave
-                    // the team list collapsed and let the coordinator
-                    // pick which team to focus on.
-                    key: ValueKey<String>('coordinator-team-$teamIndex'),
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                    childrenPadding: EdgeInsets.zero,
-                    subtitle: currentStationName == null
-                        ? null
-                        : Text(
-                            '→ $currentStationName',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                    title: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Text(
-                            '${localizations.team(1)} ${teamIndex + 1}',
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: VerticalDividerWidget(),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Text(
-                            localizations.station(1),
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                        ...List<Widget>.generate(_exercise!.schedule.length, (
-                          roundIndex,
-                        ) {
-                          final isCurrent =
-                              event.isRunning &&
-                              roundIndex == event.currentRound;
-                          return TeamStationWidget(
-                            isCurrent: isCurrent,
-                            exercise: _exercise!,
-                            teamIndex: teamIndex,
-                            roundIndex: roundIndex,
-                          );
-                        }),
-                      ],
+        children: List<Widget>.generate(event.exercise.numberOfTeams, (
+          teamIndex,
+        ) {
+          // The team's current station, in plain text. Shown as the
+          // ExpansionTile subtitle while the exercise is running so
+          // the coordinator can read off where each team is without
+          // scanning the rotation matrix column-by-column. The matrix
+          // already highlights the current round, but the subtitle is
+          // faster to read for exercises with many rounds.
+          final currentStationIndex = event.isRunning
+              ? _exercise!.stationIndex(teamIndex, event.currentRound)
+              : -1;
+          final currentStationName =
+              (currentStationIndex >= 0 &&
+                  currentStationIndex < _exercise!.stations.length)
+              ? _exercise!.stations[currentStationIndex].name
+              : null;
+          return Card(
+            elevation: 2,
+            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+            clipBehavior: Clip.antiAlias,
+            child: ExpansionTile(
+              // Use ValueKey (not PageStorageKey) — see the comment
+              // on the station ExpansionTile above for the reason.
+              // Teams are NOT auto-expanded on "live": every team
+              // always has a station via the rotation, so a naive
+              // isLive check would expand every row at once. Leave
+              // the team list collapsed and let the coordinator
+              // pick which team to focus on.
+              key: ValueKey<String>('coordinator-team-$teamIndex'),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: EdgeInsets.zero,
+              subtitle: currentStationName == null
+                  ? null
+                  : Text(
+                      '→ $currentStationName',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    children: [_buildTeamDetail(teamIndex, event)],
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      '${localizations.team(1)} ${teamIndex + 1}',
+                      style: const TextStyle(fontSize: 18),
+                    ),
                   ),
-                );
-              },
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: VerticalDividerWidget(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      localizations.station(1),
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                  ),
+                  ...List<Widget>.generate(_exercise!.schedule.length, (
+                    roundIndex,
+                  ) {
+                    final isCurrent =
+                        event.isRunning && roundIndex == event.currentRound;
+                    return TeamStationWidget(
+                      isCurrent: isCurrent,
+                      exercise: _exercise!,
+                      teamIndex: teamIndex,
+                      roundIndex: roundIndex,
+                    );
+                  }),
+                ],
+              ),
+              children: [_buildTeamDetail(teamIndex, event)],
             ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
