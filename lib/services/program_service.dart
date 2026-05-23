@@ -698,6 +698,7 @@ class ProgramService {
     required String name,
     required TimeOfDay startTime,
     required int numberOfTeams,
+    required int numberOfStations,
     required int numberOfRounds,
     required int executionTime,
     required int evaluationTime,
@@ -707,8 +708,8 @@ class ProgramService {
     List<Station> stations = const [],
   }) {
     assert(
-      numberOfTeams <= numberOfRounds,
-      '<numberOfTeams> must be less or equal to <numberOfRounds>',
+      numberOfTeams <= numberOfStations,
+      '<numberOfTeams> must be less or equal to <numberOfStations>',
     );
     final schedule = List<List<TimeOfDay>>.generate(numberOfRounds, (
       stationIndex,
@@ -752,7 +753,7 @@ class ProgramService {
       rotationTime: rotationTime,
       numberOfTeams: numberOfTeams,
       numberOfRounds: numberOfRounds,
-      stations: ensureStations(localizations, numberOfRounds, stations),
+      stations: ensureStations(localizations, numberOfStations, stations),
       schedule: List.unmodifiable(
         schedule.map((e) => e.map((e) => e.toSimple()).toList()),
       ),
@@ -762,11 +763,11 @@ class ProgramService {
 
   static List<Station> ensureStations(
     AppLocalizations localizations,
-    int numberOfRounds,
+    int numberOfStations,
     List<Station> stations,
   ) {
     return List.unmodifiable(
-      List<Station>.generate(numberOfRounds, (index) {
+      List<Station>.generate(numberOfStations, (index) {
         return index < stations.length
             ? stations[index]
             : Station(

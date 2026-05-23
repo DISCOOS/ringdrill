@@ -284,6 +284,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         startTime: _startTime,
         uuid: widget.exercise?.uuid,
         numberOfTeams: numberOfTeams,
+        numberOfStations: int.parse(_numberOfTeamsController.text),
         numberOfRounds: numberOfRounds,
         executionTime: executionTime,
         evaluationTime: evaluationTime,
