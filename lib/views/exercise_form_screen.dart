@@ -181,103 +181,89 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
                 SizedBox(height: 16.0),
 
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final fieldWidth = constraints.maxWidth >= 560
-                        ? (constraints.maxWidth - 32) / 3
-                        : (constraints.maxWidth - 16) / 2;
-                    return Wrap(
-                      spacing: 16.0,
-                      runSpacing: 16.0,
-                      children: [
-                        // Number of Rounds
-                        SizedBox(
-                          width: fieldWidth,
-                          child: TextFormField(
-                            controller: _numberOfRoundsController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: localizations.numberOfRounds,
-                            ),
-                            onChanged: (_) => setState(() {}),
-                            validator: (value) => _isValidNumber(value)
-                                ? null
-                                : localizations.pleaseEnterAValidNumber,
-                          ),
+                Row(
+                  children: [
+                    // Number of Teams
+                    Expanded(
+                      child: TextFormField(
+                        controller: _numberOfTeamsController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.numberOfTeams,
                         ),
+                        onChanged: (value) {
+                          if (_stationsTracksTeams) {
+                            _numberOfStationsController.text = value;
+                          }
+                          setState(() {});
+                        },
+                        validator: (value) {
+                          if (!_isValidNumber(value)) {
+                            return localizations.pleaseEnterAValidNumber;
+                          }
+                          if (_isValidNumber(
+                                _numberOfStationsController.text,
+                              ) &&
+                              int.parse(value!) >
+                                  int.parse(_numberOfStationsController.text)) {
+                            return localizations
+                                .mustBeEqualToOrLessThanNumberOf(
+                                  localizations.station(2).toLowerCase(),
+                                );
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
 
-                        // Number of Teams
-                        SizedBox(
-                          width: fieldWidth,
-                          child: TextFormField(
-                            controller: _numberOfTeamsController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: localizations.numberOfTeams,
-                            ),
-                            onChanged: (value) {
-                              if (_stationsTracksTeams) {
-                                _numberOfStationsController.text = value;
-                              }
-                              setState(() {});
-                            },
-                            validator: (value) {
-                              if (!_isValidNumber(value)) {
-                                return localizations.pleaseEnterAValidNumber;
-                              }
-                              if (_isValidNumber(
-                                    _numberOfStationsController.text,
-                                  ) &&
-                                  int.parse(value!) >
-                                      int.parse(
-                                        _numberOfStationsController.text,
-                                      )) {
-                                return localizations
-                                    .mustBeEqualToOrLessThanNumberOf(
-                                      localizations.station(2).toLowerCase(),
-                                    );
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
+                    SizedBox(width: 16.0),
 
-                        // Number of Stations
-                        SizedBox(
-                          width: fieldWidth,
-                          child: TextFormField(
-                            controller: _numberOfStationsController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: localizations.numberOfStations,
-                            ),
-                            onChanged: (_) {
-                              _stationsTracksTeams = false;
-                              setState(() {});
-                            },
-                            validator: (value) {
-                              if (!_isValidNumber(value)) {
-                                return localizations.pleaseEnterAValidNumber;
-                              }
-                              if (_isValidNumber(
-                                    _numberOfTeamsController.text,
-                                  ) &&
-                                  int.parse(value!) <
-                                      int.parse(
-                                        _numberOfTeamsController.text,
-                                      )) {
-                                return localizations
-                                    .mustBeEqualToOrGreaterThanNumberOf(
-                                      localizations.team(2).toLowerCase(),
-                                    );
-                              }
-                              return null;
-                            },
-                          ),
+                    // Number of Stations
+                    Expanded(
+                      child: TextFormField(
+                        controller: _numberOfStationsController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.numberOfStations,
                         ),
-                      ],
-                    );
-                  },
+                        onChanged: (_) {
+                          _stationsTracksTeams = false;
+                          setState(() {});
+                        },
+                        validator: (value) {
+                          if (!_isValidNumber(value)) {
+                            return localizations.pleaseEnterAValidNumber;
+                          }
+                          if (_isValidNumber(_numberOfTeamsController.text) &&
+                              int.parse(value!) <
+                                  int.parse(_numberOfTeamsController.text)) {
+                            return localizations
+                                .mustBeEqualToOrGreaterThanNumberOf(
+                                  localizations.team(2).toLowerCase(),
+                                );
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+
+                    SizedBox(width: 16.0),
+
+                    // Number of Rounds
+                    Expanded(
+                      child: TextFormField(
+                        controller: _numberOfRoundsController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: localizations.numberOfRounds,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                        validator: (value) => _isValidNumber(value)
+                            ? null
+                            : localizations.pleaseEnterAValidNumber,
+                      ),
+                    ),
+                  ],
                 ),
                 ?_buildStationsRoundNote(localizations),
               ],
