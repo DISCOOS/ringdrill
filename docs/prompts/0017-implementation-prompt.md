@@ -66,10 +66,16 @@ Behaviour:
 * On `initState`, `_numberOfStationsController.text` is initialized from `widget.exercise?.stations.length` if editing, otherwise from `_numberOfTeamsController.text` (the existing default `"4"`).
 * A boolean `_stationsTracksTeams` starts `true` on a new exercise and `false` when editing an existing exercise that already has a station count. While `true`, any change to the teams field updates the stations field to the same value. Wire this through `onChanged` on the teams `TextFormField`.
 * When the user manually edits the stations field, set `_stationsTracksTeams = false`. From that point on, teams changes no longer overwrite stations within the current form session.
-* Add a validator on the stations field: must be a positive integer and must be `>= numberOfTeams`. Reuse `_isValidNumber`. The error message goes through a new ARB key `mustBeEqualToOrGreaterThanNumberOf(arg)` mirroring the existing `mustBeEqualToOrLessThanNumberOf` so both directions of the same constraint share a translation pattern.
-* Replace the validators on the teams and rounds fields:
-  * Teams: must be a positive integer and must be `<= numberOfStations` (use the existing `mustBeEqualToOrLessThanNumberOf` key with `localizations.station(2).toLowerCase()` as the argument).
-  * Rounds: must be a positive integer. Drop the rounds-vs-teams cross-check entirely.
+
+Bounded numeric input. ADR-0017 keeps the three counters as `TextFormField`s and tightens them per Material Design 3 text-field guidance. Apply to all three fields (teams, stations, rounds):
+
+* `keyboardType: TextInputType.number` (teams and rounds already have this, add for stations).
+* `inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)]`. Digits only, max two characters. Import `package:flutter/services.dart`.
+* `decoration` carries a persistent `helperText` showing the practical range. Teams and stations both use `"2–12"`. Rounds uses `"1–12"`. Use the same string literal across English and Norwegian, no ARB key needed — it is just digits and an en-dash.
+* Validators:
+  * Teams: integer in 2..12 and `<= numberOfStations`. Out-of-range gives a specific message via a new ARB key `valueMustBeBetween(min, max)` (English: "Must be between {min} and {max}"). Cross-field failure keeps the existing `mustBeEqualToOrLessThanNumberOf(localizations.station(2).toLowerCase())` message.
+  * Stations: integer in 2..12 and `>= numberOfTeams`. Cross-field failure uses a new ARB key `mustBeEqualToOrGreaterThanNumberOf(arg)` mirroring the existing `mustBeEqualToOrLessThanNumberOf`.
+  * Rounds: integer in 1..12. Drop the rounds-vs-teams cross-check entirely.
 
 Update `_saveExercise` to pass `numberOfStations: int.parse(_numberOfStationsController.text)` to `ProgramService.generateSchedule`. Dispose the new controller in `dispose()`.
 
@@ -111,6 +117,7 @@ Cover at minimum:
 * `generateSchedule` with `numberOfRounds > numberOfStations` does not assert and produces a valid schedule (revisits are allowed).
 * `generateSchedule` asserts when `numberOfTeams > numberOfStations`.
 * A loaded exercise where `stations.length != numberOfRounds` (e.g. 4 stations, 1 round) round-trips through `Exercise.toJson` / `Exercise.fromJson` unchanged.
+* The form validators reject teams=1, teams=13, stations=1, stations=13, rounds=0 and rounds=13 with range-specific messages. Cross-field validation rejects teams=8 with stations=4 and accepts teams=4 with stations=8.
 
 Run `flutter analyze` and `flutter test`. Acknowledge `test/widget_test.dart` is still broken.
 
@@ -124,6 +131,7 @@ Commit: `test(exercise): cover decoupled station count and rotation cases`.
    * Create a new exercise with 4 teams, 4 stations, 1 round. Verify the coordinator screen shows 4 stations with one round each, and that team N lands at station N.
    * Create an exercise with 4 teams, 4 stations, 6 rounds. Verify the revisits soft note appears under the rounds field, the save button stays enabled, and the rotation matrix shows each team visiting some stations twice.
    * Create an exercise with 4 teams, 6 stations, 4 rounds. Verify the under-coverage soft note appears, save stays enabled, and the team list shows each team visiting only 4 of 6 stations.
+   * Try to enter 13 or 1 in any of the three counters. Verify the field shows the helper "2–12" (or "1–12" for rounds) and the validator blocks save with a range-specific error.
    * Edit an existing exercise that has stations with names, descriptions or positions filled in. Reduce the station count. Verify the confirmation dialog appears and cancelling preserves the existing data.
    * Open an exercise that was created before this change (`stations.length == numberOfRounds`). Verify it loads and renders unchanged, and that re-saving it with no changes produces an identical exercise.
 4. Verify the rotation-share text (long-press on the coordinator round table, or the copy button) still includes correct counts of rounds, teams and stations on a revisits configuration.

@@ -39,10 +39,22 @@ Chosen option: **Option A**, because it makes the three counters independent, ke
 * `ExerciseFormScreen` gains a third numeric field "Number of stations" / "Antall poster". It is pre-populated to `numberOfTeams` and follows that field until the user edits it manually. On an existing exercise the initial value comes from `stations.length` on the loaded exercise so a roundtrip through the form is loss-free.
 * `ProgramService.generateSchedule` takes a `numberOfStations` parameter and calls `ensureStations(localizations, numberOfStations, stations)`. The internal assert becomes `numberOfTeams <= numberOfStations`.
 * Form validation rules:
-  * Stations must be `>= numberOfTeams`.
-  * Teams must be `<= numberOfStations`.
-  * Rounds must be `>= 1`, no upper bound from the model.
+  * Stations must be between 2 and 12 and `>= numberOfTeams`.
+  * Teams must be between 2 and 12 and `<= numberOfStations`.
+  * Rounds must be between 1 and 12.
 * No changes to rotation math in `lib/models/exercise.dart` and no drill-file schema bump.
+
+### Input control
+
+The three counters stay as `TextFormField`s. Material Design 3 does not specify a stepper component, and Flutter does not ship one for numeric input. The MD3 [text-field guidance](https://m3.material.io/components/text-fields/specs) covers bounded numeric input through pattern validation, helper text and error messages, which is what this form already uses.
+
+Three tightenings on top of today's fields:
+
+* Persistent helper text under each field shows the practical range (for example "2–12"). The user sees the bound before they hit it, not after.
+* `inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)]` on all three fields. The keyboard cannot produce non-digits or values past two characters.
+* Validators give specific error messages when input is out of range, instead of the generic "please enter a valid number" used today.
+
+The 2–12 ceiling reflects the practical drill sizes the app is used for. A single coordinator rarely runs more than six teams in one exercise, and ten is the realistic maximum. Twelve gives a small buffer without inviting unrealistic configurations. If a real drill ever needs more than twelve, the ceiling is one constant to bump.
 
 ### Soft notes in the form
 
