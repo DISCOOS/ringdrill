@@ -529,6 +529,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get legacyOversizedExerciseNotice =>
+      'This exercise was created before the current 12-value limit. Existing values are preserved, but reducing them is permanent and values above 12 must be lowered before saving.';
+
+  @override
   String get pleaseEnterAValidNumber => 'Please enter a valid number';
 
   @override

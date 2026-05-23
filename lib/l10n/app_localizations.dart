@@ -902,6 +902,12 @@ abstract class AppLocalizations {
   /// **'Reducing the number of stations will remove {count} stations including their names, descriptions and positions. This cannot be undone. Continue?'**
   String confirmReduceStationsBody(int count);
 
+  /// Banner shown in the exercise form when loading an older exercise whose team, station, or round count is above the current cap.
+  ///
+  /// In en, this message translates to:
+  /// **'This exercise was created before the current 12-value limit. Existing values are preserved, but reducing them is permanent and values above 12 must be lowered before saving.'**
+  String get legacyOversizedExerciseNotice;
+
   /// Message
   ///
   /// In en, this message translates to:

@@ -565,6 +565,10 @@
       }
     }
   },
+  "legacyOversizedExerciseNotice": "This exercise was created before the current 12-value limit. Existing values are preserved, but reducing them is permanent and values above 12 must be lowered before saving.",
+  "@legacyOversizedExerciseNotice": {
+    "description": "Banner shown in the exercise form when loading an older exercise whose team, station, or round count is above the current cap."
+  },
   "pleaseEnterAValidNumber": "Please enter a valid number",
   "@pleaseEnterAValidNumber": {
     "description": "Message"

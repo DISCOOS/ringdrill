@@ -135,6 +135,7 @@
   "stationsUnderCoverageNote": "Hvert lag besøker bare {rounds} av {stations} poster under denne øvelsen.",
   "confirmReduceStationsTitle": "Redusere antall poster?",
   "confirmReduceStationsBody": "Hvis du reduserer antall poster, fjernes {count} poster med navn, beskrivelser og posisjoner. Dette kan ikke angres. Fortsette?",
+  "legacyOversizedExerciseNotice": "Denne øvelsen ble laget før dagens grense på 12. Eksisterende verdier beholdes, men reduksjon er permanent og verdier over 12 må senkes før lagring.",
   "pleaseEnterAValidNumber": "Oppgi et nummer",
   "updateRequired": "Oppdater",
   "newPatchIsAvailable": "Ny oppdatering er tilgjengelig",

@@ -1,25 +1,19 @@
 # ADR-0017 follow-up
 
-Tre oppfølgingsoppgaver etter ADR-0017-implementasjonen. Hver oppgave er én commit. Samme ground rules og commit-format som forrige prompt.
+Two follow-ups after the ADR-0017 implementation. Same session, so ground rules, commit format and codebase context still apply. Each task is one commit.
 
-## 1. Annotér revisits og under-coverage i delingsteksten
+## 1. Annotate revisits and under-coverage in the rotation-share text
 
-ADR-0017 listet dette som en uadressert "Bad consequence". I `formatExerciseForShare`, legg til én informasjonslinje etter meta-linjen når `numberOfRounds != numberOfStations`. Nye ARB-nøkler `shareNoteRevisits(rounds, stations)` og `shareNoteUnderCoverage(rounds, stations)`. Rullerings-blokken under er fredet (jf. `feedback_rotation_share_format`). Oppdater golden strings i `exercise_share_format_test.dart`.
+ADR-0017 left this as an unaddressed "Bad" consequence. In `formatExerciseForShare`, add one informational line after the meta line when `numberOfRounds != numberOfStations`. New ARB keys `shareNoteRevisits(rounds, stations)` and `shareNoteUnderCoverage(rounds, stations)`. The rotation block below is frozen (see memory note on the share format). Update the golden strings in `exercise_share_format_test.dart`.
 
 Commit: `feat(coordinator): annotate revisits and under-coverage in rotation-share text`.
 
-## 2. Eksisterende øvelser med verdier over 12
+## 2. Existing exercises with counter values above 12
 
-En lagret øvelse kan ha `numberOfTeams = 14` eller `stations.length = 14` fra før kapselen. I `ExerciseFormScreen.initState`, hvis noen av de tre tellerene laster en verdi > 12: behold verdien i feltet (ikke clampe), og vis en banner over feltene som forklarer at øvelsen er fra før dagens grense og at reduksjon er permanent. Ny ARB-nøkkel `legacyOversizedExerciseNotice`. Validatorene skal fortsatt blokkere lagring uten redigering. Test load-stien.
+A saved exercise from before the new 2..12 bounds can carry e.g. `numberOfTeams = 14`. In `ExerciseFormScreen.initState`, when any of the three counters loads a value > 12: keep the value in the field (do not clamp), and render a banner above the fields explaining that this exercise predates the current limit and that reducing it is permanent. New ARB key `legacyOversizedExerciseNotice`. The validators still block save without a manual reduction. Add a unit test for the load path.
 
 Commit: `fix(exercise): preserve legacy counter values above the 12-cap on load`.
 
-## 3. Migrér koordinator-stations-tab til `StationExpansionTile`
-
-DESIGN-002 flagget dette som follow-up. I `coordinator_screen.dart _buildStationList`, bytt ut Material `ExpansionTile` med `StationExpansionTile`. Title-Row blir `title`-slot, `_buildStationDetail` blir `body`-slot, `_expandedStationIndex` holder mutex via `expanded`/`onToggle`. Live-styling (`isLive`-farger og border) blir på `Card`, ikke på den delte widgeten.
-
-Commit: `refactor(coordinator): use shared StationExpansionTile in the Stations tab`.
-
 ## Out of scope
 
-Option D fra ADR-0017 trenger eget designdokument og er ikke en del av denne runden.
+Option D from ADR-0017 (dedicated station-management UI) needs its own design doc and is not part of this round.

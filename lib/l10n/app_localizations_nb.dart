@@ -526,6 +526,10 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get legacyOversizedExerciseNotice =>
+      'Denne øvelsen ble laget før dagens grense på 12. Eksisterende verdier beholdes, men reduksjon er permanent og verdier over 12 må senkes før lagring.';
+
+  @override
   String get pleaseEnterAValidNumber => 'Oppgi et nummer';
 
   @override

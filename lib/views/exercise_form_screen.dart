@@ -15,6 +15,8 @@ class ExerciseFormScreen extends StatefulWidget {
 }
 
 class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
+  static const int _maxCounterValue = 12;
+
   final _formKey = GlobalKey<FormState>();
 
   TimeOfDay _startTime = _initStartTime();
@@ -48,6 +50,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   );
 
   bool _stationsTracksTeams = true;
+  bool _legacyOversizedCounters = false;
 
   @override
   void initState() {
@@ -63,6 +66,10 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       _evaluationTimeController.text = e.evaluationTime.toString();
       _rotationTimeController.text = e.rotationTime.toString();
       _stationsTracksTeams = false;
+      _legacyOversizedCounters =
+          (widget.numberOfTeams ?? e.numberOfTeams) > _maxCounterValue ||
+          e.stations.length > _maxCounterValue ||
+          e.numberOfRounds > _maxCounterValue;
     } else {
       _numberOfStationsController.text = _numberOfTeamsController.text;
     }
@@ -181,6 +188,19 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
                 SizedBox(height: 16.0),
 
+                if (_legacyOversizedCounters) ...[
+                  MaterialBanner(
+                    content: Text(localizations.legacyOversizedExerciseNotice),
+                    actions: const [SizedBox.shrink()],
+                    padding: const EdgeInsetsDirectional.only(
+                      start: 16,
+                      end: 8,
+                    ),
+                    leading: const Icon(Icons.info_outline),
+                  ),
+                  SizedBox(height: 16.0),
+                ],
+
                 Row(
                   children: [
                     // Number of Teams
@@ -198,9 +218,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                           setState(() {});
                         },
                         validator: (value) {
-                          if (!_isValidNumber(value)) {
-                            return localizations.pleaseEnterAValidNumber;
-                          }
+                          final counterError = _validateCounter(
+                            value,
+                            localizations,
+                          );
+                          if (counterError != null) return counterError;
                           if (_isValidNumber(
                                 _numberOfStationsController.text,
                               ) &&
@@ -231,9 +253,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                           setState(() {});
                         },
                         validator: (value) {
-                          if (!_isValidNumber(value)) {
-                            return localizations.pleaseEnterAValidNumber;
-                          }
+                          final counterError = _validateCounter(
+                            value,
+                            localizations,
+                          );
+                          if (counterError != null) return counterError;
                           if (_isValidNumber(_numberOfTeamsController.text) &&
                               int.parse(value!) <
                                   int.parse(_numberOfTeamsController.text)) {
@@ -258,9 +282,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                           labelText: localizations.numberOfRounds,
                         ),
                         onChanged: (_) => setState(() {}),
-                        validator: (value) => _isValidNumber(value)
-                            ? null
-                            : localizations.pleaseEnterAValidNumber,
+                        validator: (value) =>
+                            _validateCounter(value, localizations),
                       ),
                     ),
                   ],
@@ -380,6 +403,18 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
   bool _isValidNumber(String? value) {
     return value != null && int.tryParse(value) != null && int.parse(value) > 0;
+  }
+
+  String? _validateCounter(String? value, AppLocalizations localizations) {
+    if (!_isValidNumber(value)) {
+      return localizations.pleaseEnterAValidNumber;
+    }
+    if (int.parse(value!) > _maxCounterValue) {
+      return localizations.mustBeEqualToOrLessThanNumberOf(
+        _maxCounterValue.toString(),
+      );
+    }
+    return null;
   }
 
   Widget? _buildStationsRoundNote(AppLocalizations localizations) {
