@@ -52,21 +52,21 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   // Mutual-exclusive expansion state for the station and team lists.
   // At most one row may be expanded in either list at any time. We keep
-  // a pool of [ExpansionTileController]s so we can programmatically
+  // a pool of [ExpansibleController]s so we can programmatically
   // collapse the previously-expanded row when the coordinator taps a
   // different one — `initiallyExpanded` alone only sets state on the
   // first mount, so a controller is needed for later updates.
-  final _stationControllers = <ExpansionTileController>[];
-  final _teamControllers = <ExpansionTileController>[];
+  final _stationControllers = <ExpansibleController>[];
+  final _teamControllers = <ExpansibleController>[];
   int? _expandedStationIndex;
   int? _expandedTeamIndex;
 
-  ExpansionTileController _controllerFor(
-    List<ExpansionTileController> pool,
+  ExpansibleController _controllerFor(
+    List<ExpansibleController> pool,
     int index,
   ) {
     while (pool.length <= index) {
-      pool.add(ExpansionTileController());
+      pool.add(ExpansibleController());
     }
     return pool[index];
   }
@@ -80,7 +80,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   void _handleExpansionChange({
     required bool expanded,
     required int tappedIndex,
-    required List<ExpansionTileController> pool,
+    required List<ExpansibleController> pool,
     required int? Function() readIndex,
     required void Function(int?) writeIndex,
   }) {
@@ -481,7 +481,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   /// so the sidebar reads as a single unit. See the user-supplied
   /// design with the card placed to the right of the round table.
   Widget _buildCombinedHeroCard(ExerciseEvent event, {bool isSidebar = false}) {
-    final theme = Theme.of(context);
     return Card(
       elevation: 2,
       margin: EdgeInsets.zero,
@@ -595,67 +594,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     if (phaseIndex < 2) return schedule[roundIndex][phaseIndex + 1];
     if (roundIndex + 1 < schedule.length) return schedule[roundIndex + 1][0];
     return _exercise!.endTime;
-  }
-
-  String _phaseLabel(int phaseIndex, AppLocalizations l10n) {
-    return switch (phaseIndex) {
-      0 => l10n.drill,
-      1 => l10n.eval,
-      2 => l10n.roll,
-      _ => '',
-    }.toUpperCase();
-  }
-
-  /// Phase colour palette aligned with the player mockup at
-  /// `docs/design/mockups/coordinator-oversikt.html`. Drill is green,
-  /// eval is blue, roll is orange. These are hard-coded for now because
-  /// they don't map cleanly onto the Material colour scheme — when the
-  /// player view is extracted to its own widget tree this is a good
-  /// candidate to move into a shared theming layer.
-  Color _phaseColor(int phaseIndex) {
-    return switch (phaseIndex) {
-      0 => const Color(0xFF1D9E75),
-      1 => const Color(0xFF378ADD),
-      2 => const Color(0xFFBA7517),
-      _ => Colors.grey,
-    };
-  }
-
-  IconData _phaseIcon(int phaseIndex) {
-    return switch (phaseIndex) {
-      0 => Icons.local_fire_department,
-      1 => Icons.assignment_turned_in,
-      2 => Icons.swap_horiz,
-      _ => Icons.help_outline,
-    };
-  }
-
-  /// Returns up to [maxItems] phases that come after the [currentPhase]
-  /// of [currentRound], iterating first through the remaining phases of
-  /// the current round and then through phases of subsequent rounds.
-  /// Pass `-1` as [currentPhase] to start from the very first phase of
-  /// [currentRound] (used during the pending state, when no phase has
-  /// actually begun yet).
-  List<({int round, int phase})> _upcomingPhases(
-    int currentRound,
-    int currentPhase,
-    int maxItems,
-  ) {
-    final upcoming = <({int round, int phase})>[];
-    final lastRound = _exercise!.schedule.length - 1;
-    for (var p = currentPhase + 1; p < 3 && upcoming.length < maxItems; p++) {
-      upcoming.add((round: currentRound, phase: p));
-    }
-    for (
-      var r = currentRound + 1;
-      r <= lastRound && upcoming.length < maxItems;
-      r++
-    ) {
-      for (var p = 0; p < 3 && upcoming.length < maxItems; p++) {
-        upcoming.add((round: r, phase: p));
-      }
-    }
-    return upcoming;
   }
 
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
@@ -1171,38 +1109,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     for (final it in _subscriptions) {
       it.cancel();
     }
+    // ExpansibleController extends ChangeNotifier, so each pool entry
+    // holds listener resources that must be released explicitly. The
+    // deprecated ExpansionTileController didn't require this, which is
+    // why earlier revisions skipped the cleanup.
+    for (final it in _stationControllers) {
+      it.dispose();
+    }
+    for (final it in _teamControllers) {
+      it.dispose();
+    }
     super.dispose();
-  }
-}
-
-/// Coloured rounded square that fronts each row in the "Next" card on
-/// [CoordinatorScreen]. The colour comes from the mockup-aligned phase
-/// palette in [_CoordinatorScreenState._phaseColor]; the icon sits in
-/// the centre on a white-tinted surface so it stays legible regardless
-/// of theme. Mirrors the `width: 36; height: 36; background: …` squares
-/// in `docs/design/mockups/coordinator-oversikt.html`.
-class _PhaseIconSquare extends StatelessWidget {
-  const _PhaseIconSquare({
-    required this.color,
-    required this.icon,
-    this.size = 44.0,
-  });
-
-  final Color color;
-  final IconData icon;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, color: Colors.white, size: size * 24 / 44),
-    );
   }
 }
 
