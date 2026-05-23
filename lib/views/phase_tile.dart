@@ -14,6 +14,7 @@ class PhaseTile extends StatelessWidget {
     this.decoration,
     this.isPortrait = true,
     this.mainAxisAlignment = MainAxisAlignment.center,
+    this.titleWidth,
   });
 
   final String? title;
@@ -23,6 +24,21 @@ class PhaseTile extends StatelessWidget {
   final ExerciseEvent event;
   final TextDecoration? decoration;
   final MainAxisAlignment mainAxisAlignment;
+
+  /// Behaviour of the title cell:
+  ///
+  /// * `null` — the cell sizes itself to the text via [TextPainter] (legacy
+  ///   behaviour). Fine when every tile in a list has a similar-length
+  ///   title (e.g. "Round 1", "Round 2", "Lag 1" — these vary only in the
+  ///   last character).
+  /// * non-null — the cell uses this value as its **minimum** width and is
+  ///   wrapped in [Expanded] so it grows to fill whatever space is left in
+  ///   the row after the phase columns. This both (a) makes title cells in
+  ///   a list line up vertically because the phase columns end up at the
+  ///   same horizontal offset, and (b) uses the full available width
+  ///   instead of leaving dead space on the right. Titles longer than the
+  ///   available width are ellipsed.
+  final double? titleWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -46,25 +62,45 @@ class PhaseTile extends StatelessWidget {
     )..layout();
 
     final phaseCount = exercise.schedule[roundIndex].length;
+    final hasFlexibleWidth = titleWidth != null;
+
+    final titleCell = Container(
+      height: 32,
+      constraints: hasFlexibleWidth
+          ? BoxConstraints(minWidth: titleWidth!)
+          : null,
+      width: hasFlexibleWidth ? null : painter.width + 24,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: isCurrent ? Colors.blueAccent : Colors.transparent,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(4),
+          bottomLeft: Radius.circular(4),
+        ),
+      ),
+      // Centered when the cell sizes to text (legacy behaviour) so the
+      // text doesn't slide left of the highlight. Left-aligned in the
+      // flexible mode so multiple tiles with different title lengths line
+      // up cleanly.
+      child: Align(
+        alignment: hasFlexibleWidth
+            ? AlignmentDirectional.centerStart
+            : Alignment.center,
+        child: Text(
+          name,
+          style: textStyle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: mainAxisAlignment,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          height: 32,
-          width: painter.width + 24,
-          padding: EdgeInsets.only(left: isCurrent ? 8 : 8),
-          decoration: BoxDecoration(
-            color: isCurrent ? Colors.blueAccent : Colors.transparent,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(4),
-              bottomLeft: Radius.circular(4),
-            ),
-          ),
-          child: Center(child: Text(name, style: textStyle)),
-        ),
+        if (hasFlexibleWidth) Expanded(child: titleCell) else titleCell,
         VerticalDividerWidget(isCurrent: isCurrent, isComplete: isCurrent),
         ...List<Widget>.generate(phaseCount, (phaseIndex) {
           final isComplete = isCurrent && phaseIndex < event.phase.index - 1;
