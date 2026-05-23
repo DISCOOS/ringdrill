@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Mini-player</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-page: #f5f5f4;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-background-tertiary: #e9e7e0;
+    --color-background-info: #E6F1FB;
+    --color-text-primary: #2c2c2a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-text-info: #185FA5;
+    --color-border-tertiary: rgba(0, 0, 0, 0.12);
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-page: #1a1a1a;
+      --color-background-primary: #242322;
+      --color-background-secondary: #2e2d2b;
+      --color-background-tertiary: #3a3a37;
+      --color-background-info: #0C447C;
+      --color-text-primary: #f1efe8;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-text-info: #B5D4F4;
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-page);
+    color: var(--color-text-primary);
+    padding: 24px 16px;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  .caption {
+    max-width: 320px;
+    margin: 0 auto 16px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<p class="caption">Mini-spilleren over bunnfanen på smal skjerm</p>
+
+<div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 12px; max-width: 320px; margin: 0 auto;">
+  <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; min-height: 460px; display: flex; flex-direction: column;">
+    <!-- App bar -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="ti ti-menu-2" style="font-size: 18px;" aria-hidden="true"></i>
+        <span style="font-size: 14px; font-weight: 500;">Skogbrann 2026</span>
+      </div>
+      <span style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--color-background-info); color: var(--color-text-info);">Publisert</span>
+    </div>
+    <!-- Body (stations placeholder) -->
+    <div style="flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--color-background-tertiary);">
+      <div style="font-size: 12px; color: var(--color-text-secondary);">Stasjoner</div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 12px; font-size: 13px;">A1 — Førstehjelp</div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 12px; font-size: 13px;">A2 — Slokking</div>
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 12px; font-size: 13px;">A3 — Søk</div>
+    </div>
+    <!-- MINI PLAYER -->
+    <div style="border-top: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary);">
+      <div style="height: 3px; background: var(--color-background-secondary);">
+        <div style="height: 100%; width: 62%; background: #1D9E75;"></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px;">
+        <div style="width: 36px; height: 36px; border-radius: var(--border-radius-md); background: #1D9E75; display: flex; align-items: center; justify-content: center; color: white;">
+          <i class="ti ti-flame" style="font-size: 18px;" aria-hidden="true"></i>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #E1F5EE; color: #0F6E56; font-weight: 500;">EXECUTION</span>
+            <span style="font-size: 11px; color: var(--color-text-secondary);">Runde 2 / 5</span>
+          </div>
+          <div style="font-size: 13px; font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Brann i bolighus</div>
+        </div>
+        <div style="font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums;">06:42</div>
+        <button aria-label="Stopp øvelse" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #E24B4A; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <i class="ti ti-player-stop" style="font-size: 16px;" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+    <!-- Bottom nav -->
+    <div style="display: flex; justify-content: space-around; padding: 8px 0 10px; border-top: 0.5px solid var(--color-border-tertiary);">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--color-text-secondary);">
+        <i class="ti ti-list-details" style="font-size: 18px;" aria-hidden="true"></i>
+        <span style="font-size: 10px;">Program</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--color-text-info); font-weight: 500;">
+        <i class="ti ti-map" style="font-size: 18px;" aria-hidden="true"></i>
+        <span style="font-size: 10px;">Stasjoner</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--color-text-secondary);">
+        <i class="ti ti-users" style="font-size: 18px;" aria-hidden="true"></i>
+        <span style="font-size: 10px;">Lag</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
