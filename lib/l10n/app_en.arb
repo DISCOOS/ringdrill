@@ -525,6 +525,26 @@
   "@appUpdatedPleaseCloseAndOpen": {
     "description": "Message"
   },
+  "forceUpdateTitle": "Force update",
+  "@forceUpdateTitle": {
+    "description": "Settings tile title for clearing browser cache and reloading the PWA"
+  },
+  "forceUpdateSubtitle": "Clears the browser cache and reloads. Use this if the app feels stuck on an old version.",
+  "@forceUpdateSubtitle": {
+    "description": "Settings tile subtitle explaining the force-update action"
+  },
+  "forceUpdateConfirmTitle": "Force update?",
+  "@forceUpdateConfirmTitle": {
+    "description": "Confirmation dialog title for the force-update action"
+  },
+  "forceUpdateConfirmBody": "This clears the browser cache for ringdrill and reloads the page. Plans and settings stored on this device are kept.",
+  "@forceUpdateConfirmBody": {
+    "description": "Confirmation dialog body for the force-update action"
+  },
+  "forceUpdateConfirmAction": "Update now",
+  "@forceUpdateConfirmAction": {
+    "description": "Confirmation dialog action button for the force-update action"
+  },
   "searchForPlaceOrLocation": "Search for place or location",
   "@searchForPlaceOrLocation": {
     "description": "Label"

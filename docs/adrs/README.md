@@ -23,7 +23,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0013 | [Local end-to-end catalog testing via netlify dev, CLI seeding and a build-time base URL](./0013-local-catalog-testing.md) | Accepted |
 | ADR-0014 | [Server-controlled drill upload contract](./0014-server-assigned-drill-version.md) | Accepted |
 | ADR-0015 | [Shareable install links open the plan in the app via `ringdrill.app/i/<slug>`](./0015-shareable-install-links.md) | Accepted |
-| ADR-0016 | [Non-fingerprinted Flutter web entry points are served with `no-cache`](./0016-pwa-cache-strategy.md) | Accepted |
+| ADR-0016 | [PWA update strategy: `no-cache` entry points, resilient SW detection, and an in-app last resort](./0016-pwa-cache-strategy.md) | Accepted |
 
 ## When to write an ADR
 

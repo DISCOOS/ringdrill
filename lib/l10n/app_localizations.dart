@@ -878,6 +878,36 @@ abstract class AppLocalizations {
   /// **'App updated, please close app and open again'**
   String get appUpdatedPleaseCloseAndOpen;
 
+  /// Settings tile title for clearing browser cache and reloading the PWA
+  ///
+  /// In en, this message translates to:
+  /// **'Force update'**
+  String get forceUpdateTitle;
+
+  /// Settings tile subtitle explaining the force-update action
+  ///
+  /// In en, this message translates to:
+  /// **'Clears the browser cache and reloads. Use this if the app feels stuck on an old version.'**
+  String get forceUpdateSubtitle;
+
+  /// Confirmation dialog title for the force-update action
+  ///
+  /// In en, this message translates to:
+  /// **'Force update?'**
+  String get forceUpdateConfirmTitle;
+
+  /// Confirmation dialog body for the force-update action
+  ///
+  /// In en, this message translates to:
+  /// **'This clears the browser cache for ringdrill and reloads the page. Plans and settings stored on this device are kept.'**
+  String get forceUpdateConfirmBody;
+
+  /// Confirmation dialog action button for the force-update action
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get forceUpdateConfirmAction;
+
   /// Label
   ///
   /// In en, this message translates to:

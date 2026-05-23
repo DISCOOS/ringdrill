@@ -507,6 +507,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'App updated, please close app and open again';
 
   @override
+  String get forceUpdateTitle => 'Force update';
+
+  @override
+  String get forceUpdateSubtitle =>
+      'Clears the browser cache and reloads. Use this if the app feels stuck on an old version.';
+
+  @override
+  String get forceUpdateConfirmTitle => 'Force update?';
+
+  @override
+  String get forceUpdateConfirmBody =>
+      'This clears the browser cache for ringdrill and reloads the page. Plans and settings stored on this device are kept.';
+
+  @override
+  String get forceUpdateConfirmAction => 'Update now';
+
+  @override
   String get searchForPlaceOrLocation => 'Search for place or location';
 
   @override

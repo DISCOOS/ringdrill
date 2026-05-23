@@ -505,6 +505,23 @@ class AppLocalizationsNb extends AppLocalizations {
       'Appen er oppdatert. Lukk appen og åpne den igjen.';
 
   @override
+  String get forceUpdateTitle => 'Tving oppdatering';
+
+  @override
+  String get forceUpdateSubtitle =>
+      'Tømmer nettleserens cache og laster siden på nytt. Bruk dette hvis appen ser ut til å henge på en gammel versjon.';
+
+  @override
+  String get forceUpdateConfirmTitle => 'Tving oppdatering?';
+
+  @override
+  String get forceUpdateConfirmBody =>
+      'Dette tømmer nettleserens cache for ringdrill og laster siden på nytt. Planer og innstillinger som er lagret på denne enheten beholdes.';
+
+  @override
+  String get forceUpdateConfirmAction => 'Oppdater nå';
+
+  @override
   String get searchForPlaceOrLocation => 'Søk etter sted eller posisjon';
 
   @override
