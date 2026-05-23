@@ -1934,6 +1934,18 @@ abstract class AppLocalizations {
   /// **'return'**
   String get rotationShareReturn;
 
+  /// Informational line inserted after the meta line in copied exercise share text when rounds exceed stations.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: {rounds} rounds across {stations} stations means each team will revisit some stations.'**
+  String shareNoteRevisits(int rounds, int stations);
+
+  /// Informational line inserted after the meta line in copied exercise share text when rounds are fewer than stations.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: {rounds} rounds across {stations} stations means each team will only visit some stations.'**
+  String shareNoteUnderCoverage(int rounds, int stations);
+
   /// SnackBar shown after copying the full exercise (header, meta, station list, rotation block) to the clipboard for sharing in Slack/Teams/Messenger. Triggered by the overlay copy button on CoordinatorScreen or by long-pressing the rotation table.
   ///
   /// In en, this message translates to:

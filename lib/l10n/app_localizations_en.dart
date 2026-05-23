@@ -1144,6 +1144,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rotationShareReturn => 'return';
 
   @override
+  String shareNoteRevisits(int rounds, int stations) {
+    return 'Note: $rounds rounds across $stations stations means each team will revisit some stations.';
+  }
+
+  @override
+  String shareNoteUnderCoverage(int rounds, int stations) {
+    return 'Note: $rounds rounds across $stations stations means each team will only visit some stations.';
+  }
+
+  @override
   String get exerciseCopied => 'Exercise copied to clipboard';
 
   @override

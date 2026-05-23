@@ -65,6 +65,19 @@ String formatExerciseForShare(Exercise exercise, AppLocalizations l10n) {
         '${l10n.station(exercise.stations.length).toLowerCase()}',
   ].join(' | ');
   buf.writeln(meta);
+  if (exercise.numberOfRounds != exercise.stations.length) {
+    buf.writeln(
+      exercise.numberOfRounds > exercise.stations.length
+          ? l10n.shareNoteRevisits(
+              exercise.numberOfRounds,
+              exercise.stations.length,
+            )
+          : l10n.shareNoteUnderCoverage(
+              exercise.numberOfRounds,
+              exercise.stations.length,
+            ),
+    );
+  }
   buf.writeln();
 
   // 3. Station list. The header uses the plural form so it reads as a

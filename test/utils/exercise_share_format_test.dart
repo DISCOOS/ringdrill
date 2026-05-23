@@ -15,8 +15,11 @@ void main() {
       final exercise = _exerciseTwo();
       final actual = formatExerciseForShare(exercise, AppLocalizationsNb());
 
-      const expected = 'Øvelse 2\n'
+      const expected =
+          'Øvelse 2\n'
           '09:30-12:30 | 6 runder | 3 lag | 3 poster\n'
+          'Merk: 6 runder på 3 poster betyr at hvert lag besøker noen '
+          'poster flere ganger.\n'
           '\n'
           'Poster\n'
           '1. Stasjon A\n'
@@ -53,12 +56,17 @@ void main() {
 
       expect(actual.startsWith('Øvelse 2\n'), isTrue);
       expect(actual, contains('6 rounds | 3 teams | 3 stations'));
-      expect(actual, contains('\nStations\n1. Stasjon A\n'));
       expect(
         actual,
         contains(
-          'Each round: 15 | 10 | 5 (drill | eval | roll / inbound)',
+          'Note: 6 rounds across 3 stations means each team will revisit '
+          'some stations.',
         ),
+      );
+      expect(actual, contains('\nStations\n1. Stasjon A\n'));
+      expect(
+        actual,
+        contains('Each round: 15 | 10 | 5 (drill | eval | roll / inbound)'),
       );
       expect(actual, contains('Rotation (time of day)'));
       expect(actual, contains('Round 1: 0930 | 0945 | 0955 (next)'));
@@ -83,6 +91,31 @@ void main() {
       // documented in the formatter's dartdoc.
       expect(actual, contains('\n1. Stasjon A\n2. Stasjon B\n3. Stasjon C\n'));
       expect(actual, isNot(contains('LatLng')));
+    });
+
+    test('annotates under-coverage without changing rotation block', () {
+      final exercise = _exerciseTwo().copyWith(
+        stations: const [
+          Station(index: 0, name: 'Stasjon A'),
+          Station(index: 1, name: 'Stasjon B'),
+          Station(index: 2, name: 'Stasjon C'),
+          Station(index: 3, name: 'Stasjon D'),
+          Station(index: 4, name: 'Stasjon E'),
+          Station(index: 5, name: 'Stasjon F'),
+          Station(index: 6, name: 'Stasjon G'),
+        ],
+      );
+      final actual = formatExerciseForShare(exercise, AppLocalizationsEn());
+
+      expect(
+        actual,
+        contains(
+          'Note: 6 rounds across 7 stations means each team will only visit '
+          'some stations.',
+        ),
+      );
+      expect(actual, contains('Round 1: 0930 | 0945 | 0955 (next)'));
+      expect(actual, contains('Round 6: 1200 | 1215 | 1225 (return)'));
     });
   });
 }

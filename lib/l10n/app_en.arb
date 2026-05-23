@@ -968,6 +968,30 @@
   "@rotationShareReturn": {
     "description": "Suffix in parentheses on the final round in the shared rotation-table text, indicating return/inbound transport after this round."
   },
+  "shareNoteRevisits": "Note: {rounds} rounds across {stations} stations means each team will revisit some stations.",
+  "@shareNoteRevisits": {
+    "description": "Informational line inserted after the meta line in copied exercise share text when rounds exceed stations.",
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      },
+      "stations": {
+        "type": "int"
+      }
+    }
+  },
+  "shareNoteUnderCoverage": "Note: {rounds} rounds across {stations} stations means each team will only visit some stations.",
+  "@shareNoteUnderCoverage": {
+    "description": "Informational line inserted after the meta line in copied exercise share text when rounds are fewer than stations.",
+    "placeholders": {
+      "rounds": {
+        "type": "int"
+      },
+      "stations": {
+        "type": "int"
+      }
+    }
+  },
   "exerciseCopied": "Exercise copied to clipboard",
   "@exerciseCopied": {
     "description": "SnackBar shown after copying the full exercise (header, meta, station list, rotation block) to the clipboard for sharing in Slack/Teams/Messenger. Triggered by the overlay copy button on CoordinatorScreen or by long-pressing the rotation table."

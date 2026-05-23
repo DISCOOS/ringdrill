@@ -1140,6 +1140,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rotationShareReturn => 'retur';
 
   @override
+  String shareNoteRevisits(int rounds, int stations) {
+    return 'Merk: $rounds runder på $stations poster betyr at hvert lag besøker noen poster flere ganger.';
+  }
+
+  @override
+  String shareNoteUnderCoverage(int rounds, int stations) {
+    return 'Merk: $rounds runder på $stations poster betyr at hvert lag bare besøker noen poster.';
+  }
+
+  @override
   String get exerciseCopied => 'Øvelse kopiert til utklippstavlen';
 
   @override
