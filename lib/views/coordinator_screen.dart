@@ -506,7 +506,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     final isPending = phaseIdx < 0;
     final caption = isPending
         ? event.getState(localizations)
-        : localizations.remainingInPhase.toUpperCase();
+        : localizations
+              .remainingInPhase(event.getState(localizations))
+              .toUpperCase();
     final endTime = isPending
         ? _exercise!.startTime
         : _phaseEndTime(event.currentRound, phaseIdx);
@@ -757,14 +759,35 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                   ? Icon(Icons.play_circle_fill, color: colorScheme.primary)
                   : null,
               title: Row(
-                mainAxisSize: MainAxisSize.min,
+                // Row fills the title slot so the station name can claim
+                // the leftover space via Expanded. Without this the Row
+                // would shrink-wrap its children and the team-count
+                // columns on the right would line up with the end of
+                // each station name, drifting horizontally between rows
+                // with different name lengths. Same idea as the
+                // titleWidth/Expanded treatment in [PhaseTile] used by
+                // `_buildTeamDetail`.
+                mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      station.name,
-                      style: const TextStyle(fontSize: 18),
+                  // Station name takes a fixed minimum width and grows
+                  // to fill whatever horizontal space the team-count
+                  // columns leave behind. Names longer than the
+                  // available width are ellipsed so the columns to the
+                  // right stay anchored at the same x offset across
+                  // rows.
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 120),
+                        child: Text(
+                          station.name,
+                          style: const TextStyle(fontSize: 18),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                   ),
                   Padding(
@@ -949,24 +972,57 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               ),
               tilePadding: const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding: EdgeInsets.zero,
-              subtitle: currentStationName == null
-                  ? null
-                  : Text(
-                      '→ $currentStationName',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
               title: Row(
-                mainAxisSize: MainAxisSize.min,
+                // Same layout treatment as the station list above:
+                // fill the title slot and let the team label claim
+                // the leftover space via Expanded so the rotation
+                // columns get pushed to the right edge of the row
+                // instead of crowding up against "Lag N".
+                mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      '${localizations.team(1)} ${teamIndex + 1}',
-                      style: const TextStyle(fontSize: 18),
+                  // "Lag N → Stasjonsnavn" sits in the leading cell.
+                  // The arrow is the current-rotation hint that used
+                  // to live in the ExpansionTile subtitle; placing it
+                  // immediately after the team label reads naturally
+                  // as "from Lag N to Stasjon X". minWidth: 120
+                  // matches the station list for symmetry. Long
+                  // station names ellipsize so the rotation columns
+                  // stay anchored to the right edge.
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 120),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${localizations.team(1)} ${teamIndex + 1}',
+                              style: const TextStyle(fontSize: 18),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (currentStationName != null) ...[
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  '→ $currentStationName',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   Padding(

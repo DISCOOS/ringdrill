@@ -181,7 +181,7 @@
   "phaseNow": "Fase nå",
   "nextLabel": "Neste",
   "phaseEndsAt": "ferdig {time}",
-  "remainingInPhase": "Igjen av fasen",
+  "remainingInPhase": "Igjen av {phase}",
   "wait": "Vent",
   "drill": "Øve",
   "eval": "Eval",

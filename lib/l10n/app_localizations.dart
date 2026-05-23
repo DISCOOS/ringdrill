@@ -1106,11 +1106,11 @@ abstract class AppLocalizations {
   /// **'ends {time}'**
   String phaseEndsAt(String time);
 
-  /// Subtitle under the prominent remaining-time number in the Phase Now hero cell
+  /// Subtitle under the prominent remaining-time number in the Phase Now hero cell. {phase} is the current phase name (e.g. Drill, Eval, Roll).
   ///
   /// In en, this message translates to:
-  /// **'Remaining in phase'**
-  String get remainingInPhase;
+  /// **'Remaining in {phase}'**
+  String remainingInPhase(String phase);
 
   /// Short for exercise is pending
   ///

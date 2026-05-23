@@ -627,7 +627,9 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get remainingInPhase => 'Igjen av fasen';
+  String remainingInPhase(String phase) {
+    return 'Igjen av $phase';
+  }
 
   @override
   String get wait => 'Vent';

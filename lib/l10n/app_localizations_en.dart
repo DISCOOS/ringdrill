@@ -632,7 +632,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get remainingInPhase => 'Remaining in phase';
+  String remainingInPhase(String phase) {
+    return 'Remaining in $phase';
+  }
 
   @override
   String get wait => 'Wait';
