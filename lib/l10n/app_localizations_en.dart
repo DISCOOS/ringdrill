@@ -521,6 +521,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get confirmReduceStationsTitle => 'Reduce stations?';
+
+  @override
+  String confirmReduceStationsBody(int count) {
+    return 'Reducing the number of stations will remove $count stations including their names, descriptions and positions. This cannot be undone. Continue?';
+  }
+
+  @override
   String get pleaseEnterAValidNumber => 'Please enter a valid number';
 
   @override

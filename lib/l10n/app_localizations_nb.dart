@@ -518,6 +518,14 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get confirmReduceStationsTitle => 'Redusere antall poster?';
+
+  @override
+  String confirmReduceStationsBody(int count) {
+    return 'Hvis du reduserer antall poster, fjernes $count poster med navn, beskrivelser og posisjoner. Dette kan ikke angres. Fortsette?';
+  }
+
+  @override
   String get pleaseEnterAValidNumber => 'Oppgi et nummer';
 
   @override

@@ -890,6 +890,18 @@ abstract class AppLocalizations {
   /// **'Each team will only visit {rounds} of {stations} stations during this exercise.'**
   String stationsUnderCoverageNote(int rounds, int stations);
 
+  /// Title for the confirmation dialog shown before removing stations from an existing exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduce stations?'**
+  String get confirmReduceStationsTitle;
+
+  /// Body for the confirmation dialog shown before removing user-edited stations from an existing exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Reducing the number of stations will remove {count} stations including their names, descriptions and positions. This cannot be undone. Continue?'**
+  String confirmReduceStationsBody(int count);
+
   /// Message
   ///
   /// In en, this message translates to:

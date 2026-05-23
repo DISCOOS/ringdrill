@@ -133,6 +133,8 @@
   "mustBeEqualToOrGreaterThanNumberOf": "Må være større eller lik {name}",
   "stationsRevisitNote": "Hvert lag besøker noen poster flere ganger. Med {rounds} runder og {stations} poster passerer hvert lag hver post omtrent {rounds}/{stations} ganger.",
   "stationsUnderCoverageNote": "Hvert lag besøker bare {rounds} av {stations} poster under denne øvelsen.",
+  "confirmReduceStationsTitle": "Redusere antall poster?",
+  "confirmReduceStationsBody": "Hvis du reduserer antall poster, fjernes {count} poster med navn, beskrivelser og posisjoner. Dette kan ikke angres. Fortsette?",
   "pleaseEnterAValidNumber": "Oppgi et nummer",
   "updateRequired": "Oppdater",
   "newPatchIsAvailable": "Ny oppdatering er tilgjengelig",

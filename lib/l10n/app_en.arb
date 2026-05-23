@@ -552,6 +552,19 @@
       }
     }
   },
+  "confirmReduceStationsTitle": "Reduce stations?",
+  "@confirmReduceStationsTitle": {
+    "description": "Title for the confirmation dialog shown before removing stations from an existing exercise."
+  },
+  "confirmReduceStationsBody": "Reducing the number of stations will remove {count} stations including their names, descriptions and positions. This cannot be undone. Continue?",
+  "@confirmReduceStationsBody": {
+    "description": "Body for the confirmation dialog shown before removing user-edited stations from an existing exercise.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "pleaseEnterAValidNumber": "Please enter a valid number",
   "@pleaseEnterAValidNumber": {
     "description": "Message"

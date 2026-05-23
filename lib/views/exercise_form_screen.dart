@@ -329,6 +329,49 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       final rotationTime = int.parse(_rotationTimeController.text);
       final localizations = AppLocalizations.of(context)!;
 
+      final existingExercise = widget.exercise;
+      if (existingExercise != null &&
+          numberOfStations < existingExercise.stations.length) {
+        final droppedStations = existingExercise.stations.asMap().entries.where(
+          (entry) => entry.key >= numberOfStations,
+        );
+        final dropsUserVisibleContent = droppedStations.any((entry) {
+          final station = entry.value;
+          final defaultName = '${localizations.station(1)} ${entry.key + 1}';
+          return station.name != defaultName ||
+              (station.description?.isNotEmpty ?? false) ||
+              station.position != null;
+        });
+
+        if (dropsUserVisibleContent) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(localizations.confirmReduceStationsTitle),
+              content: Text(
+                localizations.confirmReduceStationsBody(
+                  existingExercise.stations.length - numberOfStations,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(localizations.cancel),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(localizations.yes),
+                ),
+              ],
+            ),
+          );
+          if (!mounted) return;
+          if (confirmed != true) {
+            return;
+          }
+        }
+      }
+
       // Generate exercise with user input
       final newExercise = ProgramService.generateSchedule(
         name: name,
