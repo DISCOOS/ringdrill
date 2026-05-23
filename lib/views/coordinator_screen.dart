@@ -7,7 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/utils/rotation_share_format.dart';
+import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
@@ -308,46 +308,82 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     // coordinator scrolls. Previously only the inner list scrolled, which
     // pinned the round table to the top and forced the coordinator to
     // scroll inside a small viewport.
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildTopSection(event, showHero: showHero),
-          const SizedBox(height: 16),
-          Center(
-            child: SegmentedButton<_CoordinatorView>(
-              segments: [
-                ButtonSegment<_CoordinatorView>(
-                  value: _CoordinatorView.stations,
-                  label: Text(
-                    '${localizations.stationRotations}'
-                    ' (${_exercise!.stations.length})',
-                  ),
-                  icon: const Icon(Icons.location_on),
+    //
+    // The Stack wrapper carries a single overlay action: a small copy
+    // IconButton in the top-right corner that copies the full exercise
+    // (header, meta, station list, rotation block) to the clipboard.
+    // Placing it on the scroll body — not on the rotation table —
+    // matches the user mental model that this action is about the
+    // exercise as a whole. The button does not scroll with the content
+    // because it lives as a sibling of the SingleChildScrollView inside
+    // the Stack, so it stays anchored to the same screen position while
+    // the coordinator scrolls through the round table and lists below.
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildTopSection(event, showHero: showHero),
+              const SizedBox(height: 16),
+              Center(
+                child: SegmentedButton<_CoordinatorView>(
+                  segments: [
+                    ButtonSegment<_CoordinatorView>(
+                      value: _CoordinatorView.stations,
+                      label: Text(
+                        '${localizations.stationRotations}'
+                        ' (${_exercise!.stations.length})',
+                      ),
+                      icon: const Icon(Icons.location_on),
+                    ),
+                    ButtonSegment<_CoordinatorView>(
+                      value: _CoordinatorView.teams,
+                      label: Text(
+                        '${localizations.teamRotations}'
+                        ' (${_exercise!.numberOfTeams})',
+                      ),
+                      icon: const Icon(Icons.group),
+                    ),
+                  ],
+                  selected: <_CoordinatorView>{_view},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selection) {
+                    setState(() => _view = selection.first);
+                  },
                 ),
-                ButtonSegment<_CoordinatorView>(
-                  value: _CoordinatorView.teams,
-                  label: Text(
-                    '${localizations.teamRotations}'
-                    ' (${_exercise!.numberOfTeams})',
-                  ),
-                  icon: const Icon(Icons.group),
-                ),
-              ],
-              selected: <_CoordinatorView>{_view},
-              showSelectedIcon: false,
-              onSelectionChanged: (selection) {
-                setState(() => _view = selection.first);
-              },
+              ),
+              const SizedBox(height: 8),
+              _view == _CoordinatorView.stations
+                  ? _buildStationList(event)
+                  : _buildTeamList(event),
+            ],
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Tooltip(
+            message: localizations.exerciseCopyTooltip,
+            child: IconButton(
+              icon: const Icon(Icons.copy_all_outlined, size: 20),
+              // Tight 36 px hit-box keeps the floating button compact
+              // enough to coexist with the dense top section below it
+              // without obscuring content. Still above the MD3 minimum
+              // touch-target for secondary actions, and the long-press
+              // on the rotation table remains as a forgiving fallback.
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _copyExerciseToClipboard(localizations),
             ),
           ),
-          const SizedBox(height: 8),
-          _view == _CoordinatorView.stations
-              ? _buildStationList(event)
-              : _buildTeamList(event),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -598,92 +634,60 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
     final localizations = AppLocalizations.of(context)!;
-    // Long-press copies the whole rotation table as plain text in the
-    // exact format observers already share manually in Slack/Teams/
-    // Messenger. The table is the only "rich" piece of the coordinator
-    // view observers ever ask to re-share verbatim, so we expose copy at
-    // the table level rather than per-row. `behavior: opaque` makes the
-    // gesture fire on the padded area too, not just on tile pixels.
-    //
-    // A small IconButton at the top-right corner duplicates the same
-    // affordance for users who don't discover the long-press gesture —
-    // common on web and desktop, where holding the mouse button is not a
-    // learned chat-app behaviour. The overlay sits in a Stack so it
-    // doesn't disturb the PhaseHeaders / PhaseTile layout, and is wrapped
-    // in a Tooltip so the action is named without taking horizontal
-    // space in the dense table.
-    return Stack(
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onLongPress: () => _copyRotationToClipboard(localizations),
-          child: Container(
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                PhaseHeaders(
-                  titleWidth: 90,
-                  title: localizations.schedule,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                ),
-                SizedBox(height: 8),
-                ...List<Widget>.generate(_exercise!.schedule.length, (
-                  roundIndex,
-                ) {
-                  // Determine whether this round is completed or current
-                  return PhaseTile(
-                    title:
-                        "${AppLocalizations.of(context)!.round(1)} "
-                        "${roundIndex + 1}",
-                    event: event,
-                    exercise: _exercise!,
-                    roundIndex: roundIndex,
-                    isPortrait: isPortrait,
-                  );
-                }),
-              ],
+    // Long-press on the rotation table is kept as a forgiving shortcut
+    // that triggers the same copy-exercise action as the floating
+    // button in the top-right corner of the screen (see _buildBody).
+    // Observers who learned the gesture in the original prototype
+    // continue to get it; new users discover the button. Both
+    // affordances copy the full exercise (header, meta, station list,
+    // rotation block) so there's a single mental model. `behavior:
+    // opaque` makes the gesture fire on the padded area too, not just
+    // on tile pixels.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () => _copyExerciseToClipboard(localizations),
+      child: Container(
+        padding: EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            PhaseHeaders(
+              titleWidth: 90,
+              title: localizations.schedule,
+              mainAxisAlignment: MainAxisAlignment.center,
             ),
-          ),
+            SizedBox(height: 8),
+            ...List<Widget>.generate(_exercise!.schedule.length, (roundIndex) {
+              // Determine whether this round is completed or current
+              return PhaseTile(
+                title:
+                    "${AppLocalizations.of(context)!.round(1)} "
+                    "${roundIndex + 1}",
+                event: event,
+                exercise: _exercise!,
+                roundIndex: roundIndex,
+                isPortrait: isPortrait,
+              );
+            }),
+          ],
         ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: Tooltip(
-            message: localizations.rotationCopyTooltip,
-            child: IconButton(
-              icon: const Icon(Icons.copy_all_outlined, size: 20),
-              // Tighten the default 48 px hit-box so the icon doesn't
-              // crowd the PHASE header row underneath it. 36 px is still
-              // above the 24 px MD3 minimum touch-target guidance for
-              // secondary actions, and the long-press gesture remains
-              // available as a forgiving fallback.
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 36,
-                minHeight: 36,
-              ),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => _copyRotationToClipboard(localizations),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Future<void> _copyRotationToClipboard(AppLocalizations localizations) async {
+  Future<void> _copyExerciseToClipboard(AppLocalizations localizations) async {
     final exercise = _exercise;
     if (exercise == null) return;
-    final text = formatRotationForShare(exercise, localizations);
+    final text = formatExerciseForShare(exercise, localizations);
     await Clipboard.setData(ClipboardData(text: text));
-    // Light haptic so the user knows the long-press registered even when
-    // the SnackBar is hidden behind a soft keyboard or a sheet.
+    // Light haptic so the user knows the gesture or tap registered
+    // even when the SnackBar is hidden behind a soft keyboard or a
+    // sheet.
     await HapticFeedback.selectionClick();
     if (!mounted) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
     messenger?.showSnackBar(
       SnackBar(
-        content: Text(localizations.rotationCopied),
+        content: Text(localizations.exerciseCopied),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),

@@ -1826,17 +1826,17 @@ abstract class AppLocalizations {
   /// **'return'**
   String get rotationShareReturn;
 
-  /// SnackBar shown after long-pressing the rotation table to copy it as text for sharing in Slack/Teams/Messenger.
+  /// SnackBar shown after copying the full exercise (header, meta, station list, rotation block) to the clipboard for sharing in Slack/Teams/Messenger. Triggered by the overlay copy button on CoordinatorScreen or by long-pressing the rotation table.
   ///
   /// In en, this message translates to:
-  /// **'Rotation table copied to clipboard'**
-  String get rotationCopied;
+  /// **'Exercise copied to clipboard'**
+  String get exerciseCopied;
 
-  /// Tooltip on the small copy IconButton overlaid at the top-right of the rotation table on the coordinator screen.
+  /// Tooltip on the copy IconButton overlaid at the top-right of the scrollable list on the coordinator screen.
   ///
   /// In en, this message translates to:
-  /// **'Copy rotation table'**
-  String get rotationCopyTooltip;
+  /// **'Copy exercise'**
+  String get exerciseCopyTooltip;
 }
 
 class _AppLocalizationsDelegate

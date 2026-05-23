@@ -1077,8 +1077,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rotationShareReturn => 'return';
 
   @override
-  String get rotationCopied => 'Rotation table copied to clipboard';
+  String get exerciseCopied => 'Exercise copied to clipboard';
 
   @override
-  String get rotationCopyTooltip => 'Copy rotation table';
+  String get exerciseCopyTooltip => 'Copy exercise';
 }

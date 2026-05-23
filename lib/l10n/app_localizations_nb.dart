@@ -1073,8 +1073,8 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rotationShareReturn => 'retur';
 
   @override
-  String get rotationCopied => 'Rulleringstabell kopiert til utklippstavlen';
+  String get exerciseCopied => 'Øvelse kopiert til utklippstavlen';
 
   @override
-  String get rotationCopyTooltip => 'Kopier rulleringstabell';
+  String get exerciseCopyTooltip => 'Kopier øvelse';
 }
