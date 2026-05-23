@@ -271,11 +271,11 @@ class _MainScreenState extends State<MainScreen> {
 
   late final List<PageWidget> _pages = [
     PageWidget(controller: ProgramPageController(), child: ProgramView()),
-    PageWidget(controller: TeamsPageController(), child: TeamsView()),
     PageWidget(
       controller: _stationListController,
       child: StationListView(controller: _stationListController),
     ),
+    PageWidget(controller: TeamsPageController(), child: TeamsView()),
     PageWidget(controller: StationsPageController(), child: StationsView()),
   ];
 
