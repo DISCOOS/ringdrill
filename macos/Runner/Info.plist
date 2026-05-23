@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSLocationUsageDescription</key>
+	<string>RingDrill uses your location only when you tap the "locate me" button on the map to centre the view on your current position.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>RingDrill uses your location only when you tap the "locate me" button on the map to centre the view on your current position.</string>
 </dict>
 </plist>

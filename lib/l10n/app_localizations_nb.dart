@@ -566,6 +566,26 @@ class AppLocalizationsNb extends AppLocalizations {
   String get zoomOut => 'Zoom ut';
 
   @override
+  String get locateMe => 'Vis min posisjon';
+
+  @override
+  String get locating => 'Henter posisjon…';
+
+  @override
+  String get locationServicesDisabled =>
+      'Slå på posisjonstjenester for å bruke denne funksjonen.';
+
+  @override
+  String get locationPermissionDenied => 'Tilgang til posisjon ble avslått.';
+
+  @override
+  String get locationPermissionDeniedForever =>
+      'Tilgang til posisjon er permanent avslått. Aktiver den i systeminnstillingene for å vise posisjonen din.';
+
+  @override
+  String get locationError => 'Kunne ikke finne posisjonen din.';
+
+  @override
   String get searchHintStation => 'Post';
 
   @override

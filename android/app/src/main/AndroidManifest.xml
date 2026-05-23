@@ -59,6 +59,14 @@
     Needed for channelBypassDnd: true, allowing notifications to bypass Do Not Disturb mode.
     -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
+    <!--
+    Required by the "locate me" map FAB so the user can centre the map on their
+    current device position. Only used while the app is in the foreground.
+    Coarse permission is declared as a graceful fallback when the user grants
+    approximate-only location on Android 12+.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
         android:label="RingDrill"

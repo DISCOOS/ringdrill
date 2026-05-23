@@ -14,6 +14,7 @@ class MapPickerScreen<K> extends StatefulWidget {
     this.withCenter = true,
     this.withToggle = true,
     this.withZoom = true,
+    this.withLocate = true,
     this.initialZoom = 16,
     this.markers = const [],
     this.initialCenter = MapConfig.initialCenter,
@@ -25,6 +26,7 @@ class MapPickerScreen<K> extends StatefulWidget {
   final bool withSearch;
   final bool withCenter;
   final bool withToggle;
+  final bool withLocate;
   final double initialZoom;
   final CameraFit? initialFit;
   final LatLng initialCenter;
@@ -82,6 +84,7 @@ class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
           withSearch: widget.withCross,
           withCenter: widget.withCenter,
           withToggle: widget.withToggle,
+          withLocate: widget.withLocate,
           initialZoom: widget.initialZoom,
           initialCenter: widget.initialCenter,
           interactionFlags: MapConfig.interactive,

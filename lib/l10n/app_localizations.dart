@@ -986,6 +986,42 @@ abstract class AppLocalizations {
   /// **'Zoom out'**
   String get zoomOut;
 
+  /// Tooltip for the 'locate me' button on the map
+  ///
+  /// In en, this message translates to:
+  /// **'Show my position'**
+  String get locateMe;
+
+  /// Snackbar shown while the device is acquiring a GPS fix after the user taps 'locate me'
+  ///
+  /// In en, this message translates to:
+  /// **'Locating…'**
+  String get locating;
+
+  /// Snackbar shown when the OS-level location switch is off
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location services to use this feature.'**
+  String get locationServicesDisabled;
+
+  /// Snackbar shown when the user declines the location permission prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied.'**
+  String get locationPermissionDenied;
+
+  /// Snackbar shown when location permission was previously denied with 'don't ask again' and must now be re-enabled from system settings
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission is permanently denied. Enable it in system settings to show your position.'**
+  String get locationPermissionDeniedForever;
+
+  /// Snackbar shown when fetching the current position fails for an unspecified reason
+  ///
+  /// In en, this message translates to:
+  /// **'Could not determine your position.'**
+  String get locationError;
+
   /// Prefix shown next to station name in search results
   ///
   /// In en, this message translates to:

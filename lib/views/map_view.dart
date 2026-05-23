@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -40,13 +41,16 @@ class MapConfig {
     bool withSearch = false,
     bool withZoom = false,
     bool withCenter = false,
+    bool withLocate = false,
   }) {
-    return EdgeInsets.fromLTRB(
-      64,
-      withSearch ? 112 : 48,
-      64,
-      (withZoom || withCenter) ? 200 : 48,
-    );
+    // The bottom-right FAB column can host up to four buttons (locate,
+    // zoom in, zoom out, centre). 200 px clears the zoom+centre stack;
+    // adding the locate FAB on top pushes the column another ~68 px so
+    // we bump the bottom inset to keep the centroid above the controls.
+    final double bottom = (withZoom || withCenter || withLocate)
+        ? (withLocate ? 268 : 200)
+        : 48;
+    return EdgeInsets.fromLTRB(64, withSearch ? 112 : 48, 64, bottom);
   }
 
   // Important! TileLayers are widgets! We need to get new layers
@@ -82,6 +86,8 @@ class MapView<K> extends StatefulWidget {
     this.withCenter = false,
     this.withToggle = true,
     this.withZoom = false,
+    this.withLocate = false,
+    this.locateZoom = 16,
     this.initialZoom = 15,
     this.minZoom = 2,
     this.maxZoom = 19,
@@ -100,6 +106,21 @@ class MapView<K> extends StatefulWidget {
   final bool withCenter;
   final bool withToggle;
   final bool withZoom;
+
+  /// When true, render a "locate me" FAB at the top of the bottom-right
+  /// command column. Tapping it requests one-shot foreground location
+  /// from `geolocator`, recentres the camera, and draws a non-interactive
+  /// blue dot at the resolved position. Permission state is handled in
+  /// place via SnackBars; this widget does not surface a settings UI of
+  /// its own beyond the deny-forever action that deep-links into the OS
+  /// app settings.
+  final bool withLocate;
+
+  /// Zoom level the camera animates to after a successful locate. Picked
+  /// to roughly match Google Maps's "blue-dot recenter" feel without
+  /// being so tight that it overshoots short-distance moves on a
+  /// stationary device.
+  final double locateZoom;
   final double initialZoom;
   final double minZoom;
   final double maxZoom;
@@ -139,6 +160,17 @@ class _MapViewState<K> extends State<MapView<K>> {
   bool _isSearching = false;
   int _currentLayerIndex = 0;
   int _currentCenterIndex = 0;
+
+  /// Last known device position resolved by the locate-me FAB. Null until
+  /// the user has successfully located themselves at least once during
+  /// this session. Survives layer toggles but resets on widget rebuild
+  /// from scratch.
+  LatLng? _currentLocation;
+
+  /// Set while a one-shot location request is in flight so a second tap
+  /// on the FAB does not stack requests. The FAB swaps its icon for a
+  /// spinner while this is true.
+  bool _locating = false;
 
   @override
   void initState() {
@@ -247,6 +279,18 @@ class _MapViewState<K> extends State<MapView<K>> {
                       );
                     }).toList(),
                   ),
+                if (_currentLocation != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _currentLocation!,
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        child: const _CurrentLocationDot(),
+                      ),
+                    ],
+                  ),
                 Scalebar(alignment: Alignment.bottomLeft),
               ],
             ),
@@ -305,7 +349,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                   ),
                 ),
               ),
-            if (widget.withCenter || widget.withZoom)
+            if (widget.withCenter || widget.withZoom || widget.withLocate)
               Align(
                 alignment: Alignment.bottomRight,
                 child: Padding(
@@ -314,6 +358,24 @@ class _MapViewState<K> extends State<MapView<K>> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
+                      if (widget.withLocate) ...[
+                        FloatingActionButton(
+                          heroTag: 'locate',
+                          tooltip: AppLocalizations.of(context)!.locateMe,
+                          onPressed: _locating ? null : _locateMe,
+                          child: _locating
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                  ),
+                                )
+                              : const Icon(Icons.my_location),
+                        ),
+                        if (widget.withZoom || widget.withCenter)
+                          const SizedBox(height: 12),
+                      ],
                       if (widget.withZoom) ...[
                         FloatingActionButton(
                           heroTag: 'zoomIn',
@@ -360,6 +422,93 @@ class _MapViewState<K> extends State<MapView<K>> {
       widget.maxZoom,
     );
     _mapController.move(_mapController.camera.center, next);
+  }
+
+  /// One-shot "locate me" flow. Verifies that location services are on,
+  /// requests permission if needed, fetches a single high-accuracy fix,
+  /// and recentres the camera with the resulting point. All user-visible
+  /// outcomes are surfaced via SnackBar; nothing is logged to the
+  /// console. Unexpected errors are forwarded to Sentry (which is a
+  /// no-op when the user has opted out of analytics).
+  Future<void> _locateMe() async {
+    if (_locating) return;
+    // Capture localized strings and the messenger up front: the
+    // geolocator calls await, and BuildContext is not safe to use
+    // across async gaps.
+    final l = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _locating = true);
+
+    void show(String message, {SnackBarAction? action}) {
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          showCloseIcon: true,
+          dismissDirection: DismissDirection.endToStart,
+          content: Text(message),
+          action: action,
+        ),
+      );
+    }
+
+    try {
+      final servicesOn = await Geolocator.isLocationServiceEnabled();
+      if (!servicesOn) {
+        show(l.locationServicesDisabled);
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever) {
+        show(
+          l.locationPermissionDeniedForever,
+          action: SnackBarAction(
+            label: l.settings,
+            onPressed: () => unawaited(Geolocator.openAppSettings()),
+          ),
+        );
+        return;
+      }
+      if (permission == LocationPermission.denied) {
+        show(l.locationPermissionDenied);
+        return;
+      }
+
+      // Optimistic "looking for you" hint. Cleared by the success path
+      // implicitly because that path hides the current snackbar before
+      // it would normally time out.
+      show(l.locating);
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          // Cap the wait so a stalled GPS does not leave the FAB
+          // spinning forever. The widget settles into the "error"
+          // branch on timeout and the user can simply try again.
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      final point = LatLng(position.latitude, position.longitude);
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+      setState(() {
+        _currentLocation = point;
+      });
+      _mapController.move(point, widget.locateZoom);
+    } catch (e, stackTrace) {
+      show(l.locationError);
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+    } finally {
+      if (mounted) {
+        setState(() => _locating = false);
+      } else {
+        _locating = false;
+      }
+    }
   }
 
   void _toggleCenter() {
@@ -727,6 +876,7 @@ class _MapViewState<K> extends State<MapView<K>> {
         withSearch: widget.withSearch,
         withZoom: widget.withZoom,
         withCenter: widget.withCenter,
+        withLocate: widget.withLocate,
       );
       final fit =
           result.points.centroidFit(padding) ??
@@ -853,5 +1003,44 @@ class SearchResult {
       if (a[i] != b[i]) return false;
     }
     return true;
+  }
+}
+
+/// Non-interactive blue dot used to mark the user's resolved position
+/// from the locate-me FAB. Kept visually distinct from the green station
+/// pins so an observer can tell at a glance "this is *me*" vs. "this is
+/// a station." Sized to read at the same density as a standard Material
+/// FAB; the halo gives a small target area for visual scanning without
+/// hijacking taps from underlying markers.
+class _CurrentLocationDot extends StatelessWidget {
+  const _CurrentLocationDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.blueAccent.withValues(alpha: 0.25),
+        ),
+        alignment: Alignment.center,
+        child: Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.blueAccent,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x66000000),
+                blurRadius: 4,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

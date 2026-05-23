@@ -47,6 +47,8 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>RingDrill uses your location only when you tap the "locate me" button on the map to centre the view on your current position.</string>
 		<key>CFBundleDocumentTypes</key>
         <array>
           <dict>

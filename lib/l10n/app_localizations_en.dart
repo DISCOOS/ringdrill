@@ -568,6 +568,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get zoomOut => 'Zoom out';
 
   @override
+  String get locateMe => 'Show my position';
+
+  @override
+  String get locating => 'Locating…';
+
+  @override
+  String get locationServicesDisabled =>
+      'Turn on location services to use this feature.';
+
+  @override
+  String get locationPermissionDenied => 'Location permission denied.';
+
+  @override
+  String get locationPermissionDeniedForever =>
+      'Location permission is permanently denied. Enable it in system settings to show your position.';
+
+  @override
+  String get locationError => 'Could not determine your position.';
+
+  @override
   String get searchHintStation => 'Station';
 
   @override

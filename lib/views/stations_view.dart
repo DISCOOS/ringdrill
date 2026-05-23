@@ -144,6 +144,7 @@ class _StationsViewState extends State<StationsView> {
       withSearch: true,
       withZoom: true,
       withCenter: true,
+      withLocate: true,
     );
 
     final allExercises = _programService.loadExercises();
@@ -163,6 +164,7 @@ class _StationsViewState extends State<StationsView> {
             withCenter: true,
             withToggle: true,
             withZoom: true,
+            withLocate: true,
             initialCenter: center,
             initialFit: markers.fit(fitPadding),
             controller: _mapController,

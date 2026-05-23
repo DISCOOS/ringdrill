@@ -600,6 +600,30 @@
   "@zoomOut": {
     "description": "Tooltip for zoom out button on the map"
   },
+  "locateMe": "Show my position",
+  "@locateMe": {
+    "description": "Tooltip for the 'locate me' button on the map"
+  },
+  "locating": "Locating…",
+  "@locating": {
+    "description": "Snackbar shown while the device is acquiring a GPS fix after the user taps 'locate me'"
+  },
+  "locationServicesDisabled": "Turn on location services to use this feature.",
+  "@locationServicesDisabled": {
+    "description": "Snackbar shown when the OS-level location switch is off"
+  },
+  "locationPermissionDenied": "Location permission denied.",
+  "@locationPermissionDenied": {
+    "description": "Snackbar shown when the user declines the location permission prompt"
+  },
+  "locationPermissionDeniedForever": "Location permission is permanently denied. Enable it in system settings to show your position.",
+  "@locationPermissionDeniedForever": {
+    "description": "Snackbar shown when location permission was previously denied with 'don't ask again' and must now be re-enabled from system settings"
+  },
+  "locationError": "Could not determine your position.",
+  "@locationError": {
+    "description": "Snackbar shown when fetching the current position fails for an unspecified reason"
+  },
   "searchHintStation": "Station",
   "@searchHintStation": {
     "description": "Prefix shown next to station name in search results"
