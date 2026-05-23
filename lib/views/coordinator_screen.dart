@@ -48,6 +48,51 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   bool _promptShowNotification = false;
   _CoordinatorView _view = _CoordinatorView.stations;
 
+  // Mutual-exclusive expansion state for the station and team lists.
+  // At most one row may be expanded in either list at any time. We keep
+  // a pool of [ExpansionTileController]s so we can programmatically
+  // collapse the previously-expanded row when the coordinator taps a
+  // different one — `initiallyExpanded` alone only sets state on the
+  // first mount, so a controller is needed for later updates.
+  final _stationControllers = <ExpansionTileController>[];
+  final _teamControllers = <ExpansionTileController>[];
+  int? _expandedStationIndex;
+  int? _expandedTeamIndex;
+
+  ExpansionTileController _controllerFor(
+    List<ExpansionTileController> pool,
+    int index,
+  ) {
+    while (pool.length <= index) {
+      pool.add(ExpansionTileController());
+    }
+    return pool[index];
+  }
+
+  /// Handles an `onExpansionChanged` callback so only one row in [pool]
+  /// is expanded at a time. [readIndex]/[writeIndex] read and update the
+  /// state field that tracks the expanded index for this list. Calling
+  /// `controller.collapse()` re-enters `onExpansionChanged(false)` for
+  /// the previous tile, but by then `readIndex()` no longer matches its
+  /// index so the recursive call is a no-op.
+  void _handleExpansionChange({
+    required bool expanded,
+    required int tappedIndex,
+    required List<ExpansionTileController> pool,
+    required int? Function() readIndex,
+    required void Function(int?) writeIndex,
+  }) {
+    if (expanded) {
+      final prev = readIndex();
+      setState(() => writeIndex(tappedIndex));
+      if (prev != null && prev != tappedIndex && prev < pool.length) {
+        pool[prev].collapse();
+      }
+    } else if (readIndex() == tappedIndex) {
+      setState(() => writeIndex(null));
+    }
+  }
+
   @override
   void initState() {
     _isStarted = _exerciseService.isStartedOn(widget.uuid);
@@ -683,7 +728,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               // already keeps the expanded state stable across
               // exercise-event rebuilds.
               key: ValueKey<String>('coordinator-station-$stationIndex'),
-              initiallyExpanded: isLive,
+              controller: _controllerFor(_stationControllers, stationIndex),
+              // Mutual exclusivity: only the row matching
+              // `_expandedStationIndex` is expanded. The previous
+              // `initiallyExpanded: isLive` would auto-expand every
+              // station that had a team assigned in the current round,
+              // which conflicts with one-row-at-a-time. The live
+              // styling below (border, primaryContainer fill, play
+              // icon) still makes active stations easy to spot when
+              // collapsed.
+              initiallyExpanded: _expandedStationIndex == stationIndex,
+              onExpansionChanged: (expanded) => _handleExpansionChange(
+                expanded: expanded,
+                tappedIndex: stationIndex,
+                pool: _stationControllers,
+                readIndex: () => _expandedStationIndex,
+                writeIndex: (v) => _expandedStationIndex = v,
+              ),
               tilePadding: const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding: EdgeInsets.zero,
               iconColor: isLive ? colorScheme.primary : null,
@@ -874,6 +935,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               // the team list collapsed and let the coordinator
               // pick which team to focus on.
               key: ValueKey<String>('coordinator-team-$teamIndex'),
+              controller: _controllerFor(_teamControllers, teamIndex),
+              // Mutual exclusivity: only one team row stays open at a
+              // time. See `_handleExpansionChange` for how the prior
+              // tile is collapsed.
+              initiallyExpanded: _expandedTeamIndex == teamIndex,
+              onExpansionChanged: (expanded) => _handleExpansionChange(
+                expanded: expanded,
+                tappedIndex: teamIndex,
+                pool: _teamControllers,
+                readIndex: () => _expandedTeamIndex,
+                writeIndex: (v) => _expandedTeamIndex = v,
+              ),
               tilePadding: const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding: EdgeInsets.zero,
               subtitle: currentStationName == null
