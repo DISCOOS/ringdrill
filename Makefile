@@ -23,13 +23,16 @@ web:
 	flutter build web --pwa-strategy=offline-first --release --web-renderer canvaskit
 
 release-android:
-	shorebird release android
-	#flutter build appbundle --obfuscate --split-debug-info=build/debug-info
-	#echo "appbundle path: build/app/outputs/bundle/release/$(ls build/app/outputs/bundle/release/)"
-	#flutter pub run sentry_dart_plugin
+	shorebird release android -- \
+		--obfuscate \
+		--split-debug-info=build/debug-info
+	dart run sentry_dart_plugin
 
 patch-android:
-	shorebird patch android
+	shorebird patch android -- \
+		--obfuscate \
+		--split-debug-info=build/debug-info
+	dart run sentry_dart_plugin
 
 # Local backend for development. Uses `netlify functions:serve` (not
 # `netlify dev`) because the latter sets up an Edge Functions runtime
