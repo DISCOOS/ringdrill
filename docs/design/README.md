@@ -9,7 +9,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | ID         | Title                                                   | Status   | Started    |
 |------------|---------------------------------------------------------|----------|------------|
 | DESIGN-001 | [Exercise Player](./exercise-player.md)                 | Accepted | 2026-05-23 |
-| DESIGN-002 | [Posts tab](./posts-tab.md)                             | Draft    | 2026-05-23 |
+| DESIGN-002 | [Stations tab](./stations-tab.md)                       | Accepted | 2026-05-23 |
 
 ## Folder layout
 
@@ -17,7 +17,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 docs/design/
 ├── README.md               (this file)
 ├── exercise-player.md      (one design doc per feature)
-├── posts-tab.md
+├── stations-tab.md
 └── mockups/                (standalone HTML mockups referenced by docs)
     ├── coordinator-lag.html
     ├── coordinator-oversikt.html

@@ -30,7 +30,7 @@ mockups:
 When an exercise is running, RingDrill exposes it as a **persistent player** that follows the user across the Program, Stations and Teams tabs, instead of locking them to a single "run" screen. The player has two visual states:
 
 * A **mini-player** strip that lives above the bottom navigation on mobile and along the bottom edge on wide screens. Always visible while an exercise is active or pending.
-* A **full-player** sheet that slides up from the mini-player on demand. The full-player takes one of three forms depending on the user's role: the **coordinator player** (with the Overview, Posts and Teams tabs), the **observer player for teams** (following one team), and the **observer player for posts** (following one post).
+* A **full-player** sheet that slides up from the mini-player on demand. The full-player takes one of three forms depending on the user's role: the **coordinator player** (with the Overview, Stations and Teams tabs), the **observer player for teams** (following one team), and the **observer player for stations** (following one station).
 
 The model is borrowed from Spotify. `ExerciseService` is already a singleton that runs one exercise at a time and keeps running while you navigate around. Today that fact has no surface in the UI. The player gives it one.
 
@@ -38,7 +38,7 @@ The model is borrowed from Spotify. `ExerciseService` is already a singleton tha
 
 1. Let the coordinator check stations and teams without losing track of where in the exercise they are.
 2. Separate "editing an exercise" (today's `CoordinatorScreen`) from "playing back an exercise" (the player). The two have different needs and deserve different shells.
-3. Reuse most existing widgets. `_buildStationList` and `_buildTeamList` from `CoordinatorScreen` work as the Posts and Teams tabs without being rewritten.
+3. Reuse most existing widgets. `_buildStationList` and `_buildTeamList` from `CoordinatorScreen` work as the Stations and Teams tabs without being rewritten.
 4. Provide a home for a future "Overview" view that the coordinator currently lacks.
 
 ## Non-goals
@@ -82,7 +82,7 @@ The user recognized the pattern instantly. A persistent bar above the navigation
 ┌─────────────────────────────────────────────┐
 │  ⌄        Forest Fire 2026         ⋮        │ ← FULL-PLAYER
 │                                             │   (bottom sheet)
-│  [ Overview ]  Posts   Teams                │ ← segmented control
+│  [ Overview ]  Stations  Teams              │ ← segmented control
 │                                             │
 │  ┌──────┐   06:42       NEXT                │
 │  │ EXEC │   LEFT        ▤ EVAL  14:34       │
@@ -136,7 +136,7 @@ A `showModalBottomSheet` with `isScrollControlled: true` and `useSafeArea: true`
 For the coordinator, the full-player has three tabs via a segmented control at the top:
 
 * **Overview** – aggregated status and progress (new view).
-* **Posts** – station list with the rotation strip (reuses `_buildStationList`).
+* **Stations** – station list with the rotation strip (reuses `_buildStationList`).
 * **Teams** – team list with the rotation strip (reuses `_buildTeamList`).
 
 These tabs are at the same zoom level. All three see the whole exercise, just through a different lens.
@@ -184,7 +184,7 @@ From top to bottom:
 
 **Vertical "you are here" marker on the phase strip.** A 12 px tall tick that moves from left to right through the active segment. It is more precise than pure fill, especially for short phase durations where percentage fill jumps in minute steps.
 
-## Posts tab
+## Stations tab
 
 Builds on `_buildStationList` from `CoordinatorScreen` with only minor adjustments to fit the player shell.
 
@@ -201,7 +201,7 @@ Adjustments for the player shell:
 
 * The list gets the full width to itself instead of sharing with the team list.
 * A small header element "STATION ROTATIONS" + "N stations" sits directly below the segmented control, with the same typography as the section labels in the Overview tab (CURRENT-ROUND PROGRESS, ROUND TIMELINE).
-* The active row gets the phase's green border color (`#1D9E75`) and a light green fill (`#E1F5EE`), not the coordinator screen's generic `primaryContainer`. This ties "active post" directly to the phase color that dominates the hero.
+* The active row gets the phase's green border color (`#1D9E75`) and a light green fill (`#E1F5EE`), not the coordinator screen's generic `primaryContainer`. This ties "active station" directly to the phase color that dominates the hero.
 
 The footer row (POSTS · ROUND · STOP · TIME LEFT · TEAMS) is shared across all three tabs and stays visible at the bottom.
 
@@ -214,21 +214,21 @@ Mockup: [`mockups/coordinator-lag.html`](./mockups/coordinator-lag.html)
 Existing behavior that is preserved:
 
 * Each team row is an `ExpansionTile` with its name, a "→ Station name" subtitle showing where the team is right now, and a mini horizontal rotation strip (station codes per round, the active round highlighted in blue).
-* The expanded body shows one `PhaseTile` per round with the station name as the title. Same `PhaseTile` reuse as in the Posts tab — we do not render a new per-round progress widget.
+* The expanded body shows one `PhaseTile` per round with the station name as the title. Same `PhaseTile` reuse as in the Stations tab — we do not render a new per-round progress widget.
 
 Changes in the player shell:
 
 * **Auto-expand for the observed team.** In today's `CoordinatorScreen`, no team auto-expands, because every team always has an active station (a naive "isLive" check would expand every row). In the player, we take one step further and auto-expand the team that the coordinator has the "observation context" on, if such a context exists. The source can be the team row the coordinator last expanded manually, the team they last navigated to via `TeamScreen`, or a default choice. If no context exists, the list starts collapsed, matching today's behavior.
 * **The expanded row is colored purple.** The active team row gets a purple border color (`#534AB7`) and a light purple fill (`#EEEDFE`), not green. Purple is the observer player's "team" color, so the coordinator immediately sees "this is the team someone is following" rather than "this is an active station". The color-semantic split — green for phase status, purple for team identity — is consistent across the whole player model.
 
-The footer row is identical to Overview and Posts.
+The footer row is identical to Overview and Stations.
 
 ## Observer player
 
 For users who do not coordinate the whole exercise but follow one specific entity, there is a separate variant of the full-player. It has no segmented control because the observer always has one lens at a time. Two roles share the same template:
 
 * **Observer player for teams** – the user follows a specific team through the rotations.
-* **Observer player for posts** – the user stands at a specific post and watches teams rotate through.
+* **Observer player for stations** – the user stands at a specific station and watches teams rotate through.
 
 Mockups: [`mockups/observer-lag.html`](./mockups/observer-lag.html) and [`mockups/observer-post.html`](./mockups/observer-post.html).
 
@@ -243,16 +243,16 @@ The observer player uses the same visual template as the coordinator player, wit
 
 Differences from the coordinator player:
 
-* **A perspective pill replaces the segmented control.** A single pill element at the top shows which entity the observer is following, with an icon in purple (`#534AB7`) on the left and a chevron-down on the right. Tapping the pill opens a picker in a bottom sheet to switch entity. The icon is `ti-user-circle` for the team variant and `ti-map-pin` for the post variant.
-* **Title strip below the hero.** A dedicated row between the hero and the phase strip displays the observer's "now playing" context, parallel to Spotify's song title below the album cover. For the team variant: station name in large type + "Team X is here now" subtitle. For the post variant: team name in large type + "At your post now · Arrived HH:MM" subtitle.
-* **The NEXT column shows the perspective's queue, not the phase queue.** For the team variant: the two upcoming stations the team will visit (purple tiles with post codes). For the post variant: the two upcoming teams arriving at the post (purple tiles with team numbers). Purple is reserved for "your perspective's queue" and is distinct from the phase colors that dominate the hero square.
+* **A perspective pill replaces the segmented control.** A single pill element at the top shows which entity the observer is following, with an icon in purple (`#534AB7`) on the left and a chevron-down on the right. Tapping the pill opens a picker in a bottom sheet to switch entity. The icon is `ti-user-circle` for the team variant and `ti-map-pin` for the station variant.
+* **Title strip below the hero.** A dedicated row between the hero and the phase strip displays the observer's "now playing" context, parallel to Spotify's song title below the album cover. For the team variant: station name in large type + "Team X is here now" subtitle. For the station variant: team name in large type + "At your station now · Arrived HH:MM" subtitle.
+* **The NEXT column shows the perspective's queue, not the phase queue.** For the team variant: the two upcoming stations the team will visit (purple tiles with station codes). For the station variant: the two upcoming teams arriving at the station (purple tiles with team numbers). Purple is reserved for "your perspective's queue" and is distinct from the phase colors that dominate the hero square.
 * **A queue list replaces the round timeline.** A vertical list of 3-N rows gives the observer more detail per entry than the coordinator's horizontal 5-pill strip, because the observer has only one sequence to display.
-  * Team variant: header "UP NEXT FOR TEAM X" with "N stations left" on the right. Rows: round number + purple post tile + post name + "Starts HH:MM".
+  * Team variant: header "UP NEXT FOR TEAM X" with "N stations left" on the right. Rows: round number + purple station tile + station name + "Starts HH:MM".
   * Post variant: header "UP NEXT AT AX" with "N teams left" on the right. Rows: round number + purple team tile + "Team N" + "Arrives HH:MM".
 * **The bottom row adapts its outer cells.** ROUND, STOP and TIME LEFT are identical to the coordinator. The outer cells are field-agnostic and show the perspective's progress:
-  * **DONE** (left): the number of stations the team has visited (team variant) or the number of teams the post has served (post variant).
-  * **LEFT** (right): the number of stations the team has remaining (team variant) or the number of teams the post still has to serve (post variant).
-  * The labels contain no "post" or "team", so the same field template is reused across the two observer roles.
+  * **DONE** (left): the number of stations the team has visited (team variant) or the number of teams the station has served (station variant).
+  * **LEFT** (right): the number of stations the team has remaining (team variant) or the number of teams the station still has to serve (station variant).
+  * The labels contain no "station" or "team", so the same field template is reused across the two observer roles.
 
 ### Stop button
 
@@ -303,7 +303,7 @@ Raised during design and parked, not closed:
   3. Have each phase cell always be colored in its phase color, and use the fill (`phaseProgress`) to mark progress over the colored cell. Most information in the least space.
   
   Likely option 2, but the choice is parked until we move to code.
-* **Tappable cells in the ROUND TIMELINE.** Should tapping "R3" jump the Posts or Teams tab to that round in a "preview" mode so the coordinator can see what will happen? For now no, but it is a low-cost extension.
+* **Tappable cells in the ROUND TIMELINE.** Should tapping "R3" jump the Stations or Teams tab to that round in a "preview" mode so the coordinator can see what will happen? For now no, but it is a low-cost extension.
 * **Tappable NEXT tiles.** Should tapping the EVAL tile preview how the phase strip and round timeline will look once evaluation starts? Same question, same answer.
 * **The role of `CoordinatorScreen` once the player exists.** Proposal: it becomes a pure "edit before start" screen. All "playback" functionality moves to the player. `CoordinatorScreen` would then hold only the exercise form, team and station editing, and a large "Start" button that actually opens the player.
 * **Capitalization of phase labels.** The mockup uses `EXECUTION` / `EVAL` / `ROLL` in caps. The existing code uses `event.getState(localizations).toUpperCase()`. Consistent as is, but worth reconsidering when the localizations are translated (DRILL / EVAL / ROLL in Norwegian?).
@@ -322,10 +322,10 @@ ExercisePlayerScaffold        (Scaffold-ish container)
     ExercisePlayerSheet       (DraggableScrollableSheet or showModalBottomSheet)
     └── one of:
         ├── CoordinatorPlayerBody
-        │   ├── PlayerSegmentTabs (Overview | Posts | Teams)
+        │   ├── PlayerSegmentTabs (Overview | Stations | Teams)
         │   ├── (selected tab body)
         │   │   ├── OverviewTab
-        │   │   ├── PostsTab      (wraps existing _buildStationList logic)
+        │   │   ├── StationsTab      (wraps existing _buildStationList logic)
         │   │   └── TeamsTab      (wraps existing _buildTeamList logic)
         │   └── PlayerFooter      (POSTS · ROUND · STOP · TIME LEFT · TEAMS)
         └── ObserverPlayerBody
@@ -333,7 +333,7 @@ ExercisePlayerScaffold        (Scaffold-ish container)
             ├── PlayerHero        (shared with the Overview tab)
             ├── ObserverTitleStrip(role-specific "now playing")
             ├── PhaseProgressStrip(shared)
-            ├── ObserverQueueList (team-stations or post-teams)
+            ├── ObserverQueueList (team-stations or station-teams)
             └── PlayerFooter      (DONE · ROUND · STOP · TIME LEFT · LEFT)
 ```
 
@@ -358,6 +358,8 @@ To keep the existing `CoordinatorScreen` and the new `CoordinatorPlayerBody` fro
 
 `_buildExerciseStatus` (the compact live status row in `CoordinatorScreen`) is replaced by the mini-player and can be deleted once the player is adopted.
 
+The per-station `ExpansionTile` inside `_buildStationList` should also be migrated to the shared `StationExpansionTile` widget specced in [DESIGN-002](./stations-tab.md). The rotation strip becomes the `title` slot, the per-round PhaseTile rows become the `body` slot, and the mutex stays in the parent. This keeps station tiles consistent across the Stations tab and the player.
+
 ### Routing
 
 The mini-player is global, not per route. It is therefore placed in `MainScreen` between `body` and `bottomNavigationBar` (narrow) or in a `Column` after the `Row` with rail and content (wide). The full-player is a modal and does not affect the routing tree.
@@ -375,7 +377,8 @@ The mini-player is global, not per route. It is therefore placed in `MainScreen`
 ## Changelog
 
 * 2026-05-23 — Draft created after design dialog with kengu.
-* 2026-05-23 — Added the Observer-player section with team and post variants. Updated "Suggested widget tree" to cover `ObserverPlayerBody`. Resolved the open question about tab choice per role. Added two new mockups: `observer-lag.html` and `observer-post.html`.
-* 2026-05-23 — More detailed description of the Posts tab and the Teams tab, with dedicated mockups (`coordinator-poster.html` and `coordinator-lag.html`). Change: the Teams tab auto-expands the team the coordinator has observation context on. Color semantics: green for "active post", purple for "observed team". The data set in the mockups is tightened to 4 teams + 4 posts + 5 rounds to respect `teams <= posts`.
+* 2026-05-23 — Added the Observer-player section with team and station variants. Updated "Suggested widget tree" to cover `ObserverPlayerBody`. Resolved the open question about tab choice per role. Added two new mockups: `observer-lag.html` and `observer-post.html`.
+* 2026-05-23 — More detailed description of the Stations tab and the Teams tab, with dedicated mockups (`coordinator-poster.html` and `coordinator-lag.html`). Change: the Teams tab auto-expands the team the coordinator has observation context on. Color semantics: green for "active station", purple for "observed team". The data set in the mockups is tightened to 4 teams + 4 stations + 5 rounds to respect `teams <= stations`.
 * 2026-05-23 — Explicit note that per-round progress in the expanded body reuses the existing `PhaseTile` + `PhasesWidget`. The mockup's mini-bars are simplified illustration. Open question on `PhaseTile` color semantics (blueAccent vs the phase colors) added.
 * 2026-05-23 — Status bumped to **Accepted**. The design is locked as the direction for implementation. The mockups are frozen as reference. Open questions under "Open questions" are not blocking for the code architecture — they are decided as the implementation proceeds.
+* 2026-05-23 — Terminology alignment with [DESIGN-002](./stations-tab.md). Norwegian "post" maps to English "station". English prose, segmented-control labels, observer-variant names and identifiers in this doc now use "station(s)" throughout. Mockup filenames are kept (frozen assets). The Norwegian "Poster" / "post" label is unchanged in the localization layer.
