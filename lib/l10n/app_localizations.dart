@@ -1976,10 +1976,10 @@ abstract class AppLocalizations {
   /// **'Role'**
   String get roleSection;
 
-  /// Section header for the locally-assigned actor fields in the expanded tile (Norwegian: Markør).
+  /// Relation label on the Cast section header in the expanded tile — answers 'who plays this role'. Norwegian: Spilles av.
   ///
   /// In en, this message translates to:
-  /// **'Cast'**
+  /// **'Played by'**
   String get castSection;
 
   /// Button shown when no actor is assigned to a role. Opens the cast picker.
@@ -2030,11 +2030,35 @@ abstract class AppLocalizations {
   /// **'Cast: {role}'**
   String castPickerTitle(String role);
 
-  /// One-time hint shown with the Cast section header to make the privacy boundary explicit.
+  /// Persistent hint below the Cast section header. Positively framed: the actor data stays local and is never published.
   ///
   /// In en, this message translates to:
-  /// **'Private — never published'**
+  /// **'Stays on this device'**
   String get castPrivateHint;
+
+  /// Collapsed-tile subtitle when the role has a stationIndex set. Displays the station name.
+  ///
+  /// In en, this message translates to:
+  /// **'Station: {name}'**
+  String roleSubtitleStation(String name);
+
+  /// Collapsed-tile subtitle fallback when stationIndex is null. Displays the exercise name.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise: {name}'**
+  String roleSubtitleExercise(String name);
+
+  /// Empty state shown in the cast roster sheet when no Actor records exist in the program.
+  ///
+  /// In en, this message translates to:
+  /// **'No actors yet. Tap + New actor to add one.'**
+  String get noActorsInRoster;
+
+  /// Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activeProgramUuid is null.
+  ///
+  /// In en, this message translates to:
+  /// **'No active program. Open or create one in the Exercises tab.'**
+  String get noActiveProgramHint;
 
   /// Placeholder shown in the Role section when the signalement field is blank.
   ///

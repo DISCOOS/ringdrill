@@ -1166,7 +1166,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get roleSection => 'Markørordre';
 
   @override
-  String get castSection => 'Markør';
+  String get castSection => 'Spilles av';
 
   @override
   String get addCast => 'Velg markør';
@@ -1199,7 +1199,25 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get castPrivateHint => 'Privat — publiseres aldri';
+  String get castPrivateHint => 'Lagres lokalt';
+
+  @override
+  String roleSubtitleStation(String name) {
+    return 'Post: $name';
+  }
+
+  @override
+  String roleSubtitleExercise(String name) {
+    return 'Øvelse: $name';
+  }
+
+  @override
+  String get noActorsInRoster =>
+      'Ingen markører ennå. Trykk + Ny markør for å legge til.';
+
+  @override
+  String get noActiveProgramHint =>
+      'Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen.';
 
   @override
   String get noSignalement => 'Ingen signalement';

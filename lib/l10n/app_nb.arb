@@ -351,9 +351,9 @@
   "@roleSection": {
     "description": "Section header for the publishable role fields in the expanded tile and detail screen."
   },
-  "castSection": "Markør",
+  "castSection": "Spilles av",
   "@castSection": {
-    "description": "Section header for the locally-assigned actor fields in the expanded tile."
+    "description": "Relasjonsetiketten på rollebesetting-seksjonen i den utvidede flisen — svarer på 'hvem spiller denne rollen'."
   },
   "addCast": "Velg markør",
   "@addCast": {
@@ -396,9 +396,31 @@
       "role": { "type": "String" }
     }
   },
-  "castPrivateHint": "Privat — publiseres aldri",
+  "castPrivateHint": "Lagres lokalt",
   "@castPrivateHint": {
-    "description": "One-time hint shown with the Cast section header."
+    "description": "Vedvarende hint under seksjonsoverskriften. Positivt formulert: aktørdata lagres lokalt og publiseres aldri."
+  },
+  "roleSubtitleStation": "Post: {name}",
+  "@roleSubtitleStation": {
+    "description": "Undertittel på sammenfoldet flis når rollen har stationIndex satt. Viser postnavnet.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "roleSubtitleExercise": "Øvelse: {name}",
+  "@roleSubtitleExercise": {
+    "description": "Undertittel-fallback på sammenfoldet flis når stationIndex er null. Viser øvelsesnavnet.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noActorsInRoster": "Ingen markører ennå. Trykk + Ny markør for å legge til.",
+  "@noActorsInRoster": {
+    "description": "Tom tilstand vist i rollebesetting-arket når det ikke finnes noen Actor-poster i programmet."
+  },
+  "noActiveProgramHint": "Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen.",
+  "@noActiveProgramHint": {
+    "description": "Vist som faneinnhold og tooltip på deaktivert rollebesetting-knapp i AppBar når activeProgramUuid er null."
   },
   "noSignalement": "Ingen signalement",
   "@noSignalement": {

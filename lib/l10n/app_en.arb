@@ -1013,9 +1013,9 @@
   "@roleSection": {
     "description": "Section header for the publishable role fields in the expanded tile and detail screen."
   },
-  "castSection": "Cast",
+  "castSection": "Played by",
   "@castSection": {
-    "description": "Section header for the locally-assigned actor fields in the expanded tile (Norwegian: Markør)."
+    "description": "Relation label on the Cast section header in the expanded tile — answers 'who plays this role'. Norwegian: Spilles av."
   },
   "addCast": "Add cast",
   "@addCast": {
@@ -1058,9 +1058,31 @@
       "role": { "type": "String" }
     }
   },
-  "castPrivateHint": "Private — never published",
+  "castPrivateHint": "Stays on this device",
   "@castPrivateHint": {
-    "description": "One-time hint shown with the Cast section header to make the privacy boundary explicit."
+    "description": "Persistent hint below the Cast section header. Positively framed: the actor data stays local and is never published."
+  },
+  "roleSubtitleStation": "Station: {name}",
+  "@roleSubtitleStation": {
+    "description": "Collapsed-tile subtitle when the role has a stationIndex set. Displays the station name.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "roleSubtitleExercise": "Exercise: {name}",
+  "@roleSubtitleExercise": {
+    "description": "Collapsed-tile subtitle fallback when stationIndex is null. Displays the exercise name.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noActorsInRoster": "No actors yet. Tap + New actor to add one.",
+  "@noActorsInRoster": {
+    "description": "Empty state shown in the cast roster sheet when no Actor records exist in the program."
+  },
+  "noActiveProgramHint": "No active program. Open or create one in the Exercises tab.",
+  "@noActiveProgramHint": {
+    "description": "Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activeProgramUuid is null."
   },
   "noSignalement": "No description",
   "@noSignalement": {

@@ -1170,7 +1170,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleSection => 'Role';
 
   @override
-  String get castSection => 'Cast';
+  String get castSection => 'Played by';
 
   @override
   String get addCast => 'Add cast';
@@ -1203,7 +1203,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get castPrivateHint => 'Private — never published';
+  String get castPrivateHint => 'Stays on this device';
+
+  @override
+  String roleSubtitleStation(String name) {
+    return 'Station: $name';
+  }
+
+  @override
+  String roleSubtitleExercise(String name) {
+    return 'Exercise: $name';
+  }
+
+  @override
+  String get noActorsInRoster => 'No actors yet. Tap + New actor to add one.';
+
+  @override
+  String get noActiveProgramHint =>
+      'No active program. Open or create one in the Exercises tab.';
 
   @override
   String get noSignalement => 'No description';
