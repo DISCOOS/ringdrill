@@ -4,12 +4,16 @@ title: RolePlays tab
 status: Accepted
 started: 2026-05-23
 accepted: 2026-05-23
+revised: 2026-05-24
 owners: ["kengu"]
 related_code:
   - lib/views/main_screen.dart
   - lib/views/roleplay_form_screen.dart
+  - lib/views/roleplay_screen.dart
   - lib/views/actor_form_screen.dart
+  - lib/views/station_screen.dart
   - lib/views/widgets/station_expansion_tile.dart
+  - lib/views/widgets/role_expansion_tile.dart
   - lib/views/map_view.dart
 related_designs:
   - exercise-player.md
@@ -21,19 +25,27 @@ related_adrs:
 
 # RolePlays tab
 
-> Terminology note: Norwegian UI uses **"Markører"** (the colloquial SAR term for *anyone* on the role/actor side). English UI and all code use **"RolePlay"** (the publishable role) and **"Actor"** (the local human, PII). The tab itself is named *RolePlays* in code and *Markører* in the Norwegian localization. See [[feedback_roleplay_actor_terminology]] in the project memory for the rule that drives this.
+> Terminology note (Norwegian UI). In SAR practice, a *markørordre* is the briefing document for one role at one location, the role half of what this design covers. A *markør* is the human enacting that order. The model maps cleanly: **`RolePlay`** is the digital markørordre (publishable, scenario fields), **`Actor`** is the markør (local, PII). The Norwegian UI follows a simple rule:
+>
+> - **"Markørordre"** is used when the surface names a single `RolePlay` entity: section labels on the expanded tile, form titles ("Ny markørordre", "Rediger markørordre"), and creation affordances ("Legg til markørordre").
+> - **"Markører"** is used for lists, counts, navigation and other colloquial references. The tab name, the cast-roster sheet title, section headers above lists of role briefs, and empty-state counts all use the plural colloquial form ("Ingen markører ennå", "5 markører på denne posten").
+> - **"Markør"** (singular) stays reserved for the human, i.e. references to `Actor`: the Cast section label, cast picker title, "Velg markør", "Allerede markør for {role}", "Markør for: {roles}".
+>
+> English UI and all code use **"RolePlay"** and **"Actor"** without this distinction. See [[feedback_roleplay_actor_terminology]] in the project memory for the rule that drives this.
 
 ## TL;DR
 
-A new **RolePlays** tab is added to the bottom navigation, becoming the fifth destination. Each row is one `RolePlay` (role to be enacted). Tap the row body to open the role read view. The tile expands to show both halves of the entry: the **Role** section (publishable scenario fields from the `RolePlay`) and the **Cast** section (the locally-assigned `Actor`, or an "Add cast" affordance if none is yet linked). A filter FAB narrows the list to one exercise, mirroring the pattern from [DESIGN-002](./stations-tab.md). When the Exercise Player from [DESIGN-001](./exercise-player.md) eventually exists in code, the observer-player gains a **Role** tab that surfaces the same scenario fields for a participant who is enacting a role.
+A new **RolePlays** tab is added to the bottom navigation, becoming the fifth destination. Each row is one `RolePlay` (a markørordre). Tap the row body to open the role read view. The tile expands to show both halves of the entry: the **Role** section (publishable scenario fields from the `RolePlay`) and the **Cast** section (the locally-assigned `Actor`, or an "Add cast" affordance if none is yet linked). A filter FAB narrows the list to one exercise, mirroring the pattern from [DESIGN-002](./stations-tab.md). When the Exercise Player from [DESIGN-001](./exercise-player.md) eventually exists in code, the observer-player gains a **Role** tab that surfaces the same scenario fields for a participant who is enacting a role.
+
+Creation of roles happens on the **Station screen** (the post), not in this tab and not in the exercise form. The post is where a markørordre is physically distributed in the field, and the same place is where it is authored digitally. See [Creating roles](#creating-roles).
 
 ## Rationale
 
-[ADR-0018](../adrs/0018-roleplayer-data-model.md) introduced `RolePlay` and `Actor` at the data model level, but gave them nowhere to live in the UI. [ADR-0019](../adrs/0019-roleplayer-participant-role.md) added the runtime role *roleplayer* to the session model, but a roleplayer can only check in if the role exists in the program first. Both ADRs assume an authoring surface.
+[ADR-0018](../adrs/0018-roleplayer-data-model.md) introduced `RolePlay` and `Actor` at the data model level, but gave them nowhere to live in the UI. [ADR-0019](../adrs/0019-roleplayer-participant-role.md) added the runtime role *roleplayer* to the session model, but a roleplayer can only check in if the role exists in the program first. Both ADRs assume an authoring surface, but neither commits to where.
 
-The RolePlays tab is that authoring surface. Authors create roles, fill in signalement and behaviour, optionally cast a person from the local roster, and during a run the same data feeds the player and the map.
+In SAR practice the markørordre belongs to the post. Operators print or hand a brief to the person playing the role at the location where they will enact it, so the post is where authors think about who is there and what they are doing. Mirroring that into the app, creation of a `RolePlay` happens from the Station screen, where the markørordre conceptually lives. Multiple roles per post are allowed because real scenarios pair a missing person with a witness, a casualty with a bystander, an interview subject with their family member.
 
-The tab also acts as the natural roster manager. Actors are program-scoped (one cast pool, reused across exercises), so the tab needs to expose adding a person without forcing a separate top-level destination just for that.
+The RolePlays tab is the cross-cutting inspect and cast-management surface. It lists every role across every post and exercise, lets the operator cast actors from the local roster, and acts as the natural roster manager (Actors are program-scoped and reused across exercises). It does not own structural changes to the set of roles. That ownership sits with the Station screen.
 
 ## Goals
 
@@ -49,7 +61,8 @@ The tab also acts as the natural roster manager. Actors are program-scoped (one 
 * **No coordinator-to-roleplayer messaging.** Ad-hoc instructions during a run go via the operational radio. Adding a chat or instruction patch would require a new session patch kind and a fresh ADR.
 * **No status tracking** ("found", "evacuated", "transported"). The user has explicitly deferred this. The RolePlays tab inspects and edits structural data, not run state.
 * **Does not build the observer-player shell.** The shell belongs to [DESIGN-001](./exercise-player.md). This doc specifies what slots into it once it exists.
-* **No structural changes to the set of roles from anywhere except the Exercises tab.** Add and remove are exercise-setup operations, mirroring the rule for stations from [DESIGN-002](./stations-tab.md). The RolePlays tab inspects and edits role properties.
+* **No structural changes to the set of roles from the RolePlays tab.** Add and remove are post-level operations and happen on the Station screen ([Creating roles](#creating-roles)). The RolePlays tab inspects role properties and manages cast.
+* **No creation of station-less roles in this iteration.** Wandering or scenario-only `RolePlay`s (no `stationIndex`) are allowed by the data model but have no creation affordance yet. A follow-up may add an "unattached role" entry point if a real use case appears. The current Station-screen flow always sets `stationIndex` on creation.
 
 ## Navigation
 
@@ -99,7 +112,7 @@ Each row is an expandable tile based on the shared `RoleExpansionTile` widget (s
 
 ### Role section (`RolePlay` fields, publishable)
 
-A label "Role" with a subtle book-marker icon (`Icons.menu_book`). Body:
+A label "Role" / "Markørordre" with a subtle book-marker icon (`Icons.menu_book`). Body:
 
 * Age (if set), rendered inline next to the name as "Anna Hansen, 67".
 * **Signalement.** Free-text, paragraph rendering. Empty placeholder "Ingen signalement" / "No description" when blank.
@@ -148,6 +161,64 @@ Opened from the AppBar action. Lists every `Actor` in the program. Each row:
 
 A "New actor" FAB lives in this sheet only.
 
+## Creating roles
+
+A `RolePlay` is the digital form of a markørordre. The Station screen is where one is authored, because the post is where the markørordre is distributed to the person playing it in the field. Routing creation through the Station screen also enforces that every role created this way has a `stationIndex` set, which is the common case and keeps the operator's mental model anchored on locations.
+
+### Station screen "Markører" section
+
+The Station screen gains a "Markører" / "Roles" section below the existing station fields (name, description, position). The section lists every `RolePlay` where `exerciseUuid` matches the station's owning exercise and `stationIndex` matches this station's index.
+
+Each row is a compact variant of the RolePlays-tab tile, intended to fit several rows in a screen without scrolling:
+
+* Leading: a small theatre glyph (`Icons.theater_comedy`).
+* Title: role name.
+* Trailing: cast chip (`Icons.person` filled when cast, `Icons.person_add` outlined when not).
+* No expansion. Tap row body → push `RolePlayScreen` (read view). Tap cast chip → open cast picker.
+* Swipe-left → push `RolePlayFormScreen` for edit, same `Dismissible` pattern used elsewhere.
+
+**Deletion is not supported in this iteration.** See [Deletion and templating](#deletion-and-templating).
+
+A section-header action "+ Legg til markørordre" / "Add role" sits to the right of the section title. Tap opens `RolePlayFormScreen` in create mode with `exerciseUuid` and `stationIndex` pre-filled from the station context. On save, the new `RolePlay` is appended to `Program.rolePlays` and the section refreshes inline.
+
+### Multiple roles per post
+
+Multiple roles at the same post are allowed and expected. A "missing person at the cabin" scenario typically pairs the person with a witness, a relative, or a casual bystander. Each is its own `RolePlay` with the same `stationIndex`. No model change is required, since [ADR-0018](../adrs/0018-roleplayer-data-model.md) does not constrain `stationIndex` uniqueness.
+
+The section list has no enforced order beyond stable insertion order. Operators who care about a specific reading order can rename the roles to encode it ("01 Anna", "02 Witness").
+
+### Edit from either surface, create only from the Station screen
+
+Both surfaces offer edit (swipe-left → `RolePlayFormScreen`). Only the Station screen offers create. The RolePlays tab continues to expose cast operations (cast picker, clear cast) and the cast roster sheet, but the "+" button is absent there. Structural changes (the set of role briefs at a post) funnel through the post.
+
+### Deletion and templating
+
+Deletion of `RolePlay` records is **not** supported in this iteration, on either the Station screen or the RolePlays tab. The reasoning:
+
+* `Program.rolePlays` is already a flat, program-scoped list. That structure is a natural foundation for treating a markørordre as a **template** that can be reused across posts and exercises later. Adding destructive deletion now would force us to choose between hard-delete (loses reuse potential) and soft-delete (drags lifecycle state into the model). Neither is the right call before templating itself is designed.
+* In SAR practice, an authored markørordre rarely becomes wholly invalid. The common operations are "move to another post" (handled by editing `stationIndex`) and "don't use this brief in this exercise" (not yet expressible in the model).
+* No real user has asked for deletion. Adding it speculatively pre-empts the templating design.
+
+If the operator authored a role by mistake, the practical workaround is to edit and rename it, or to leave it. Stale role briefs at the bottom of `Program.rolePlays` carry no runtime cost: nothing references them unless they have a `stationIndex` and `exerciseUuid` placing them at a post, and even then they only render on the post screen and the Markører tab.
+
+A future iteration may introduce:
+
+* **Template instantiation.** A markørordre authored once, then referenced from multiple `(exercise, station)` pairs. Requires either an indirection field on `RolePlay` or a separate template record. The current single-`exerciseUuid` field implies one-instance-per-brief, which the templating work will need to resolve.
+* **"Don't use here anymore".** A post-level disassociation that removes the role from one location without destroying the brief. Likely surfaces as a row action on the Station screen.
+* **Hard delete.** Only meaningful after templating exists, since today every `RolePlay` is already its own instance.
+
+Until then, the design is intentionally append-only on this axis. See [Deferred decisions](#deferred-decisions).
+
+### Empty state on the Station screen
+
+When the post has no roles, the section header still renders with the "+ Legg til markørordre" action, and the body shows a thin one-line hint: "Ingen markører på denne posten" / "No roles at this post". The hint disappears once the first role is added.
+
+### Empty state on the RolePlays tab
+
+The previous wording ("Add a role from the Exercises tab") is wrong under this revision. The corrected language:
+
+* **No roles in the program:** "Ingen markører ennå. Åpne en post i Poster-fanen for å legge til en." / "No roles yet. Open a post in the Stations tab to add one." ARB key: `noRolesInProgram` (existing key, content revised).
+
 ## Map marker glyph
 
 Per [ADR-0019](../adrs/0019-roleplayer-participant-role.md), live roleplayer positions render with a distinct marker shape from team broadcasters. The chosen glyph:
@@ -193,7 +264,7 @@ A "Del posisjon" / "Share position" toggle lives in the role tab footer, gating 
 
 ## Empty states
 
-* **No roles in the program:** "No roles yet. Add a role from the Exercises tab." Mirrors the Stations tab empty state.
+* **No roles in the program:** "No roles yet. Open a post in the Stations tab to add one." See [Creating roles](#creating-roles) for the full wording and ARB key.
 * **Filter excludes everything:** banner stays visible with "Show all" recovery. List area: "No roles in this exercise."
 * **No actors in the roster** (during cast picker): the sticky "New actor" row is the only option, no message needed beyond the empty list.
 
@@ -231,11 +302,16 @@ Skipped. `StationMiniMap` from [DESIGN-002](./stations-tab.md) is already domain
 * **Field markers (mobile roleplayers).** Per the user, mobile markers are allowed but their consequences are deferred. The current spec assumes a roleplayer is tied to one station at a time. When mobility lands, the Role tab gains an itinerary slot.
 * **Run-state on roles.** "Found", "evacuated", "transported" deferred. Adding these would require a session patch kind and a fresh ADR.
 * **Coordinator-to-roleplayer messaging.** Out of scope. Radio remains the channel.
+* **Deletion of markørordrer.** Not supported in this iteration. See [Deletion and templating](#deletion-and-templating). The current `Program.rolePlays` shape is a natural foundation for treating briefs as reusable templates; designing destructive deletion before that templating direction is settled would force a premature choice between hard-delete and soft-delete.
+* **Templating.** `Program.rolePlays` is flat and program-scoped, which is exactly the shape needed for one-brief-many-instances. The design step is open: either an indirection field on `RolePlay` or a separate template record. Not in scope here. The point is that the current model does not block it.
+* **Station-less role creation.** Allowed by the data model (`stationIndex` is optional) but has no creation affordance. Defer until a real use case appears.
 
 ## Implementation notes
 
-Scope per Alternative X (additive to [DESIGN-001](./exercise-player.md)). Implementation order is open: a contributor may land the RolePlays tab against the Exercises tab first (with no observer-player work) and the role tab inside the player later when DESIGN-001 builds the shell. Nothing in this design forces a particular order.
+Scope is additive to [DESIGN-001](./exercise-player.md). Implementation order is open: a contributor may land the RolePlays tab, the Station-screen authoring section and the observer-player role tab in any sequence. Nothing in this design forces a particular order.
 
-Localization keys land in `lib/l10n/app_en.arb` and `app_nb.arb` together. Norwegian uses "Markører" (tab name and roster), "Rolle" (Role section) and "Markør" (Cast section, singular) per the terminology rule.
+Localization keys land in `lib/l10n/app_en.arb` and `app_nb.arb` together. Norwegian follows the terminology rule from the note at the top: **"Markører"** for the tab name, the cast roster sheet, the Station-screen section header, and empty-state counts. **"Markørordre"** as the Role section label on the expanded tile, in form titles ("Ny markørordre", "Rediger markørordre") and in creation affordances ("Legg til markørordre"). **"Markør"** stays for the Cast section label and every other surface that names the human (Actor): "Velg markør", "Rediger markør", "Fjern markør", "Allerede markør for {role}", "Markør for: {roles}".
 
 `lib/views/main_screen.dart` gains the fifth route and the bottom-navigation entry. The route name in code is `/roleplays`. `lib/views/widgets/role_expansion_tile.dart` is the new shared widget. `RolePlayScreen` and `RolePlayFormScreen` are new screens at `lib/views/`. `ActorFormScreen` is new and is the only screen that touches `Actor` records.
+
+`lib/views/station_screen.dart` (existing) gains the "Markører" section described in [Creating roles](#creating-roles). The section reads from `Program.rolePlays` filtered on `exerciseUuid` and `stationIndex`. The section's edit/delete actions write back through the same `ProgramService` path the existing station fields use.
