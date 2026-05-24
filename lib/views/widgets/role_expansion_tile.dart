@@ -95,7 +95,7 @@ class RoleExpansionTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null) trailing!,
+              ?trailing,
               IconButton(
                 onPressed: onToggle,
                 icon: AnimatedRotation(

@@ -449,5 +449,25 @@
   "unknownRole": "Ukjent rolle",
   "@unknownRole": {
     "description": "Fallback label on the map when rolePlayUuid cannot be resolved locally."
+  },
+  "roleName": "Navn",
+  "@roleName": {
+    "description": "Feltetikett for rollenavn i RolePlayFormScreen."
+  },
+  "roleAge": "Alder",
+  "@roleAge": {
+    "description": "Feltetikett for valgfritt aldersfelt i RolePlayFormScreen."
+  },
+  "optional": "Valgfritt",
+  "@optional": {
+    "description": "Hinttekst for valgfrie skjemafelt."
+  },
+  "ageRange": "Alder må være mellom 0 og 120",
+  "@ageRange": {
+    "description": "Valideringsfeil vist når aldersverdien er utenfor gyldig område."
+  },
+  "stationLabel": "Post",
+  "@stationLabel": {
+    "description": "Nedtrekksetikett for stationIndex-feltet i RolePlayFormScreen."
   }
 }

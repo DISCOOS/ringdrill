@@ -1111,5 +1111,25 @@
   "unknownRole": "Unknown role",
   "@unknownRole": {
     "description": "Fallback label on the map when a roleplayer participant's rolePlayUuid cannot be resolved to a local RolePlay record."
+  },
+  "roleName": "Name",
+  "@roleName": {
+    "description": "Field label for the role name in RolePlayFormScreen."
+  },
+  "roleAge": "Age",
+  "@roleAge": {
+    "description": "Field label for the optional age field in RolePlayFormScreen."
+  },
+  "optional": "Optional",
+  "@optional": {
+    "description": "Hint text for optional form fields."
+  },
+  "ageRange": "Age must be between 0 and 120",
+  "@ageRange": {
+    "description": "Validation error shown when the age value is outside the valid range."
+  },
+  "stationLabel": "Station",
+  "@stationLabel": {
+    "description": "Dropdown label for the stationIndex field in RolePlayFormScreen."
   }
 }
