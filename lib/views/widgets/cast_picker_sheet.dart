@@ -147,7 +147,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
                   final crossCast = _crossCastName(actor.uuid);
 
                   return ListTile(
-                    leading: const Icon(Icons.person),
+                    leading: const Icon(Icons.face),
                     title: Text(actor.realName),
                     subtitle: crossCast != null
                         ? Text(

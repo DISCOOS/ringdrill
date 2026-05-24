@@ -215,6 +215,25 @@ void main() {
     });
   });
 
+  group('Active-program guard and AppBar action (Step 5)', () {
+    testWidgets('with active program: noActiveProgramHint not shown',
+        (tester) async {
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.noActiveProgramHint), findsNothing);
+    });
+
+    testWidgets('filter FAB is present when active program exists',
+        (tester) async {
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+  });
+
   group('Collapsed tile — subtitle and title (Step 3)', () {
     testWidgets(
         'subtitle shows roleSubtitleStation when stationIndex is set',

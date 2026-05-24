@@ -319,6 +319,16 @@ class _MainScreenState extends State<MainScreen> {
         if (mounted) setState(() {});
       }),
     );
+    // Gated startup validation: only when a stored active-program reference
+    // exists. Skipped on fresh install so no auto-created plan appears.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      if (!prefs.containsKey(AppConfig.keyActiveProgram)) return;
+      if (!mounted) return;
+      final localizations = AppLocalizations.of(context)!;
+      await ProgramService().ensureActiveProgram(localizations);
+    });
   }
 
   void _initTab() {

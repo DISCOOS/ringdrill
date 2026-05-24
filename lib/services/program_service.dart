@@ -695,6 +695,14 @@ class ProgramService {
     );
   }
 
+  /// Public entry point for the gated startup call in [MainScreen].
+  ///
+  /// Only runs when SharedPreferences already contains the active-program key
+  /// (i.e., the user has previously created a program). On a fresh install,
+  /// [MainScreen] skips this call so no auto-created "Default plan" appears.
+  Future<void> ensureActiveProgram(AppLocalizations localizations) =>
+      _ensureActiveProgram(localizations.defaultPlanName);
+
   Future<void> _ensureActiveProgram(String defaultPlanName) async {
     if (activeProgramUuid != null) return;
     final program = await createProgram(name: defaultPlanName);

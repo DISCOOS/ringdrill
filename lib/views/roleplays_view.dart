@@ -101,9 +101,25 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   bool get _hasAnyRole => _service.loadRolePlays().isNotEmpty;
 
+  bool get _hasActiveProgram => _service.activeProgramUuid != null;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+
+    // No-active-program guard: show hint, disable filter FAB.
+    if (!_hasActiveProgram) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            localizations.noActiveProgramHint,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     final rows = _collectRows();
     final filterExercise = _filterExercise();
 
@@ -319,7 +335,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         // Cast section header
         Row(
           children: [
-            Icon(Icons.people, size: 16, color: scheme.onSurfaceVariant),
+            Icon(Icons.person, size: 16, color: scheme.onSurfaceVariant),
             const SizedBox(width: 6),
             Text(
               localizations.castSection,
@@ -543,11 +559,15 @@ class RolePlaysController extends ScreenController {
 
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
+    final localizations = AppLocalizations.of(context)!;
+    final hasActiveProgram = ProgramService().activeProgramUuid != null;
     return [
       IconButton(
-        icon: const Icon(Icons.people_outline),
-        tooltip: AppLocalizations.of(context)!.castRoster,
-        onPressed: () => _openCastRoster(context),
+        icon: const Icon(Icons.recent_actors),
+        tooltip: hasActiveProgram
+            ? localizations.castSection
+            : localizations.noActiveProgramHint,
+        onPressed: hasActiveProgram ? () => _openCastRoster(context) : null,
       ),
     ];
   }

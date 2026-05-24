@@ -85,15 +85,38 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.castRoster)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
         icon: const Icon(Icons.person_add),
         label: Text(localizations.newActor),
       ),
-      body: _actors.isEmpty
-          ? Center(child: Text(localizations.newActor))
-          : ListView.builder(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              localizations.castRoster,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          Expanded(
+            child: _actors.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        localizations.noActorsInRoster,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
               itemCount: _actors.length,
               itemBuilder: (context, index) {
                 final actor = _actors[index];
@@ -120,7 +143,7 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
                     ),
                   ),
                   child: ListTile(
-                    leading: const Icon(Icons.person),
+                    leading: const Icon(Icons.face),
                     title: Text(actor.realName),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,6 +166,9 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
                 );
               },
             ),
+          ),
+        ],
+      ),
     );
   }
 }
