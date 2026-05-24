@@ -24,6 +24,12 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
   exercises: (json['exercises'] as List<dynamic>)
       .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
       .toList(),
+  rolePlays: (json['rolePlays'] as List<dynamic>)
+      .map((e) => RolePlay.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  actors: (json['actors'] as List<dynamic>)
+      .map((e) => Actor.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
@@ -36,6 +42,8 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'teams': instance.teams,
   'sessions': instance.sessions,
   'exercises': instance.exercises,
+  'rolePlays': instance.rolePlays,
+  'actors': instance.actors,
 };
 
 _Local _$LocalFromJson(Map<String, dynamic> json) =>
@@ -121,6 +129,21 @@ _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
           ?.map((e) => e as String)
           .toList() ??
       const [],
+  addedRolePlays:
+      (json['addedRolePlays'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  removedRolePlays:
+      (json['removedRolePlays'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  modifiedRolePlays:
+      (json['modifiedRolePlays'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ProgramDiffToJson(_ProgramDiff instance) =>
@@ -138,6 +161,9 @@ Map<String, dynamic> _$ProgramDiffToJson(_ProgramDiff instance) =>
       'addedSessions': instance.addedSessions,
       'removedSessions': instance.removedSessions,
       'modifiedSessions': instance.modifiedSessions,
+      'addedRolePlays': instance.addedRolePlays,
+      'removedRolePlays': instance.removedRolePlays,
+      'modifiedRolePlays': instance.modifiedRolePlays,
     };
 
 _Session _$SessionFromJson(Map<String, dynamic> json) => _Session(
@@ -167,6 +193,7 @@ _ProgramMetadata _$ProgramMetadataFromJson(Map<String, dynamic> json) =>
       created: DateTime.parse(json['created'] as String),
       updated: DateTime.parse(json['updated'] as String),
       version: json['version'] as String,
+      schema: json['schema'] as String?,
     );
 
 Map<String, dynamic> _$ProgramMetadataToJson(_ProgramMetadata instance) =>
@@ -174,4 +201,5 @@ Map<String, dynamic> _$ProgramMetadataToJson(_ProgramMetadata instance) =>
       'created': instance.created.toIso8601String(),
       'updated': instance.updated.toIso8601String(),
       'version': instance.version,
+      'schema': instance.schema,
     };

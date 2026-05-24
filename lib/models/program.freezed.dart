@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Program {
 
- String get uuid; String get name; String get description; ProgramMetadata get metadata; ProgramSource get source; String? get contentHash; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises;
+ String get uuid; String get name; String get description; ProgramMetadata get metadata; ProgramSource get source; String? get contentHash; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises; List<RolePlay> get rolePlays; List<Actor> get actors;
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ProgramCopyWith<Program> get copyWith => _$ProgramCopyWithImpl<Program>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other.teams, teams)&&const DeepCollectionEquality().equals(other.sessions, sessions)&&const DeepCollectionEquality().equals(other.exercises, exercises));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other.teams, teams)&&const DeepCollectionEquality().equals(other.sessions, sessions)&&const DeepCollectionEquality().equals(other.exercises, exercises)&&const DeepCollectionEquality().equals(other.rolePlays, rolePlays)&&const DeepCollectionEquality().equals(other.actors, actors));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,source,contentHash,const DeepCollectionEquality().hash(teams),const DeepCollectionEquality().hash(sessions),const DeepCollectionEquality().hash(exercises));
+int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,source,contentHash,const DeepCollectionEquality().hash(teams),const DeepCollectionEquality().hash(sessions),const DeepCollectionEquality().hash(exercises),const DeepCollectionEquality().hash(rolePlays),const DeepCollectionEquality().hash(actors));
 
 @override
 String toString() {
-  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises)';
+  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ProgramCopyWith<$Res>  {
   factory $ProgramCopyWith(Program value, $Res Function(Program) _then) = _$ProgramCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String name, String description, ProgramMetadata metadata, ProgramSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises
+ String uuid, String name, String description, ProgramMetadata metadata, ProgramSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors
 });
 
 
@@ -65,7 +65,7 @@ class _$ProgramCopyWithImpl<$Res>
 
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? actors = null,}) {
   return _then(_self.copyWith(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -76,7 +76,9 @@ as ProgramSource,contentHash: freezed == contentHash ? _self.contentHash : conte
 as String?,teams: null == teams ? _self.teams : teams // ignore: cast_nullable_to_non_nullable
 as List<Team>,sessions: null == sessions ? _self.sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<Session>,exercises: null == exercises ? _self.exercises : exercises // ignore: cast_nullable_to_non_nullable
-as List<Exercise>,
+as List<Exercise>,rolePlays: null == rolePlays ? _self.rolePlays : rolePlays // ignore: cast_nullable_to_non_nullable
+as List<RolePlay>,actors: null == actors ? _self.actors : actors // ignore: cast_nullable_to_non_nullable
+as List<Actor>,
   ));
 }
 /// Create a copy of Program
@@ -176,10 +178,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Program() when $default != null:
-return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises);case _:
+return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors);case _:
   return orElse();
 
 }
@@ -197,10 +199,10 @@ return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.sou
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors)  $default,) {final _that = this;
 switch (_that) {
 case _Program():
-return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises);}
+return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -214,10 +216,10 @@ return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.sou
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  String description,  ProgramMetadata metadata,  ProgramSource source,  String? contentHash,  List<Team> teams,  List<Session> sessions,  List<Exercise> exercises,  List<RolePlay> rolePlays,  List<Actor> actors)?  $default,) {final _that = this;
 switch (_that) {
 case _Program() when $default != null:
-return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises);case _:
+return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.source,_that.contentHash,_that.teams,_that.sessions,_that.exercises,_that.rolePlays,_that.actors);case _:
   return null;
 
 }
@@ -229,7 +231,7 @@ return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.sou
 @JsonSerializable()
 
 class _Program implements Program {
-  const _Program({required this.uuid, required this.name, required this.description, required this.metadata, this.source = const ProgramSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises}): _teams = teams,_sessions = sessions,_exercises = exercises;
+  const _Program({required this.uuid, required this.name, required this.description, required this.metadata, this.source = const ProgramSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises, required final  List<RolePlay> rolePlays, required final  List<Actor> actors}): _teams = teams,_sessions = sessions,_exercises = exercises,_rolePlays = rolePlays,_actors = actors;
   factory _Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 
 @override final  String uuid;
@@ -259,6 +261,20 @@ class _Program implements Program {
   return EqualUnmodifiableListView(_exercises);
 }
 
+ final  List<RolePlay> _rolePlays;
+@override List<RolePlay> get rolePlays {
+  if (_rolePlays is EqualUnmodifiableListView) return _rolePlays;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_rolePlays);
+}
+
+ final  List<Actor> _actors;
+@override List<Actor> get actors {
+  if (_actors is EqualUnmodifiableListView) return _actors;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_actors);
+}
+
 
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
@@ -273,16 +289,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other._teams, _teams)&&const DeepCollectionEquality().equals(other._sessions, _sessions)&&const DeepCollectionEquality().equals(other._exercises, _exercises));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Program&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.source, source) || other.source == source)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&const DeepCollectionEquality().equals(other._teams, _teams)&&const DeepCollectionEquality().equals(other._sessions, _sessions)&&const DeepCollectionEquality().equals(other._exercises, _exercises)&&const DeepCollectionEquality().equals(other._rolePlays, _rolePlays)&&const DeepCollectionEquality().equals(other._actors, _actors));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,source,contentHash,const DeepCollectionEquality().hash(_teams),const DeepCollectionEquality().hash(_sessions),const DeepCollectionEquality().hash(_exercises));
+int get hashCode => Object.hash(runtimeType,uuid,name,description,metadata,source,contentHash,const DeepCollectionEquality().hash(_teams),const DeepCollectionEquality().hash(_sessions),const DeepCollectionEquality().hash(_exercises),const DeepCollectionEquality().hash(_rolePlays),const DeepCollectionEquality().hash(_actors));
 
 @override
 String toString() {
-  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises)';
+  return 'Program(uuid: $uuid, name: $name, description: $description, metadata: $metadata, source: $source, contentHash: $contentHash, teams: $teams, sessions: $sessions, exercises: $exercises, rolePlays: $rolePlays, actors: $actors)';
 }
 
 
@@ -293,7 +309,7 @@ abstract mixin class _$ProgramCopyWith<$Res> implements $ProgramCopyWith<$Res> {
   factory _$ProgramCopyWith(_Program value, $Res Function(_Program) _then) = __$ProgramCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String name, String description, ProgramMetadata metadata, ProgramSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises
+ String uuid, String name, String description, ProgramMetadata metadata, ProgramSource source, String? contentHash, List<Team> teams, List<Session> sessions, List<Exercise> exercises, List<RolePlay> rolePlays, List<Actor> actors
 });
 
 
@@ -310,7 +326,7 @@ class __$ProgramCopyWithImpl<$Res>
 
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? description = null,Object? metadata = null,Object? source = null,Object? contentHash = freezed,Object? teams = null,Object? sessions = null,Object? exercises = null,Object? rolePlays = null,Object? actors = null,}) {
   return _then(_Program(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -321,7 +337,9 @@ as ProgramSource,contentHash: freezed == contentHash ? _self.contentHash : conte
 as String?,teams: null == teams ? _self._teams : teams // ignore: cast_nullable_to_non_nullable
 as List<Team>,sessions: null == sessions ? _self._sessions : sessions // ignore: cast_nullable_to_non_nullable
 as List<Session>,exercises: null == exercises ? _self._exercises : exercises // ignore: cast_nullable_to_non_nullable
-as List<Exercise>,
+as List<Exercise>,rolePlays: null == rolePlays ? _self._rolePlays : rolePlays // ignore: cast_nullable_to_non_nullable
+as List<RolePlay>,actors: null == actors ? _self._actors : actors // ignore: cast_nullable_to_non_nullable
+as List<Actor>,
   ));
 }
 
@@ -741,7 +759,8 @@ mixin _$ProgramDiff {
 /// match.
  String? get descriptionLocal;/// Remote description when it differs from local. Null when descriptions
 /// match.
- String? get descriptionRemote; List<String> get addedExercises; List<String> get removedExercises; List<String> get modifiedExercises; List<String> get addedTeams; List<String> get removedTeams; List<String> get modifiedTeams; List<String> get addedSessions; List<String> get removedSessions; List<String> get modifiedSessions;
+ String? get descriptionRemote; List<String> get addedExercises; List<String> get removedExercises; List<String> get modifiedExercises; List<String> get addedTeams; List<String> get removedTeams; List<String> get modifiedTeams; List<String> get addedSessions; List<String> get removedSessions; List<String> get modifiedSessions;// rolePlays are included in the content hash; actors are not.
+ List<String> get addedRolePlays; List<String> get removedRolePlays; List<String> get modifiedRolePlays;
 /// Create a copy of ProgramDiff
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -754,16 +773,16 @@ $ProgramDiffCopyWith<ProgramDiff> get copyWith => _$ProgramDiffCopyWithImpl<Prog
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&const DeepCollectionEquality().equals(other.addedExercises, addedExercises)&&const DeepCollectionEquality().equals(other.removedExercises, removedExercises)&&const DeepCollectionEquality().equals(other.modifiedExercises, modifiedExercises)&&const DeepCollectionEquality().equals(other.addedTeams, addedTeams)&&const DeepCollectionEquality().equals(other.removedTeams, removedTeams)&&const DeepCollectionEquality().equals(other.modifiedTeams, modifiedTeams)&&const DeepCollectionEquality().equals(other.addedSessions, addedSessions)&&const DeepCollectionEquality().equals(other.removedSessions, removedSessions)&&const DeepCollectionEquality().equals(other.modifiedSessions, modifiedSessions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&const DeepCollectionEquality().equals(other.addedExercises, addedExercises)&&const DeepCollectionEquality().equals(other.removedExercises, removedExercises)&&const DeepCollectionEquality().equals(other.modifiedExercises, modifiedExercises)&&const DeepCollectionEquality().equals(other.addedTeams, addedTeams)&&const DeepCollectionEquality().equals(other.removedTeams, removedTeams)&&const DeepCollectionEquality().equals(other.modifiedTeams, modifiedTeams)&&const DeepCollectionEquality().equals(other.addedSessions, addedSessions)&&const DeepCollectionEquality().equals(other.removedSessions, removedSessions)&&const DeepCollectionEquality().equals(other.modifiedSessions, modifiedSessions)&&const DeepCollectionEquality().equals(other.addedRolePlays, addedRolePlays)&&const DeepCollectionEquality().equals(other.removedRolePlays, removedRolePlays)&&const DeepCollectionEquality().equals(other.modifiedRolePlays, modifiedRolePlays));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,nameLocal,nameRemote,descriptionLocal,descriptionRemote,const DeepCollectionEquality().hash(addedExercises),const DeepCollectionEquality().hash(removedExercises),const DeepCollectionEquality().hash(modifiedExercises),const DeepCollectionEquality().hash(addedTeams),const DeepCollectionEquality().hash(removedTeams),const DeepCollectionEquality().hash(modifiedTeams),const DeepCollectionEquality().hash(addedSessions),const DeepCollectionEquality().hash(removedSessions),const DeepCollectionEquality().hash(modifiedSessions));
+int get hashCode => Object.hash(runtimeType,nameLocal,nameRemote,descriptionLocal,descriptionRemote,const DeepCollectionEquality().hash(addedExercises),const DeepCollectionEquality().hash(removedExercises),const DeepCollectionEquality().hash(modifiedExercises),const DeepCollectionEquality().hash(addedTeams),const DeepCollectionEquality().hash(removedTeams),const DeepCollectionEquality().hash(modifiedTeams),const DeepCollectionEquality().hash(addedSessions),const DeepCollectionEquality().hash(removedSessions),const DeepCollectionEquality().hash(modifiedSessions),const DeepCollectionEquality().hash(addedRolePlays),const DeepCollectionEquality().hash(removedRolePlays),const DeepCollectionEquality().hash(modifiedRolePlays));
 
 @override
 String toString() {
-  return 'ProgramDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions)';
+  return 'ProgramDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions, addedRolePlays: $addedRolePlays, removedRolePlays: $removedRolePlays, modifiedRolePlays: $modifiedRolePlays)';
 }
 
 
@@ -774,7 +793,7 @@ abstract mixin class $ProgramDiffCopyWith<$Res>  {
   factory $ProgramDiffCopyWith(ProgramDiff value, $Res Function(ProgramDiff) _then) = _$ProgramDiffCopyWithImpl;
 @useResult
 $Res call({
- String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, List<String> addedExercises, List<String> removedExercises, List<String> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<String> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<String> modifiedSessions
+ String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, List<String> addedExercises, List<String> removedExercises, List<String> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<String> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<String> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<String> modifiedRolePlays
 });
 
 
@@ -791,7 +810,7 @@ class _$ProgramDiffCopyWithImpl<$Res>
 
 /// Create a copy of ProgramDiff
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? nameLocal = freezed,Object? nameRemote = freezed,Object? descriptionLocal = freezed,Object? descriptionRemote = freezed,Object? addedExercises = null,Object? removedExercises = null,Object? modifiedExercises = null,Object? addedTeams = null,Object? removedTeams = null,Object? modifiedTeams = null,Object? addedSessions = null,Object? removedSessions = null,Object? modifiedSessions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? nameLocal = freezed,Object? nameRemote = freezed,Object? descriptionLocal = freezed,Object? descriptionRemote = freezed,Object? addedExercises = null,Object? removedExercises = null,Object? modifiedExercises = null,Object? addedTeams = null,Object? removedTeams = null,Object? modifiedTeams = null,Object? addedSessions = null,Object? removedSessions = null,Object? modifiedSessions = null,Object? addedRolePlays = null,Object? removedRolePlays = null,Object? modifiedRolePlays = null,}) {
   return _then(_self.copyWith(
 nameLocal: freezed == nameLocal ? _self.nameLocal : nameLocal // ignore: cast_nullable_to_non_nullable
 as String?,nameRemote: freezed == nameRemote ? _self.nameRemote : nameRemote // ignore: cast_nullable_to_non_nullable
@@ -806,6 +825,9 @@ as List<String>,modifiedTeams: null == modifiedTeams ? _self.modifiedTeams : mod
 as List<String>,addedSessions: null == addedSessions ? _self.addedSessions : addedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,removedSessions: null == removedSessions ? _self.removedSessions : removedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedSessions: null == modifiedSessions ? _self.modifiedSessions : modifiedSessions // ignore: cast_nullable_to_non_nullable
+as List<String>,addedRolePlays: null == addedRolePlays ? _self.addedRolePlays : addedRolePlays // ignore: cast_nullable_to_non_nullable
+as List<String>,removedRolePlays: null == removedRolePlays ? _self.removedRolePlays : removedRolePlays // ignore: cast_nullable_to_non_nullable
+as List<String>,modifiedRolePlays: null == modifiedRolePlays ? _self.modifiedRolePlays : modifiedRolePlays // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }
@@ -888,10 +910,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<String> modifiedRolePlays)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProgramDiff() when $default != null:
-return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions);case _:
+return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);case _:
   return orElse();
 
 }
@@ -909,10 +931,10 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<String> modifiedRolePlays)  $default,) {final _that = this;
 switch (_that) {
 case _ProgramDiff():
-return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions);}
+return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -926,10 +948,10 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<String> modifiedRolePlays)?  $default,) {final _that = this;
 switch (_that) {
 case _ProgramDiff() when $default != null:
-return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions);case _:
+return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);case _:
   return null;
 
 }
@@ -941,7 +963,7 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 @JsonSerializable()
 
 class _ProgramDiff implements ProgramDiff {
-  const _ProgramDiff({this.nameLocal, this.nameRemote, this.descriptionLocal, this.descriptionRemote, final  List<String> addedExercises = const [], final  List<String> removedExercises = const [], final  List<String> modifiedExercises = const [], final  List<String> addedTeams = const [], final  List<String> removedTeams = const [], final  List<String> modifiedTeams = const [], final  List<String> addedSessions = const [], final  List<String> removedSessions = const [], final  List<String> modifiedSessions = const []}): _addedExercises = addedExercises,_removedExercises = removedExercises,_modifiedExercises = modifiedExercises,_addedTeams = addedTeams,_removedTeams = removedTeams,_modifiedTeams = modifiedTeams,_addedSessions = addedSessions,_removedSessions = removedSessions,_modifiedSessions = modifiedSessions;
+  const _ProgramDiff({this.nameLocal, this.nameRemote, this.descriptionLocal, this.descriptionRemote, final  List<String> addedExercises = const [], final  List<String> removedExercises = const [], final  List<String> modifiedExercises = const [], final  List<String> addedTeams = const [], final  List<String> removedTeams = const [], final  List<String> modifiedTeams = const [], final  List<String> addedSessions = const [], final  List<String> removedSessions = const [], final  List<String> modifiedSessions = const [], final  List<String> addedRolePlays = const [], final  List<String> removedRolePlays = const [], final  List<String> modifiedRolePlays = const []}): _addedExercises = addedExercises,_removedExercises = removedExercises,_modifiedExercises = modifiedExercises,_addedTeams = addedTeams,_removedTeams = removedTeams,_modifiedTeams = modifiedTeams,_addedSessions = addedSessions,_removedSessions = removedSessions,_modifiedSessions = modifiedSessions,_addedRolePlays = addedRolePlays,_removedRolePlays = removedRolePlays,_modifiedRolePlays = modifiedRolePlays;
   factory _ProgramDiff.fromJson(Map<String, dynamic> json) => _$ProgramDiffFromJson(json);
 
 /// Local name when it differs from remote. Null when names match.
@@ -1017,6 +1039,29 @@ class _ProgramDiff implements ProgramDiff {
   return EqualUnmodifiableListView(_modifiedSessions);
 }
 
+// rolePlays are included in the content hash; actors are not.
+ final  List<String> _addedRolePlays;
+// rolePlays are included in the content hash; actors are not.
+@override@JsonKey() List<String> get addedRolePlays {
+  if (_addedRolePlays is EqualUnmodifiableListView) return _addedRolePlays;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_addedRolePlays);
+}
+
+ final  List<String> _removedRolePlays;
+@override@JsonKey() List<String> get removedRolePlays {
+  if (_removedRolePlays is EqualUnmodifiableListView) return _removedRolePlays;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_removedRolePlays);
+}
+
+ final  List<String> _modifiedRolePlays;
+@override@JsonKey() List<String> get modifiedRolePlays {
+  if (_modifiedRolePlays is EqualUnmodifiableListView) return _modifiedRolePlays;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_modifiedRolePlays);
+}
+
 
 /// Create a copy of ProgramDiff
 /// with the given fields replaced by the non-null parameter values.
@@ -1031,16 +1076,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&const DeepCollectionEquality().equals(other._addedExercises, _addedExercises)&&const DeepCollectionEquality().equals(other._removedExercises, _removedExercises)&&const DeepCollectionEquality().equals(other._modifiedExercises, _modifiedExercises)&&const DeepCollectionEquality().equals(other._addedTeams, _addedTeams)&&const DeepCollectionEquality().equals(other._removedTeams, _removedTeams)&&const DeepCollectionEquality().equals(other._modifiedTeams, _modifiedTeams)&&const DeepCollectionEquality().equals(other._addedSessions, _addedSessions)&&const DeepCollectionEquality().equals(other._removedSessions, _removedSessions)&&const DeepCollectionEquality().equals(other._modifiedSessions, _modifiedSessions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramDiff&&(identical(other.nameLocal, nameLocal) || other.nameLocal == nameLocal)&&(identical(other.nameRemote, nameRemote) || other.nameRemote == nameRemote)&&(identical(other.descriptionLocal, descriptionLocal) || other.descriptionLocal == descriptionLocal)&&(identical(other.descriptionRemote, descriptionRemote) || other.descriptionRemote == descriptionRemote)&&const DeepCollectionEquality().equals(other._addedExercises, _addedExercises)&&const DeepCollectionEquality().equals(other._removedExercises, _removedExercises)&&const DeepCollectionEquality().equals(other._modifiedExercises, _modifiedExercises)&&const DeepCollectionEquality().equals(other._addedTeams, _addedTeams)&&const DeepCollectionEquality().equals(other._removedTeams, _removedTeams)&&const DeepCollectionEquality().equals(other._modifiedTeams, _modifiedTeams)&&const DeepCollectionEquality().equals(other._addedSessions, _addedSessions)&&const DeepCollectionEquality().equals(other._removedSessions, _removedSessions)&&const DeepCollectionEquality().equals(other._modifiedSessions, _modifiedSessions)&&const DeepCollectionEquality().equals(other._addedRolePlays, _addedRolePlays)&&const DeepCollectionEquality().equals(other._removedRolePlays, _removedRolePlays)&&const DeepCollectionEquality().equals(other._modifiedRolePlays, _modifiedRolePlays));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,nameLocal,nameRemote,descriptionLocal,descriptionRemote,const DeepCollectionEquality().hash(_addedExercises),const DeepCollectionEquality().hash(_removedExercises),const DeepCollectionEquality().hash(_modifiedExercises),const DeepCollectionEquality().hash(_addedTeams),const DeepCollectionEquality().hash(_removedTeams),const DeepCollectionEquality().hash(_modifiedTeams),const DeepCollectionEquality().hash(_addedSessions),const DeepCollectionEquality().hash(_removedSessions),const DeepCollectionEquality().hash(_modifiedSessions));
+int get hashCode => Object.hash(runtimeType,nameLocal,nameRemote,descriptionLocal,descriptionRemote,const DeepCollectionEquality().hash(_addedExercises),const DeepCollectionEquality().hash(_removedExercises),const DeepCollectionEquality().hash(_modifiedExercises),const DeepCollectionEquality().hash(_addedTeams),const DeepCollectionEquality().hash(_removedTeams),const DeepCollectionEquality().hash(_modifiedTeams),const DeepCollectionEquality().hash(_addedSessions),const DeepCollectionEquality().hash(_removedSessions),const DeepCollectionEquality().hash(_modifiedSessions),const DeepCollectionEquality().hash(_addedRolePlays),const DeepCollectionEquality().hash(_removedRolePlays),const DeepCollectionEquality().hash(_modifiedRolePlays));
 
 @override
 String toString() {
-  return 'ProgramDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions)';
+  return 'ProgramDiff(nameLocal: $nameLocal, nameRemote: $nameRemote, descriptionLocal: $descriptionLocal, descriptionRemote: $descriptionRemote, addedExercises: $addedExercises, removedExercises: $removedExercises, modifiedExercises: $modifiedExercises, addedTeams: $addedTeams, removedTeams: $removedTeams, modifiedTeams: $modifiedTeams, addedSessions: $addedSessions, removedSessions: $removedSessions, modifiedSessions: $modifiedSessions, addedRolePlays: $addedRolePlays, removedRolePlays: $removedRolePlays, modifiedRolePlays: $modifiedRolePlays)';
 }
 
 
@@ -1051,7 +1096,7 @@ abstract mixin class _$ProgramDiffCopyWith<$Res> implements $ProgramDiffCopyWith
   factory _$ProgramDiffCopyWith(_ProgramDiff value, $Res Function(_ProgramDiff) _then) = __$ProgramDiffCopyWithImpl;
 @override @useResult
 $Res call({
- String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, List<String> addedExercises, List<String> removedExercises, List<String> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<String> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<String> modifiedSessions
+ String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, List<String> addedExercises, List<String> removedExercises, List<String> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<String> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<String> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<String> modifiedRolePlays
 });
 
 
@@ -1068,7 +1113,7 @@ class __$ProgramDiffCopyWithImpl<$Res>
 
 /// Create a copy of ProgramDiff
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? nameLocal = freezed,Object? nameRemote = freezed,Object? descriptionLocal = freezed,Object? descriptionRemote = freezed,Object? addedExercises = null,Object? removedExercises = null,Object? modifiedExercises = null,Object? addedTeams = null,Object? removedTeams = null,Object? modifiedTeams = null,Object? addedSessions = null,Object? removedSessions = null,Object? modifiedSessions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? nameLocal = freezed,Object? nameRemote = freezed,Object? descriptionLocal = freezed,Object? descriptionRemote = freezed,Object? addedExercises = null,Object? removedExercises = null,Object? modifiedExercises = null,Object? addedTeams = null,Object? removedTeams = null,Object? modifiedTeams = null,Object? addedSessions = null,Object? removedSessions = null,Object? modifiedSessions = null,Object? addedRolePlays = null,Object? removedRolePlays = null,Object? modifiedRolePlays = null,}) {
   return _then(_ProgramDiff(
 nameLocal: freezed == nameLocal ? _self.nameLocal : nameLocal // ignore: cast_nullable_to_non_nullable
 as String?,nameRemote: freezed == nameRemote ? _self.nameRemote : nameRemote // ignore: cast_nullable_to_non_nullable
@@ -1083,6 +1128,9 @@ as List<String>,modifiedTeams: null == modifiedTeams ? _self._modifiedTeams : mo
 as List<String>,addedSessions: null == addedSessions ? _self._addedSessions : addedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,removedSessions: null == removedSessions ? _self._removedSessions : removedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedSessions: null == modifiedSessions ? _self._modifiedSessions : modifiedSessions // ignore: cast_nullable_to_non_nullable
+as List<String>,addedRolePlays: null == addedRolePlays ? _self._addedRolePlays : addedRolePlays // ignore: cast_nullable_to_non_nullable
+as List<String>,removedRolePlays: null == removedRolePlays ? _self._removedRolePlays : removedRolePlays // ignore: cast_nullable_to_non_nullable
+as List<String>,modifiedRolePlays: null == modifiedRolePlays ? _self._modifiedRolePlays : modifiedRolePlays // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }
@@ -1381,7 +1429,9 @@ $SimpleTimeOfDayCopyWith<$Res> get startTime {
 /// @nodoc
 mixin _$ProgramMetadata {
 
- DateTime get created; DateTime get updated; String get version;
+ DateTime get created; DateTime get updated; String get version;// Optional schema marker added in schema 1.1 (ADR-0018).
+// Absent in 1.0 archives; readers treat null as '1.0'.
+ String? get schema;
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1394,16 +1444,16 @@ $ProgramMetadataCopyWith<ProgramMetadata> get copyWith => _$ProgramMetadataCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,created,updated,version);
+int get hashCode => Object.hash(runtimeType,created,updated,version,schema);
 
 @override
 String toString() {
-  return 'ProgramMetadata(created: $created, updated: $updated, version: $version)';
+  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema)';
 }
 
 
@@ -1414,7 +1464,7 @@ abstract mixin class $ProgramMetadataCopyWith<$Res>  {
   factory $ProgramMetadataCopyWith(ProgramMetadata value, $Res Function(ProgramMetadata) _then) = _$ProgramMetadataCopyWithImpl;
 @useResult
 $Res call({
- DateTime created, DateTime updated, String version
+ DateTime created, DateTime updated, String version, String? schema
 });
 
 
@@ -1431,12 +1481,13 @@ class _$ProgramMetadataCopyWithImpl<$Res>
 
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? created = null,Object? updated = null,Object? version = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,}) {
   return _then(_self.copyWith(
 created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,updated: null == updated ? _self.updated : updated // ignore: cast_nullable_to_non_nullable
 as DateTime,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
-as String,
+as String,schema: freezed == schema ? _self.schema : schema // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -1518,10 +1569,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProgramMetadata() when $default != null:
-return $default(_that.created,_that.updated,_that.version);case _:
+return $default(_that.created,_that.updated,_that.version,_that.schema);case _:
   return orElse();
 
 }
@@ -1539,10 +1590,10 @@ return $default(_that.created,_that.updated,_that.version);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema)  $default,) {final _that = this;
 switch (_that) {
 case _ProgramMetadata():
-return $default(_that.created,_that.updated,_that.version);}
+return $default(_that.created,_that.updated,_that.version,_that.schema);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1556,10 +1607,10 @@ return $default(_that.created,_that.updated,_that.version);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  DateTime updated,  String version)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  DateTime updated,  String version,  String? schema)?  $default,) {final _that = this;
 switch (_that) {
 case _ProgramMetadata() when $default != null:
-return $default(_that.created,_that.updated,_that.version);case _:
+return $default(_that.created,_that.updated,_that.version,_that.schema);case _:
   return null;
 
 }
@@ -1571,12 +1622,15 @@ return $default(_that.created,_that.updated,_that.version);case _:
 @JsonSerializable()
 
 class _ProgramMetadata implements ProgramMetadata {
-  const _ProgramMetadata({required this.created, required this.updated, required this.version});
+  const _ProgramMetadata({required this.created, required this.updated, required this.version, this.schema});
   factory _ProgramMetadata.fromJson(Map<String, dynamic> json) => _$ProgramMetadataFromJson(json);
 
 @override final  DateTime created;
 @override final  DateTime updated;
 @override final  String version;
+// Optional schema marker added in schema 1.1 (ADR-0018).
+// Absent in 1.0 archives; readers treat null as '1.0'.
+@override final  String? schema;
 
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
@@ -1591,16 +1645,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,created,updated,version);
+int get hashCode => Object.hash(runtimeType,created,updated,version,schema);
 
 @override
 String toString() {
-  return 'ProgramMetadata(created: $created, updated: $updated, version: $version)';
+  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema)';
 }
 
 
@@ -1611,7 +1665,7 @@ abstract mixin class _$ProgramMetadataCopyWith<$Res> implements $ProgramMetadata
   factory _$ProgramMetadataCopyWith(_ProgramMetadata value, $Res Function(_ProgramMetadata) _then) = __$ProgramMetadataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime created, DateTime updated, String version
+ DateTime created, DateTime updated, String version, String? schema
 });
 
 
@@ -1628,12 +1682,13 @@ class __$ProgramMetadataCopyWithImpl<$Res>
 
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? created = null,Object? updated = null,Object? version = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,}) {
   return _then(_ProgramMetadata(
 created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,updated: null == updated ? _self.updated : updated // ignore: cast_nullable_to_non_nullable
 as DateTime,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
-as String,
+as String,schema: freezed == schema ? _self.schema : schema // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

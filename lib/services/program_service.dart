@@ -8,8 +8,10 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/program_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -151,6 +153,8 @@ class ProgramService {
       teams: const [],
       sessions: const [],
       exercises: const [],
+      rolePlays: const [],
+      actors: const [],
     );
     final program = emptyProgram.copyWith(
       contentHash: emptyProgram.computeContentHash(),
@@ -188,6 +192,28 @@ class ProgramService {
   }
 
   Exercise? getExercise(String uuid) => _repo.getExercise(uuid);
+
+  List<RolePlay> loadRolePlays() {
+    if (activeProgramUuid == null) return const [];
+    return _repo.loadRolePlays();
+  }
+
+  RolePlay? getRolePlay(String uuid) => _repo.getRolePlay(uuid);
+
+  Future<void> saveRolePlay(RolePlay rolePlay) => _repo.saveRolePlay(rolePlay);
+
+  Future<RolePlay?> deleteRolePlay(String uuid) => _repo.deleteRolePlay(uuid);
+
+  List<Actor> loadActors() {
+    if (activeProgramUuid == null) return const [];
+    return _repo.loadActors();
+  }
+
+  Actor? getActor(String uuid) => _repo.getActor(uuid);
+
+  Future<void> saveActor(Actor actor) => _repo.saveActor(actor);
+
+  Future<Actor?> deleteActor(String uuid) => _repo.deleteActor(uuid);
 
   List<Exercise> loadExercises() {
     if (activeProgramUuid == null) return const [];
@@ -664,6 +690,8 @@ class ProgramService {
       teams: loadTeams(),
       sessions: current?.sessions ?? const [],
       exercises: exercises,
+      rolePlays: loadRolePlays(),
+      actors: loadActors(),
     );
   }
 

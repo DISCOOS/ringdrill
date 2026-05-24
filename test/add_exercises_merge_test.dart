@@ -72,6 +72,8 @@ Program _program({
     teams: teams,
     sessions: const [],
     exercises: exercises,
+    rolePlays: const [],
+    actors: const [],
   );
 }
 

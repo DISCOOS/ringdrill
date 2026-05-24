@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/team.dart';
 
 part 'program.freezed.dart';
@@ -21,6 +23,8 @@ sealed class Program with _$Program {
     required List<Team> teams,
     required List<Session> sessions,
     required List<Exercise> exercises,
+    required List<RolePlay> rolePlays,
+    required List<Actor> actors,
   }) = _Program;
 
   factory Program.fromJson(Map<String, dynamic> json) =>
@@ -68,6 +72,10 @@ sealed class ProgramDiff with _$ProgramDiff {
     @Default([]) List<String> addedSessions,
     @Default([]) List<String> removedSessions,
     @Default([]) List<String> modifiedSessions,
+    // rolePlays are included in the content hash; actors are not.
+    @Default([]) List<String> addedRolePlays,
+    @Default([]) List<String> removedRolePlays,
+    @Default([]) List<String> modifiedRolePlays,
   }) = _ProgramDiff;
 
   factory ProgramDiff.fromJson(Map<String, dynamic> json) =>
@@ -87,6 +95,8 @@ extension ProgramX on Program {
       'exercises': _sortedCanonical(exercises, (e) => e.uuid),
       'teams': _sortedCanonical(teams, (e) => e.uuid),
       'sessions': _sortedCanonical(sessions, (e) => e.uuid),
+      // rolePlays are publishable; actors are local PII and excluded per ADR-0018.
+      'rolePlays': _sortedCanonical(rolePlays, (r) => r.uuid),
     };
     return sha256
         .convert(utf8.encode(jsonEncode(_canonicalize(canonical))))
@@ -113,6 +123,12 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     (e) => e.uuid,
     (e) => e.uuid,
   );
+  final rolePlayDiff = _diffNamed(
+    local.rolePlays,
+    remote.rolePlays,
+    (r) => r.uuid,
+    (r) => r.name,
+  );
 
   final nameChanged = local.name != remote.name;
   final descriptionChanged = local.description != remote.description;
@@ -131,6 +147,9 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     addedSessions: sessionDiff.added,
     removedSessions: sessionDiff.removed,
     modifiedSessions: sessionDiff.modified,
+    addedRolePlays: rolePlayDiff.added,
+    removedRolePlays: rolePlayDiff.removed,
+    modifiedRolePlays: rolePlayDiff.modified,
   );
 }
 
@@ -214,6 +233,9 @@ sealed class ProgramMetadata with _$ProgramMetadata {
     required DateTime created,
     required DateTime updated,
     required String version,
+    // Optional schema marker added in schema 1.1 (ADR-0018).
+    // Absent in 1.0 archives; readers treat null as '1.0'.
+    String? schema,
   }) = _ProgramMetadata;
 
   factory ProgramMetadata.fromJson(Map<String, dynamic> json) =>

@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +53,8 @@ class ProgramRepository {
           teams: const [],
           sessions: const [],
           exercises: const [],
+          rolePlays: const [],
+          actors: const [],
         ),
       );
       await _prefs.setString(AppConfig.keyActiveProgram, programUuid);
@@ -83,6 +87,8 @@ class ProgramRepository {
       exercises: loadExercises(uuid),
       teams: loadTeams(uuid),
       sessions: loadSessions(uuid),
+      rolePlays: loadRolePlays(uuid),
+      actors: loadActors(uuid),
     );
   }
 
@@ -91,6 +97,8 @@ class ProgramRepository {
       exercises: const [],
       teams: const [],
       sessions: const [],
+      rolePlays: const [],
+      actors: const [],
     );
     await _prefs.setString(
       _programKey(program.uuid),
@@ -105,6 +113,8 @@ class ProgramRepository {
       exercises: program.exercises,
       teams: program.teams,
       sessions: program.sessions,
+      rolePlays: program.rolePlays,
+      actors: program.actors,
     );
   }
 
@@ -116,7 +126,9 @@ class ProgramRepository {
           (key) =>
               key.startsWith('pe:$uuid:') ||
               key.startsWith('pt:$uuid:') ||
-              key.startsWith('ps:$uuid:'),
+              key.startsWith('ps:$uuid:') ||
+              key.startsWith('pr:$uuid:') ||
+              key.startsWith('pa:$uuid:'),
         )
         .toList();
     for (final key in keys) {
@@ -311,6 +323,8 @@ class ProgramRepository {
     required List<Exercise> exercises,
     required List<Team> teams,
     required List<Session> sessions,
+    required List<RolePlay> rolePlays,
+    required List<Actor> actors,
   }) async {
     final keys = _prefs
         .getKeys()
@@ -318,7 +332,9 @@ class ProgramRepository {
           (key) =>
               key.startsWith('pe:$programUuid:') ||
               key.startsWith('pt:$programUuid:') ||
-              key.startsWith('ps:$programUuid:'),
+              key.startsWith('ps:$programUuid:') ||
+              key.startsWith('pr:$programUuid:') ||
+              key.startsWith('pa:$programUuid:'),
         )
         .toList();
     for (final key in keys) {
@@ -340,6 +356,18 @@ class ProgramRepository {
       await _prefs.setString(
         _sessionKey(programUuid, session.uuid),
         jsonEncode(session.toJson()),
+      );
+    }
+    for (final rolePlay in rolePlays) {
+      await _prefs.setString(
+        _rolePlayKey(programUuid, rolePlay.uuid),
+        jsonEncode(rolePlay.toJson()),
+      );
+    }
+    for (final actor in actors) {
+      await _prefs.setString(
+        _actorKey(programUuid, actor.uuid),
+        jsonEncode(actor.toJson()),
       );
     }
   }
@@ -368,10 +396,92 @@ class ProgramRepository {
   static bool _isLegacyTeamKey(String key) =>
       key.startsWith('t:') && key.split(':').length == 2;
 
+  List<RolePlay> loadRolePlays([String? programUuid]) {
+    final uuid = _requireProgramUuid(programUuid);
+    return _prefs
+        .getKeys()
+        .where((key) => key.startsWith('pr:$uuid:'))
+        .map((key) => _prefs.getString(key))
+        .whereType<String>()
+        .map((value) => RolePlay.fromJson(jsonDecode(value)))
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+  }
+
+  RolePlay? getRolePlay(String uuid, [String? programUuid]) {
+    final programId = _requireProgramUuid(programUuid);
+    final jsonString = _prefs.getString(_rolePlayKey(programId, uuid));
+    if (jsonString == null) return null;
+    return RolePlay.fromJson(jsonDecode(jsonString));
+  }
+
+  Future<void> saveRolePlay(RolePlay rolePlay, [String? programUuid]) async {
+    final programId = _requireProgramUuid(programUuid);
+    await _prefs.setString(
+      _rolePlayKey(programId, rolePlay.uuid),
+      jsonEncode(rolePlay.toJson()),
+    );
+    await _touchProgram(programId);
+  }
+
+  Future<RolePlay?> deleteRolePlay(
+    String uuid, [
+    String? programUuid,
+  ]) async {
+    final programId = _requireProgramUuid(programUuid);
+    final deleted = getRolePlay(uuid, programId);
+    if (deleted != null) {
+      await _prefs.remove(_rolePlayKey(programId, uuid));
+      await _touchProgram(programId);
+    }
+    return deleted;
+  }
+
+  List<Actor> loadActors([String? programUuid]) {
+    final uuid = _requireProgramUuid(programUuid);
+    return _prefs
+        .getKeys()
+        .where((key) => key.startsWith('pa:$uuid:'))
+        .map((key) => _prefs.getString(key))
+        .whereType<String>()
+        .map((value) => Actor.fromJson(jsonDecode(value)))
+        .toList()
+      ..sort((a, b) => a.realName.compareTo(b.realName));
+  }
+
+  Actor? getActor(String uuid, [String? programUuid]) {
+    final programId = _requireProgramUuid(programUuid);
+    final jsonString = _prefs.getString(_actorKey(programId, uuid));
+    if (jsonString == null) return null;
+    return Actor.fromJson(jsonDecode(jsonString));
+  }
+
+  Future<void> saveActor(Actor actor, [String? programUuid]) async {
+    final programId = _requireProgramUuid(programUuid);
+    await _prefs.setString(
+      _actorKey(programId, actor.uuid),
+      jsonEncode(actor.toJson()),
+    );
+    await _touchProgram(programId);
+  }
+
+  Future<Actor?> deleteActor(String uuid, [String? programUuid]) async {
+    final programId = _requireProgramUuid(programUuid);
+    final deleted = getActor(uuid, programId);
+    if (deleted != null) {
+      await _prefs.remove(_actorKey(programId, uuid));
+      await _touchProgram(programId);
+    }
+    return deleted;
+  }
+
   String _programKey(String uuid) => 'p:$uuid';
   String _exerciseKey(String programUuid, String uuid) =>
       'pe:$programUuid:$uuid';
   String _teamKey(String programUuid, String uuid) => 'pt:$programUuid:$uuid';
   String _sessionKey(String programUuid, String uuid) =>
       'ps:$programUuid:$uuid';
+  String _rolePlayKey(String programUuid, String uuid) =>
+      'pr:$programUuid:$uuid';
+  String _actorKey(String programUuid, String uuid) => 'pa:$programUuid:$uuid';
 }
