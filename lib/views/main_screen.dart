@@ -19,6 +19,7 @@ import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/station_screen.dart';
@@ -196,6 +197,16 @@ GoRouter buildRouter(bool isFirstLaunch) {
             // Stub builder avoids constructing an extra RolePlaysController.
             builder: (BuildContext context, GoRouterState state) =>
                 const SizedBox.shrink(),
+            routes: [
+              GoRoute(
+                path: ':roleUuid',
+                parentNavigatorKey: key,
+                builder: (BuildContext context, GoRouterState state) =>
+                    RolePlayScreen(
+                  rolePlayUuid: state.pathParameters['roleUuid']!,
+                ),
+              ),
+            ],
           ),
         ],
       ),
