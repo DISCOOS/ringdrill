@@ -25,6 +25,8 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0015 | [Shareable install links open the plan in the app via `ringdrill.app/i/<slug>`](./0015-shareable-install-links.md) | Accepted |
 | ADR-0016 | [PWA update strategy: `no-cache` entry points, resilient SW detection, and an in-app last resort](./0016-pwa-cache-strategy.md) | Accepted |
 | ADR-0017 | [Decouple number of stations from number of rounds in exercise setup](./0017-decouple-stations-from-rounds.md) | Accepted |
+| ADR-0018 | [Introduce RolePlay and Actor entities, persist schema 1.1 in metadata](./0018-roleplayer-data-model.md) | Accepted |
+| ADR-0019 | [Roleplayer as a third session participant role](./0019-roleplayer-participant-role.md) | Accepted |
 
 ## When to write an ADR
 

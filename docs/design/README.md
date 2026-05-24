@@ -10,6 +10,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 |------------|---------------------------------------------------------|----------|------------|
 | DESIGN-001 | [Exercise Player](./exercise-player.md)                 | Accepted | 2026-05-23 |
 | DESIGN-002 | [Stations tab](./stations-tab.md)                       | Accepted | 2026-05-23 |
+| DESIGN-003 | [RolePlays tab](./roleplays-tab.md)                     | Accepted | 2026-05-23 |
 
 ## Folder layout
 
