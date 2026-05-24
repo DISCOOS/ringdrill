@@ -225,11 +225,23 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           highlight: actor != null,
         ),
         title: Text(
-          rolePlay.age != null
-              ? '${rolePlay.name}, ${rolePlay.age}'
-              : rolePlay.name,
+          () {
+            final tb = StringBuffer(rolePlay.name);
+            if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
+            if (actor != null) tb.write(' (${actor.realName})');
+            return tb.toString();
+          }(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(exercise.name),
+        subtitle: Text(
+          (rolePlay.stationIndex != null &&
+                  rolePlay.stationIndex! < exercise.stations.length)
+              ? localizations.roleSubtitleStation(
+                  exercise.stations[rolePlay.stationIndex!].name,
+                )
+              : localizations.roleSubtitleExercise(exercise.name),
+        ),
         trailing: _buildCastChip(context, localizations, rolePlay, actor),
         expanded: expanded,
         onOpen: () => _openRolePlay(rolePlay),

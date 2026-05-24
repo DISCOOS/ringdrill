@@ -214,4 +214,48 @@ void main() {
       expect(find.text(_actorA.phone!), findsNothing);
     });
   });
+
+  group('Collapsed tile — subtitle and title (Step 3)', () {
+    testWidgets(
+        'subtitle shows roleSubtitleStation when stationIndex is set',
+        (tester) async {
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // Both roles have stationIndex: 0 → station name _stationName
+      expect(
+        find.text(l10n.roleSubtitleStation(_stationName)),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('title includes cast actor realName in parens (role B)',
+        (tester) async {
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+
+      // Role B: name 'Vitne X', no age, cast to actorB ('Ola Nordmann').
+      // Role B was never cleared in any prior test — safe to assert here.
+      expect(find.text('Vitne X (${_actorB.realName})'), findsOneWidget);
+    });
+
+    testWidgets('title includes age suffix when age is set (role A)',
+        (tester) async {
+      // Role A may or may not have actor after the clearCast test, but its
+      // name 'Anna Hansen' and age 45 are always present in the title.
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+
+      // Find a text widget whose content starts with 'Anna Hansen, 45'
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data?.startsWith('Anna Hansen, 45') ?? false),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
 }
