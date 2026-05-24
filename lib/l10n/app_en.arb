@@ -1198,5 +1198,17 @@
   "roleBehavior": "Behaviour",
   "@roleBehavior": {
     "description": "Form field label for the behavior field in RolePlayFormScreen."
+  },
+
+  "castedByLine": "Played by {name}",
+  "@castedByLine": {
+    "description": "Subtitle on a role row when an actor is cast. Used on the Station-screen Markørordre section and browse summaries.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noCastLine": "No actor selected",
+  "@noCastLine": {
+    "description": "Subtitle on a role row when no actor is cast. Styled italic + subdued."
   }
 }

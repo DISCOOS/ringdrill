@@ -2221,6 +2221,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Behaviour'**
   String get roleBehavior;
+
+  /// Subtitle on a role row when an actor is cast. Used on the Station-screen Markørordre section and browse summaries.
+  ///
+  /// In en, this message translates to:
+  /// **'Played by {name}'**
+  String castedByLine(String name);
+
+  /// Subtitle on a role row when no actor is cast. Styled italic + subdued.
+  ///
+  /// In en, this message translates to:
+  /// **'No actor selected'**
+  String get noCastLine;
 }
 
 class _AppLocalizationsDelegate

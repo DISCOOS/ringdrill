@@ -1304,4 +1304,12 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get roleBehavior => 'Oppførsel';
+
+  @override
+  String castedByLine(String name) {
+    return 'Spilles av $name';
+  }
+
+  @override
+  String get noCastLine => 'Ingen markør valgt';
 }

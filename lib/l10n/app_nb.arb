@@ -536,5 +536,17 @@
   "roleBehavior": "Oppførsel",
   "@roleBehavior": {
     "description": "Feltetikett for oppførsel-feltet i RolePlayFormScreen."
+  },
+
+  "castedByLine": "Spilles av {name}",
+  "@castedByLine": {
+    "description": "Undertittel på en rolleradex når en markør er tildelt.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noCastLine": "Ingen markør valgt",
+  "@noCastLine": {
+    "description": "Undertittel på en rolleradex når ingen markør er tildelt. Stiles kursiv + dempet."
   }
 }

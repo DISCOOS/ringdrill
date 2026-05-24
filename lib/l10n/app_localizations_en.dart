@@ -1307,4 +1307,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roleBehavior => 'Behaviour';
+
+  @override
+  String castedByLine(String name) {
+    return 'Played by $name';
+  }
+
+  @override
+  String get noCastLine => 'No actor selected';
 }
