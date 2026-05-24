@@ -6,12 +6,16 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
 import 'package:ringdrill/views/widgets/role_expansion_tile.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+enum _CastAction { edit, clear }
 
 /// Flat list of all [RolePlay] rows across all exercises, sorted by
 /// exercise order then role index. Each row uses [RoleExpansionTile].
@@ -330,16 +334,53 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           )
         else
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  actor.realName,
-                  style: theme.textTheme.bodyMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(actor.realName, style: theme.textTheme.bodyMedium),
+                    if (actor.phone != null)
+                      InkWell(
+                        onTap: () => launchUrl(
+                          Uri.parse('tel:${actor.phone}'),
+                        ),
+                        child: Text(
+                          actor.phone!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.primary,
+                          ),
+                        ),
+                      ),
+                    if (actor.notes != null && actor.notes!.isNotEmpty)
+                      Text(
+                        actor.notes!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              TextButton(
-                onPressed: () => _clearCast(rolePlay),
-                child: Text(localizations.clearCast),
+              PopupMenuButton<_CastAction>(
+                onSelected: (action) async {
+                  if (action == _CastAction.clear) {
+                    await _clearCast(rolePlay);
+                  } else {
+                    await _editCast(actor, rolePlay);
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: _CastAction.edit,
+                    child: Text(localizations.editCast),
+                  ),
+                  PopupMenuItem(
+                    value: _CastAction.clear,
+                    child: Text(localizations.clearCast),
+                  ),
+                ],
               ),
             ],
           ),
@@ -428,6 +469,15 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     await _service.saveRolePlay(
       rolePlay.copyWith(actorUuid: null),
     );
+    setState(() {});
+  }
+
+  Future<void> _editCast(Actor actor, RolePlay rolePlay) async {
+    final updated = await Navigator.of(context).push<Actor>(
+      MaterialPageRoute(builder: (_) => ActorFormScreen(actor: actor)),
+    );
+    if (updated == null || !mounted) return;
+    await _service.saveActor(updated);
     setState(() {});
   }
 }
