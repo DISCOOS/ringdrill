@@ -4,14 +4,15 @@
     "node": ">=20.12.2"
   },
   "dependencies": {
-    "@netlify/blobs": "^10.0.8"
+    "@netlify/blobs": "^10.0.8",
+    "fflate": "0.8.3"
   },
   "name": "functions",
   "version": "1.0.0",
   "description": "",
   "main": "netlify/functions/_shared.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test netlify/functions/__tests__/**/*.test.mjs"
   },
   "keywords": [],
   "author": "",

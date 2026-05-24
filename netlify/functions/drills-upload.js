@@ -1,3 +1,4 @@
+import { unzipSync, strFromU8, zipSync } from "fflate";
 import {
     keysFor, readJson, sanitizeSlug,
     getSlugRecord, claimSlug, sha256Hex,
@@ -5,6 +6,73 @@ import {
     writeBinaryConditional, writeJsonConditional,
     corsPreflight, withCors
 } from "./_shared.js";
+
+// The highest schema version this function accepts. Bumping this requires
+// coordinated changes to the Flutter app and this handler (AGENTS.md).
+const KNOWN_SCHEMA_MAX = "1.1";
+
+/**
+ * Strip the actors/ folder from a .drill archive and validate the schema.
+ * Returns { strippedBytes, error } where error is a Response when invalid.
+ *
+ * Actors are local PII (phone, real name) and must never reach the catalog.
+ * The strip happens here rather than in the client because the same .drill
+ * may legitimately carry actors/ peer-to-peer (USB, AirDrop, email).
+ */
+function stripActorsAndValidate(request, bytes) {
+    let files;
+    try {
+        files = unzipSync(new Uint8Array(bytes));
+    } catch (e) {
+        return { error: withCors(request, new Response(
+            `Invalid archive: ${e.message}`,
+            { status: 400 }
+        )) };
+    }
+
+    // Read and validate schema from metadata.json
+    const metadataEntry = files["metadata.json"];
+    if (metadataEntry) {
+        let metadata;
+        try {
+            metadata = JSON.parse(strFromU8(metadataEntry));
+        } catch (_) {
+            // malformed metadata.json is not a schema violation; continue
+        }
+        if (metadata?.schema) {
+            const clientSchema = String(metadata.schema);
+            // Simple semver-like comparison for 1.x schemas.
+            // Reject if client schema > our max.
+            if (compareSchemas(clientSchema, KNOWN_SCHEMA_MAX) > 0) {
+                return { error: withCors(request, new Response(
+                    JSON.stringify({ error: "unsupported_schema", schema: clientSchema, max: KNOWN_SCHEMA_MAX }),
+                    { status: 415, headers: { "content-type": "application/json" } }
+                )) };
+            }
+        }
+    }
+
+    // Strip actors/ folder entries (PII — never published to catalog)
+    const stripped = {};
+    for (const [name, data] of Object.entries(files)) {
+        if (!name.startsWith("actors/")) {
+            stripped[name] = data;
+        }
+    }
+
+    return { strippedBytes: Buffer.from(zipSync(stripped)) };
+}
+
+/**
+ * Compare two "major.minor" schema strings.
+ * Returns negative if a < b, 0 if equal, positive if a > b.
+ */
+function compareSchemas(a, b) {
+    const [aMaj, aMin] = a.split(".").map(Number);
+    const [bMaj, bMin] = b.split(".").map(Number);
+    if (aMaj !== bMaj) return aMaj - bMaj;
+    return (aMin || 0) - (bMin || 0);
+}
 
 export default async function (request) {
     const preflight = corsPreflight(request);
@@ -35,7 +103,15 @@ export default async function (request) {
         const published = (qs.get("published") || "false").toLowerCase() === "true";
         const tags      = (qs.get("tags") || "").split(",").map(s => s.trim()).filter(Boolean);
 
-        const bytes = await readDrillBytes(request);
+        const rawBytes = await readDrillBytes(request);
+
+        // ---- Strip actors/ and validate schema ----
+        // actors/ contains PII (phone, real name) and must never reach the
+        // catalog. The strip is server-side only; peer-to-peer .drill files
+        // legitimately carry actors/.
+        const { strippedBytes, error: archiveError } = stripActorsAndValidate(request, rawBytes);
+        if (archiveError) return archiveError;
+        const bytes = strippedBytes;
 
         // ---- Slug claim / ownership check ----
         const slugTakenResponse = () => withCors(request, new Response(
