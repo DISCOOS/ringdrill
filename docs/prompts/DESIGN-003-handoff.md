@@ -52,3 +52,33 @@
 - `flutter analyze`: no issues
 - `flutter test`: 58 tests pass (all new + existing)
 - `make build`: 0 outputs written (codegen stable)
+
+## Follow-up: Creating roles (DESIGN-003-followup-creating-roles.md)
+
+### Follow-up Step 1: l10n (cbdc1fb)
+- `roleSection` (nb): `"Rolle"` → `"Markørordre"` per terminology rule.
+- `noRolesInProgram` (en/nb): updated to direct users to Stations tab.
+- 8 new keys: `addRolePlay`, `newRolePlayTitle`, `editRolePlayTitle`, `stationRolesSection`, `noRolesAtThisStation`, `roleSignalement`, `roleBackground`, `roleBehavior`.
+- `flutter gen-l10n` run explicitly; generated files committed.
+
+### Follow-up Step 2: localize form labels + title fallback (5375d7d)
+- `roleplay_form_screen.dart`: literal `'Signalement'`/`'Background'`/`'Behavior'` → localized getters.
+- AppBar title falls back to `newRolePlayTitle` when `rolePlay.name.trim().isEmpty`.
+- 3 new widget tests added to `test/views/roleplay_form_screen_test.dart` (8 total).
+
+### Follow-up Step 3: Markørordre section on StationExerciseScreen (6a564bd)
+- `station_screen.dart`: `_buildRolesSection(station)` Card added below stationInfo (portrait) and below side-by-side Row (landscape).
+- Rows: `theater_comedy` icon, name, cast chip, `Dismissible(startToEnd)` → edit form (never dismisses), body tap → `context.push('/roleplays/$uuid')`.
+- `_addRolePlay`: `nanoid(10)` draft with `stationIndex` pre-set, pushes `RolePlayFormScreen`.
+- `_openCastPicker`: standard `CastPickerSheet` pattern.
+- No delete affordance. `ProgramService.deleteRolePlay` stays unwired.
+- Exercises stored under `'pe:$programUuid:$uuid'` keys (not inline in program JSON) — critical for test seeding.
+- 6 widget tests in new `test/views/station_screen_test.dart`.
+
+### Follow-up Step 4: test alignment (4679446)
+- No old wording literals found in test files; unused import removed.
+
+### Follow-up Verification
+- `flutter analyze`: no issues
+- `flutter test`: 67 tests pass
+- `make build`: 0 outputs written (codegen stable)
