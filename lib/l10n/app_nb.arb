@@ -469,5 +469,17 @@
   "stationLabel": "Post",
   "@stationLabel": {
     "description": "Nedtrekksetikett for stationIndex-feltet i RolePlayFormScreen."
+  },
+  "actorRealName": "Fullt navn",
+  "@actorRealName": {
+    "description": "Feltetikett for markørens fulle navn i ActorFormScreen."
+  },
+  "actorPhone": "Telefon",
+  "@actorPhone": {
+    "description": "Feltetikett for markørens telefonnummer i ActorFormScreen."
+  },
+  "actorNotes": "Notater",
+  "@actorNotes": {
+    "description": "Feltetikett for private notater om markøren i ActorFormScreen."
   }
 }

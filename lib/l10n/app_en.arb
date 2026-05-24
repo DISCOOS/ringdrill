@@ -1131,5 +1131,17 @@
   "stationLabel": "Station",
   "@stationLabel": {
     "description": "Dropdown label for the stationIndex field in RolePlayFormScreen."
+  },
+  "actorRealName": "Full name",
+  "@actorRealName": {
+    "description": "Field label for the actor's real name in ActorFormScreen."
+  },
+  "actorPhone": "Phone",
+  "@actorPhone": {
+    "description": "Field label for the actor's phone number in ActorFormScreen."
+  },
+  "actorNotes": "Notes",
+  "@actorNotes": {
+    "description": "Field label for private notes about the actor in ActorFormScreen."
   }
 }
