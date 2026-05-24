@@ -171,6 +171,13 @@ class _StationsViewState extends State<StationsView> {
             interactionFlags: MapConfig.interactive,
             layers: MapConfig.layers,
             markers: markers,
+            roleMarkers: _programService
+                .loadRolePlays()
+                .where((rp) => rp.position != null)
+                .map<((String, int), String, LatLng)>(
+                  (rp) => ((rp.exerciseUuid, rp.index), rp.name, rp.position!),
+                )
+                .toList(),
             searchTargets: _buildSearchTargets(context),
             onMarkerTap: onMarkerTap,
             topRightCommands: [

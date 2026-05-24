@@ -92,6 +92,7 @@ class MapView<K> extends StatefulWidget {
     this.minZoom = 2,
     this.maxZoom = 19,
     this.markers = const [],
+    this.roleMarkers = const [],
     this.searchTargets = const [],
     this.topRightCommands = const [],
     this.initialFit,
@@ -131,6 +132,12 @@ class MapView<K> extends StatefulWidget {
   final MapController? controller;
   final List<TileLayer> layers;
   final List<(K, String, LatLng)> markers;
+
+  /// Role-play position markers rendered with a rounded-square theatre glyph.
+  /// Uses a parallel parameter (same tuple shape as [markers]) so existing
+  /// [markers] callers are untouched. Rendered in a second [MarkerLayer]
+  /// after the station layer so roles appear on top.
+  final List<(K, String, LatLng)> roleMarkers;
 
   /// Extra named locations available to the search field. Each target may
   /// have zero, one, or many points (e.g. an exercise that aggregates the
@@ -274,6 +281,22 @@ class _MapViewState<K> extends State<MapView<K>> {
                               ),
                             ],
                           ),
+                          onTap: () => widget.onMarkerTap?.call(e),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                if (widget.roleMarkers.isNotEmpty)
+                  MarkerLayer(
+                    markers: widget.roleMarkers.map((e) {
+                      return Marker(
+                        height: 56,
+                        width: 56,
+                        point: e.$3,
+                        alignment: Alignment.topCenter,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.deferToChild,
+                          child: _RoleMarker(label: e.$2),
                           onTap: () => widget.onMarkerTap?.call(e),
                         ),
                       );
@@ -1041,6 +1064,64 @@ class _CurrentLocationDot extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Rounded-square marker for a role-play position.
+///
+/// Visually distinct from the station's green [Icons.place] pin:
+/// uses a rounded rectangle with a [Icons.theater_comedy] glyph in
+/// the colorScheme.tertiary colour. A heavier border weight signals
+/// that this is a statically-placed roleplayer position.
+class _RoleMarker extends StatelessWidget {
+  const _RoleMarker({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Opacity(
+          opacity: 0.65,
+          child: Material(
+            elevation: 2,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Text(label, style: const TextStyle(fontSize: 11)),
+            ),
+          ),
+        ),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: scheme.tertiaryContainer,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: scheme.tertiary,
+              width: 2.5,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.theater_comedy,
+            color: scheme.onTertiaryContainer,
+            size: 18,
+          ),
+        ),
+      ],
     );
   }
 }
