@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -26,6 +27,29 @@ const _roleAtStation0 = RolePlay(
   exerciseUuid: _exerciseUuid,
   stationIndex: 0,
   name: 'Pasient A',
+);
+
+// Role with age set — used to verify age suffix in title.
+const _actorAUuid = 'actor-a';
+final _actorA = Actor(uuid: _actorAUuid, realName: 'Kari Nordmann');
+
+const _roleWithAge = RolePlay(
+  uuid: 'role-age',
+  index: 1,
+  exerciseUuid: _exerciseUuid,
+  stationIndex: 0,
+  name: 'Olav Berg',
+  age: 45,
+);
+
+// Role cast to actorA — used to verify castedByLine subtitle.
+const _roleCast = RolePlay(
+  uuid: 'role-cast',
+  index: 2,
+  exerciseUuid: _exerciseUuid,
+  stationIndex: 0,
+  name: 'Vitne Y',
+  actorUuid: _actorAUuid,
 );
 
 Exercise _exercise() => Exercise(
@@ -73,9 +97,13 @@ Map<String, Object> _basePrefs() {
     }),
     // Exercises are stored with 'pe:' prefix keys, not inline in program JSON
     'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    // Only station 0 gets a role; station 1 stays empty for empty-state test
+    // Only station 0 gets roles; station 1 stays empty for empty-state test
     'pr:$_programUuid:${_roleAtStation0.uuid}':
         jsonEncode(_roleAtStation0.toJson()),
+    'pr:$_programUuid:${_roleWithAge.uuid}': jsonEncode(_roleWithAge.toJson()),
+    'pr:$_programUuid:${_roleCast.uuid}': jsonEncode(_roleCast.toJson()),
+    // Actor cast to _roleCast
+    'pa:$_programUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
   };
 }
 
@@ -203,6 +231,59 @@ void main() {
         d.direction,
         isNot(DismissDirection.endToStart),
         reason: 'Role row must not have an endToStart (delete) swipe',
+      );
+    }
+  });
+
+  testWidgets('row title shows age suffix when age is set', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    // _roleWithAge has name 'Olav Berg' and age 45
+    expect(find.text('Olav Berg, 45'), findsOneWidget);
+  });
+
+  testWidgets('row title shows no age suffix when age is null', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    // _roleAtStation0 has name 'Pasient A' and no age — exact text match
+    expect(find.text('Pasient A'), findsOneWidget);
+  });
+
+  testWidgets('subtitle shows castedByLine when actor is cast', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // _roleCast is cast to _actorA
+    expect(find.text(l10n.castedByLine(_actorA.realName)), findsOneWidget);
+  });
+
+  testWidgets('subtitle shows noCastLine when no actor is cast', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // _roleAtStation0 and _roleWithAge are uncast — noCastLine appears for each
+    expect(find.text(l10n.noCastLine), findsWidgets);
+  });
+
+  testWidgets('uncast subtitle is italic', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // Find a Text widget displaying noCastLine and verify italic style
+    final noCastWidgets = tester.widgetList<Text>(
+      find.text(l10n.noCastLine),
+    );
+    for (final w in noCastWidgets) {
+      final style = w.style;
+      expect(
+        style?.fontStyle,
+        FontStyle.italic,
+        reason: 'Uncast subtitle must be italic',
       );
     }
   });

@@ -359,10 +359,21 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   Widget _buildRoleRow(RolePlay r) {
     final localizations = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final actor = r.actorUuid != null
         ? _programService.getActor(r.actorUuid!)
         : null;
+    final titleText = r.age != null ? '${r.name}, ${r.age}' : r.name;
+    final subtitleText = actor != null
+        ? localizations.castedByLine(actor.realName)
+        : localizations.noCastLine;
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: actor != null
+          ? colorScheme.onSurfaceVariant
+          : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+      fontStyle: actor != null ? FontStyle.normal : FontStyle.italic,
+    );
 
     return Dismissible(
       key: ValueKey('role-row-${r.uuid}'),
@@ -403,6 +414,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
                 Icons.theater_comedy,
@@ -411,7 +423,23 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(r.name),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titleText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      subtitleText,
+                      style: subtitleStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
               IconButton(
                 icon: Icon(
