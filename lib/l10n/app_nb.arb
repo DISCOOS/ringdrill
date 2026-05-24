@@ -341,5 +341,113 @@
   "exerciseCopyTooltip": "Kopier øvelse",
   "@exerciseCopyTooltip": {
     "description": "Tooltip on the copy IconButton overlaid at the top-right of the scrollable list on the coordinator screen."
+  },
+
+  "rolePlaysTab": "Markører",
+  "@rolePlaysTab": {
+    "description": "Bottom-nav label for the RolePlays (Markører) tab introduced in DESIGN-003."
+  },
+  "roleSection": "Rolle",
+  "@roleSection": {
+    "description": "Section header for the publishable role fields in the expanded tile and detail screen."
+  },
+  "castSection": "Markør",
+  "@castSection": {
+    "description": "Section header for the locally-assigned actor fields in the expanded tile."
+  },
+  "addCast": "Velg markør",
+  "@addCast": {
+    "description": "Button shown when no actor is assigned to a role. Opens the cast picker."
+  },
+  "editCast": "Rediger markør",
+  "@editCast": {
+    "description": "Overflow menu item to open ActorFormScreen for the currently assigned actor."
+  },
+  "clearCast": "Fjern markør",
+  "@clearCast": {
+    "description": "Overflow menu item to unlink the actor from the role."
+  },
+  "castRoster": "Markører",
+  "@castRoster": {
+    "description": "AppBar tooltip / sheet title for the full list of Actor records in the program."
+  },
+  "newActor": "Ny markør",
+  "@newActor": {
+    "description": "Sticky top row in the cast picker and FAB label in the cast roster sheet."
+  },
+  "castedAs": "Markør for: {names}",
+  "@castedAs": {
+    "description": "Footer shown on an actor row in the cast roster sheet listing roles they are cast to.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "alreadyCastAs": "Allerede markør for {name}",
+  "@alreadyCastAs": {
+    "description": "Annotation shown in the cast picker when the actor is already cast to another role in the same exercise.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "castPickerTitle": "Markør: {role}",
+  "@castPickerTitle": {
+    "description": "Title of the cast picker bottom sheet.",
+    "placeholders": {
+      "role": { "type": "String" }
+    }
+  },
+  "castPrivateHint": "Privat — publiseres aldri",
+  "@castPrivateHint": {
+    "description": "One-time hint shown with the Cast section header."
+  },
+  "noSignalement": "Ingen signalement",
+  "@noSignalement": {
+    "description": "Placeholder shown when signalement is blank."
+  },
+  "noBackground": "Ingen bakgrunn",
+  "@noBackground": {
+    "description": "Placeholder shown when background is blank."
+  },
+  "noBehavior": "Ingen oppførsel",
+  "@noBehavior": {
+    "description": "Placeholder shown when behavior is blank."
+  },
+  "noStationAssigned": "Ingen post",
+  "@noStationAssigned": {
+    "description": "Placeholder shown when stationIndex is null."
+  },
+  "noRolesInProgram": "Ingen markører ennå. Legg til en rolle fra Øvelser-fanen.",
+  "@noRolesInProgram": {
+    "description": "Empty-state when program has no RolePlay records."
+  },
+  "noRolesInExercise": "Ingen markører for denne øvelsen.",
+  "@noRolesInExercise": {
+    "description": "Empty-state when exercise filter excludes every role."
+  },
+  "showAllRoles": "Vis alle",
+  "@showAllRoles": {
+    "description": "Recovery button in the exercise filter banner on the RolePlays tab."
+  },
+  "showingRolesIn": "Viser markører i: {exercise}",
+  "@showingRolesIn": {
+    "description": "Banner when the RolePlays tab is filtered to a single exercise.",
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "castDeleteBlocked": "Markør i {count} rolle(r). Fjern først.",
+  "@castDeleteBlocked": {
+    "description": "Error shown when trying to delete a cast actor.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "confirmReduceRoles": "(placeholder)",
+  "@confirmReduceRoles": {
+    "description": "Placeholder — final wording added when the confirm-reduce-roles dialog is implemented."
+  },
+  "unknownRole": "Ukjent rolle",
+  "@unknownRole": {
+    "description": "Fallback label on the map when rolePlayUuid cannot be resolved locally."
   }
 }

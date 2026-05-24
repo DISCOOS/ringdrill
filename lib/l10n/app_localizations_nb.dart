@@ -1158,4 +1158,84 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get exerciseCopyTooltip => 'Kopier øvelse';
+
+  @override
+  String get rolePlaysTab => 'Markører';
+
+  @override
+  String get roleSection => 'Rolle';
+
+  @override
+  String get castSection => 'Markør';
+
+  @override
+  String get addCast => 'Velg markør';
+
+  @override
+  String get editCast => 'Rediger markør';
+
+  @override
+  String get clearCast => 'Fjern markør';
+
+  @override
+  String get castRoster => 'Markører';
+
+  @override
+  String get newActor => 'Ny markør';
+
+  @override
+  String castedAs(String names) {
+    return 'Markør for: $names';
+  }
+
+  @override
+  String alreadyCastAs(String name) {
+    return 'Allerede markør for $name';
+  }
+
+  @override
+  String castPickerTitle(String role) {
+    return 'Markør: $role';
+  }
+
+  @override
+  String get castPrivateHint => 'Privat — publiseres aldri';
+
+  @override
+  String get noSignalement => 'Ingen signalement';
+
+  @override
+  String get noBackground => 'Ingen bakgrunn';
+
+  @override
+  String get noBehavior => 'Ingen oppførsel';
+
+  @override
+  String get noStationAssigned => 'Ingen post';
+
+  @override
+  String get noRolesInProgram =>
+      'Ingen markører ennå. Legg til en rolle fra Øvelser-fanen.';
+
+  @override
+  String get noRolesInExercise => 'Ingen markører for denne øvelsen.';
+
+  @override
+  String get showAllRoles => 'Vis alle';
+
+  @override
+  String showingRolesIn(String exercise) {
+    return 'Viser markører i: $exercise';
+  }
+
+  @override
+  String castDeleteBlocked(int count) {
+    return 'Markør i $count rolle(r). Fjern først.';
+  }
+
+  @override
+  String get confirmReduceRoles => '(placeholder)';
+
+  @override
+  String get unknownRole => 'Ukjent rolle';
 }

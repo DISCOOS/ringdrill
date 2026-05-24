@@ -1003,5 +1003,113 @@
   "exerciseCopyTooltip": "Copy exercise",
   "@exerciseCopyTooltip": {
     "description": "Tooltip on the copy IconButton overlaid at the top-right of the scrollable list on the coordinator screen."
+  },
+
+  "rolePlaysTab": "RolePlays",
+  "@rolePlaysTab": {
+    "description": "Bottom-nav label for the RolePlays (Markører) tab introduced in DESIGN-003."
+  },
+  "roleSection": "Role",
+  "@roleSection": {
+    "description": "Section header for the publishable role fields in the expanded tile and detail screen."
+  },
+  "castSection": "Cast",
+  "@castSection": {
+    "description": "Section header for the locally-assigned actor fields in the expanded tile (Norwegian: Markør)."
+  },
+  "addCast": "Add cast",
+  "@addCast": {
+    "description": "Button shown when no actor is assigned to a role. Opens the cast picker."
+  },
+  "editCast": "Edit cast",
+  "@editCast": {
+    "description": "Overflow menu item to open ActorFormScreen for the currently assigned actor."
+  },
+  "clearCast": "Clear cast",
+  "@clearCast": {
+    "description": "Overflow menu item to unlink the actor from the role (sets actorUuid = null)."
+  },
+  "castRoster": "Cast roster",
+  "@castRoster": {
+    "description": "AppBar tooltip / sheet title for the full list of Actor records in the program."
+  },
+  "newActor": "New actor",
+  "@newActor": {
+    "description": "Sticky top row in the cast picker and FAB label in the cast roster sheet."
+  },
+  "castedAs": "Cast as: {names}",
+  "@castedAs": {
+    "description": "Footer shown on an actor row in the cast roster sheet listing roles they are cast to.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "alreadyCastAs": "Already cast as {name}",
+  "@alreadyCastAs": {
+    "description": "Annotation shown in the cast picker when the actor is already cast to another role in the same exercise.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "castPickerTitle": "Cast: {role}",
+  "@castPickerTitle": {
+    "description": "Title of the cast picker bottom sheet. Displays the role name.",
+    "placeholders": {
+      "role": { "type": "String" }
+    }
+  },
+  "castPrivateHint": "Private — never published",
+  "@castPrivateHint": {
+    "description": "One-time hint shown with the Cast section header to make the privacy boundary explicit."
+  },
+  "noSignalement": "No description",
+  "@noSignalement": {
+    "description": "Placeholder shown in the Role section when the signalement field is blank."
+  },
+  "noBackground": "No background",
+  "@noBackground": {
+    "description": "Placeholder shown in the Role section when the background field is blank."
+  },
+  "noBehavior": "No behaviour",
+  "@noBehavior": {
+    "description": "Placeholder shown in the Role section when the behavior field is blank."
+  },
+  "noStationAssigned": "No station",
+  "@noStationAssigned": {
+    "description": "Placeholder shown in the Role section when stationIndex is null."
+  },
+  "noRolesInProgram": "No roles yet. Add a role from the Exercises tab.",
+  "@noRolesInProgram": {
+    "description": "Empty-state shown in the RolePlays tab when the program has no RolePlay records."
+  },
+  "noRolesInExercise": "No roles in this exercise.",
+  "@noRolesInExercise": {
+    "description": "Empty-state shown in the RolePlays tab when the active exercise filter excludes every role."
+  },
+  "showAllRoles": "Show all",
+  "@showAllRoles": {
+    "description": "Recovery button in the exercise filter banner on the RolePlays tab."
+  },
+  "showingRolesIn": "Showing roles in: {exercise}",
+  "@showingRolesIn": {
+    "description": "Banner shown above the bottom-nav when the RolePlays tab is filtered to a single exercise.",
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "castDeleteBlocked": "Cast in {count} role(s). Clear before deleting.",
+  "@castDeleteBlocked": {
+    "description": "Error shown when the user tries to delete an actor who is still cast in one or more roles.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "confirmReduceRoles": "(placeholder)",
+  "@confirmReduceRoles": {
+    "description": "Placeholder — final wording added when the confirm-reduce-roles dialog is implemented."
+  },
+  "unknownRole": "Unknown role",
+  "@unknownRole": {
+    "description": "Fallback label on the map when a roleplayer participant's rolePlayUuid cannot be resolved to a local RolePlay record."
   }
 }

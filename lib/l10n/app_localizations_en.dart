@@ -1162,4 +1162,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exerciseCopyTooltip => 'Copy exercise';
+
+  @override
+  String get rolePlaysTab => 'RolePlays';
+
+  @override
+  String get roleSection => 'Role';
+
+  @override
+  String get castSection => 'Cast';
+
+  @override
+  String get addCast => 'Add cast';
+
+  @override
+  String get editCast => 'Edit cast';
+
+  @override
+  String get clearCast => 'Clear cast';
+
+  @override
+  String get castRoster => 'Cast roster';
+
+  @override
+  String get newActor => 'New actor';
+
+  @override
+  String castedAs(String names) {
+    return 'Cast as: $names';
+  }
+
+  @override
+  String alreadyCastAs(String name) {
+    return 'Already cast as $name';
+  }
+
+  @override
+  String castPickerTitle(String role) {
+    return 'Cast: $role';
+  }
+
+  @override
+  String get castPrivateHint => 'Private — never published';
+
+  @override
+  String get noSignalement => 'No description';
+
+  @override
+  String get noBackground => 'No background';
+
+  @override
+  String get noBehavior => 'No behaviour';
+
+  @override
+  String get noStationAssigned => 'No station';
+
+  @override
+  String get noRolesInProgram =>
+      'No roles yet. Add a role from the Exercises tab.';
+
+  @override
+  String get noRolesInExercise => 'No roles in this exercise.';
+
+  @override
+  String get showAllRoles => 'Show all';
+
+  @override
+  String showingRolesIn(String exercise) {
+    return 'Showing roles in: $exercise';
+  }
+
+  @override
+  String castDeleteBlocked(int count) {
+    return 'Cast in $count role(s). Clear before deleting.';
+  }
+
+  @override
+  String get confirmReduceRoles => '(placeholder)';
+
+  @override
+  String get unknownRole => 'Unknown role';
 }

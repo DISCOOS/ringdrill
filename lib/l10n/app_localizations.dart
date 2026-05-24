@@ -1963,6 +1963,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy exercise'**
   String get exerciseCopyTooltip;
+
+  /// Bottom-nav label for the RolePlays (Markører) tab introduced in DESIGN-003.
+  ///
+  /// In en, this message translates to:
+  /// **'RolePlays'**
+  String get rolePlaysTab;
+
+  /// Section header for the publishable role fields in the expanded tile and detail screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get roleSection;
+
+  /// Section header for the locally-assigned actor fields in the expanded tile (Norwegian: Markør).
+  ///
+  /// In en, this message translates to:
+  /// **'Cast'**
+  String get castSection;
+
+  /// Button shown when no actor is assigned to a role. Opens the cast picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add cast'**
+  String get addCast;
+
+  /// Overflow menu item to open ActorFormScreen for the currently assigned actor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit cast'**
+  String get editCast;
+
+  /// Overflow menu item to unlink the actor from the role (sets actorUuid = null).
+  ///
+  /// In en, this message translates to:
+  /// **'Clear cast'**
+  String get clearCast;
+
+  /// AppBar tooltip / sheet title for the full list of Actor records in the program.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast roster'**
+  String get castRoster;
+
+  /// Sticky top row in the cast picker and FAB label in the cast roster sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'New actor'**
+  String get newActor;
+
+  /// Footer shown on an actor row in the cast roster sheet listing roles they are cast to.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast as: {names}'**
+  String castedAs(String names);
+
+  /// Annotation shown in the cast picker when the actor is already cast to another role in the same exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Already cast as {name}'**
+  String alreadyCastAs(String name);
+
+  /// Title of the cast picker bottom sheet. Displays the role name.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast: {role}'**
+  String castPickerTitle(String role);
+
+  /// One-time hint shown with the Cast section header to make the privacy boundary explicit.
+  ///
+  /// In en, this message translates to:
+  /// **'Private — never published'**
+  String get castPrivateHint;
+
+  /// Placeholder shown in the Role section when the signalement field is blank.
+  ///
+  /// In en, this message translates to:
+  /// **'No description'**
+  String get noSignalement;
+
+  /// Placeholder shown in the Role section when the background field is blank.
+  ///
+  /// In en, this message translates to:
+  /// **'No background'**
+  String get noBackground;
+
+  /// Placeholder shown in the Role section when the behavior field is blank.
+  ///
+  /// In en, this message translates to:
+  /// **'No behaviour'**
+  String get noBehavior;
+
+  /// Placeholder shown in the Role section when stationIndex is null.
+  ///
+  /// In en, this message translates to:
+  /// **'No station'**
+  String get noStationAssigned;
+
+  /// Empty-state shown in the RolePlays tab when the program has no RolePlay records.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles yet. Add a role from the Exercises tab.'**
+  String get noRolesInProgram;
+
+  /// Empty-state shown in the RolePlays tab when the active exercise filter excludes every role.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles in this exercise.'**
+  String get noRolesInExercise;
+
+  /// Recovery button in the exercise filter banner on the RolePlays tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get showAllRoles;
+
+  /// Banner shown above the bottom-nav when the RolePlays tab is filtered to a single exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing roles in: {exercise}'**
+  String showingRolesIn(String exercise);
+
+  /// Error shown when the user tries to delete an actor who is still cast in one or more roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast in {count} role(s). Clear before deleting.'**
+  String castDeleteBlocked(int count);
+
+  /// Placeholder — final wording added when the confirm-reduce-roles dialog is implemented.
+  ///
+  /// In en, this message translates to:
+  /// **'(placeholder)'**
+  String get confirmReduceRoles;
+
+  /// Fallback label on the map when a roleplayer participant's rolePlayUuid cannot be resolved to a local RolePlay record.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown role'**
+  String get unknownRole;
 }
 
 class _AppLocalizationsDelegate
