@@ -2,13 +2,17 @@ import 'dart:convert';
 
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:universal_io/io.dart';
 
 class DrillFile {
   static const drillSchema1_0 = '1.0';
+  static const drillSchema1_1 = '1.1';
+  static const drillSchemaCurrent = drillSchema1_1;
   // TODO: Change to iana format for custom mime type
   static const drillMimeType = 'application/vnd.ringdrill+zip';
   static const drillExtension = 'drill';
@@ -34,6 +38,8 @@ class DrillFile {
     final teams = <Team>[];
     final sessions = <Session>[];
     final exercises = <Exercise>[];
+    final rolePlays = <RolePlay>[];
+    final actors = <Actor>[];
     late final Program program;
     late final ProgramMetadata metadata;
 
@@ -63,6 +69,14 @@ class DrillFile {
           exercises.add(Exercise.fromJson(json));
           continue;
         }
+        if (file.name.startsWith('roleplays')) {
+          rolePlays.add(RolePlay.fromJson(json));
+          continue;
+        }
+        if (file.name.startsWith('actors')) {
+          actors.add(Actor.fromJson(json));
+          continue;
+        }
       }
     }
 
@@ -71,6 +85,8 @@ class DrillFile {
       sessions: sessions,
       metadata: metadata,
       exercises: exercises,
+      rolePlays: rolePlays,
+      actors: actors,
     );
   }
 
@@ -97,8 +113,11 @@ class DrillFile {
     final archive = Archive();
     final encoder = ZipEncoder();
 
-    // Serialize Program's metadata
-    final metadata = utf8.encode(jsonEncode(program.metadata.toJson()));
+    // Serialize Program's metadata, stamping the current schema version.
+    final metadataWithSchema = program.metadata.copyWith(
+      schema: drillSchemaCurrent,
+    );
+    final metadata = utf8.encode(jsonEncode(metadataWithSchema.toJson()));
     archive.addFile(ArchiveFile('metadata.json', metadata.length, metadata));
 
     // Serialize exercises into folder 'exercises'
@@ -133,16 +152,48 @@ class DrillFile {
       );
     }
 
+    // Serialize roleplays into folder 'roleplays'
+    for (var rolePlay in program.rolePlays) {
+      final json = utf8.encode(jsonEncode(rolePlay.toJson()));
+      archive.addFile(
+        ArchiveFile(
+          path.join('roleplays', '${rolePlay.uuid}.json'),
+          json.length,
+          json,
+        ),
+      );
+    }
+
+    // Serialize actors into folder 'actors'
+    for (var actor in program.actors) {
+      final json = utf8.encode(jsonEncode(actor.toJson()));
+      archive.addFile(
+        ArchiveFile(
+          path.join('actors', '${actor.uuid}.json'),
+          json.length,
+          json,
+        ),
+      );
+    }
+
     // Serialize Program itself (without nested objects)
     final json = utf8.encode(
       jsonEncode(
-        program.copyWith(teams: [], sessions: [], exercises: []).toJson(),
+        program
+            .copyWith(
+              teams: [],
+              sessions: [],
+              exercises: [],
+              rolePlays: [],
+              actors: [],
+            )
+            .toJson(),
       ),
     );
     archive.addFile(ArchiveFile('program.json', json.length, json));
 
     return DrillFile(
-      schema: drillSchema1_0,
+      schema: drillSchemaCurrent,
       mimeType: drillMimeType,
       fileName: '$fileName.drill',
       content: encoder.encode(archive),
