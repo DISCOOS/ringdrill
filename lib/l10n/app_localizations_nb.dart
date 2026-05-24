@@ -1238,4 +1238,28 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get unknownRole => 'Ukjent rolle';
+
+  @override
+  String get roleName => 'Navn';
+
+  @override
+  String get roleAge => 'Alder';
+
+  @override
+  String get optional => 'Valgfritt';
+
+  @override
+  String get ageRange => 'Alder må være mellom 0 og 120';
+
+  @override
+  String get stationLabel => 'Post';
+
+  @override
+  String get actorRealName => 'Fullt navn';
+
+  @override
+  String get actorPhone => 'Telefon';
+
+  @override
+  String get actorNotes => 'Notater';
 }

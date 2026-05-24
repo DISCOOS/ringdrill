@@ -1242,4 +1242,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unknownRole => 'Unknown role';
+
+  @override
+  String get roleName => 'Name';
+
+  @override
+  String get roleAge => 'Age';
+
+  @override
+  String get optional => 'Optional';
+
+  @override
+  String get ageRange => 'Age must be between 0 and 120';
+
+  @override
+  String get stationLabel => 'Station';
+
+  @override
+  String get actorRealName => 'Full name';
+
+  @override
+  String get actorPhone => 'Phone';
+
+  @override
+  String get actorNotes => 'Notes';
 }

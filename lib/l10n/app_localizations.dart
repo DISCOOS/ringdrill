@@ -2101,6 +2101,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown role'**
   String get unknownRole;
+
+  /// Field label for the role name in RolePlayFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get roleName;
+
+  /// Field label for the optional age field in RolePlayFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get roleAge;
+
+  /// Hint text for optional form fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get optional;
+
+  /// Validation error shown when the age value is outside the valid range.
+  ///
+  /// In en, this message translates to:
+  /// **'Age must be between 0 and 120'**
+  String get ageRange;
+
+  /// Dropdown label for the stationIndex field in RolePlayFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Station'**
+  String get stationLabel;
+
+  /// Field label for the actor's real name in ActorFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get actorRealName;
+
+  /// Field label for the actor's phone number in ActorFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get actorPhone;
+
+  /// Field label for private notes about the actor in ActorFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get actorNotes;
 }
 
 class _AppLocalizationsDelegate
