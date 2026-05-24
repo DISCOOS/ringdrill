@@ -11,6 +11,7 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/station_expansion_tile.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
 class StationListView extends StatefulWidget {
   const StationListView({super.key, required this.controller});
@@ -272,6 +273,11 @@ class _StationListViewState extends State<StationListView> {
           miniMapKey: ValueKey<String>(
             'stations-list-map-${exercise.uuid}-${station.index}',
           ),
+        ),
+        const SizedBox(height: 12),
+        StationRoleSummary(
+          exercise: exercise,
+          stationIndex: station.index,
         ),
       ],
     );

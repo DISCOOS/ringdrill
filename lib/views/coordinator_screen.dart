@@ -14,6 +14,7 @@ import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
 import 'exercise_control_button.dart';
 import 'exercise_form_screen.dart';
@@ -880,6 +881,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               miniMapKey: ValueKey<String>(
                 'coordinator-station-map-$stationIndex',
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: StationRoleSummary(
+              exercise: _exercise!,
+              stationIndex: stationIndex,
             ),
           ),
         ],
