@@ -19,6 +19,7 @@ import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/stations_view.dart';
@@ -82,7 +83,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
               isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
               location: state.matchedLocation,
-              routes: [routeProgram, routeStations, routeTeams, routeMap],
+              routes: [routeProgram, routeMap, routeStations, routeRolePlays, routeTeams],
             ),
           );
         },
@@ -189,6 +190,13 @@ GoRouter buildRouter(bool isFirstLaunch) {
               ),
             ],
           ),
+          GoRoute(
+            path: routeRolePlays,
+            // ShellRoute's child is ignored by MainScreen (IndexedStack).
+            // Stub builder avoids constructing an extra RolePlaysController.
+            builder: (BuildContext context, GoRouterState state) =>
+                const SizedBox.shrink(),
+          ),
         ],
       ),
     ],
@@ -269,14 +277,23 @@ class _MainScreenState extends State<MainScreen> {
   late final StationListController _stationListController =
       StationListController();
 
+  late final RolePlaysController _rolePlaysController = RolePlaysController();
+
+  /// Order matches [routeProgram, routeMap, routeStations, routeRolePlays, routeTeams].
+  /// Note: Map tab (StationsView) was previously at position 4; it moved to
+  /// position 2 when RolePlays was added. See DESIGN-003.
   late final List<PageWidget> _pages = [
     PageWidget(controller: ProgramPageController(), child: ProgramView()),
+    PageWidget(controller: StationsPageController(), child: StationsView()),
     PageWidget(
       controller: _stationListController,
       child: StationListView(controller: _stationListController),
     ),
+    PageWidget(
+      controller: _rolePlaysController,
+      child: RolePlaysView(controller: _rolePlaysController),
+    ),
     PageWidget(controller: TeamsPageController(), child: TeamsView()),
-    PageWidget(controller: StationsPageController(), child: StationsView()),
   ];
 
   int _currentTab = 0;
@@ -650,9 +667,13 @@ class _MainScreenState extends State<MainScreen> {
   List<Destination> _buildDestinations(AppLocalizations localizations) {
     return [
       Destination(icon: Icons.update, label: localizations.exercise(2)),
-      Destination(icon: Icons.place, label: localizations.stationsTab),
-      Destination(icon: Icons.group, label: localizations.team(2)),
       Destination(icon: Icons.map, label: localizations.mapTab),
+      Destination(icon: Icons.place, label: localizations.stationsTab),
+      Destination(
+        icon: Icons.theater_comedy,
+        label: localizations.rolePlaysTab,
+      ),
+      Destination(icon: Icons.group, label: localizations.team(2)),
     ];
   }
 

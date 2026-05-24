@@ -20,3 +20,7 @@ const String routeMap = '/map';
 const String routeStations = '/stations';
 
 const String routeTeams = '/teams';
+
+/// RolePlays tab — flat list of RolePlay rows across all exercises.
+/// Introduced in DESIGN-003.
+const String routeRolePlays = '/roleplays';
