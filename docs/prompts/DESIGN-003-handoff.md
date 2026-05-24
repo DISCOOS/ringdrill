@@ -123,3 +123,54 @@
 - `flutter analyze`: no issues
 - `flutter test`: 86 tests pass (67 pre-existing + 19 new)
 - `make build`: 0 outputs written (codegen stable)
+
+## Follow-up: Station Row and Routing (DESIGN-003-followup-station-row-and-routing.md)
+
+### Follow-up Step 1: navigation (6691d42)
+- `lib/views/main_screen.dart`: added import for `roleplay_screen.dart`; replaced stub `GoRoute` for `routeRolePlays` with a route that has a nested `:roleUuid` child using `parentNavigatorKey: key`, building `RolePlayScreen(rolePlayUuid: state.pathParameters['roleUuid']!)`.
+- Route registration was the cause of GoException on row-body tap in the Station-screen Markørordre section.
+
+### Follow-up Step 2: l10n (13d8ce7)
+- `castedByLine`: "Played by {name}" / "Spilles av {name}" (String param `name`).
+- `noCastLine`: "No actor selected" / "Ingen markør valgt".
+- Both keys are shared with the station-expansion-summary follow-up.
+- `flutter gen-l10n` run explicitly; generated files committed.
+
+### Follow-up Step 3: station row enrichment (6abbb0e)
+- `station_screen.dart` `_buildRoleRow`: replaced `Expanded(child: Text(r.name))` with a two-line Column: title (`r.name, r.age` when set) and subtitle (`castedByLine(actor.realName)` when cast, `noCastLine` when not).
+- Subtitle style: italic + `withValues(alpha: 0.7)` when uncast, regular when cast.
+- Interactive `IconButton` trailing cast chip unchanged.
+- Per DESIGN-003 §Tile anatomy: cast-actor parens on title are exclusive to the Markører-tab tile.
+- `test/views/station_screen_test.dart`: +5 new tests (age suffix, no-age, castedByLine, noCastLine, italic style); 3 new fixtures (_actorA, _roleWithAge, _roleCast).
+
+### Follow-up Step 4: sweep (137ded3)
+- Grep sweeps clean. `flutter analyze` + `flutter test` + `make build` all clean.
+
+### Follow-up Verification
+- `flutter analyze`: no issues
+- `flutter test`: 91 tests pass (86 pre-existing + 5 new)
+- `make build`: 0 outputs written (codegen stable)
+
+## Follow-up: Station-Expansion Summary (DESIGN-003-followup-station-expansions.md)
+
+### Follow-up Step 1: StationRoleSummary widget (3894f9a)
+- New file `lib/views/widgets/station_role_summary.dart`.
+- `StationRoleSummary(exercise, stationIndex)`: reads `loadRolePlays()` + `loadActors()` from ProgramService; returns `SizedBox.shrink()` when no roles match.
+- Header: `Icons.theater_comedy` (size 18) + `stationRolesSection` + count.
+- `_RoleSummaryRow`: leading theatre icon (size 20), two-line Column (name+age title, cast subtitle), trailing non-interactive cast-state icon (no `IconButton`/`InkWell` wrapper). Row body tap: `context.push('$routeRolePlays/${role.uuid}')`.
+- No `Dismissible`, no overflow menu, no swipe affordances.
+- New file `test/views/widgets/station_role_summary_test.dart`: 9 tests (empty→shrink, header count, row titles, castedByLine, noCastLine, italic, route tap, non-interactive chip, no Dismissible).
+
+### Follow-up Step 2: integration (0c97366)
+- `lib/views/coordinator_screen.dart` `_buildStationDetail`: appended `Padding(fromLTRB(8,0,8,8), StationRoleSummary(...))` after StationPositionPanel block.
+- `lib/views/station_list_view.dart` `_buildExpandedBody`: appended `SizedBox(height: 12)` + `StationRoleSummary(...)` after StationPositionPanel.
+- Both callers rely on `SizedBox.shrink()` for stations with no roles — no local gating needed.
+
+### Follow-up Step 3: sweep + verification
+- `StationRoleSummary` appears in 3 call sites (widget def + 2 integrations) + test file.
+- `castedByLine`/`noCastLine` appear in Station-screen row, summary widget, and both test files (≥4 hits).
+
+### Follow-up Verification
+- `flutter analyze`: no issues
+- `flutter test`: 100 tests pass (91 pre-existing + 9 new)
+- `make build`: 0 outputs written (codegen stable)
