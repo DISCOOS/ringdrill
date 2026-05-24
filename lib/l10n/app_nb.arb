@@ -347,7 +347,7 @@
   "@rolePlaysTab": {
     "description": "Bottom-nav label for the RolePlays (Markører) tab introduced in DESIGN-003."
   },
-  "roleSection": "Rolle",
+  "roleSection": "Markørordre",
   "@roleSection": {
     "description": "Section header for the publishable role fields in the expanded tile and detail screen."
   },
@@ -416,7 +416,7 @@
   "@noStationAssigned": {
     "description": "Placeholder shown when stationIndex is null."
   },
-  "noRolesInProgram": "Ingen markører ennå. Legg til en rolle fra Øvelser-fanen.",
+  "noRolesInProgram": "Ingen markører ennå. Åpne en post i Poster-fanen for å legge til en.",
   "@noRolesInProgram": {
     "description": "Empty-state when program has no RolePlay records."
   },
@@ -481,5 +481,38 @@
   "actorNotes": "Notater",
   "@actorNotes": {
     "description": "Feltetikett for private notater om markøren i ActorFormScreen."
+  },
+
+  "addRolePlay": "Legg til markørordre",
+  "@addRolePlay": {
+    "description": "Knappetikett i Markørordre-seksjonen på StationExerciseScreen."
+  },
+  "newRolePlayTitle": "Ny markørordre",
+  "@newRolePlayTitle": {
+    "description": "AppBar-tittel i RolePlayFormScreen når rollen ikke har navn ennå."
+  },
+  "editRolePlayTitle": "Rediger markørordre",
+  "@editRolePlayTitle": {
+    "description": "AppBar-tittel i RolePlayFormScreen ved redigering av eksisterende rolle."
+  },
+  "stationRolesSection": "Markører",
+  "@stationRolesSection": {
+    "description": "Seksjonstittel for markørordrelisten i StationExerciseScreen."
+  },
+  "noRolesAtThisStation": "Ingen markører på denne posten",
+  "@noRolesAtThisStation": {
+    "description": "Tom-tilstand vist i Markørordre-seksjonen når ingen markørordrer er koblet til posten."
+  },
+  "roleSignalement": "Signalement",
+  "@roleSignalement": {
+    "description": "Feltetikett for signalement-feltet i RolePlayFormScreen."
+  },
+  "roleBackground": "Bakgrunn",
+  "@roleBackground": {
+    "description": "Feltetikett for bakgrunn-feltet i RolePlayFormScreen."
+  },
+  "roleBehavior": "Oppførsel",
+  "@roleBehavior": {
+    "description": "Feltetikett for oppførsel-feltet i RolePlayFormScreen."
   }
 }

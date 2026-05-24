@@ -1163,7 +1163,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rolePlaysTab => 'Markører';
 
   @override
-  String get roleSection => 'Rolle';
+  String get roleSection => 'Markørordre';
 
   @override
   String get castSection => 'Markør';
@@ -1215,7 +1215,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get noRolesInProgram =>
-      'Ingen markører ennå. Legg til en rolle fra Øvelser-fanen.';
+      'Ingen markører ennå. Åpne en post i Poster-fanen for å legge til en.';
 
   @override
   String get noRolesInExercise => 'Ingen markører for denne øvelsen.';
@@ -1262,4 +1262,28 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get actorNotes => 'Notater';
+
+  @override
+  String get addRolePlay => 'Legg til markørordre';
+
+  @override
+  String get newRolePlayTitle => 'Ny markørordre';
+
+  @override
+  String get editRolePlayTitle => 'Rediger markørordre';
+
+  @override
+  String get stationRolesSection => 'Markører';
+
+  @override
+  String get noRolesAtThisStation => 'Ingen markører på denne posten';
+
+  @override
+  String get roleSignalement => 'Signalement';
+
+  @override
+  String get roleBackground => 'Bakgrunn';
+
+  @override
+  String get roleBehavior => 'Oppførsel';
 }

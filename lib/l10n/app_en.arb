@@ -1078,7 +1078,7 @@
   "@noStationAssigned": {
     "description": "Placeholder shown in the Role section when stationIndex is null."
   },
-  "noRolesInProgram": "No roles yet. Add a role from the Exercises tab.",
+  "noRolesInProgram": "No roles yet. Open a post in the Stations tab to add one.",
   "@noRolesInProgram": {
     "description": "Empty-state shown in the RolePlays tab when the program has no RolePlay records."
   },
@@ -1143,5 +1143,38 @@
   "actorNotes": "Notes",
   "@actorNotes": {
     "description": "Field label for private notes about the actor in ActorFormScreen."
+  },
+
+  "addRolePlay": "Add role",
+  "@addRolePlay": {
+    "description": "Button label in the Markører section on StationExerciseScreen to create a new RolePlay at this post."
+  },
+  "newRolePlayTitle": "New role",
+  "@newRolePlayTitle": {
+    "description": "AppBar title in RolePlayFormScreen when the role has no name yet (new draft)."
+  },
+  "editRolePlayTitle": "Edit role",
+  "@editRolePlayTitle": {
+    "description": "AppBar title in RolePlayFormScreen when editing an existing role (unused fallback — title shows role name)."
+  },
+  "stationRolesSection": "Roles",
+  "@stationRolesSection": {
+    "description": "Section header for the Markørordre list inside StationExerciseScreen."
+  },
+  "noRolesAtThisStation": "No roles at this post",
+  "@noRolesAtThisStation": {
+    "description": "Empty-state hint shown in the Markørordre section when no RolePlays are linked to the current station."
+  },
+  "roleSignalement": "Signalement",
+  "@roleSignalement": {
+    "description": "Form field label for the signalement field in RolePlayFormScreen."
+  },
+  "roleBackground": "Background",
+  "@roleBackground": {
+    "description": "Form field label for the background field in RolePlayFormScreen."
+  },
+  "roleBehavior": "Behaviour",
+  "@roleBehavior": {
+    "description": "Form field label for the behavior field in RolePlayFormScreen."
   }
 }

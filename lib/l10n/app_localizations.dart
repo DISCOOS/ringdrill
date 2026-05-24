@@ -2063,7 +2063,7 @@ abstract class AppLocalizations {
   /// Empty-state shown in the RolePlays tab when the program has no RolePlay records.
   ///
   /// In en, this message translates to:
-  /// **'No roles yet. Add a role from the Exercises tab.'**
+  /// **'No roles yet. Open a post in the Stations tab to add one.'**
   String get noRolesInProgram;
 
   /// Empty-state shown in the RolePlays tab when the active exercise filter excludes every role.
@@ -2149,6 +2149,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes'**
   String get actorNotes;
+
+  /// Button label in the Markører section on StationExerciseScreen to create a new RolePlay at this post.
+  ///
+  /// In en, this message translates to:
+  /// **'Add role'**
+  String get addRolePlay;
+
+  /// AppBar title in RolePlayFormScreen when the role has no name yet (new draft).
+  ///
+  /// In en, this message translates to:
+  /// **'New role'**
+  String get newRolePlayTitle;
+
+  /// AppBar title in RolePlayFormScreen when editing an existing role (unused fallback — title shows role name).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit role'**
+  String get editRolePlayTitle;
+
+  /// Section header for the Markørordre list inside StationExerciseScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get stationRolesSection;
+
+  /// Empty-state hint shown in the Markørordre section when no RolePlays are linked to the current station.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles at this post'**
+  String get noRolesAtThisStation;
+
+  /// Form field label for the signalement field in RolePlayFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Signalement'**
+  String get roleSignalement;
+
+  /// Form field label for the background field in RolePlayFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get roleBackground;
+
+  /// Form field label for the behavior field in RolePlayFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Behaviour'**
+  String get roleBehavior;
 }
 
 class _AppLocalizationsDelegate

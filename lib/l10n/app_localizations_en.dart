@@ -1219,7 +1219,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noRolesInProgram =>
-      'No roles yet. Add a role from the Exercises tab.';
+      'No roles yet. Open a post in the Stations tab to add one.';
 
   @override
   String get noRolesInExercise => 'No roles in this exercise.';
@@ -1266,4 +1266,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actorNotes => 'Notes';
+
+  @override
+  String get addRolePlay => 'Add role';
+
+  @override
+  String get newRolePlayTitle => 'New role';
+
+  @override
+  String get editRolePlayTitle => 'Edit role';
+
+  @override
+  String get stationRolesSection => 'Roles';
+
+  @override
+  String get noRolesAtThisStation => 'No roles at this post';
+
+  @override
+  String get roleSignalement => 'Signalement';
+
+  @override
+  String get roleBackground => 'Background';
+
+  @override
+  String get roleBehavior => 'Behaviour';
 }
