@@ -23,8 +23,10 @@ sealed class Program with _$Program {
     required List<Team> teams,
     required List<Session> sessions,
     required List<Exercise> exercises,
-    required List<RolePlay> rolePlays,
-    required List<Actor> actors,
+    // @Default([]) so 1.0 archives without these keys deserialize to empty
+    // lists rather than failing (ADR-0018 backward-compat requirement).
+    @Default([]) List<RolePlay> rolePlays,
+    @Default([]) List<Actor> actors,
   }) = _Program;
 
   factory Program.fromJson(Map<String, dynamic> json) =>

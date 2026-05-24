@@ -1,18 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/models/actor.dart';
-import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/models/station.dart';
 
 void main() {
-  final _now = DateTime(2026);
+  final now = DateTime(2026);
 
-  Program _base() => Program(
+  Program base() => Program(
         uuid: 'prog-1',
         name: 'Test',
         description: '',
-        metadata: ProgramMetadata(created: _now, updated: _now, version: '1.0'),
+        metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
         teams: const [],
         sessions: const [],
         exercises: const [],
@@ -20,39 +18,39 @@ void main() {
         actors: const [],
       );
 
-  const _rp1 = RolePlay(
+  const rp1 = RolePlay(
     uuid: 'rp-1',
     index: 0,
     exerciseUuid: 'ex-1',
     name: 'Anna Hansen',
   );
-  const _rp2 = RolePlay(
+  const rp2 = RolePlay(
     uuid: 'rp-2',
     index: 1,
     exerciseUuid: 'ex-1',
     name: 'Ola Nordmann',
   );
-  const _actor1 = Actor(uuid: 'actor-1', realName: 'Kari');
+  const actor1 = Actor(uuid: 'actor-1', realName: 'Kari');
 
   test('content hash is stable across actor mutations', () {
-    final base = _base().copyWith(rolePlays: [_rp1]);
-    final withActor = base.copyWith(actors: [_actor1]);
-    final differentActor = base.copyWith(
-      actors: [_actor1.copyWith(phone: '+47999')],
+    final prog = base().copyWith(rolePlays: [rp1]);
+    final withActor = prog.copyWith(actors: [actor1]);
+    final differentActor = prog.copyWith(
+      actors: [actor1.copyWith(phone: '+47999')],
     );
-    expect(base.computeContentHash(), withActor.computeContentHash());
-    expect(base.computeContentHash(), differentActor.computeContentHash());
+    expect(prog.computeContentHash(), withActor.computeContentHash());
+    expect(prog.computeContentHash(), differentActor.computeContentHash());
   });
 
   test('content hash changes when rolePlays change', () {
-    final base = _base();
-    final withRole = base.copyWith(rolePlays: [_rp1]);
-    final withTwoRoles = base.copyWith(rolePlays: [_rp1, _rp2]);
-    final modifiedRole = base.copyWith(
-      rolePlays: [_rp1.copyWith(name: 'Changed')],
+    final prog = base();
+    final withRole = prog.copyWith(rolePlays: [rp1]);
+    final withTwoRoles = prog.copyWith(rolePlays: [rp1, rp2]);
+    final modifiedRole = prog.copyWith(
+      rolePlays: [rp1.copyWith(name: 'Changed')],
     );
 
-    expect(base.computeContentHash(), isNot(withRole.computeContentHash()));
+    expect(prog.computeContentHash(), isNot(withRole.computeContentHash()));
     expect(
       withRole.computeContentHash(),
       isNot(withTwoRoles.computeContentHash()),
@@ -64,11 +62,11 @@ void main() {
   });
 
   test('diffPrograms detects added/removed/modified rolePlays', () {
-    final local = _base().copyWith(rolePlays: [_rp1]);
-    final remote = _base().copyWith(
+    final local = base().copyWith(rolePlays: [rp1]);
+    final remote = base().copyWith(
       rolePlays: [
-        _rp1.copyWith(name: 'Anna Renamed'),
-        _rp2,
+        rp1.copyWith(name: 'Anna Renamed'),
+        rp2,
       ],
     );
     final diff = diffPrograms(local, remote);
@@ -79,16 +77,16 @@ void main() {
 
   test('ProgramMetadata round-trips with and without schema', () {
     final withoutSchema = ProgramMetadata(
-      created: _now,
-      updated: _now,
+      created: now,
+      updated: now,
       version: '1.0',
     );
     final decoded = ProgramMetadata.fromJson(withoutSchema.toJson());
     expect(decoded.schema, isNull);
 
     final withSchema = ProgramMetadata(
-      created: _now,
-      updated: _now,
+      created: now,
+      updated: now,
       version: '1.0',
       schema: '1.1',
     );

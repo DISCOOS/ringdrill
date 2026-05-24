@@ -24,12 +24,16 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
   exercises: (json['exercises'] as List<dynamic>)
       .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
       .toList(),
-  rolePlays: (json['rolePlays'] as List<dynamic>)
-      .map((e) => RolePlay.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  actors: (json['actors'] as List<dynamic>)
-      .map((e) => Actor.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  rolePlays:
+      (json['rolePlays'] as List<dynamic>?)
+          ?.map((e) => RolePlay.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  actors:
+      (json['actors'] as List<dynamic>?)
+          ?.map((e) => Actor.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{

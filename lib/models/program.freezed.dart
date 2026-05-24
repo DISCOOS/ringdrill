@@ -15,7 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Program {
 
- String get uuid; String get name; String get description; ProgramMetadata get metadata; ProgramSource get source; String? get contentHash; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises; List<RolePlay> get rolePlays; List<Actor> get actors;
+ String get uuid; String get name; String get description; ProgramMetadata get metadata; ProgramSource get source; String? get contentHash; List<Team> get teams; List<Session> get sessions; List<Exercise> get exercises;// @Default([]) so 1.0 archives without these keys deserialize to empty
+// lists rather than failing (ADR-0018 backward-compat requirement).
+ List<RolePlay> get rolePlays; List<Actor> get actors;
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -231,7 +233,7 @@ return $default(_that.uuid,_that.name,_that.description,_that.metadata,_that.sou
 @JsonSerializable()
 
 class _Program implements Program {
-  const _Program({required this.uuid, required this.name, required this.description, required this.metadata, this.source = const ProgramSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises, required final  List<RolePlay> rolePlays, required final  List<Actor> actors}): _teams = teams,_sessions = sessions,_exercises = exercises,_rolePlays = rolePlays,_actors = actors;
+  const _Program({required this.uuid, required this.name, required this.description, required this.metadata, this.source = const ProgramSource.local(), this.contentHash, required final  List<Team> teams, required final  List<Session> sessions, required final  List<Exercise> exercises, final  List<RolePlay> rolePlays = const [], final  List<Actor> actors = const []}): _teams = teams,_sessions = sessions,_exercises = exercises,_rolePlays = rolePlays,_actors = actors;
   factory _Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 
 @override final  String uuid;
@@ -261,15 +263,19 @@ class _Program implements Program {
   return EqualUnmodifiableListView(_exercises);
 }
 
+// @Default([]) so 1.0 archives without these keys deserialize to empty
+// lists rather than failing (ADR-0018 backward-compat requirement).
  final  List<RolePlay> _rolePlays;
-@override List<RolePlay> get rolePlays {
+// @Default([]) so 1.0 archives without these keys deserialize to empty
+// lists rather than failing (ADR-0018 backward-compat requirement).
+@override@JsonKey() List<RolePlay> get rolePlays {
   if (_rolePlays is EqualUnmodifiableListView) return _rolePlays;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_rolePlays);
 }
 
  final  List<Actor> _actors;
-@override List<Actor> get actors {
+@override@JsonKey() List<Actor> get actors {
   if (_actors is EqualUnmodifiableListView) return _actors;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_actors);
