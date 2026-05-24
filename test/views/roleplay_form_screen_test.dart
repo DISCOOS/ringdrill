@@ -123,6 +123,38 @@ void main() {
     expect(result?.name, 'Maria Olsen');
   });
 
+  testWidgets('AppBar title shows newRolePlayTitle when name is empty',
+      (tester) async {
+    final emptyRole = const RolePlay(
+      uuid: 'role-new',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: '',
+    );
+    await tester.pumpWidget(_buildForm(rolePlay: emptyRole));
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    expect(find.text(l10n.newRolePlayTitle), findsOneWidget);
+  });
+
+  testWidgets('AppBar title shows role name when name is non-empty',
+      (tester) async {
+    await tester.pumpWidget(_buildForm());
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    expect(find.text('Anna Hansen'), findsAtLeastNWidgets(1));
+    expect(find.text(l10n.newRolePlayTitle), findsNothing);
+  });
+
+  testWidgets('localized form labels render', (tester) async {
+    await tester.pumpWidget(_buildForm());
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    expect(find.text(l10n.roleSignalement), findsOneWidget);
+    expect(find.text(l10n.roleBackground), findsOneWidget);
+    expect(find.text(l10n.roleBehavior), findsOneWidget);
+  });
+
   testWidgets('station dropdown shows exercise stations', (tester) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));

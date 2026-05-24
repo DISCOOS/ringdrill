@@ -74,7 +74,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.rolePlay.name),
+        title: Text(
+          widget.rolePlay.name.trim().isEmpty
+              ? localizations.newRolePlayTitle
+              : widget.rolePlay.name,
+        ),
         actions: [
           ElevatedButton(
             onPressed: _save,
@@ -153,8 +157,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   keyboardType: TextInputType.multiline,
                   minLines: 2,
                   maxLines: 8,
-                  decoration: const InputDecoration(
-                    labelText: 'Signalement',
+                  decoration: InputDecoration(
+                    labelText: localizations.roleSignalement,
                     alignLabelWithHint: true,
                   ),
                 ),
@@ -166,8 +170,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   keyboardType: TextInputType.multiline,
                   minLines: 2,
                   maxLines: 8,
-                  decoration: const InputDecoration(
-                    labelText: 'Background',
+                  decoration: InputDecoration(
+                    labelText: localizations.roleBackground,
                     alignLabelWithHint: true,
                   ),
                 ),
@@ -179,8 +183,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   keyboardType: TextInputType.multiline,
                   minLines: 2,
                   maxLines: 8,
-                  decoration: const InputDecoration(
-                    labelText: 'Behavior',
+                  decoration: InputDecoration(
+                    labelText: localizations.roleBehavior,
                     alignLabelWithHint: true,
                   ),
                 ),
