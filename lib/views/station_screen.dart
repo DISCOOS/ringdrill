@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -11,7 +13,9 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 class StationExerciseScreen extends StatefulWidget {
@@ -111,6 +115,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                 final event = asyncSnapshot.data!;
                 final station = _exercise.stations[widget.stationIndex];
                 final stationInfo = _buildStationInfo(station);
+                final rolesSection = _buildRolesSection(station);
                 final rotations = _buildTeamRotations(event);
                 // One outer SingleChildScrollView so the screen has a
                 // single scroll context. Sub-sections (station info,
@@ -127,8 +132,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                       if (isPortrait) ...[
                         stationInfo,
                         const SizedBox(height: 8),
+                        rolesSection,
+                        const SizedBox(height: 8),
                         rotations,
-                      ] else
+                      ] else ...[
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -137,6 +144,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                             Expanded(child: rotations),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        rolesSection,
+                      ],
                     ],
                   ),
                 );
@@ -301,6 +311,166 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final last = _exerciseService.last;
     if (last?.exercise.uuid == widget.uuid) return last!;
     return ExerciseEvent.pending(_exercise);
+  }
+
+  Widget _buildRolesSection(Station station) {
+    final localizations = AppLocalizations.of(context)!;
+    final roles = _programService
+        .loadRolePlays()
+        .where((r) =>
+            r.exerciseUuid == _exercise.uuid &&
+            r.stationIndex == widget.stationIndex)
+        .toList();
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  localizations.stationRolesSection,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: Text(localizations.addRolePlay),
+                  onPressed: () => _addRolePlay(station),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (roles.isEmpty)
+              Text(
+                localizations.noRolesAtThisStation,
+                style: Theme.of(context).textTheme.bodySmall,
+              )
+            else
+              ...roles.map((r) => _buildRoleRow(r)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleRow(RolePlay r) {
+    final localizations = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final actor = r.actorUuid != null
+        ? _programService.getActor(r.actorUuid!)
+        : null;
+
+    return Dismissible(
+      key: ValueKey('role-row-${r.uuid}'),
+      direction: DismissDirection.startToEnd,
+      background: Container(
+        color: colorScheme.secondaryContainer,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
+            const SizedBox(width: 8),
+            Text(
+              localizations.stationRolesSection,
+              style: TextStyle(color: colorScheme.onSecondaryContainer),
+            ),
+          ],
+        ),
+      ),
+      confirmDismiss: (_) async {
+        final updated = await Navigator.push<RolePlay>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RolePlayFormScreen(
+              rolePlay: r,
+              exercise: _exercise,
+            ),
+          ),
+        );
+        if (updated != null) {
+          await _programService.saveRolePlay(updated);
+          if (mounted) setState(() {});
+        }
+        return false;
+      },
+      child: InkWell(
+        onTap: () => context.push('$routeRolePlays/${r.uuid}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.theater_comedy,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(r.name),
+              ),
+              IconButton(
+                icon: Icon(
+                  actor != null ? Icons.person : Icons.person_add_outlined,
+                  color: actor != null
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+                tooltip: actor != null
+                    ? localizations.editCast
+                    : localizations.addCast,
+                onPressed: () => _openCastPicker(r),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addRolePlay(Station station) async {
+    final existing = _programService
+        .loadRolePlays()
+        .where((r) => r.exerciseUuid == _exercise.uuid)
+        .length;
+    final draft = RolePlay(
+      uuid: nanoid(10),
+      index: existing,
+      exerciseUuid: _exercise.uuid,
+      stationIndex: station.index,
+      name: '',
+    );
+    final saved = await Navigator.push<RolePlay>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RolePlayFormScreen(
+          rolePlay: draft,
+          exercise: _exercise,
+        ),
+      ),
+    );
+    if (saved != null) {
+      await _programService.saveRolePlay(saved);
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _openCastPicker(RolePlay r) async {
+    final actorUuid = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => CastPickerSheet(rolePlay: r),
+    );
+    if (actorUuid != null && actorUuid != r.actorUuid) {
+      await _programService.saveRolePlay(r.copyWith(actorUuid: actorUuid));
+      if (mounted) setState(() {});
+    }
   }
 
   /// Function to handle editing the exercise
