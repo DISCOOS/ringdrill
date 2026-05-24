@@ -5,6 +5,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/widgets/role_expansion_tile.dart';
 
 RolePlay _baseRole() => const RolePlay(
       uuid: 'role-1',
@@ -165,5 +166,40 @@ void main() {
     expect(find.text(l10n.noStationAssigned), findsWidgets);
     expect(find.text('Post 1'), findsWidgets);
     expect(find.text('Post 2'), findsWidgets);
+  });
+
+  testWidgets('AppBar contains a RoleCodeBadge', (tester) async {
+    await tester.pumpWidget(_buildForm());
+    await tester.pump();
+    // ProgramService not initialized → exerciseIndex = -1 → code = '?.1'
+    expect(find.byType(RoleCodeBadge), findsOneWidget);
+  });
+
+  testWidgets('AppBar subtitle shows roleSubtitleStation when stationIndex set',
+      (tester) async {
+    final roleWithStation = const RolePlay(
+      uuid: 'role-s',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: 'Rolle med post',
+      stationIndex: 0,
+    );
+    await tester.pumpWidget(
+      _buildForm(rolePlay: roleWithStation, exercise: _exercise()),
+    );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // Station at index 0 is 'Post 1'
+    expect(find.text(l10n.roleSubtitleStation('Post 1')), findsOneWidget);
+  });
+
+  testWidgets(
+      'AppBar subtitle shows roleSubtitleExercise when stationIndex null',
+      (tester) async {
+    await tester.pumpWidget(_buildForm(exercise: _exercise()));
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(
+      find.text(l10n.roleSubtitleExercise(_exercise().name)),
+      findsOneWidget,
+    );
   });
 }

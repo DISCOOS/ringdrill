@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/position_form_field.dart';
+import 'package:ringdrill/views/widgets/role_expansion_tile.dart';
 
 /// Edit form for a single [RolePlay].
 ///
@@ -34,6 +36,7 @@ class RolePlayFormScreen extends StatefulWidget {
 
 class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _programService = ProgramService();
 
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
@@ -71,13 +74,54 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final stations = widget.exercise?.stations ?? [];
+    final theme = Theme.of(context);
+
+    // Compute the role-code badge text.
+    final exercises = _programService.loadExercises();
+    final exerciseIndex = exercises
+        .indexWhere((e) => e.uuid == widget.rolePlay.exerciseUuid);
+    final code = exerciseIndex < 0
+        ? '?.${widget.rolePlay.index + 1}'
+        : '${exerciseIndex + 1}.${widget.rolePlay.index + 1}';
+
+    // Compute the AppBar subtitle — same logic as the collapsed tile.
+    final stationIndex = widget.rolePlay.stationIndex;
+    final subtitleText = (stationIndex != null && stationIndex < stations.length)
+        ? localizations.roleSubtitleStation(stations[stationIndex].name)
+        : localizations.roleSubtitleExercise(widget.exercise?.name ?? '');
+
+    final titleText = widget.rolePlay.name.trim().isEmpty
+        ? localizations.newRolePlayTitle
+        : widget.rolePlay.name;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.rolePlay.name.trim().isEmpty
-              ? localizations.newRolePlayTitle
-              : widget.rolePlay.name,
+        title: Row(
+          children: [
+            RoleCodeBadge(code: code),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titleText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitleText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           ElevatedButton(
