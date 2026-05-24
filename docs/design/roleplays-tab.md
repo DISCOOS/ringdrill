@@ -29,9 +29,10 @@ related_adrs:
 >
 > - **"Markørordre"** is used when the surface names a single `RolePlay` entity: section labels on the expanded tile, form titles ("Ny markørordre", "Rediger markørordre"), and creation affordances ("Legg til markørordre").
 > - **"Markører"** is used for lists, counts, navigation and other colloquial references. The tab name, the cast-roster sheet title, section headers above lists of role briefs, and empty-state counts all use the plural colloquial form ("Ingen markører ennå", "5 markører på denne posten").
-> - **"Markør"** (singular) stays reserved for the human, i.e. references to `Actor`: the Cast section label, cast picker title, "Velg markør", "Allerede markør for {role}", "Markør for: {roles}".
+> - **"Markør"** (singular) stays reserved for direct references to the human (`Actor`) and the actions that operate on them: cast picker title, "Velg markør", "Rediger markør", "Fjern markør", "Allerede markør for {role}", "Markør for: {roles}".
+> - **"Spilles av"** is used as a relation label on the expanded tile's Cast section, because the section answers the question "who plays this role" rather than naming an entity. English uses "Played by". This is the one place a relation phrase wins over the entity term.
 >
-> English UI and all code use **"RolePlay"** and **"Actor"** without this distinction. See [[feedback_roleplay_actor_terminology]] in the project memory for the rule that drives this.
+> English UI and all code use **"RolePlay"** and **"Actor"** without this distinction.
 
 ## TL;DR
 
@@ -86,7 +87,17 @@ Five tabs is the upper bound for a Material bottom navigation before icons start
 
 **Sorting.** First by exercise order, then by the role's `index` within the exercise.
 
-**Roster access.** A small persistent action in the AppBar (icon-button, `Icons.people_outline`, tooltip "Cast roster" / "Markører") opens a separate sheet listing all `Actor` records in the program. Add, edit, and remove happen there. The Cast roster is not its own tab because it is supporting infrastructure for casting, not a destination users navigate to on its own.
+**Roster access.** A small persistent action in the AppBar (icon-button, `Icons.recent_actors`, tooltip "Played by" / "Spilles av") opens a separate sheet listing all `Actor` records in the program. The icon depicts a row of silhouettes, matching the semantic "list of castable people". The tooltip uses the same "Spilles av" relation phrase as the Cast section label on the expanded tile, which reinforces that this button gives access to the same data the tile displays. Add, edit and remove happen inside the sheet. The Cast roster is not its own tab because it is supporting infrastructure for casting, not a destination users navigate to on its own.
+
+**Actor icon family.** The casting surfaces use a small icon hierarchy:
+
+* `Icons.recent_actors` — the AppBar action that opens the list of actors. Plural silhouette row, list-level.
+* `Icons.face` — leading icon on individual actor rows inside the cast roster sheet and the cast picker sheet. Single face, row-level.
+* `Icons.person` (filled) and `Icons.person_add_outlined` (outlined) — the cast affordance family. Used on the cast chip on Markører-tab tiles and Station-screen Markører rows, and on the Cast section header next to the "Spilles av" label inside the expanded tile (the section header marks the affordance that the chip controls, so it belongs to the same family). Material does not ship a `face_add` companion; keeping the section header and the chip pair on `Icons.person` preserves visual symmetry.
+
+The action's tooltip carries a different message when the action is disabled (no active program): `localizations.noActiveProgramHint` so a long-press explains why the button is greyed out. See [Active-program gating](#active-program-gating).
+
+The Markører-tab icon stays `Icons.theater_comedy`, distinct from `Icons.recent_actors`, so the tab in the bottom-nav (the role briefs / markørordrer) and the AppBar action (the people / markører) are visually unambiguous.
 
 ## Filtering
 
@@ -104,9 +115,9 @@ Each row is an expandable tile based on the shared `RoleExpansionTile` widget (s
 **Collapsed:**
 
 * Leading: compact role-code square showing `exerciseNumber.roleNumber` (1-based), parallel to the station code from [DESIGN-002](./stations-tab.md).
-* Title: role name (e.g. "Anna Hansen, savnet turgåer").
-* Subtitle: `Exercise: <name>`.
-* Trailing: a small cast indicator. A filled `Icons.person` chip if cast, an outlined `Icons.person_add` chip if not. Tap on the chip opens the cast picker directly. Chevron sits next to it for expand/collapse.
+* Title: role name, with `age` appended as `, <age>` when set, and the cast actor's `realName` appended as ` (<realName>)` when the role is cast (`actorUuid != null`). Example: "Anna Hansen, 67 (Kari Nordmann)". The cast suffix is shown **only** on this tile (the Markører tab). Other surfaces — form AppBar, `RolePlayScreen` read view, Station-screen Markører row — already convey cast status through their own affordances (dedicated Cast section, read view, trailing chip) and duplicating the cast name in the title there would clutter the surface.
+* Subtitle: `Post: <station name>` / `Station: <station name>` when `stationIndex` is set. Falls back to `Øvelse: <name>` / `Exercise: <name>` when stationIndex is null (rare since DESIGN-003 defers station-less creation, but possible for legacy data). The post is the role's operational home and is what the operator wants to see at a glance; the exercise is already encoded in the leading code badge ("1.5" → exercise 1) and filterable via the FAB.
+* Trailing: a small cast indicator. A filled `Icons.person` chip if cast, an outlined `Icons.person_add_outlined` chip if not. Tap on the chip opens the cast picker directly. Chevron sits next to it for expand/collapse.
 
 **Expanded adds two stacked sections, in this order:**
 
@@ -119,16 +130,16 @@ A label "Role" / "Markørordre" with a subtle book-marker icon (`Icons.menu_book
 * **Background.** Free-text, paragraph rendering. Empty placeholder "Ingen bakgrunn" / "No background" when blank.
 * **Behavior.** Free-text, paragraph rendering. Empty placeholder "Ingen oppførsel" / "No behaviour" when blank.
 * Station row. If `stationIndex` is set, a chip "Post: <station name>" linking to `StationScreen`. If not, "Ingen post" / "No station".
-* Mini-map if `position` is set. Reuses `StationMiniMap` from [DESIGN-002](./stations-tab.md) (the widget is already domain-agnostic per [[feedback_mapview_domain_agnostic]]; we pass a marker, not a domain flag). Tap → bottom-sheet map. Empty case: no mini-map slot.
+* Mini-map if `position` is set. Reuses `StationMiniMap` from [DESIGN-002](./stations-tab.md); the widget is already domain-agnostic, so we pass a marker rather than a domain flag. Tap → bottom-sheet map. Empty case: no mini-map slot.
 
 ### Cast section (`Actor` fields, local-only)
 
-A label "Cast" / "Markør" with a subtle `Icons.person` icon. Visually subdued (slightly less weight than the Role section) so the publishable/private boundary reads at a glance. Body branches on `RolePlay.actorUuid`:
+A label "Played by" / "Spilles av" with a subtle `Icons.person` icon. The label is a relation phrase, not the entity name, because the section answers *who plays this role* rather than naming the human. Visually subdued (slightly less weight than the Role section) so the publishable/private boundary reads at a glance. Body branches on `RolePlay.actorUuid`:
 
-* **Cast set** (`actorUuid != null`): shows the cast actor's `realName` and `phone` (tap-to-call), plus `notes` if any. A trailing overflow menu offers "Edit cast" / "Rediger markør" (opens `ActorFormScreen`) and "Clear cast" / "Fjern markør" (sets `actorUuid = null`).
+* **Cast set** (`actorUuid != null`): shows the cast actor's full record — `realName` as the primary line, `phone` directly below with `tel:` tap-to-call (suppressed when null), and `notes` as a third line when non-empty. A trailing overflow menu offers "Edit cast" / "Rediger markør" (opens `ActorFormScreen` and persists the returned `Actor`) and "Clear cast" / "Fjern markør" (sets `actorUuid = null`).
 * **Not cast** (`actorUuid == null`): a single full-width button "Add cast" / "Velg markør" with a `+` icon. Opens the cast picker.
 
-A "Private — never published" subtitle accompanies the Cast section header on the first expanded tile per session (a one-time hint after install, dismissible). The hint exists to make the privacy boundary explicit, given that users coming from chat-thread-based casting do not have an existing mental model for "this stays on my device".
+A "Stays on this device" / "Lagres lokalt" subtitle accompanies the Cast section header at all times. The hint is short and informative enough to stay persistent without becoming visual noise; framing it positively ("stays here") rather than negatively ("never published") matches what the user actually needs to know. It exists because users coming from chat-thread-based casting do not have an existing mental model for "this stays on my device".
 
 **Tap targets are split:**
 
@@ -139,6 +150,16 @@ A "Private — never published" subtitle accompanies the Cast section header on 
 * Swipe-left on the row → open `RolePlayFormScreen` for the role (edit form). Same `Dismissible` pattern as [DESIGN-002](./stations-tab.md).
 
 **Mutex expansion.** At most one tile is open at a time, same shape as the Stations tab.
+
+## Form anatomy
+
+`RolePlayFormScreen` is reached from three surfaces (the Markører-tab row swipe, the Station-screen row swipe, and the Station-screen "+ Legg til markørordre" action). The AppBar mirrors the list-row anatomy so the form feels like a continuation of the row you came from, not a context switch.
+
+* **Leading position** (inside the title slot, before the back button is handled by the framework's automatic leading): `RoleCodeBadge` showing `${exerciseNumber}.${role.index + 1}`. For a draft role that has not been saved yet, the same expression still works because the draft is constructed with the correct `index` before the form is pushed.
+* **Title line**: the role's `name`. When the form is opened in create mode the name starts empty; the title falls back to `localizations.newRolePlayTitle` ("Ny markørordre" / "New role") until the user types a name.
+* **Subtitle line**: same format as the Markører-tab row subtitle. `Post: <station name>` when `stationIndex` is set, falling back to `Øvelse: <name>` when null. The exercise context is always available via the `exercise` constructor parameter.
+
+The layout follows the same Row + Column pattern used by `_MapSheetHeader` in `lib/views/widgets/station_mini_map.dart`. Reuse that shape; do not invent a parallel one.
 
 ## Cast picker
 
@@ -152,12 +173,18 @@ Selecting an actor row sets `RolePlay.actorUuid` and closes the sheet. The expan
 
 ## Cast roster sheet
 
-Opened from the AppBar action. Lists every `Actor` in the program. Each row:
+Opened from the AppBar action on the Markører tab (the action lives on the tab itself, not inside the sheet). Presented via `showModalBottomSheet` with `showDragHandle: true` so the drag handle at the top of the sheet is the dismiss affordance.
+
+**No AppBar inside the sheet.** The sheet's layout is a `Scaffold` body composed of a header row plus a list, with a "New actor" FAB anchored at the bottom-right by the Scaffold. The header row sits at the top of the body, padded, and renders the sheet's title ("Markører" / "Cast roster") as `titleLarge`. No back button, no leading icon. The phrase "Opened from the AppBar action" in this design refers to *how* the sheet is launched, not to having one inside.
+
+Lists every `Actor` in the program. Each row:
 
 * `realName` and `phone`.
 * A small footer listing roles this actor is currently cast to ("Cast as: <role 1>, <role 2>" / "Markør for: <rolle 1>, <rolle 2>"). Empty when uncast.
 * Tap row → `ActorFormScreen` for edit.
 * Swipe-left → confirm deletion. Deletion is allowed only when the actor is uncast in every role; otherwise the swipe shows "Cast in <N> role(s). Clear before deleting" / "Markør i <N> rolle(r). Fjern først" and snaps back.
+
+Empty state (no actors yet): a padded multi-line hint reading "Ingen markører ennå. Trykk + Ny markør for å legge til." / "No actors yet. Tap + New actor to add one." Uses `bodyMedium` with `onSurfaceVariant`. The hint sits in the list body, not as floating centred text; the FAB carries the same "Ny markør" label and the hint points to it.
 
 A "New actor" FAB lives in this sheet only.
 
@@ -219,6 +246,22 @@ The previous wording ("Add a role from the Exercises tab") is wrong under this r
 
 * **No roles in the program:** "Ingen markører ennå. Åpne en post i Poster-fanen for å legge til en." / "No roles yet. Open a post in the Stations tab to add one." ARB key: `noRolesInProgram` (existing key, content revised).
 
+## Station-expansion summary
+
+Two surfaces render stations as expandable rows in addition to the dedicated Station screen: the coordinator screen's station list (the operator's primary view during a run) and the Stations tab's flat list (the cross-cutting browser). Both expansion bodies currently render description + position panel. They get a third inline section: a **read-only** Markører summary.
+
+Behaviour:
+
+* When the station has no role attached, the section is **omitted entirely**. No header, no empty-state hint. Surfaces that historically showed only description + position panel keep that exact layout when no roles exist.
+* When one or more roles are attached, a small header row reads "Markører (<count>)" with a leading `Icons.theater_comedy` glyph, followed by one compact row per role.
+* Each row: leading `Icons.theater_comedy` (size ~18), title is `role.name` only, trailing is a **non-interactive** cast-state chip (`Icons.person` filled when cast, `Icons.person_add_outlined` when not). Tap on the row body opens `RolePlayScreen` (the read view).
+* The cast chip is purely a state indicator on these surfaces. It does not open the cast picker; that affordance lives on the Markører tab and the Station screen.
+* No "Legg til markørordre" action, no swipe-edit, no delete, no overflow menu. Authoring stays on the dedicated Station screen per [Creating roles](#creating-roles).
+
+Title rendering on these rows omits both the age suffix and the cast-actor parens. Those belong to the Markører-tab tile per [Tile anatomy](#tile-anatomy); other surfaces stay clean.
+
+Implementation lives in a shared widget `lib/views/widgets/station_role_summary.dart` that takes `(Exercise exercise, int stationIndex)` and renders the section or `SizedBox.shrink()`. Both expansion callers drop the widget in without local gating logic. The widget reads from `ProgramService` on each build; it does not subscribe to mutation events. Refresh on role mutation elsewhere requires collapsing and re-expanding the row, which is acceptable for a browse surface.
+
 ## Map marker glyph
 
 Per [ADR-0019](../adrs/0019-roleplayer-participant-role.md), live roleplayer positions render with a distinct marker shape from team broadcasters. The chosen glyph:
@@ -264,9 +307,26 @@ A "Del posisjon" / "Share position" toggle lives in the role tab footer, gating 
 
 ## Empty states
 
+* **No active program:** "Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen." / "No active program. Open or create one in the Exercises tab." Takes precedence over the other empty states on this tab — when no active program is set, the Markører tab body shows only this message. The cast-roster AppBar action stays visible but is **disabled** (greyed out, no-op on tap, tooltip carries the same message). The filter FAB is omitted entirely. See [Active-program gating](#active-program-gating) for the wider rule.
 * **No roles in the program:** "No roles yet. Open a post in the Stations tab to add one." See [Creating roles](#creating-roles) for the full wording and ARB key.
 * **Filter excludes everything:** banner stays visible with "Show all" recovery. List area: "No roles in this exercise."
 * **No actors in the roster** (during cast picker): the sticky "New actor" row is the only option, no message needed beyond the empty list.
+* **No actors in the cast roster sheet:** "Ingen markører ennå. Trykk + Ny markør for å legge til." See [Cast roster sheet](#cast-roster-sheet).
+
+## Active-program gating
+
+The Markører tab and every casting surface require an active program. Since actors can only be added from the cast roster sheet, and that sheet is opened only via the cast-roster AppBar action on the Markører tab, gating that one action also blocks every path to creating actors when no plan is active.
+
+When `ProgramService.activeProgramUuid` is null:
+
+* The Markører tab body shows the "no active program" empty state.
+* The cast-roster AppBar action stays visible but is **disabled** (greyed out, no-op on tap). A tooltip carries the same "Ingen aktiv øvelsesplan..." message so a long-press explains why. Disabled (rather than hidden) preserves discoverability — the user sees that the affordance exists and what gates it.
+* The filter FAB is omitted. Material's FAB convention is that a visible FAB is always actionable.
+* The Station-screen "Markører" section is unreachable through normal navigation in this state, since opening a post requires opening an exercise, which requires an active program.
+
+On app startup, the app does **not** auto-create a program. A fresh install lands the user in the no-active-program state and guides them to the Øvelser-fanen, rather than surprising them with a "Default plan" they did not author. A previously stored active reference is honored: when SharedPreferences contains the active-program key on launch, the app calls `ProgramService.ensureActiveProgram(localizations)` to validate or recover that reference. When the key is absent, no startup call runs.
+
+`ProgramService.saveActor` and `saveRolePlay` do **not** include the auto-create-on-write behaviour that `saveExercise` does. The casting surfaces rely on the UI gating above to prevent saves without an active program. This keeps the casting paths honest: a save that would have failed surfaces as a blocked UI state, not a quietly auto-created program.
 
 ## Relationship to the Exercise Player
 
@@ -310,7 +370,7 @@ Skipped. `StationMiniMap` from [DESIGN-002](./stations-tab.md) is already domain
 
 Scope is additive to [DESIGN-001](./exercise-player.md). Implementation order is open: a contributor may land the RolePlays tab, the Station-screen authoring section and the observer-player role tab in any sequence. Nothing in this design forces a particular order.
 
-Localization keys land in `lib/l10n/app_en.arb` and `app_nb.arb` together. Norwegian follows the terminology rule from the note at the top: **"Markører"** for the tab name, the cast roster sheet, the Station-screen section header, and empty-state counts. **"Markørordre"** as the Role section label on the expanded tile, in form titles ("Ny markørordre", "Rediger markørordre") and in creation affordances ("Legg til markørordre"). **"Markør"** stays for the Cast section label and every other surface that names the human (Actor): "Velg markør", "Rediger markør", "Fjern markør", "Allerede markør for {role}", "Markør for: {roles}".
+Localization keys land in `lib/l10n/app_en.arb` and `app_nb.arb` together. Norwegian follows the terminology rule from the note at the top: **"Markører"** for the tab name, the cast roster sheet, the Station-screen section header, and empty-state counts. **"Markørordre"** as the Role section label on the expanded tile, in form titles ("Ny markørordre", "Rediger markørordre") and in creation affordances ("Legg til markørordre"). **"Markør"** stays for the cast picker title and action affordances ("Velg markør", "Rediger markør", "Fjern markør", "Allerede markør for {role}", "Markør for: {roles}"). **"Spilles av"** is the Cast section header on the expanded tile (relation phrase, not entity name).
 
 `lib/views/main_screen.dart` gains the fifth route and the bottom-navigation entry. The route name in code is `/roleplays`. `lib/views/widgets/role_expansion_tile.dart` is the new shared widget. `RolePlayScreen` and `RolePlayFormScreen` are new screens at `lib/views/`. `ActorFormScreen` is new and is the only screen that touches `Actor` records.
 
