@@ -196,15 +196,18 @@ A `RolePlay` is the digital form of a markørordre. The Station screen is where 
 
 The Station screen gains a "Markører" / "Roles" section below the existing station fields (name, description, position). The section lists every `RolePlay` where `exerciseUuid` matches the station's owning exercise and `stationIndex` matches this station's index.
 
-Each row is a compact variant of the RolePlays-tab tile, intended to fit several rows in a screen without scrolling:
+Each row is a two-line layout that fits several rows in a screen without scrolling:
 
-* Leading: a small theatre glyph (`Icons.theater_comedy`).
-* Title: role name.
-* Trailing: cast chip (`Icons.person` filled when cast, `Icons.person_add` outlined when not).
-* No expansion. Tap row body → push `RolePlayScreen` (read view). Tap cast chip → open cast picker.
+* Leading: a small theatre glyph (`Icons.theater_comedy`, size ~20).
+* Title: role name, with `age` appended as `, <age>` when set. Example: "Anna Hansen, 67".
+* Subtitle: "Spilles av <actor name>" / "Played by <actor name>" when the role is cast. Reads "Ingen markør valgt" / "No actor selected" (subdued and italicised) when not. The cast subtitle replaces what the Markører-tab tile shows in parens on the title — the parenthetical cast suffix is exclusive to the Markører-tab per [Tile anatomy](#tile-anatomy); other surfaces use the subtitle line so the row format stays two-line consistent across all station-related surfaces.
+* Trailing: cast chip (`Icons.person` filled when cast, `Icons.person_add_outlined` outlined when not).
+* No expansion. Tap row body → push `RolePlayScreen` (read view) via the `/roleplays/:roleUuid` deep route. Tap cast chip → open cast picker.
 * Swipe-left → push `RolePlayFormScreen` for edit, same `Dismissible` pattern used elsewhere.
 
 **Deletion is not supported in this iteration.** See [Deletion and templating](#deletion-and-templating).
+
+This same two-line row layout is reused on the read-only surfaces in [Station-expansion summary](#station-expansion-summary). The only difference there is interaction: the cast chip is static, no swipe is wired, no header action is shown. Visual identity across the three surfaces means an operator scanning any of them reads the same shape; the surrounding screen tells them which mode they are in.
 
 A section-header action "+ Legg til markørordre" / "Add role" sits to the right of the section title. Tap opens `RolePlayFormScreen` in create mode with `exerciseUuid` and `stationIndex` pre-filled from the station context. On save, the new `RolePlay` is appended to `Program.rolePlays` and the section refreshes inline.
 
@@ -254,11 +257,12 @@ Behaviour:
 
 * When the station has no role attached, the section is **omitted entirely**. No header, no empty-state hint. Surfaces that historically showed only description + position panel keep that exact layout when no roles exist.
 * When one or more roles are attached, a small header row reads "Markører (<count>)" with a leading `Icons.theater_comedy` glyph, followed by one compact row per role.
-* Each row: leading `Icons.theater_comedy` (size ~18), title is `role.name` only, trailing is a **non-interactive** cast-state chip (`Icons.person` filled when cast, `Icons.person_add_outlined` when not). Tap on the row body opens `RolePlayScreen` (the read view).
-* The cast chip is purely a state indicator on these surfaces. It does not open the cast picker; that affordance lives on the Markører tab and the Station screen.
+* Each row reuses the two-line layout from the [Station screen "Markører" section](#station-screen-markører-section): leading `Icons.theater_comedy`, title with age suffix when set, subtitle showing the cast actor's name or "Ingen markør valgt" when uncast, trailing cast chip. The shape is identical so the reading habit transfers across surfaces.
+* The cast chip is **non-interactive** here. It does not open the cast picker; that affordance lives on the Markører tab and the Station screen.
+* Tap on the row body opens `RolePlayScreen` (the read view) via the `/roleplays/:roleUuid` deep route.
 * No "Legg til markørordre" action, no swipe-edit, no delete, no overflow menu. Authoring stays on the dedicated Station screen per [Creating roles](#creating-roles).
 
-Title rendering on these rows omits both the age suffix and the cast-actor parens. Those belong to the Markører-tab tile per [Tile anatomy](#tile-anatomy); other surfaces stay clean.
+Title rendering on these rows still omits the cast-actor parens that the Markører-tab tile uses; the cast subtitle line is the corresponding convention for non-tab surfaces.
 
 Implementation lives in a shared widget `lib/views/widgets/station_role_summary.dart` that takes `(Exercise exercise, int stationIndex)` and renders the section or `SizedBox.shrink()`. Both expansion callers drop the widget in without local gating logic. The widget reads from `ProgramService` on each build; it does not subscribe to mutation events. Refresh on role mutation elsewhere requires collapsing and re-expanding the row, which is acceptable for a browse surface.
 
