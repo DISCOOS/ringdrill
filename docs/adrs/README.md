@@ -27,6 +27,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0017 | [Decouple number of stations from number of rounds in exercise setup](./0017-decouple-stations-from-rounds.md) | Accepted |
 | ADR-0018 | [Introduce RolePlay and Actor entities, persist schema 1.1 in metadata](./0018-roleplayer-data-model.md) | Accepted |
 | ADR-0019 | [Roleplayer as a third session participant role](./0019-roleplayer-participant-role.md) | Accepted |
+| ADR-0020 | [Reduce map label and marker clutter via clustering, a unified marker spec, zoom-gated labels and per-layer visibility toggles](./0020-map-label-and-marker-clutter.md) | Accepted |
 
 ## When to write an ADR
 
