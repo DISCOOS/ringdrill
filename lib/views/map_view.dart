@@ -255,25 +255,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              // Slightly translucent so the label does
-                              // not dominate when multiple markers sit
-                              // close together. Affects background and
-                              // text together; the pin underneath stays
-                              // fully opaque.
-                              Opacity(
-                                opacity: 0.55,
-                                child: Material(
-                                  elevation: 2,
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(1.0),
-                                    child: Text(
-                                      e.$2,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              FeatureLabel(text: e.$2),
                               const Icon(
                                 Icons.place,
                                 color: Colors.green,
@@ -335,8 +317,7 @@ class _MapViewState<K> extends State<MapView<K>> {
               Align(
                 alignment: Alignment.topLeft,
                 child: SizedBox(
-                  width:
-                      constraints.maxWidth - (hasTopRightColumn ? 66 : 0),
+                  width: constraints.maxWidth - (hasTopRightColumn ? 66 : 0),
                   child: _buildSearchTool(context, constraints),
                 ),
               ),
@@ -364,8 +345,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                         i < widget.topRightCommands.length;
                         i++
                       ) ...[
-                        if (i > 0 || withToggle)
-                          const SizedBox(height: 8),
+                        if (i > 0 || withToggle) const SizedBox(height: 8),
                         widget.topRightCommands[i],
                       ],
                     ],
@@ -933,6 +913,32 @@ class _MapViewState<K> extends State<MapView<K>> {
   }
 }
 
+// Slightly translucent so the label does
+// not dominate when multiple markers sit
+// close together. Affects background and
+// text together; the pin underneath stays
+// fully opaque.
+class FeatureLabel extends StatelessWidget {
+  const FeatureLabel({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.55,
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(1.0),
+          child: Text(text, style: const TextStyle(fontSize: 12)),
+        ),
+      ),
+    );
+  }
+}
+
 // Helper class to represent search results.
 //
 // A result may have:
@@ -1078,6 +1084,7 @@ class _RoleMarker extends StatelessWidget {
   const _RoleMarker({required this.label});
 
   final String label;
+  final double size = 24;
 
   @override
   Widget build(BuildContext context) {
@@ -1086,39 +1093,33 @@ class _RoleMarker extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        FeatureLabel(text: label),
         Opacity(
-          opacity: 0.65,
+          opacity: 0.85,
           child: Material(
             elevation: 2,
-            borderRadius: BorderRadius.circular(4),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Text(label, style: const TextStyle(fontSize: 11)),
-            ),
-          ),
-        ),
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: scheme.tertiaryContainer,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: scheme.tertiary,
-              width: 2.5,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 4,
-                offset: Offset(0, 2),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: scheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: scheme.tertiary, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 2,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Icon(
-            Icons.theater_comedy,
-            color: scheme.onTertiaryContainer,
-            size: 18,
+              child: Icon(
+                Icons.theater_comedy,
+                color: scheme.onTertiaryContainer,
+                size: size / 2,
+              ),
+            ),
           ),
         ),
       ],
