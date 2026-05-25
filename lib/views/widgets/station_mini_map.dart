@@ -3,7 +3,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/map_view.dart';
-import 'package:ringdrill/views/widgets/station_expansion_tile.dart';
+import 'package:ringdrill/views/widgets/station_code_badge.dart';
 
 /// Static preview of a single station's position. Tapping the preview
 /// opens a modal bottom sheet with the interactive variant centred on

@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ringdrill/views/widgets/role_expansion_tile.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/role_code_badge.dart';
 
 Widget _buildTile({
   required bool expanded,
-  required VoidCallback onOpen,
-  required VoidCallback onToggle,
+  VoidCallback? onOpen,
+  VoidCallback? onToggle,
   Widget? trailing,
+  Widget? body = const Text('body content'),
 }) {
   return MaterialApp(
     home: Scaffold(
-      body: RoleExpansionTile(
+      body: ExpandableTile(
         leading: const RoleCodeBadge(code: '1.1'),
         title: const Text('Anna Hansen'),
         subtitle: const Text('Øvelse 1'),
         trailing: trailing,
-        body: const Text('body content'),
+        body: body,
         expanded: expanded,
         onOpen: onOpen,
         onToggle: onToggle,
@@ -39,7 +41,7 @@ void main() {
     await tester.pumpWidget(
       _buildTile(expanded: true, onOpen: () {}, onToggle: () {}),
     );
-    await tester.pump(RoleExpansionTile.animationDuration);
+    await tester.pump(ExpandableTile.animationDuration);
     // Body is wrapped in Padding when expanded
     expect(find.text('body content'), findsOneWidget);
     expect(find.byType(Padding), findsWidgets);
@@ -55,7 +57,9 @@ void main() {
         onToggle: () => toggleCount++,
       ),
     );
-    // Tap the title area (InkWell)
+    // Tap the title area. The outer InkWell catches the tap and fires
+    // onOpen; onToggle stays untouched because the chevron's
+    // IconButton sits in a separate hit region.
     await tester.tap(find.text('Anna Hansen'));
     await tester.pump();
     expect(openCount, 1);
@@ -72,7 +76,8 @@ void main() {
         onToggle: () => toggleCount++,
       ),
     );
-    // Tap the chevron (IconButton)
+    // Tap the chevron. IconButton has its own InkResponse that absorbs
+    // the gesture, so the outer row-level InkWell does not also fire.
     await tester.tap(find.byType(IconButton));
     await tester.pump();
     expect(toggleCount, 1);
@@ -89,5 +94,33 @@ void main() {
       ),
     );
     expect(find.byKey(const Key('cast-chip')), findsOneWidget);
+  });
+
+  testWidgets('row tap toggles when onOpen is null', (tester) async {
+    var toggleCount = 0;
+    await tester.pumpWidget(
+      _buildTile(
+        expanded: false,
+        onOpen: null,
+        onToggle: () => toggleCount++,
+      ),
+    );
+    // With onOpen null, tapping the row falls through to onToggle.
+    await tester.tap(find.text('Anna Hansen'));
+    await tester.pump();
+    expect(toggleCount, 1);
+  });
+
+  testWidgets('chevron is hidden when body is null', (tester) async {
+    await tester.pumpWidget(
+      _buildTile(
+        expanded: false,
+        onOpen: () {},
+        onToggle: () {},
+        body: null,
+      ),
+    );
+    // No body means no expand affordance, regardless of onToggle.
+    expect(find.byType(IconButton), findsNothing);
   });
 }

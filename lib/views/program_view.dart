@@ -14,6 +14,8 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/live_accent.dart';
 
 import 'exercise_form_screen.dart';
 
@@ -31,11 +33,13 @@ class _ProgramViewState extends State<ProgramView> {
   final _programService = ProgramService();
   final List<StreamSubscription> _subscriptions = [];
   List<Exercise> _exercises = [];
+  ExerciseEvent? _liveEvent;
 
   @override
   void initState() {
     super.initState();
     _initExercises();
+    _liveEvent = ExerciseService().last;
 
     // Listen to exercise changes
     _subscriptions.add(
@@ -46,10 +50,18 @@ class _ProgramViewState extends State<ProgramView> {
       }),
     );
 
-    // The play/stop control used to live on each card and needed live
-    // ExerciseService updates here. Starting now happens from the exercise
-    // detail screen, so we no longer need to rebuild the program list on
-    // ExerciseService events.
+    // The play/stop control used to live on each card; that part no longer
+    // needs ExerciseService updates here. We re-subscribe so the live "blue
+    // card" marker on the running exercise — mirroring the team view —
+    // tracks start/stop/phase transitions while the user is on this tab.
+    _subscriptions.add(
+      ExerciseService().events.listen((event) {
+        if (!mounted) return;
+        setState(() {
+          _liveEvent = event;
+        });
+      }),
+    );
   }
 
   @override
@@ -73,60 +85,57 @@ class _ProgramViewState extends State<ProgramView> {
                 final exercise = _exercises[index];
                 final markers = exercise.getLocations(false);
 
-                return GestureDetector(
-                  onTap: () async {
-                    // Navigate to CoordinatorViewScreen with the selected exercise
-                    await context.push('$routeProgram/${exercise.uuid}');
+                return Dismissible(
+                  key: ValueKey(exercise.name),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  confirmDismiss: (direction) => showDialog(
+                    context: context,
+                    barrierDismissible:
+                        false, // Prevent closing without taking action
+                    builder: (context) => AlertDialog(
+                      title: Text(localizations.confirm),
+                      content: Text(localizations.confirmDeleteExercise),
+                      actions: [
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context, false);
+                          },
+                          child: Text(localizations.cancel),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          onPressed: () async {
+                            Navigator.pop(context, true);
+                          },
+                          child: Text(
+                            localizations.delete,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onDismissed: (direction) {
+                    _deleteExercise(exercise);
                   },
-                  child: Dismissible(
-                    key: ValueKey(exercise.name),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      color: Colors.red,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: const Icon(Icons.delete, color: Colors.white),
-                    ),
-                    confirmDismiss: (direction) => showDialog(
-                      context: context,
-                      barrierDismissible:
-                          false, // Prevent closing without taking action
-                      builder: (context) => AlertDialog(
-                        title: Text(localizations.confirm),
-                        content: Text(localizations.confirmDeleteExercise),
-                        actions: [
-                          TextButton(
-                            onPressed: () async {
-                              Navigator.pop(context, false);
-                            },
-                            child: Text(localizations.cancel),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                            ),
-                            onPressed: () async {
-                              Navigator.pop(context, true);
-                            },
-                            child: Text(
-                              localizations.delete,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    onDismissed: (direction) {
-                      _deleteExercise(exercise);
-                    },
-                    child: ExerciseCard(
-                      exercise: exercise,
-                      localizations: localizations,
-                      markers: markers,
-                    ),
+                  child: ExerciseCard(
+                    exercise: exercise,
+                    localizations: localizations,
+                    markers: markers,
+                    liveEvent: _liveEvent,
+                    onOpen: () =>
+                        context.push('$routeProgram/${exercise.uuid}'),
                   ),
                 );
               },
@@ -156,6 +165,8 @@ class ExerciseCard extends StatefulWidget {
     required this.localizations,
     this.trailing,
     required this.markers,
+    this.liveEvent,
+    this.onOpen,
   });
 
   final Widget? trailing;
@@ -163,13 +174,24 @@ class ExerciseCard extends StatefulWidget {
   final AppLocalizations localizations;
   final List<StationLocation> markers;
 
+  /// Latest [ExerciseEvent] from [ExerciseService], if any. When this
+  /// event belongs to the card's exercise, the card is rendered with
+  /// the same blue "live" treatment used in `team_screen.dart` so the
+  /// running exercise stands out at a glance. Default `null` keeps the
+  /// neutral look — that is what the export/import picker uses, where
+  /// "live" styling would be misleading.
+  final ExerciseEvent? liveEvent;
+
+  /// Fires when the row is tapped. When `null`, tapping the row toggles
+  /// the inline map preview instead (used by the export/import picker
+  /// where there is no detail screen to navigate to).
+  final VoidCallback? onOpen;
+
   @override
   State<ExerciseCard> createState() => _ExerciseCardState();
 }
 
 class _ExerciseCardState extends State<ExerciseCard> {
-  static const _animationDuration = Duration(milliseconds: 200);
-
   bool _expanded = false;
 
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
@@ -182,71 +204,46 @@ class _ExerciseCardState extends State<ExerciseCard> {
     final hasMap = markers.isNotEmpty;
     final st = exercise.startTime.toMaterial();
     final et = exercise.endTime.toMaterial();
+    final liveEvent = widget.liveEvent;
+    final isLive = liveEvent?.exercise.uuid == exercise.uuid;
+    final accent = LiveAccent.of(context, isLive: isLive);
+    final subtitleParts = <String>[
+      if (isLive) liveEvent!.getState(localizations),
+      '${st.formal()} - ${et.formal()}',
+      et.toDateTime().formal(localizations, st.toDateTime()),
+      '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
+      '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
+    ];
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: ListTile(
-                  title: Text(
-                    exercise.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    [
-                      '${st.formal()} - ${et.formal()}',
-                      et.toDateTime().formal(localizations, st.toDateTime()),
-                      '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
-                      '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
-                    ].join(' | '),
-                  ),
+    return ExpandableTile(
+      accent: accent,
+      leading: accent.indicator,
+      title: Text(
+        exercise.name,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: accent.foreground,
+        ),
+      ),
+      subtitle: Text(subtitleParts.join(' | '), style: accent.textStyle),
+      trailing: widget.trailing,
+      onOpen: widget.onOpen,
+      onToggle: hasMap ? _toggleExpanded : null,
+      expanded: _expanded,
+      body: hasMap
+          ? SizedBox(
+              height: 200,
+              child: IgnorePointer(
+                child: MapView(
+                  layers: MapConfig.layers,
+                  withToggle: false,
+                  markers: markers,
+                  initialFit: markers.fit(),
+                  initialCenter: markers.average(),
                 ),
               ),
-              if (hasMap)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: IconButton(
-                    onPressed: _toggleExpanded,
-                    icon: AnimatedRotation(
-                      turns: _expanded ? 0.5 : 0,
-                      duration: _animationDuration,
-                      child: const Icon(Icons.expand_more),
-                    ),
-                  ),
-                ),
-              if (widget.trailing != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: widget.trailing!,
-                ),
-            ],
-          ),
-          if (hasMap)
-            AnimatedSize(
-              duration: _animationDuration,
-              curve: Curves.easeInOut,
-              alignment: Alignment.topCenter,
-              child: _expanded
-                  ? SizedBox(
-                      height: 200,
-                      child: IgnorePointer(
-                        child: MapView(
-                          layers: MapConfig.layers,
-                          withToggle: false,
-                          markers: markers,
-                          initialFit: markers.fit(),
-                          initialCenter: markers.average(),
-                        ),
-                      ),
-                    )
-                  : const SizedBox(width: double.infinity, height: 0),
-            ),
-        ],
-      ),
+            )
+          : null,
     );
   }
 }

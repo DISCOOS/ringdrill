@@ -6,6 +6,8 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/live_accent.dart';
 
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key, required this.teamIndex});
@@ -97,7 +99,7 @@ class _TeamScreenState extends State<TeamScreen> {
   }
 }
 
-class _ExerciseSection extends StatelessWidget {
+class _ExerciseSection extends StatefulWidget {
   const _ExerciseSection({
     required this.exercise,
     required this.event,
@@ -115,46 +117,56 @@ class _ExerciseSection extends StatelessWidget {
   final ValueChanged<int> onStationTap;
 
   @override
+  State<_ExerciseSection> createState() => _ExerciseSectionState();
+}
+
+class _ExerciseSectionState extends State<_ExerciseSection> {
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.initiallyExpanded;
+  }
+
+  void _toggleExpanded() => setState(() => _expanded = !_expanded);
+
+  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
+    final exercise = widget.exercise;
+    final event = widget.event;
+    final isLive = widget.isLive;
+    final teamIndex = widget.teamIndex;
+    final onStationTap = widget.onStationTap;
     final roundCount = exercise.schedule.length;
+    final accent = LiveAccent.of(context, isLive: isLive);
     final subtitle = [
       if (isLive) event.getState(localizations),
       '$roundCount ${localizations.round(roundCount).toLowerCase()}',
       '${exercise.startTime}–${exercise.endTime}',
     ].join(' · ');
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      clipBehavior: Clip.antiAlias,
-      color: isLive ? colorScheme.primaryContainer : null,
-      shape: isLive
-          ? RoundedRectangleBorder(
-              side: BorderSide(color: colorScheme.primary, width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            )
-          : null,
-      child: ExpansionTile(
-        initiallyExpanded: initiallyExpanded,
-        leading: isLive
-            ? Icon(Icons.play_circle_fill, color: colorScheme.primary)
-            : null,
-        title: Text(
-          exercise.name,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: isLive ? colorScheme.onPrimaryContainer : null,
-          ),
+    return ExpandableTile(
+      accent: accent,
+      leading: accent.indicator,
+      title: Text(
+        exercise.name,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: accent.foreground,
         ),
-        subtitle: Text(
-          subtitle,
-          style: isLive
-              ? TextStyle(color: colorScheme.onPrimaryContainer)
-              : null,
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      ),
+      subtitle: Text(subtitle, style: accent.textStyle),
+      expanded: _expanded,
+      // No onOpen: tapping the row toggles, matching the previous
+      // ExpansionTile behaviour where the row itself was the expand
+      // affordance.
+      onToggle: _toggleExpanded,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PhaseHeaders(
             expand: true,

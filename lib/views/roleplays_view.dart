@@ -12,13 +12,14 @@ import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
-import 'package:ringdrill/views/widgets/role_expansion_tile.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/role_code_badge.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _CastAction { edit, clear }
 
 /// Flat list of all [RolePlay] rows across all exercises, sorted by
-/// exercise order then role index. Each row uses [RoleExpansionTile].
+/// exercise order then role index. Each row uses [ExpandableTile].
 ///
 /// The tab also carries an exercise filter (mirrors [StationListView])
 /// and a cast roster button in the AppBar.
@@ -235,7 +236,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         await _openRolePlayForm(exercise, rolePlay);
         return false;
       },
-      child: RoleExpansionTile(
+      child: ExpandableTile(
         leading: RoleCodeBadge(
           code: '$exerciseNumber.${rolePlay.index + 1}',
           highlight: actor != null,

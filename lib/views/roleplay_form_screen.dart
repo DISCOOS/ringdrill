@@ -5,7 +5,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/position_form_field.dart';
-import 'package:ringdrill/views/widgets/role_expansion_tile.dart';
+import 'package:ringdrill/views/widgets/role_code_badge.dart';
 
 /// Edit form for a single [RolePlay].
 ///

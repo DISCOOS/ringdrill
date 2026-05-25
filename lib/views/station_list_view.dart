@@ -5,11 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-import 'package:ringdrill/views/widgets/station_expansion_tile.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/station_code_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
@@ -30,16 +33,27 @@ class StationListView extends StatefulWidget {
 class _StationListViewState extends State<StationListView> {
   final _programService = ProgramService();
   StreamSubscription? _subscription;
+  StreamSubscription<ExerciseEvent>? _exerciseSubscription;
 
   int? _expandedRowIndex;
+  ExerciseEvent? _liveEvent;
 
   StationListController get _controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
+    _liveEvent = ExerciseService().last;
     _subscription = _programService.events.listen((_) {
       if (mounted) setState(() {});
+    });
+    // Track the running exercise so rows belonging to it get the same
+    // blue "live" treatment used in the team and exercises views.
+    _exerciseSubscription = ExerciseService().events.listen((event) {
+      if (!mounted) return;
+      setState(() {
+        _liveEvent = event;
+      });
     });
     _controller.filterExerciseUuid.addListener(_onFilterChanged);
   }
@@ -64,6 +78,7 @@ class _StationListViewState extends State<StationListView> {
   void dispose() {
     _controller.filterExerciseUuid.removeListener(_onFilterChanged);
     _subscription?.cancel();
+    _exerciseSubscription?.cancel();
     super.dispose();
   }
 
@@ -199,6 +214,8 @@ class _StationListViewState extends State<StationListView> {
   }) {
     final expanded = _expandedRowIndex == rowIndex;
     final colorScheme = Theme.of(context).colorScheme;
+    final isLive = _liveEvent?.exercise.uuid == exercise.uuid;
+    final accent = LiveAccent.of(context, isLive: isLive);
     return Dismissible(
       key: ValueKey('station-row-${exercise.uuid}-${station.index}'),
       direction: DismissDirection.endToStart,
@@ -222,14 +239,17 @@ class _StationListViewState extends State<StationListView> {
         await _openStationForm(exercise, station);
         return false;
       },
-      child: StationExpansionTile(
+      child: ExpandableTile(
         leading: StationCodeBadge(
           code: _stationCode(exerciseNumber, station),
+          highlight: isLive,
         ),
-        title: Text(station.name),
+        title: Text(station.name, style: accent.textStyle),
         subtitle: Text(
           '${localizations.exercise(1)}: ${exercise.name}',
+          style: accent.textStyle,
         ),
+        accent: accent,
         expanded: expanded,
         onOpen: () => _openStation(exercise, station),
         onToggle: () {

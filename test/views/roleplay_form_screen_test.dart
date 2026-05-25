@@ -5,7 +5,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
-import 'package:ringdrill/views/widgets/role_expansion_tile.dart';
+import 'package:ringdrill/views/widgets/role_code_badge.dart';
 
 RolePlay _baseRole() => const RolePlay(
       uuid: 'role-1',
