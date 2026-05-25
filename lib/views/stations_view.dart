@@ -160,7 +160,7 @@ class _StationsViewState extends State<StationsView> {
 
     final stationSpecs = _showStations
         ? markers.toMarkerSpecs(
-            clusterGroup: 'stations',
+            clusterGroup: 'markers',
             onTap: _onStationTap,
           )
         : <MapMarkerSpec<(String, int)>>[];
@@ -175,7 +175,7 @@ class _StationsViewState extends State<StationsView> {
               label: rp.name,
               point: rp.position!,
               child: const RoleMarker(),
-              clusterGroup: 'roleplays',
+              clusterGroup: 'markers',
               onTap: () {
                 final ex = _programService.getExercise(rp.exerciseUuid);
                 if (ex != null) {
@@ -214,13 +214,9 @@ class _StationsViewState extends State<StationsView> {
             markers: allSpecs,
             showLabels: _showLabels,
             clusterStyles: {
-              'stations': MapClusterStyle(
-                color: Colors.green,
-                onColor: Colors.white,
-              ),
-              'roleplays': MapClusterStyle(
-                color: scheme.tertiaryContainer,
-                onColor: scheme.onTertiaryContainer,
+              'markers': MapClusterStyle(
+                color: scheme.primaryContainer,
+                onColor: scheme.onPrimaryContainer,
               ),
             },
             searchTargets: _buildSearchTargets(context),
@@ -279,9 +275,8 @@ class _StationsViewState extends State<StationsView> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
-            void applyAndRefit() {
+            void apply() {
               setState(() {});
-              _recenter();
             }
 
             final activeDimensions = (_hiddenExercises.isNotEmpty ? 1 : 0)
@@ -360,7 +355,7 @@ class _StationsViewState extends State<StationsView> {
                                   _hiddenExercises.add(ex.uuid);
                                 }
                               });
-                              applyAndRefit();
+                              apply();
                             },
                           );
                         },
@@ -381,7 +376,7 @@ class _StationsViewState extends State<StationsView> {
                                     _showRoleplays = true;
                                     _showLabels = true;
                                   });
-                                  applyAndRefit();
+                                  apply();
                                   Navigator.pop(sheetContext);
                                 },
                           child: Text(l.showAll),
@@ -438,7 +433,6 @@ class _StationsViewState extends State<StationsView> {
               TextButton(
                 onPressed: () {
                   setState(_hiddenExercises.clear);
-                  _recenter();
                 },
                 child: Text(localizations.showAll),
               ),
@@ -485,7 +479,6 @@ class _StationsViewState extends State<StationsView> {
                     _showRoleplays = true;
                     _showLabels = true;
                   });
-                  _recenter();
                 },
                 child: Text(l.showAll),
               ),
