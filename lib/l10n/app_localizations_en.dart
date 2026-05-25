@@ -202,6 +202,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showExercises => 'Show exercises';
 
   @override
+  String get filter => 'Filter';
+
+  @override
+  String get filterShowOnMap => 'Show on map';
+
+  @override
   String get showAll => 'Show all';
 
   @override

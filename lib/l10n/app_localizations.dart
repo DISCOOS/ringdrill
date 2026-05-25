@@ -434,6 +434,18 @@ abstract class AppLocalizations {
   /// **'Show exercises'**
   String get showExercises;
 
+  /// Tooltip for the unified filter FAB on the map tab
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filter;
+
+  /// Section header in the unified filter sheet for the stations/roleplays/labels toggles
+  ///
+  /// In en, this message translates to:
+  /// **'Show on map'**
+  String get filterShowOnMap;
+
   /// Action that makes every exercise visible on the map
   ///
   /// In en, this message translates to:

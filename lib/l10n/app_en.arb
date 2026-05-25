@@ -224,6 +224,14 @@
   "@showExercises": {
     "description": "Tooltip for the map command that opens the exercise-visibility filter"
   },
+  "filter": "Filter",
+  "@filter": {
+    "description": "Tooltip for the unified filter FAB on the map tab"
+  },
+  "filterShowOnMap": "Show on map",
+  "@filterShowOnMap": {
+    "description": "Section header in the unified filter sheet for the stations/roleplays/labels toggles"
+  },
   "showAll": "Show all",
   "@showAll": {
     "description": "Action that makes every exercise visible on the map"

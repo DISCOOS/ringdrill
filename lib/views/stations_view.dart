@@ -225,15 +225,7 @@ class _StationsViewState extends State<StationsView> {
             },
             searchTargets: _buildSearchTargets(context),
             topRightCommands: [
-              if (allExercises.isNotEmpty)
-                _buildVisibilityFab(
-                  context,
-                  localizations,
-                  allExercises,
-                  hiddenCount,
-                ),
-              _buildLabelsFab(localizations),
-              _buildMarkerTypesFab(context, localizations),
+              _buildFilterFab(context, localizations, allExercises),
             ],
           ),
         ),
@@ -249,62 +241,71 @@ class _StationsViewState extends State<StationsView> {
     );
   }
 
-  /// FAB with a Material [Badge] showing how many exercises are hidden.
-  /// When the filter is inactive the FAB looks like every other map
-  /// command so it does not visually shout for attention.
-  Widget _buildVisibilityFab(
-    BuildContext context,
-    AppLocalizations localizations,
-    List<Exercise> allExercises,
-    int hiddenCount,
-  ) {
-    final fab = FloatingActionButton(
-      heroTag: 'filterExercises',
-      tooltip: localizations.showExercises,
-      onPressed: () => _openVisibilitySheet(allExercises),
-      child: const Icon(Icons.tune),
-    );
-    if (hiddenCount == 0) return fab;
-    return Badge.count(count: hiddenCount, child: fab);
-  }
-
-  Widget _buildLabelsFab(AppLocalizations l) {
-    return FloatingActionButton(
-      heroTag: 'toggleLabels',
-      tooltip: _showLabels ? l.hideLabels : l.showLabels,
-      onPressed: () => setState(() => _showLabels = !_showLabels),
-      child: Icon(_showLabels ? Icons.label : Icons.label_off),
-    );
-  }
-
-  Widget _buildMarkerTypesFab(BuildContext context, AppLocalizations l) {
-    final offCount = (!_showStations ? 1 : 0) + (!_showRoleplays ? 1 : 0);
-    final fab = FloatingActionButton(
-      heroTag: 'markerTypes',
-      tooltip: l.markerTypes,
-      onPressed: () => _openMarkerTypesSheet(context, l),
-      child: const Icon(Icons.tune_outlined),
-    );
-    if (offCount == 0) return fab;
-    return Badge.count(count: offCount, child: fab);
-  }
-
-  Future<void> _openMarkerTypesSheet(
+  /// Single filter FAB replacing the old three-FAB stack. The [Badge]
+  /// count reflects how many independent filter dimensions are active
+  /// (0–4: hidden exercises, stations off, roleplays off, labels off).
+  Widget _buildFilterFab(
     BuildContext context,
     AppLocalizations l,
+    List<Exercise> allExercises,
   ) {
-    return showModalBottomSheet<void>(
+    final activeDimensions = (_hiddenExercises.isNotEmpty ? 1 : 0)
+        + (!_showStations ? 1 : 0)
+        + (!_showRoleplays ? 1 : 0)
+        + (!_showLabels ? 1 : 0);
+    final fab = FloatingActionButton(
+      heroTag: 'filter',
+      tooltip: l.filter,
+      onPressed: () => _openFilterSheet(context, l, allExercises),
+      child: const Icon(Icons.filter_alt),
+    );
+    if (activeDimensions == 0) return fab;
+    return Badge.count(count: activeDimensions, child: fab);
+  }
+
+  /// Unified filter sheet replacing `_openVisibilitySheet` and
+  /// `_openMarkerTypesSheet`. Sections: marker-type toggles (stations,
+  /// roleplays, labels) then per-exercise visibility, then a "Show all"
+  /// reset button that is disabled when nothing is filtered.
+  Future<void> _openFilterSheet(
+    BuildContext context,
+    AppLocalizations l,
+    List<Exercise> exercises,
+  ) async {
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
+            void applyAndRefit() {
+              setState(() {});
+              _recenter();
+            }
+
+            final activeDimensions = (_hiddenExercises.isNotEmpty ? 1 : 0)
+                + (!_showStations ? 1 : 0)
+                + (!_showRoleplays ? 1 : 0)
+                + (!_showLabels ? 1 : 0);
+
+            final sectionLabelStyle =
+                Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
+                  color:
+                      Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                );
+
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Text(l.filterShowOnMap, style: sectionLabelStyle),
+                    ),
                     SwitchListTile(
                       value: _showStations,
                       title: Text(l.showStations),
@@ -320,6 +321,72 @@ class _StationsViewState extends State<StationsView> {
                         setSheetState(() => _showRoleplays = value);
                         setState(() => _showRoleplays = value);
                       },
+                    ),
+                    SwitchListTile(
+                      value: _showLabels,
+                      title: Text(l.showLabels),
+                      onChanged: (value) {
+                        setSheetState(() => _showLabels = value);
+                        setState(() => _showLabels = value);
+                      },
+                    ),
+                    const Divider(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                      child: Text(
+                        l.exercisesShownOfTotal(
+                          exercises.length - _hiddenExercises.length,
+                          exercises.length,
+                        ),
+                        style: Theme.of(sheetContext).textTheme.titleMedium,
+                      ),
+                    ),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: exercises.length,
+                        itemBuilder: (context, index) {
+                          final ex = exercises[index];
+                          final isVisible =
+                              !_hiddenExercises.contains(ex.uuid);
+                          return SwitchListTile(
+                            value: isVisible,
+                            title: Text(ex.name),
+                            onChanged: (value) {
+                              setSheetState(() {
+                                if (value) {
+                                  _hiddenExercises.remove(ex.uuid);
+                                } else {
+                                  _hiddenExercises.add(ex.uuid);
+                                }
+                              });
+                              applyAndRefit();
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const Divider(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: activeDimensions == 0
+                              ? null
+                              : () {
+                                  setSheetState(() {
+                                    _hiddenExercises.clear();
+                                    _showStations = true;
+                                    _showRoleplays = true;
+                                    _showLabels = true;
+                                  });
+                                  applyAndRefit();
+                                  Navigator.pop(sheetContext);
+                                },
+                          child: Text(l.showAll),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -426,110 +493,6 @@ class _StationsViewState extends State<StationsView> {
           ),
         ),
       ),
-    );
-  }
-
-  /// Opens a modal bottom sheet listing every exercise in the active
-  /// program with a toggle per row. Hidden exercises drop out of both
-  /// the marker layer and the search results. The sheet manages its own
-  /// transient state and pushes the result back via [setState] when the
-  /// user closes it.
-  Future<void> _openVisibilitySheet(List<Exercise> exercises) async {
-    final localizations = AppLocalizations.of(context)!;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            void applyAndRefit() {
-              setState(() {});
-              _recenter();
-            }
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              // Same "shown of total" phrasing as the
-                              // banner above the map and the
-                              // import/export selector; rebuilt by
-                              // StatefulBuilder so the count tracks
-                              // toggles live.
-                              localizations.exercisesShownOfTotal(
-                                exercises.length - _hiddenExercises.length,
-                                exercises.length,
-                              ),
-                              style: Theme.of(sheetContext)
-                                  .textTheme
-                                  .titleMedium,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setSheetState(() {
-                                _hiddenExercises.clear();
-                              });
-                              applyAndRefit();
-                            },
-                            child: Text(localizations.showAll),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setSheetState(() {
-                                _hiddenExercises
-                                  ..clear()
-                                  ..addAll(exercises.map((e) => e.uuid));
-                              });
-                              applyAndRefit();
-                            },
-                            child: Text(localizations.hideAll),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Flexible(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: exercises.length,
-                        itemBuilder: (context, index) {
-                          final ex = exercises[index];
-                          final isVisible =
-                              !_hiddenExercises.contains(ex.uuid);
-                          return SwitchListTile(
-                            value: isVisible,
-                            title: Text(ex.name),
-                            onChanged: (value) {
-                              setSheetState(() {
-                                if (value) {
-                                  _hiddenExercises.remove(ex.uuid);
-                                } else {
-                                  _hiddenExercises.add(ex.uuid);
-                                }
-                              });
-                              applyAndRefit();
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 

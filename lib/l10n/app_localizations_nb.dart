@@ -202,6 +202,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get showExercises => 'Vis øvelser';
 
   @override
+  String get filter => 'Filter';
+
+  @override
+  String get filterShowOnMap => 'Vis på kart';
+
+  @override
   String get showAll => 'Vis alle';
 
   @override

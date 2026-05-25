@@ -31,6 +31,8 @@
   "selectFile": "Velg en fil",
   "selectExercises": "Velg øvelser",
   "showExercises": "Vis øvelser",
+  "filter": "Filter",
+  "filterShowOnMap": "Vis på kart",
   "showAll": "Vis alle",
   "hideAll": "Skjul alle",
   "showLabels": "Vis etiketter",
