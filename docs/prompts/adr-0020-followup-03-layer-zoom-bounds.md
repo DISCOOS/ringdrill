@@ -1,12 +1,15 @@
-# Follow-up 03: Per-layer zoom bounds in MapConfig
+# Follow-up 03: Zoom bounds on tile layers and camera
 
-The two `TileLayer` factories in `lib/views/map_view.dart` (`MapConfig.osmLayer`, `MapConfig.topoLayer`) do not declare any zoom bounds. flutter_map then defaults `maxNativeZoom` to 19 and tries to fetch tiles at zoom 18–19 from Kartverket's cache, which only publishes webmercator topo tiles up to zoom 18 in practice (see [`cache.kartverket.no`](https://cache.kartverket.no/) and the WMTS capabilities document). Above that the network returns 404s or empty tiles. Introduce explicit min/max bounds per layer so each layer only fetches what its source actually serves and over-zoom is handled by upscaling instead of dropping out.
+Two related fixes in `lib/views/map_view.dart`, both about making zoom bounds actually hold:
+
+1. The two `TileLayer` factories in `MapConfig` (`osmLayer`, `topoLayer`) do not declare any zoom bounds, so flutter_map defaults `maxNativeZoom` to 19 and tries to fetch Kartverket topo tiles above the published webmercator range (typically 18). Above that the network returns empty tiles.
+2. `MapOptions` does not pass `minZoom` / `maxZoom`, so only the `_zoomIn` / `_zoomOut` FABs respect `widget.minZoom` / `widget.maxZoom`. Pinch, scroll-wheel and double-tap-zoom let the camera drift past those bounds.
 
 Scope is `lib/views/map_view.dart` only.
 
 ## Order of work
 
-1. **Add zoom bounds to `MapConfig.topoLayer`:**
+1. **Zoom bounds on `MapConfig.topoLayer`:**
    ```dart
    static TileLayer get topoLayer => TileLayer(
      key: const ValueKey('topo'),
@@ -20,9 +23,9 @@ Scope is `lib/views/map_view.dart` only.
      maxNativeZoom: 18,
    );
    ```
-   `maxNativeZoom: 18` matches Kartverket's published webmercator range. `maxZoom: 19` keeps the layer visible across the whole camera range so the user does not see the layer pop out when zooming past 18 — flutter_map upscales the deepest available tile.
+   `maxNativeZoom: 18` matches Kartverket's published webmercator range. `maxZoom: 19` keeps the layer visible across the whole camera range, so flutter_map upscales the deepest available tile instead of dropping the layer above 18.
 
-2. **Add zoom bounds to `MapConfig.osmLayer`:**
+2. **Zoom bounds on `MapConfig.osmLayer`:**
    ```dart
    static TileLayer get osmLayer => TileLayer(
      key: const ValueKey('osm'),
@@ -37,18 +40,39 @@ Scope is `lib/views/map_view.dart` only.
    ```
    OSM serves tiles natively through zoom 19, so `maxNativeZoom` matches `maxZoom`.
 
-3. **Leave `MapView.minZoom` and `MapView.maxZoom` alone.** They are the camera's hard cap and still default to `2` and `19`. The per-layer bounds operate underneath those.
+3. **Camera bounds in `MapOptions`.** Inside `MapView.build`, where `MapOptions(...)` is constructed, add `minZoom` and `maxZoom`:
+   ```dart
+   options: MapOptions(
+     initialZoom: widget.initialZoom,
+     initialCenter: widget.initialCenter,
+     initialCameraFit: widget.initialFit,
+     minZoom: widget.minZoom,
+     maxZoom: widget.maxZoom,
+     interactionOptions: InteractionOptions(
+       flags: widget.interactionFlags,
+     ),
+     onTap: (tapPosition, point) { ... },
+   ),
+   ```
+   This caps every camera-moving path — pinch, scroll-wheel, double-tap-zoom, `fitCamera`, and the FABs — to the same `[widget.minZoom, widget.maxZoom]` interval the `_zoomIn` / `_zoomOut` clamps already use.
 
-4. **Verification.**
-   - `flutter analyze` clean.
-   - `flutter test`. Report results. `test/widget_test.dart` remains known-broken.
-   - Smoke-check: switch the layer toggle to Topo, zoom to 18, then to 19. Tiles at 19 should appear upscaled instead of disappearing or showing blank tiles. Switch to OSM and zoom to 19 — tiles should be sharp (native). At zoom 2 (the camera's minimum), both layers should still render.
-   - Check the network panel (or `flutter_map` debug logs) if available: no requests should be made for topo tiles at `{z} > 18`.
+4. **Leave the `MapView` constructor defaults alone.** `minZoom: 2` and `maxZoom: 19` stay as today. They are now actually enforced.
+
+## Verification
+
+- `flutter analyze` clean.
+- `flutter test`. Report results. `test/widget_test.dart` remains known-broken.
+- Smoke-check:
+  - Switch to the Topo layer, zoom past 18 with pinch or scroll-wheel. Tiles should appear upscaled, not blank. No requests should be made for topo tiles at `{z} > 18`.
+  - Switch to OSM and zoom to 19. Tiles should be sharp (native).
+  - Try to zoom past 19 with scroll-wheel, pinch and double-tap. The camera must stop at 19 in every case, matching the behaviour of the `+` FAB.
+  - Try to zoom below 2 the same way. The camera must stop at 2.
+  - Call sites that pass their own `minZoom` / `maxZoom` (e.g. mini-maps) should still respect those tighter bounds rather than the defaults.
 
 ## Constraints
 
-- Do not change `urlTemplate`, headers or any other field on the existing tile layers.
-- Do not change `MapView.minZoom` / `MapView.maxZoom` defaults.
+- Do not change `urlTemplate`, headers or other fields on the existing tile layers.
+- Do not change the default `minZoom` / `maxZoom` on `MapView`.
 - Do not add a new layer or remove an existing one.
 - Match existing `dart format` style.
 
