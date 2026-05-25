@@ -374,10 +374,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               // touch-target for secondary actions, and the long-press
               // on the rotation table remains as a forgiving fallback.
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 36,
-                minHeight: 36,
-              ),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               visualDensity: VisualDensity.compact,
               onPressed: () => _copyExerciseToClipboard(localizations),
             ),
@@ -907,6 +904,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         children: List<Widget>.generate(event.exercise.numberOfTeams, (
           teamIndex,
         ) {
+          final colorScheme = Theme.of(context).colorScheme;
           // The team's current station, in plain text. Shown as the
           // ExpansionTile subtitle while the exercise is running so
           // the coordinator can read off where each team is without
@@ -921,10 +919,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                   currentStationIndex < _exercise!.stations.length)
               ? _exercise!.stations[currentStationIndex].name
               : null;
+          // A team is "live" when the exercise is live.
+          // Mirrors the live styling used in TeamScreen._ExerciseSection.
+          final isLive = event.isRunning;
           return Card(
             elevation: 2,
             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
             clipBehavior: Clip.antiAlias,
+            color: isLive ? colorScheme.primaryContainer : null,
+            shape: isLive
+                ? RoundedRectangleBorder(
+                    side: BorderSide(color: colorScheme.primary, width: 1.5),
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                : null,
             child: ExpansionTile(
               // Use ValueKey (not PageStorageKey) — see the comment
               // on the station ExpansionTile above for the reason.
