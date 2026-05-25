@@ -237,7 +237,8 @@ class _ExerciseCardState extends State<ExerciseCard> {
                 child: MapView(
                   layers: MapConfig.layers,
                   withToggle: false,
-                  markers: markers,
+                  withClustering: false,
+                  markers: markers.toMarkerSpecs(),
                   initialFit: markers.fit(),
                   initialCenter: markers.average(),
                 ),

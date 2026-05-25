@@ -208,6 +208,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hideAll => 'Hide all';
 
   @override
+  String get showLabels => 'Show labels';
+
+  @override
+  String get hideLabels => 'Hide labels';
+
+  @override
+  String get markerTypes => 'Marker types';
+
+  @override
+  String get showStations => 'Show stations';
+
+  @override
+  String get showRoleplays => 'Show roleplays';
+
+  @override
+  String get filterActiveCombined => 'Filter active';
+
+  @override
   String exercisesShownOfTotal(int shown, int total) {
     return 'Showing $shown of $total exercises';
   }

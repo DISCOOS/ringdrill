@@ -9,6 +9,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
@@ -357,7 +358,7 @@ class _StationListViewState extends State<StationListView> {
       MaterialPageRoute(
         builder: (_) => StationFormScreen(
           station: station,
-          markers: _programService.getLocations(),
+          markers: _programService.getLocations().toMarkerSpecs(),
         ),
       ),
     );

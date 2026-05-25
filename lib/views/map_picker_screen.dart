@@ -30,7 +30,7 @@ class MapPickerScreen<K> extends StatefulWidget {
   final double initialZoom;
   final CameraFit? initialFit;
   final LatLng initialCenter;
-  final List<(K, String, LatLng)> markers;
+  final List<MapMarkerSpec<K>> markers;
 
   @override
   State<MapPickerScreen<K>> createState() => _MapPickerScreenState<K>();

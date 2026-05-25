@@ -14,7 +14,6 @@ class MapScreen<K> extends StatefulWidget {
     this.withLocate = false,
     this.initialZoom = 15,
     this.markers = const [],
-    this.onMarkerTap,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
   });
@@ -28,8 +27,7 @@ class MapScreen<K> extends StatefulWidget {
   final double initialZoom;
   final int interactionFlags;
   final LatLng initialCenter;
-  final List<(K, String, LatLng)> markers;
-  final ValueSetter<(K, String, LatLng)>? onMarkerTap;
+  final List<MapMarkerSpec<K>> markers;
 
   @override
   State<MapScreen<K>> createState() => _MapScreenState();
@@ -56,7 +54,6 @@ class _MapScreenState<K> extends State<MapScreen<K>> {
           interactionFlags: MapConfig.interactive,
           layers: MapConfig.layers,
           markers: widget.markers,
-          onMarkerTap: widget.onMarkerTap,
         ),
       ),
     );

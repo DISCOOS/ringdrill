@@ -14,6 +14,7 @@ import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
@@ -511,7 +512,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       MaterialPageRoute(
         builder: (context) => StationFormScreen(
           station: stations[widget.stationIndex],
-          markers: _programService.getLocations(),
+          markers: _programService.getLocations().toMarkerSpecs(),
         ),
       ),
     );

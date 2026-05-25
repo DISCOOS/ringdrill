@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 
 class StationFormScreen extends StatefulWidget {
   const StationFormScreen({
     super.key,
     required this.station,
-    this.markers = const [],
+    this.markers = const <MapMarkerSpec<(String, int)>>[],
   });
 
   final Station station;
-  final List<(Object, String, LatLng)> markers;
+  final List<MapMarkerSpec<(String, int)>> markers;
 
   @override
   State<StationFormScreen> createState() => _StationFormScreenState();
@@ -42,7 +43,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final markers = widget.markers.where((e) => e.$3 == _position).toList();
+    final markers = widget.markers.where((e) => e.point == _position).toList();
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.editStation),

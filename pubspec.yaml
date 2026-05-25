@@ -38,7 +38,8 @@ dependencies:
   strings: ^4.0.1 # needed for flutter_map
   latlong2: ^0.9.1
   upgrader: ^13.3.0
-  flutter_map: ^8.2.1
+  flutter_map: ^8.2.2
+  flutter_map_marker_cluster: ^8.2.2
   geolocator: ^14.0.1
   google_fonts: ^8.1.0
   url_launcher: ^6.3.2

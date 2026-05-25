@@ -208,6 +208,24 @@ class AppLocalizationsNb extends AppLocalizations {
   String get hideAll => 'Skjul alle';
 
   @override
+  String get showLabels => 'Vis etiketter';
+
+  @override
+  String get hideLabels => 'Skjul etiketter';
+
+  @override
+  String get markerTypes => 'Markørtyper';
+
+  @override
+  String get showStations => 'Vis poster';
+
+  @override
+  String get showRoleplays => 'Vis markører';
+
+  @override
+  String get filterActiveCombined => 'Filter aktivt';
+
+  @override
   String exercisesShownOfTotal(int shown, int total) {
     return 'Viser $shown av $total øvelser';
   }

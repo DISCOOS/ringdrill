@@ -8,6 +8,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/widgets/role_marker.dart';
 
 import '../models/exercise.dart' show Exercise, StationLocation;
 import '../services/program_service.dart' show ProgramEvent, ProgramService;
@@ -52,6 +53,10 @@ class _StationsViewState extends State<StationsView> {
   /// UUIDs of exercises the user has toggled off in the visibility sheet.
   /// View-state only — does not survive a process restart by design.
   final Set<String> _hiddenExercises = <String>{};
+
+  bool _showLabels = true;
+  bool _showStations = true;
+  bool _showRoleplays = true;
 
   @override
   void initState() {
@@ -151,7 +156,43 @@ class _StationsViewState extends State<StationsView> {
     final localizations = AppLocalizations.of(context)!;
 
     final hiddenCount = _hiddenExercises.length;
-    final hasFilterActive = hiddenCount > 0;
+    final scheme = Theme.of(context).colorScheme;
+
+    final stationSpecs = _showStations
+        ? markers.toMarkerSpecs(
+            clusterGroup: 'stations',
+            onTap: _onStationTap,
+          )
+        : <MapMarkerSpec<(String, int)>>[];
+
+    final roleplays = _programService
+        .loadRolePlays()
+        .where((rp) => rp.position != null)
+        .toList();
+    final roleSpecs = _showRoleplays
+        ? roleplays.map((rp) => MapMarkerSpec<(String, int)>(
+              id: (rp.exerciseUuid, rp.index),
+              label: rp.name,
+              point: rp.position!,
+              child: const RoleMarker(),
+              clusterGroup: 'roleplays',
+              onTap: () {
+                final ex = _programService.getExercise(rp.exerciseUuid);
+                if (ex != null) {
+                  context.push('$routeStations/${ex.uuid}/${rp.index}');
+                }
+              },
+            ))
+        : <MapMarkerSpec<(String, int)>>[];
+
+    final allSpecs = [...stationSpecs, ...roleSpecs];
+
+    final hasFilterActive = hiddenCount > 0 ||
+        !_showStations ||
+        !_showRoleplays ||
+        !_showLabels;
+    final onlyExercisesFiltered =
+        hiddenCount > 0 && _showStations && _showRoleplays && _showLabels;
 
     return Column(
       children: [
@@ -170,16 +211,19 @@ class _StationsViewState extends State<StationsView> {
             controller: _mapController,
             interactionFlags: MapConfig.interactive,
             layers: MapConfig.layers,
-            markers: markers,
-            roleMarkers: _programService
-                .loadRolePlays()
-                .where((rp) => rp.position != null)
-                .map<((String, int), String, LatLng)>(
-                  (rp) => ((rp.exerciseUuid, rp.index), rp.name, rp.position!),
-                )
-                .toList(),
+            markers: allSpecs,
+            showLabels: _showLabels,
+            clusterStyles: {
+              'stations': MapClusterStyle(
+                color: Colors.green,
+                onColor: Colors.white,
+              ),
+              'roleplays': MapClusterStyle(
+                color: scheme.tertiaryContainer,
+                onColor: scheme.onTertiaryContainer,
+              ),
+            },
             searchTargets: _buildSearchTargets(context),
-            onMarkerTap: onMarkerTap,
             topRightCommands: [
               if (allExercises.isNotEmpty)
                 _buildVisibilityFab(
@@ -188,15 +232,19 @@ class _StationsViewState extends State<StationsView> {
                   allExercises,
                   hiddenCount,
                 ),
+              _buildLabelsFab(localizations),
+              _buildMarkerTypesFab(context, localizations),
             ],
           ),
         ),
         if (hasFilterActive)
-          _buildFilterBanner(
-            context,
-            shown: allExercises.length - hiddenCount,
-            total: allExercises.length,
-          ),
+          onlyExercisesFiltered
+              ? _buildFilterBanner(
+                  context,
+                  shown: allExercises.length - hiddenCount,
+                  total: allExercises.length,
+                )
+              : _buildCombinedFilterBanner(context),
       ],
     );
   }
@@ -218,6 +266,69 @@ class _StationsViewState extends State<StationsView> {
     );
     if (hiddenCount == 0) return fab;
     return Badge.count(count: hiddenCount, child: fab);
+  }
+
+  Widget _buildLabelsFab(AppLocalizations l) {
+    return FloatingActionButton(
+      heroTag: 'toggleLabels',
+      tooltip: _showLabels ? l.hideLabels : l.showLabels,
+      onPressed: () => setState(() => _showLabels = !_showLabels),
+      child: Icon(_showLabels ? Icons.label : Icons.label_off),
+    );
+  }
+
+  Widget _buildMarkerTypesFab(BuildContext context, AppLocalizations l) {
+    final offCount = (!_showStations ? 1 : 0) + (!_showRoleplays ? 1 : 0);
+    final fab = FloatingActionButton(
+      heroTag: 'markerTypes',
+      tooltip: l.markerTypes,
+      onPressed: () => _openMarkerTypesSheet(context, l),
+      child: const Icon(Icons.tune_outlined),
+    );
+    if (offCount == 0) return fab;
+    return Badge.count(count: offCount, child: fab);
+  }
+
+  Future<void> _openMarkerTypesSheet(
+    BuildContext context,
+    AppLocalizations l,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SwitchListTile(
+                      value: _showStations,
+                      title: Text(l.showStations),
+                      onChanged: (value) {
+                        setSheetState(() => _showStations = value);
+                        setState(() => _showStations = value);
+                      },
+                    ),
+                    SwitchListTile(
+                      value: _showRoleplays,
+                      title: Text(l.showRoleplays),
+                      onChanged: (value) {
+                        setSheetState(() => _showRoleplays = value);
+                        setState(() => _showRoleplays = value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   /// Slim banner shown above the map whenever the visibility filter
@@ -263,6 +374,53 @@ class _StationsViewState extends State<StationsView> {
                   _recenter();
                 },
                 child: Text(localizations.showAll),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shown when two or more filter types are simultaneously active.
+  Widget _buildCombinedFilterBanner(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.secondaryContainer,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.filter_alt,
+                size: 18,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l.filterActiveCombined,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _hiddenExercises.clear();
+                    _showStations = true;
+                    _showRoleplays = true;
+                    _showLabels = true;
+                  });
+                  _recenter();
+                },
+                child: Text(l.showAll),
               ),
             ],
           ),
@@ -554,10 +712,10 @@ class _StationsViewState extends State<StationsView> {
     return targets;
   }
 
-  void onMarkerTap(((String, int), String, LatLng) value) {
-    final exercise = _programService.getExercise(value.$1.$1);
+  void _onStationTap((String, int) id) {
+    final exercise = _programService.getExercise(id.$1);
     if (exercise != null) {
-      context.push('$routeStations/${exercise.uuid}/${value.$1.$2}');
+      context.push('$routeStations/${exercise.uuid}/${id.$2}');
     }
   }
 

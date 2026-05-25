@@ -46,9 +46,17 @@ class StationMiniMap extends StatelessWidget {
             child: MapView(
               layers: MapConfig.layers,
               withToggle: false,
+              withClustering: false,
               initialZoom: 15,
               initialCenter: position,
-              markers: [(0, station.name, position)],
+              markers: [
+                MapMarkerSpec(
+                  id: 0,
+                  label: station.name,
+                  point: position,
+                  child: const Icon(Icons.place, color: Colors.green, size: 32),
+                ),
+              ],
             ),
           ),
         ),
@@ -92,10 +100,18 @@ Future<void> openStationMapSheet(
                 withZoom: true,
                 withCenter: true,
                 withToggle: true,
+                withClustering: false,
                 initialZoom: 16,
                 initialCenter: position,
                 interactionFlags: MapConfig.interactive,
-                markers: [(0, station.name, position)],
+                markers: [
+                  MapMarkerSpec(
+                    id: 0,
+                    label: station.name,
+                    point: position,
+                    child: const Icon(Icons.place, color: Colors.green, size: 32),
+                  ),
+              ],
               ),
             ),
           ],

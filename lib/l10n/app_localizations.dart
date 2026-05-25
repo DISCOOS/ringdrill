@@ -446,6 +446,42 @@ abstract class AppLocalizations {
   /// **'Hide all'**
   String get hideAll;
 
+  /// Tooltip for the labels FAB when labels are currently hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Show labels'**
+  String get showLabels;
+
+  /// Tooltip for the labels FAB when labels are currently visible
+  ///
+  /// In en, this message translates to:
+  /// **'Hide labels'**
+  String get hideLabels;
+
+  /// Tooltip for the marker-types FAB that opens the visibility bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Marker types'**
+  String get markerTypes;
+
+  /// Switch label in the marker-types sheet for station markers
+  ///
+  /// In en, this message translates to:
+  /// **'Show stations'**
+  String get showStations;
+
+  /// Switch label in the marker-types sheet for roleplay markers
+  ///
+  /// In en, this message translates to:
+  /// **'Show roleplays'**
+  String get showRoleplays;
+
+  /// Banner text shown when two or more map filter types are active simultaneously
+  ///
+  /// In en, this message translates to:
+  /// **'Filter active'**
+  String get filterActiveCombined;
+
   /// Banner shown above the stations map when one or more exercises have been hidden via the visibility filter. Mirrors the selectedOfTotal pattern used in import/export.
   ///
   /// In en, this message translates to:

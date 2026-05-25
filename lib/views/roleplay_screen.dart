@@ -5,6 +5,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/widgets/role_marker.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -224,7 +225,14 @@ class _RoleMiniMap extends StatelessWidget {
               withToggle: false,
               initialZoom: 15,
               initialCenter: position,
-              markers: [(0, label, position)],
+              markers: [
+                MapMarkerSpec(
+                  id: 0,
+                  label: label,
+                  point: position,
+                  child: const RoleMarker(),
+                ),
+              ],
             ),
           ),
         ),
@@ -248,7 +256,14 @@ class _RoleMiniMap extends StatelessWidget {
           initialZoom: 16,
           initialCenter: position,
           interactionFlags: MapConfig.interactive,
-          markers: [(0, label, position)],
+          markers: [
+            MapMarkerSpec(
+              id: 0,
+              label: label,
+              point: position,
+              child: const RoleMarker(),
+            ),
+          ],
         ),
       ),
     );

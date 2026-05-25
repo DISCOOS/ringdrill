@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
@@ -10,6 +11,51 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/projection.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+
+/// Unified spec for a single map marker. The [child] widget is the icon
+/// (e.g. [Icons.place], [RoleMarker]). [MapView] owns label rendering.
+///
+/// Set [clusterGroup] to a non-null key to opt this marker into clustering
+/// with others that share the same key. Markers with a null [clusterGroup]
+/// are rendered in a flat [MarkerLayer] without clustering.
+class MapMarkerSpec<K> {
+  const MapMarkerSpec({
+    required this.id,
+    required this.label,
+    required this.point,
+    required this.child,
+    this.clusterGroup,
+    this.onTap,
+  });
+
+  final K id;
+  final String label;
+  final LatLng point;
+
+  /// The icon widget rendered below the label. Must not render its own label.
+  final Widget child;
+
+  /// Cluster discriminator. Markers with the same non-null key are clustered
+  /// together; null means flat rendering.
+  final Object? clusterGroup;
+
+  final VoidCallback? onTap;
+}
+
+/// Visual style for a cluster badge produced by [MapView] when
+/// [MapMarkerSpec.clusterGroup] is set. Omitted fields fall back to
+/// theme-derived defaults inside [MapView].
+class MapClusterStyle {
+  const MapClusterStyle({
+    this.color,
+    this.onColor,
+    this.size = const Size(40, 40),
+  });
+
+  final Color? color;
+  final Color? onColor;
+  final Size size;
+}
 
 class MapConfig {
   static const int static = InteractiveFlag.none;
@@ -23,6 +69,10 @@ class MapConfig {
       InteractiveFlag.scrollWheelZoom;
 
   static const LatLng initialCenter = LatLng(59.91, 10.75);
+
+  /// Below this zoom level, marker labels are hidden. Labels fade in between
+  /// [labelMinZoom] - 1 and [labelMinZoom] via [AnimatedOpacity].
+  static const double labelMinZoom = 14.0;
 
   /// Padding used when calling [MapController.fitCamera] so the fit
   /// honours the on-map overlays. Because [MapController.fitCamera]
@@ -92,14 +142,15 @@ class MapView<K> extends StatefulWidget {
     this.minZoom = 2,
     this.maxZoom = 19,
     this.markers = const [],
-    this.roleMarkers = const [],
+    this.clusterStyles = const {},
+    this.showLabels = true,
+    this.withClustering = true,
     this.searchTargets = const [],
     this.topRightCommands = const [],
     this.initialFit,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
     this.onTap,
-    this.onMarkerTap,
   });
 
   final bool withCross;
@@ -131,13 +182,24 @@ class MapView<K> extends StatefulWidget {
   final TapCallback? onTap;
   final MapController? controller;
   final List<TileLayer> layers;
-  final List<(K, String, LatLng)> markers;
 
-  /// Role-play position markers rendered with a rounded-square theatre glyph.
-  /// Uses a parallel parameter (same tuple shape as [markers]) so existing
-  /// [markers] callers are untouched. Rendered in a second [MarkerLayer]
-  /// after the station layer so roles appear on top.
-  final List<(K, String, LatLng)> roleMarkers;
+  /// Unified marker list. Replaces the old `markers` + `roleMarkers` split.
+  /// Each spec carries its own icon widget and optional tap callback.
+  /// Markers with a non-null [MapMarkerSpec.clusterGroup] are clustered
+  /// together when [withClustering] is true.
+  final List<MapMarkerSpec<K>> markers;
+
+  /// Per-group visual style for cluster badges. Keys must match the
+  /// [MapMarkerSpec.clusterGroup] values used in [markers].
+  final Map<Object, MapClusterStyle> clusterStyles;
+
+  /// When false, the label slot returns [SizedBox.shrink] regardless of zoom.
+  final bool showLabels;
+
+  /// When false, all markers are emitted into a single flat [MarkerLayer]
+  /// regardless of their [MapMarkerSpec.clusterGroup]. Useful for mini-maps
+  /// and pickers that never have enough markers to benefit from clustering.
+  final bool withClustering;
 
   /// Extra named locations available to the search field. Each target may
   /// have zero, one, or many points (e.g. an exercise that aggregates the
@@ -151,7 +213,6 @@ class MapView<K> extends StatefulWidget {
   /// to a particular domain. Each widget should be sized like a
   /// [FloatingActionButton] and carry a unique `heroTag`.
   final List<Widget> topRightCommands;
-  final ValueSetter<(K, String, LatLng)>? onMarkerTap;
 
   @override
   State<MapView<K>> createState() => _MapViewState();
@@ -237,53 +298,7 @@ class _MapViewState<K> extends State<MapView<K>> {
               ),
               children: [
                 widget.layers[_currentLayerIndex],
-                if (widget.markers.isNotEmpty)
-                  MarkerLayer(
-                    markers: widget.markers.map((e) {
-                      final painter = TextPainter(
-                        text: TextSpan(text: e.$2),
-                        maxLines: 1,
-                        textDirection: TextDirection.ltr,
-                      )..layout();
-                      return Marker(
-                        height: 52,
-                        width: painter.width,
-                        point: e.$3,
-                        alignment: Alignment.topCenter,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.deferToChild,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              FeatureLabel(text: e.$2),
-                              const Icon(
-                                Icons.place,
-                                color: Colors.green,
-                                size: 32,
-                              ),
-                            ],
-                          ),
-                          onTap: () => widget.onMarkerTap?.call(e),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                if (widget.roleMarkers.isNotEmpty)
-                  MarkerLayer(
-                    markers: widget.roleMarkers.map((e) {
-                      return Marker(
-                        height: 56,
-                        width: 56,
-                        point: e.$3,
-                        alignment: Alignment.topCenter,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.deferToChild,
-                          child: _RoleMarker(label: e.$2),
-                          onTap: () => widget.onMarkerTap?.call(e),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                ..._buildMarkerLayers(),
                 if (_currentLocation != null)
                   MarkerLayer(
                     markers: [
@@ -521,14 +536,14 @@ class _MapViewState<K> extends State<MapView<K>> {
     }
 
     // Do not toggle to same initial center if exists in markers
-    final unique = !widget.markers.any((e) => e.$3 == widget.initialCenter);
+    final unique = !widget.markers.any((e) => e.point == widget.initialCenter);
 
     _currentCenterIndex =
         (_currentCenterIndex + 1) % (widget.markers.length + (unique ? 1 : 0));
 
     final point = _currentCenterIndex == 0
         ? widget.initialCenter
-        : widget.markers[_currentCenterIndex - (unique ? 1 : 0)].$3;
+        : widget.markers[_currentCenterIndex - (unique ? 1 : 0)].point;
 
     debugPrint((_currentCenterIndex, point).toString());
 
@@ -692,12 +707,114 @@ class _MapViewState<K> extends State<MapView<K>> {
     int i = 0;
     _currentCenterIndex = 0;
     for (final it in widget.markers) {
-      if (it.$3 == widget.initialCenter) {
+      if (it.point == widget.initialCenter) {
         _currentCenterIndex = i;
         return;
       }
       i++;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Marker layer builders
+  // ---------------------------------------------------------------------------
+
+  /// Builds the list of [MarkerLayer] / [MarkerClusterLayerWidget] children
+  /// for [FlutterMap]. When [withClustering] is false, all specs go into a
+  /// single flat layer. Otherwise, null-group specs get a flat layer and each
+  /// non-null group gets its own [MarkerClusterLayerWidget].
+  List<Widget> _buildMarkerLayers() {
+    if (widget.markers.isEmpty) return const [];
+
+    if (!widget.withClustering) {
+      return [
+        MarkerLayer(
+          markers: widget.markers.map(_buildMarker).toList(),
+        ),
+      ];
+    }
+
+    final nullGroup = <MapMarkerSpec<K>>[];
+    final groups = <Object, List<MapMarkerSpec<K>>>{};
+    for (final spec in widget.markers) {
+      if (spec.clusterGroup == null) {
+        nullGroup.add(spec);
+      } else {
+        groups.putIfAbsent(spec.clusterGroup!, () => []).add(spec);
+      }
+    }
+
+    return [
+      if (nullGroup.isNotEmpty)
+        MarkerLayer(markers: nullGroup.map(_buildMarker).toList()),
+      for (final entry in groups.entries)
+        _buildClusterLayer(entry.key, entry.value),
+    ];
+  }
+
+  Marker _buildMarker(MapMarkerSpec<K> spec) {
+    final painter = TextPainter(
+      text: TextSpan(text: spec.label),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return Marker(
+      height: 64,
+      width: math.max(80.0, painter.width),
+      point: spec.point,
+      alignment: Alignment.topCenter,
+      child: GestureDetector(
+        behavior: HitTestBehavior.deferToChild,
+        onTap: spec.onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _ZoomGatedLabel(label: spec.label, showLabels: widget.showLabels),
+            spec.child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClusterLayer(Object group, List<MapMarkerSpec<K>> specs) {
+    final style = widget.clusterStyles[group];
+    final color = style?.color;
+    final onColor = style?.onColor;
+    final size = style?.size ?? const Size(40, 40);
+    return MarkerClusterLayerWidget(
+      options: MarkerClusterLayerOptions(
+        maxClusterRadius: 45,
+        size: size,
+        padding: const EdgeInsets.all(50),
+        maxZoom: 17,
+        markers: specs.map(_buildMarker).toList(),
+        markerChildBehavior: true,
+        builder: (context, clusterMarkers) {
+          final scheme = Theme.of(context).colorScheme;
+          final bgColor = color ?? scheme.primary;
+          final fgColor = onColor ?? scheme.onPrimary;
+          return Container(
+            width: size.width,
+            height: size.height,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: bgColor,
+            ),
+            child: Center(
+              child: Text(
+                '${clusterMarkers.length}',
+                style: TextStyle(
+                  color: fgColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _searchLocationWithThrottle(String input) {
@@ -1074,55 +1191,33 @@ class _CurrentLocationDot extends StatelessWidget {
   }
 }
 
-/// Rounded-square marker for a role-play position.
+/// Zoom-gated label slot rendered above each marker icon.
 ///
-/// Visually distinct from the station's green [Icons.place] pin:
-/// uses a rounded rectangle with a [Icons.theater_comedy] glyph in
-/// the colorScheme.tertiary colour. A heavier border weight signals
-/// that this is a statically-placed roleplayer position.
-class _RoleMarker extends StatelessWidget {
-  const _RoleMarker({required this.label});
+/// Returns [SizedBox.shrink] when [showLabels] is false or when the camera
+/// zoom is below [MapConfig.labelMinZoom] - 1. Between that threshold and
+/// [MapConfig.labelMinZoom] the label fades in via [AnimatedOpacity].
+///
+/// Reads the current zoom via [MapCamera.of] so it rebuilds automatically
+/// when the camera moves. Must be used inside a [FlutterMap] subtree.
+class _ZoomGatedLabel extends StatelessWidget {
+  const _ZoomGatedLabel({required this.label, required this.showLabels});
 
   final String label;
-  final double size = 24;
+  final bool showLabels;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        FeatureLabel(text: label),
-        Opacity(
-          opacity: 0.85,
-          child: Material(
-            elevation: 2,
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: scheme.tertiaryContainer,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: scheme.tertiary, width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 2,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.theater_comedy,
-                color: scheme.onTertiaryContainer,
-                size: size / 2,
-              ),
-            ),
-          ),
-        ),
-      ],
+    if (!showLabels) return const SizedBox.shrink();
+    final zoom = MapCamera.of(context).zoom;
+    const minZoom = MapConfig.labelMinZoom;
+    if (zoom < minZoom - 1) return const SizedBox.shrink();
+    final opacity = zoom >= minZoom
+        ? 1.0
+        : (zoom - (minZoom - 1)).clamp(0.0, 1.0);
+    return AnimatedOpacity(
+      opacity: opacity,
+      duration: const Duration(milliseconds: 200),
+      child: FeatureLabel(text: label),
     );
   }
 }

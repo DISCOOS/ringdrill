@@ -12,7 +12,7 @@ class PositionFormField<K> extends FormField<LatLng> {
     required FormFieldSetter<LatLng> super.onSaved,
     required super.initialValue,
     super.validator,
-    List<(K, String, LatLng)> markers = const [],
+    List<MapMarkerSpec<K>> markers = const [],
 
     AutovalidateMode super.autovalidateMode = AutovalidateMode.disabled,
   }) : super(

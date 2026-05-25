@@ -232,6 +232,30 @@
   "@hideAll": {
     "description": "Action that hides every exercise on the map"
   },
+  "showLabels": "Show labels",
+  "@showLabels": {
+    "description": "Tooltip for the labels FAB when labels are currently hidden"
+  },
+  "hideLabels": "Hide labels",
+  "@hideLabels": {
+    "description": "Tooltip for the labels FAB when labels are currently visible"
+  },
+  "markerTypes": "Marker types",
+  "@markerTypes": {
+    "description": "Tooltip for the marker-types FAB that opens the visibility bottom sheet"
+  },
+  "showStations": "Show stations",
+  "@showStations": {
+    "description": "Switch label in the marker-types sheet for station markers"
+  },
+  "showRoleplays": "Show roleplays",
+  "@showRoleplays": {
+    "description": "Switch label in the marker-types sheet for roleplay markers"
+  },
+  "filterActiveCombined": "Filter active",
+  "@filterActiveCombined": {
+    "description": "Banner text shown when two or more map filter types are active simultaneously"
+  },
   "exercisesShownOfTotal": "Showing {shown} of {total} exercises",
   "@exercisesShownOfTotal": {
     "description": "Banner shown above the stations map when one or more exercises have been hidden via the visibility filter. Mirrors the selectedOfTotal pattern used in import/export.",

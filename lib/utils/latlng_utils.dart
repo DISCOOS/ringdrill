@@ -79,4 +79,21 @@ extension StationLocationX on Iterable<StationLocation> {
   CameraFit? fit([EdgeInsets padding = const EdgeInsets.all(72)]) {
     return map((e) => e.$3).fit(padding);
   }
+
+  /// Converts each location to a [MapMarkerSpec] with the standard green
+  /// station icon. Optional [clusterGroup] and [onTap] factory are forwarded.
+  List<MapMarkerSpec<(String, int)>> toMarkerSpecs({
+    Object? clusterGroup,
+    void Function((String, int) id)? onTap,
+  }) =>
+      map(
+        (m) => MapMarkerSpec<(String, int)>(
+          id: m.$1,
+          label: m.$2,
+          point: m.$3,
+          child: const Icon(Icons.place, color: Colors.green, size: 32),
+          clusterGroup: clusterGroup,
+          onTap: onTap == null ? null : () => onTap(m.$1),
+        ),
+      ).toList();
 }
