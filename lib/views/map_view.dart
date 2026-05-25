@@ -110,19 +110,27 @@ class MapConfig {
 
   // Important! We need to get new layers each time. See above!
   static TileLayer get osmLayer => TileLayer(
-    key: ValueKey('osm'),
+    key: const ValueKey('osm'),
     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     userAgentPackageName: 'discoos.org/ringdrill',
-    subdomains: [],
+    subdomains: const [],
+    minZoom: 0,
+    maxZoom: 19,
+    minNativeZoom: 0,
+    maxNativeZoom: 19,
   );
 
   // Important! We need to get new layers each time. See above!
   static TileLayer get topoLayer => TileLayer(
-    key: ValueKey('topo'),
+    key: const ValueKey('topo'),
     urlTemplate:
         'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',
-    subdomains: [],
+    subdomains: const [],
     userAgentPackageName: 'discoos.org/ringdrill',
+    minZoom: 0,
+    maxZoom: 19,
+    minNativeZoom: 0,
+    maxNativeZoom: 18,
   );
 }
 
