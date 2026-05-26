@@ -1,47 +1,70 @@
 // Post-deploy smoke test for the RingDrill web app.
 //
 // Catches the class of failure that widget tests cannot: the app
-// compiles, the bundle ships, the engine boots — but nothing paints
-// because of a layout/sizing bug, a missing function deploy, an
-// uncaught error during boot, or similar.
+// compiles, the bundle ships, the engine boots — but the deploy is
+// actually broken (engine fails to instantiate, function endpoints
+// return 404, the page never paints anything).
 //
-// Each check is intentionally simple so a failure points at one
-// concrete thing. The script exits non-zero on the first hard
-// failure; soft warnings are collected and printed at the end.
+// Why we DO NOT inspect flt-glass-pane / flt-semantics size:
+//   The dart2wasm build uses Flutter's skwasm renderer, which paints
+//   into an OffscreenCanvas owned by a Web Worker. flt-glass-pane is
+//   only a shadow-DOM host on the main thread and stays at 0×0 even
+//   when the app renders perfectly. Semantics nodes are not created
+//   until accessibility is explicitly activated (screen reader, tab
+//   focus, etc.). Both signals are unreliable under skwasm.
 //
-// Run locally:    SMOKE_URL=https://ringdrill.app node scripts/smoke-test-web.mjs
-// Run from CI:    make smoke-web (see Makefile)
+// What we check instead:
+//   1. The page returns HTTP 200 and reaches networkidle so all
+//      bundle assets (main.dart.wasm, skwasm.wasm, canvaskit) have
+//      a chance to download.
+//   2. window._flutter_skwasmInstance (or window._flutter at minimum)
+//      exists after boot — the engine instantiated.
+//   3. A viewport screenshot has enough pixel variety that the page
+//      is not "one solid color of background" — i.e. something
+//      actually painted into the canvas.
+//   4. No uncaught console errors during boot (soft warning).
+//   5. The /api/market/feed function endpoint returns 2xx — catches
+//      the kind of functions-dir misconfiguration we hit earlier.
+//
+// Screenshots are written to scripts/.smoke-screenshots/ so a failing
+// run can be diagnosed visually from the GH Actions artifact upload.
 
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 
 const BASE = process.env.SMOKE_URL || "https://ringdrill.app";
 const PATHS = ["/", "/program", "/map", "/stations", "/teams"];
 const NAV_TIMEOUT = 60_000;
 // dart2wasm builds take noticeably longer than dart2js to reach first
-// paint (~3MB .wasm to fetch, instantiate and link) so the budget here
-// is generous. If a build genuinely never paints we still fail well
-// inside the 25-minute job timeout.
-const PAINT_TIMEOUT = 60_000;
+// paint (~3MB .wasm to fetch, instantiate and link). Give it a real
+// budget; we still fail well inside the 25-minute job timeout.
+const BOOT_WAIT_MS = 12_000;
+// Empirically a fully-blank Flutter page (just the indigo background)
+// compresses to ~6–10 KB. Real UI lands at 40 KB and up. 25 KB is a
+// safe split.
+const MIN_SCREENSHOT_BYTES = 25_000;
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SCREENSHOT_DIR = join(__dirname, ".smoke-screenshots");
 
 const hardFailures = [];
 const softWarnings = [];
 
-function ok(msg) {
-  console.log(`  ok    ${msg}`);
-}
-function warn(msg, url) {
-  softWarnings.push(`[${url}] ${msg}`);
-  console.log(`  warn  ${msg}`);
-}
-function fail(msg, url) {
-  hardFailures.push(`[${url}] ${msg}`);
-  console.log(`  FAIL  ${msg}`);
+function ok(msg) { console.log(`  ok    ${msg}`); }
+function warn(msg, url) { softWarnings.push(`[${url}] ${msg}`); console.log(`  warn  ${msg}`); }
+function fail(msg, url) { hardFailures.push(`[${url}] ${msg}`); console.log(`  FAIL  ${msg}`); }
+
+function slug(path) {
+  return path.replace(/^\/+|\/+$/g, "").replace(/[^a-z0-9]+/gi, "_") || "root";
 }
 
 async function checkPath(browser, path) {
   const url = BASE + path;
   console.log(`\n> ${url}`);
   const page = await browser.newPage();
+  await page.setViewport({ width: 1280, height: 800 });
   const consoleErrors = [];
   page.on("console", (msg) => {
     if (msg.type() === "error") consoleErrors.push(msg.text());
@@ -49,78 +72,64 @@ async function checkPath(browser, path) {
   page.on("pageerror", (err) => consoleErrors.push(String(err)));
 
   try {
-    // networkidle2 lets the WASM bundle and canvaskit assets settle
-    // before we start polling for paint. With domcontentloaded the
-    // timer would already be ticking while the .wasm is still
-    // downloading, and 30s often wasn't enough on a CI runner.
-    await page.goto(url, { waitUntil: "networkidle2", timeout: NAV_TIMEOUT });
+    const response = await page.goto(url, {
+      waitUntil: "networkidle2",
+      timeout: NAV_TIMEOUT,
+    });
 
-    // Wait for the Flutter glass pane to take real size. This is the
-    // single most informative check: if it stays at 0x0 the engine
-    // is alive but the widget tree didn't lay out properly. That was
-    // exactly the regression we shipped (Stack without StackFit.expand).
-    try {
-      await page.waitForFunction(
-        () => {
-          const gp = document.querySelector("flt-glass-pane");
-          if (!gp) return false;
-          const r = gp.getBoundingClientRect();
-          return r.width > 200 && r.height > 200;
-        },
-        { timeout: PAINT_TIMEOUT },
-      );
-      ok("flt-glass-pane sized > 200x200");
-    } catch {
-      // Capture dims defensively — if the page itself has crashed,
-      // page.evaluate also throws.
-      let dims = null;
-      try {
-        dims = await page.evaluate(() => {
-          const gp = document.querySelector("flt-glass-pane");
-          const r = gp?.getBoundingClientRect();
-          return r ? { w: r.width, h: r.height } : null;
-        });
-      } catch {
-        // page is gone; report what we know
-      }
-      fail(
-        `flt-glass-pane never reached visible size (got ${JSON.stringify(dims)})`,
-        url,
-      );
+    if (!response || !response.ok()) {
+      fail(`HTTP ${response?.status() ?? "no response"} on initial load`, url);
       return;
     }
+    ok(`HTTP ${response.status()} reached networkidle`);
 
-    // Semantics nodes only appear once Flutter has actually laid out
-    // and painted widgets. Zero semantics with a sized glass pane
-    // means the app rendered an empty screen.
-    const semCount = await page.evaluate(
-      () => document.querySelectorAll("flt-semantics").length,
-    );
-    if (semCount === 0) {
-      fail("glass pane is sized but zero flt-semantics rendered", url);
+    // Give Flutter time to instantiate the WASM engine and paint the
+    // first frame. We do not poll DOM signals here because skwasm
+    // does not expose any reliable main-thread DOM signal for "ready".
+    await new Promise((r) => setTimeout(r, BOOT_WAIT_MS));
+
+    const engineReady = await page.evaluate(() => {
+      return Boolean(window._flutter_skwasmInstance || window._flutter);
+    });
+    if (!engineReady) {
+      fail("Flutter engine did not instantiate (no _flutter on window)", url);
+      return;
+    }
+    ok("Flutter engine instantiated");
+
+    // Screenshot the visible viewport and use compressed file size as
+    // a proxy for "actually rendered something". A fully blank page
+    // compresses tiny; real UI compresses much larger. The screenshot
+    // is also written to disk so a CI artifact upload can capture it
+    // for visual diagnosis after a failure.
+    await mkdir(SCREENSHOT_DIR, { recursive: true });
+    const screenshotPath = join(SCREENSHOT_DIR, `${slug(path)}.png`);
+    const buf = await page.screenshot({ type: "png", fullPage: false });
+    await writeFile(screenshotPath, buf);
+    if (buf.length < MIN_SCREENSHOT_BYTES) {
+      fail(
+        `screenshot only ${buf.length} bytes (< ${MIN_SCREENSHOT_BYTES}); page likely blank — see ${screenshotPath}`,
+        url,
+      );
     } else {
-      ok(`flt-semantics count: ${semCount}`);
+      ok(`screenshot ${buf.length} bytes (saved ${screenshotPath})`);
     }
 
     if (consoleErrors.length > 0) {
-      // Console errors during boot are a soft warning, not a hard
-      // fail — third-party scripts (extensions, ads) sometimes log
-      // here. We surface them so they are reviewable.
-      warn(`${consoleErrors.length} console error(s); first: ${consoleErrors[0].slice(0, 200)}`, url);
+      warn(
+        `${consoleErrors.length} console error(s); first: ${consoleErrors[0].slice(0, 200)}`,
+        url,
+      );
     } else {
       ok("no console errors");
     }
   } catch (err) {
     fail(`navigation/wait failed: ${err.message}`, url);
   } finally {
-    // Close the page even if the protocol connection is half-dead.
-    // page.close() throws "Protocol error: Connection closed" when
-    // the underlying CDP session is gone, which would otherwise
-    // crash the whole smoke run before later URLs get to try.
     try {
       await page.close();
     } catch {
-      // ignore — the browser teardown at the end will reclaim it
+      // ignore — the CDP connection may already be gone
     }
   }
 }
@@ -150,9 +159,6 @@ async function main() {
     for (const p of PATHS) {
       await checkPath(browser, p);
     }
-    // Netlify functions: hitting one proves the [functions] block in
-    // netlify.toml was honored. Today's earlier 404 on market-feed
-    // (after we forgot functions-dir) would have been caught here.
     await checkFunction("/api/market/feed?limit=1");
   } finally {
     await browser.close();

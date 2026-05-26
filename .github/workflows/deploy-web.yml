@@ -168,13 +168,23 @@ jobs:
 
       - name: Smoke test deployed site
         # Headless Chromium against the live URL. Hard-fails the
-        # workflow if the production page does not actually paint
-        # (flt-glass-pane stays 0x0), if no semantics render, or if a
-        # critical function endpoint returns non-2xx. Placed before
-        # Lighthouse so a broken deploy is reported in the same job as
-        # the deploy itself, and so the Lighthouse step does not pollute
-        # the audit history with scores from a non-rendering site.
+        # workflow if the Flutter engine fails to instantiate, if a
+        # page screenshot looks blank (renderer-agnostic check that
+        # works for skwasm), or if a critical function endpoint
+        # returns non-2xx. Placed before Lighthouse so a broken deploy
+        # is reported in the same job as the deploy itself, and so
+        # Lighthouse history does not include scores from a
+        # non-rendering site.
         run: make smoke-web SMOKE_URL=https://ringdrill.app
+
+      - name: Upload smoke-test screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: scripts/.smoke-screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Lighthouse audit
         # Runs against the production URL so the score reflects the live
