@@ -13,7 +13,7 @@ import { zipSync, strFromU8, unzipSync } from "fflate";
 // (which would pull in @netlify/blobs and require a Netlify context).
 // These are copied verbatim from drills-upload.js.
 
-const KNOWN_SCHEMA_MAX = "1.1";
+const KNOWN_SCHEMA_MAX = "1.2";
 
 function compareSchemas(a, b) {
     const [aMaj, aMin] = a.split(".").map(Number);
@@ -118,12 +118,37 @@ test("accepts schema 1.1", () => {
     assert.equal(error, undefined);
 });
 
-test("rejects schema higher than 1.1", async () => {
+test("accepts schema 1.2", () => {
     const bytes = buildArchive({ schema: "1.2" });
+    const { error } = stripActorsAndValidate(null, bytes);
+    assert.equal(error, undefined);
+});
+
+test("rejects schema higher than 1.2", async () => {
+    const bytes = buildArchive({ schema: "1.3" });
     const { strippedBytes, error } = stripActorsAndValidate(null, bytes);
     assert.ok(error, "should return an error response");
     assert.equal(error.status, 415);
     assert.equal(strippedBytes, undefined);
+});
+
+test("strips actors/<uuid>/notes.md but keeps roleplays/<uuid>/behavior.md", () => {
+    const files = {};
+    files["metadata.json"] = new TextEncoder().encode(JSON.stringify({ version: "1.0", schema: "1.2" }));
+    files["program.json"] = new TextEncoder().encode(JSON.stringify({ uuid: "prog-1", name: "Test" }));
+    files["actors/actor-1.json"] = new TextEncoder().encode(JSON.stringify({ uuid: "actor-1", realName: "Kari" }));
+    files["actors/actor-1/notes.md"] = new TextEncoder().encode("# Notes\nSome PII notes");
+    files["roleplays/rp-1.json"] = new TextEncoder().encode(JSON.stringify({ uuid: "rp-1", name: "Anna" }));
+    files["roleplays/rp-1/behavior.md"] = new TextEncoder().encode("# Behavior\nBe calm");
+    const bytes = Buffer.from(zipSync(files));
+
+    const { strippedBytes, error } = stripActorsAndValidate(null, bytes);
+    assert.equal(error, undefined);
+
+    const result = unzipSync(new Uint8Array(strippedBytes));
+    assert.ok(!result["actors/actor-1.json"], "actors/<uuid>.json must be stripped");
+    assert.ok(!result["actors/actor-1/notes.md"], "actors/<uuid>/notes.md must be stripped");
+    assert.ok(result["roleplays/rp-1/behavior.md"], "roleplays/<uuid>/behavior.md must survive");
 });
 
 test("rejects schema 2.0", async () => {

@@ -9,7 +9,7 @@ import {
 
 // The highest schema version this function accepts. Bumping this requires
 // coordinated changes to the Flutter app and this handler (AGENTS.md).
-const KNOWN_SCHEMA_MAX = "1.1";
+const KNOWN_SCHEMA_MAX = "1.2";
 
 /**
  * Strip the actors/ folder from a .drill archive and validate the schema.
