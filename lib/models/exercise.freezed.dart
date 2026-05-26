@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Exercise {
 
- String get uuid; String get name; SimpleTimeOfDay get startTime; int get numberOfTeams; int get numberOfRounds; int get executionTime; int get evaluationTime; int get rotationTime; List<Station> get stations; List<List<SimpleTimeOfDay>> get schedule; SimpleTimeOfDay get endTime; ExerciseMetadata? get metadata;
+ String get uuid; String get name; SimpleTimeOfDay get startTime; int get numberOfTeams; int get numberOfRounds; int get executionTime; int get evaluationTime; int get rotationTime; List<Station> get stations; List<List<SimpleTimeOfDay>> get schedule; SimpleTimeOfDay get endTime; ExerciseMetadata? get metadata; String? get templateId;
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ExerciseCopyWith<Exercise> get copyWith => _$ExerciseCopyWithImpl<Exercise>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Exercise&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.numberOfTeams, numberOfTeams) || other.numberOfTeams == numberOfTeams)&&(identical(other.numberOfRounds, numberOfRounds) || other.numberOfRounds == numberOfRounds)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.evaluationTime, evaluationTime) || other.evaluationTime == evaluationTime)&&(identical(other.rotationTime, rotationTime) || other.rotationTime == rotationTime)&&const DeepCollectionEquality().equals(other.stations, stations)&&const DeepCollectionEquality().equals(other.schedule, schedule)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.metadata, metadata) || other.metadata == metadata));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Exercise&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.numberOfTeams, numberOfTeams) || other.numberOfTeams == numberOfTeams)&&(identical(other.numberOfRounds, numberOfRounds) || other.numberOfRounds == numberOfRounds)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.evaluationTime, evaluationTime) || other.evaluationTime == evaluationTime)&&(identical(other.rotationTime, rotationTime) || other.rotationTime == rotationTime)&&const DeepCollectionEquality().equals(other.stations, stations)&&const DeepCollectionEquality().equals(other.schedule, schedule)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.templateId, templateId) || other.templateId == templateId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,startTime,numberOfTeams,numberOfRounds,executionTime,evaluationTime,rotationTime,const DeepCollectionEquality().hash(stations),const DeepCollectionEquality().hash(schedule),endTime,metadata);
+int get hashCode => Object.hash(runtimeType,uuid,name,startTime,numberOfTeams,numberOfRounds,executionTime,evaluationTime,rotationTime,const DeepCollectionEquality().hash(stations),const DeepCollectionEquality().hash(schedule),endTime,metadata,templateId);
 
 @override
 String toString() {
-  return 'Exercise(uuid: $uuid, name: $name, startTime: $startTime, numberOfTeams: $numberOfTeams, numberOfRounds: $numberOfRounds, executionTime: $executionTime, evaluationTime: $evaluationTime, rotationTime: $rotationTime, stations: $stations, schedule: $schedule, endTime: $endTime, metadata: $metadata)';
+  return 'Exercise(uuid: $uuid, name: $name, startTime: $startTime, numberOfTeams: $numberOfTeams, numberOfRounds: $numberOfRounds, executionTime: $executionTime, evaluationTime: $evaluationTime, rotationTime: $rotationTime, stations: $stations, schedule: $schedule, endTime: $endTime, metadata: $metadata, templateId: $templateId)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ExerciseCopyWith<$Res>  {
   factory $ExerciseCopyWith(Exercise value, $Res Function(Exercise) _then) = _$ExerciseCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String name, SimpleTimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations, List<List<SimpleTimeOfDay>> schedule, SimpleTimeOfDay endTime, ExerciseMetadata? metadata
+ String uuid, String name, SimpleTimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations, List<List<SimpleTimeOfDay>> schedule, SimpleTimeOfDay endTime, ExerciseMetadata? metadata, String? templateId
 });
 
 
@@ -65,7 +65,7 @@ class _$ExerciseCopyWithImpl<$Res>
 
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? startTime = null,Object? numberOfTeams = null,Object? numberOfRounds = null,Object? executionTime = null,Object? evaluationTime = null,Object? rotationTime = null,Object? stations = null,Object? schedule = null,Object? endTime = null,Object? metadata = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? uuid = null,Object? name = null,Object? startTime = null,Object? numberOfTeams = null,Object? numberOfRounds = null,Object? executionTime = null,Object? evaluationTime = null,Object? rotationTime = null,Object? stations = null,Object? schedule = null,Object? endTime = null,Object? metadata = freezed,Object? templateId = freezed,}) {
   return _then(_self.copyWith(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -79,7 +79,8 @@ as int,stations: null == stations ? _self.stations : stations // ignore: cast_nu
 as List<Station>,schedule: null == schedule ? _self.schedule : schedule // ignore: cast_nullable_to_non_nullable
 as List<List<SimpleTimeOfDay>>,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
 as SimpleTimeOfDay,metadata: freezed == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
-as ExerciseMetadata?,
+as ExerciseMetadata?,templateId: freezed == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of Exercise
@@ -191,10 +192,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata,  String? templateId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Exercise() when $default != null:
-return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata);case _:
+return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata,_that.templateId);case _:
   return orElse();
 
 }
@@ -212,10 +213,10 @@ return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata,  String? templateId)  $default,) {final _that = this;
 switch (_that) {
 case _Exercise():
-return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata);}
+return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata,_that.templateId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -229,10 +230,10 @@ return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String name,  SimpleTimeOfDay startTime,  int numberOfTeams,  int numberOfRounds,  int executionTime,  int evaluationTime,  int rotationTime,  List<Station> stations,  List<List<SimpleTimeOfDay>> schedule,  SimpleTimeOfDay endTime,  ExerciseMetadata? metadata,  String? templateId)?  $default,) {final _that = this;
 switch (_that) {
 case _Exercise() when $default != null:
-return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata);case _:
+return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.numberOfRounds,_that.executionTime,_that.evaluationTime,_that.rotationTime,_that.stations,_that.schedule,_that.endTime,_that.metadata,_that.templateId);case _:
   return null;
 
 }
@@ -244,7 +245,7 @@ return $default(_that.uuid,_that.name,_that.startTime,_that.numberOfTeams,_that.
 @JsonSerializable()
 
 class _Exercise implements Exercise {
-  const _Exercise({required this.uuid, required this.name, required this.startTime, required this.numberOfTeams, required this.numberOfRounds, required this.executionTime, required this.evaluationTime, required this.rotationTime, required final  List<Station> stations, required final  List<List<SimpleTimeOfDay>> schedule, required this.endTime, this.metadata}): _stations = stations,_schedule = schedule;
+  const _Exercise({required this.uuid, required this.name, required this.startTime, required this.numberOfTeams, required this.numberOfRounds, required this.executionTime, required this.evaluationTime, required this.rotationTime, required final  List<Station> stations, required final  List<List<SimpleTimeOfDay>> schedule, required this.endTime, this.metadata, this.templateId}): _stations = stations,_schedule = schedule;
   factory _Exercise.fromJson(Map<String, dynamic> json) => _$ExerciseFromJson(json);
 
 @override final  String uuid;
@@ -271,6 +272,7 @@ class _Exercise implements Exercise {
 
 @override final  SimpleTimeOfDay endTime;
 @override final  ExerciseMetadata? metadata;
+@override final  String? templateId;
 
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
@@ -285,16 +287,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Exercise&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.numberOfTeams, numberOfTeams) || other.numberOfTeams == numberOfTeams)&&(identical(other.numberOfRounds, numberOfRounds) || other.numberOfRounds == numberOfRounds)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.evaluationTime, evaluationTime) || other.evaluationTime == evaluationTime)&&(identical(other.rotationTime, rotationTime) || other.rotationTime == rotationTime)&&const DeepCollectionEquality().equals(other._stations, _stations)&&const DeepCollectionEquality().equals(other._schedule, _schedule)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.metadata, metadata) || other.metadata == metadata));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Exercise&&(identical(other.uuid, uuid) || other.uuid == uuid)&&(identical(other.name, name) || other.name == name)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.numberOfTeams, numberOfTeams) || other.numberOfTeams == numberOfTeams)&&(identical(other.numberOfRounds, numberOfRounds) || other.numberOfRounds == numberOfRounds)&&(identical(other.executionTime, executionTime) || other.executionTime == executionTime)&&(identical(other.evaluationTime, evaluationTime) || other.evaluationTime == evaluationTime)&&(identical(other.rotationTime, rotationTime) || other.rotationTime == rotationTime)&&const DeepCollectionEquality().equals(other._stations, _stations)&&const DeepCollectionEquality().equals(other._schedule, _schedule)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&(identical(other.templateId, templateId) || other.templateId == templateId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,uuid,name,startTime,numberOfTeams,numberOfRounds,executionTime,evaluationTime,rotationTime,const DeepCollectionEquality().hash(_stations),const DeepCollectionEquality().hash(_schedule),endTime,metadata);
+int get hashCode => Object.hash(runtimeType,uuid,name,startTime,numberOfTeams,numberOfRounds,executionTime,evaluationTime,rotationTime,const DeepCollectionEquality().hash(_stations),const DeepCollectionEquality().hash(_schedule),endTime,metadata,templateId);
 
 @override
 String toString() {
-  return 'Exercise(uuid: $uuid, name: $name, startTime: $startTime, numberOfTeams: $numberOfTeams, numberOfRounds: $numberOfRounds, executionTime: $executionTime, evaluationTime: $evaluationTime, rotationTime: $rotationTime, stations: $stations, schedule: $schedule, endTime: $endTime, metadata: $metadata)';
+  return 'Exercise(uuid: $uuid, name: $name, startTime: $startTime, numberOfTeams: $numberOfTeams, numberOfRounds: $numberOfRounds, executionTime: $executionTime, evaluationTime: $evaluationTime, rotationTime: $rotationTime, stations: $stations, schedule: $schedule, endTime: $endTime, metadata: $metadata, templateId: $templateId)';
 }
 
 
@@ -305,7 +307,7 @@ abstract mixin class _$ExerciseCopyWith<$Res> implements $ExerciseCopyWith<$Res>
   factory _$ExerciseCopyWith(_Exercise value, $Res Function(_Exercise) _then) = __$ExerciseCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String name, SimpleTimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations, List<List<SimpleTimeOfDay>> schedule, SimpleTimeOfDay endTime, ExerciseMetadata? metadata
+ String uuid, String name, SimpleTimeOfDay startTime, int numberOfTeams, int numberOfRounds, int executionTime, int evaluationTime, int rotationTime, List<Station> stations, List<List<SimpleTimeOfDay>> schedule, SimpleTimeOfDay endTime, ExerciseMetadata? metadata, String? templateId
 });
 
 
@@ -322,7 +324,7 @@ class __$ExerciseCopyWithImpl<$Res>
 
 /// Create a copy of Exercise
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? startTime = null,Object? numberOfTeams = null,Object? numberOfRounds = null,Object? executionTime = null,Object? evaluationTime = null,Object? rotationTime = null,Object? stations = null,Object? schedule = null,Object? endTime = null,Object? metadata = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? uuid = null,Object? name = null,Object? startTime = null,Object? numberOfTeams = null,Object? numberOfRounds = null,Object? executionTime = null,Object? evaluationTime = null,Object? rotationTime = null,Object? stations = null,Object? schedule = null,Object? endTime = null,Object? metadata = freezed,Object? templateId = freezed,}) {
   return _then(_Exercise(
 uuid: null == uuid ? _self.uuid : uuid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -336,7 +338,8 @@ as int,stations: null == stations ? _self._stations : stations // ignore: cast_n
 as List<Station>,schedule: null == schedule ? _self._schedule : schedule // ignore: cast_nullable_to_non_nullable
 as List<List<SimpleTimeOfDay>>,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
 as SimpleTimeOfDay,metadata: freezed == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
-as ExerciseMetadata?,
+as ExerciseMetadata?,templateId: freezed == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -31,6 +31,7 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   metadata: json['metadata'] == null
       ? null
       : ExerciseMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
+  templateId: json['templateId'] as String?,
 );
 
 Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
@@ -46,6 +47,7 @@ Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'schedule': instance.schedule,
   'endTime': instance.endTime,
   'metadata': instance.metadata,
+  'templateId': instance.templateId,
 };
 
 _ExerciseMetadata _$ExerciseMetadataFromJson(Map<String, dynamic> json) =>

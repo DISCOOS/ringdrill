@@ -23,6 +23,7 @@ sealed class Exercise with _$Exercise {
     required List<List<SimpleTimeOfDay>> schedule,
     required SimpleTimeOfDay endTime,
     ExerciseMetadata? metadata,
+    String? templateId,
   }) = _Exercise;
 
   factory Exercise.fromJson(Map<String, dynamic> json) =>

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Station {
 
- int get index; String get name;@NullableLatLngJsonConverter() LatLng? get position; String? get description;
+ int get index; String get name; String? get variantSuffix;@NullableLatLngJsonConverter() LatLng? get position; String? get description;
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $StationCopyWith<Station> get copyWith => _$StationCopyWithImpl<Station>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantSuffix, variantSuffix) || other.variantSuffix == variantSuffix)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,name,position,description);
+int get hashCode => Object.hash(runtimeType,index,name,variantSuffix,position,description);
 
 @override
 String toString() {
-  return 'Station(index: $index, name: $name, position: $position, description: $description)';
+  return 'Station(index: $index, name: $name, variantSuffix: $variantSuffix, position: $position, description: $description)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $StationCopyWith<$Res>  {
   factory $StationCopyWith(Station value, $Res Function(Station) _then) = _$StationCopyWithImpl;
 @useResult
 $Res call({
- int index, String name,@NullableLatLngJsonConverter() LatLng? position, String? description
+ int index, String name, String? variantSuffix,@NullableLatLngJsonConverter() LatLng? position, String? description
 });
 
 
@@ -65,11 +65,12 @@ class _$StationCopyWithImpl<$Res>
 
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? name = null,Object? position = freezed,Object? description = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? name = null,Object? variantSuffix = freezed,Object? position = freezed,Object? description = freezed,}) {
   return _then(_self.copyWith(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as String,variantSuffix: freezed == variantSuffix ? _self.variantSuffix : variantSuffix // ignore: cast_nullable_to_non_nullable
+as String?,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as LatLng?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -153,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name, @NullableLatLngJsonConverter()  LatLng? position,  String? description)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  String name,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
-return $default(_that.index,_that.name,_that.position,_that.description);case _:
+return $default(_that.index,_that.name,_that.variantSuffix,_that.position,_that.description);case _:
   return orElse();
 
 }
@@ -174,10 +175,10 @@ return $default(_that.index,_that.name,_that.position,_that.description);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name, @NullableLatLngJsonConverter()  LatLng? position,  String? description)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  String name,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description)  $default,) {final _that = this;
 switch (_that) {
 case _Station():
-return $default(_that.index,_that.name,_that.position,_that.description);}
+return $default(_that.index,_that.name,_that.variantSuffix,_that.position,_that.description);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -191,10 +192,10 @@ return $default(_that.index,_that.name,_that.position,_that.description);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name, @NullableLatLngJsonConverter()  LatLng? position,  String? description)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  String name,  String? variantSuffix, @NullableLatLngJsonConverter()  LatLng? position,  String? description)?  $default,) {final _that = this;
 switch (_that) {
 case _Station() when $default != null:
-return $default(_that.index,_that.name,_that.position,_that.description);case _:
+return $default(_that.index,_that.name,_that.variantSuffix,_that.position,_that.description);case _:
   return null;
 
 }
@@ -206,11 +207,12 @@ return $default(_that.index,_that.name,_that.position,_that.description);case _:
 @JsonSerializable()
 
 class _Station implements Station {
-  const _Station({required this.index, required this.name, @NullableLatLngJsonConverter() this.position, this.description});
+  const _Station({required this.index, required this.name, this.variantSuffix, @NullableLatLngJsonConverter() this.position, this.description});
   factory _Station.fromJson(Map<String, dynamic> json) => _$StationFromJson(json);
 
 @override final  int index;
 @override final  String name;
+@override final  String? variantSuffix;
 @override@NullableLatLngJsonConverter() final  LatLng? position;
 @override final  String? description;
 
@@ -227,16 +229,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Station&&(identical(other.index, index) || other.index == index)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantSuffix, variantSuffix) || other.variantSuffix == variantSuffix)&&(identical(other.position, position) || other.position == position)&&(identical(other.description, description) || other.description == description));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,name,position,description);
+int get hashCode => Object.hash(runtimeType,index,name,variantSuffix,position,description);
 
 @override
 String toString() {
-  return 'Station(index: $index, name: $name, position: $position, description: $description)';
+  return 'Station(index: $index, name: $name, variantSuffix: $variantSuffix, position: $position, description: $description)';
 }
 
 
@@ -247,7 +249,7 @@ abstract mixin class _$StationCopyWith<$Res> implements $StationCopyWith<$Res> {
   factory _$StationCopyWith(_Station value, $Res Function(_Station) _then) = __$StationCopyWithImpl;
 @override @useResult
 $Res call({
- int index, String name,@NullableLatLngJsonConverter() LatLng? position, String? description
+ int index, String name, String? variantSuffix,@NullableLatLngJsonConverter() LatLng? position, String? description
 });
 
 
@@ -264,11 +266,12 @@ class __$StationCopyWithImpl<$Res>
 
 /// Create a copy of Station
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? name = null,Object? position = freezed,Object? description = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? name = null,Object? variantSuffix = freezed,Object? position = freezed,Object? description = freezed,}) {
   return _then(_Station(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as String,variantSuffix: freezed == variantSuffix ? _self.variantSuffix : variantSuffix // ignore: cast_nullable_to_non_nullable
+as String?,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as LatLng?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

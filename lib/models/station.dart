@@ -10,6 +10,7 @@ sealed class Station with _$Station {
   const factory Station({
     required int index,
     required String name,
+    String? variantSuffix,
     @NullableLatLngJsonConverter() LatLng? position,
     String? description,
   }) = _Station;
