@@ -1,6 +1,6 @@
 .PHONY: \
 	build watch release \
-	build-web upload-symbols-web strip-source-maps-web release-web \
+	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	smoke-web \
 	netlify-dev catalog-seed catalog-feed catalog-reset
 
@@ -32,6 +32,35 @@ watch:
 # expose the unminified source to anyone who opens DevTools.
 
 build-web:
+	# --wasm produces both dart2wasm and dart2js outputs. The
+	# boot loader picks dart2wasm when the browser supports WASM
+	# GC (Chrome 119+, Firefox 120+, Safari 18.2+) and falls back
+	# to dart2js otherwise, so iOS 17 and older users see no
+	# regression. Expected gain: TBT down ~50-70%, TTI down
+	# ~30-50%, Performance score up 10-20 points.
+	#
+	# Bundle is ~15-25% larger because both compilations ship; the
+	# CDN serves only one variant per request based on the
+	# browser's capability headers.
+	#
+	# If a WASM-related regression shows up in production, fall
+	# back to `build-web-js` (dart2js only) until the issue is
+	# diagnosed. Same release-web wiring works for either target.
+	flutter build web \
+		--wasm \
+		--release \
+		--pwa-strategy=offline-first \
+		--source-maps
+	mkdir -p build/web/.well-known
+	cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
+
+build-web-js:
+	# dart2js-only fallback. Kept around so we can bisect WASM
+	# regressions without reverting commits, and so we have a
+	# known-good path if dart2wasm breaks for some plugin update.
+	# Drops to roughly the bundle size and runtime characteristics
+	# we had pre-WASM. Swap into release-web by hand:
+	#   make build-web-js upload-symbols-web strip-source-maps-web
 	flutter build web \
 		--release \
 		--pwa-strategy=offline-first \
