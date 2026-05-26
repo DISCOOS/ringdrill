@@ -16,8 +16,12 @@ import puppeteer from "puppeteer";
 
 const BASE = process.env.SMOKE_URL || "https://ringdrill.app";
 const PATHS = ["/", "/program", "/map", "/stations", "/teams"];
-const NAV_TIMEOUT = 30_000;
-const PAINT_TIMEOUT = 30_000;
+const NAV_TIMEOUT = 60_000;
+// dart2wasm builds take noticeably longer than dart2js to reach first
+// paint (~3MB .wasm to fetch, instantiate and link) so the budget here
+// is generous. If a build genuinely never paints we still fail well
+// inside the 25-minute job timeout.
+const PAINT_TIMEOUT = 60_000;
 
 const hardFailures = [];
 const softWarnings = [];
@@ -45,12 +49,16 @@ async function checkPath(browser, path) {
   page.on("pageerror", (err) => consoleErrors.push(String(err)));
 
   try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: NAV_TIMEOUT });
+    // networkidle2 lets the WASM bundle and canvaskit assets settle
+    // before we start polling for paint. With domcontentloaded the
+    // timer would already be ticking while the .wasm is still
+    // downloading, and 30s often wasn't enough on a CI runner.
+    await page.goto(url, { waitUntil: "networkidle2", timeout: NAV_TIMEOUT });
 
     // Wait for the Flutter glass pane to take real size. This is the
     // single most informative check: if it stays at 0x0 the engine
     // is alive but the widget tree didn't lay out properly. That was
-    // exactly today's regression (Stack without StackFit.expand).
+    // exactly the regression we shipped (Stack without StackFit.expand).
     try {
       await page.waitForFunction(
         () => {
@@ -63,16 +71,22 @@ async function checkPath(browser, path) {
       );
       ok("flt-glass-pane sized > 200x200");
     } catch {
-      const dims = await page.evaluate(() => {
-        const gp = document.querySelector("flt-glass-pane");
-        const r = gp?.getBoundingClientRect();
-        return r ? { w: r.width, h: r.height } : null;
-      });
+      // Capture dims defensively — if the page itself has crashed,
+      // page.evaluate also throws.
+      let dims = null;
+      try {
+        dims = await page.evaluate(() => {
+          const gp = document.querySelector("flt-glass-pane");
+          const r = gp?.getBoundingClientRect();
+          return r ? { w: r.width, h: r.height } : null;
+        });
+      } catch {
+        // page is gone; report what we know
+      }
       fail(
         `flt-glass-pane never reached visible size (got ${JSON.stringify(dims)})`,
         url,
       );
-      await page.close();
       return;
     }
 
@@ -99,7 +113,15 @@ async function checkPath(browser, path) {
   } catch (err) {
     fail(`navigation/wait failed: ${err.message}`, url);
   } finally {
-    await page.close();
+    // Close the page even if the protocol connection is half-dead.
+    // page.close() throws "Protocol error: Connection closed" when
+    // the underlying CDP session is gone, which would otherwise
+    // crash the whole smoke run before later URLs get to try.
+    try {
+      await page.close();
+    } catch {
+      // ignore — the browser teardown at the end will reclaim it
+    }
   }
 }
 
