@@ -5,7 +5,7 @@
 
 [build]
     command = """flutter pub get && \
-        flutter build web --release --pwa-strategy=offline-first && \
+        flutter build web --release --pwa-strategy=offline-first --source-maps && \
         mkdir -p build/web/.well-known && \
         cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json"""
     publish = "build/web"
