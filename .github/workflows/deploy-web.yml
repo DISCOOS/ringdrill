@@ -155,6 +155,15 @@ jobs:
             --dir=build/web \
             --message="$DEPLOY_MESSAGE"
 
+      - name: Wait for Netlify CDN to propagate
+        # `netlify deploy --prod` returns the moment the new artifact
+        # is committed on origin, but the global edge network needs
+        # a few seconds to invalidate caches. Without this wait the
+        # Lighthouse step below has occasionally audited a stale HTML
+        # (e.g. flagged the old meta-viewport even though the new one
+        # was already live on origin), giving misleading reports.
+        run: sleep 30
+
       - name: Lighthouse audit
         # Runs against the production URL so the score reflects the live
         # CDN, headers, service worker, and edge functions — not just
