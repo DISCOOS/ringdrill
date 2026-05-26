@@ -108,10 +108,12 @@ GoRouter buildRouter(bool isFirstLaunch) {
           GoRoute(path: '/', redirect: (_, _) => routeProgram),
           GoRoute(
             path: routeProgram,
-            builder: (BuildContext context, GoRouterState state) => PageWidget(
-              controller: ProgramPageController(),
-              child: const ProgramView(),
-            ),
+            // ShellRoute's child is ignored by MainScreen (IndexedStack).
+            // Stub builder avoids constructing a second ProgramPageController
+            // that would only ever be mounted inside the offstage shell
+            // sentinel and would double-subscribe to ProgramService events.
+            builder: (BuildContext context, GoRouterState state) =>
+                const SizedBox.shrink(),
             routes: [
               GoRoute(
                 path: ':exerciseId',
@@ -159,11 +161,12 @@ GoRouter buildRouter(bool isFirstLaunch) {
           ),
           GoRoute(
             path: routeMap,
+            // ShellRoute's child is ignored by MainScreen (IndexedStack).
+            // Stub builder avoids constructing a second StationsPageController
+            // that would only ever be mounted inside the offstage shell
+            // sentinel.
             builder: (BuildContext context, GoRouterState state) =>
-                const PageWidget(
-                  controller: StationsPageController(),
-                  child: StationsView(),
-                ),
+                const SizedBox.shrink(),
           ),
           GoRoute(
             path: routeStations,
@@ -191,11 +194,12 @@ GoRouter buildRouter(bool isFirstLaunch) {
           ),
           GoRoute(
             path: routeTeams,
+            // ShellRoute's child is ignored by MainScreen (IndexedStack).
+            // Stub builder avoids constructing a second TeamsPageController
+            // that would only ever be mounted inside the offstage shell
+            // sentinel.
             builder: (BuildContext context, GoRouterState state) =>
-                const PageWidget(
-                  controller: TeamsPageController(),
-                  child: TeamsView(),
-                ),
+                const SizedBox.shrink(),
             routes: [
               GoRoute(
                 path: ':teamIndex',
