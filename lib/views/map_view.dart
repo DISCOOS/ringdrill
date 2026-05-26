@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
@@ -490,12 +491,20 @@ class _MapViewState<K> extends State<MapView<K>> {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.deniedForever) {
+        // openAppSettings is not implemented on web (the browser does
+        // not expose a deep-link to its per-site permission page), so
+        // showing a Settings button there crashes with UnsupportedError.
+        // Offer it only where it actually works; on web the message
+        // alone has to be enough — the user has to clear the permission
+        // from the browser's URL-bar lock icon manually.
         show(
           l.locationPermissionDeniedForever,
-          action: SnackBarAction(
-            label: l.settings,
-            onPressed: () => unawaited(Geolocator.openAppSettings()),
-          ),
+          action: kIsWeb
+              ? null
+              : SnackBarAction(
+                  label: l.settings,
+                  onPressed: () => unawaited(Geolocator.openAppSettings()),
+                ),
         );
         return;
       }
