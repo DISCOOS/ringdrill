@@ -67,6 +67,7 @@ dependencies:
   go_router: ^17.2.3
   http: ^1.5.0
   meta: ^1.16.0
+  mustache_template: ^2.0.0
   http_parser: ^4.1.2
   args: ^2.7.0
 
