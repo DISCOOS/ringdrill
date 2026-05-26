@@ -1,0 +1,63 @@
+# Dependabot keeps third-party dependencies fresh by opening pull requests
+# when a new version is published. We pin GitHub Actions, Flutter/Dart
+# packages and the Netlify-function npm dependencies, so all three need
+# to be covered.
+#
+# Conventions:
+#  - Weekly cadence on Mondays. Daily creates too much PR noise for a
+#    project this size; security advisories still land as soon as they
+#    are published regardless of the schedule.
+#  - Minor + patch updates are grouped per ecosystem so we get one PR
+#    per week per ecosystem instead of ten. Majors stay separate because
+#    they often need code changes.
+#  - open-pull-requests-limit keeps the queue bounded; if the limit is
+#    hit Dependabot pauses new PRs until the existing ones merge.
+#  - commit-message.prefix matches the conventional-commits style used
+#    elsewhere in this repo (build/ci/chore + scope).
+
+version: 2
+updates:
+  # GitHub Actions workflows (.github/workflows/*.yml)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci(deps)
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Flutter / Dart packages (pubspec.yaml)
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      pub-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Netlify functions (package.json at repo root)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
