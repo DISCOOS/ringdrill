@@ -48,20 +48,24 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
       .toList();
 
   Future<void> _openEdit(Actor actor) async {
+    final localizations = AppLocalizations.of(context)!;
     final updated = await Navigator.of(context).push<Actor>(
       MaterialPageRoute(builder: (_) => ActorFormScreen(actor: actor)),
     );
     if (updated == null) return;
-    await _service.saveActor(updated);
+    await _service.saveActor(localizations, updated);
+    if (!mounted) return;
     _reload();
   }
 
   Future<void> _openCreate() async {
+    final localizations = AppLocalizations.of(context)!;
     final created = await Navigator.of(context).push<Actor>(
       MaterialPageRoute(builder: (_) => const ActorFormScreen()),
     );
     if (created == null) return;
-    await _service.saveActor(created);
+    await _service.saveActor(localizations, created);
+    if (!mounted) return;
     _reload();
   }
 

@@ -468,6 +468,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
   }
 
   Future<void> _openRolePlayForm(Exercise exercise, RolePlay rolePlay) async {
+    final localizations = AppLocalizations.of(context)!;
     final updated = await Navigator.of(context).push<RolePlay>(
       MaterialPageRoute(
         builder: (_) => RolePlayFormScreen(
@@ -477,11 +478,12 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       ),
     );
     if (updated == null || !mounted) return;
-    await _service.saveRolePlay(updated);
-    setState(() {});
+    await _service.saveRolePlay(localizations, updated);
+    if (mounted) setState(() {});
   }
 
   Future<void> _openCastPicker(RolePlay rolePlay) async {
+    final localizations = AppLocalizations.of(context)!;
     final actorUuid = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -490,24 +492,30 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       builder: (_) => CastPickerSheet(rolePlay: rolePlay),
     );
     if (actorUuid == null || !mounted) return;
-    await _service.saveRolePlay(rolePlay.copyWith(actorUuid: actorUuid));
-    setState(() {});
+    await _service.saveRolePlay(
+      localizations,
+      rolePlay.copyWith(actorUuid: actorUuid),
+    );
+    if (mounted) setState(() {});
   }
 
   Future<void> _clearCast(RolePlay rolePlay) async {
+    final localizations = AppLocalizations.of(context)!;
     await _service.saveRolePlay(
+      localizations,
       rolePlay.copyWith(actorUuid: null),
     );
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   Future<void> _editCast(Actor actor, RolePlay rolePlay) async {
+    final localizations = AppLocalizations.of(context)!;
     final updated = await Navigator.of(context).push<Actor>(
       MaterialPageRoute(builder: (_) => ActorFormScreen(actor: actor)),
     );
     if (updated == null || !mounted) return;
-    await _service.saveActor(updated);
-    setState(() {});
+    await _service.saveActor(localizations, updated);
+    if (mounted) setState(() {});
   }
 }
 

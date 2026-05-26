@@ -200,7 +200,19 @@ class ProgramService {
 
   RolePlay? getRolePlay(String uuid) => _repo.getRolePlay(uuid);
 
-  Future<void> saveRolePlay(RolePlay rolePlay) => _repo.saveRolePlay(rolePlay);
+  /// Persists [rolePlay] under the currently active program, creating a
+  /// default plan first if none exists yet. Mirrors [saveExercise]: every
+  /// mutation that writes nested data must ensure a parent program exists,
+  /// otherwise [_repo.saveRolePlay] (via `_requireProgramUuid`) throws
+  /// `Bad state: No active program.` and the call site has no chance to
+  /// recover — see Sentry issue 7503574588.
+  Future<void> saveRolePlay(
+    AppLocalizations localizations,
+    RolePlay rolePlay,
+  ) async {
+    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _repo.saveRolePlay(rolePlay);
+  }
 
   Future<RolePlay?> deleteRolePlay(String uuid) => _repo.deleteRolePlay(uuid);
 
@@ -211,7 +223,15 @@ class ProgramService {
 
   Actor? getActor(String uuid) => _repo.getActor(uuid);
 
-  Future<void> saveActor(Actor actor) => _repo.saveActor(actor);
+  /// See [saveRolePlay] for the rationale behind requiring localizations
+  /// and ensuring an active program before write.
+  Future<void> saveActor(
+    AppLocalizations localizations,
+    Actor actor,
+  ) async {
+    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _repo.saveActor(actor);
+  }
 
   Future<Actor?> deleteActor(String uuid) => _repo.deleteActor(uuid);
 

@@ -80,12 +80,13 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
   }
 
   Future<void> _createAndSelect() async {
+    final localizations = AppLocalizations.of(context)!;
     final created = await Navigator.of(context).push<Actor>(
       MaterialPageRoute(builder: (_) => const ActorFormScreen()),
     );
     if (created == null || !mounted) return;
-    await _service.saveActor(created);
-    // ignore: use_build_context_synchronously
+    await _service.saveActor(localizations, created);
+    if (!mounted) return;
     Navigator.of(context).pop(created.uuid);
   }
 

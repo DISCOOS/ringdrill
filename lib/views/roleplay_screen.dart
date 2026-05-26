@@ -75,8 +75,8 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                 ),
               );
               if (updated != null) {
-                _programService.saveRolePlay(updated);
-                _load();
+                await _programService.saveRolePlay(localizations, updated);
+                if (context.mounted) _load();
               }
             },
           ),

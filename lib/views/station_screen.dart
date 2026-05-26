@@ -395,6 +395,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         ),
       ),
       confirmDismiss: (_) async {
+        final localizations = AppLocalizations.of(context)!;
         final updated = await Navigator.push<RolePlay>(
           context,
           MaterialPageRoute(
@@ -405,7 +406,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           ),
         );
         if (updated != null) {
-          await _programService.saveRolePlay(updated);
+          await _programService.saveRolePlay(localizations, updated);
           if (mounted) setState(() {});
         }
         return false;
@@ -462,6 +463,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   }
 
   Future<void> _addRolePlay(Station station) async {
+    final localizations = AppLocalizations.of(context)!;
     final existing = _programService
         .loadRolePlays()
         .where((r) => r.exerciseUuid == _exercise.uuid)
@@ -483,12 +485,13 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       ),
     );
     if (saved != null) {
-      await _programService.saveRolePlay(saved);
+      await _programService.saveRolePlay(localizations, saved);
       if (mounted) setState(() {});
     }
   }
 
   Future<void> _openCastPicker(RolePlay r) async {
+    final localizations = AppLocalizations.of(context)!;
     final actorUuid = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -497,7 +500,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       builder: (_) => CastPickerSheet(rolePlay: r),
     );
     if (actorUuid != null && actorUuid != r.actorUuid) {
-      await _programService.saveRolePlay(r.copyWith(actorUuid: actorUuid));
+      await _programService.saveRolePlay(
+        localizations,
+        r.copyWith(actorUuid: actorUuid),
+      );
       if (mounted) setState(() {});
     }
   }
