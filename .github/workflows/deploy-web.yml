@@ -111,8 +111,19 @@ jobs:
 
       - name: Install function dependencies
         # Netlify CLI bundles functions from node_modules/, so the deps must
-        # be installed before the deploy step picks them up.
+        # be installed before the deploy step picks them up. Puppeteer
+        # (used by the post-deploy smoke test) also installs here, but
+        # its Chromium binary cache lives under ~/.cache/puppeteer, which
+        # the next step caches separately.
         run: npm ci
+
+      - name: Cache Puppeteer Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            puppeteer-${{ runner.os }}-
 
       - name: Build web
         # Compiles the web bundle with source maps and stages the
@@ -154,6 +165,16 @@ jobs:
             --prod \
             --dir=build/web \
             --message="$DEPLOY_MESSAGE"
+
+      - name: Smoke test deployed site
+        # Headless Chromium against the live URL. Hard-fails the
+        # workflow if the production page does not actually paint
+        # (flt-glass-pane stays 0x0), if no semantics render, or if a
+        # critical function endpoint returns non-2xx. Placed before
+        # Lighthouse so a broken deploy is reported in the same job as
+        # the deploy itself, and so the Lighthouse step does not pollute
+        # the audit history with scores from a non-rendering site.
+        run: make smoke-web SMOKE_URL=https://ringdrill.app
 
       - name: Lighthouse audit
         # Runs against the production URL so the score reflects the live
