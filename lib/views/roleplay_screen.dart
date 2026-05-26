@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
-import 'package:ringdrill/views/widgets/role_marker.dart';
+import 'package:ringdrill/views/widgets/role_position_panel.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -88,12 +86,16 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Name + age
+              // Identity header — name + age + exercise name (outside card,
+              // mirrors the station-name heading in StationExerciseScreen)
               Text(
                 rolePlay.age != null
                     ? '${rolePlay.name}, ${rolePlay.age}'
                     : rolePlay.name,
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (exercise != null) ...[
                 const SizedBox(height: 4),
@@ -104,45 +106,86 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                   ),
                 ),
               ],
-              const Divider(height: 24),
+              const SizedBox(height: 8),
 
-              if (rolePlay.signalement?.isNotEmpty == true) ...[
-                _FieldBlock(
-                  label: localizations.roleSignalement,
-                  text: rolePlay.signalement!,
+              // Scenario fields — only shown when at least one is present
+              if (rolePlay.signalement?.isNotEmpty == true ||
+                  rolePlay.background?.isNotEmpty == true ||
+                  rolePlay.behavior?.isNotEmpty == true)
+                Card(
+                  elevation: 1,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.theater_comedy,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              localizations.roleSection,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (rolePlay.signalement?.isNotEmpty == true) ...[
+                          _FieldBlock(
+                            label: localizations.roleSignalement,
+                            text: rolePlay.signalement!,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (rolePlay.background?.isNotEmpty == true) ...[
+                          _FieldBlock(
+                            label: localizations.roleBackground,
+                            text: rolePlay.background!,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (rolePlay.behavior?.isNotEmpty == true)
+                          _FieldBlock(
+                            label: localizations.roleBehavior,
+                            text: rolePlay.behavior!,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
-              ],
-              if (rolePlay.background?.isNotEmpty == true) ...[
-                _FieldBlock(
-                  label: localizations.roleBackground,
-                  text: rolePlay.background!,
-                ),
-                const SizedBox(height: 8),
-              ],
-              if (rolePlay.behavior?.isNotEmpty == true) ...[
-                _FieldBlock(
-                  label: localizations.roleBehavior,
-                  text: rolePlay.behavior!,
-                ),
-                const SizedBox(height: 8),
-              ],
 
-              // Station
-              _StationRow(
-                stationIndex: rolePlay.stationIndex,
-                exercise: exercise,
-                noStation: localizations.noStationAssigned,
+              // Station card
+              Card(
+                elevation: 1,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _StationRow(
+                    stationIndex: rolePlay.stationIndex,
+                    exercise: exercise,
+                    noStation: localizations.noStationAssigned,
+                  ),
+                ),
               ),
 
-              // Position mini-map
-              if (rolePlay.position != null) ...[
-                const SizedBox(height: 16),
-                _RoleMiniMap(
-                  position: rolePlay.position!,
-                  label: rolePlay.name,
+              // Position card
+              if (rolePlay.position != null)
+                Card(
+                  elevation: 1,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: RolePositionPanel(
+                      position: rolePlay.position!,
+                      label: rolePlay.name,
+                    ),
+                  ),
                 ),
-              ],
             ],
           ),
         ),
@@ -171,77 +214,6 @@ class _FieldBlock extends StatelessWidget {
         const SizedBox(height: 2),
         Text(text),
       ],
-    );
-  }
-}
-
-/// Compact static preview of a role's position. Tapping opens a bottom sheet
-/// with an interactive full-screen map. Mirrors the StationMiniMap pattern
-/// but accepts a LatLng directly rather than a Station/Exercise pair so it
-/// stays domain-agnostic per the project's MapView rule.
-class _RoleMiniMap extends StatelessWidget {
-  const _RoleMiniMap({required this.position, required this.label});
-
-  final LatLng position;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 140,
-      width: double.infinity,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _openMapSheet(context),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: IgnorePointer(
-            child: MapView(
-              layers: MapConfig.layers,
-              withToggle: false,
-              initialZoom: 15,
-              initialCenter: position,
-              markers: [
-                MapMarkerSpec(
-                  id: 0,
-                  label: label,
-                  point: position,
-                  child: const RoleMarker(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openMapSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: 1.0,
-        child: MapView(
-          layers: MapConfig.layers,
-          withZoom: true,
-          withCenter: true,
-          withToggle: true,
-          initialZoom: 16,
-          initialCenter: position,
-          interactionFlags: MapConfig.interactive,
-          markers: [
-            MapMarkerSpec(
-              id: 0,
-              label: label,
-              point: position,
-              child: const RoleMarker(),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

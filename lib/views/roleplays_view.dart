@@ -15,6 +15,7 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/role_code_badge.dart';
+import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _CastAction { edit, clear }
@@ -305,54 +306,43 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (rolePlay.signalement?.isNotEmpty == true ||
-            rolePlay.background?.isNotEmpty == true ||
-            rolePlay.behavior?.isNotEmpty == true) ...[
-          // Role section header
-          Row(
-            children: [
-              Icon(Icons.menu_book, size: 16, color: scheme.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Text(
-                localizations.roleSection,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+        // Scenario fields — labeled, matching the RolePlayScreen card style
+        if (rolePlay.signalement?.isNotEmpty == true) ...[
+          _ExpandedFieldBlock(
+            label: localizations.roleSignalement,
+            text: rolePlay.signalement!,
           ),
-          const SizedBox(height: 6),
-          if (rolePlay.signalement?.isNotEmpty == true)
-            _FieldLine(text: rolePlay.signalement!),
-          if (rolePlay.background?.isNotEmpty == true)
-            _FieldLine(text: rolePlay.background!),
-          if (rolePlay.behavior?.isNotEmpty == true)
-            _FieldLine(text: rolePlay.behavior!),
-          const Divider(height: 20),
+          const SizedBox(height: 8),
+        ],
+        if (rolePlay.background?.isNotEmpty == true) ...[
+          _ExpandedFieldBlock(
+            label: localizations.roleBackground,
+            text: rolePlay.background!,
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (rolePlay.behavior?.isNotEmpty == true) ...[
+          _ExpandedFieldBlock(
+            label: localizations.roleBehavior,
+            text: rolePlay.behavior!,
+          ),
+          const SizedBox(height: 8),
         ],
 
-        // Cast section header
-        Row(
-          children: [
-            Icon(Icons.person, size: 16, color: scheme.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Text(
-              localizations.castSection,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              localizations.castPrivateHint,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
+        // Position panel (label row + mini-map)
+        if (rolePlay.position != null) ...[
+          const Divider(height: 16),
+          RolePositionPanel(
+            key: ValueKey('role-map-${rolePlay.uuid}'),
+            position: rolePlay.position!,
+            label: rolePlay.name,
+            mapHeight: 140,
+          ),
+        ],
+
+        const Divider(height: 16),
+
+        // Cast
         if (actor == null)
           TextButton.icon(
             onPressed: () => _openCastPicker(rolePlay),
@@ -387,6 +377,13 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
+                    Text(
+                      localizations.castPrivateHint,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -514,19 +511,30 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 }
 
 // ---------------------------------------------------------------------------
-// Small helper widget — one-liner field value (no label).
+// Small helper widget — labeled field block matching RolePlayScreen style.
 // ---------------------------------------------------------------------------
 
-class _FieldLine extends StatelessWidget {
-  const _FieldLine({required this.text});
+class _ExpandedFieldBlock extends StatelessWidget {
+  const _ExpandedFieldBlock({required this.label, required this.text});
 
+  final String label;
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Text(text),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(text),
+      ],
     );
   }
 }
