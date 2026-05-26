@@ -14,8 +14,11 @@ name: Deploy web
 #                         pubspec.yaml.
 #   NETLIFY_AUTH_TOKEN  - Personal access token from Netlify
 #                         (User settings -> Applications).
-#   NETLIFY_SITE_ID     - Site ID (Netlify dashboard -> Site settings ->
-#                         General -> Site information).
+#   NETLIFY_SITE_ID     - Project ID, formerly known as Site ID
+#                         (Netlify dashboard -> Project configuration ->
+#                         General -> Project information -> Project ID).
+#                         The environment variable name is still
+#                         NETLIFY_SITE_ID; only the UI label changed.
 
 on:
   push:
@@ -130,22 +133,24 @@ jobs:
         run: make strip-source-maps-web
 
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3
-        with:
-          publish-dir: build/web
-          # Unlike Netlify's own CI, this action does NOT read the
-          # [functions] block in netlify.toml automatically. Without
-          # functions-dir the static bundle deploys fine, but every
-          # /.netlify/functions/* path 404s because no functions were
-          # uploaded. node_modules has already been populated by the
-          # `npm ci` step above so dependency bundling works.
-          functions-dir: netlify/functions
-          production-deploy: true
-          deploy-message: ${{ github.event.head_commit.message }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          enable-pull-request-comment: false
-          enable-commit-comment: false
-          fails-without-credentials: true
+        # Use the first-party Netlify CLI (installed as a devDependency
+        # in package.json) rather than a third-party deploy action. The
+        # action wrappers around the Netlify API have repeatedly bitten
+        # us: they ignore the [functions] block in netlify.toml, and
+        # their bundled zip-it-and-ship-it is old enough that it cannot
+        # resolve modern `node:`-prefixed builtin imports. The CLI
+        # reads netlify.toml natively (functions, redirects, headers)
+        # and stays in lockstep with what Netlify's own builds use.
+        #
+        # DEPLOY_MESSAGE is passed via env, not interpolated into the
+        # shell, so a commit message with quotes/backticks/newlines does
+        # not break --message= or worse get interpreted as code.
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          DEPLOY_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          npx netlify deploy \
+            --prod \
+            --dir=build/web \
+            --message="$DEPLOY_MESSAGE"
