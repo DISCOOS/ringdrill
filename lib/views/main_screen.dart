@@ -37,6 +37,16 @@ import 'package:universal_io/io.dart';
 
 GoRouter buildRouter(bool isFirstLaunch) {
   final key = GlobalKey<NavigatorState>();
+  // Explicit key for the ShellRoute's internal Navigator. GoRouter creates
+  // one implicitly when omitted, but we own it here for two reasons:
+  // (1) so we can pass `child` through to MainScreen and mount it ourselves
+  //     — without that, the GlobalKey is never attached to a NavigatorState
+  //     and pressing system back on Android crashes inside
+  //     `GoRouterDelegate._findCurrentNavigators` with a null check failure
+  //     on `walker.navigatorKey.currentState!`;
+  // (2) so the diagnostic is obvious next time something accidentally
+  //     drops the shell's Navigator out of the tree.
+  final shellNavigatorKey = GlobalKey<NavigatorState>();
   return GoRouter(
     navigatorKey: key,
     debugLogDiagnostics: kDebugMode,
@@ -77,6 +87,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
     routes: [
       GoRoute(path: '/i/:slug', redirect: (_, _) => routeProgram),
       ShellRoute(
+        navigatorKey: shellNavigatorKey,
         builder: (BuildContext context, GoRouterState state, Widget child) {
           return PlatformWidget(
             child: MainScreen(
@@ -85,6 +96,11 @@ GoRouter buildRouter(bool isFirstLaunch) {
               router: GoRouter.of(context),
               location: state.matchedLocation,
               routes: [routeProgram, routeMap, routeStations, routeRolePlays, routeTeams],
+              // The shell's nested Navigator (identified by
+              // [shellNavigatorKey]). MainScreen mounts it offstage so the
+              // GlobalKey gets attached — see the comment on
+              // [shellNavigatorKey] above for why this matters on Android.
+              shellChild: child,
             ),
           );
         },
@@ -254,6 +270,7 @@ class MainScreen extends StatefulWidget {
     required this.location,
     required this.navigatorKey,
     required this.isFirstLaunch,
+    required this.shellChild,
   });
 
   final GoRouter router;
@@ -261,6 +278,14 @@ class MainScreen extends StatefulWidget {
   final bool isFirstLaunch;
   final List<String> routes;
   final GlobalKey<NavigatorState> navigatorKey;
+
+  /// The Navigator produced by the surrounding [ShellRoute]. Not painted
+  /// or interacted with — MainScreen renders its own [IndexedStack] of
+  /// keep-alive tab pages — but mounted offstage so the shell Navigator's
+  /// [GlobalKey] is attached. Without that, GoRouter crashes on Android
+  /// system back inside `_findCurrentNavigators` with
+  /// `walker.navigatorKey.currentState!` returning null.
+  final Widget shellChild;
 
   static void showSettings(BuildContext context, [bool pop = false]) {
     if (pop) Navigator.pop(context);
@@ -383,6 +408,16 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final page = _pages[_currentTab];
+    // Off-screen mount point for the ShellRoute's nested Navigator. Hosts
+    // the GlobalKey GoRouter walks during system back; not painted, never
+    // hit-tested. The visible tab UI is the IndexedStack below.
+    final shellSentinel = Offstage(
+      offstage: true,
+      child: TickerMode(
+        enabled: false,
+        child: widget.shellChild,
+      ),
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         return Scaffold(
@@ -392,18 +427,25 @@ class _MainScreenState extends State<MainScreen> {
           drawerEnableOpenDragGesture: true,
           appBar: _wideScreen ? null : _buildAppBar(context, constraints, page),
           drawer: _buildDrawer(context, localizations),
-          body: _wideScreen
-              ? _buildNavRail(context, constraints, localizations, page)
-              : SafeArea(
-                  child:
-                      // Keep all tabs in memory allowing
-                      // state to persist between tab switches
-                      IndexedStack(
-                        key: _indexedTabsKey,
-                        index: _currentTab,
-                        children: _pages,
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: _wideScreen
+                    ? _buildNavRail(context, constraints, localizations, page)
+                    : SafeArea(
+                        child:
+                            // Keep all tabs in memory allowing
+                            // state to persist between tab switches
+                            IndexedStack(
+                              key: _indexedTabsKey,
+                              index: _currentTab,
+                              children: _pages,
+                            ),
                       ),
-                ),
+              ),
+              shellSentinel,
+            ],
+          ),
           floatingActionButton: _wideScreen
               ? null
               : page.controller.buildFAB(context, constraints),
