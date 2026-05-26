@@ -40,8 +40,15 @@ class DrillFile {
     final exercises = <Exercise>[];
     final rolePlays = <RolePlay>[];
     final actors = <Actor>[];
-    late final Program program;
-    late final ProgramMetadata metadata;
+    // Nullable rather than `late final`: a `.drill` archive produced by
+    // an older client, a manual zip, or a truncated download may be
+    // missing one or both of these entries. With `late final` the
+    // access at the bottom of this method blows up with the opaque
+    // `LateInitializationError: Field '' has not been initialized.`
+    // We want a clear FormatException with a name so the import path
+    // can surface a useful message to the user instead.
+    Program? program;
+    ProgramMetadata? metadata;
 
     final archive = ZipDecoder().decodeBytes(content);
 
@@ -80,10 +87,20 @@ class DrillFile {
       }
     }
 
+    if (program == null) {
+      throw const FormatException(
+        'Invalid .drill archive: missing required entry "program.json".',
+      );
+    }
+    // metadata.json was not part of the very first schema (drillSchema1_0).
+    // Fall back to the embedded metadata on the program shell so we can
+    // still import those older archives instead of crashing.
+    final effectiveMetadata = metadata ?? program.metadata;
+
     return program.copyWith(
       teams: teams,
       sessions: sessions,
-      metadata: metadata,
+      metadata: effectiveMetadata,
       exercises: exercises,
       rolePlays: rolePlays,
       actors: actors,
