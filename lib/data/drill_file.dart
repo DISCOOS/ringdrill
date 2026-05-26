@@ -39,7 +39,11 @@ class DrillFile {
     final teams = <Team>[];
     final sessions = <Session>[];
     final exercises = <Exercise>[];
-    final rolePlays = <RolePlay>[];
+    // Intermediate storage keyed by uuid for the two-pass approach.
+    final rolePlayJsons = <String, Map<String, dynamic>>{};
+    final rolePlayMdFields = <String, Map<String, String>>{};
+    final actorJsons = <String, Map<String, dynamic>>{};
+    final actorNotesFields = <String, String>{};
     final actors = <Actor>[];
     // Nullable rather than `late final`: a `.drill` archive produced by
     // an older client, a manual zip, or a truncated download may be
@@ -53,39 +57,115 @@ class DrillFile {
 
     final archive = ZipDecoder().decodeBytes(content);
 
+    // Pass 1: index all archive entries by name.
+    final index = <String, List<int>>{};
     for (final file in archive.files) {
       if (file.isFile) {
-        final content = utf8.decode(file.content as List<int>);
-        final json = jsonDecode(content);
-        if (file.name == 'program.json') {
-          program = Program.fromJson(json);
-          continue;
-        }
-        if (file.name == 'metadata.json') {
-          metadata = ProgramMetadata.fromJson(json);
-          continue;
-        }
-        if (file.name.startsWith('teams')) {
-          teams.add(Team.fromJson(json));
-          continue;
-        }
-        if (file.name.startsWith('sessions')) {
-          sessions.add(Session.fromJson(json));
-          continue;
-        }
-        if (file.name.startsWith('exercises')) {
-          exercises.add(Exercise.fromJson(json));
-          continue;
-        }
-        if (file.name.startsWith('roleplays')) {
-          rolePlays.add(RolePlay.fromJson(json));
-          continue;
-        }
-        if (file.name.startsWith('actors')) {
-          actors.add(Actor.fromJson(json));
-          continue;
-        }
+        index[file.name] = file.content as List<int>;
       }
+    }
+
+    // Pass 2: classify and deserialize by exact path shape.
+    for (final entry in index.entries) {
+      final name = entry.key;
+      final bytes = entry.value;
+
+      if (name == 'program.json') {
+        final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+        program = Program.fromJson(json);
+        continue;
+      }
+      if (name == 'metadata.json') {
+        final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+        metadata = ProgramMetadata.fromJson(json);
+        continue;
+      }
+
+      final segments = name.split('/');
+
+      if (segments.length == 2) {
+        // <folder>/<uuid>.json — entity manifests
+        final folder = segments[0];
+        final file = segments[1];
+        if (!file.endsWith('.json')) continue;
+        final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+
+        if (folder == 'teams') {
+          teams.add(Team.fromJson(json));
+        } else if (folder == 'sessions') {
+          sessions.add(Session.fromJson(json));
+        } else if (folder == 'exercises') {
+          exercises.add(Exercise.fromJson(json));
+        } else if (folder == 'roleplays') {
+          final uuid = file.substring(0, file.length - 5); // strip .json
+          rolePlayJsons[uuid] = json;
+        } else if (folder == 'actors') {
+          final uuid = file.substring(0, file.length - 5);
+          actorJsons[uuid] = json;
+        }
+        continue;
+      }
+
+      if (segments.length == 3 && segments[2].endsWith('.md')) {
+        // <folder>/<uuid>/<field>.md — markdown companion files
+        final folder = segments[0];
+        final uuid = segments[1];
+        final field = segments[2];
+        final mdContent = utf8.decode(bytes);
+
+        if (folder == 'roleplays') {
+          rolePlayMdFields.putIfAbsent(uuid, () => {})[field] = mdContent;
+        } else if (folder == 'actors' && field == 'notes.md') {
+          actorNotesFields[uuid] = mdContent;
+        }
+        continue;
+      }
+    }
+
+    // Build RolePlay entities with legacy-inline fallback + .md precedence.
+    final rolePlays = <RolePlay>[];
+    for (final entry in rolePlayJsons.entries) {
+      final uuid = entry.key;
+      final json = entry.value;
+
+      // Capture legacy inline values before fromJson (which ignores them).
+      final legacyBehavior = json['behavior'] as String?;
+      final legacyBackground = json['background'] as String?;
+
+      var rp = RolePlay.fromJson(json);
+
+      final mdFields = rolePlayMdFields[uuid];
+      final behavior = mdFields != null && mdFields.containsKey('behavior.md')
+          ? mdFields['behavior.md']
+          : legacyBehavior;
+      final background =
+          mdFields != null && mdFields.containsKey('background.md')
+          ? mdFields['background.md']
+          : legacyBackground;
+
+      if (behavior != null || background != null) {
+        rp = rp.copyWith(behavior: behavior, background: background);
+      }
+      rolePlays.add(rp);
+    }
+
+    // Build Actor entities with legacy-inline fallback + .md precedence.
+    for (final entry in actorJsons.entries) {
+      final uuid = entry.key;
+      final json = entry.value;
+
+      final legacyNotes = json['notes'] as String?;
+
+      var actor = Actor.fromJson(json);
+
+      final notes = actorNotesFields.containsKey(uuid)
+          ? actorNotesFields[uuid]
+          : legacyNotes;
+
+      if (notes != null) {
+        actor = actor.copyWith(notes: notes);
+      }
+      actors.add(actor);
     }
 
     if (program == null) {
@@ -180,6 +260,28 @@ class DrillFile {
           json,
         ),
       );
+      // Write .md companion files for markdown fields (null = no file,
+      // empty string = zero-byte file).
+      if (rolePlay.behavior != null) {
+        final md = utf8.encode(rolePlay.behavior!);
+        archive.addFile(
+          ArchiveFile(
+            path.join('roleplays', rolePlay.uuid, 'behavior.md'),
+            md.length,
+            md,
+          ),
+        );
+      }
+      if (rolePlay.background != null) {
+        final md = utf8.encode(rolePlay.background!);
+        archive.addFile(
+          ArchiveFile(
+            path.join('roleplays', rolePlay.uuid, 'background.md'),
+            md.length,
+            md,
+          ),
+        );
+      }
     }
 
     // Serialize actors into folder 'actors'
@@ -192,6 +294,16 @@ class DrillFile {
           json,
         ),
       );
+      if (actor.notes != null) {
+        final md = utf8.encode(actor.notes!);
+        archive.addFile(
+          ArchiveFile(
+            path.join('actors', actor.uuid, 'notes.md'),
+            md.length,
+            md,
+          ),
+        );
+      }
     }
 
     // Serialize Program itself (without nested objects)
