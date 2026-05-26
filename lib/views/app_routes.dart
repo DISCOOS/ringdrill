@@ -24,3 +24,11 @@ const String routeTeams = '/teams';
 /// RolePlays tab — flat list of RolePlay rows across all exercises.
 /// Introduced in DESIGN-003.
 const String routeRolePlays = '/roleplays';
+
+/// Brief route — read-mode renderer of an exercise or program as a
+/// markdown document. Reachable as `/brief/program/:programUuid` for
+/// the whole program and `/brief/:exerciseUuid` for a single exercise.
+/// Not in the bottom navigation; pushed onto the root navigator from
+/// the Brief action on `CoordinatorScreen` and `ProgramView`. See
+/// DESIGN-004.
+const String routeBrief = '/brief';

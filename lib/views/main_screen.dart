@@ -10,6 +10,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
@@ -86,6 +87,23 @@ GoRouter buildRouter(bool isFirstLaunch) {
     },
     routes: [
       GoRoute(path: '/i/:slug', redirect: (_, _) => routeProgram),
+      // Brief routes — not tabs; pushed over the root navigator. The program
+      // variant is listed first so go_router matches the more specific
+      // `program/` path before the bare `:exerciseUuid` catch-all.
+      GoRoute(
+        path: '$routeBrief/program/:programUuid',
+        parentNavigatorKey: key,
+        builder: (BuildContext context, GoRouterState state) => BriefScreen(
+          programUuid: state.pathParameters['programUuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '$routeBrief/:exerciseUuid',
+        parentNavigatorKey: key,
+        builder: (BuildContext context, GoRouterState state) => BriefScreen(
+          exerciseUuid: state.pathParameters['exerciseUuid']!,
+        ),
+      ),
       ShellRoute(
         navigatorKey: shellNavigatorKey,
         builder: (BuildContext context, GoRouterState state, Widget child) {
