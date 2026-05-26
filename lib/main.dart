@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -27,43 +29,131 @@ Future<void> main() async {
     usePathUrlStrategy();
   }
 
-  if (kDebugMode) {
-    // Only call clearSavedSettings() during testing to reset internal values.
-    await Upgrader.clearSavedSettings(); // REMOVE this for release builds
+  // Any uncaught error in the async boot below must NOT be allowed to skip
+  // runApp(): on web, the native splash screen is removed by Flutter's
+  // first-frame callback. If main() throws before runApp(), Flutter never
+  // renders a frame, the splash stays forever, and the only recovery path
+  // is for the user to clear site data. Wrap the whole boot so the worst
+  // case is a visible error screen rather than an invisible hang.
+  try {
+    if (kDebugMode) {
+      // Only call clearSavedSettings() during testing to reset internal values.
+      await Upgrader.clearSavedSettings(); // REMOVE this for release builds
+    }
+
+    // Load user consent for analytics from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLaunch = prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
+    final analyticsConsent =
+        prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
+
+    // Ensure system locale is set
+    await findSystemLocale();
+
+    // TODO: Make a widget that does this with progress
+    //  indicator until all services are initialized and
+    //  MainScreen is shown
+    // Initialize services
+    await ProgramService().init();
+
+    if (isFirstLaunch) {
+      // Set default "analyticsConsent" to false (opt-out by default)
+      await prefs.setBool(AppConfig.keyAnalyticsConsent, false);
+      await prefs.setBool(AppConfig.keyIsFirstLaunch, false);
+    }
+
+    if (analyticsConsent) {
+      // Run app with Sentry on consent
+      await SentryFlutter.init(SentryConfig.apply);
+      runApp(
+        FeedbackBoundary(
+          child: SentryWidget(child: RingDrillApp(isFirstLaunch: isFirstLaunch)),
+        ),
+      );
+    } else {
+      // Run app without Sentry if no consent
+      runApp(RingDrillApp(isFirstLaunch: isFirstLaunch));
+    }
+  } catch (error, stackTrace) {
+    // Best-effort error reporting. Sentry may not have been initialized
+    // yet — its global captureException is a safe no-op in that case.
+    debugPrint('RingDrill boot failed: $error\n$stackTrace');
+    unawaited(Sentry.captureException(error, stackTrace: stackTrace));
+    runApp(_BootFailureApp(error: error));
   }
+}
 
-  // Load user consent for analytics from SharedPreferences
-  final prefs = await SharedPreferences.getInstance();
-  final isFirstLaunch = prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
-  final analyticsConsent =
-      prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
+/// Fallback shown when [main] fails before the normal app tree can be
+/// constructed. The point is twofold: (1) cause Flutter to render a first
+/// frame so the web splash screen is dismissed, and (2) give the user
+/// a visible action to recover (reload + clear local data) rather than
+/// stranding them in front of a frozen splash with no way out.
+class _BootFailureApp extends StatelessWidget {
+  const _BootFailureApp({required this.error});
 
-  // Ensure system locale is set
-  await findSystemLocale();
+  final Object error;
 
-  // TODO: Make a widget that does this with progress
-  //  indicator until all services are initialized and
-  //  MainScreen is shown
-  // Initialize services
-  await ProgramService().init();
-
-  if (isFirstLaunch) {
-    // Set default "analyticsConsent" to false (opt-out by default)
-    await prefs.setBool(AppConfig.keyAnalyticsConsent, false);
-    await prefs.setBool(AppConfig.keyIsFirstLaunch, false);
-  }
-
-  if (analyticsConsent) {
-    // Run app with Sentry on consent
-    await SentryFlutter.init(SentryConfig.apply);
-    runApp(
-      FeedbackBoundary(
-        child: SentryWidget(child: RingDrillApp(isFirstLaunch: isFirstLaunch)),
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ringDrillTheme,
+      darkTheme: ringDrillDarkTheme,
+      themeMode: ThemeMode.system,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      'RingDrill could not start',
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Stored data appears to be corrupt. You can try '
+                      'reloading the page. If that does not help, clear '
+                      'site data in your browser to recover.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    SelectableText(
+                      '$error',
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    if (kIsWeb) ...[
+                      ElevatedButton.icon(
+                        onPressed: reloadCurrentPage,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Reload'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: clearWebStorageAndReload,
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Clear local data and reload'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
-  } else {
-    // Run app without Sentry if no consent
-    runApp(RingDrillApp(isFirstLaunch: isFirstLaunch));
   }
 }
 

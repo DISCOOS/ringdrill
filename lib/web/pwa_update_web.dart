@@ -90,6 +90,27 @@ void listenForPwaUpdates({required OnUpdateReady onUpdateReady}) {
   swContainer.ready.toDart.then(wire);
 }
 
+/// Plain page reload. Equivalent to `window.location.reload()`; kept in
+/// this file so the rest of the app can route the call through the same
+/// conditional-import seam used for the other PWA helpers.
+void reloadCurrentPage() {
+  web.window.location.reload();
+}
+
+/// Wipe localStorage (where shared_preferences_web persists everything)
+/// then reload. Used as the "nuclear" recovery from the boot-failure
+/// screen when a corrupt entry keeps `main()` from completing. Does NOT
+/// touch service workers; pair with [forcePwaUpdate] if cache-busting is
+/// also required.
+Future<void> clearWebStorageAndReload() async {
+  try {
+    web.window.localStorage.clear();
+  } catch (_) {
+    // ignore; reload below will still try to start with whatever is left
+  }
+  web.window.location.reload();
+}
+
 /// Last-resort recovery for clients that are stuck on an old build:
 /// unregister every service worker for this origin, wipe Cache Storage,
 /// then hard-reload. Existing IndexedDB / localStorage is preserved.

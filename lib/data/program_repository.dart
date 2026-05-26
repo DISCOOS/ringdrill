@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -7,7 +9,33 @@ import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// Best-effort JSON decode + map. Returns `null` (and logs/reports) instead
+/// of throwing when a stored entry can't be parsed. Used by every load*
+/// method below so that a single corrupt entry in SharedPreferences cannot
+/// take down `main()` and leave the web splash screen hanging — which was
+/// the failure mode users hit when bad data (e.g. a station with NaN
+/// coordinates) made it into storage.
+T? _tryParseEntry<T>(
+  String key,
+  String value,
+  T Function(Map<String, dynamic>) parse,
+) {
+  try {
+    final decoded = jsonDecode(value);
+    if (decoded is! Map<String, dynamic>) return null;
+    return parse(decoded);
+  } catch (e, st) {
+    debugPrint('ProgramRepository: skipping corrupt entry "$key": $e');
+    // Sentry may not be initialised yet during boot. Its global
+    // captureException is a safe no-op in that case, so calling it
+    // unconditionally is fine.
+    unawaited(Sentry.captureException(e, stackTrace: st));
+    return null;
+  }
+}
 
 class ProgramRepository {
   static const librarySchemaVersion = '1';
@@ -69,13 +97,13 @@ class ProgramRepository {
   }
 
   List<Program> listPrograms() {
-    final programs = _prefs
-        .getKeys()
-        .where((key) => key.startsWith('p:'))
-        .map((key) => _prefs.getString(key))
-        .whereType<String>()
-        .map((value) => Program.fromJson(jsonDecode(value)))
-        .toList();
+    final programs = <Program>[];
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('p:'))) {
+      final value = _prefs.getString(key);
+      if (value == null) continue;
+      final parsed = _tryParseEntry(key, value, Program.fromJson);
+      if (parsed != null) programs.add(parsed);
+    }
     programs.sort((a, b) => a.name.compareTo(b.name));
     return programs;
   }
@@ -150,22 +178,23 @@ class ProgramRepository {
 
   List<Exercise> loadExercises([String? programUuid]) {
     final uuid = _requireProgramUuid(programUuid);
-    final items = _prefs
-        .getKeys()
-        .where((key) => key.startsWith('pe:$uuid:'))
-        .map((key) => _prefs.getString(key))
-        .whereType<String>()
-        .map((value) => Exercise.fromJson(jsonDecode(value)))
-        .toList();
+    final items = <Exercise>[];
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('pe:$uuid:'))) {
+      final value = _prefs.getString(key);
+      if (value == null) continue;
+      final parsed = _tryParseEntry(key, value, Exercise.fromJson);
+      if (parsed != null) items.add(parsed);
+    }
     items.sort((a, b) => a.name.compareTo(b.name));
     return items;
   }
 
   Exercise? getExercise(String uuid, [String? programUuid]) {
     final programId = _requireProgramUuid(programUuid);
-    final jsonString = _prefs.getString(_exerciseKey(programId, uuid));
+    final key = _exerciseKey(programId, uuid);
+    final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return Exercise.fromJson(jsonDecode(jsonString));
+    return _tryParseEntry(key, jsonString, Exercise.fromJson);
   }
 
   Future<void> addExercise(Exercise exercise, [bool replace = false]) async {
@@ -210,22 +239,23 @@ class ProgramRepository {
 
   List<Team> loadTeams([String? programUuid]) {
     final uuid = _requireProgramUuid(programUuid);
-    final items = _prefs
-        .getKeys()
-        .where((key) => key.startsWith('pt:$uuid:'))
-        .map((key) => _prefs.getString(key))
-        .whereType<String>()
-        .map((value) => Team.fromJson(jsonDecode(value)))
-        .toList();
+    final items = <Team>[];
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('pt:$uuid:'))) {
+      final value = _prefs.getString(key);
+      if (value == null) continue;
+      final parsed = _tryParseEntry(key, value, Team.fromJson);
+      if (parsed != null) items.add(parsed);
+    }
     items.sort((a, b) => a.index.compareTo(b.index));
     return items;
   }
 
   Team? getTeam(String uuid, [String? programUuid]) {
     final programId = _requireProgramUuid(programUuid);
-    final jsonString = _prefs.getString(_teamKey(programId, uuid));
+    final key = _teamKey(programId, uuid);
+    final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return Team.fromJson(jsonDecode(jsonString));
+    return _tryParseEntry(key, jsonString, Team.fromJson);
   }
 
   Future<void> addTeam(Team team, [bool replace = false]) async {
@@ -271,13 +301,13 @@ class ProgramRepository {
 
   List<Session> loadSessions([String? programUuid]) {
     final uuid = _requireProgramUuid(programUuid);
-    final items = _prefs
-        .getKeys()
-        .where((key) => key.startsWith('ps:$uuid:'))
-        .map((key) => _prefs.getString(key))
-        .whereType<String>()
-        .map((value) => Session.fromJson(jsonDecode(value)))
-        .toList();
+    final items = <Session>[];
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('ps:$uuid:'))) {
+      final value = _prefs.getString(key);
+      if (value == null) continue;
+      final parsed = _tryParseEntry(key, value, Session.fromJson);
+      if (parsed != null) items.add(parsed);
+    }
     items.sort((a, b) => a.startTime.compareTo(b.startTime));
     return items;
   }
@@ -293,11 +323,12 @@ class ProgramRepository {
 
   Future<Session?> deleteSession(String uuid, [String? programUuid]) async {
     final programId = _requireProgramUuid(programUuid);
-    final jsonString = _prefs.getString(_sessionKey(programId, uuid));
+    final key = _sessionKey(programId, uuid);
+    final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    await _prefs.remove(_sessionKey(programId, uuid));
+    await _prefs.remove(key);
     await _touchProgram(programId);
-    return Session.fromJson(jsonDecode(jsonString));
+    return _tryParseEntry(key, jsonString, Session.fromJson);
   }
 
   bool get librarySchemaJustMigrated =>
@@ -313,9 +344,10 @@ class ProgramRepository {
       _prefs.setBool(AppConfig.catalogOwnershipKey(slug), value);
 
   Program? _loadProgramShell(String uuid) {
-    final jsonString = _prefs.getString(_programKey(uuid));
+    final key = _programKey(uuid);
+    final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return Program.fromJson(jsonDecode(jsonString));
+    return _tryParseEntry(key, jsonString, Program.fromJson);
   }
 
   Future<void> _replaceNested(
@@ -398,21 +430,23 @@ class ProgramRepository {
 
   List<RolePlay> loadRolePlays([String? programUuid]) {
     final uuid = _requireProgramUuid(programUuid);
-    return _prefs
-        .getKeys()
-        .where((key) => key.startsWith('pr:$uuid:'))
-        .map((key) => _prefs.getString(key))
-        .whereType<String>()
-        .map((value) => RolePlay.fromJson(jsonDecode(value)))
-        .toList()
-      ..sort((a, b) => a.index.compareTo(b.index));
+    final items = <RolePlay>[];
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('pr:$uuid:'))) {
+      final value = _prefs.getString(key);
+      if (value == null) continue;
+      final parsed = _tryParseEntry(key, value, RolePlay.fromJson);
+      if (parsed != null) items.add(parsed);
+    }
+    items.sort((a, b) => a.index.compareTo(b.index));
+    return items;
   }
 
   RolePlay? getRolePlay(String uuid, [String? programUuid]) {
     final programId = _requireProgramUuid(programUuid);
-    final jsonString = _prefs.getString(_rolePlayKey(programId, uuid));
+    final key = _rolePlayKey(programId, uuid);
+    final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return RolePlay.fromJson(jsonDecode(jsonString));
+    return _tryParseEntry(key, jsonString, RolePlay.fromJson);
   }
 
   Future<void> saveRolePlay(RolePlay rolePlay, [String? programUuid]) async {
@@ -439,21 +473,23 @@ class ProgramRepository {
 
   List<Actor> loadActors([String? programUuid]) {
     final uuid = _requireProgramUuid(programUuid);
-    return _prefs
-        .getKeys()
-        .where((key) => key.startsWith('pa:$uuid:'))
-        .map((key) => _prefs.getString(key))
-        .whereType<String>()
-        .map((value) => Actor.fromJson(jsonDecode(value)))
-        .toList()
-      ..sort((a, b) => a.realName.compareTo(b.realName));
+    final items = <Actor>[];
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('pa:$uuid:'))) {
+      final value = _prefs.getString(key);
+      if (value == null) continue;
+      final parsed = _tryParseEntry(key, value, Actor.fromJson);
+      if (parsed != null) items.add(parsed);
+    }
+    items.sort((a, b) => a.realName.compareTo(b.realName));
+    return items;
   }
 
   Actor? getActor(String uuid, [String? programUuid]) {
     final programId = _requireProgramUuid(programUuid);
-    final jsonString = _prefs.getString(_actorKey(programId, uuid));
+    final key = _actorKey(programId, uuid);
+    final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return Actor.fromJson(jsonDecode(jsonString));
+    return _tryParseEntry(key, jsonString, Actor.fromJson);
   }
 
   Future<void> saveActor(Actor actor, [String? programUuid]) async {
