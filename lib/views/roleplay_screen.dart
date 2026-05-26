@@ -60,7 +60,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(rolePlay.name),
+        title: Text(localizations.rolePlayScreenTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -105,19 +105,6 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                 ),
               ],
               const Divider(height: 24),
-
-              // Role section header
-              Row(
-                children: [
-                  const Icon(Icons.menu_book, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    localizations.roleSection,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
 
               _FieldBlock(
                 label: 'Signalement',

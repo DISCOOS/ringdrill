@@ -2024,6 +2024,12 @@ abstract class AppLocalizations {
   /// **'Role'**
   String get roleSection;
 
+  /// AppBar title for the RolePlayScreen detail view.
+  ///
+  /// In en, this message translates to:
+  /// **'Roleplay'**
+  String get rolePlayScreenTitle;
+
   /// Relation label on the Cast section header in the expanded tile — answers 'who plays this role'. Norwegian: Spilles av.
   ///
   /// In en, this message translates to:

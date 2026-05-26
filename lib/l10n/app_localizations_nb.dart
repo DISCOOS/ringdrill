@@ -1190,6 +1190,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get roleSection => 'Markørordre';
 
   @override
+  String get rolePlayScreenTitle => 'Markørordre';
+
+  @override
   String get castSection => 'Spilles av';
 
   @override

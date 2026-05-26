@@ -359,6 +359,10 @@
   "@roleSection": {
     "description": "Section header for the publishable role fields in the expanded tile and detail screen."
   },
+  "rolePlayScreenTitle": "Markørordre",
+  "@rolePlayScreenTitle": {
+    "description": "AppBar title for the RolePlayScreen detail view."
+  },
   "castSection": "Spilles av",
   "@castSection": {
     "description": "Relasjonsetiketten på rollebesetting-seksjonen i den utvidede flisen — svarer på 'hvem spiller denne rollen'."

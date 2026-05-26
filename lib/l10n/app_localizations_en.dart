@@ -1194,6 +1194,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleSection => 'Role';
 
   @override
+  String get rolePlayScreenTitle => 'Roleplay';
+
+  @override
   String get castSection => 'Played by';
 
   @override

@@ -1045,6 +1045,10 @@
   "@roleSection": {
     "description": "Section header for the publishable role fields in the expanded tile and detail screen."
   },
+  "rolePlayScreenTitle": "Roleplay",
+  "@rolePlayScreenTitle": {
+    "description": "AppBar title for the RolePlayScreen detail view."
+  },
   "castSection": "Played by",
   "@castSection": {
     "description": "Relation label on the Cast section header in the expanded tile — answers 'who plays this role'. Norwegian: Spilles av."
