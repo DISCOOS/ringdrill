@@ -1,17 +1,11 @@
-[[plugins]]
-    package = "netlify-plugin-flutter"
-    [plugins.inputs]
-        channel = "stable"   # or "beta" if you really want that
-
-[build]
-    command = """flutter pub get && \
-        flutter build web --release --pwa-strategy=offline-first --source-maps && \
-        mkdir -p build/web/.well-known && \
-        cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json"""
-    publish = "build/web"
-
-[build.environment]
-    PUB_CACHE = "/opt/buildhome/.pub-cache"
+# The Flutter web build no longer runs on Netlify. It runs in GitHub
+# Actions (.github/workflows/deploy-web.yml) which uploads sources +
+# source maps to Sentry and then pushes the built artifact here via the
+# Netlify CLI. Netlify only serves the CDN and runs the functions below.
+#
+# Auto-publishing from Git should be turned off in the Netlify dashboard
+# (Site settings -> Build & deploy -> Continuous deployment -> Stop
+# builds) so a stray push does not race the GH Actions deploy.
 
 # Cache policy: keep index fresh, fingerprinted assets long-lived
 [[headers]]

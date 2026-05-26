@@ -1,5 +1,6 @@
 .PHONY: \
 	build watch release \
+	build-web upload-symbols-web strip-source-maps-web release-web \
 	netlify-dev catalog-seed catalog-feed catalog-reset
 
 .SILENT: \
@@ -19,8 +20,31 @@ watch:
 	echo "Watch for buildable changes..."
 	dart run build_runner watch --delete-conflicting-outputs
 
-web:
-	flutter build web --pwa-strategy=offline-first --release --web-renderer canvaskit
+# Web release pipeline. Decomposed so CI can run the steps individually
+# (one log group per step) but `make release-web` is the one-shot used
+# locally and as a sanity check.
+#
+# Why source maps live on disk between build-web and strip-source-maps-web:
+# sentry_dart_plugin needs the .map files next to main.dart.js so it can
+# resolve the original Dart sources. They are stripped from build/web/
+# AFTER upload so they never reach the public CDN — serving them would
+# expose the unminified source to anyone who opens DevTools.
+
+build-web:
+	flutter build web \
+		--release \
+		--pwa-strategy=offline-first \
+		--source-maps
+	mkdir -p build/web/.well-known
+	cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
+
+upload-symbols-web:
+	dart run sentry_dart_plugin
+
+strip-source-maps-web:
+	find build/web -type f -name '*.js.map' -delete
+
+release-web: build-web upload-symbols-web strip-source-maps-web
 
 release-android:
 	shorebird release android -- \
