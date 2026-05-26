@@ -1,15 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
-import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
@@ -459,11 +460,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
   }
 
   Future<void> _openRolePlay(RolePlay rolePlay) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => RolePlayScreen(rolePlayUuid: rolePlay.uuid),
-      ),
-    );
+    await context.push('$routeRolePlays/${rolePlay.uuid}');
     if (mounted) setState(() {});
   }
 
