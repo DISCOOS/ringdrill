@@ -115,7 +115,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final stations = widget.exercise?.stations ?? [];
-    final theme = Theme.of(context);
 
     // Compute the role-code badge text.
     final exercises = _programService.loadExercises();
@@ -124,12 +123,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final code = exerciseIndex < 0
         ? '?.${widget.rolePlay.index + 1}'
         : '${exerciseIndex + 1}.${widget.rolePlay.index + 1}';
-
-    // Compute the AppBar subtitle — same logic as the collapsed tile.
-    final stationIndex = widget.rolePlay.stationIndex;
-    final subtitleText = (stationIndex != null && stationIndex < stations.length)
-        ? localizations.roleSubtitleStation(stations[stationIndex].name)
-        : localizations.roleSubtitleExercise(widget.exercise?.name ?? '');
 
     final titleText = widget.rolePlay.name.trim().isEmpty
         ? localizations.newRolePlayTitle
@@ -146,24 +139,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
             RoleCodeBadge(code: code),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    titleText,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    subtitleText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Text(
+                titleText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -252,6 +231,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       decoration: InputDecoration(
                         labelText: _labelFor(section, localizations),
                         alignLabelWithHint: true,
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => setState(() {
+                            _activeSections.remove(section);
+                            _controllerFor(section).clear();
+                          }),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),

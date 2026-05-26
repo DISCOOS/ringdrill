@@ -175,31 +175,12 @@ void main() {
     expect(find.byType(RoleCodeBadge), findsOneWidget);
   });
 
-  testWidgets('AppBar subtitle shows roleSubtitleStation when stationIndex set',
-      (tester) async {
-    final roleWithStation = const RolePlay(
-      uuid: 'role-s',
-      index: 0,
-      exerciseUuid: 'ex-1',
-      name: 'Rolle med post',
-      stationIndex: 0,
-    );
-    await tester.pumpWidget(
-      _buildForm(rolePlay: roleWithStation, exercise: _exercise()),
-    );
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    // Station at index 0 is 'Post 1'
-    expect(find.text(l10n.roleSubtitleStation('Post 1')), findsOneWidget);
-  });
-
-  testWidgets(
-      'AppBar subtitle shows roleSubtitleExercise when stationIndex null',
-      (tester) async {
+  testWidgets('AppBar subtitle is not shown', (tester) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(
       find.text(l10n.roleSubtitleExercise(_exercise().name)),
-      findsOneWidget,
+      findsNothing,
     );
   });
 }
