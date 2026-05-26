@@ -106,24 +106,27 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
               ],
               const Divider(height: 24),
 
-              _FieldBlock(
-                label: 'Signalement',
-                text: rolePlay.signalement,
-                empty: localizations.noSignalement,
-              ),
-              const SizedBox(height: 8),
-              _FieldBlock(
-                label: 'Background',
-                text: rolePlay.background,
-                empty: localizations.noBackground,
-              ),
-              const SizedBox(height: 8),
-              _FieldBlock(
-                label: 'Behavior',
-                text: rolePlay.behavior,
-                empty: localizations.noBehavior,
-              ),
-              const SizedBox(height: 8),
+              if (rolePlay.signalement?.isNotEmpty == true) ...[
+                _FieldBlock(
+                  label: localizations.roleSignalement,
+                  text: rolePlay.signalement!,
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (rolePlay.background?.isNotEmpty == true) ...[
+                _FieldBlock(
+                  label: localizations.roleBackground,
+                  text: rolePlay.background!,
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (rolePlay.behavior?.isNotEmpty == true) ...[
+                _FieldBlock(
+                  label: localizations.roleBehavior,
+                  text: rolePlay.behavior!,
+                ),
+                const SizedBox(height: 8),
+              ],
 
               // Station
               _StationRow(
@@ -149,19 +152,13 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
 }
 
 class _FieldBlock extends StatelessWidget {
-  const _FieldBlock({
-    required this.label,
-    required this.empty,
-    this.text,
-  });
+  const _FieldBlock({required this.label, required this.text});
 
   final String label;
-  final String? text;
-  final String empty;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    final hasText = text != null && text!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -172,15 +169,7 @@ class _FieldBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          hasText ? text! : empty,
-          style: hasText
-              ? null
-              : TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-        ),
+        Text(text),
       ],
     );
   }

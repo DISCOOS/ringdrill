@@ -7,6 +7,9 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/role_code_badge.dart';
 
+/// Optional long-form sections that can be added to a [RolePlay].
+enum _Section { signalement, background, behavior }
+
 /// Edit form for a single [RolePlay].
 ///
 /// Edits the publishable Role fields only: name, age, signalement,
@@ -44,6 +47,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   final _backgroundController = TextEditingController();
   final _behaviorController = TextEditingController();
 
+  final _signalementFocus = FocusNode();
+  final _backgroundFocus = FocusNode();
+  final _behaviorFocus = FocusNode();
+
+  late Set<_Section> _activeSections;
   int? _stationIndex;
   // Tracks the current position; updated by PositionFormField.onSaved
   late RolePlay _rolePlay;
@@ -58,6 +66,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     _backgroundController.text = _rolePlay.background ?? '';
     _behaviorController.text = _rolePlay.behavior ?? '';
     _stationIndex = _rolePlay.stationIndex;
+    _activeSections = {
+      if (_rolePlay.signalement != null) _Section.signalement,
+      if (_rolePlay.background != null) _Section.background,
+      if (_rolePlay.behavior != null) _Section.behavior,
+    };
   }
 
   @override
@@ -67,8 +80,36 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     _signalementController.dispose();
     _backgroundController.dispose();
     _behaviorController.dispose();
+    _signalementFocus.dispose();
+    _backgroundFocus.dispose();
+    _behaviorFocus.dispose();
     super.dispose();
   }
+
+  void _addSection(_Section section) {
+    setState(() => _activeSections.add(section));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusFor(section).requestFocus();
+    });
+  }
+
+  FocusNode _focusFor(_Section section) => switch (section) {
+    _Section.signalement => _signalementFocus,
+    _Section.background => _backgroundFocus,
+    _Section.behavior => _behaviorFocus,
+  };
+
+  String _labelFor(_Section section, AppLocalizations l) => switch (section) {
+    _Section.signalement => l.roleSignalement,
+    _Section.background => l.roleBackground,
+    _Section.behavior => l.roleBehavior,
+  };
+
+  TextEditingController _controllerFor(_Section section) => switch (section) {
+    _Section.signalement => _signalementController,
+    _Section.background => _backgroundController,
+    _Section.behavior => _behaviorController,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +134,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final titleText = widget.rolePlay.name.trim().isEmpty
         ? localizations.newRolePlayTitle
         : widget.rolePlay.name;
+
+    final missingSections = _Section.values
+        .where((s) => !_activeSections.contains(s))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -195,44 +240,39 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Signalement
-                TextFormField(
-                  controller: _signalementController,
-                  keyboardType: TextInputType.multiline,
-                  minLines: 2,
-                  maxLines: 8,
-                  decoration: InputDecoration(
-                    labelText: localizations.roleSignalement,
-                    alignLabelWithHint: true,
-                  ),
-                ),
-                const SizedBox(height: 12),
+                // Optional sections — only shown when added
+                for (final section in _Section.values)
+                  if (_activeSections.contains(section)) ...[
+                    TextFormField(
+                      focusNode: _focusFor(section),
+                      controller: _controllerFor(section),
+                      keyboardType: TextInputType.multiline,
+                      minLines: 2,
+                      maxLines: 8,
+                      decoration: InputDecoration(
+                        labelText: _labelFor(section, localizations),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
-                // Background
-                TextFormField(
-                  controller: _backgroundController,
-                  keyboardType: TextInputType.multiline,
-                  minLines: 2,
-                  maxLines: 8,
-                  decoration: InputDecoration(
-                    labelText: localizations.roleBackground,
-                    alignLabelWithHint: true,
+                // Add section buttons for sections not yet added
+                if (missingSections.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      for (final section in missingSections)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.add, size: 16),
+                          label: Text(_labelFor(section, localizations)),
+                          onPressed: () => _addSection(section),
+                        ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                // Behavior
-                TextFormField(
-                  controller: _behaviorController,
-                  keyboardType: TextInputType.multiline,
-                  minLines: 2,
-                  maxLines: 8,
-                  decoration: InputDecoration(
-                    labelText: localizations.roleBehavior,
-                    alignLabelWithHint: true,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
 
                 // Position
                 PositionFormField(
@@ -257,15 +297,18 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final updated = _rolePlay.copyWith(
       name: _nameController.text.trim(),
       age: ageText.isEmpty ? null : int.parse(ageText),
-      signalement: _signalementController.text.trim().isEmpty
-          ? null
-          : _signalementController.text.trim(),
-      background: _backgroundController.text.trim().isEmpty
-          ? null
-          : _backgroundController.text.trim(),
-      behavior: _behaviorController.text.trim().isEmpty
-          ? null
-          : _behaviorController.text.trim(),
+      signalement: _activeSections.contains(_Section.signalement) &&
+              _signalementController.text.trim().isNotEmpty
+          ? _signalementController.text.trim()
+          : null,
+      background: _activeSections.contains(_Section.background) &&
+              _backgroundController.text.trim().isNotEmpty
+          ? _backgroundController.text.trim()
+          : null,
+      behavior: _activeSections.contains(_Section.behavior) &&
+              _behaviorController.text.trim().isNotEmpty
+          ? _behaviorController.text.trim()
+          : null,
       stationIndex: _stationIndex,
     );
 

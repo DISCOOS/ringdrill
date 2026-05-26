@@ -305,34 +305,31 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Role section header
-        Row(
-          children: [
-            Icon(Icons.menu_book, size: 16, color: scheme.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Text(
-              localizations.roleSection,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+        if (rolePlay.signalement?.isNotEmpty == true ||
+            rolePlay.background?.isNotEmpty == true ||
+            rolePlay.behavior?.isNotEmpty == true) ...[
+          // Role section header
+          Row(
+            children: [
+              Icon(Icons.menu_book, size: 16, color: scheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                localizations.roleSection,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        _FieldLine(
-          text: rolePlay.signalement,
-          empty: localizations.noSignalement,
-        ),
-        _FieldLine(
-          text: rolePlay.background,
-          empty: localizations.noBackground,
-        ),
-        _FieldLine(
-          text: rolePlay.behavior,
-          empty: localizations.noBehavior,
-        ),
-
-        const Divider(height: 20),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (rolePlay.signalement?.isNotEmpty == true)
+            _FieldLine(text: rolePlay.signalement!),
+          if (rolePlay.background?.isNotEmpty == true)
+            _FieldLine(text: rolePlay.background!),
+          if (rolePlay.behavior?.isNotEmpty == true)
+            _FieldLine(text: rolePlay.behavior!),
+          const Divider(height: 20),
+        ],
 
         // Cast section header
         Row(
@@ -521,25 +518,15 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 // ---------------------------------------------------------------------------
 
 class _FieldLine extends StatelessWidget {
-  const _FieldLine({required this.empty, this.text});
+  const _FieldLine({required this.text});
 
-  final String? text;
-  final String empty;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    final hasText = text != null && text!.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
-      child: Text(
-        hasText ? text! : empty,
-        style: hasText
-            ? null
-            : TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
-              ),
-      ),
+      child: Text(text),
     );
   }
 }
