@@ -163,38 +163,45 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name
-                TextFormField(
-                  autofocus: true,
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: localizations.roleName,
-                  ),
-                  validator: (value) =>
-                      value != null && value.trim().isNotEmpty
-                          ? null
-                          : localizations.pleaseEnterAName,
-                ),
-                const SizedBox(height: 12),
-
-                // Age (optional, 0–120)
-                TextFormField(
-                  key: const Key('age-field'),
-                  controller: _ageController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(
-                    labelText: localizations.roleAge,
-                    hintText: localizations.optional,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return null;
-                    final age = int.tryParse(value);
-                    if (age == null || age < 0 || age > 120) {
-                      return localizations.ageRange;
-                    }
-                    return null;
-                  },
+                // Name + age on one line
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        autofocus: true,
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: localizations.roleName,
+                        ),
+                        validator: (value) =>
+                            value != null && value.trim().isNotEmpty
+                                ? null
+                                : localizations.pleaseEnterAName,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 80,
+                      child: TextFormField(
+                        key: const Key('age-field'),
+                        controller: _ageController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: InputDecoration(
+                          labelText: localizations.roleAge,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return null;
+                          final age = int.tryParse(value);
+                          if (age == null || age < 0 || age > 120) {
+                            return localizations.ageRange;
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
 
