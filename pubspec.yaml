@@ -37,6 +37,7 @@ dependencies:
   nanoid: ^1.0.0
   strings: ^4.0.1 # needed for flutter_map
   latlong2: ^0.9.1
+  markdown_widget: ^2.3.2+8
   upgrader: ^13.3.0
   flutter_map: ^8.2.2
   flutter_map_marker_cluster: ^8.2.2
