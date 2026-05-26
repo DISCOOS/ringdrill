@@ -226,6 +226,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // Position
+                PositionFormField(
+                  initialValue: _rolePlay.position,
+                  onSaved: (pos) {
+                    _rolePlay = _rolePlay.copyWith(position: pos);
+                  },
+                ),
+                const Divider(height: 24),
+
                 // Optional sections — only shown when added
                 for (final section in _Section.values)
                   if (_activeSections.contains(section)) ...[
@@ -267,13 +276,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   const SizedBox(height: 16),
                 ],
 
-                // Position
-                PositionFormField(
-                  initialValue: _rolePlay.position,
-                  onSaved: (pos) {
-                    _rolePlay = _rolePlay.copyWith(position: pos);
-                  },
-                ),
               ],
             ),
           ),
