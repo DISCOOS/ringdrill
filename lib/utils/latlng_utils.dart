@@ -6,28 +6,43 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/views/map_view.dart';
 
+/// True when both lat and lon are finite (no NaN, no infinity). flutter_map
+/// and latlong2 throw `FormatException("LatLng is not finite: ...")` the
+/// moment a non-finite point reaches projection, so every extension here
+/// filters its input through this gate before touching coordinates.
+bool _isFiniteLatLng(LatLng p) =>
+    p.latitude.isFinite && p.longitude.isFinite;
+
 extension LatlngListX on Iterable<LatLng> {
+  /// Same as the iterable, but with any non-finite [LatLng] removed. Used
+  /// to keep NaN coordinates from poisoning [average]/[fit]/[centroidFit].
+  /// Filters defensively rather than at the source so a single bad row in
+  /// storage cannot prevent the rest of the map from rendering.
+  Iterable<LatLng> get _finite => where(_isFiniteLatLng);
+
   LatLng average([LatLng? initialCenter]) {
-    if (isEmpty) return initialCenter ?? MapConfig.initialCenter;
+    final pts = _finite.toList(growable: false);
+    if (pts.isEmpty) return initialCenter ?? MapConfig.initialCenter;
 
     double sumLat = 0.0;
     double sumLng = 0.0;
 
-    for (var coordinate in this) {
+    for (var coordinate in pts) {
       sumLat += coordinate.latitude;
       sumLng += coordinate.longitude;
     }
 
-    double averageLat = sumLat / length;
-    double averageLng = sumLng / length;
+    double averageLat = sumLat / pts.length;
+    double averageLng = sumLng / pts.length;
 
     return LatLng(averageLat, averageLng);
   }
 
   CameraFit? fit([EdgeInsets padding = const EdgeInsets.all(72)]) {
-    return length < 2
+    final pts = _finite.toList(growable: false);
+    return pts.length < 2
         ? null
-        : CameraFit.coordinates(padding: padding, coordinates: toList());
+        : CameraFit.coordinates(padding: padding, coordinates: pts);
   }
 
   /// CameraFit that keeps the *centroid* (arithmetic mean of all points)
@@ -38,10 +53,11 @@ extension LatlngListX on Iterable<LatLng> {
   /// around the centroid with the largest lat/lng delta, so all points
   /// stay visible *and* the centroid is dead centre.
   CameraFit? centroidFit([EdgeInsets padding = const EdgeInsets.all(72)]) {
-    final pts = toList(growable: false);
+    final pts = _finite.toList(growable: false);
     if (pts.length < 2) return null;
 
     final centroid = pts.average();
+    if (!_isFiniteLatLng(centroid)) return null;
     double maxLatDelta = 0;
     double maxLngDelta = 0;
     for (final p in pts) {
@@ -54,7 +70,9 @@ extension LatlngListX on Iterable<LatLng> {
         (p.longitude - centroid.longitude).abs(),
       );
     }
-    // Guard against zero-extent bounds when all points coincide.
+    // Guard against zero-extent bounds when all points coincide, and
+    // against NaN propagation from any pathological arithmetic above.
+    if (!maxLatDelta.isFinite || !maxLngDelta.isFinite) return null;
     if (maxLatDelta == 0 && maxLngDelta == 0) return null;
 
     final bounds = LatLngBounds(
@@ -82,18 +100,22 @@ extension StationLocationX on Iterable<StationLocation> {
 
   /// Converts each location to a [MapMarkerSpec] with the standard green
   /// station icon. Optional [clusterGroup] and [onTap] factory are forwarded.
+  /// Locations whose point is not finite are dropped: a NaN point would
+  /// throw on the next projection pass and take the whole map with it.
   List<MapMarkerSpec<(String, int)>> toMarkerSpecs({
     Object? clusterGroup,
     void Function((String, int) id)? onTap,
   }) =>
-      map(
-        (m) => MapMarkerSpec<(String, int)>(
-          id: m.$1,
-          label: m.$2,
-          point: m.$3,
-          child: const Icon(Icons.place, color: Colors.green, size: 32),
-          clusterGroup: clusterGroup,
-          onTap: onTap == null ? null : () => onTap(m.$1),
-        ),
-      ).toList();
+      where((m) => _isFiniteLatLng(m.$3))
+          .map(
+            (m) => MapMarkerSpec<(String, int)>(
+              id: m.$1,
+              label: m.$2,
+              point: m.$3,
+              child: const Icon(Icons.place, color: Colors.green, size: 32),
+              clusterGroup: clusterGroup,
+              onTap: onTap == null ? null : () => onTap(m.$1),
+            ),
+          )
+          .toList();
 }

@@ -20,8 +20,17 @@ class NullableLatLngJsonConverter
   const NullableLatLngJsonConverter();
 
   @override
-  LatLng? fromJson(Map<String, dynamic>? json) =>
-      json == null ? null : LatLng.fromJson(json);
+  LatLng? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    final parsed = LatLng.fromJson(json);
+    // Reject non-finite coordinates at the storage boundary. flutter_map
+    // throws `LatLng is not finite` the moment such a value is projected,
+    // which manifests as a crash deep inside the marker/cluster build
+    // pipeline rather than at the site of the bad data. Treating it as a
+    // missing position lets the rest of the map render normally.
+    if (!parsed.latitude.isFinite || !parsed.longitude.isFinite) return null;
+    return parsed;
+  }
 
   @override
   Map<String, dynamic>? toJson(LatLng? object) => object?.toJson();

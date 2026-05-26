@@ -518,6 +518,14 @@ class _MapViewState<K> extends State<MapView<K>> {
           timeLimit: Duration(seconds: 15),
         ),
       );
+      // Geolocator on web can in rare cases hand back NaN coordinates
+      // (e.g. when the Geolocation API resolves successfully but the
+      // underlying platform has no fix yet). A LatLng with NaN poisons
+      // every subsequent projection pass, so treat it as an error.
+      if (!position.latitude.isFinite || !position.longitude.isFinite) {
+        show(l.locationError);
+        return;
+      }
       final point = LatLng(position.latitude, position.longitude);
       if (!mounted) return;
       messenger.hideCurrentSnackBar();
@@ -857,7 +865,7 @@ class _MapViewState<K> extends State<MapView<K>> {
         final parts = input.split(",");
         final lat = double.tryParse(parts[0]);
         final lon = double.tryParse(parts[1]);
-        if (lat != null && lon != null) {
+        if (lat != null && lon != null && lat.isFinite && lon.isFinite) {
           final result = LatLng(lat, lon);
           _mapController.move(result, _mapController.camera.zoom);
           setState(() {
@@ -867,9 +875,14 @@ class _MapViewState<K> extends State<MapView<K>> {
         }
       }
 
-      // Try parsing UTM using coordinate_converter
+      // Try parsing UTM using coordinate_converter. proj4dart can hand
+      // back NaN on near-singular inputs, which would crash flutter_map
+      // the moment it tries to project the result. Drop those silently
+      // and let the geocoder branch have a shot at the same query.
       final result = input.toLatLngFromUtm();
-      if (result != null) {
+      if (result != null &&
+          result.latitude.isFinite &&
+          result.longitude.isFinite) {
         _mapController.move(result, _mapController.camera.zoom);
         setState(() {
           _isSearching = false;

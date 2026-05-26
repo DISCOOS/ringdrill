@@ -176,12 +176,7 @@ class _StationsViewState extends State<StationsView> {
               point: rp.position!,
               child: const RoleMarker(),
               clusterGroup: 'markers',
-              onTap: () {
-                final ex = _programService.getExercise(rp.exerciseUuid);
-                if (ex != null) {
-                  context.push('$routeStations/${ex.uuid}/${rp.index}');
-                }
-              },
+              onTap: () => context.push('$routeRolePlays/${rp.uuid}'),
             ))
         : <MapMarkerSpec<(String, int)>>[];
 
