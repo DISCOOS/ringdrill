@@ -9,7 +9,7 @@ sealed class Actor with _$Actor {
     required String uuid,
     required String realName,
     String? phone,
-    String? notes,
+    @JsonKey(includeFromJson: false, includeToJson: false) String? notes,
   }) = _Actor;
 
   factory Actor.fromJson(Map<String, dynamic> json) => _$ActorFromJson(json);

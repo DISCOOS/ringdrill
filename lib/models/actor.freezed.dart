@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Actor {
 
- String get uuid; String get realName; String? get phone; String? get notes;
+ String get uuid; String get realName; String? get phone;@JsonKey(includeFromJson: false, includeToJson: false) String? get notes;
 /// Create a copy of Actor
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $ActorCopyWith<$Res>  {
   factory $ActorCopyWith(Actor value, $Res Function(Actor) _then) = _$ActorCopyWithImpl;
 @useResult
 $Res call({
- String uuid, String realName, String? phone, String? notes
+ String uuid, String realName, String? phone,@JsonKey(includeFromJson: false, includeToJson: false) String? notes
 });
 
 
@@ -153,7 +153,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Actor() when $default != null:
 return $default(_that.uuid,_that.realName,_that.phone,_that.notes);case _:
@@ -174,7 +174,7 @@ return $default(_that.uuid,_that.realName,_that.phone,_that.notes);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone,  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  String realName,  String? phone, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes)  $default,) {final _that = this;
 switch (_that) {
 case _Actor():
 return $default(_that.uuid,_that.realName,_that.phone,_that.notes);}
@@ -191,7 +191,7 @@ return $default(_that.uuid,_that.realName,_that.phone,_that.notes);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String realName,  String? phone,  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  String realName,  String? phone, @JsonKey(includeFromJson: false, includeToJson: false)  String? notes)?  $default,) {final _that = this;
 switch (_that) {
 case _Actor() when $default != null:
 return $default(_that.uuid,_that.realName,_that.phone,_that.notes);case _:
@@ -206,13 +206,13 @@ return $default(_that.uuid,_that.realName,_that.phone,_that.notes);case _:
 @JsonSerializable()
 
 class _Actor implements Actor {
-  const _Actor({required this.uuid, required this.realName, this.phone, this.notes});
+  const _Actor({required this.uuid, required this.realName, this.phone, @JsonKey(includeFromJson: false, includeToJson: false) this.notes});
   factory _Actor.fromJson(Map<String, dynamic> json) => _$ActorFromJson(json);
 
 @override final  String uuid;
 @override final  String realName;
 @override final  String? phone;
-@override final  String? notes;
+@override@JsonKey(includeFromJson: false, includeToJson: false) final  String? notes;
 
 /// Create a copy of Actor
 /// with the given fields replaced by the non-null parameter values.
@@ -247,7 +247,7 @@ abstract mixin class _$ActorCopyWith<$Res> implements $ActorCopyWith<$Res> {
   factory _$ActorCopyWith(_Actor value, $Res Function(_Actor) _then) = __$ActorCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, String realName, String? phone, String? notes
+ String uuid, String realName, String? phone,@JsonKey(includeFromJson: false, includeToJson: false) String? notes
 });
 
 

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RolePlay {
 
- String get uuid; int get index; String get exerciseUuid; String get name; int? get age; String? get signalement; String? get background; String? get behavior; int? get stationIndex;@NullableLatLngJsonConverter() LatLng? get position; String? get actorUuid;
+ String get uuid; int get index; String get exerciseUuid; String get name; int? get age; String? get signalement;@JsonKey(includeFromJson: false, includeToJson: false) String? get background;@JsonKey(includeFromJson: false, includeToJson: false) String? get behavior; int? get stationIndex;@NullableLatLngJsonConverter() LatLng? get position; String? get actorUuid;
 /// Create a copy of RolePlay
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $RolePlayCopyWith<$Res>  {
   factory $RolePlayCopyWith(RolePlay value, $Res Function(RolePlay) _then) = _$RolePlayCopyWithImpl;
 @useResult
 $Res call({
- String uuid, int index, String exerciseUuid, String name, int? age, String? signalement, String? background, String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid
+ String uuid, int index, String exerciseUuid, String name, int? age, String? signalement,@JsonKey(includeFromJson: false, includeToJson: false) String? background,@JsonKey(includeFromJson: false, includeToJson: false) String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid
 });
 
 
@@ -160,7 +160,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? signalement,  String? background,  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? signalement, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RolePlay() when $default != null:
 return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.signalement,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid);case _:
@@ -181,7 +181,7 @@ return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? signalement,  String? background,  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? signalement, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid)  $default,) {final _that = this;
 switch (_that) {
 case _RolePlay():
 return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.signalement,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid);}
@@ -198,7 +198,7 @@ return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? signalement,  String? background,  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String uuid,  int index,  String exerciseUuid,  String name,  int? age,  String? signalement, @JsonKey(includeFromJson: false, includeToJson: false)  String? background, @JsonKey(includeFromJson: false, includeToJson: false)  String? behavior,  int? stationIndex, @NullableLatLngJsonConverter()  LatLng? position,  String? actorUuid)?  $default,) {final _that = this;
 switch (_that) {
 case _RolePlay() when $default != null:
 return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_that.signalement,_that.background,_that.behavior,_that.stationIndex,_that.position,_that.actorUuid);case _:
@@ -213,7 +213,7 @@ return $default(_that.uuid,_that.index,_that.exerciseUuid,_that.name,_that.age,_
 @JsonSerializable()
 
 class _RolePlay implements RolePlay {
-  const _RolePlay({required this.uuid, required this.index, required this.exerciseUuid, required this.name, this.age, this.signalement, this.background, this.behavior, this.stationIndex, @NullableLatLngJsonConverter() this.position, this.actorUuid});
+  const _RolePlay({required this.uuid, required this.index, required this.exerciseUuid, required this.name, this.age, this.signalement, @JsonKey(includeFromJson: false, includeToJson: false) this.background, @JsonKey(includeFromJson: false, includeToJson: false) this.behavior, this.stationIndex, @NullableLatLngJsonConverter() this.position, this.actorUuid});
   factory _RolePlay.fromJson(Map<String, dynamic> json) => _$RolePlayFromJson(json);
 
 @override final  String uuid;
@@ -222,8 +222,8 @@ class _RolePlay implements RolePlay {
 @override final  String name;
 @override final  int? age;
 @override final  String? signalement;
-@override final  String? background;
-@override final  String? behavior;
+@override@JsonKey(includeFromJson: false, includeToJson: false) final  String? background;
+@override@JsonKey(includeFromJson: false, includeToJson: false) final  String? behavior;
 @override final  int? stationIndex;
 @override@NullableLatLngJsonConverter() final  LatLng? position;
 @override final  String? actorUuid;
@@ -261,7 +261,7 @@ abstract mixin class _$RolePlayCopyWith<$Res> implements $RolePlayCopyWith<$Res>
   factory _$RolePlayCopyWith(_RolePlay value, $Res Function(_RolePlay) _then) = __$RolePlayCopyWithImpl;
 @override @useResult
 $Res call({
- String uuid, int index, String exerciseUuid, String name, int? age, String? signalement, String? background, String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid
+ String uuid, int index, String exerciseUuid, String name, int? age, String? signalement,@JsonKey(includeFromJson: false, includeToJson: false) String? background,@JsonKey(includeFromJson: false, includeToJson: false) String? behavior, int? stationIndex,@NullableLatLngJsonConverter() LatLng? position, String? actorUuid
 });
 
 
