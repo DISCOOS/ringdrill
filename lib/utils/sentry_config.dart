@@ -1,9 +1,31 @@
+import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class SentryConfig {
   static void apply(SentryFlutterOptions options) {
     options.dsn =
         'https://8a23c7176b097c782e43e6d930c4d513@o288287.ingest.us.sentry.io/4509676938395648';
+    // Tag every event with `debug` or `production`. The release also goes
+    // out for both, but having an explicit `environment` lets Sentry's UI
+    // filter on it cheaply (no full-text search) and matches the existing
+    // tags Sentry already shows on every event.
+    options.environment = kReleaseMode ? 'production' : 'debug';
+
+    // Drop everything that comes out of a dev/debug build. Local hot
+    // restarts, asserts in the engine (e.g. "Trying to render a disposed
+    // EngineFlutterView" during hot reload) and other transient debug-only
+    // noise should never reach the prod project — they bury real reports
+    // from users. Keep the SDK initialised so breadcrumbs, replay etc.
+    // still work locally, just refuse to ship the event over the wire.
+    options.beforeSend = (event, hint) {
+      if (!kReleaseMode) return null;
+      return event;
+    };
+    options.beforeSendTransaction = (transaction, hint) {
+      if (!kReleaseMode) return null;
+      return transaction;
+    };
+
     // Adds request headers and IP for users, for more info visit:
     // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
     options.sendDefaultPii = true;
