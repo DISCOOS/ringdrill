@@ -1,0 +1,308 @@
+/// BriefRenderer — renders a program or single-exercise brief as markdown.
+///
+/// The renderer is a pure function over the in-memory [Program]. It does not
+/// call [DrillFile.fromProgram] or [program()]. The brief is rendered after
+/// the program is already loaded.
+///
+/// Template authors: fields that contain literal `{{` not intended as mustache
+/// must be escaped with the `{{=<% %>=}}` delimiter-change pragma at the start
+/// of the field content, e.g. `{{=<% %>=}} some {{literal}} text <%={{ }}=%>`.
+library;
+
+import 'package:flutter/services.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:meta/meta.dart';
+import 'package:mustache_template/mustache_template.dart';
+import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/services/brief/template_registry.dart';
+import 'package:ringdrill/utils/projection.dart';
+
+class BriefRenderer {
+  BriefRenderer({TemplateRegistry? registry, AssetBundle? bundle})
+      : _registry = registry ?? TemplateRegistry.instance,
+        _bundle = bundle ?? rootBundle;
+
+  final TemplateRegistry _registry;
+  final AssetBundle _bundle;
+
+  /// Renders a brief for [program]. When [exercise] is non-null, scopes the
+  /// brief to that exercise. When null, renders the whole program. The
+  /// template is resolved from [exercise?.templateId] (single-exercise mode)
+  /// or from the system default (program mode).
+  Future<String> render({
+    required Program program,
+    Exercise? exercise,
+    required BriefAudience audience,
+  }) async {
+    final template = _registry.resolve(exercise?.templateId);
+    final source = await _bundle.loadString(template.assetPath);
+    final mustache = Template(source, htmlEscapeValues: false);
+
+    final exercises = exercise != null
+        ? [exercise]
+        : program.exercises;
+
+    final actorMap = {
+      for (final a in program.actors) a.uuid: a,
+    };
+    final rolePlaysByExercise = <String, List<RolePlay>>{};
+    for (final rp in program.rolePlays) {
+      rolePlaysByExercise.putIfAbsent(rp.exerciseUuid, () => []).add(rp);
+    }
+
+    final exerciseContexts = exercises.map((ex) {
+      return _buildExerciseContext(
+        program: program,
+        exercise: ex,
+        audience: audience,
+        actorMap: actorMap,
+        rolePlays: rolePlaysByExercise[ex.uuid] ?? [],
+      );
+    }).toList();
+
+    final context = {
+      'program': {
+        'name': program.name,
+        'description': program.description.isEmpty ? null : program.description,
+        'briefIntroMd': program.briefIntroMd,
+        'commsMd': program.commsMd,
+      },
+      'exercises': exerciseContexts,
+      'if_director': audience.includesActorPii,
+      'if_instructor_or_director': audience.includesDirectorNotes,
+    };
+
+    return mustache.renderString(context);
+  }
+
+  Map<String, dynamic> _buildExerciseContext({
+    required Program program,
+    required Exercise exercise,
+    required BriefAudience audience,
+    required Map<String, Actor> actorMap,
+    required List<RolePlay> rolePlays,
+  }) {
+    final exNum = _exerciseNumber(program, exercise);
+    final effectiveComms = _effectiveCommsMd(program, exercise);
+
+    final stationContexts = exercise.stations.map((station) {
+      return _buildStationContext(
+        exercise: exercise,
+        exerciseNumber: exNum,
+        station: station,
+        audience: audience,
+        actorMap: actorMap,
+        rolePlays: rolePlays.where((rp) => rp.stationIndex == station.index).toList(),
+        effectiveCommsMd: effectiveComms,
+      );
+    }).toList();
+
+    // Anchor id for table of contents: lowercase, spaces to hyphens.
+    final exerciseAnchor = _toAnchor(exercise.name);
+
+    return {
+      'name': exercise.name,
+      'exerciseNumber': exNum,
+      'exerciseAnchor': exerciseAnchor,
+      'durationLabel': _durationLabel(exercise),
+      'methodMd': exercise.methodMd,
+      'learningGoalsMd': exercise.learningGoalsMd,
+      'trainingFocusMd': exercise.trainingFocusMd,
+      'orderFormatMd': exercise.orderFormatMd,
+      'executionTipsMd': exercise.executionTipsMd,
+      'effectiveCommsMd': effectiveComms,
+      'setupLabel': _setupLabel(exercise),
+      'stations': stationContexts,
+    };
+  }
+
+  Map<String, dynamic> _buildStationContext({
+    required Exercise exercise,
+    required int exerciseNumber,
+    required Station station,
+    required BriefAudience audience,
+    required Map<String, Actor> actorMap,
+    required List<RolePlay> rolePlays,
+    required String? effectiveCommsMd,
+  }) {
+    final letter = _stationLetter(station);
+    final utmStr = _formatUtm(station.position);
+
+    // Build a partial station context for cross-reference resolution inside
+    // markdown fields (e.g. {{station.position.utm}} inside situationMd).
+    final stationRefContext = {
+      'station': {
+        'name': station.name,
+        'position': {'utm': utmStr},
+      },
+    };
+
+    String? resolveField(String? content) {
+      if (content == null) return null;
+      try {
+        return Template(content, htmlEscapeValues: false)
+            .renderString(stationRefContext);
+      } catch (_) {
+        return content;
+      }
+    }
+
+    final roleplayContexts = rolePlays.map((rp) {
+      Map<String, dynamic>? actorContext;
+      if (audience.includesActorPii && rp.actorUuid != null) {
+        final actor = actorMap[rp.actorUuid];
+        if (actor != null) {
+          actorContext = {
+            'realName': actor.realName,
+            'phone': actor.phone,
+          };
+        }
+      }
+      return {
+        'name': rp.name,
+        'age': rp.age,
+        'signalement': rp.signalement,
+        'behavior': resolveField(rp.behavior),
+        'background': resolveField(rp.background),
+        'propsMd': resolveField(rp.propsMd),
+        'actor': actorContext,
+        'if_director': audience.includesActorPii,
+      };
+    }).toList();
+
+    final stationAnchor = _toAnchor(
+      '$exerciseNumber$letter – ${station.name}'
+      '${station.variantSuffix != null ? ' – ${station.variantSuffix}' : ''}',
+    );
+
+    return {
+      'name': station.name,
+      'variantSuffix': station.variantSuffix,
+      'exerciseNumber': exerciseNumber,
+      'stationLetter': letter,
+      'stationAnchor': stationAnchor,
+      'position': {'utm': utmStr},
+      'durationLabel': _durationLabel(exercise),
+      'equipmentMd': resolveField(station.equipmentMd),
+      'situationMd': resolveField(station.situationMd),
+      'missionMd': resolveField(station.missionMd),
+      'logisticsMd': resolveField(station.logisticsMd),
+      'criticalQuestionsMd': resolveField(station.criticalQuestionsMd),
+      'leaderAnswersMd': resolveField(station.leaderAnswersMd),
+      'directorNotesMd': audience.includesDirectorNotes
+          ? resolveField(station.directorNotesMd)
+          : null,
+      'effectiveCommsMd': effectiveCommsMd,
+      'roleplays': roleplayContexts,
+      'if_director': audience.includesActorPii,
+      'if_instructor_or_director': audience.includesDirectorNotes,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  /// Returns the 1-based position of [exercise] in [program]'s exercise list.
+  @visibleForTesting
+  static int exerciseNumber(Program program, Exercise exercise) =>
+      _exerciseNumber(program, exercise);
+
+  /// Returns the lowercase letter for [station] based on its index.
+  /// index 0 → 'a', index 1 → 'b', ..., index 25 → 'z'.
+  @visibleForTesting
+  static String stationLetter(Station station) => _stationLetter(station);
+
+  /// Formats [exercise] duration as "60 min." (single round) or "4 x 60 min."
+  /// (multiple rounds). Uses [Exercise.executionTime] in minutes.
+  @visibleForTesting
+  static String durationLabel(Exercise exercise) => _durationLabel(exercise);
+
+  /// Returns the ring-configuration string for [exercise].
+  /// Format: "4 x (60 | 15 | 5)" where the numbers are
+  /// numberOfRounds × (executionTime | evaluationTime | rotationTime).
+  /// When schedule entries exist, appends a comma-separated list of round
+  /// start times on the same line (separated by a newline suitable for a
+  /// markdown table cell).
+  @visibleForTesting
+  static String setupLabel(Exercise exercise) => _setupLabel(exercise);
+
+  /// Formats [latLng] as "32V 0580414E 6552008N" (UTM, easting before
+  /// northing). Returns empty string when [latLng] is null.
+  @visibleForTesting
+  static String formatUtm(LatLng? latLng) => _formatUtm(latLng);
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers (top-level functions for testability via @visibleForTesting
+// static wrappers above)
+// ---------------------------------------------------------------------------
+
+int _exerciseNumber(Program program, Exercise exercise) {
+  final idx = program.exercises.indexWhere((e) => e.uuid == exercise.uuid);
+  return idx < 0 ? 1 : idx + 1;
+}
+
+String _stationLetter(Station station) {
+  return String.fromCharCode('a'.codeUnitAt(0) + station.index);
+}
+
+String _durationLabel(Exercise exercise) {
+  final mins = exercise.executionTime;
+  if (exercise.numberOfRounds > 1) {
+    return '${exercise.numberOfRounds} x $mins min.';
+  }
+  return '$mins min.';
+}
+
+String _setupLabel(Exercise exercise) {
+  final config =
+      '${exercise.numberOfRounds} x (${exercise.executionTime} | '
+      '${exercise.evaluationTime} | ${exercise.rotationTime})';
+
+  final schedule = exercise.schedule;
+  if (schedule.isEmpty) return config;
+
+  // Each inner list is one round's time slots. We use the first slot of each
+  // round as the round-start time. Render as comma-separated HH:mm values.
+  final roundStarts = <String>[];
+  for (final round in schedule) {
+    if (round.isNotEmpty) {
+      roundStarts.add(round.first.toString());
+    }
+  }
+
+  if (roundStarts.isEmpty) return config;
+  return '$config\n${roundStarts.join(', ')}';
+}
+
+/// Formats a UTM coordinate as "32V 0580414E 6552008N" — zone+band, then
+/// zero-padded 7-digit easting with 'E', then zero-padded 7-digit northing
+/// with 'N'.  Returns empty string when [latLng] is null.
+String _formatUtm(LatLng? latLng) {
+  if (latLng == null) return '';
+  final utm = latLng.utm();
+  final e = utm.easting.toStringAsFixed(0).padLeft(7, '0');
+  final n = utm.northing.toStringAsFixed(0).padLeft(7, '0');
+  return '${utm.zone}${utm.band} ${e}E ${n}N';
+}
+
+String? _effectiveCommsMd(Program program, Exercise exercise) {
+  return exercise.commsMd ?? program.commsMd;
+}
+
+/// Converts a heading string to a GitHub-flavored markdown anchor id:
+/// lowercase, trim, replace spaces and special chars with hyphens.
+String _toAnchor(String heading) {
+  return heading
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^\w\s-]'), '')
+      .trim()
+      .replaceAll(RegExp(r'[\s]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-');
+}
