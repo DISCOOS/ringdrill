@@ -1,0 +1,104 @@
+# {{program.name}}
+
+{{#program.description}}_{{program.description}}_
+
+{{/program.description}}
+## Innholdsfortegnelse
+
+{{#exercises}}- [{{name}}](#{{exerciseAnchor}})
+{{#stations}}  - [{{exerciseNumber}}{{stationLetter}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}](#{{stationAnchor}})
+{{/stations}}{{/exercises}}
+
+{{#program.briefIntroMd}}
+## Generelt om spill og øvingsledelse
+
+{{{program.briefIntroMd}}}
+
+{{/program.briefIntroMd}}
+{{#program.commsMd}}
+## Talegrupper
+
+{{{program.commsMd}}}
+
+{{/program.commsMd}}
+---
+
+{{#exercises}}
+## {{name}}
+
+| | |
+|---|---|
+| Tid | {{durationLabel}} |
+{{#methodMd}}| Metode | {{{methodMd}}} |
+{{/methodMd}}{{#learningGoalsMd}}| Læringsmål | {{{learningGoalsMd}}} |
+{{/learningGoalsMd}}{{#trainingFocusMd}}| Øvingsmomenter | {{{trainingFocusMd}}} |
+{{/trainingFocusMd}}| Organisering | {{{setupLabel}}} |
+{{#orderFormatMd}}| Ordreformat | {{{orderFormatMd}}} |
+{{/orderFormatMd}}{{#executionTipsMd}}| Tips til gjennomføring | {{{executionTipsMd}}} |
+{{/executionTipsMd}}{{#effectiveCommsMd}}| Samband | {{{effectiveCommsMd}}} |
+{{/effectiveCommsMd}}
+
+{{#stations}}
+### {{exerciseNumber}}{{stationLetter}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}
+
+**Post {{exerciseNumber}}{{stationLetter}} plassering:** {{position.utm}}
+
+#### Tid
+{{durationLabel}}
+
+{{#equipmentMd}}
+#### Utstyrsbehov
+{{{equipmentMd}}}
+
+{{/equipmentMd}}
+{{#roleplays}}
+#### Markørspill ({{name}})
+{{{behavior}}}
+{{#propsMd}}
+**Rekvisita:** {{{propsMd}}}
+{{/propsMd}}
+{{#if_director}}{{#actor}}
+**Markør:** {{realName}}{{#phone}} ({{phone}}){{/phone}}
+
+{{/actor}}{{/if_director}}
+{{/roleplays}}
+{{#situationMd}}
+#### Situasjon
+{{{situationMd}}}
+
+{{/situationMd}}
+{{#missionMd}}
+#### Oppdrag
+{{{missionMd}}}
+
+{{/missionMd}}
+{{#effectiveCommsMd}}
+#### Samband
+{{{effectiveCommsMd}}}
+
+{{/effectiveCommsMd}}
+{{#logisticsMd}}
+#### Administrasjon og forsyninger
+{{{logisticsMd}}}
+
+{{/logisticsMd}}
+{{#criticalQuestionsMd}}
+#### Kritiske spørsmål
+{{{criticalQuestionsMd}}}
+
+{{/criticalQuestionsMd}}
+{{#leaderAnswersMd}}
+#### Forslag til svar på spørsmål fra lagleder
+{{{leaderAnswersMd}}}
+
+{{/leaderAnswersMd}}
+{{#if_instructor_or_director}}{{#directorNotesMd}}
+> **Notater til instruktør/øvingsledelse**
+>
+> {{{directorNotesMd}}}
+
+{{/directorNotesMd}}{{/if_instructor_or_director}}
+---
+
+{{/stations}}
+{{/exercises}}
