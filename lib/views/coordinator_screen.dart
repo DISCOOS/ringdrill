@@ -9,6 +9,8 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
@@ -235,6 +237,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               _exercise!.name,
             ), // Dynamic title shows the exercise's name
             actions: [
+              // Open Brief — scoped to this exercise
+              IconButton(
+                icon: const Icon(Icons.menu_book),
+                padding: const EdgeInsets.all(8.0),
+                tooltip: localizations.briefAction,
+                onPressed: () =>
+                    context.push('$routeBrief/${widget.uuid}'),
+              ),
+
               IconButton(
                 icon: const Icon(Icons.notifications_on),
                 padding: const EdgeInsets.all(8.0),

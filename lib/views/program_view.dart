@@ -278,7 +278,17 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
-    return null;
+    final activeProgram = programService.activeProgram;
+    if (activeProgram == null) return null;
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      IconButton(
+        icon: const Icon(Icons.menu_book),
+        tooltip: localizations.briefAction,
+        onPressed: () =>
+            GoRouter.of(context).push('$routeBrief/program/${activeProgram.uuid}'),
+      ),
+    ];
   }
 
   /// Shows the exercise picker as a bottom sheet on small form factors and as
