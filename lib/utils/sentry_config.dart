@@ -18,7 +18,11 @@ class SentryConfig {
     options.replay.sessionSampleRate = 0.1;
     options.replay.onErrorSampleRate = 1.0;
 
-    // Filter out well-known noise that we cannot act on:
+    // Filter out well-known noise that we cannot act on. Matched as
+    // substrings against the exception value. Anything originating from
+    // browser-extension internals (chrome.runtime, WebExtensions messaging)
+    // belongs here — RingDrill itself has no access to those APIs, so the
+    // call site is always third-party code injected into the page.
     //
     //   "Script error."
     //     Fired by window.onerror when a script from a different origin
@@ -37,11 +41,24 @@ class SentryConfig {
     //   "Non-Error promise rejection captured ..."
     //     A `Promise.reject(non-Error)` somewhere in third-party JS.
     //     Without a real Error there is nothing to debug from.
+    //
+    //   "Invalid call to runtime.sendMessage()" / "Extension context
+    //   invalidated" / "message port closed" / "Receiving end does not
+    //   exist"
+    //     The WebExtensions messaging API. Extensions use these to talk
+    //     between content scripts and background pages; when a tab closes
+    //     mid-message or the extension is updated/disabled the call
+    //     throws. We have no chrome.runtime in app code — every report is
+    //     extension-internal noise.
     options.ignoreErrors = const [
       'Script error.',
       'ResizeObserver loop limit exceeded',
       'ResizeObserver loop completed with undelivered notifications',
       'Non-Error promise rejection captured',
+      'Invalid call to runtime.sendMessage()',
+      'Extension context invalidated',
+      'The message port closed before a response was received',
+      'Receiving end does not exist',
     ];
   }
 }
