@@ -17,5 +17,31 @@ class SentryConfig {
     // Configure Session Replay
     options.replay.sessionSampleRate = 0.1;
     options.replay.onErrorSampleRate = 1.0;
+
+    // Filter out well-known noise that we cannot act on:
+    //
+    //   "Script error."
+    //     Fired by window.onerror when a script from a different origin
+    //     throws without CORS headers. In practice this is almost always
+    //     a browser extension (ad blocker, password manager, translator,
+    //     accessibility tool) — the browser strips the message, line and
+    //     stack, so even Sentry only sees `Script error.` at line 0. Not
+    //     actionable on our side.
+    //
+    //   "ResizeObserver loop ..."
+    //     Benign Chrome/Edge warning that fires when a ResizeObserver
+    //     callback synchronously triggers another layout pass. Has no
+    //     user-visible effect; it shows up as an uncaught error simply
+    //     because the spec asks the browser to surface it.
+    //
+    //   "Non-Error promise rejection captured ..."
+    //     A `Promise.reject(non-Error)` somewhere in third-party JS.
+    //     Without a real Error there is nothing to debug from.
+    options.ignoreErrors = const [
+      'Script error.',
+      'ResizeObserver loop limit exceeded',
+      'ResizeObserver loop completed with undelivered notifications',
+      'Non-Error promise rejection captured',
+    ];
   }
 }
