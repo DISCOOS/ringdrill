@@ -91,7 +91,7 @@ jobs:
           cache: true
 
       - name: Cache pub-cache and .dart_tool
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
