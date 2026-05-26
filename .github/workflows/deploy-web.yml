@@ -133,6 +133,13 @@ jobs:
         uses: nwtgck/actions-netlify@v3
         with:
           publish-dir: build/web
+          # Unlike Netlify's own CI, this action does NOT read the
+          # [functions] block in netlify.toml automatically. Without
+          # functions-dir the static bundle deploys fine, but every
+          # /.netlify/functions/* path 404s because no functions were
+          # uploaded. node_modules has already been populated by the
+          # `npm ci` step above so dependency bundling works.
+          functions-dir: netlify/functions
           production-deploy: true
           deploy-message: ${{ github.event.head_commit.message }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
