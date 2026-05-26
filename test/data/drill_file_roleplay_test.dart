@@ -143,7 +143,7 @@ void main() {
     expect(decoded.actors.first.realName, 'Kari Nordmann');
     expect(decoded.actors.first.notes, 'Keep in character');
 
-    expect(decoded.metadata.schema, '1.1');
+    expect(decoded.metadata.schema, '1.2');
   });
 
   test('round-trips empty program without creating spurious folders', () {
@@ -159,7 +159,7 @@ void main() {
     expect(decoded.rolePlays, isEmpty);
     expect(decoded.actors, isEmpty);
     // schema is always stamped by fromProgram
-    expect(decoded.metadata.schema, '1.1');
+    expect(decoded.metadata.schema, '1.2');
   });
 
   test('opens a synthetic 1.0 archive with no roleplays/actors/schema', () {
@@ -339,6 +339,47 @@ void main() {
     final decodedRp = decoded.rolePlays.firstWhere((r) => r.uuid == 'rp-1');
     expect(decodedRp.behavior, '');
     expect(decodedRp.background, isNull);
+  });
+
+  test('mutating behavior on a rolePlay changes the content hash', () {
+    const rp = RolePlay(
+      uuid: 'rp-1',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: 'Anna',
+      behavior: 'Original behavior',
+    );
+    final program = _emptyProgram().copyWith(rolePlays: [rp]);
+    final hash1 = program.computeContentHash();
+
+    final modified = program.copyWith(
+      rolePlays: [rp.copyWith(behavior: 'Changed behavior')],
+    );
+    final hash2 = modified.computeContentHash();
+
+    expect(hash2, isNot(hash1));
+  });
+
+  test('identical content with different archive-entry order produces equal hashes', () {
+    const rp1 = RolePlay(
+      uuid: 'aaa-rp',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: 'First',
+      behavior: 'Calm',
+    );
+    const rp2 = RolePlay(
+      uuid: 'zzz-rp',
+      index: 1,
+      exerciseUuid: 'ex-1',
+      name: 'Second',
+      background: 'History',
+    );
+
+    final programA = _emptyProgram().copyWith(rolePlays: [rp1, rp2]);
+    final programB = _emptyProgram().copyWith(rolePlays: [rp2, rp1]);
+
+    expect(programA.computeContentHash(), programB.computeContentHash());
   });
 
   test('roundtrip preserves content hash', () {

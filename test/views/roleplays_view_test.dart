@@ -98,8 +98,10 @@ Map<String, Object> _buildPrefs() {
     // Two roles seeded together
     'pr:$_programUuid:$_roleAUuid': jsonEncode(_roleA.toJson()),
     'pr:$_programUuid:$_roleBUuid': jsonEncode(_roleB.toJson()),
-    // Two actors: A has phone+notes, B has neither
+    // Two actors: A has phone+notes, B has neither.
+    // Actor.notes is excluded from JSON (ADR-0022); stored under pan: prefix.
     'pa:$_programUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
+    'pan:$_programUuid:$_actorAUuid': _actorA.notes!,
     'pa:$_programUuid:$_actorBUuid': jsonEncode(_actorB.toJson()),
   };
 }

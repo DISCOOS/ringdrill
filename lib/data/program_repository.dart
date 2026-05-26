@@ -366,7 +366,8 @@ class ProgramRepository {
               key.startsWith('pt:$programUuid:') ||
               key.startsWith('ps:$programUuid:') ||
               key.startsWith('pr:$programUuid:') ||
-              key.startsWith('pa:$programUuid:'),
+              key.startsWith('pa:$programUuid:') ||
+              key.startsWith('pan:$programUuid:'),
         )
         .toList();
     for (final key in keys) {
@@ -401,6 +402,11 @@ class ProgramRepository {
         _actorKey(programUuid, actor.uuid),
         jsonEncode(actor.toJson()),
       );
+      // Actor.notes is excluded from JSON (ADR-0022) — store separately.
+      final notesKey = _actorNotesKey(programUuid, actor.uuid);
+      if (actor.notes != null) {
+        await _prefs.setString(notesKey, actor.notes!);
+      }
     }
   }
 
@@ -477,8 +483,12 @@ class ProgramRepository {
     for (final key in _prefs.getKeys().where((k) => k.startsWith('pa:$uuid:'))) {
       final value = _prefs.getString(key);
       if (value == null) continue;
-      final parsed = _tryParseEntry(key, value, Actor.fromJson);
-      if (parsed != null) items.add(parsed);
+      var parsed = _tryParseEntry(key, value, Actor.fromJson);
+      if (parsed == null) continue;
+      // Actor.notes is excluded from JSON (ADR-0022); restore from separate key.
+      final notes = _prefs.getString(_actorNotesKey(uuid, parsed.uuid));
+      if (notes != null) parsed = parsed.copyWith(notes: notes);
+      items.add(parsed);
     }
     items.sort((a, b) => a.realName.compareTo(b.realName));
     return items;
@@ -489,7 +499,12 @@ class ProgramRepository {
     final key = _actorKey(programId, uuid);
     final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return _tryParseEntry(key, jsonString, Actor.fromJson);
+    var actor = _tryParseEntry(key, jsonString, Actor.fromJson);
+    if (actor == null) return null;
+    // Actor.notes is excluded from JSON (ADR-0022); restore from separate key.
+    final notes = _prefs.getString(_actorNotesKey(programId, uuid));
+    if (notes != null) actor = actor.copyWith(notes: notes);
+    return actor;
   }
 
   Future<void> saveActor(Actor actor, [String? programUuid]) async {
@@ -498,6 +513,13 @@ class ProgramRepository {
       _actorKey(programId, actor.uuid),
       jsonEncode(actor.toJson()),
     );
+    // Actor.notes is excluded from JSON (ADR-0022) — store separately.
+    final notesKey = _actorNotesKey(programId, actor.uuid);
+    if (actor.notes != null) {
+      await _prefs.setString(notesKey, actor.notes!);
+    } else {
+      await _prefs.remove(notesKey);
+    }
     await _touchProgram(programId);
   }
 
@@ -506,6 +528,7 @@ class ProgramRepository {
     final deleted = getActor(uuid, programId);
     if (deleted != null) {
       await _prefs.remove(_actorKey(programId, uuid));
+      await _prefs.remove(_actorNotesKey(programId, uuid));
       await _touchProgram(programId);
     }
     return deleted;
@@ -520,4 +543,7 @@ class ProgramRepository {
   String _rolePlayKey(String programUuid, String uuid) =>
       'pr:$programUuid:$uuid';
   String _actorKey(String programUuid, String uuid) => 'pa:$programUuid:$uuid';
+  // Actor.notes is excluded from JSON manifests (ADR-0022); stored under pan:.
+  String _actorNotesKey(String programUuid, String uuid) =>
+      'pan:$programUuid:$uuid';
 }

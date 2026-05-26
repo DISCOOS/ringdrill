@@ -91,14 +91,25 @@ extension ProgramX on Program {
   /// are detected as local changes. Excludes uuid, source, contentHash and
   /// metadata timestamps because those drift without being content changes.
   String computeContentHash() {
+    // rolePlays are publishable; actors are local PII and excluded per ADR-0018.
+    // behavior and background are excluded from toJson (ADR-0022) so we inject
+    // them back into the canonical map before hashing.
+    final sortedRolePlays = rolePlays.toList()
+      ..sort((a, b) => a.uuid.compareTo(b.uuid));
+    final rolePlaysMaps = sortedRolePlays.map((rp) {
+      final map = Map<String, dynamic>.from(rp.toJson());
+      map['behavior'] = rp.behavior;
+      map['background'] = rp.background;
+      return _canonicalize(map) as Map<String, dynamic>;
+    }).toList();
+
     final canonical = {
       'name': name,
       'description': description,
       'exercises': _sortedCanonical(exercises, (e) => e.uuid),
       'teams': _sortedCanonical(teams, (e) => e.uuid),
       'sessions': _sortedCanonical(sessions, (e) => e.uuid),
-      // rolePlays are publishable; actors are local PII and excluded per ADR-0018.
-      'rolePlays': _sortedCanonical(rolePlays, (r) => r.uuid),
+      'rolePlays': rolePlaysMaps,
     };
     return sha256
         .convert(utf8.encode(jsonEncode(_canonicalize(canonical))))

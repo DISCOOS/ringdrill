@@ -3,7 +3,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/role_play.dart';
 
 void main() {
-  test('RolePlay round-trips JSON with all fields populated', () {
+  test(
+      'RolePlay round-trips JSON for structural fields; behavior/background excluded',
+      () {
+    // behavior and background are @JsonKey(includeFromJson: false,
+    // includeToJson: false) per ADR-0022 — they live in
+    // roleplays/<uuid>/behavior.md and roleplays/<uuid>/background.md.
     const rp = RolePlay(
       uuid: 'rp-1',
       index: 0,
@@ -17,8 +22,17 @@ void main() {
       actorUuid: 'actor-1',
     );
     final json = rp.toJson();
+    expect(json.containsKey('behavior'), isFalse);
+    expect(json.containsKey('background'), isFalse);
     final decoded = RolePlay.fromJson(json);
-    expect(decoded, rp);
+    expect(decoded.uuid, rp.uuid);
+    expect(decoded.name, rp.name);
+    expect(decoded.age, rp.age);
+    expect(decoded.signalement, rp.signalement);
+    expect(decoded.stationIndex, rp.stationIndex);
+    expect(decoded.actorUuid, rp.actorUuid);
+    expect(decoded.behavior, isNull); // behavior is not in JSON
+    expect(decoded.background, isNull); // background is not in JSON
   });
 
   test('RolePlay round-trips JSON with minimal fields only', () {

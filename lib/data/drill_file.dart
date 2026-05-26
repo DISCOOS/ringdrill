@@ -13,7 +13,7 @@ class DrillFile {
   static const drillSchema1_0 = '1.0';
   static const drillSchema1_1 = '1.1';
   static const drillSchema1_2 = '1.2';
-  static const drillSchemaCurrent = drillSchema1_1;
+  static const drillSchemaCurrent = drillSchema1_2;
   // TODO: Change to iana format for custom mime type
   static const drillMimeType = 'application/vnd.ringdrill+zip';
   static const drillExtension = 'drill';
