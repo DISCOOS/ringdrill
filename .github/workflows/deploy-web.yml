@@ -104,7 +104,7 @@ jobs:
         run: flutter pub get
 
       - name: Setup Node for Netlify functions
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: package.json
           cache: npm
