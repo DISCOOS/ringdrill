@@ -38,13 +38,21 @@ class DrillFile {
   Program program() {
     final teams = <Team>[];
     final sessions = <Session>[];
-    final exercises = <Exercise>[];
+    // Exercise manifests keyed by uuid; markdown patches collected separately.
+    final exerciseJsons = <String, Map<String, dynamic>>{};
+    // exerciseMdFields[uuid][fieldName] = content
+    final exerciseMdFields = <String, Map<String, String>>{};
+    // stationMdFields[(exerciseUuid, index)][fieldName] = content
+    final stationMdFields = <(String, int), Map<String, String>>{};
     // Intermediate storage keyed by uuid for the two-pass approach.
     final rolePlayJsons = <String, Map<String, dynamic>>{};
     final rolePlayMdFields = <String, Map<String, String>>{};
     final actorJsons = <String, Map<String, dynamic>>{};
     final actorNotesFields = <String, String>{};
     final actors = <Actor>[];
+    // Program-level markdown fields (program/intro.md, program/comms.md).
+    String? programBriefIntroMd;
+    String? programCommsMd;
     // Nullable rather than `late final`: a `.drill` archive produced by
     // an older client, a manual zip, or a truncated download may be
     // missing one or both of these entries. With `late final` the
@@ -80,6 +88,14 @@ class DrillFile {
         metadata = ProgramMetadata.fromJson(json);
         continue;
       }
+      if (name == 'program/intro.md') {
+        programBriefIntroMd = utf8.decode(bytes);
+        continue;
+      }
+      if (name == 'program/comms.md') {
+        programCommsMd = utf8.decode(bytes);
+        continue;
+      }
 
       final segments = name.split('/');
 
@@ -95,7 +111,8 @@ class DrillFile {
         } else if (folder == 'sessions') {
           sessions.add(Session.fromJson(json));
         } else if (folder == 'exercises') {
-          exercises.add(Exercise.fromJson(json));
+          final uuid = file.substring(0, file.length - 5); // strip .json
+          exerciseJsons[uuid] = json;
         } else if (folder == 'roleplays') {
           final uuid = file.substring(0, file.length - 5); // strip .json
           rolePlayJsons[uuid] = json;
@@ -113,13 +130,68 @@ class DrillFile {
         final field = segments[2];
         final mdContent = utf8.decode(bytes);
 
-        if (folder == 'roleplays') {
+        if (folder == 'exercises') {
+          exerciseMdFields.putIfAbsent(uuid, () => {})[field] = mdContent;
+        } else if (folder == 'roleplays') {
           rolePlayMdFields.putIfAbsent(uuid, () => {})[field] = mdContent;
         } else if (folder == 'actors' && field == 'notes.md') {
           actorNotesFields[uuid] = mdContent;
         }
         continue;
       }
+
+      if (segments.length == 5 && segments[0] == 'exercises' &&
+          segments[2] == 'stations' && segments[4].endsWith('.md')) {
+        // exercises/<uuid>/stations/<index>/<field>.md
+        final exerciseUuid = segments[1];
+        final stationIdx = int.tryParse(segments[3]);
+        final field = segments[4];
+        if (stationIdx != null) {
+          final mdContent = utf8.decode(bytes);
+          stationMdFields
+              .putIfAbsent((exerciseUuid, stationIdx), () => {})[field] =
+              mdContent;
+        }
+        continue;
+      }
+    }
+
+    // Build Exercise entities, patching in markdown fields and station markdown.
+    final exercises = <Exercise>[];
+    for (final entry in exerciseJsons.entries) {
+      final uuid = entry.key;
+      final json = entry.value;
+      var exercise = Exercise.fromJson(json);
+
+      final exMd = exerciseMdFields[uuid];
+      if (exMd != null && exMd.isNotEmpty) {
+        exercise = exercise.copyWith(
+          methodMd: exMd['method.md'],
+          learningGoalsMd: exMd['learning-goals.md'],
+          trainingFocusMd: exMd['training-focus.md'],
+          orderFormatMd: exMd['order-format.md'],
+          executionTipsMd: exMd['execution-tips.md'],
+          commsMd: exMd['comms.md'],
+        );
+      }
+
+      // Patch station markdown into each station.
+      final patchedStations = exercise.stations.map((station) {
+        final key = (uuid, station.index);
+        final sMd = stationMdFields[key];
+        if (sMd == null || sMd.isEmpty) return station;
+        return station.copyWith(
+          equipmentMd: sMd['equipment.md'],
+          situationMd: sMd['situation.md'],
+          missionMd: sMd['mission.md'],
+          logisticsMd: sMd['logistics.md'],
+          criticalQuestionsMd: sMd['critical-questions.md'],
+          leaderAnswersMd: sMd['leader-answers.md'],
+          directorNotesMd: sMd['director-notes.md'],
+        );
+      }).toList();
+
+      exercises.add(exercise.copyWith(stations: patchedStations));
     }
 
     // Build RolePlay entities with legacy-inline fallback + .md precedence.
@@ -142,9 +214,14 @@ class DrillFile {
           mdFields != null && mdFields.containsKey('background.md')
           ? mdFields['background.md']
           : legacyBackground;
+      final propsMd = mdFields?['props.md'];
 
-      if (behavior != null || background != null) {
-        rp = rp.copyWith(behavior: behavior, background: background);
+      if (behavior != null || background != null || propsMd != null) {
+        rp = rp.copyWith(
+          behavior: behavior,
+          background: background,
+          propsMd: propsMd,
+        );
       }
       rolePlays.add(rp);
     }
@@ -178,7 +255,7 @@ class DrillFile {
     // still import those older archives instead of crashing.
     final effectiveMetadata = metadata ?? program.metadata;
 
-    return program.copyWith(
+    var result = program.copyWith(
       teams: teams,
       sessions: sessions,
       metadata: effectiveMetadata,
@@ -186,6 +263,15 @@ class DrillFile {
       rolePlays: rolePlays,
       actors: actors,
     );
+
+    if (programBriefIntroMd != null || programCommsMd != null) {
+      result = result.copyWith(
+        briefIntroMd: programBriefIntroMd,
+        commsMd: programCommsMd,
+      );
+    }
+
+    return result;
   }
 
   static DrillFile fromFile(File file) {
@@ -218,6 +304,10 @@ class DrillFile {
     final metadata = utf8.encode(jsonEncode(metadataWithSchema.toJson()));
     archive.addFile(ArchiveFile('metadata.json', metadata.length, metadata));
 
+    // Program-level markdown fields.
+    _writeMd(archive, 'program/intro.md', program.briefIntroMd);
+    _writeMd(archive, 'program/comms.md', program.commsMd);
+
     // Serialize exercises into folder 'exercises'
     for (var exercise in program.exercises) {
       final json = utf8.encode(jsonEncode(exercise.toJson()));
@@ -228,6 +318,25 @@ class DrillFile {
           json,
         ),
       );
+      // Exercise-level markdown fields.
+      final exBase = path.join('exercises', exercise.uuid);
+      _writeMd(archive, path.join(exBase, 'method.md'), exercise.methodMd);
+      _writeMd(archive, path.join(exBase, 'learning-goals.md'), exercise.learningGoalsMd);
+      _writeMd(archive, path.join(exBase, 'training-focus.md'), exercise.trainingFocusMd);
+      _writeMd(archive, path.join(exBase, 'order-format.md'), exercise.orderFormatMd);
+      _writeMd(archive, path.join(exBase, 'execution-tips.md'), exercise.executionTipsMd);
+      _writeMd(archive, path.join(exBase, 'comms.md'), exercise.commsMd);
+      // Station-level markdown fields (keyed by station.index, not UUID).
+      for (final station in exercise.stations) {
+        final sBase = path.join(exBase, 'stations', '${station.index}');
+        _writeMd(archive, path.join(sBase, 'equipment.md'), station.equipmentMd);
+        _writeMd(archive, path.join(sBase, 'situation.md'), station.situationMd);
+        _writeMd(archive, path.join(sBase, 'mission.md'), station.missionMd);
+        _writeMd(archive, path.join(sBase, 'logistics.md'), station.logisticsMd);
+        _writeMd(archive, path.join(sBase, 'critical-questions.md'), station.criticalQuestionsMd);
+        _writeMd(archive, path.join(sBase, 'leader-answers.md'), station.leaderAnswersMd);
+        _writeMd(archive, path.join(sBase, 'director-notes.md'), station.directorNotesMd);
+      }
     }
 
     // Serialize teams into folder 'teams'
@@ -262,26 +371,10 @@ class DrillFile {
       );
       // Write .md companion files for markdown fields (null = no file,
       // empty string = zero-byte file).
-      if (rolePlay.behavior != null) {
-        final md = utf8.encode(rolePlay.behavior!);
-        archive.addFile(
-          ArchiveFile(
-            path.join('roleplays', rolePlay.uuid, 'behavior.md'),
-            md.length,
-            md,
-          ),
-        );
-      }
-      if (rolePlay.background != null) {
-        final md = utf8.encode(rolePlay.background!);
-        archive.addFile(
-          ArchiveFile(
-            path.join('roleplays', rolePlay.uuid, 'background.md'),
-            md.length,
-            md,
-          ),
-        );
-      }
+      final rpBase = path.join('roleplays', rolePlay.uuid);
+      _writeMd(archive, path.join(rpBase, 'behavior.md'), rolePlay.behavior);
+      _writeMd(archive, path.join(rpBase, 'background.md'), rolePlay.background);
+      _writeMd(archive, path.join(rpBase, 'props.md'), rolePlay.propsMd);
     }
 
     // Serialize actors into folder 'actors'
@@ -294,16 +387,7 @@ class DrillFile {
           json,
         ),
       );
-      if (actor.notes != null) {
-        final md = utf8.encode(actor.notes!);
-        archive.addFile(
-          ArchiveFile(
-            path.join('actors', actor.uuid, 'notes.md'),
-            md.length,
-            md,
-          ),
-        );
-      }
+      _writeMd(archive, path.join('actors', actor.uuid, 'notes.md'), actor.notes);
     }
 
     // Serialize Program itself (without nested objects)
@@ -329,6 +413,14 @@ class DrillFile {
       content: encoder.encode(archive),
     );
   }
+}
+
+/// Writes a markdown companion file to [archive] at [filePath] iff [content]
+/// is non-null. Empty string writes a zero-byte file; null writes no file.
+void _writeMd(Archive archive, String filePath, String? content) {
+  if (content == null) return;
+  final bytes = utf8.encode(content);
+  archive.addFile(ArchiveFile(filePath, bytes.length, bytes));
 }
 
 String sanitizeSlug(String s) {
