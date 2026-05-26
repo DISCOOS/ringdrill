@@ -45,7 +45,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # sentry_dart_plugin reads git refs when stamping the release.
           # Shallow clones drop those refs and break the upload.
