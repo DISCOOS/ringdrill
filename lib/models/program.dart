@@ -93,23 +93,66 @@ extension ProgramX on Program {
   /// Includes name and description so renames (the most common "small" edit)
   /// are detected as local changes. Excludes uuid, source, contentHash and
   /// metadata timestamps because those drift without being content changes.
+  ///
+  /// All *Md fields are excluded from toJson (ADR-0022) so they are injected
+  /// back into the canonical maps before hashing. Actor fields are excluded
+  /// entirely per ADR-0018. Stations inside exercises are sorted by index for
+  /// determinism. Exercises and RolePlays are sorted by uuid.
   String computeContentHash() {
+    // Build canonical exercise maps with markdown fields injected.
+    final sortedExercises = exercises.toList()
+      ..sort((a, b) => a.uuid.compareTo(b.uuid));
+    final exerciseMaps = sortedExercises.map((ex) {
+      final map = Map<String, dynamic>.from(ex.toJson());
+      map['methodMd'] = ex.methodMd;
+      map['learningGoalsMd'] = ex.learningGoalsMd;
+      map['trainingFocusMd'] = ex.trainingFocusMd;
+      map['orderFormatMd'] = ex.orderFormatMd;
+      map['executionTipsMd'] = ex.executionTipsMd;
+      map['commsMd'] = ex.commsMd;
+      // Patch station maps in place with their markdown fields.
+      // Stations are sorted by index for determinism.
+      final sortedStations = ex.stations.toList()
+        ..sort((a, b) => a.index.compareTo(b.index));
+      map['stations'] = sortedStations.map((s) {
+        final sMap = Map<String, dynamic>.from(s.toJson());
+        sMap['equipmentMd'] = s.equipmentMd;
+        sMap['situationMd'] = s.situationMd;
+        sMap['missionMd'] = s.missionMd;
+        sMap['logisticsMd'] = s.logisticsMd;
+        sMap['criticalQuestionsMd'] = s.criticalQuestionsMd;
+        sMap['leaderAnswersMd'] = s.leaderAnswersMd;
+        sMap['directorNotesMd'] = s.directorNotesMd;
+        return _canonicalize(sMap);
+      }).toList();
+      return _canonicalize(map) as Map<String, dynamic>;
+    }).toList();
+
     // rolePlays are publishable; actors are local PII and excluded per ADR-0018.
-    // behavior and background are excluded from toJson (ADR-0022) so we inject
-    // them back into the canonical map before hashing.
+    // behavior, background, and propsMd are excluded from toJson (ADR-0022) so
+    // we inject them back into the canonical map before hashing.
     final sortedRolePlays = rolePlays.toList()
       ..sort((a, b) => a.uuid.compareTo(b.uuid));
     final rolePlaysMaps = sortedRolePlays.map((rp) {
       final map = Map<String, dynamic>.from(rp.toJson());
       map['behavior'] = rp.behavior;
       map['background'] = rp.background;
+      map['propsMd'] = rp.propsMd;
       return _canonicalize(map) as Map<String, dynamic>;
     }).toList();
 
-    final canonical = {
+    // Program-level markdown fields injected after program.toJson (which omits
+    // them because of @JsonKey suppression).
+    final programMap = Map<String, dynamic>.from({
       'name': name,
       'description': description,
-      'exercises': _sortedCanonical(exercises, (e) => e.uuid),
+      'briefIntroMd': briefIntroMd,
+      'commsMd': commsMd,
+    });
+
+    final canonical = {
+      ...programMap,
+      'exercises': exerciseMaps,
       'teams': _sortedCanonical(teams, (e) => e.uuid),
       'sessions': _sortedCanonical(sessions, (e) => e.uuid),
       'rolePlays': rolePlaysMaps,
