@@ -73,6 +73,10 @@ The same template produces three documents based on a `BriefAudience` parameter:
 
 Mustache sections (`{{#if_director}}...{{/if_director}}` and `{{#if_instructor_or_director}}...{{/if_instructor_or_director}}`) gate audience-specific blocks. One template, three render parameters.
 
+The audience IDs are intentionally distinct from the session-runtime roles (`coordinator`, `observer`, `roleplayer`) defined in [ADR-0019](../adrs/0019-roleplayer-participant-role.md). Session roles govern what a device can do live. Brief audience governs what content is visible to a reader. The two axes overlap in practice (the same person is often both `coordinator` at run-time and `director` audience pre-exercise) but are orthogonal concepts.
+
+The English audience IDs remain `participant`, `instructor` and `director` in code, in ARB keys and in template booleans. The `nb` template and the audience-picker UI map them to Norwegian labels that match LSOR practice: `participant` -> "Deltaker", `instructor` -> "Veileder", `director` -> "Øvelsesleder". `instructor` does not become "Instruktør" because that term carries an authoritative-teacher connotation absent from how veiledere actually work in the field.
+
 ### Cross-references in rich text
 
 A rich-text field needs to refer to data that lives elsewhere ("the IPP at &lt;UTM&gt;"). v1 uses inline mustache expressions inside the field content:
