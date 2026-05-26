@@ -6,7 +6,8 @@ name: Deploy web
 #  - keep Netlify build minutes available (Netlify only ships the artifact);
 #  - cache pub-cache and Flutter SDK across runs for faster iteration.
 #
-# Required repository secrets:
+# Required secrets, all on the PROD environment
+# (Settings -> Environments -> PROD -> Secrets):
 #   SENTRY_AUTH_TOKEN   - Sentry user/org token with the `project:releases`
 #                         scope. Read by sentry_dart_plugin to associate the
 #                         uploaded files with the release defined in
@@ -29,6 +30,13 @@ jobs:
   build-and-deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
+    # The deploy targets the PROD environment in GitHub
+    # (Settings -> Environments -> PROD). All required secrets
+    # (SENTRY_AUTH_TOKEN, NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID) live on
+    # that environment, so declaring it here is what makes them visible
+    # to the job. Environment scope also lets us layer on required
+    # reviewers or deploy windows later without touching the workflow.
+    environment: PROD
     timeout-minutes: 25
     permissions:
       contents: read
@@ -39,6 +47,34 @@ jobs:
           # sentry_dart_plugin reads git refs when stamping the release.
           # Shallow clones drop those refs and break the upload.
           fetch-depth: 0
+
+      - name: Verify required secrets are present
+        # Fail fast if any secret is empty. Without this, the job runs
+        # all the way through `flutter build web` (5+ minutes) before
+        # discovering that, for example, SENTRY_AUTH_TOKEN was added
+        # under Environment secrets instead of Repository secrets and
+        # resolves to an empty string. The length print never reveals
+        # the value — GitHub still masks it through ${#…} — but tells
+        # us whether the variable arrived at all.
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          missing=()
+          [ -z "$SENTRY_AUTH_TOKEN"  ] && missing+=("SENTRY_AUTH_TOKEN")
+          [ -z "$NETLIFY_AUTH_TOKEN" ] && missing+=("NETLIFY_AUTH_TOKEN")
+          [ -z "$NETLIFY_SITE_ID"    ] && missing+=("NETLIFY_SITE_ID")
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing or empty repository secrets: ${missing[*]}"
+            echo "Check Settings -> Secrets and variables -> Actions -> Repository secrets."
+            echo "Environment-scoped secrets are NOT visible here unless the job"
+            echo "declares 'environment: <name>'."
+            exit 1
+          fi
+          echo "SENTRY_AUTH_TOKEN length: ${#SENTRY_AUTH_TOKEN}"
+          echo "NETLIFY_AUTH_TOKEN length: ${#NETLIFY_AUTH_TOKEN}"
+          echo "NETLIFY_SITE_ID length: ${#NETLIFY_SITE_ID}"
 
       - name: Setup Flutter
         # Pinned to a release tag rather than @v2. The mutable @v2 tag
