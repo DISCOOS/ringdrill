@@ -431,22 +431,28 @@ class _MainScreenState extends State<MainScreen> {
           drawerEnableOpenDragGesture: true,
           appBar: _wideScreen ? null : _buildAppBar(context, constraints, page),
           drawer: _buildDrawer(context, localizations),
+          // StackFit.expand is load-bearing: without it the Stack sizes
+          // itself to the biggest non-positioned child, but the only
+          // non-positioned child here is the Offstage shell sentinel
+          // (which has zero size by design), so the Stack collapses to
+          // 0x0 and the visible Positioned.fill child has nothing to
+          // fill. Result: tabs render fine but at zero size, so the UI
+          // looks completely empty even though no exception is thrown.
           body: Stack(
+            fit: StackFit.expand,
             children: [
-              Positioned.fill(
-                child: _wideScreen
-                    ? _buildNavRail(context, constraints, localizations, page)
-                    : SafeArea(
-                        child:
-                            // Keep all tabs in memory allowing
-                            // state to persist between tab switches
-                            IndexedStack(
-                              key: _indexedTabsKey,
-                              index: _currentTab,
-                              children: _pages,
-                            ),
-                      ),
-              ),
+              _wideScreen
+                  ? _buildNavRail(context, constraints, localizations, page)
+                  : SafeArea(
+                      child:
+                          // Keep all tabs in memory allowing
+                          // state to persist between tab switches
+                          IndexedStack(
+                            key: _indexedTabsKey,
+                            index: _currentTab,
+                            children: _pages,
+                          ),
+                    ),
               shellSentinel,
             ],
           ),
