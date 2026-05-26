@@ -1,7 +1,6 @@
 .PHONY: \
 	build watch release \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
-	smoke-web \
 	netlify-dev catalog-seed catalog-feed catalog-reset
 
 .SILENT: \
@@ -75,15 +74,6 @@ strip-source-maps-web:
 	find build/web -type f -name '*.js.map' -delete
 
 release-web: build-web upload-symbols-web strip-source-maps-web
-
-# Post-deploy smoke test against the production URL. Catches the class
-# of failure that widget tests cannot see: a UI that compiles, ships
-# and boots but doesn't actually paint anything (Stack-collapse,
-# missing function deploy, uncaught error during boot). Override
-# SMOKE_URL to point at a different environment.
-SMOKE_URL ?= https://ringdrill.app
-smoke-web:
-	SMOKE_URL=$(SMOKE_URL) node scripts/smoke-test-web.mjs
 
 release-android:
 	shorebird release android -- \

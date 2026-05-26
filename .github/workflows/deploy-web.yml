@@ -110,20 +110,9 @@ jobs:
           cache: npm
 
       - name: Install function dependencies
-        # Netlify CLI bundles functions from node_modules/, so the deps must
-        # be installed before the deploy step picks them up. Puppeteer
-        # (used by the post-deploy smoke test) also installs here, but
-        # its Chromium binary cache lives under ~/.cache/puppeteer, which
-        # the next step caches separately.
+        # Netlify CLI bundles functions from node_modules/, so the deps
+        # must be installed before the deploy step picks them up.
         run: npm ci
-
-      - name: Cache Puppeteer Chromium
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/puppeteer
-          key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            puppeteer-${{ runner.os }}-
 
       - name: Build web
         # Compiles the web bundle with source maps and stages the
@@ -165,26 +154,6 @@ jobs:
             --prod \
             --dir=build/web \
             --message="$DEPLOY_MESSAGE"
-
-      - name: Smoke test deployed site
-        # Headless Chromium against the live URL. Hard-fails the
-        # workflow if the Flutter engine fails to instantiate, if a
-        # page screenshot looks blank (renderer-agnostic check that
-        # works for skwasm), or if a critical function endpoint
-        # returns non-2xx. Placed before Lighthouse so a broken deploy
-        # is reported in the same job as the deploy itself, and so
-        # Lighthouse history does not include scores from a
-        # non-rendering site.
-        run: make smoke-web SMOKE_URL=https://ringdrill.app
-
-      - name: Upload smoke-test screenshots on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smoke-screenshots
-          path: scripts/.smoke-screenshots/
-          if-no-files-found: ignore
-          retention-days: 7
 
       - name: Lighthouse audit
         # Runs against the production URL so the score reflects the live

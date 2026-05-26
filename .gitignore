@@ -50,7 +50,3 @@ sentry.properties
 
 # Local Netlify folder
 .netlify
-
-# Smoke-test screenshots written by scripts/smoke-test-web.mjs.
-# Uploaded as GH Actions artifact when a run fails — never committed.
-scripts/.smoke-screenshots/
