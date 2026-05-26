@@ -29,7 +29,11 @@
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  <!-- maximum-scale and user-scalable=no were removed: blocking pinch
+       zoom is an accessibility regression (Lighthouse meta-viewport
+       audit, WCAG 1.4.4) and Flutter web handles viewport scaling
+       fine without that lock. -->
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
   <title>RingDrill</title>
 

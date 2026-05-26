@@ -1,0 +1,8 @@
+# Crawl policy for ringdrill.app. Everything user-visible is welcome
+# in search; the catalog and admin function endpoints are not.
+#
+# Add a Sitemap: directive here once web/sitemap.xml exists.
+User-agent: *
+Allow: /
+Disallow: /api/admin
+Disallow: /.netlify/
