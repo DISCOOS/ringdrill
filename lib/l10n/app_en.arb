@@ -1246,5 +1246,65 @@
   "noCastLine": "No actor selected",
   "@noCastLine": {
     "description": "Subtitle on a role row when no actor is cast. Styled italic + subdued."
+  },
+
+  "briefScreenTitle": "Brief",
+  "@briefScreenTitle": {
+    "description": "AppBar title for the BriefScreen."
+  },
+  "briefAudienceParticipant": "Participant",
+  "@briefAudienceParticipant": {
+    "description": "Audience toggle label for participant audience."
+  },
+  "briefAudienceInstructor": "Instructor",
+  "@briefAudienceInstructor": {
+    "description": "Audience toggle label for instructor audience."
+  },
+  "briefAudienceDirector": "Director",
+  "@briefAudienceDirector": {
+    "description": "Audience toggle label for director audience (exercise leader)."
+  },
+  "briefAudienceLabel": "Audience",
+  "@briefAudienceLabel": {
+    "description": "Label above the audience toggle on mobile."
+  },
+  "briefPrint": "Print",
+  "@briefPrint": {
+    "description": "Tooltip on the print button in BriefScreen."
+  },
+  "briefSearch": "Search in brief",
+  "@briefSearch": {
+    "description": "Tooltip on the search button in BriefScreen."
+  },
+  "briefSearchHint": "Search",
+  "@briefSearchHint": {
+    "description": "Placeholder inside the search field in BriefScreen."
+  },
+  "briefSearchNoMatches": "No matches",
+  "@briefSearchNoMatches": {
+    "description": "Shown next to the search field when the query has no hits."
+  },
+  "briefRenderError": "Could not render brief: {error}",
+  "@briefRenderError": {
+    "description": "Error message shown when the brief renderer throws.",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "briefMissingProgram": "No active program",
+  "@briefMissingProgram": {
+    "description": "Empty-state when the brief route is opened with no program loaded."
+  },
+  "briefMissingExercise": "Exercise not found",
+  "@briefMissingExercise": {
+    "description": "Empty-state when the exerciseUuid resolves to nothing."
+  },
+  "briefToc": "Contents",
+  "@briefToc": {
+    "description": "Heading above the TOC sidebar on wide screens."
+  },
+  "briefAction": "Open brief",
+  "@briefAction": {
+    "description": "Label/tooltip for the brief entry-point action on CoordinatorScreen and ProgramView app bars."
   }
 }

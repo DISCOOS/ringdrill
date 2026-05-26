@@ -1342,4 +1342,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noCastLine => 'No actor selected';
+
+  @override
+  String get briefScreenTitle => 'Brief';
+
+  @override
+  String get briefAudienceParticipant => 'Participant';
+
+  @override
+  String get briefAudienceInstructor => 'Instructor';
+
+  @override
+  String get briefAudienceDirector => 'Director';
+
+  @override
+  String get briefAudienceLabel => 'Audience';
+
+  @override
+  String get briefPrint => 'Print';
+
+  @override
+  String get briefSearch => 'Search in brief';
+
+  @override
+  String get briefSearchHint => 'Search';
+
+  @override
+  String get briefSearchNoMatches => 'No matches';
+
+  @override
+  String briefRenderError(String error) {
+    return 'Could not render brief: $error';
+  }
+
+  @override
+  String get briefMissingProgram => 'No active program';
+
+  @override
+  String get briefMissingExercise => 'Exercise not found';
+
+  @override
+  String get briefToc => 'Contents';
+
+  @override
+  String get briefAction => 'Open brief';
 }

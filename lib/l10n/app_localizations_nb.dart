@@ -1339,4 +1339,48 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get noCastLine => 'Ingen markør valgt';
+
+  @override
+  String get briefScreenTitle => 'Brief';
+
+  @override
+  String get briefAudienceParticipant => 'Deltaker';
+
+  @override
+  String get briefAudienceInstructor => 'Veileder';
+
+  @override
+  String get briefAudienceDirector => 'Øvelsesleder';
+
+  @override
+  String get briefAudienceLabel => 'Målgruppe';
+
+  @override
+  String get briefPrint => 'Skriv ut';
+
+  @override
+  String get briefSearch => 'Søk i brief';
+
+  @override
+  String get briefSearchHint => 'Søk';
+
+  @override
+  String get briefSearchNoMatches => 'Ingen treff';
+
+  @override
+  String briefRenderError(String error) {
+    return 'Kunne ikke lage brief: $error';
+  }
+
+  @override
+  String get briefMissingProgram => 'Ingen aktiv plan';
+
+  @override
+  String get briefMissingExercise => 'Øvelse ikke funnet';
+
+  @override
+  String get briefToc => 'Innhold';
+
+  @override
+  String get briefAction => 'Åpne brief';
 }

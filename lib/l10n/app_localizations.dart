@@ -2287,6 +2287,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No actor selected'**
   String get noCastLine;
+
+  /// AppBar title for the BriefScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief'**
+  String get briefScreenTitle;
+
+  /// Audience toggle label for participant audience.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant'**
+  String get briefAudienceParticipant;
+
+  /// Audience toggle label for instructor audience.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructor'**
+  String get briefAudienceInstructor;
+
+  /// Audience toggle label for director audience (exercise leader).
+  ///
+  /// In en, this message translates to:
+  /// **'Director'**
+  String get briefAudienceDirector;
+
+  /// Label above the audience toggle on mobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience'**
+  String get briefAudienceLabel;
+
+  /// Tooltip on the print button in BriefScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get briefPrint;
+
+  /// Tooltip on the search button in BriefScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in brief'**
+  String get briefSearch;
+
+  /// Placeholder inside the search field in BriefScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get briefSearchHint;
+
+  /// Shown next to the search field when the query has no hits.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get briefSearchNoMatches;
+
+  /// Error message shown when the brief renderer throws.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not render brief: {error}'**
+  String briefRenderError(String error);
+
+  /// Empty-state when the brief route is opened with no program loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'No active program'**
+  String get briefMissingProgram;
+
+  /// Empty-state when the exerciseUuid resolves to nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise not found'**
+  String get briefMissingExercise;
+
+  /// Heading above the TOC sidebar on wide screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Contents'**
+  String get briefToc;
+
+  /// Label/tooltip for the brief entry-point action on CoordinatorScreen and ProgramView app bars.
+  ///
+  /// In en, this message translates to:
+  /// **'Open brief'**
+  String get briefAction;
 }
 
 class _AppLocalizationsDelegate

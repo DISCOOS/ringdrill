@@ -560,5 +560,25 @@
   "noCastLine": "Ingen markør valgt",
   "@noCastLine": {
     "description": "Undertittel på en rolleradex når ingen markør er tildelt. Stiles kursiv + dempet."
-  }
+  },
+
+  "briefScreenTitle": "Brief",
+  "briefAudienceParticipant": "Deltaker",
+  "briefAudienceInstructor": "Veileder",
+  "briefAudienceDirector": "Øvelsesleder",
+  "briefAudienceLabel": "Målgruppe",
+  "briefPrint": "Skriv ut",
+  "briefSearch": "Søk i brief",
+  "briefSearchHint": "Søk",
+  "briefSearchNoMatches": "Ingen treff",
+  "briefRenderError": "Kunne ikke lage brief: {error}",
+  "@briefRenderError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "briefMissingProgram": "Ingen aktiv plan",
+  "briefMissingExercise": "Øvelse ikke funnet",
+  "briefToc": "Innhold",
+  "briefAction": "Åpne brief"
 }
