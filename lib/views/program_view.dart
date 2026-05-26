@@ -86,48 +86,39 @@ class _ProgramViewState extends State<ProgramView> {
                 final markers = exercise.getLocations(false);
 
                 return Dismissible(
-                  key: ValueKey(exercise.name),
+                  key: ValueKey(exercise.uuid),
                   direction: DismissDirection.endToStart,
                   background: Container(
-                    color: Colors.red,
+                    color: Theme.of(context).colorScheme.primary,
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  confirmDismiss: (direction) => showDialog(
-                    context: context,
-                    barrierDismissible:
-                        false, // Prevent closing without taking action
-                    builder: (context) => AlertDialog(
-                      title: Text(localizations.confirm),
-                      content: Text(localizations.confirmDeleteExercise),
-                      actions: [
-                        TextButton(
-                          onPressed: () async {
-                            Navigator.pop(context, false);
-                          },
-                          child: Text(localizations.cancel),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () async {
-                            Navigator.pop(context, true);
-                          },
-                          child: Text(
-                            localizations.delete,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      Icons.edit,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
-                  onDismissed: (direction) {
-                    _deleteExercise(exercise);
+                  confirmDismiss: (direction) async {
+                    final numberOfTeams =
+                        _programService.loadTeams().length;
+                    final updated = await Navigator.push<Exercise>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ExerciseFormScreen(
+                          exercise: exercise,
+                          numberOfTeams:
+                              numberOfTeams == 0 ? null : numberOfTeams,
+                        ),
+                      ),
+                    );
+                    if (updated != null && context.mounted) {
+                      await _programService.saveExercise(
+                        localizations,
+                        updated,
+                      );
+                      setState(_initExercises);
+                    }
+                    // Always return false — the item should not be removed.
+                    return false;
                   },
                   child: ExerciseCard(
                     exercise: exercise,
@@ -148,14 +139,6 @@ class _ProgramViewState extends State<ProgramView> {
     _exercises = _programService.loadExercises();
   }
 
-  // Delete an exercise and refresh the list
-  Future<void> _deleteExercise(Exercise exercise) async {
-    if (ExerciseService().exercise == exercise) {
-      ExerciseService().stop();
-    }
-    // Remove the exercise from the repository
-    await _programService.deleteExercise(exercise.uuid);
-  }
 }
 
 class ExerciseCard extends StatefulWidget {
