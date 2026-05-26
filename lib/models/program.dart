@@ -27,6 +27,9 @@ sealed class Program with _$Program {
     // lists rather than failing (ADR-0018 backward-compat requirement).
     @Default([]) List<RolePlay> rolePlays,
     @Default([]) List<Actor> actors,
+    // Markdown brief fields — stored as program/<field>.md, not in JSON.
+    @JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,
+    @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,
   }) = _Program;
 
   factory Program.fromJson(Map<String, dynamic> json) =>

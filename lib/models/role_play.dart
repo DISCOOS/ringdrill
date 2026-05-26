@@ -19,6 +19,8 @@ sealed class RolePlay with _$RolePlay {
     int? stationIndex,
     @NullableLatLngJsonConverter() LatLng? position,
     String? actorUuid,
+    // Markdown brief fields — stored as roleplays/<uuid>/<field>.md, not in JSON.
+    @JsonKey(includeFromJson: false, includeToJson: false) String? propsMd,
   }) = _RolePlay;
 
   factory RolePlay.fromJson(Map<String, dynamic> json) =>
