@@ -488,7 +488,7 @@ void main() {
         stations: const [],
         schedule: const [],
       );
-      expect(BriefRenderer.setupLabel(exercise), '4 x (60 | 15 | 5)');
+      expect(BriefRenderer.setupLabel(exercise), r'4 x (60 \| 15 \| 5)');
     });
 
     test('setupLabel appends schedule round-start times when present', () {
@@ -512,7 +512,7 @@ void main() {
         schedule: schedule,
       );
       final label = BriefRenderer.setupLabel(exercise);
-      expect(label, startsWith('4 x (60 | 15 | 5)\n'));
+      expect(label, startsWith(r'4 x (60 \| 15 \| 5)<br>'));
       expect(label, contains('08:30'));
       expect(label, contains('09:35'));
     });

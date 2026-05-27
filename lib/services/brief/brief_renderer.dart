@@ -267,8 +267,8 @@ String _durationLabel(Exercise exercise) {
 
 String _setupLabel(Exercise exercise) {
   final config =
-      '${exercise.numberOfRounds} x (${exercise.executionTime} | '
-      '${exercise.evaluationTime} | ${exercise.rotationTime})';
+      '${exercise.numberOfRounds} x (${exercise.executionTime} \\| '
+      '${exercise.evaluationTime} \\| ${exercise.rotationTime})';
 
   final schedule = exercise.schedule;
   if (schedule.isEmpty) return config;
@@ -283,7 +283,7 @@ String _setupLabel(Exercise exercise) {
   }
 
   if (roundStarts.isEmpty) return config;
-  return '$config\n${roundStarts.join(', ')}';
+  return '$config<br>${roundStarts.join(', ')}';
 }
 
 /// Formats a UTM coordinate as "32V 0580414E 6552008N" — zone+band, then
