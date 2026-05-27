@@ -3,12 +3,14 @@
 {{#program.description}}_{{program.description}}_
 
 {{/program.description}}
+{{#if_in_doc_toc}}
 ## Innholdsfortegnelse
 
 {{#exercises}}- [{{name}}](#{{exerciseAnchor}})
 {{#stations}}  - [{{exerciseNumber}}{{stationLetter}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}](#{{stationAnchor}})
 {{/stations}}{{/exercises}}
 
+{{/if_in_doc_toc}}
 {{#program.briefIntroMd}}
 ## Generelt om spill og øvingsledelse
 
@@ -43,8 +45,7 @@
 
 **Post {{exerciseNumber}}{{stationLetter}} plassering:** {{position.utm}}
 
-#### Tid
-{{durationLabel}}
+**Tid:** {{durationLabel}}
 
 {{#equipmentMd}}
 #### Utstyrsbehov

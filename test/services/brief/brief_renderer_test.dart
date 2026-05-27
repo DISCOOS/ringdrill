@@ -32,56 +32,56 @@ Program _emptyProgram() {
 
 /// DESIGN-004 exercise fixture.
 Exercise _designExercise() => Exercise(
-      uuid: 'ex-3',
-      name: 'Øvelse 3 – Øve PIK + taktisk tankegang',
-      startTime: _start,
-      endTime: _end,
-      numberOfTeams: 4,
-      numberOfRounds: 4,
-      executionTime: 60,
-      evaluationTime: 15,
-      rotationTime: 5,
-      stations: [_designStation()],
-      schedule: const [],
-      methodMd: 'Gruppevis øving utendørs',
-      learningGoalsMd: '''Etter gjennomført øvelse skal deltakerne
+  uuid: 'ex-3',
+  name: 'Øvelse 3 – Øve PIK + taktisk tankegang',
+  startTime: _start,
+  endTime: _end,
+  numberOfTeams: 4,
+  numberOfRounds: 4,
+  executionTime: 60,
+  evaluationTime: 15,
+  rotationTime: 5,
+  stations: [_designStation()],
+  schedule: const [],
+  methodMd: 'Gruppevis øving utendørs',
+  learningGoalsMd: '''Etter gjennomført øvelse skal deltakerne
 - kunne planlegge oppdraget taktisk ut fra situasjon og oppdrag
 - kunne iverksette oppdraget
 - kunne lede mannskaper under utførelsen
 ''',
-      commsMd: '**Talegruppe:** RK-VFOLD-ØV2  \n**Telefon til KO:** 93258930',
-    );
+  commsMd: '**Talegruppe:** RK-VFOLD-ØV2  \n**Telefon til KO:** 93258930',
+);
 
 /// DESIGN-004 station fixture.
 Station _designStation() => const Station(
-      index: 0,
-      name: 'Demens',
-      position: LatLng(58.99, 10.43),
-      equipmentMd:
-          'Et stort hus til å gjennomføre hussøk i (bruk huset «Gamlestuen» på Eidene).',
-      situationMd:
-          '(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i {{station.position.utm}},\n'
-          'av pårørende kl 13.00 i dag. Sist sett på vei mot kjellertrappen kl 09.30.\n',
-      missionMd:
-          '(AL) Politiet ønsker at Røde Kors utfører søk etter savnet kvinne. Det er\n'
-          'avklart at før hussøk kan starte må området rundt huset finsøkes.\n'
-          '\n'
-          '**Utførelse**\n'
-          '\n'
-          '(AL) Lag 2.X gjennomfører finsøk på R25 først, deretter hussøk av søndre fløy.\n',
-      logisticsMd:
-          '(AL) Aksjonssekk etter stående ordre. KO sin posisjon er 32V 0580465E 6551894N.',
-      criticalQuestionsMd:
-          '(AL)\n'
-          '- Har gått seg fast? Dersom de går utenfor en vei kommer de sjelden langt før de\n'
-          '  setter seg ned.\n'
-          '- Hvilke klær har hun på?\n',
-      leaderAnswersMd:
-          '- Har vert savnet fire ganger før. Funnet i nærheten av barndomshjemmet.\n'
-          '- Bruker briller, kan ha gått fra dem.\n',
-      directorNotesMd:
-          'Markør er utplassert. Det skal gjennomføres hussøk av «Søndre». Rom 105 er låst med vilje.',
-    );
+  index: 0,
+  name: 'Demens',
+  position: LatLng(58.99, 10.43),
+  equipmentMd:
+      'Et stort hus til å gjennomføre hussøk i (bruk huset «Gamlestuen» på Eidene).',
+  situationMd:
+      '(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i {{station.position.utm}},\n'
+      'av pårørende kl 13.00 i dag. Sist sett på vei mot kjellertrappen kl 09.30.\n',
+  missionMd:
+      '(AL) Politiet ønsker at Røde Kors utfører søk etter savnet kvinne. Det er\n'
+      'avklart at før hussøk kan starte må området rundt huset finsøkes.\n'
+      '\n'
+      '**Utførelse**\n'
+      '\n'
+      '(AL) Lag 2.X gjennomfører finsøk på R25 først, deretter hussøk av søndre fløy.\n',
+  logisticsMd:
+      '(AL) Aksjonssekk etter stående ordre. KO sin posisjon er 32V 0580465E 6551894N.',
+  criticalQuestionsMd:
+      '(AL)\n'
+      '- Har gått seg fast? Dersom de går utenfor en vei kommer de sjelden langt før de\n'
+      '  setter seg ned.\n'
+      '- Hvilke klær har hun på?\n',
+  leaderAnswersMd:
+      '- Har vert savnet fire ganger før. Funnet i nærheten av barndomshjemmet.\n'
+      '- Bruker briller, kan ha gått fra dem.\n',
+  directorNotesMd:
+      'Markør er utplassert. Det skal gjennomføres hussøk av «Søndre». Rom 105 er låst med vilje.',
+);
 
 const _rolePlay = RolePlay(
   uuid: 'rp-anne',
@@ -99,13 +99,17 @@ const _rolePlay = RolePlay(
   actorUuid: 'actor-12',
 );
 
-const _actor = Actor(uuid: 'actor-12', realName: 'Kari Hansen', phone: '99887766');
+const _actor = Actor(
+  uuid: 'actor-12',
+  realName: 'Kari Hansen',
+  phone: '99887766',
+);
 
 Program _designProgram() => _emptyProgram().copyWith(
-      exercises: [_designExercise()],
-      rolePlays: [_rolePlay],
-      actors: [_actor],
-    );
+  exercises: [_designExercise()],
+  rolePlays: [_rolePlay],
+  actors: [_actor],
+);
 
 /// Trims trailing whitespace from each line so whitespace-only differences
 /// at line endings don't cause false failures.
@@ -159,7 +163,12 @@ void main() {
       expect(normalized, contains('**Markør:** Kari Hansen (99887766)'));
 
       // Situation with resolved UTM cross-reference — {{station.position.utm}} is substituted
-      expect(normalized, contains('(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i $expectedUtm,'));
+      expect(
+        normalized,
+        contains(
+          '(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i $expectedUtm,',
+        ),
+      );
 
       // Mission
       expect(normalized, contains('#### Oppdrag'));
@@ -196,14 +205,7 @@ void main() {
 
       // Director notes must be absent
       expect(result, isNot(contains('Notater til instruktør/øvingsledelse')));
-      expect(
-        result,
-        isNot(
-          contains(
-            'Markør er utplassert.',
-          ),
-        ),
-      );
+      expect(result, isNot(contains('Markør er utplassert.')));
 
       // Roleplay name (publishable) must still appear
       expect(result, contains('Anne Glemsk'));
@@ -332,9 +334,14 @@ void main() {
       // program.commsMd does appear in the top-level "Talegrupper" section — that is
       // correct behaviour. We verify that directly below the station "#### Samband"
       // heading the exercise comms token appears, not the program comms token.
-      final stationSambandIndex = result.indexOf('#### Samband\nEXERCISE_COMMS_TOKEN');
-      expect(stationSambandIndex, isNot(-1),
-          reason: 'Station Samband must contain EXERCISE_COMMS_TOKEN');
+      final stationSambandIndex = result.indexOf(
+        '#### Samband\nEXERCISE_COMMS_TOKEN',
+      );
+      expect(
+        stationSambandIndex,
+        isNot(-1),
+        reason: 'Station Samband must contain EXERCISE_COMMS_TOKEN',
+      );
     });
 
     test('falls back to program.commsMd when exercise has none', () async {
@@ -380,10 +387,16 @@ void main() {
         schedule: const [],
         templateId: 'does-not-exist',
       );
-      final exerciseNoTemplate = exerciseWithTemplate.copyWith(templateId: null);
+      final exerciseNoTemplate = exerciseWithTemplate.copyWith(
+        templateId: null,
+      );
 
-      final programA = _emptyProgram().copyWith(exercises: [exerciseWithTemplate]);
-      final programB = _emptyProgram().copyWith(exercises: [exerciseNoTemplate]);
+      final programA = _emptyProgram().copyWith(
+        exercises: [exerciseWithTemplate],
+      );
+      final programB = _emptyProgram().copyWith(
+        exercises: [exerciseNoTemplate],
+      );
 
       final resultA = await renderer.render(
         program: programA,
@@ -401,6 +414,31 @@ void main() {
         _normalizeLines(resultA).contains('## Test'),
         _normalizeLines(resultB).contains('## Test'),
       );
+    });
+  });
+
+  group('BriefRenderer — wideTocSidebar flag', () {
+    test('in-doc TOC present when wideTocSidebar is false (default)', () async {
+      final program = _designProgram();
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        wideTocSidebar: false,
+      );
+      expect(result, contains('## Innholdsfortegnelse'));
+      expect(result, contains('Øvelse 3'));
+    });
+
+    test('in-doc TOC absent when wideTocSidebar is true', () async {
+      final program = _designProgram();
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        wideTocSidebar: true,
+      );
+      expect(result, isNot(contains('## Innholdsfortegnelse')));
+      // Exercise content still present
+      expect(result, contains('Øvelse 3'));
     });
   });
 

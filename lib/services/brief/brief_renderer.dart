@@ -24,8 +24,8 @@ import 'package:ringdrill/utils/projection.dart';
 
 class BriefRenderer {
   BriefRenderer({TemplateRegistry? registry, AssetBundle? bundle})
-      : _registry = registry ?? TemplateRegistry.instance,
-        _bundle = bundle ?? rootBundle;
+    : _registry = registry ?? TemplateRegistry.instance,
+      _bundle = bundle ?? rootBundle;
 
   final TemplateRegistry _registry;
   final AssetBundle _bundle;
@@ -34,22 +34,25 @@ class BriefRenderer {
   /// brief to that exercise. When null, renders the whole program. The
   /// template is resolved from [exercise?.templateId] (single-exercise mode)
   /// or from the system default (program mode).
+  ///
+  /// [wideTocSidebar] signals that [BriefScreen] is displaying a dedicated
+  /// sidebar TOC (wide layout). When `true`, the mustache context sets
+  /// `if_in_doc_toc` to `false`, suppressing the duplicate in-document
+  /// `## Innholdsfortegnelse` block. When `false` (default), the in-document
+  /// TOC is rendered so narrow-screen readers still have a contents list.
   Future<String> render({
     required Program program,
     Exercise? exercise,
     required BriefAudience audience,
+    bool wideTocSidebar = false,
   }) async {
     final template = _registry.resolve(exercise?.templateId);
     final source = await _bundle.loadString(template.assetPath);
     final mustache = Template(source, htmlEscapeValues: false);
 
-    final exercises = exercise != null
-        ? [exercise]
-        : program.exercises;
+    final exercises = exercise != null ? [exercise] : program.exercises;
 
-    final actorMap = {
-      for (final a in program.actors) a.uuid: a,
-    };
+    final actorMap = {for (final a in program.actors) a.uuid: a};
     final rolePlaysByExercise = <String, List<RolePlay>>{};
     for (final rp in program.rolePlays) {
       rolePlaysByExercise.putIfAbsent(rp.exerciseUuid, () => []).add(rp);
@@ -75,6 +78,7 @@ class BriefRenderer {
       'exercises': exerciseContexts,
       'if_director': audience.includesActorPii,
       'if_instructor_or_director': audience.includesDirectorNotes,
+      'if_in_doc_toc': !wideTocSidebar,
     };
 
     return mustache.renderString(context);
@@ -97,7 +101,9 @@ class BriefRenderer {
         station: station,
         audience: audience,
         actorMap: actorMap,
-        rolePlays: rolePlays.where((rp) => rp.stationIndex == station.index).toList(),
+        rolePlays: rolePlays
+            .where((rp) => rp.stationIndex == station.index)
+            .toList(),
         effectiveCommsMd: effectiveComms,
       );
     }).toList();
@@ -145,8 +151,10 @@ class BriefRenderer {
     String? resolveField(String? content) {
       if (content == null) return null;
       try {
-        return Template(content, htmlEscapeValues: false)
-            .renderString(stationRefContext);
+        return Template(
+          content,
+          htmlEscapeValues: false,
+        ).renderString(stationRefContext);
       } catch (_) {
         return content;
       }
@@ -157,10 +165,7 @@ class BriefRenderer {
       if (audience.includesActorPii && rp.actorUuid != null) {
         final actor = actorMap[rp.actorUuid];
         if (actor != null) {
-          actorContext = {
-            'realName': actor.realName,
-            'phone': actor.phone,
-          };
+          actorContext = {'realName': actor.realName, 'phone': actor.phone};
         }
       }
       return {
