@@ -30,6 +30,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0020 | [Reduce map label and marker clutter via clustering, a unified marker spec, zoom-gated labels and per-layer visibility toggles](./0020-map-label-and-marker-clutter.md) | Accepted |
 | ADR-0021 | [Use `app.ringdrill` as the iOS and macOS bundle identifier and keep `org.discoos.ringdrill` on Android](./0021-ios-bundle-identifier-app-ringdrill.md) | Accepted |
 | ADR-0022 | [Store long-form markdown content as `.md` files in the drill archive](./0022-markdown-content-as-files.md) | Accepted |
+| ADR-0023 | [Render the Brief view with a dedicated `BriefTheme` token set inspired by docs-site typography, independent of Material `ColorScheme`](./0023-brief-theme-tokens.md) | Accepted |
 
 ## When to write an ADR
 

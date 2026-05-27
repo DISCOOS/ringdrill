@@ -18,6 +18,7 @@ related_designs:
 related_adrs:
   - 0018-roleplayer-data-model.md
   - 0022-markdown-content-as-files.md
+  - 0023-brief-theme-tokens.md
 ---
 
 # Exercise brief template
@@ -443,9 +444,20 @@ The `participant` render of the same station drops the actor PII line and the di
 
 ### Where the brief lives
 
-A **Brief** action on `ExerciseScreen` and the Exercise tab opens `/brief/:exerciseUuid` (single exercise) or `/brief/program/:programUuid` (whole program). The route renders the markdown with a TOC, search-in-page, an audience toggle (`participant` / `instructor` / `director`), and a print button. On mobile, the audience selector sits at the top of the screen instead of as a sticky toggle.
+A **Brief** action on `ExerciseScreen` and the Exercise tab opens `/brief/:exerciseUuid` (single exercise) or `/brief/program/:programUuid` (whole program). The route is reachable but not in the bottom nav. It is a read mode for an exercise, the same way `ExercisePlayer` is a run mode.
 
-The route is reachable but not in the bottom nav. It is a read mode for an exercise, the same way `ExercisePlayer` is a run mode.
+### Presentation
+
+The brief is presented as a **fullscreen modal bottom sheet**, not as a regular pushed route. The route still exists and is the canonical entry point so deep links, web-print URLs and future shareable brief links stay viable, but its only job is to open the sheet on first frame. Closing the sheet pops the route.
+
+This applies on every platform, including web. A future "viewer" mode that renders the brief inline as a regular page (e.g. for embedding or for an external read-only audience) can be added later without changing how the in-app Brief is reached.
+
+The sheet uses `showModalBottomSheet(isScrollControlled: true, useSafeArea: true)` with a `DraggableScrollableSheet` at `initialChildSize: 1.0`. The slim app bar from [ADR-0023](../adrs/0023-brief-theme-tokens.md) becomes the sheet's top bar, with two adjustments:
+
+* A drag handle (4×40 px pill in `BriefTheme.borders.subtle`) sits centered above the title row. This handle is the only surface that responds to drag-to-dismiss. The handle area uses the parent `DraggableScrollableSheet` controller; the markdown body below uses its own scroll controller so a vertical drag inside the reading column scrolls the text rather than dismissing the sheet.
+* A close button (`Icons.close`) replaces the back arrow in the leading slot. Closing pops the underlying route as well, keeping the URL in sync with the visible state.
+
+Audience selector, search and print actions stay where ADR-0023 put them. The reading-column max-width (720 px) and the wide-vs-narrow TOC rules apply inside the sheet exactly as they would on a route-rendered page.
 
 ### Where the data is edited
 
@@ -466,8 +478,67 @@ Rejected:
 
 ### Render targets
 
-* In-app viewer: `markdown_widget`, with a TOC sidebar on wide screens.
+* In-app viewer: `markdown_widget`, wrapped in `BriefMarkdown` and themed by `BriefTheme` per [ADR-0023](../adrs/0023-brief-theme-tokens.md). A TOC sidebar shows on wide screens, the audience selector sits in a slim app bar.
 * Print: the same markdown under a print stylesheet that hides chrome and forces page breaks between exercises.
+
+## Visual design
+
+The Brief view is the only reading surface in RingDrill. Every other screen is a working surface where Material accents earn their weight by marking actions. The Brief earns its weight by getting out of the way. Its visual language is therefore intentionally distinct from the rest of the app. The full token set, palette values, typography scale and layout numbers live in [ADR-0023](../adrs/0023-brief-theme-tokens.md). This section captures the user-facing design decisions that ride along with that ADR so a reader of DESIGN-004 sees the whole picture.
+
+### Reference look
+
+The reference is the [Zudoku](https://zudoku.dev) docs-site family, with [Mintlify](https://mintlify.com) as a secondary cross-check. Both share four traits that the Brief adopts:
+
+* Near-monochrome body text with low-saturation neutrals. No bright primary color anywhere in the reading column.
+* A slim, near-flat app bar separated from the canvas by a 1px subtle border, not a filled primary surface.
+* Links that match body text and are distinguished only by a faint underline.
+* A constrained reading column (~720 px) centered on a wider canvas.
+
+The Brief inherits these in both light and dark mode. Light mode uses a white canvas with slate-700 body text. Dark mode uses a near-black canvas (`#0B0F17`) with slate-300 body text. The exact values are in ADR-0023; nothing in the Brief is derived from `Theme.of(context).colorScheme`.
+
+### Sidebar TOC rules
+
+The wide-screen layout has one TOC sidebar (240 px) on the left. The sidebar lists at most two heading levels:
+
+1. Exercise (`## {{name}}`)
+2. Station (`### {{exerciseNumber}}{{stationLetter}} – {{name}}`)
+
+Per-station metadata that today is rendered as `#### Tid`, `#### Utstyrsbehov`, etc. is split into two categories. One-line metadata becomes inline bold (`**Tid:** 60 min.`) so it does not appear in the outline. Multi-paragraph content keeps the `####` heading because its outline entry pays for itself. The audit lives in the renderer-helpers table in the next section.
+
+The audience selector and the search action live in the app bar, not in the sidebar. The sidebar is purely navigational.
+
+### In-document TOC
+
+The mustache template emits a `## Innholdsfortegnelse` block at the top of the document, but the renderer hides it on wide screens via a `wideTocSidebar` parameter ([ADR-0023, "Renderer signature change"](../adrs/0023-brief-theme-tokens.md)). On narrow screens the sidebar is hidden and the in-doc TOC takes over. Wide-screen readers see the sidebar, narrow-screen readers see the inline TOC. They never see both.
+
+### Audience selector
+
+`SegmentedButton<BriefAudience>` in the app bar on wide screens, at the top of the body on narrow screens. The audience IDs and Norwegian labels are the same as in the Audience subsection above (`participant` -> "Deltaker", `instructor` -> "Veileder", `director` -> "Øvelsesleder"). The styling per ADR-0023 uses `BriefTheme.text.body` for unselected segments and `BriefTheme.surfaces.sidebar` as the fill for the selected segment, with `BriefTheme.text.heading` on top. No Material primary fill.
+
+### Headings that produce outline entries
+
+The sidebar only exists on wide screens. On narrow screens there is no sidebar at all; the in-doc TOC takes its place. The "Sidebar TOC entry" column below describes the wide layout.
+
+| Markdown level | Source                                              | Sidebar TOC entry |
+|----------------|-----------------------------------------------------|-------------------|
+| `# `           | `program.name`                                      | no (one per doc)  |
+| `## `          | `exercise.name`                                     | yes               |
+| `## `          | "Innholdsfortegnelse"                               | hidden on wide, rendered on narrow without sidebar |
+| `## `          | "Generelt om spill og øvingsledelse" (when present) | yes               |
+| `## `          | "Talegrupper" (when present)                        | yes               |
+| `### `         | station heading                                     | yes               |
+| `#### `        | "Markørspill", "Situasjon", "Oppdrag", "Samband", "Administrasjon og forsyninger", "Kritiske spørsmål", "Forslag til svar..." | yes (under station) |
+| inline bold    | "Tid", "Utstyrsbehov" (one-liner metadata)          | no                |
+
+`#### Tid` becomes `**Tid:** {{durationLabel}}`. `#### Utstyrsbehov` keeps the heading when the field is multi-paragraph, but the line that follows is no longer a separate heading. The `_renderer_` helpers table earlier in this document is unchanged; only the template emission shape changes.
+
+### Code spans
+
+UTM coordinates and radio identifiers render as inline code (`` `32V 0580414E 6552008N` ``, `` `RK-VFOLD-ØV2` ``) so they stand out from prose without using color. The mustache template wraps `position.utm` and the comms identifiers in backticks. `BriefTheme.code` styles the result.
+
+### Light vs. dark
+
+Both modes are first-class. The Brief is read on phones in daylight (light) and on desktops at night (dark) in roughly equal measure based on the target audience. ADR-0023's acceptance criterion is that both modes look intentional, not auto-inverted. The hardcoded palette values in that ADR are the contract.
 
 ## Deferred decisions
 
@@ -495,7 +566,7 @@ Each stage is a separate PR.
 
 **Stage 2 — Template engine.** Add a `mustache_template` dependency. Register `ringdrill-standard-v1` in `TemplateRegistry`. Add `BriefRenderer` under `lib/services/`. Unit-test against a fixture program.
 
-**Stage 3 — Brief route.** Add `/brief/...` routes. Render with `markdown_widget`. Add the audience toggle.
+**Stage 3 — Brief route.** Add `/brief/...` routes. The route opens the brief as a fullscreen modal bottom sheet on first frame and pops itself when the sheet closes (see Presentation above). Sheet content uses `markdown_widget` wrapped by `BriefMarkdown` and themed by `BriefTheme` ([ADR-0023](../adrs/0023-brief-theme-tokens.md)). Add the audience toggle in the slim sheet top bar. Sidebar TOC on wide screens, in-doc TOC on narrow screens, never both at the same time. Template emits `**Tid:**` inline instead of `#### Tid`. Drag-to-dismiss is wired only to the drag handle, not the markdown body.
 
 **Stage 4 — Form fields.** Add the per-section editors. Group under a collapsible "Brief" section on each form.
 
@@ -508,5 +579,6 @@ A "Brief" action on existing list rows is deferred until the route works end-to-
 * `2026 LSOR øvelseshefte.docx` — source booklet the v1 `nb` template targets. Not checked into the repo (contains PII).
 * [ADR-0018](../adrs/0018-roleplayer-data-model.md) — publishable `RolePlay` vs. local `Actor` split. The audience filter relies on it.
 * [ADR-0022](../adrs/0022-markdown-content-as-files.md) — markdown content stored as `.md` files in the drill archive. Drives the storage model for the new fields.
+* [ADR-0023](../adrs/0023-brief-theme-tokens.md) — `BriefTheme` token set and `BriefMarkdown` wrapper for the in-app viewer. Locks in the docs-site look in both light and dark mode.
 * [DESIGN-002](./stations-tab.md) — Stations tab. The brief route is a parallel read surface.
 * [DESIGN-003](./roleplays-tab.md) — RolePlays tab. The brief surfaces roleplays under their station.
