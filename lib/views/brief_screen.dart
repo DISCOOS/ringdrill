@@ -6,6 +6,8 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/widgets/brief_markdown.dart';
+import 'package:ringdrill/views/widgets/brief_theme.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
 // Pattern: unqualified = web, if(dart.library.io) = native stub.
 import 'package:ringdrill/web/brief_print_web.dart'
@@ -20,10 +22,10 @@ const double _kWideBreakpoint = 900.0;
 
 class BriefScreen extends StatefulWidget {
   const BriefScreen({super.key, this.exerciseUuid, this.programUuid})
-      : assert(
-          (exerciseUuid == null) != (programUuid == null),
-          'exactly one of exerciseUuid or programUuid must be provided',
-        );
+    : assert(
+        (exerciseUuid == null) != (programUuid == null),
+        'exactly one of exerciseUuid or programUuid must be provided',
+      );
 
   /// When non-null, the brief is scoped to this single exercise.
   final String? exerciseUuid;
@@ -43,6 +45,7 @@ class _BriefScreenState extends State<BriefScreen> {
   bool _searchOpen = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  bool _wideTocSidebar = false;
 
   // Re-assigned when audience changes so FutureBuilder re-runs.
   late Future<String> _renderFuture;
@@ -70,12 +73,21 @@ class _BriefScreenState extends State<BriefScreen> {
       program: program,
       exercise: exercise,
       audience: _audience,
+      wideTocSidebar: _wideTocSidebar,
     );
   }
 
   void _setAudience(BriefAudience audience) {
     setState(() {
       _audience = audience;
+      _renderFuture = _buildRenderFuture();
+    });
+  }
+
+  void _setWideTocSidebar(bool isWide) {
+    if (!mounted) return;
+    setState(() {
+      _wideTocSidebar = isWide;
       _renderFuture = _buildRenderFuture();
     });
   }
@@ -90,6 +102,7 @@ class _BriefScreenState extends State<BriefScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final theme = BriefTheme.of(context);
     final program = ProgramService().activeProgram;
 
     if (program == null) {
@@ -116,38 +129,59 @@ class _BriefScreenState extends State<BriefScreen> {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= _kWideBreakpoint;
-        return Scaffold(
-          appBar: _buildAppBar(context, localizations, isWide),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (!isWide) _buildNarrowAudienceToggle(localizations),
-              Expanded(
-                child: _buildContent(context, localizations, isWide),
-              ),
-            ],
-          ),
-        );
-      },
+    return Theme(
+      data: Theme.of(context).copyWith(
+        appBarTheme: AppBarTheme(
+          backgroundColor: theme.surfaces.appBar,
+          foregroundColor: theme.text.heading,
+          elevation: 0,
+        ),
+        scaffoldBackgroundColor: theme.surfaces.canvas,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= _kWideBreakpoint;
+          if (isWide != _wideTocSidebar) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _setWideTocSidebar(isWide);
+            });
+          }
+          return Scaffold(
+            appBar: _buildAppBar(context, localizations, theme, isWide),
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!isWide) _buildNarrowAudienceToggle(localizations, theme),
+                Expanded(
+                  child: _buildContent(context, localizations, theme, isWide),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
   AppBar _buildAppBar(
     BuildContext context,
     AppLocalizations localizations,
+    BriefTheme theme,
     bool isWide,
   ) {
     return AppBar(
-      title: Text(localizations.briefScreenTitle),
-      bottom: _searchOpen ? _buildSearchBar(localizations) : null,
+      title: Text(
+        localizations.briefScreenTitle,
+        style: theme.typography.h4.copyWith(color: theme.text.heading),
+      ),
+      shape: Border(bottom: BorderSide(color: theme.borders.subtle)),
+      bottom: _searchOpen ? _buildSearchBar(localizations, theme) : null,
       actions: [
-        if (isWide) _buildAudienceToggle(localizations),
+        if (isWide) _buildAudienceToggle(localizations, theme),
         if (isWide) const SizedBox(width: 8),
         IconButton(
           icon: Icon(_searchOpen ? Icons.search_off : Icons.search),
+          color: theme.text.heading,
           tooltip: localizations.briefSearch,
           onPressed: () {
             setState(() {
@@ -162,6 +196,7 @@ class _BriefScreenState extends State<BriefScreen> {
         if (kIsWeb)
           IconButton(
             icon: const Icon(Icons.print),
+            color: theme.text.heading,
             tooltip: localizations.briefPrint,
             onPressed: printBrief,
           ),
@@ -169,7 +204,10 @@ class _BriefScreenState extends State<BriefScreen> {
     );
   }
 
-  PreferredSizeWidget _buildSearchBar(AppLocalizations localizations) {
+  PreferredSizeWidget _buildSearchBar(
+    AppLocalizations localizations,
+    BriefTheme theme,
+  ) {
     return PreferredSize(
       preferredSize: const Size.fromHeight(48),
       child: Padding(
@@ -211,9 +249,9 @@ class _BriefScreenState extends State<BriefScreen> {
                 future: _renderFuture,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return const SizedBox.shrink();
-                  final hasMatch = snapshot.data!
-                      .toLowerCase()
-                      .contains(_searchQuery.toLowerCase());
+                  final hasMatch = snapshot.data!.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  );
                   if (hasMatch) return const SizedBox.shrink();
                   return Text(
                     localizations.briefSearchNoMatches,
@@ -231,38 +269,65 @@ class _BriefScreenState extends State<BriefScreen> {
     );
   }
 
-  Widget _buildNarrowAudienceToggle(AppLocalizations localizations) {
+  Widget _buildNarrowAudienceToggle(
+    AppLocalizations localizations,
+    BriefTheme theme,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: _buildAudienceToggle(localizations),
+      child: _buildAudienceToggle(localizations, theme),
     );
   }
 
-  Widget _buildAudienceToggle(AppLocalizations localizations) {
-    return SegmentedButton<BriefAudience>(
-      segments: [
-        ButtonSegment(
-          value: BriefAudience.participant,
-          label: Text(localizations.briefAudienceParticipant),
+  Widget _buildAudienceToggle(
+    AppLocalizations localizations,
+    BriefTheme theme,
+  ) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        segmentedButtonTheme: SegmentedButtonThemeData(
+          style: ButtonStyle(
+            backgroundColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return theme.surfaces.sidebar;
+              }
+              return Colors.transparent;
+            }),
+            foregroundColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return theme.text.heading;
+              }
+              return theme.text.body;
+            }),
+          ),
         ),
-        ButtonSegment(
-          value: BriefAudience.instructor,
-          label: Text(localizations.briefAudienceInstructor),
-        ),
-        ButtonSegment(
-          value: BriefAudience.director,
-          label: Text(localizations.briefAudienceDirector),
-        ),
-      ],
-      selected: {_audience},
-      showSelectedIcon: false,
-      onSelectionChanged: (selection) => _setAudience(selection.first),
+      ),
+      child: SegmentedButton<BriefAudience>(
+        segments: [
+          ButtonSegment(
+            value: BriefAudience.participant,
+            label: Text(localizations.briefAudienceParticipant),
+          ),
+          ButtonSegment(
+            value: BriefAudience.instructor,
+            label: Text(localizations.briefAudienceInstructor),
+          ),
+          ButtonSegment(
+            value: BriefAudience.director,
+            label: Text(localizations.briefAudienceDirector),
+          ),
+        ],
+        selected: {_audience},
+        showSelectedIcon: false,
+        onSelectionChanged: (selection) => _setAudience(selection.first),
+      ),
     );
   }
 
   Widget _buildContent(
     BuildContext context,
     AppLocalizations localizations,
+    BriefTheme theme,
     bool isWide,
   ) {
     return FutureBuilder<String>(
@@ -285,13 +350,13 @@ class _BriefScreenState extends State<BriefScreen> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTocSidebar(localizations),
-              const VerticalDivider(width: 1),
-              Expanded(child: _buildMarkdown(markdown)),
+              _buildTocSidebar(localizations, theme),
+              VerticalDivider(width: 1, color: theme.borders.subtle),
+              Expanded(child: _buildMarkdown(markdown, theme)),
             ],
           );
         }
-        return _buildMarkdown(markdown);
+        return _buildMarkdown(markdown, theme);
       },
     );
   }
@@ -301,46 +366,83 @@ class _BriefScreenState extends State<BriefScreen> {
   /// when the query is empty.
   String _applySearch(String markdown) {
     if (_searchQuery.isEmpty) return markdown;
-    final pattern = RegExp(
-      RegExp.escape(_searchQuery),
-      caseSensitive: false,
-    );
+    final pattern = RegExp(RegExp.escape(_searchQuery), caseSensitive: false);
     return markdown.replaceAllMapped(
       pattern,
       (m) => '<mark>${m.group(0)}</mark>',
     );
   }
 
-  Widget _buildTocSidebar(AppLocalizations localizations) {
-    return SizedBox(
-      width: 240,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text(
-              localizations.briefToc,
-              style: Theme.of(context).textTheme.titleSmall,
+  Widget _buildTocSidebar(AppLocalizations localizations, BriefTheme theme) {
+    return ColoredBox(
+      color: theme.surfaces.sidebar,
+      child: SizedBox(
+        width: theme.spacing.sidebarWidth,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                localizations.briefToc,
+                style: TextStyle(color: theme.text.muted, fontSize: 12),
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: TocWidget(controller: _tocController),
-          ),
-        ],
+            Divider(height: 1, color: theme.borders.subtle),
+            Expanded(
+              child: TocWidget(
+                controller: _tocController,
+                itemBuilder: (data) {
+                  final isActive = data.index == data.currentIndex;
+                  final tag = data.toc.node.headingConfig.tag;
+                  final level = headingTag2Level[tag] ?? 1;
+                  return GestureDetector(
+                    onTap: () => data.refreshIndexCallback(data.index),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 2,
+                          height: 24,
+                          color: isActive
+                              ? theme.accent.activeStripe
+                              : Colors.transparent,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: 8.0 + 12.0 * (level - 1),
+                              top: 4,
+                              bottom: 4,
+                              right: 8,
+                            ),
+                            child: ProxyRichText(data.toc.node.build()),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMarkdown(String markdown) {
-    return MarkdownWidget(
-      data: markdown,
-      tocController: _tocController,
-      config: MarkdownConfig(
-        configs: [
-          const PConfig(textStyle: TextStyle(height: 1.5)),
-        ],
+  Widget _buildMarkdown(String markdown, BriefTheme theme) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: theme.spacing.readingColumnMax),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+          child: BriefMarkdown(
+            data: markdown,
+            theme: theme,
+            tocController: _tocController,
+          ),
+        ),
       ),
     );
   }

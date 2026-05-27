@@ -13,6 +13,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
+import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -43,47 +44,47 @@ const _rolePlay = RolePlay(
 );
 
 Exercise _exercise() => Exercise(
-      uuid: _exerciseUuid,
-      name: 'Øvelse 3',
-      startTime: const SimpleTimeOfDay(hour: 8, minute: 30),
-      endTime: const SimpleTimeOfDay(hour: 10, minute: 30),
-      numberOfTeams: 4,
-      numberOfRounds: 4,
-      executionTime: 60,
-      evaluationTime: 15,
-      rotationTime: 5,
-      stations: const [
-        Station(
-          index: 0,
-          name: 'Demens',
-          position: LatLng(58.99, 10.43),
-          situationMd: 'Anne Glemsk er savnet.',
-          directorNotesMd: 'Notater til instruktør: Markør utplassert.',
-        ),
-      ],
-      schedule: const [
-        [
-          SimpleTimeOfDay(hour: 8, minute: 30),
-          SimpleTimeOfDay(hour: 9, minute: 30),
-          SimpleTimeOfDay(hour: 9, minute: 45),
-        ],
-        [
-          SimpleTimeOfDay(hour: 9, minute: 50),
-          SimpleTimeOfDay(hour: 10, minute: 50),
-          SimpleTimeOfDay(hour: 10, minute: 5),
-        ],
-        [
-          SimpleTimeOfDay(hour: 10, minute: 10),
-          SimpleTimeOfDay(hour: 11, minute: 10),
-          SimpleTimeOfDay(hour: 11, minute: 25),
-        ],
-        [
-          SimpleTimeOfDay(hour: 11, minute: 30),
-          SimpleTimeOfDay(hour: 12, minute: 30),
-          SimpleTimeOfDay(hour: 12, minute: 45),
-        ],
-      ],
-    );
+  uuid: _exerciseUuid,
+  name: 'Øvelse 3',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 30),
+  endTime: const SimpleTimeOfDay(hour: 10, minute: 30),
+  numberOfTeams: 4,
+  numberOfRounds: 4,
+  executionTime: 60,
+  evaluationTime: 15,
+  rotationTime: 5,
+  stations: const [
+    Station(
+      index: 0,
+      name: 'Demens',
+      position: LatLng(58.99, 10.43),
+      situationMd: 'Anne Glemsk er savnet.',
+      directorNotesMd: 'Notater til instruktør: Markør utplassert.',
+    ),
+  ],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 30),
+      SimpleTimeOfDay(hour: 9, minute: 30),
+      SimpleTimeOfDay(hour: 9, minute: 45),
+    ],
+    [
+      SimpleTimeOfDay(hour: 9, minute: 50),
+      SimpleTimeOfDay(hour: 10, minute: 50),
+      SimpleTimeOfDay(hour: 10, minute: 5),
+    ],
+    [
+      SimpleTimeOfDay(hour: 10, minute: 10),
+      SimpleTimeOfDay(hour: 11, minute: 10),
+      SimpleTimeOfDay(hour: 11, minute: 25),
+    ],
+    [
+      SimpleTimeOfDay(hour: 11, minute: 30),
+      SimpleTimeOfDay(hour: 12, minute: 30),
+      SimpleTimeOfDay(hour: 12, minute: 45),
+    ],
+  ],
+);
 
 Map<String, Object> _buildPrefs() {
   final ex = _exercise();
@@ -117,10 +118,7 @@ Widget _buildScreen({String? exerciseUuid, String? programUuid}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: BriefScreen(
-      exerciseUuid: exerciseUuid,
-      programUuid: programUuid,
-    ),
+    home: BriefScreen(exerciseUuid: exerciseUuid, programUuid: programUuid),
   );
 }
 
@@ -281,30 +279,28 @@ void main() {
     });
 
     testWidgets(
-        'wide layout puts audience toggle in app bar and shows TOC sidebar',
-        (tester) async {
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      'wide layout puts audience toggle in app bar and shows TOC sidebar',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
-      await _awaitRender(tester);
+        await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+        await _awaitRender(tester);
 
-      final segButton = find.byType(SegmentedButton<BriefAudience>);
-      expect(segButton, findsOneWidget);
+        final segButton = find.byType(SegmentedButton<BriefAudience>);
+        expect(segButton, findsOneWidget);
 
-      // TOC sidebar heading visible
-      expect(find.text('Contents'), findsOneWidget);
+        // TOC sidebar heading visible
+        expect(find.text('Contents'), findsOneWidget);
 
-      // The segmented button must be inside the AppBar widget tree
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: segButton,
-        ),
-        findsOneWidget,
-      );
-    });
+        // The segmented button must be inside the AppBar widget tree
+        expect(
+          find.descendant(of: find.byType(AppBar), matching: segButton),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   group('BriefScreen — search', () {
@@ -321,19 +317,20 @@ void main() {
     });
 
     testWidgets(
-        'typing a query wraps matches in <mark> tags in MarkdownWidget.data',
-        (tester) async {
-      await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
-      await _awaitRender(tester);
+      'typing a query wraps matches in <mark> tags in MarkdownWidget.data',
+      (tester) async {
+        await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+        await _awaitRender(tester);
 
-      await tester.tap(find.byIcon(Icons.search));
-      await tester.pump();
+        await tester.tap(find.byIcon(Icons.search));
+        await tester.pump();
 
-      await tester.enterText(find.byType(TextField), 'Anne');
-      await tester.pump();
+        await tester.enterText(find.byType(TextField), 'Anne');
+        await tester.pump();
 
-      expect(_markdownData(tester), contains('<mark>Anne'));
-    });
+        expect(_markdownData(tester), contains('<mark>Anne'));
+      },
+    );
   });
 
   group('BriefScreen — print button', () {
@@ -343,6 +340,67 @@ void main() {
 
       // kIsWeb is false in the vm test environment
       expect(find.byIcon(Icons.print), findsNothing);
+    });
+  });
+
+  group('BriefScreen — BriefTheme', () {
+    testWidgets('scaffold background matches BriefTheme.light canvas', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+      await _awaitRender(tester);
+
+      // Find the inner Theme widget that sets scaffoldBackgroundColor
+      final themes = tester.widgetList<Theme>(find.byType(Theme));
+      final canvasColor = BriefTheme.light().surfaces.canvas;
+      final found = themes.any(
+        (t) => t.data.scaffoldBackgroundColor == canvasColor,
+      );
+      expect(
+        found,
+        isTrue,
+        reason:
+            'A Theme in the tree must set scaffoldBackgroundColor to the '
+            'BriefTheme.light() canvas color',
+      );
+    });
+
+    testWidgets(
+      'wide layout (1024px): markdown omits in-doc TOC after layout settles',
+      (tester) async {
+        tester.view.physicalSize = const Size(1024, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+        await _awaitRender(tester); // first render + _wideTocSidebar transition
+        await _awaitRender(tester); // second render with wideTocSidebar: true
+
+        expect(
+          _markdownData(tester),
+          isNot(contains('Innholdsfortegnelse')),
+          reason:
+              'Wide layout passes wideTocSidebar: true, suppressing in-doc TOC',
+        );
+      },
+    );
+
+    testWidgets('narrow layout (600px): markdown includes in-doc TOC', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+      await _awaitRender(tester);
+
+      expect(
+        _markdownData(tester),
+        contains('Innholdsfortegnelse'),
+        reason:
+            'Narrow layout passes wideTocSidebar: false, rendering in-doc TOC',
+      );
     });
   });
 }
