@@ -2371,6 +2371,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open brief'**
   String get briefAction;
+
+  /// Tooltip/label for the close button on the brief sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get briefClose;
+
+  /// Semantics label for the drag handle on the brief sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to close'**
+  String get briefDragHandle;
 }
 
 class _AppLocalizationsDelegate

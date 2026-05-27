@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -30,7 +29,7 @@ void main() {
   const fixture = '# H1\n\nbody [link](https://example.com) and `code`.';
   final lightTheme = BriefTheme.light();
 
-  Widget _buildWidget({String? data}) {
+  Widget buildWidget({String? data}) {
     return MaterialApp(
       home: Scaffold(
         body: SizedBox(
@@ -46,7 +45,7 @@ void main() {
     testWidgets('H1 text is rendered in theme.text.heading color', (
       tester,
     ) async {
-      await tester.pumpWidget(_buildWidget());
+      await tester.pumpWidget(buildWidget());
       await tester.pump();
 
       // Find all RichText widgets and check if any have a text span colored
@@ -69,7 +68,7 @@ void main() {
     testWidgets('link text uses body color with underline decoration', (
       tester,
     ) async {
-      await tester.pumpWidget(_buildWidget());
+      await tester.pumpWidget(buildWidget());
       await tester.pump();
 
       // Find a RichText that contains the link text "link"
@@ -119,7 +118,7 @@ void main() {
 
   group('BriefMarkdown — inline code background', () {
     testWidgets('inline code has code.background applied', (tester) async {
-      await tester.pumpWidget(_buildWidget());
+      await tester.pumpWidget(buildWidget());
       await tester.pump();
 
       // Find any RichText that contains the word "code" and check for the

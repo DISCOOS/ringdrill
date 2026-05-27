@@ -87,22 +87,35 @@ GoRouter buildRouter(bool isFirstLaunch) {
     },
     routes: [
       GoRoute(path: '/i/:slug', redirect: (_, _) => routeProgram),
-      // Brief routes — not tabs; pushed over the root navigator. The program
-      // variant is listed first so go_router matches the more specific
-      // `program/` path before the bare `:exerciseUuid` catch-all.
+      // Brief routes — not tabs; pushed over the root navigator as a
+      // fullscreen modal bottom sheet. The program variant is listed first so
+      // go_router matches the more specific `program/` path before the bare
+      // `:exerciseUuid` catch-all.
       GoRoute(
         path: '$routeBrief/program/:programUuid',
         parentNavigatorKey: key,
-        builder: (BuildContext context, GoRouterState state) => BriefScreen(
-          programUuid: state.pathParameters['programUuid']!,
-        ),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            CustomTransitionPage(
+              opaque: false,
+              barrierColor: Colors.transparent,
+              transitionsBuilder: (_, _, _, child) => child,
+              child: BriefSheetLauncher(
+                programUuid: state.pathParameters['programUuid']!,
+              ),
+            ),
       ),
       GoRoute(
         path: '$routeBrief/:exerciseUuid',
         parentNavigatorKey: key,
-        builder: (BuildContext context, GoRouterState state) => BriefScreen(
-          exerciseUuid: state.pathParameters['exerciseUuid']!,
-        ),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            CustomTransitionPage(
+              opaque: false,
+              barrierColor: Colors.transparent,
+              transitionsBuilder: (_, _, _, child) => child,
+              child: BriefSheetLauncher(
+                exerciseUuid: state.pathParameters['exerciseUuid']!,
+              ),
+            ),
       ),
       ShellRoute(
         navigatorKey: shellNavigatorKey,
@@ -113,7 +126,13 @@ GoRouter buildRouter(bool isFirstLaunch) {
               isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
               location: state.matchedLocation,
-              routes: [routeProgram, routeMap, routeStations, routeRolePlays, routeTeams],
+              routes: [
+                routeProgram,
+                routeMap,
+                routeStations,
+                routeRolePlays,
+                routeTeams,
+              ],
               // The shell's nested Navigator (identified by
               // [shellNavigatorKey]). MainScreen mounts it offstage so the
               // GlobalKey gets attached — see the comment on
@@ -241,8 +260,8 @@ GoRouter buildRouter(bool isFirstLaunch) {
                 parentNavigatorKey: key,
                 builder: (BuildContext context, GoRouterState state) =>
                     RolePlayScreen(
-                  rolePlayUuid: state.pathParameters['roleUuid']!,
-                ),
+                      rolePlayUuid: state.pathParameters['roleUuid']!,
+                    ),
               ),
             ],
           ),
@@ -435,10 +454,7 @@ class _MainScreenState extends State<MainScreen> {
     // hit-tested. The visible tab UI is the IndexedStack below.
     final shellSentinel = Offstage(
       offstage: true,
-      child: TickerMode(
-        enabled: false,
-        child: widget.shellChild,
-      ),
+      child: TickerMode(enabled: false, child: widget.shellChild),
     );
     return LayoutBuilder(
       builder: (context, constraints) {

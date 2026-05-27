@@ -1386,4 +1386,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get briefAction => 'Open brief';
+
+  @override
+  String get briefClose => 'Close';
+
+  @override
+  String get briefDragHandle => 'Drag to close';
 }

@@ -580,5 +580,7 @@
   "briefMissingProgram": "Ingen aktiv plan",
   "briefMissingExercise": "Øvelse ikke funnet",
   "briefToc": "Innhold",
-  "briefAction": "Åpne brief"
+  "briefAction": "Åpne brief",
+  "briefClose": "Lukk",
+  "briefDragHandle": "Dra for å lukke"
 }

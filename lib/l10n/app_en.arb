@@ -1306,5 +1306,13 @@
   "briefAction": "Open brief",
   "@briefAction": {
     "description": "Label/tooltip for the brief entry-point action on CoordinatorScreen and ProgramView app bars."
+  },
+  "briefClose": "Close",
+  "@briefClose": {
+    "description": "Tooltip/label for the close button on the brief sheet."
+  },
+  "briefDragHandle": "Drag to close",
+  "@briefDragHandle": {
+    "description": "Semantics label for the drag handle on the brief sheet."
   }
 }

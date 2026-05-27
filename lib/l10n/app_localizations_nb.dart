@@ -1383,4 +1383,10 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get briefAction => 'Åpne brief';
+
+  @override
+  String get briefClose => 'Lukk';
+
+  @override
+  String get briefDragHandle => 'Dra for å lukke';
 }
