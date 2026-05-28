@@ -9,9 +9,11 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -30,6 +32,7 @@ import 'exercise_form_screen.dart';
 /// label/time pair become hard to read, so the layout falls back to
 /// the stacked variant.
 const double _kHeroSidebarWidth = 150;
+const double _kCoordinatorTwoColumnWidth = 1120;
 
 class CoordinatorScreen extends StatefulWidget {
   final String uuid;
@@ -384,46 +387,21 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     // the coordinator scrolls through the round table and lists below.
     return Stack(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildTopSection(event, showHero: showHero),
-              const SizedBox(height: 16),
-              Center(
-                child: SegmentedButton<_CoordinatorView>(
-                  segments: [
-                    ButtonSegment<_CoordinatorView>(
-                      value: _CoordinatorView.stations,
-                      label: Text(
-                        '${localizations.stationRotations}'
-                        ' (${_exercise!.stations.length})',
-                      ),
-                      icon: const Icon(Icons.location_on),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isTwoColumn =
+                constraints.maxWidth >= _kCoordinatorTwoColumnWidth;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: isTwoColumn
+                  ? _buildTwoColumnBody(event, showHero: showHero)
+                  : _buildSingleColumnBody(
+                      event,
+                      showHero: showHero,
+                      localizations: localizations,
                     ),
-                    ButtonSegment<_CoordinatorView>(
-                      value: _CoordinatorView.teams,
-                      label: Text(
-                        '${localizations.teamRotations}'
-                        ' (${_exercise!.numberOfTeams})',
-                      ),
-                      icon: const Icon(Icons.group),
-                    ),
-                  ],
-                  selected: <_CoordinatorView>{_view},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (selection) {
-                    setState(() => _view = selection.first);
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              _view == _CoordinatorView.stations
-                  ? _buildStationList(event)
-                  : _buildTeamList(event),
-            ],
-          ),
+            );
+          },
         ),
         Positioned(
           top: 4,
@@ -445,6 +423,117 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSingleColumnBody(
+    ExerciseEvent event, {
+    required bool showHero,
+    required AppLocalizations localizations,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildTopSection(event, showHero: showHero),
+        const SizedBox(height: 16),
+        Center(
+          child: SegmentedButton<_CoordinatorView>(
+            segments: [
+              ButtonSegment<_CoordinatorView>(
+                value: _CoordinatorView.stations,
+                label: Text(
+                  '${localizations.stationRotations}'
+                  ' (${_exercise!.stations.length})',
+                ),
+                icon: const Icon(Icons.location_on),
+              ),
+              ButtonSegment<_CoordinatorView>(
+                value: _CoordinatorView.teams,
+                label: Text(
+                  '${localizations.teamRotations}'
+                  ' (${_exercise!.numberOfTeams})',
+                ),
+                icon: const Icon(Icons.group),
+              ),
+            ],
+            selected: <_CoordinatorView>{_view},
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) {
+              setState(() => _view = selection.first);
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        _view == _CoordinatorView.stations
+            ? _buildStationList(event)
+            : _buildTeamList(event),
+      ],
+    );
+  }
+
+  Widget _buildTwoColumnBody(ExerciseEvent event, {required bool showHero}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 6, child: _buildStationList(event)),
+            const SizedBox(width: 24),
+            Expanded(
+              flex: 5,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: _buildTopSection(event, showHero: showHero),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildExercisePositionMap(),
+      ],
+    );
+  }
+
+  Widget _buildExercisePositionMap() {
+    final markers = _exercise!.stations
+        .where((station) => station.position != null)
+        .map(
+          (station) => MapMarkerSpec<int>(
+            id: station.index,
+            label: station.name,
+            point: station.position!,
+            child: const Icon(Icons.place, color: Colors.green, size: 32),
+            onTap: () => ContextSheet.of(context).show(
+              context,
+              StationSheetTarget(
+                exerciseUuid: widget.uuid,
+                stationIndex: station.index,
+              ),
+            ),
+          ),
+        )
+        .toList();
+    if (markers.isEmpty) return const SizedBox.shrink();
+
+    final points = markers.map((marker) => marker.point).toList();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: 360,
+        child: MapView<int>(
+          layers: MapConfig.layers,
+          withZoom: true,
+          withCenter: true,
+          withToggle: true,
+          withClustering: false,
+          interactionFlags: MapConfig.interactive,
+          initialZoom: 15,
+          initialCenter: points.average(MapConfig.initialCenter),
+          initialFit: points.fit(const EdgeInsets.all(72)),
+          markers: markers,
+        ),
+      ),
     );
   }
 
