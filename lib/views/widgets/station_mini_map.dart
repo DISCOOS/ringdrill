@@ -90,7 +90,6 @@ Future<void> openStationMapSheet(
           mainAxisSize: MainAxisSize.max,
           children: [
             _MapSheetHeader(station: station, exercise: exercise),
-            const Divider(height: 1),
             Expanded(
               child: MapView(
                 layers: MapConfig.layers,
@@ -122,11 +121,14 @@ Future<void> openStationMapSheet(
   );
 }
 
-class _MapSheetHeader extends StatelessWidget {
+class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
   const _MapSheetHeader({required this.station, required this.exercise});
 
   final Station station;
   final Exercise exercise;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(72);
 
   @override
   Widget build(BuildContext context) {
@@ -147,36 +149,40 @@ class _MapSheetHeader extends StatelessWidget {
     final hasRoles = service.loadRolePlays().any(
       (r) => r.exerciseUuid == exercise.uuid && r.stationIndex == station.index,
     );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Row(
+    // Use a real AppBar so the header picks up `AppBarTheme` (brandDeep
+    // background, white foreground, elevation) and reads identically to
+    // the AppBar atop every viewer-sheet body in the app — the bar that
+    // sits inside StationExerciseScreen, RolePlayScreen and so on. The
+    // custom Padding/Row this replaced inherited the action sheet's
+    // light surface color and looked out of place.
+    final fg = theme.appBarTheme.foregroundColor ?? theme.colorScheme.onPrimary;
+    return AppBar(
+      automaticallyImplyLeading: false,
+      toolbarHeight: 72,
+      leadingWidth: 64,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: Center(
+          child: StationCodeBadge(code: code, hasRoles: hasRoles),
+        ),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          StationCodeBadge(code: code, hasRoles: hasRoles),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  station.name,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  exercise.name,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+          Text(
+            station.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            exercise.name,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: fg.withValues(alpha: 0.75),
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
