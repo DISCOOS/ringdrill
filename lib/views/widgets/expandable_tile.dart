@@ -34,6 +34,7 @@ class ExpandableTile extends StatelessWidget {
     this.trailing,
     this.body,
     this.expanded = false,
+    this.selected = false,
     this.onOpen,
     this.onToggle,
     this.accent = const LiveAccent.inactive(),
@@ -70,6 +71,12 @@ class ExpandableTile extends StatelessWidget {
   /// can enforce a mutex across rows.
   final bool expanded;
 
+  /// Whether this tile is the currently selected item in a master-detail
+  /// layout. When `true` and [accent] is inactive, applies a subtle
+  /// `surfaceContainerHighest` background with an `outlineVariant` border.
+  /// Ignored when [accent] is active (live styling takes priority).
+  final bool selected;
+
   /// Fires when the row body is tapped. When null, row taps fall
   /// through to [onToggle] (or do nothing if both are null).
   final VoidCallback? onOpen;
@@ -96,11 +103,18 @@ class ExpandableTile extends StatelessWidget {
     // a row-tap action is wired up.
     final rowTap = onOpen ?? (canToggle ? onToggle : null);
 
+    final scheme = Theme.of(context).colorScheme;
+    final useSelected = selected && !accent.isActive;
     return Card(
       elevation: elevation,
       margin: margin,
-      color: accent.background,
-      shape: accent.shape,
+      color: useSelected ? scheme.surfaceContainerHighest : accent.background,
+      shape: useSelected
+          ? RoundedRectangleBorder(
+              side: BorderSide(color: scheme.outlineVariant),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : accent.shape,
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,

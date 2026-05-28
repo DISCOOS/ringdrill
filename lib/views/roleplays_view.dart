@@ -12,6 +12,7 @@ import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/role_code_badge.dart';
@@ -148,21 +149,35 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         ),
       );
     } else {
-      body = ListView.builder(
-        padding: const EdgeInsets.only(top: 4, bottom: 96),
-        itemCount: rows.length,
-        itemBuilder: (context, index) {
-          final (exerciseNumber, exercise, rolePlay) = rows[index];
-          return _buildRow(
-            context,
-            localizations,
-            exerciseNumber: exerciseNumber,
-            exercise: exercise,
-            rolePlay: rolePlay,
-            rowIndex: index,
-          );
-        },
-      );
+      final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
+      Widget buildList(ContextSheetTarget? selectedTarget) {
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 4, bottom: 96),
+          itemCount: rows.length,
+          itemBuilder: (context, index) {
+            final (exerciseNumber, exercise, rolePlay) = rows[index];
+            final isSelected =
+                selectedTarget is RoleSheetTarget &&
+                selectedTarget.rolePlayUuid == rolePlay.uuid;
+            return _buildRow(
+              context,
+              localizations,
+              exerciseNumber: exerciseNumber,
+              exercise: exercise,
+              rolePlay: rolePlay,
+              rowIndex: index,
+              selected: isSelected,
+            );
+          },
+        );
+      }
+
+      body = targetNotifier == null
+          ? buildList(null)
+          : ValueListenableBuilder<ContextSheetTarget?>(
+              valueListenable: targetNotifier,
+              builder: (context, target, _) => buildList(target),
+            );
     }
 
     return Column(
@@ -208,6 +223,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     required Exercise exercise,
     required RolePlay rolePlay,
     required int rowIndex,
+    bool selected = false,
   }) {
     final expanded = _expandedRowIndex == rowIndex;
     final colorScheme = Theme.of(context).colorScheme;
@@ -239,6 +255,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         return false;
       },
       child: ExpandableTile(
+        selected: selected,
         leading: RoleCodeBadge(
           code: '$exerciseNumber.${rolePlay.index + 1}',
           highlight: actor != null,

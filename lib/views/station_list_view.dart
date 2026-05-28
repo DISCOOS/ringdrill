@@ -10,6 +10,7 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
@@ -146,6 +147,8 @@ class _StationListViewState extends State<StationListView> {
     final stationsWithRoles = _collectStationsWithRoles();
     final filterExercise = _filterExercise();
 
+    final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
+
     final Widget body;
     if (!hasAnyStation) {
       body = Center(
@@ -165,26 +168,40 @@ class _StationListViewState extends State<StationListView> {
         ),
       );
     } else {
-      body = ListView.builder(
-        padding: const EdgeInsets.only(top: 4, bottom: 96),
-        itemCount: rows.length,
-        itemBuilder: (context, index) {
-          final (exerciseNumber, exercise, station) = rows[index];
-          final hasRoles = stationsWithRoles.contains((
-            exercise.uuid,
-            station.index,
-          ));
-          return _buildRow(
-            context,
-            localizations,
-            exerciseNumber: exerciseNumber,
-            exercise: exercise,
-            station: station,
-            rowIndex: index,
-            hasRoles: hasRoles,
-          );
-        },
-      );
+      Widget buildList(ContextSheetTarget? selectedTarget) {
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 4, bottom: 96),
+          itemCount: rows.length,
+          itemBuilder: (context, index) {
+            final (exerciseNumber, exercise, station) = rows[index];
+            final hasRoles = stationsWithRoles.contains((
+              exercise.uuid,
+              station.index,
+            ));
+            final isSelected =
+                selectedTarget is StationSheetTarget &&
+                selectedTarget.exerciseUuid == exercise.uuid &&
+                selectedTarget.stationIndex == station.index;
+            return _buildRow(
+              context,
+              localizations,
+              exerciseNumber: exerciseNumber,
+              exercise: exercise,
+              station: station,
+              rowIndex: index,
+              hasRoles: hasRoles,
+              selected: isSelected,
+            );
+          },
+        );
+      }
+
+      body = targetNotifier == null
+          ? buildList(null)
+          : ValueListenableBuilder<ContextSheetTarget?>(
+              valueListenable: targetNotifier,
+              builder: (context, target, _) => buildList(target),
+            );
     }
 
     // The filter FAB lives inside the body Stack rather than on the
@@ -237,6 +254,7 @@ class _StationListViewState extends State<StationListView> {
     required Station station,
     required int rowIndex,
     required bool hasRoles,
+    bool selected = false,
   }) {
     final expanded = _expandedRowIndex == rowIndex;
     final colorScheme = Theme.of(context).colorScheme;
@@ -277,6 +295,7 @@ class _StationListViewState extends State<StationListView> {
           style: accent.textStyle,
         ),
         accent: accent,
+        selected: selected,
         expanded: expanded,
         onOpen: () => _openStation(exercise, station),
         onToggle: () {

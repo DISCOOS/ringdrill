@@ -16,6 +16,7 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
@@ -84,77 +85,85 @@ class _ProgramViewState extends State<ProgramView> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
+    Widget buildList(ContextSheetTarget? selectedTarget) {
+      return ListView.builder(
+        itemCount: _exercises.length,
+        itemBuilder: (context, index) {
+          final exercise = _exercises[index];
+          final markers = exercise.getLocations(false);
+          final isSelected =
+              selectedTarget is ExerciseSheetTarget &&
+              selectedTarget.exerciseUuid == exercise.uuid;
+
+          return Dismissible(
+            key: ValueKey(exercise.uuid),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              color: Theme.of(context).colorScheme.primary,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Icon(
+                Icons.edit,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+            confirmDismiss: (direction) async {
+              final numberOfTeams = _programService.loadTeams().length;
+              final updated = await openFormSurface<Exercise>(
+                context,
+                builder: (_) => ExerciseFormScreen(
+                  exercise: exercise,
+                  numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
+                ),
+              );
+              if (updated != null && context.mounted) {
+                await _programService.saveExercise(localizations, updated);
+                setState(_initExercises);
+              }
+              // Always return false — the item should not be removed.
+              return false;
+            },
+            child: ExerciseCard(
+              exercise: exercise,
+              localizations: localizations,
+              markers: markers,
+              liveEvent: _liveEvent,
+              selected: isSelected,
+              // V1: live card opens the DrillPlayer sheet (DESIGN-001).
+              // All other cards keep the ContextSheet flow.
+              onOpen: () {
+                final isLive =
+                    _liveEvent?.exercise.uuid == exercise.uuid &&
+                    ExerciseService().isStarted;
+                if (isLive) {
+                  showDrillPlayerSheet<void>(
+                    context: context,
+                    builder: (_) => CoordinatorScreen(uuid: exercise.uuid),
+                  );
+                } else {
+                  ContextSheet.of(context).show(
+                    context,
+                    ExerciseSheetTarget(exerciseUuid: exercise.uuid),
+                  );
+                }
+              },
+            ),
+          );
+        },
+      );
+    }
+
     final programs = _exercises.isEmpty
         ? Center(child: Text(localizations.noExercisesYet))
         : Padding(
             padding: const EdgeInsets.only(top: 4.0),
-            child: ListView.builder(
-              itemCount: _exercises.length,
-              itemBuilder: (context, index) {
-                final exercise = _exercises[index];
-                final markers = exercise.getLocations(false);
-
-                return Dismissible(
-                  key: ValueKey(exercise.uuid),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Theme.of(context).colorScheme.primary,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Icon(
-                      Icons.edit,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
+            child: targetNotifier == null
+                ? buildList(null)
+                : ValueListenableBuilder<ContextSheetTarget?>(
+                    valueListenable: targetNotifier,
+                    builder: (context, target, _) => buildList(target),
                   ),
-                  confirmDismiss: (direction) async {
-                    final numberOfTeams = _programService.loadTeams().length;
-                    final updated = await openFormSurface<Exercise>(
-                      context,
-                      builder: (_) => ExerciseFormScreen(
-                        exercise: exercise,
-                        numberOfTeams: numberOfTeams == 0
-                            ? null
-                            : numberOfTeams,
-                      ),
-                    );
-                    if (updated != null && context.mounted) {
-                      await _programService.saveExercise(
-                        localizations,
-                        updated,
-                      );
-                      setState(_initExercises);
-                    }
-                    // Always return false — the item should not be removed.
-                    return false;
-                  },
-                  child: ExerciseCard(
-                    exercise: exercise,
-                    localizations: localizations,
-                    markers: markers,
-                    liveEvent: _liveEvent,
-                    // V1: live card opens the DrillPlayer sheet (DESIGN-001).
-                    // All other cards keep the ContextSheet flow.
-                    onOpen: () {
-                      final isLive =
-                          _liveEvent?.exercise.uuid == exercise.uuid &&
-                          ExerciseService().isStarted;
-                      if (isLive) {
-                        showDrillPlayerSheet<void>(
-                          context: context,
-                          builder: (_) =>
-                              CoordinatorScreen(uuid: exercise.uuid),
-                        );
-                      } else {
-                        ContextSheet.of(context).show(
-                          context,
-                          ExerciseSheetTarget(exerciseUuid: exercise.uuid),
-                        );
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
           );
     return kIsWeb ? programs : SharedFileWidget(child: programs);
   }
@@ -180,6 +189,7 @@ class ExerciseCard extends StatefulWidget {
     this.trailing,
     required this.markers,
     this.liveEvent,
+    this.selected = false,
     this.onOpen,
   });
 
@@ -195,6 +205,10 @@ class ExerciseCard extends StatefulWidget {
   /// neutral look — that is what the export/import picker uses, where
   /// "live" styling would be misleading.
   final ExerciseEvent? liveEvent;
+
+  /// Whether this card is the currently selected item in a master-detail
+  /// layout. Forwarded to [ExpandableTile.selected].
+  final bool selected;
 
   /// Fires when the row is tapped. When `null`, tapping the row toggles
   /// the inline map preview instead (used by the export/import picker
@@ -231,6 +245,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
 
     return ExpandableTile(
       accent: accent,
+      selected: widget.selected,
       leading: accent.indicator,
       title: Text(
         exercise.name,

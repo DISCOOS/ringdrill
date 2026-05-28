@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 class TeamsView extends StatefulWidget {
@@ -40,9 +41,10 @@ class _TeamsViewState extends State<TeamsView> {
     final localizations = AppLocalizations.of(context)!;
     final teams = _programService.loadTeams();
     final exercises = _programService.loadExercises();
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: ListView(
+    final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
+
+    Widget buildList(ContextSheetTarget? selectedTarget) {
+      return ListView(
         children: teams.map((t) {
           final exerciseCount = exercises
               .where((e) => e.numberOfTeams > t.index)
@@ -54,9 +56,13 @@ class _TeamsViewState extends State<TeamsView> {
             '$exerciseCount '
                 '${localizations.exercise(exerciseCount).toLowerCase()}',
           ];
+          final isSelected =
+              selectedTarget is TeamSheetTarget &&
+              selectedTarget.teamIndex == t.index;
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4),
             child: ListTile(
+              selected: isSelected,
               title: Text(
                 t.name,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -79,7 +85,17 @@ class _TeamsViewState extends State<TeamsView> {
             ),
           );
         }).toList(),
-      ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: targetNotifier == null
+          ? buildList(null)
+          : ValueListenableBuilder<ContextSheetTarget?>(
+              valueListenable: targetNotifier,
+              builder: (context, target, _) => buildList(target),
+            ),
     );
   }
 }

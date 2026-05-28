@@ -1042,8 +1042,8 @@ class _MainScreenState extends State<MainScreen> {
     );
 
     final masterWidth = windowSizeClass == WindowSizeClass.expanded
-        ? 360.0
-        : 280.0;
+        ? 420.0
+        : 320.0;
     const railWidth = 72.0;
     final detailWidth = constraints.maxWidth - railWidth - masterWidth;
     if (_currentTab == 1) {
