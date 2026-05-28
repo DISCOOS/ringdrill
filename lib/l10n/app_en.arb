@@ -982,10 +982,32 @@
   "openedAndActivated": "Opened {name}",
   "catalogConflictTitle": "Catalog update conflict",
   "catalogConflictBody": "This catalog plan has local changes. Review the differences before choosing how to continue.",
+  "catalogConflictBodyLocalOnly": "This catalog plan has local changes. The online version is unchanged. Review your local changes before choosing how to continue.",
   "catalogConflictCancel": "Cancel",
-  "catalogConflictOverwrite": "Overwrite local",
+  "catalogConflictOverwrite": "Discard local changes",
   "catalogConflictPublish": "Publish my changes",
   "catalogConflictFork": "Fork as local plan",
+  "catalogRefreshUpToDate": "{name} is already up to date",
+  "@catalogRefreshUpToDate": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "catalogRefreshUpdated": "Updated {name} from the catalog",
+  "@catalogRefreshUpdated": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "catalogRefreshReverted": "Discarded local changes to {name}",
+  "@catalogRefreshReverted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "catalogRefreshCancelled": "Catalog update cancelled",
+  "catalogRefreshForked": "Saved a local copy",
+  "catalogRefreshPublished": "Published your changes",
   "catalogDiffAdded": "Added",
   "catalogDiffRemoved": "Removed",
   "catalogDiffModified": "Modified",

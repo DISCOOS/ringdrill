@@ -524,21 +524,50 @@ class _LibraryBodyState extends State<_LibraryBody>
     final localizations = AppLocalizations.of(context)!;
     final client = _buildCatalogClient();
     try {
-      await _programService.refreshCatalogItem(
+      final outcome = await _programService.refreshCatalogItem(
         program.uuid,
         client,
-        onConflict: (diff, {required ownedSlug}) {
+        onConflict: (diff, {required ownedSlug, required remoteUnchanged}) {
           return showCatalogConflictDialog(
             context,
             diff: diff,
             ownedSlug: ownedSlug,
+            remoteUnchanged: remoteUnchanged,
           );
         },
       );
       if (mounted) setState(() {});
+      if (!context.mounted) return;
+      final message = _refreshOutcomeMessage(localizations, outcome, program);
+      if (message != null) _showSnackBar(context, message);
     } catch (_) {
       if (!context.mounted) return;
       _showSnackBar(context, localizations.catalogServiceUnavailable);
+    }
+  }
+
+  String? _refreshOutcomeMessage(
+    AppLocalizations localizations,
+    CatalogRefreshOutcome outcome,
+    Program program,
+  ) {
+    switch (outcome.kind) {
+      case CatalogRefreshKind.upToDate:
+        return localizations.catalogRefreshUpToDate(program.name);
+      case CatalogRefreshKind.updatedSilently:
+        return localizations.catalogRefreshUpdated(program.name);
+      case CatalogRefreshKind.updatedAfterPrompt:
+        return outcome.remoteUnchanged
+            ? localizations.catalogRefreshReverted(program.name)
+            : localizations.catalogRefreshUpdated(program.name);
+      case CatalogRefreshKind.cancelled:
+        return localizations.catalogRefreshCancelled;
+      case CatalogRefreshKind.forked:
+        return localizations.catalogRefreshForked;
+      case CatalogRefreshKind.published:
+        return localizations.catalogRefreshPublished;
+      case CatalogRefreshKind.failed:
+        return null;
     }
   }
 

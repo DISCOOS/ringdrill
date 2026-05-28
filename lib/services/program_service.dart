@@ -56,11 +56,19 @@ class CatalogRefreshOutcome {
     required this.kind,
     required this.programUuid,
     this.diff,
+    this.remoteUnchanged = false,
   });
 
   final CatalogRefreshKind kind;
   final String programUuid;
   final ProgramDiff? diff;
+
+  /// True when the catalog server reported no changes (HTTP 304) but the
+  /// local copy diverged from the installed snapshot. Distinguishes a real
+  /// catalog update from a local-only divergence so call sites can pick the
+  /// right user-facing wording (e.g. "Updated from catalog" vs. "Discarded
+  /// local changes").
+  final bool remoteUnchanged;
 }
 
 class ProgramEvent {
@@ -413,6 +421,7 @@ class ProgramService {
     required Future<CatalogConflictChoice> Function(
       ProgramDiff diff, {
       required bool ownedSlug,
+      required bool remoteUnchanged,
     })
     onConflict,
   }) async {
@@ -430,8 +439,18 @@ class ProgramService {
     }
     final (:slug, :storedEtag, :installedAt) = catalogSource;
 
+    // Detect local divergence from the installed snapshot up front so that a
+    // 304 from the server does not silently mask local edits (e.g. the user
+    // changed an exercise start time and then triggered "update from
+    // catalog"). When the server has not changed but the local copy has, we
+    // still need to show the conflict dialog so the user can choose between
+    // reverting (overwriteLocal), forking, or publishing.
+    final localHash = local.computeContentHash();
+    final hasLocalChanges =
+        local.contentHash != null && localHash != local.contentHash;
+
     final head = await client.head(slug, ifNoneMatch: storedEtag);
-    if (head.notModified) {
+    if (head.notModified && !hasLocalChanges) {
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.upToDate,
         programUuid: programUuid,
@@ -442,14 +461,13 @@ class ProgramService {
     final remote = download.file.program();
     final diff = diffPrograms(local, remote);
     final latestEtag = download.etag ?? head.etag ?? storedEtag;
-    final localHash = local.computeContentHash();
-    final hasLocalChanges =
-        local.contentHash != null && localHash != local.contentHash;
+    final remoteUnchanged = head.notModified;
     debugPrint(
       '[refreshCatalogItem] slug=$slug '
       'storedContentHash=${local.contentHash} '
       'localHash=$localHash '
-      'hasLocalChanges=$hasLocalChanges',
+      'hasLocalChanges=$hasLocalChanges '
+      'remoteUnchanged=$remoteUnchanged',
     );
 
     if (!hasLocalChanges) {
@@ -459,17 +477,23 @@ class ProgramService {
         kind: CatalogRefreshKind.updatedSilently,
         programUuid: programUuid,
         diff: diff,
+        remoteUnchanged: remoteUnchanged,
       );
     }
 
     final ownedSlug = _repo.ownsCatalogSlug(slug);
-    final choice = await onConflict(diff, ownedSlug: ownedSlug);
+    final choice = await onConflict(
+      diff,
+      ownedSlug: ownedSlug,
+      remoteUnchanged: remoteUnchanged,
+    );
     switch (choice) {
       case CatalogConflictChoice.cancel:
         return CatalogRefreshOutcome(
           kind: CatalogRefreshKind.cancelled,
           programUuid: programUuid,
           diff: diff,
+          remoteUnchanged: remoteUnchanged,
         );
       case CatalogConflictChoice.overwriteLocal:
         await _overwriteCatalogProgram(local, remote, slug, latestEtag);
@@ -477,6 +501,7 @@ class ProgramService {
           kind: CatalogRefreshKind.updatedAfterPrompt,
           programUuid: programUuid,
           diff: diff,
+          remoteUnchanged: remoteUnchanged,
         );
       case CatalogConflictChoice.publishMyChanges:
         // Use the *fresh* etag we just downloaded as If-Match. The user has
@@ -505,6 +530,7 @@ class ProgramService {
           kind: CatalogRefreshKind.published,
           programUuid: programUuid,
           diff: diff,
+          remoteUnchanged: remoteUnchanged,
         );
       case CatalogConflictChoice.forkAsLocal:
         final fork = local.copyWith(
@@ -519,6 +545,7 @@ class ProgramService {
           kind: CatalogRefreshKind.forked,
           programUuid: fork.uuid,
           diff: diff,
+          remoteUnchanged: remoteUnchanged,
         );
     }
   }

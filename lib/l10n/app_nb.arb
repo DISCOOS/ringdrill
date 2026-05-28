@@ -304,10 +304,32 @@
   "openedAndActivated": "Åpnet {name}",
   "catalogConflictTitle": "Konflikt ved katalogoppdatering",
   "catalogConflictBody": "Denne katalogplanen har lokale endringer. Se gjennom forskjellene før du velger hvordan du vil fortsette.",
+  "catalogConflictBodyLocalOnly": "Denne katalogplanen har lokale endringer. Onlineversjonen er uendret. Se gjennom dine lokale endringer før du velger hvordan du vil fortsette.",
   "catalogConflictCancel": "Avbryt",
-  "catalogConflictOverwrite": "Overskriv lokalt",
+  "catalogConflictOverwrite": "Forkast lokale endringer",
   "catalogConflictPublish": "Publiser mine endringer",
   "catalogConflictFork": "Lag lokal kopi",
+  "catalogRefreshUpToDate": "{name} er allerede oppdatert",
+  "@catalogRefreshUpToDate": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "catalogRefreshUpdated": "Oppdaterte {name} fra katalogen",
+  "@catalogRefreshUpdated": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "catalogRefreshReverted": "Forkastet lokale endringer i {name}",
+  "@catalogRefreshReverted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "catalogRefreshCancelled": "Katalogoppdatering avbrutt",
+  "catalogRefreshForked": "Lagret en lokal kopi",
+  "catalogRefreshPublished": "Publiserte endringene dine",
   "catalogDiffAdded": "Lagt til",
   "catalogDiffRemoved": "Fjernet",
   "catalogDiffModified": "Endret",

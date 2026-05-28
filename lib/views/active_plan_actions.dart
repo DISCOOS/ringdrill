@@ -129,20 +129,53 @@ Future<void> refreshPlanFromCatalog(
   final localizations = AppLocalizations.of(context)!;
   final client = _buildPublishClient();
   try {
-    await ProgramService().refreshCatalogItem(
+    final outcome = await ProgramService().refreshCatalogItem(
       program.uuid,
       client,
-      onConflict: (diff, {required ownedSlug}) {
+      onConflict: (diff, {required ownedSlug, required remoteUnchanged}) {
         return showCatalogConflictDialog(
           context,
           diff: diff,
           ownedSlug: ownedSlug,
+          remoteUnchanged: remoteUnchanged,
         );
       },
     );
+    if (!context.mounted) return;
+    final message = _catalogRefreshMessage(localizations, outcome, program);
+    if (message != null) _showSnackBar(context, message);
   } catch (_) {
     if (!context.mounted) return;
     _showSnackBar(context, localizations.catalogServiceUnavailable);
+  }
+}
+
+/// Map a [CatalogRefreshOutcome] to a user-facing message. Returns null when
+/// no feedback should be shown (e.g. when the program is no longer available).
+String? _catalogRefreshMessage(
+  AppLocalizations localizations,
+  CatalogRefreshOutcome outcome,
+  Program program,
+) {
+  switch (outcome.kind) {
+    case CatalogRefreshKind.upToDate:
+      return localizations.catalogRefreshUpToDate(program.name);
+    case CatalogRefreshKind.updatedSilently:
+      return localizations.catalogRefreshUpdated(program.name);
+    case CatalogRefreshKind.updatedAfterPrompt:
+      // overwriteLocal: either applied a real catalog update or discarded
+      // local-only edits. The service tells us which via remoteUnchanged.
+      return outcome.remoteUnchanged
+          ? localizations.catalogRefreshReverted(program.name)
+          : localizations.catalogRefreshUpdated(program.name);
+    case CatalogRefreshKind.cancelled:
+      return localizations.catalogRefreshCancelled;
+    case CatalogRefreshKind.forked:
+      return localizations.catalogRefreshForked;
+    case CatalogRefreshKind.published:
+      return localizations.catalogRefreshPublished;
+    case CatalogRefreshKind.failed:
+      return null;
   }
 }
 

@@ -1066,16 +1066,44 @@ class AppLocalizationsNb extends AppLocalizations {
       'Denne katalogplanen har lokale endringer. Se gjennom forskjellene før du velger hvordan du vil fortsette.';
 
   @override
+  String get catalogConflictBodyLocalOnly =>
+      'Denne katalogplanen har lokale endringer. Onlineversjonen er uendret. Se gjennom dine lokale endringer før du velger hvordan du vil fortsette.';
+
+  @override
   String get catalogConflictCancel => 'Avbryt';
 
   @override
-  String get catalogConflictOverwrite => 'Overskriv lokalt';
+  String get catalogConflictOverwrite => 'Forkast lokale endringer';
 
   @override
   String get catalogConflictPublish => 'Publiser mine endringer';
 
   @override
   String get catalogConflictFork => 'Lag lokal kopi';
+
+  @override
+  String catalogRefreshUpToDate(String name) {
+    return '$name er allerede oppdatert';
+  }
+
+  @override
+  String catalogRefreshUpdated(String name) {
+    return 'Oppdaterte $name fra katalogen';
+  }
+
+  @override
+  String catalogRefreshReverted(String name) {
+    return 'Forkastet lokale endringer i $name';
+  }
+
+  @override
+  String get catalogRefreshCancelled => 'Katalogoppdatering avbrutt';
+
+  @override
+  String get catalogRefreshForked => 'Lagret en lokal kopi';
+
+  @override
+  String get catalogRefreshPublished => 'Publiserte endringene dine';
 
   @override
   String get catalogDiffAdded => 'Lagt til';

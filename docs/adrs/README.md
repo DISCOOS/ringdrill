@@ -35,6 +35,8 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0025 | [Authorise catalog writes against Account, with per-plan access policy](./0025-authorization-and-publish-policy.md) | Accepted |
 | ADR-0026 | [Sheet-based context navigation with replace-semantics for detail surfaces](./0026-sheet-based-context-navigation.md) | Accepted |
 | ADR-0027 | [Unify all bottom sheets behind two showRingdrillSheet variants](./0027-unified-bottom-sheet-chrome.md) | Accepted |
+| ADR-0028 | [Group `lib/views/` by feature and distribute shared domain widgets](./0028-feature-first-views-layout.md) | Accepted |
+| ADR-0029 | [Surface a live mini player via ActivityKit on iOS and a foreground service notification on Android](./0029-live-activity-and-foreground-service.md) | Proposed |
 
 ## When to write an ADR
 

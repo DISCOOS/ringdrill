@@ -294,11 +294,13 @@ Future<Program?> _resolvePublishConflict(
     final outcome = await ProgramService().refreshCatalogItem(
       programUuid,
       client,
-      onConflict: (diff, {required ownedSlug}) => showCatalogConflictDialog(
-        context,
-        diff: diff,
-        ownedSlug: ownedSlug,
-      ),
+      onConflict: (diff, {required ownedSlug, required remoteUnchanged}) =>
+          showCatalogConflictDialog(
+            context,
+            diff: diff,
+            ownedSlug: ownedSlug,
+            remoteUnchanged: remoteUnchanged,
+          ),
     );
     if (outcome.kind == CatalogRefreshKind.published) {
       final published = ProgramService().loadProgram(outcome.programUuid);

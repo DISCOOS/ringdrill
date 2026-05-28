@@ -1071,16 +1071,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'This catalog plan has local changes. Review the differences before choosing how to continue.';
 
   @override
+  String get catalogConflictBodyLocalOnly =>
+      'This catalog plan has local changes. The online version is unchanged. Review your local changes before choosing how to continue.';
+
+  @override
   String get catalogConflictCancel => 'Cancel';
 
   @override
-  String get catalogConflictOverwrite => 'Overwrite local';
+  String get catalogConflictOverwrite => 'Discard local changes';
 
   @override
   String get catalogConflictPublish => 'Publish my changes';
 
   @override
   String get catalogConflictFork => 'Fork as local plan';
+
+  @override
+  String catalogRefreshUpToDate(String name) {
+    return '$name is already up to date';
+  }
+
+  @override
+  String catalogRefreshUpdated(String name) {
+    return 'Updated $name from the catalog';
+  }
+
+  @override
+  String catalogRefreshReverted(String name) {
+    return 'Discarded local changes to $name';
+  }
+
+  @override
+  String get catalogRefreshCancelled => 'Catalog update cancelled';
+
+  @override
+  String get catalogRefreshForked => 'Saved a local copy';
+
+  @override
+  String get catalogRefreshPublished => 'Published your changes';
 
   @override
   String get catalogDiffAdded => 'Added';

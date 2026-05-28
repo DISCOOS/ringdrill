@@ -1796,6 +1796,12 @@ abstract class AppLocalizations {
   /// **'This catalog plan has local changes. Review the differences before choosing how to continue.'**
   String get catalogConflictBody;
 
+  /// No description provided for @catalogConflictBodyLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This catalog plan has local changes. The online version is unchanged. Review your local changes before choosing how to continue.'**
+  String get catalogConflictBodyLocalOnly;
+
   /// No description provided for @catalogConflictCancel.
   ///
   /// In en, this message translates to:
@@ -1805,7 +1811,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogConflictOverwrite.
   ///
   /// In en, this message translates to:
-  /// **'Overwrite local'**
+  /// **'Discard local changes'**
   String get catalogConflictOverwrite;
 
   /// No description provided for @catalogConflictPublish.
@@ -1819,6 +1825,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fork as local plan'**
   String get catalogConflictFork;
+
+  /// No description provided for @catalogRefreshUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is already up to date'**
+  String catalogRefreshUpToDate(String name);
+
+  /// No description provided for @catalogRefreshUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {name} from the catalog'**
+  String catalogRefreshUpdated(String name);
+
+  /// No description provided for @catalogRefreshReverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Discarded local changes to {name}'**
+  String catalogRefreshReverted(String name);
+
+  /// No description provided for @catalogRefreshCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog update cancelled'**
+  String get catalogRefreshCancelled;
+
+  /// No description provided for @catalogRefreshForked.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved a local copy'**
+  String get catalogRefreshForked;
+
+  /// No description provided for @catalogRefreshPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Published your changes'**
+  String get catalogRefreshPublished;
 
   /// No description provided for @catalogDiffAdded.
   ///

@@ -8,6 +8,7 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
   BuildContext context, {
   required ProgramDiff diff,
   required bool ownedSlug,
+  bool remoteUnchanged = false,
 }) async {
   final localizations = AppLocalizations.of(context)!;
   final choice = await showDialog<CatalogConflictChoice>(
@@ -22,7 +23,11 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(localizations.catalogConflictBody),
+              Text(
+                remoteUnchanged
+                    ? localizations.catalogConflictBodyLocalOnly
+                    : localizations.catalogConflictBody,
+              ),
               const SizedBox(height: 16),
               DiffField(
                 label: localizations.catalogDiffName,
