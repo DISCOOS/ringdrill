@@ -274,7 +274,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
     // heroTag is intentionally null. The FAB pushes ExerciseFormScreen via a
-    // MaterialPageRoute, which has no FAB to morph into, so there is no hero
+    // The destination has no FAB to morph into, so there is no hero
     // animation to preserve. With an explicit string tag the Scaffold's
     // _FloatingActionButtonTransition can keep both the outgoing and incoming
     // FAB widgets briefly alive (in its internal Stack) when the user switches

@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 
 import 'map_picker_screen.dart';
 
@@ -37,13 +38,11 @@ class PositionFormField<K> extends FormField<LatLng> {
                    IconButton(
                      icon: Icon(Icons.map),
                      onPressed: () async {
-                       final selected = await Navigator.push<LatLng>(
+                       final selected = await openFormSurface<LatLng>(
                          state.context,
-                         MaterialPageRoute(
-                           builder: (context) => MapPickerScreen(
-                             initialCenter: position ?? MapConfig.initialCenter,
-                             markers: markers,
-                           ),
+                         builder: (context) => MapPickerScreen(
+                           initialCenter: position ?? MapConfig.initialCenter,
+                           markers: markers,
                          ),
                        );
                        if (selected != null) state.didChange(selected);

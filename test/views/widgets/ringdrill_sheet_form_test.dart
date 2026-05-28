@@ -15,10 +15,10 @@ void main() {
   testWidgets('form dialog constrains body to 720 px on wide screens', (
     tester,
   ) async {
-    tester.binding.window.physicalSizeTestValue = const Size(1024, 800);
-    tester.binding.window.devicePixelRatioTestValue = 1;
-    addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
-    addTearDown(tester.binding.window.clearDevicePixelRatioTestValue);
+    tester.view.physicalSize = const Size(1024, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
       _harness(
@@ -48,10 +48,10 @@ void main() {
   testWidgets('form dialog does not artificially constrain narrow screens', (
     tester,
   ) async {
-    tester.binding.window.physicalSizeTestValue = const Size(400, 800);
-    tester.binding.window.devicePixelRatioTestValue = 1;
-    addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
-    addTearDown(tester.binding.window.clearDevicePixelRatioTestValue);
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
       _harness(

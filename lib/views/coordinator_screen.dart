@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -212,13 +213,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   void _editExercise(BuildContext context) async {
     final numberOfTeams = _programService.loadTeams().length;
     // Navigate to the edit exercise screen
-    final newExercise = await Navigator.push(
+    final newExercise = await openFormSurface<Exercise>(
       context,
-      MaterialPageRoute(
-        builder: (context) => ExerciseFormScreen(
-          exercise: _exercise,
-          numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
-        ),
+      builder: (context) => ExerciseFormScreen(
+        exercise: _exercise,
+        numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
       ),
     );
     if (context.mounted && newExercise != null) {
