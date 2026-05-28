@@ -96,7 +96,12 @@ class ContextSheetController {
     _navigator?.pop();
   }
 
-  void dispose() => _target.dispose();
+  void dispose() {
+    if (ContextSheet._currentController == this) {
+      ContextSheet._currentController = null;
+    }
+    _target.dispose();
+  }
 }
 
 class ContextSheet
@@ -121,8 +126,9 @@ class ContextSheet
 
   static ContextSheetController of(BuildContext context) {
     final sheet = context.dependOnInheritedWidgetOfExactType<ContextSheet>();
-    assert(sheet != null, 'No ContextSheet found in context');
-    return sheet!.controller;
+    final controller = sheet?.controller ?? _currentController;
+    assert(controller != null, 'No ContextSheet found in context');
+    return controller!;
   }
 
   static ContextSheetBodyBuilder? _bodyBuilderOf(BuildContext context) {
