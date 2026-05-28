@@ -95,6 +95,7 @@ class _Harness extends StatelessWidget {
         controller: controller,
         bodyBuilder: (context, target) {
           final label = switch (target) {
+            ExerciseSheetTarget() => 'exercise',
             StationSheetTarget() => 'station',
             TeamSheetTarget() => 'team',
             RoleSheetTarget() => 'role',
