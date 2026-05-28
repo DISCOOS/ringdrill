@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -28,6 +29,7 @@ import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/exercise_control_button.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
@@ -1088,18 +1090,48 @@ class _MainScreenState extends State<MainScreen> {
                     children: [
                       _buildAppBar(context, constraints, page, hasRail: true),
                       Expanded(child: _buildIndexedTabs()),
-                      if (ExerciseService().isStarted)
-                        SafeArea(
-                          top: false,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                            child: DrillMiniPlayer(
-                              onOpen: () => _openDrillPlayer(context),
-                            ),
-                          ),
-                        ),
+                      ValueListenableBuilder<ContextSheetTarget?>(
+                        valueListenable:
+                            _contextSheetController.targetNotifier,
+                        builder: (context, target, _) {
+                          const roundedTop = BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          );
+                          if (ExerciseService().isStarted) {
+                            return SafeArea(
+                              top: false,
+                              child: ClipRRect(
+                                borderRadius: roundedTop,
+                                child: DrillMiniPlayer(
+                                  onOpen: () {
+                                    final last = ExerciseService().last;
+                                    if (last == null) return;
+                                    _contextSheetController.targetNotifier
+                                        .value = ExerciseSheetTarget(
+                                      exerciseUuid: last.exercise.uuid,
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          }
+                          if (target is ExerciseSheetTarget) {
+                            final exercise = ProgramService().getExercise(
+                              target.exerciseUuid,
+                            );
+                            if (exercise != null) {
+                              return SafeArea(
+                                top: false,
+                                child: ClipRRect(
+                                  borderRadius: roundedTop,
+                                  child: _ExercisePlayBar(exercise: exercise),
+                                ),
+                              );
+                            }
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -1200,6 +1232,10 @@ class _MainScreenState extends State<MainScreen> {
       );
   }
 
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
   void _showMigrationSnackBarOnce() {
     if (_migrationSnackBarChecked) return;
     _migrationSnackBarChecked = true;
@@ -1219,5 +1255,45 @@ class _MainScreenState extends State<MainScreen> {
           .closed
           .then((_) => ProgramService().clearLibrarySchemaJustMigrated());
     });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Compact bar shown in the master column when an exercise is selected but
+// not yet started. Replaced by DrillMiniPlayer once the exercise is running.
+// ---------------------------------------------------------------------------
+
+class _ExercisePlayBar extends StatelessWidget {
+  const _ExercisePlayBar({required this.exercise});
+
+  final Exercise exercise;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                exercise.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            ExerciseControlButton(
+              exercise: exercise,
+              service: ExerciseService(),
+              localizations: localizations,
+              isFAB: false,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

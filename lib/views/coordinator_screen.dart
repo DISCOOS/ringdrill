@@ -16,6 +16,7 @@ import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
@@ -340,14 +341,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 ? Center(child: Text(localizations.noRoundsScheduled))
                 : _buildBody(event),
           ),
-          floatingActionButton: _isStarted
-              ? ExerciseControlButton(
-                  key: const ValueKey('coordinator-exercise-fab'),
-                  exercise: _exercise!,
-                  service: _exerciseService,
-                  localizations: localizations,
-                )
-              : null,
+          floatingActionButton:
+              _isStarted && MasterDetailScope.maybeOf(context) == null
+                  ? ExerciseControlButton(
+                      key: const ValueKey('coordinator-exercise-fab'),
+                      exercise: _exercise!,
+                      service: _exerciseService,
+                      localizations: localizations,
+                    )
+                  : null,
           floatingActionButtonLocation: _isStarted
               ? FloatingActionButtonLocation.centerDocked
               : FloatingActionButtonLocation.endFloat,
@@ -620,6 +622,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     final localizations = AppLocalizations.of(context)!;
     final child = _buildTopSectionContent(event, showHero: showHero);
     if (_exerciseService.isStartedOn(widget.uuid)) return child;
+    // In master-detail layout the play control lives in the master column;
+    // don't add it here so the coordinator is purely informational.
+    if (MasterDetailScope.maybeOf(context) != null) return child;
     return Stack(
       children: [
         Padding(padding: const EdgeInsets.only(bottom: 72), child: child),
