@@ -69,10 +69,15 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
         ? localizations.drillPlayerStartingInWithCountdown('$mm:$ss')
         : '$mm:$ss';
 
-    final phaseDurationSeconds =
-        (event.currentDuration * 60).clamp(1, 1 << 30);
+    // Bottom strip = total exercise progress. Per-phase progress lives inside
+    // MiniRoundRow via PhasesWidget cell fills (Step 7).
+    final totalDurationMinutes = event.exercise.numberOfRounds *
+        (event.exercise.executionTime +
+            event.exercise.evaluationTime +
+            event.exercise.rotationTime);
+    final totalDurationSeconds = (totalDurationMinutes * 60).clamp(1, 1 << 30);
     final smoothedProgress =
-        (event.phaseProgress + secondsSinceEvent / phaseDurationSeconds)
+        (event.totalProgress + secondsSinceEvent / totalDurationSeconds)
             .clamp(0.0, 1.0);
 
     final accent = LiveAccent.of(context, isLive: true);
