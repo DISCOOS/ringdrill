@@ -580,7 +580,13 @@ class _BriefScreenState extends State<BriefScreen> {
                     itemBuilder: (data) {
                       final tag = data.toc.node.headingConfig.tag;
                       final level = headingTag2Level[tag] ?? 1;
-                      if (level > 3) return const SizedBox.shrink();
+                      // Outline starts at exercise (H2). H1 is the program
+                      // title — the document name, not a navigation target —
+                      // and H4+ are per-section metadata headings that the
+                      // sidebar deliberately collapses.
+                      if (level < 2 || level > 3) {
+                        return const SizedBox.shrink();
+                      }
                       final label = data.toc.node.build().toPlainText();
                       return ListTile(
                         dense: true,
@@ -681,7 +687,13 @@ class _BriefScreenState extends State<BriefScreen> {
                   final isActive = data.index == data.currentIndex;
                   final tag = data.toc.node.headingConfig.tag;
                   final level = headingTag2Level[tag] ?? 1;
-                  if (level > 3) return const SizedBox.shrink();
+                  // Outline starts at exercise (H2). H1 is the program
+                  // title — the document name, not a navigation target —
+                  // and H4+ are per-section metadata headings that the
+                  // sidebar deliberately collapses.
+                  if (level < 2 || level > 3) {
+                    return const SizedBox.shrink();
+                  }
                   // The TocNode's own build() returns a TextSpan styled with
                   // the heading's full h2/h3 typography (24/18 px). That is
                   // far too big for a sidebar entry. Pull just the plain
