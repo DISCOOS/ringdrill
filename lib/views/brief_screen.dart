@@ -792,13 +792,14 @@ class _BriefScreenState extends State<BriefScreen> {
             onPressed: _copyMarkdownToClipboard,
           ),
         ),
-        // Floating TOC button at the top-left, only when the sidebar is
-        // hidden (narrow viewport). Wide screens already show the TOC in
-        // the persistent sidebar.
+        // Floating TOC button at the bottom-right, narrow viewports only.
+        // Wide viewports already show the persistent sidebar TOC. The
+        // bottom-right placement keeps the icon out of the way of the
+        // body text and the search bar above.
         if (!isWide)
           Positioned(
-            top: 8,
-            left: 8,
+            bottom: 16,
+            right: 16,
             child: _FloatingActionIcon(
               icon: Icons.toc,
               tooltip: l10n.briefOpenToc,
