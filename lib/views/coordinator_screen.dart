@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -11,7 +12,6 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
@@ -35,6 +35,7 @@ const double _kHeroSidebarWidth = 150;
 const double _kCoordinatorTwoColumnViewportWidth = 1120;
 const double _kCoordinatorTwoColumnContentWidth = 900;
 const double _kCoordinatorBodyPadding = 16;
+const double _kCoordinatorWideTopSectionHeight = 300;
 
 class CoordinatorScreen extends StatefulWidget {
   final String uuid;
@@ -502,7 +503,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildExercisePositionMap(viewportHeight: viewportHeight),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: _buildExercisePositionMap(viewportHeight: viewportHeight),
+        ),
       ],
     );
   }
@@ -532,10 +536,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
-        height: (viewportHeight - _kCoordinatorBodyPadding * 2).clamp(
-          240.0,
-          double.infinity,
-        ),
+        height:
+            (viewportHeight -
+                    _kCoordinatorBodyPadding * 2 -
+                    _kCoordinatorWideTopSectionHeight)
+                .clamp(240.0, double.infinity),
         child: MapView<int>(
           layers: MapConfig.layers,
           withZoom: true,
