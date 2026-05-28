@@ -1076,32 +1076,36 @@ class _MainScreenState extends State<MainScreen> {
     return Row(
       children: [
         rail,
-        SizedBox(
-          width: masterWidth,
-          child: Column(
-            children: [
-              _buildAppBar(context, constraints, page, hasRail: true),
-              Expanded(child: _buildIndexedTabs()),
-              if (ExerciseService().isStarted)
-                SafeArea(
-                  top: false,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                    child: DrillMiniPlayer(
-                      onOpen: () => _openDrillPlayer(context),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
         Expanded(
           child: MasterDetailScope(
             target: _contextSheetController.targetNotifier,
             emptyPaneBuilder: _emptyPaneBuilderForCurrentTab,
-            child: const MasterDetailPane(),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: masterWidth,
+                  child: Column(
+                    children: [
+                      _buildAppBar(context, constraints, page, hasRail: true),
+                      Expanded(child: _buildIndexedTabs()),
+                      if (ExerciseService().isStarted)
+                        SafeArea(
+                          top: false,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12),
+                            ),
+                            child: DrillMiniPlayer(
+                              onOpen: () => _openDrillPlayer(context),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const Expanded(child: MasterDetailPane()),
+              ],
+            ),
           ),
         ),
       ],
