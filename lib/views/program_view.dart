@@ -13,6 +13,7 @@ import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -106,16 +107,14 @@ class _ProgramViewState extends State<ProgramView> {
                     ),
                   ),
                   confirmDismiss: (direction) async {
-                    final numberOfTeams =
-                        _programService.loadTeams().length;
-                    final updated = await Navigator.push<Exercise>(
+                    final numberOfTeams = _programService.loadTeams().length;
+                    final updated = await openFormSurface<Exercise>(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => ExerciseFormScreen(
-                          exercise: exercise,
-                          numberOfTeams:
-                              numberOfTeams == 0 ? null : numberOfTeams,
-                        ),
+                      builder: (_) => ExerciseFormScreen(
+                        exercise: exercise,
+                        numberOfTeams: numberOfTeams == 0
+                            ? null
+                            : numberOfTeams,
                       ),
                     );
                     if (updated != null && context.mounted) {
@@ -138,7 +137,7 @@ class _ProgramViewState extends State<ProgramView> {
                     onOpen: () {
                       final isLive =
                           _liveEvent?.exercise.uuid == exercise.uuid &&
-                              ExerciseService().isStarted;
+                          ExerciseService().isStarted;
                       if (isLive) {
                         showDrillPlayerSheet<void>(
                           context: context,
@@ -235,10 +234,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
       leading: accent.indicator,
       title: Text(
         exercise.name,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: accent.foreground,
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold, color: accent.foreground),
       ),
       subtitle: Text(subtitleParts.join(' | '), style: accent.textStyle),
       trailing: widget.trailing,
@@ -295,8 +291,9 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   // Navigate to the CreateExerciseScreen to add a new exercise
   Future<void> _navigateToCreateExercise(BuildContext context) async {
-    final newExercise = await Navigator.of(context).push<Exercise>(
-      MaterialPageRoute(builder: (context) => ExerciseFormScreen()),
+    final newExercise = await openFormSurface<Exercise>(
+      context,
+      builder: (context) => ExerciseFormScreen(),
     );
 
     if (context.mounted && newExercise != null) {
@@ -317,8 +314,9 @@ abstract class ProgramPageControllerBase extends ScreenController {
       IconButton(
         icon: const Icon(Icons.menu_book),
         tooltip: localizations.briefAction,
-        onPressed: () =>
-            GoRouter.of(context).push('$routeBrief/program/${activeProgram.uuid}'),
+        onPressed: () => GoRouter.of(
+          context,
+        ).push('$routeBrief/program/${activeProgram.uuid}'),
       ),
     ];
   }
@@ -358,134 +356,133 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // as "everything selected" and trigger an unintended export/import.
     final List<String>? popped =
         await showResponsiveSheetOrDialog<List<String>>(
-      context,
-      maximizeHeight: true,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final headerLabelStyle = Theme.of(context).textTheme.titleSmall
-                ?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                );
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                top: 8.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
-              ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    if (showSelectAllControls) ...[
-                      const SizedBox(height: 8.0),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              localizations.selectedOfTotal(
-                                selected.length,
-                                exercises.length,
+          context,
+          maximizeHeight: true,
+          builder: (context) {
+            return StatefulBuilder(
+              builder: (context, setState) {
+                final headerLabelStyle = Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    );
+                return Padding(
+                  padding: EdgeInsets.only(
+                    left: 20.0,
+                    right: 20.0,
+                    top: 8.0,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
+                  ),
+                  child: SafeArea(
+                    child: Column(
+                      children: [
+                        if (showSelectAllControls) ...[
+                          const SizedBox(height: 8.0),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  localizations.selectedOfTotal(
+                                    selected.length,
+                                    exercises.length,
+                                  ),
+                                  style: headerLabelStyle,
+                                ),
                               ),
-                              style: headerLabelStyle,
-                            ),
+                              TextButton(
+                                onPressed: selected.length == exercises.length
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          selected
+                                            ..clear()
+                                            ..addAll(allUuids);
+                                        });
+                                      },
+                                child: Text(localizations.selectAll),
+                              ),
+                              TextButton(
+                                onPressed: selected.isEmpty
+                                    ? null
+                                    : () {
+                                        setState(() => selected.clear());
+                                      },
+                                child: Text(localizations.selectNone),
+                              ),
+                            ],
                           ),
-                          TextButton(
-                            onPressed: selected.length == exercises.length
-                                ? null
-                                : () {
+                          const Divider(height: 16.0),
+                        ] else
+                          const SizedBox(height: 16.0),
+                        Expanded(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: exercises.length,
+                            itemBuilder: (context, index) {
+                              final exercise = exercises[index];
+                              final uuid = exercise.uuid;
+                              final markers = exercise.getLocations(false);
+                              return ExerciseCard(
+                                exercise: exercise,
+                                localizations: localizations,
+                                markers: markers,
+                                trailing: Switch(
+                                  value: selected.contains(uuid),
+                                  onChanged: (bool? value) {
                                     setState(() {
-                                      selected
-                                        ..clear()
-                                        ..addAll(allUuids);
+                                      if (value == true) {
+                                        selected.add(uuid);
+                                      } else {
+                                        selected.remove(uuid);
+                                      }
                                     });
                                   },
-                            child: Text(localizations.selectAll),
+                                ),
+                              );
+                            },
                           ),
-                          TextButton(
-                            onPressed: selected.isEmpty
-                                ? null
-                                : () {
-                                    setState(() => selected.clear());
-                                  },
-                            child: Text(localizations.selectNone),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 16.0),
-                    ] else
-                      const SizedBox(height: 16.0),
-                    Expanded(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: exercises.length,
-                        itemBuilder: (context, index) {
-                          final exercise = exercises[index];
-                          final uuid = exercise.uuid;
-                          final markers = exercise.getLocations(false);
-                          return ExerciseCard(
-                            exercise: exercise,
-                            localizations: localizations,
-                            markers: markers,
-                            trailing: Switch(
-                              value: selected.contains(uuid),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    selected.add(uuid);
-                                  } else {
-                                    selected.remove(uuid);
-                                  }
-                                });
-                              },
+                        ),
+                        const SizedBox(height: 20.0),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: headerLabelStyle,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 20.0),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: headerLabelStyle,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
+                            const SizedBox(width: 12.0),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, null);
+                              },
+                              child: Text(localizations.cancel),
+                            ),
+                            const SizedBox(width: 8.0),
+                            FilledButton(
+                              onPressed: selected.isEmpty
+                                  ? null
+                                  : () {
+                                      Navigator.pop(context, selected);
+                                    },
+                              child: Text(
+                                confirmLabel ?? localizations.confirm,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12.0),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context, null);
-                          },
-                          child: Text(localizations.cancel),
-                        ),
-                        const SizedBox(width: 8.0),
-                        FilledButton(
-                          onPressed: selected.isEmpty
-                              ? null
-                              : () {
-                                  Navigator.pop(context, selected);
-                                },
-                          child: Text(
-                            confirmLabel ?? localizations.confirm,
-                          ),
-                        ),
+                        const SizedBox(height: 8.0),
                       ],
                     ),
-                    const SizedBox(height: 8.0),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
-      },
-    );
 
     return popped ?? <String>[];
   }
 }
-

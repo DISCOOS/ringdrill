@@ -4,6 +4,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 
 /// Bottom sheet listing all [Actor] records in the active program.
 ///
@@ -49,8 +50,9 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
 
   Future<void> _openEdit(Actor actor) async {
     final localizations = AppLocalizations.of(context)!;
-    final updated = await Navigator.of(context).push<Actor>(
-      MaterialPageRoute(builder: (_) => ActorFormScreen(actor: actor)),
+    final updated = await openFormSurface<Actor>(
+      context,
+      builder: (_) => ActorFormScreen(actor: actor),
     );
     if (updated == null) return;
     await _service.saveActor(localizations, updated);
@@ -60,8 +62,9 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
 
   Future<void> _openCreate() async {
     final localizations = AppLocalizations.of(context)!;
-    final created = await Navigator.of(context).push<Actor>(
-      MaterialPageRoute(builder: (_) => const ActorFormScreen()),
+    final created = await openFormSurface<Actor>(
+      context,
+      builder: (_) => const ActorFormScreen(),
     );
     if (created == null) return;
     await _service.saveActor(localizations, created);
@@ -74,9 +77,7 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
     final roles = _rolesFor(actor.uuid);
     if (roles.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.castDeleteBlocked(roles.length)),
-        ),
+        SnackBar(content: Text(localizations.castDeleteBlocked(roles.length))),
       );
       return;
     }
@@ -112,64 +113,62 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
                       child: Text(
                         localizations.noActorsInRoster,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),
                   )
                 : ListView.builder(
-              itemCount: _actors.length,
-              itemBuilder: (context, index) {
-                final actor = _actors[index];
-                final roles = _rolesFor(actor.uuid);
-                return Dismissible(
-                  key: ValueKey(actor.uuid),
-                  direction: DismissDirection.endToStart,
-                  confirmDismiss: (_) async {
-                    final roles = _rolesFor(actor.uuid);
-                    if (roles.isNotEmpty) {
-                      await _tryDelete(context, actor);
-                      return false;
-                    }
-                    return true;
-                  },
-                  onDismissed: (_) => _service.deleteActor(actor.uuid),
-                  background: Container(
-                    color: Theme.of(context).colorScheme.error,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 16),
-                    child: Icon(
-                      Icons.delete,
-                      color: Theme.of(context).colorScheme.onError,
-                    ),
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.face),
-                    title: Text(actor.realName),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (actor.phone != null) Text(actor.phone!),
-                        if (roles.isNotEmpty)
-                          Text(
-                            localizations.castedAs(roles.join(', ')),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
+                    itemCount: _actors.length,
+                    itemBuilder: (context, index) {
+                      final actor = _actors[index];
+                      final roles = _rolesFor(actor.uuid);
+                      return Dismissible(
+                        key: ValueKey(actor.uuid),
+                        direction: DismissDirection.endToStart,
+                        confirmDismiss: (_) async {
+                          final roles = _rolesFor(actor.uuid);
+                          if (roles.isNotEmpty) {
+                            await _tryDelete(context, actor);
+                            return false;
+                          }
+                          return true;
+                        },
+                        onDismissed: (_) => _service.deleteActor(actor.uuid),
+                        background: Container(
+                          color: Theme.of(context).colorScheme.error,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Icon(
+                            Icons.delete,
+                            color: Theme.of(context).colorScheme.onError,
                           ),
-                      ],
-                    ),
-                    onTap: () => _openEdit(actor),
+                        ),
+                        child: ListTile(
+                          leading: const Icon(Icons.face),
+                          title: Text(actor.realName),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (actor.phone != null) Text(actor.phone!),
+                              if (roles.isNotEmpty)
+                                Text(
+                                  localizations.castedAs(roles.join(', ')),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          onTap: () => _openEdit(actor),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),

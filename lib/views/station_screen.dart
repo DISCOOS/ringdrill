@@ -12,6 +12,7 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
@@ -406,12 +407,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       ),
       confirmDismiss: (_) async {
         final localizations = AppLocalizations.of(context)!;
-        final updated = await Navigator.push<RolePlay>(
+        final updated = await openFormSurface<RolePlay>(
           context,
-          MaterialPageRoute(
-            builder: (_) =>
-                RolePlayFormScreen(rolePlay: r, exercise: _exercise),
-          ),
+          builder: (_) => RolePlayFormScreen(rolePlay: r, exercise: _exercise),
         );
         if (updated != null) {
           await _programService.saveRolePlay(localizations, updated);
@@ -485,12 +483,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       stationIndex: station.index,
       name: '',
     );
-    final saved = await Navigator.push<RolePlay>(
+    final saved = await openFormSurface<RolePlay>(
       context,
-      MaterialPageRoute(
-        builder: (_) =>
-            RolePlayFormScreen(rolePlay: draft, exercise: _exercise),
-      ),
+      builder: (_) => RolePlayFormScreen(rolePlay: draft, exercise: _exercise),
     );
     if (saved != null) {
       await _programService.saveRolePlay(localizations, saved);
@@ -518,13 +513,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final stations = _exercise.stations.toList();
 
     // Navigate to the edit exercise screen
-    final newStation = await Navigator.push<Station>(
+    final newStation = await openFormSurface<Station>(
       context,
-      MaterialPageRoute(
-        builder: (context) => StationFormScreen(
-          station: stations[widget.stationIndex],
-          markers: _programService.getLocations().toMarkerSpecs(),
-        ),
+      builder: (context) => StationFormScreen(
+        station: stations[widget.stationIndex],
+        markers: _programService.getLocations().toMarkerSpecs(),
       ),
     );
     // The previous guard was `newStation != _exercise`, but those are

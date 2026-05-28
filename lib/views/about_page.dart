@@ -79,7 +79,14 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.about)),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: localizations.cancel,
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(localizations.about),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

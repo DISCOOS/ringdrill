@@ -60,12 +60,14 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: localizations.cancel,
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(title),
         actions: [
-          ElevatedButton(
-            onPressed: _save,
-            child: Text(localizations.save),
-          ),
+          ElevatedButton(onPressed: _save, child: Text(localizations.save)),
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
@@ -84,10 +86,9 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
                   decoration: InputDecoration(
                     labelText: localizations.actorRealName,
                   ),
-                  validator: (value) =>
-                      value != null && value.trim().isNotEmpty
-                          ? null
-                          : localizations.pleaseEnterAName,
+                  validator: (value) => value != null && value.trim().isNotEmpty
+                      ? null
+                      : localizations.pleaseEnterAName,
                 ),
                 const SizedBox(height: 12),
 

@@ -24,11 +24,7 @@ enum _Section { signalement, background, behavior }
 /// [exercise] is optional. When provided, the stationIndex dropdown
 /// is populated with the exercise's stations.
 class RolePlayFormScreen extends StatefulWidget {
-  const RolePlayFormScreen({
-    super.key,
-    required this.rolePlay,
-    this.exercise,
-  });
+  const RolePlayFormScreen({super.key, required this.rolePlay, this.exercise});
 
   final RolePlay rolePlay;
   final Exercise? exercise;
@@ -118,8 +114,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
     // Compute the role-code badge text.
     final exercises = _programService.loadExercises();
-    final exerciseIndex = exercises
-        .indexWhere((e) => e.uuid == widget.rolePlay.exerciseUuid);
+    final exerciseIndex = exercises.indexWhere(
+      (e) => e.uuid == widget.rolePlay.exerciseUuid,
+    );
     final code = exerciseIndex < 0
         ? '?.${widget.rolePlay.index + 1}'
         : '${exerciseIndex + 1}.${widget.rolePlay.index + 1}';
@@ -134,6 +131,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: localizations.cancel,
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
             RoleCodeBadge(code: code),
@@ -148,10 +150,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           ],
         ),
         actions: [
-          ElevatedButton(
-            onPressed: _save,
-            child: Text(localizations.save),
-          ),
+          ElevatedButton(onPressed: _save, child: Text(localizations.save)),
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
@@ -176,8 +175,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                         ),
                         validator: (value) =>
                             value != null && value.trim().isNotEmpty
-                                ? null
-                                : localizations.pleaseEnterAName,
+                            ? null
+                            : localizations.pleaseEnterAName,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -187,7 +186,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                         key: const Key('age-field'),
                         controller: _ageController,
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         decoration: InputDecoration(
                           labelText: localizations.roleAge,
                         ),
@@ -275,7 +276,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-
               ],
             ),
           ),
@@ -292,15 +292,18 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final updated = _rolePlay.copyWith(
       name: _nameController.text.trim(),
       age: ageText.isEmpty ? null : int.parse(ageText),
-      signalement: _activeSections.contains(_Section.signalement) &&
+      signalement:
+          _activeSections.contains(_Section.signalement) &&
               _signalementController.text.trim().isNotEmpty
           ? _signalementController.text.trim()
           : null,
-      background: _activeSections.contains(_Section.background) &&
+      background:
+          _activeSections.contains(_Section.background) &&
               _backgroundController.text.trim().isNotEmpty
           ? _backgroundController.text.trim()
           : null,
-      behavior: _activeSections.contains(_Section.behavior) &&
+      behavior:
+          _activeSections.contains(_Section.behavior) &&
               _behaviorController.text.trim().isNotEmpty
           ? _behaviorController.text.trim()
           : null,

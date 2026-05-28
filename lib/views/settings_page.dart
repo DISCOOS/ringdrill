@@ -12,8 +12,16 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.settings)),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: localizations.cancel,
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(localizations.settings),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16.0),

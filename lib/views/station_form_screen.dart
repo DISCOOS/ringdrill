@@ -46,6 +46,11 @@ class _StationFormScreenState extends State<StationFormScreen> {
     final markers = widget.markers.where((e) => e.point == _position).toList();
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: localizations.cancel,
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(localizations.editStation),
         actions: [
           ElevatedButton(

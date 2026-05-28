@@ -7,6 +7,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -376,13 +377,11 @@ class _StationListViewState extends State<StationListView> {
 
   Future<void> _openStationForm(Exercise exercise, Station station) async {
     final localizations = AppLocalizations.of(context)!;
-    final newStation = await Navigator.push<Station>(
+    final newStation = await openFormSurface<Station>(
       context,
-      MaterialPageRoute(
-        builder: (_) => StationFormScreen(
-          station: station,
-          markers: _programService.getLocations().toMarkerSpecs(),
-        ),
+      builder: (_) => StationFormScreen(
+        station: station,
+        markers: _programService.getLocations().toMarkerSpecs(),
       ),
     );
     if (!mounted || newStation == null) return;

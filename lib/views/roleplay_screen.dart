@@ -3,6 +3,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
@@ -78,13 +79,10 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             icon: const Icon(Icons.edit),
             tooltip: localizations.roleSection,
             onPressed: () async {
-              final updated = await Navigator.of(context).push<RolePlay>(
-                MaterialPageRoute(
-                  builder: (_) => RolePlayFormScreen(
-                    rolePlay: rolePlay,
-                    exercise: exercise,
-                  ),
-                ),
+              final updated = await openFormSurface<RolePlay>(
+                context,
+                builder: (_) =>
+                    RolePlayFormScreen(rolePlay: rolePlay, exercise: exercise),
               );
               if (updated != null) {
                 await _programService.saveRolePlay(localizations, updated);

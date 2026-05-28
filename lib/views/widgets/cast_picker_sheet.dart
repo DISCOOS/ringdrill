@@ -4,6 +4,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 
 /// Bottom sheet for assigning an [Actor] to a [RolePlay].
 ///
@@ -78,9 +79,10 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
 
   Future<void> _createAndSelect() async {
     final localizations = AppLocalizations.of(context)!;
-    final created = await Navigator.of(
+    final created = await openFormSurface<Actor>(
       context,
-    ).push<Actor>(MaterialPageRoute(builder: (_) => const ActorFormScreen()));
+      builder: (_) => const ActorFormScreen(),
+    );
     if (created == null || !mounted) return;
     await _service.saveActor(localizations, created);
     if (!mounted) return;

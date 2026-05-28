@@ -9,6 +9,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -465,11 +466,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Future<void> _openRolePlayForm(Exercise exercise, RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
-    final updated = await Navigator.of(context).push<RolePlay>(
-      MaterialPageRoute(
-        builder: (_) =>
-            RolePlayFormScreen(rolePlay: rolePlay, exercise: exercise),
-      ),
+    final updated = await openFormSurface<RolePlay>(
+      context,
+      builder: (_) =>
+          RolePlayFormScreen(rolePlay: rolePlay, exercise: exercise),
     );
     if (updated == null || !mounted) return;
     await _service.saveRolePlay(localizations, updated);
@@ -501,8 +501,9 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Future<void> _editCast(Actor actor, RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
-    final updated = await Navigator.of(context).push<Actor>(
-      MaterialPageRoute(builder: (_) => ActorFormScreen(actor: actor)),
+    final updated = await openFormSurface<Actor>(
+      context,
+      builder: (_) => ActorFormScreen(actor: actor),
     );
     if (updated == null || !mounted) return;
     await _service.saveActor(localizations, updated);
