@@ -50,56 +50,53 @@
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>RingDrill uses your location only when you tap the "locate me" button on the map to centre the view on your current position.</string>
 		<key>CFBundleDocumentTypes</key>
-        <array>
-          <dict>
-            <key>CFBundleTypeName</key>
-            <string>Drill Plan</string>
-            <key>LSHandlerRank</key>
-            <string>Owner</string>
-            <key>LSItemContentTypes</key>
-            <array>
-              <string>org.discoos.ringdrill</string>
-            </array>
-          </dict>
-        </array>
-
-        <key>UTExportedTypeDeclarations</key>
-        <array>
-          <dict>
-            <key>UTTypeIdentifier</key>
-            <string>org.discoos.ringdrill</string>
-            <key>UTTypeDescription</key>
-            <string>Drill Plan</string>
-            <key>UTTypeConformsTo</key>
-            <array>
-              <string>public.data</string>
-              <string>public.content</string>
-            </array>
-            <key>UTTypeTagSpecification</key>
-            <dict>
-              <key>public.filename-extension</key>
-              <array>
-                <string>drill</string>
-              </array>
-              <key>public.mime-type</key>
-              <string>application/x-drill</string>
-              <key>public.mime-type</key>
-              <string>application/vnd.ringdrill+zip</string>
-            </dict>
-          </dict>
-        </array>
-        
-        <key>CFBundleURLTypes</key>
-        <array>
-          <dict>
-            <key>CFBundleURLName</key>
-            <string>org.discoos.ringdrill</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-              <string>ringdrill</string>
-            </array>
-          </dict>
-        </array>
-
+		<array>
+			<dict>
+				<key>CFBundleTypeName</key>
+				<string>Drill Plan</string>
+				<key>LSHandlerRank</key>
+				<string>Owner</string>
+				<key>LSItemContentTypes</key>
+				<array>
+					<string>org.discoos.ringdrill</string>
+				</array>
+			</dict>
+		</array>
+		<key>UTExportedTypeDeclarations</key>
+		<array>
+			<dict>
+				<key>UTTypeIdentifier</key>
+				<string>org.discoos.ringdrill</string>
+				<key>UTTypeDescription</key>
+				<string>Drill Plan</string>
+				<key>UTTypeConformsTo</key>
+				<array>
+					<string>public.data</string>
+					<string>public.content</string>
+				</array>
+				<key>UTTypeTagSpecification</key>
+				<dict>
+					<key>public.filename-extension</key>
+					<array>
+						<string>drill</string>
+					</array>
+					<key>public.mime-type</key>
+					<string>application/x-drill</string>
+					<key>public.mime-type</key>
+					<string>application/vnd.ringdrill+zip</string>
+				</dict>
+			</dict>
+		</array>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleURLName</key>
+				<string>org.discoos.ringdrill</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>ringdrill</string>
+				</array>
+			</dict>
+		</array>
 	</dict>
 </plist>

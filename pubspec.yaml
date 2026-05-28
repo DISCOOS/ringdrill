@@ -90,7 +90,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter_native_splash:
-  color: "#1E3A8A" # Background color
+  color: "#002C3F" # Background color
   image: assets/images/ringdrill-v2-1254x1254.png
   android: true
   ios: true
@@ -98,9 +98,9 @@ flutter_native_splash:
 
   android_12:
     image: assets/images/ringdrill-v2-1254x1254.png
-    icon_background_color: "#1E3A8A"
+    icon_background_color: "#002C3F"
     image_dark: assets/images/ringdrill-v2-1254x1254.png
-    icon_background_color_dark: "#1E3A8A"
+    icon_background_color_dark: "#002C3F"
 
 flutter_launcher_icons:
   android: "launcher_icon"
