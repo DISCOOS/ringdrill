@@ -50,9 +50,11 @@ class DrillFile {
     final actorJsons = <String, Map<String, dynamic>>{};
     final actorNotesFields = <String, String>{};
     final actors = <Actor>[];
-    // Program-level markdown fields (program/intro.md, program/comms.md).
+    // Program-level markdown fields (program/intro.md, program/comms.md,
+    // program/before-round.md).
     String? programBriefIntroMd;
     String? programCommsMd;
+    String? programBeforeRoundMd;
     // Nullable rather than `late final`: a `.drill` archive produced by
     // an older client, a manual zip, or a truncated download may be
     // missing one or both of these entries. With `late final` the
@@ -94,6 +96,10 @@ class DrillFile {
       }
       if (name == 'program/comms.md') {
         programCommsMd = utf8.decode(bytes);
+        continue;
+      }
+      if (name == 'program/before-round.md') {
+        programBeforeRoundMd = utf8.decode(bytes);
         continue;
       }
 
@@ -140,17 +146,20 @@ class DrillFile {
         continue;
       }
 
-      if (segments.length == 5 && segments[0] == 'exercises' &&
-          segments[2] == 'stations' && segments[4].endsWith('.md')) {
+      if (segments.length == 5 &&
+          segments[0] == 'exercises' &&
+          segments[2] == 'stations' &&
+          segments[4].endsWith('.md')) {
         // exercises/<uuid>/stations/<index>/<field>.md
         final exerciseUuid = segments[1];
         final stationIdx = int.tryParse(segments[3]);
         final field = segments[4];
         if (stationIdx != null) {
           final mdContent = utf8.decode(bytes);
-          stationMdFields
-              .putIfAbsent((exerciseUuid, stationIdx), () => {})[field] =
-              mdContent;
+          stationMdFields.putIfAbsent((
+            exerciseUuid,
+            stationIdx,
+          ), () => {})[field] = mdContent;
         }
         continue;
       }
@@ -264,10 +273,13 @@ class DrillFile {
       actors: actors,
     );
 
-    if (programBriefIntroMd != null || programCommsMd != null) {
+    if (programBriefIntroMd != null ||
+        programCommsMd != null ||
+        programBeforeRoundMd != null) {
       result = result.copyWith(
         briefIntroMd: programBriefIntroMd,
         commsMd: programCommsMd,
+        beforeRoundMd: programBeforeRoundMd,
       );
     }
 
@@ -307,6 +319,7 @@ class DrillFile {
     // Program-level markdown fields.
     _writeMd(archive, 'program/intro.md', program.briefIntroMd);
     _writeMd(archive, 'program/comms.md', program.commsMd);
+    _writeMd(archive, 'program/before-round.md', program.beforeRoundMd);
 
     // Serialize exercises into folder 'exercises'
     for (var exercise in program.exercises) {
@@ -321,21 +334,61 @@ class DrillFile {
       // Exercise-level markdown fields.
       final exBase = path.join('exercises', exercise.uuid);
       _writeMd(archive, path.join(exBase, 'method.md'), exercise.methodMd);
-      _writeMd(archive, path.join(exBase, 'learning-goals.md'), exercise.learningGoalsMd);
-      _writeMd(archive, path.join(exBase, 'training-focus.md'), exercise.trainingFocusMd);
-      _writeMd(archive, path.join(exBase, 'order-format.md'), exercise.orderFormatMd);
-      _writeMd(archive, path.join(exBase, 'execution-tips.md'), exercise.executionTipsMd);
+      _writeMd(
+        archive,
+        path.join(exBase, 'learning-goals.md'),
+        exercise.learningGoalsMd,
+      );
+      _writeMd(
+        archive,
+        path.join(exBase, 'training-focus.md'),
+        exercise.trainingFocusMd,
+      );
+      _writeMd(
+        archive,
+        path.join(exBase, 'order-format.md'),
+        exercise.orderFormatMd,
+      );
+      _writeMd(
+        archive,
+        path.join(exBase, 'execution-tips.md'),
+        exercise.executionTipsMd,
+      );
       _writeMd(archive, path.join(exBase, 'comms.md'), exercise.commsMd);
       // Station-level markdown fields (keyed by station.index, not UUID).
       for (final station in exercise.stations) {
         final sBase = path.join(exBase, 'stations', '${station.index}');
-        _writeMd(archive, path.join(sBase, 'equipment.md'), station.equipmentMd);
-        _writeMd(archive, path.join(sBase, 'situation.md'), station.situationMd);
+        _writeMd(
+          archive,
+          path.join(sBase, 'equipment.md'),
+          station.equipmentMd,
+        );
+        _writeMd(
+          archive,
+          path.join(sBase, 'situation.md'),
+          station.situationMd,
+        );
         _writeMd(archive, path.join(sBase, 'mission.md'), station.missionMd);
-        _writeMd(archive, path.join(sBase, 'logistics.md'), station.logisticsMd);
-        _writeMd(archive, path.join(sBase, 'critical-questions.md'), station.criticalQuestionsMd);
-        _writeMd(archive, path.join(sBase, 'leader-answers.md'), station.leaderAnswersMd);
-        _writeMd(archive, path.join(sBase, 'director-notes.md'), station.directorNotesMd);
+        _writeMd(
+          archive,
+          path.join(sBase, 'logistics.md'),
+          station.logisticsMd,
+        );
+        _writeMd(
+          archive,
+          path.join(sBase, 'critical-questions.md'),
+          station.criticalQuestionsMd,
+        );
+        _writeMd(
+          archive,
+          path.join(sBase, 'leader-answers.md'),
+          station.leaderAnswersMd,
+        );
+        _writeMd(
+          archive,
+          path.join(sBase, 'director-notes.md'),
+          station.directorNotesMd,
+        );
       }
     }
 
@@ -373,7 +426,11 @@ class DrillFile {
       // empty string = zero-byte file).
       final rpBase = path.join('roleplays', rolePlay.uuid);
       _writeMd(archive, path.join(rpBase, 'behavior.md'), rolePlay.behavior);
-      _writeMd(archive, path.join(rpBase, 'background.md'), rolePlay.background);
+      _writeMd(
+        archive,
+        path.join(rpBase, 'background.md'),
+        rolePlay.background,
+      );
       _writeMd(archive, path.join(rpBase, 'props.md'), rolePlay.propsMd);
     }
 
@@ -387,7 +444,11 @@ class DrillFile {
           json,
         ),
       );
-      _writeMd(archive, path.join('actors', actor.uuid, 'notes.md'), actor.notes);
+      _writeMd(
+        archive,
+        path.join('actors', actor.uuid, 'notes.md'),
+        actor.notes,
+      );
     }
 
     // Serialize Program itself (without nested objects)

@@ -30,6 +30,8 @@ sealed class Program with _$Program {
     // Markdown brief fields — stored as program/<field>.md, not in JSON.
     @JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,
     @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    String? beforeRoundMd,
   }) = _Program;
 
   factory Program.fromJson(Map<String, dynamic> json) =>
@@ -148,6 +150,7 @@ extension ProgramX on Program {
       'description': description,
       'briefIntroMd': briefIntroMd,
       'commsMd': commsMd,
+      'beforeRoundMd': beforeRoundMd,
     });
 
     final canonical = {
