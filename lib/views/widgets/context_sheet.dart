@@ -8,6 +8,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/team_exercise_screen.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
@@ -72,6 +73,16 @@ class ContextSheetController {
   ValueListenable<ContextSheetTarget?> get target => _target;
 
   Future<void> show(BuildContext context, ContextSheetTarget target) async {
+    if (target is! BriefSheetTarget) {
+      final scope = MasterDetailScope.maybeOf(context);
+      if (scope != null) {
+        scope.setTarget(target);
+        _isOpen = true;
+        _navigator = null;
+        _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
+        return;
+      }
+    }
     if (_isOpen) {
       _target.value = target;
       return;
@@ -109,6 +120,11 @@ class ContextSheetController {
 
   void close() {
     if (!_isOpen) return;
+    if (_navigator == null) {
+      _target.value = null;
+      _isOpen = false;
+      return;
+    }
     _navigator?.pop();
   }
 
@@ -235,6 +251,13 @@ class _DefaultContextSheetBody extends StatelessWidget {
     }
     return TeamExerciseScreen(teamIndex: teamIndex, exercise: exercise);
   }
+}
+
+Widget defaultContextSheetBody(
+  BuildContext context,
+  ContextSheetTarget target,
+) {
+  return _DefaultContextSheetBody(target: target);
 }
 
 /// Wraps [CoordinatorScreen] for an [ExerciseSheetTarget] and auto-closes
