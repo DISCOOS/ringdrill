@@ -1155,8 +1155,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rotationShareEachRound => 'Generelt hver runde';
 
   @override
-  String get rotationShareLegendPhases =>
-      'øve | evaluere | rullere / inntransport';
+  String get rotationShareLegendPhases => 'øve | eval | rull / retur';
 
   @override
   String get rotationShareTitle => 'Rullering (klokkeslett)';
