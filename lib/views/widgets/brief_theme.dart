@@ -184,7 +184,11 @@ class BriefTheme {
     ),
     borders: BriefBorders(subtle: Color(0xFFE5E7EB)),
     code: BriefCodeStyle(
-      background: Color(0xFFF4F4F5),
+      // Slate-200 chip fill. Bumped up from slate-100 (#F4F4F5) because the
+      // chip needs to be unambiguously visible on a white canvas; slate-100
+      // blends with the background even with the rounded-Container chip
+      // treatment in BriefMarkdown.
+      background: Color(0xFFE4E4E7),
       foreground: Color(0xFF0F172A),
       border: Color(0xFFE5E7EB),
     ),
@@ -225,9 +229,12 @@ class BriefTheme {
     ),
     borders: BriefBorders(subtle: Color(0xFF1F2937)),
     code: BriefCodeStyle(
-      background: Color(0xFF1F2937),
+      // Slate-700 chip fill. Bumped up from slate-800 (#1F2937) so the chip
+      // stands out against the near-black canvas. Slate-800 is too close to
+      // the #0B0F17 canvas to read as a distinct chip.
+      background: Color(0xFF374151),
       foreground: Color(0xFFE5E7EB),
-      border: Color(0xFF1F2937),
+      border: Color(0xFF374151),
     ),
     link: BriefLinkStyle(color: Color(0xFFCBD5E1), underlineOpacity: 0.6),
     accent: BriefAccent(activeStripe: Color(0xFFE5E7EB)),
