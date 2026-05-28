@@ -42,7 +42,12 @@ class _ProgramViewState extends State<ProgramView> {
   void initState() {
     super.initState();
     _initExercises();
-    _liveEvent = ExerciseService().last;
+    // Treat a `done` event as "no live exercise" so a stopped exercise
+    // stops being painted with the blue live-card treatment and the
+    // "FERDIG" subtitle stub. The service keeps `_last` around after
+    // `stop()` for diagnostics, but the list views only care about
+    // currently-live exercises.
+    _liveEvent = _filterLive(ExerciseService().last);
 
     // Listen to exercise changes
     _subscriptions.add(
@@ -61,7 +66,7 @@ class _ProgramViewState extends State<ProgramView> {
       ExerciseService().events.listen((event) {
         if (!mounted) return;
         setState(() {
-          _liveEvent = event;
+          _liveEvent = _filterLive(event);
         });
       }),
     );
@@ -159,6 +164,13 @@ class _ProgramViewState extends State<ProgramView> {
     _exercises = _programService.loadExercises();
   }
 
+  /// Returns `event` only when it represents a currently-live exercise.
+  /// A `done` event is dropped so the list view stops styling the
+  /// stopped exercise as live (no "FERDIG" subtitle, no blue card).
+  ExerciseEvent? _filterLive(ExerciseEvent? event) {
+    if (event == null || event.isDone) return null;
+    return event;
+  }
 }
 
 class ExerciseCard extends StatefulWidget {

@@ -44,7 +44,9 @@ class _StationListViewState extends State<StationListView> {
   @override
   void initState() {
     super.initState();
-    _liveEvent = ExerciseService().last;
+    // Drop `done` events so a stopped exercise's stations stop being
+    // highlighted with the live-accent treatment on the badge and tile.
+    _liveEvent = _filterLive(ExerciseService().last);
     _subscription = _programService.events.listen((_) {
       if (mounted) setState(() {});
     });
@@ -53,7 +55,7 @@ class _StationListViewState extends State<StationListView> {
     _exerciseSubscription = ExerciseService().events.listen((event) {
       if (!mounted) return;
       setState(() {
-        _liveEvent = event;
+        _liveEvent = _filterLive(event);
       });
     });
     _controller.filterExerciseUuid.addListener(_onFilterChanged);
@@ -117,6 +119,14 @@ class _StationListViewState extends State<StationListView> {
       pairs.add((rp.exerciseUuid, idx));
     }
     return pairs;
+  }
+
+  /// Returns `event` only when it represents a currently-live
+  /// exercise. A `done` event (emitted by `ExerciseService.stop()`)
+  /// is dropped so the station rows stop being styled as live.
+  ExerciseEvent? _filterLive(ExerciseEvent? event) {
+    if (event == null || event.isDone) return null;
+    return event;
   }
 
   Exercise? _filterExercise() {

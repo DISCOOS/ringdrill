@@ -54,7 +54,14 @@ class _TeamScreenState extends State<TeamScreen> {
                       itemCount: exercises.length,
                       itemBuilder: (context, index) {
                         final exercise = exercises[index];
-                        final isLive = live?.exercise.uuid == exercise.uuid;
+                        // A `done` event is treated as "not live" so a
+                        // stopped exercise stops being painted with the
+                        // blue accent. `ExerciseService.stop()` keeps
+                        // `_last` around for diagnostics; views drop
+                        // it here.
+                        final isLive =
+                            live?.exercise.uuid == exercise.uuid &&
+                            live?.isDone != true;
                         final event = isLive
                             ? live!
                             : ExerciseEvent.pending(exercise);
