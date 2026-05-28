@@ -6,6 +6,7 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/sheet_title.dart';
 
 class TeamExerciseScreen extends StatefulWidget {
   const TeamExerciseScreen({
@@ -33,6 +34,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final teamLabel = '${localizations.team(1)} ${currentIndex + 1}';
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -40,7 +42,11 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
           onPressed: () => Navigator.pop(context),
           tooltip: localizations.briefClose,
         ),
-        title: Text(widget.exercise.name),
+        toolbarHeight: 72,
+        title: SheetTitle(
+          primary: teamLabel,
+          secondary: widget.exercise.name,
+        ),
       ),
       body: SafeArea(
         child: StreamBuilder(
@@ -80,37 +86,27 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   }
 
   Widget _buildTeamStatus(ExerciseEvent event) {
-    final name =
-        '${AppLocalizations.of(context)!.team(1)} ${widget.teamIndex + 1}';
     final localizations = AppLocalizations.of(context)!;
-    return ExerciseService().isStarted
-        ? Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$name (${event.getState(localizations)})',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                event.isPending
-                    ? DateTimeX.fromMinutes(
-                        event.remainingTime,
-                      ).formal(localizations)
-                    : localizations.minute(event.remainingTime),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          )
-        : Text(
-            name,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          );
+    // The team label lives in the sheet's AppBar (`SheetTitle.primary`),
+    // so this status row only carries running-state info. When the
+    // exercise has not started yet there is nothing to report and the
+    // row collapses to `SizedBox.shrink`.
+    if (!ExerciseService().isStarted) return const SizedBox.shrink();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          event.getState(localizations),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          event.isPending
+              ? DateTimeX.fromMinutes(event.remainingTime).formal(localizations)
+              : localizations.minute(event.remainingTime),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
   }
 
   ListView _buildStationList(ExerciseEvent event) {

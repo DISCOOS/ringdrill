@@ -17,6 +17,7 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 class StationExerciseScreen extends StatefulWidget {
@@ -89,6 +90,13 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    // Station identity in the AppBar so the sheet's header names the
+    // thing the sheet is about, with the parent exercise on the
+    // secondary line. We render `station.name` verbatim — the active
+    // data convention already embeds a code prefix in the name
+    // ("1a) Turgåer"), and the body's own heading uses the same
+    // string, so any synthetic prefix here would double up.
+    final station = _exercise.stations[widget.stationIndex];
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -96,7 +104,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           onPressed: () => Navigator.pop(context),
           tooltip: localizations.briefClose,
         ),
-        title: Text(_exercise.name),
+        toolbarHeight: 72,
+        title: SheetTitle(primary: station.name, secondary: _exercise.name),
         actions: [
           // Edit Exercise Button
           IconButton(
@@ -166,35 +175,26 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   Widget _buildStationStatus(Station station, ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
-    return _exerciseService.isStarted
-        ? Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${station.name} '
-                '(${event.getState(localizations)})',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                event.isPending
-                    ? DateTimeX.fromMinutes(
-                        event.remainingTime,
-                      ).formal(localizations)
-                    : localizations.minute(event.remainingTime),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          )
-        : Text(
-            station.name,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          );
+    // The station name lives in the sheet's AppBar (`SheetTitle.primary`),
+    // so this status row only carries running-state info. When the
+    // exercise has not started yet there is nothing to report and the
+    // row collapses to `SizedBox.shrink`.
+    if (!_exerciseService.isStarted) return const SizedBox.shrink();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          event.getState(localizations),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          event.isPending
+              ? DateTimeX.fromMinutes(event.remainingTime).formal(localizations)
+              : localizations.minute(event.remainingTime),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
   }
 
   /// Description + position + mini-map. Sized to its content (no

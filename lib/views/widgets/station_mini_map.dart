@@ -4,6 +4,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_code_badge.dart';
 
 /// Static preview of a single station's position. Tapping the preview
@@ -132,7 +133,6 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // Mirror the leading badge from the Stations list rows so the sheet
     // header reads as "the same station, viewed bigger". The exercise
     // number is the 1-based position in the unfiltered exercises list;
@@ -155,7 +155,6 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
     // sits inside StationExerciseScreen, RolePlayScreen and so on. The
     // custom Padding/Row this replaced inherited the action sheet's
     // light surface color and looked out of place.
-    final fg = theme.appBarTheme.foregroundColor ?? theme.colorScheme.onPrimary;
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: 72,
@@ -166,26 +165,7 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
           child: StationCodeBadge(code: code, hasRoles: hasRoles),
         ),
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            station.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            exercise.name,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: fg.withValues(alpha: 0.75),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+      title: SheetTitle(primary: station.name, secondary: exercise.name),
     );
   }
 }

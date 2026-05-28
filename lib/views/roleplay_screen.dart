@@ -5,6 +5,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/sheet_title.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -70,7 +71,8 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
           onPressed: () => Navigator.pop(context),
           tooltip: localizations.briefClose,
         ),
-        title: Text(localizations.rolePlayScreenTitle),
+        toolbarHeight: 72,
+        title: SheetTitle(primary: rolePlay.name, secondary: exercise?.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -98,27 +100,9 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Identity header — name + age + exercise name (outside card,
-              // mirrors the station-name heading in StationExerciseScreen)
-              Text(
-                rolePlay.age != null
-                    ? '${rolePlay.name}, ${rolePlay.age}'
-                    : rolePlay.name,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (exercise != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  exercise.name,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 8),
+              // Identity (name + parent exercise) lives in the sheet's
+              // AppBar via `SheetTitle`. The body starts directly at the
+              // first content card.
 
               // Scenario fields — only shown when at least one is present
               if (rolePlay.signalement?.isNotEmpty == true ||
