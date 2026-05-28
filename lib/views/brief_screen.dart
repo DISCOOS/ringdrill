@@ -10,6 +10,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
 // Pattern: unqualified = web, if(dart.library.io) = native stub.
 import 'package:ringdrill/web/brief_print_web.dart'
@@ -561,78 +562,70 @@ class _BriefScreenState extends State<BriefScreen> {
   /// that heading and closes the sheet. Used by the floating TOC button
   /// that appears in narrow mode where there is no persistent sidebar.
   Future<void> _openTocSheet(AppLocalizations l10n, BriefTheme theme) async {
-    await showModalBottomSheet<void>(
+    await showRingdrillActionSheet<void>(
       context: context,
-      backgroundColor: theme.surfaces.sidebar,
-      useSafeArea: true,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (sheetContext) {
-        return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(sheetContext).size.height * 0.7,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Text(
-                    l10n.briefToc,
-                    style: TextStyle(
-                      color: theme.text.heading,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.7,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  l10n.briefToc,
+                  style: TextStyle(
+                    color: theme.text.heading,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
-                Divider(height: 1, color: theme.borders.subtle),
-                Expanded(
-                  child: TocWidget(
-                    controller: _tocController,
-                    itemBuilder: (data) {
-                      final tag = data.toc.node.headingConfig.tag;
-                      final level = headingTag2Level[tag] ?? 1;
-                      // Outline starts at exercise (H2). H1 is the program
-                      // title — the document name, not a navigation target —
-                      // and H4+ are per-section metadata headings that the
-                      // sidebar deliberately collapses.
-                      if (level < 2 || level > 3) {
-                        return const SizedBox.shrink();
-                      }
-                      final label = data.toc.node.build().toPlainText();
-                      return ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.only(
-                          left: 16.0 + 16.0 * (level - 1),
-                          right: 16,
+              ),
+              Divider(height: 1, color: theme.borders.subtle),
+              Expanded(
+                child: TocWidget(
+                  controller: _tocController,
+                  itemBuilder: (data) {
+                    final tag = data.toc.node.headingConfig.tag;
+                    final level = headingTag2Level[tag] ?? 1;
+                    // Outline starts at exercise (H2). H1 is the program
+                    // title — the document name, not a navigation target —
+                    // and H4+ are per-section metadata headings that the
+                    // sidebar deliberately collapses.
+                    if (level < 2 || level > 3) {
+                      return const SizedBox.shrink();
+                    }
+                    final label = data.toc.node.build().toPlainText();
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.only(
+                        left: 16.0 + 16.0 * (level - 1),
+                        right: 16,
+                      ),
+                      title: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: level <= 2
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: theme.text.body,
                         ),
-                        title: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: level <= 2
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: theme.text.body,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                        onTap: () {
-                          _tocController.jumpToIndex(data.toc.widgetIndex);
-                          Navigator.of(sheetContext).pop();
-                        },
-                      );
-                    },
-                  ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                      onTap: () {
+                        _tocController.jumpToIndex(data.toc.widgetIndex);
+                        Navigator.of(sheetContext).pop();
+                      },
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
