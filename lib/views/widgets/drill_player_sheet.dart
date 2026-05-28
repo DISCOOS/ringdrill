@@ -1,28 +1,28 @@
 /// V1 of DESIGN-001 (Exercise Player / DrillPlayer).
 ///
-/// Opens an immersive, non-dismissible fullscreen bottom sheet for the running
-/// exercise. Used by [MainScreen] (via [DrillMiniPlayer.onOpen]) and by
-/// [ProgramView] when the live exercise card is tapped. The sheet body is
-/// provided by the caller — today always [CoordinatorScreen].
+/// Opens a fullscreen, non-dismissible bottom sheet for the running exercise.
+/// The sheet is a true fullscreen route. It does not render its own close
+/// chrome — the wrapped body (today: [CoordinatorScreen]) provides its own
+/// AppBar with a close affordance. This file owns only the modal-route
+/// configuration and the Android immersive-mode lifecycle.
 ///
 /// Differences from the sibling [showRingdrillViewerSheet] helpers:
 /// - No drag handle.
 /// - [enableDrag] and [isDismissible] are both false.
+/// - Square corners — no rounded-top sheet edge.
 /// - Hides Android system UI via [SystemUiMode.immersiveSticky] while open;
 ///   restored to [SystemUiMode.edgeToEdge] on close.
-/// - A chevron-down [IconButton] at the top-left closes the sheet without
-///   stopping the exercise.
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
 
 /// Opens a fullscreen, non-dismissible DrillPlayer sheet over [context].
 ///
 /// The [builder] receives the sheet's [BuildContext] and should return the
-/// player body (e.g. `CoordinatorScreen(uuid: ...)`).
+/// player body (e.g. `CoordinatorScreen(uuid: ...)`). The body is responsible
+/// for its own close affordance (e.g. an AppBar with an X button).
 Future<T?> showDrillPlayerSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -35,8 +35,11 @@ Future<T?> showDrillPlayerSheet<T>({
     enableDrag: false,
     isDismissible: false,
     backgroundColor: Theme.of(context).colorScheme.surface,
+    // Square corners — no rounded-top edge leaking through.
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     constraints: BoxConstraints(
       minHeight: screenHeight,
+      maxHeight: screenHeight,
       maxWidth: double.infinity,
     ),
     builder: (sheetContext) => _DrillPlayerSheetBody(
@@ -47,7 +50,7 @@ Future<T?> showDrillPlayerSheet<T>({
 }
 
 // ---------------------------------------------------------------------------
-// Private sheet body — handles immersive mode lifecycle + close button
+// Private sheet body — handles immersive mode lifecycle only; no close chrome
 // ---------------------------------------------------------------------------
 
 class _DrillPlayerSheetBody extends StatefulWidget {
@@ -58,7 +61,9 @@ class _DrillPlayerSheetBody extends StatefulWidget {
 
   final WidgetBuilder builder;
 
-  /// The [BuildContext] scoped to the modal route, used for [Navigator.pop].
+  /// The [BuildContext] scoped to the modal route. Kept for parity with the
+  /// previous implementation; currently unused since the body provides its
+  /// own close affordance.
   final BuildContext sheetContext;
 
   @override
@@ -92,28 +97,8 @@ class _DrillPlayerSheetBodyState extends State<_DrillPlayerSheetBody> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.keyboard_arrow_down),
-                tooltip: localizations.drillPlayerClose,
-                onPressed: () => Navigator.of(widget.sheetContext).pop(),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: SafeArea(
-            top: false,
-            child: widget.builder(context),
-          ),
-        ),
-      ],
-    );
+    // Render the body directly. No chevron, no SafeArea wrapper —
+    // CoordinatorScreen's AppBar provides the sole close affordance.
+    return widget.builder(context);
   }
 }

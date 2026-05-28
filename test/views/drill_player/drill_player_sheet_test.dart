@@ -11,7 +11,10 @@ Widget _harness() => MaterialApp(
           builder: (context) => TextButton(
             onPressed: () => showDrillPlayerSheet<void>(
               context: context,
-              builder: (_) => const Center(child: Text('sheet body')),
+              builder: (_) => Container(
+                key: const ValueKey('test-body'),
+                child: const Center(child: Text('sheet body')),
+              ),
             ),
             child: const Text('open'),
           ),
@@ -20,21 +23,19 @@ Widget _harness() => MaterialApp(
     );
 
 void main() {
-  testWidgets('opens, renders builder body, closes via chevron', (
-    tester,
-  ) async {
+  testWidgets('wraps builder body without adding chrome', (tester) async {
     await tester.pumpWidget(_harness());
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
+    // Body is rendered
+    expect(find.byKey(const ValueKey('test-body')), findsOneWidget);
     expect(find.text('sheet body'), findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
-    await tester.pumpAndSettle();
-
-    expect(find.text('sheet body'), findsNothing);
+    // Chevron-down close button is gone — body's own AppBar X is the sole
+    // close affordance
+    expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
   });
 
   testWidgets('no drag handle', (tester) async {
@@ -63,5 +64,39 @@ void main() {
 
     // Sheet must still be visible — drag is disabled
     expect(find.text('sheet body'), findsOneWidget);
+  });
+
+  testWidgets('sheet has square corners and fills the viewport', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness());
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Find the outermost Material that the modal sheet renders into and
+    // verify its shape has no border radius (square corners).
+    final materials = tester.widgetList<Material>(
+      find.descendant(
+        of: find.byKey(const ValueKey('test-body')),
+        matching: find.byType(Material),
+      ),
+    );
+    // Coarse check: no Material in the sheet subtree has a rounded shape
+    final hasRoundedCorners = materials.any((m) {
+      if (m.shape is RoundedRectangleBorder) {
+        final r = (m.shape as RoundedRectangleBorder).borderRadius;
+        return r != BorderRadius.zero;
+      }
+      return false;
+    });
+    expect(hasRoundedCorners, isFalse,
+        reason: 'Sheet body must not introduce rounded corners');
+
+    // Sheet height fills the viewport
+    final bodySize = tester.getSize(find.byKey(const ValueKey('test-body')));
+    final viewportHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    expect(bodySize.height, closeTo(viewportHeight, 2.0));
   });
 }
