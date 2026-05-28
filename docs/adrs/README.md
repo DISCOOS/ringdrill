@@ -33,6 +33,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0023 | [Render the Brief view with a dedicated `BriefTheme` token set inspired by docs-site typography, independent of Material `ColorScheme`](./0023-brief-theme-tokens.md) | Accepted |
 | ADR-0024 | [Introduce Account, User and Identity as separate entities](./0024-account-and-identity-model.md) | Accepted |
 | ADR-0025 | [Authorise catalog writes against Account, with per-plan access policy](./0025-authorization-and-publish-policy.md) | Accepted |
+| ADR-0026 | [Sheet-based context navigation with replace-semantics for detail surfaces](./0026-sheet-based-context-navigation.md) | Accepted |
 
 ## When to write an ADR
 
