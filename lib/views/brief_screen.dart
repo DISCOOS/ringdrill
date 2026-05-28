@@ -879,7 +879,8 @@ class BriefSheetBody extends StatelessWidget {
       exerciseUuid: exerciseUuid,
       programUuid: programUuid,
       initialAudience: audience,
-      isSheet: false,
+      isSheet: true,
+      onClose: () => Navigator.pop(context),
     );
   }
 }

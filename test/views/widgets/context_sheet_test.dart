@@ -51,7 +51,7 @@ void main() {
 
     await tester.tap(find.text('show station'));
     await tester.pumpAndSettle();
-    controller.close();
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
     expect(find.text('body: station'), findsNothing);
@@ -100,22 +100,31 @@ class _Harness extends StatelessWidget {
             RoleSheetTarget() => 'role',
             BriefSheetTarget() => 'brief',
           };
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('body: $label'),
-                if (target is StationSheetTarget)
-                  TextButton(
-                    onPressed: () => ContextSheet.of(context).replace(
-                      const TeamSheetTarget(
-                        exerciseUuid: 'exercise-1',
-                        teamIndex: 1,
+          return Scaffold(
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Close',
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('body: $label'),
+                  if (target is StationSheetTarget)
+                    TextButton(
+                      onPressed: () => ContextSheet.of(context).replace(
+                        const TeamSheetTarget(
+                          exerciseUuid: 'exercise-1',
+                          teamIndex: 1,
+                        ),
                       ),
+                      child: const Text('replace team'),
                     ),
-                    child: const Text('replace team'),
-                  ),
-              ],
+                ],
+              ),
             ),
           );
         },

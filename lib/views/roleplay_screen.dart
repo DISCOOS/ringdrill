@@ -50,7 +50,13 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
 
     if (rolePlay == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+            tooltip: localizations.briefClose,
+          ),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -59,6 +65,11 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+          tooltip: localizations.briefClose,
+        ),
         title: Text(localizations.rolePlayScreenTitle),
         actions: [
           IconButton(

@@ -72,8 +72,6 @@ class ContextSheetController {
     _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
     await showRingdrillViewerSheet<void>(
       context: context,
-      title: null,
-      onClose: close,
       builder: (context, scrollController) => ContextSheet(
         controller: this,
         bodyBuilder: _bodyBuilder,

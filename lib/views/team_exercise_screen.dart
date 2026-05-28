@@ -32,8 +32,16 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.exercise.name)),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+          tooltip: localizations.briefClose,
+        ),
+        title: Text(widget.exercise.name),
+      ),
       body: SafeArea(
         child: StreamBuilder(
           stream: ExerciseService().events,

@@ -5,7 +5,7 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 void main() {
   const handleKey = Key('ringdrill-sheet-drag-handle');
 
-  testWidgets('viewer sheet opens with drag handle and close button', (
+  testWidgets('viewer sheet opens with drag handle above body only', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -30,10 +30,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(handleKey), findsOneWidget);
-    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsNothing);
     expect(find.text('viewer body'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(handleKey)).dy,
+      lessThan(tester.getTopLeft(find.text('viewer body')).dy),
+    );
 
-    await tester.tap(find.byIcon(Icons.close));
+    Navigator.of(tester.element(find.text('viewer body'))).pop();
     await tester.pumpAndSettle();
 
     expect(find.text('viewer body'), findsNothing);
@@ -110,7 +114,7 @@ void main() {
 
       _expectSharedChrome(tester, theme.colorScheme.surface);
 
-      await tester.tap(find.byIcon(Icons.close));
+      Navigator.of(tester.element(find.text('viewer body'))).pop();
       await tester.pumpAndSettle();
       await tester.tap(find.text('action'));
       await tester.pumpAndSettle();

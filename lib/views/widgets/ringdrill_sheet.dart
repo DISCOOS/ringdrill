@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 Future<T?> showRingdrillViewerSheet<T>({
   required BuildContext context,
   required Widget Function(BuildContext, ScrollController) builder,
-  String? title,
-  List<Widget>? actions,
-  VoidCallback? onClose,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -23,9 +20,6 @@ Future<T?> showRingdrillViewerSheet<T>({
         builder: (context, scrollController) {
           final body = _ViewerBody(
             scrollController: scrollController,
-            title: title,
-            actions: actions,
-            onClose: onClose,
             builder: builder,
           );
           return _RingdrillSheetSurface(child: body);
@@ -100,19 +94,10 @@ class _DragHandle extends StatelessWidget {
 }
 
 class _ViewerBody extends StatelessWidget {
-  const _ViewerBody({
-    required this.scrollController,
-    required this.builder,
-    this.title,
-    this.actions,
-    this.onClose,
-  });
+  const _ViewerBody({required this.scrollController, required this.builder});
 
   final ScrollController scrollController;
   final Widget Function(BuildContext, ScrollController) builder;
-  final String? title;
-  final List<Widget>? actions;
-  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -130,42 +115,8 @@ class _ViewerBody extends StatelessWidget {
     return Column(
       children: [
         const _DragHandle(),
-        _ViewerHeader(title: title, actions: actions, onClose: onClose),
         Expanded(child: body),
       ],
-    );
-  }
-}
-
-class _ViewerHeader extends StatelessWidget {
-  const _ViewerHeader({this.title, this.actions, this.onClose});
-
-  final String? title;
-  final List<Widget>? actions;
-  final VoidCallback? onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final close = onClose ?? () => Navigator.of(context).pop();
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 16, end: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: title == null
-                ? const SizedBox.shrink()
-                : Text(
-                    title!,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-          ),
-          ...?actions,
-          IconButton(icon: const Icon(Icons.close), onPressed: close),
-        ],
-      ),
     );
   }
 }

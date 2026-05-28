@@ -91,6 +91,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+          tooltip: localizations.briefClose,
+        ),
         title: Text(_exercise.name),
         actions: [
           // Edit Exercise Button
