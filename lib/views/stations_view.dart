@@ -272,12 +272,6 @@ class _StationsViewState extends State<StationsView> {
               setState(() {});
             }
 
-            final activeDimensions =
-                (_hiddenExercises.isNotEmpty ? 1 : 0) +
-                (!_showStations ? 1 : 0) +
-                (!_showRoleplays ? 1 : 0) +
-                (!_showLabels ? 1 : 0);
-
             final sectionLabelStyle = Theme.of(sheetContext)
                 .textTheme
                 .titleSmall
@@ -321,15 +315,47 @@ class _StationsViewState extends State<StationsView> {
                   ),
                   const Divider(height: 16),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                    child: Text(
-                      l.exercisesShownOfTotal(
-                        exercises.length - _hiddenExercises.length,
-                        exercises.length,
-                      ),
-                      style: Theme.of(sheetContext).textTheme.titleMedium,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l.exercisesShownOfTotal(
+                              exercises.length - _hiddenExercises.length,
+                              exercises.length,
+                            ),
+                            style: Theme.of(
+                              sheetContext,
+                            ).textTheme.titleMedium,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _hiddenExercises.isEmpty
+                              ? null
+                              : () {
+                                  setSheetState(_hiddenExercises.clear);
+                                  apply();
+                                },
+                          child: Text(l.showAll),
+                        ),
+                        TextButton(
+                          onPressed:
+                              _hiddenExercises.length == exercises.length
+                              ? null
+                              : () {
+                                  setSheetState(() {
+                                    _hiddenExercises
+                                      ..clear()
+                                      ..addAll(exercises.map((e) => e.uuid));
+                                  });
+                                  apply();
+                                },
+                          child: Text(l.hideAll),
+                        ),
+                      ],
                     ),
                   ),
+                  const Divider(height: 1, thickness: 1),
                   Flexible(
                     child: ListView.builder(
                       shrinkWrap: true,
@@ -352,28 +378,6 @@ class _StationsViewState extends State<StationsView> {
                           },
                         );
                       },
-                    ),
-                  ),
-                  const Divider(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: activeDimensions == 0
-                            ? null
-                            : () {
-                                setSheetState(() {
-                                  _hiddenExercises.clear();
-                                  _showStations = true;
-                                  _showRoleplays = true;
-                                  _showLabels = true;
-                                });
-                                apply();
-                                Navigator.pop(sheetContext);
-                              },
-                        child: Text(l.showAll),
-                      ),
                     ),
                   ),
                 ],
