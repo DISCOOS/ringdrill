@@ -14,6 +14,7 @@ class AppConfig {
   static const String keyUrgentNotificationThreshold =
       'app:isUrgentNotificationThreshold';
   static const String ringDrillBaseUrl = 'https://ringdrill.netlify.app';
+  static const String briefViewerBaseUrl = 'https://ringdrill.app';
 
   /// Optional local backend override, set at build time via
   ///

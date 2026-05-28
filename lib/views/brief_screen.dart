@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
@@ -530,7 +531,9 @@ class _BriefScreenState extends State<BriefScreen> {
   Future<void> _copyMarkdownToClipboard() async {
     final markdown = _renderedMarkdown;
     if (markdown == null || markdown.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: markdown));
+    await Clipboard.setData(
+      ClipboardData(text: '$markdown\n\n→ ${_briefViewerUrl()}'),
+    );
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.maybeOf(context);
@@ -542,6 +545,15 @@ class _BriefScreenState extends State<BriefScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  String _briefViewerUrl() {
+    final audience = _audience.name;
+    final base = AppConfig.briefViewerBaseUrl;
+    if (widget.programUuid != null) {
+      return '$base/brief/program/${widget.programUuid}?audience=$audience';
+    }
+    return '$base/brief/${widget.exerciseUuid}?audience=$audience';
   }
 
   /// Opens a modal bottom sheet containing the same `TocWidget` shown in
