@@ -6,6 +6,7 @@ import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/team_exercise_screen.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
 sealed class ContextSheetTarget {
   const ContextSheetTarget();
@@ -69,15 +70,17 @@ class ContextSheetController {
     _target.value = target;
     _navigator = Navigator.of(context);
     _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
-    await showModalBottomSheet<void>(
+    await showRingdrillViewerSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ContextSheet(
+      title: null,
+      onClose: close,
+      builder: (context, scrollController) => ContextSheet(
         controller: this,
         bodyBuilder: _bodyBuilder,
-        child: _ContextSheetHost(controller: this),
+        child: _ContextSheetHost(
+          controller: this,
+          scrollController: scrollController,
+        ),
       ),
     );
     _target.value = null;
@@ -139,9 +142,13 @@ class ContextSheet
 }
 
 class _ContextSheetHost extends StatelessWidget {
-  const _ContextSheetHost({required this.controller});
+  const _ContextSheetHost({
+    required this.controller,
+    required this.scrollController,
+  });
 
   final ContextSheetController controller;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -152,60 +159,13 @@ class _ContextSheetHost extends StatelessWidget {
         final body =
             controller._bodyBuilder?.call(context, target) ??
             _DefaultContextSheetBody(target: target);
-        final width = MediaQuery.sizeOf(context).width;
-        final child = width >= 600
-            ? Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: body,
-                ),
-              )
-            : body;
-        return DraggableScrollableSheet(
-          initialChildSize: 0.92,
-          minChildSize: 0.5,
-          maxChildSize: 1.0,
-          expand: false,
-          builder: (context, scrollController) {
-            return ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Material(
-                color: Theme.of(context).colorScheme.surface,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).dividerColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: controller.close,
-                      ),
-                    ),
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 120),
-                        child: PrimaryScrollController(
-                          key: ValueKey(target),
-                          controller: scrollController,
-                          child: child,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 120),
+          child: PrimaryScrollController(
+            key: ValueKey(target),
+            controller: scrollController,
+            child: body,
+          ),
         );
       },
     );

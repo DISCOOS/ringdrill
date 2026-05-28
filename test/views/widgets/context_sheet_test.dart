@@ -13,6 +13,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('body: station'), findsOneWidget);
+    expect(
+      find.byKey(const Key('ringdrill-sheet-drag-handle')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.close), findsOneWidget);
     controller.dispose();
   });
 
