@@ -60,6 +60,24 @@ class _BriefScreenState extends State<BriefScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _wideTocSidebar = false;
 
+  // Search-cycle state. _matchCount is recomputed when the rendered markdown
+  // arrives or when the query changes. _currentMatchIndex is what the user
+  // has cycled to via Enter / next-prev buttons. _renderedMarkdown caches
+  // the latest async render so we can recount matches synchronously when
+  // the query changes without re-rendering.
+  int _matchCount = 0;
+  int _currentMatchIndex = 0;
+  String? _renderedMarkdown;
+
+  // GlobalKey attached to the currently-highlighted match in the rendered
+  // markdown (the <curr-mark> WidgetSpan child). On next/previous we use
+  // it to call Scrollable.ensureVisible, scrolling the match into view.
+  // markdown_widget's ListView.builder is lazy, so the key's context will
+  // be null when the match sits far outside the cache extent — in that
+  // case the scroll silently no-ops and the counter still updates so the
+  // reader can scroll manually.
+  final GlobalKey _currentMatchKey = GlobalKey();
+
   // Re-assigned when audience or layout changes so FutureBuilder re-runs.
   late Future<String> _renderFuture;
 
@@ -250,6 +268,10 @@ class _BriefScreenState extends State<BriefScreen> {
     AppLocalizations localizations,
     BriefTheme theme,
   ) {
+    final hasMatches = _matchCount > 0;
+    final hasQueryButNoMatches =
+        _searchQuery.isNotEmpty && _renderedMarkdown != null && _matchCount == 0;
+
     return PreferredSize(
       preferredSize: const Size.fromHeight(48),
       child: Padding(
@@ -260,6 +282,7 @@ class _BriefScreenState extends State<BriefScreen> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
+                textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   hintText: localizations.briefSearchHint,
                   isDense: true,
@@ -275,34 +298,54 @@ class _BriefScreenState extends State<BriefScreen> {
                             setState(() {
                               _searchQuery = '';
                               _searchController.clear();
+                              _recomputeMatchCount();
                             });
                           },
                         )
                       : null,
                 ),
                 onChanged: (value) {
-                  setState(() => _searchQuery = value);
+                  setState(() {
+                    _searchQuery = value;
+                    _currentMatchIndex = 0;
+                    _recomputeMatchCount();
+                  });
+                },
+                onSubmitted: (_) {
+                  if (_matchCount > 0) _goToNextMatch();
                 },
               ),
             ),
-            if (_searchQuery.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              FutureBuilder<String>(
-                future: _renderFuture,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox.shrink();
-                  final hasMatch = snapshot.data!.toLowerCase().contains(
-                    _searchQuery.toLowerCase(),
-                  );
-                  if (hasMatch) return const SizedBox.shrink();
-                  return Text(
-                    localizations.briefSearchNoMatches,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 12,
-                    ),
-                  );
-                },
+            if (hasMatches) ...[
+              const SizedBox(width: 12),
+              Text(
+                localizations.briefSearchMatchCount(
+                  _currentMatchIndex + 1,
+                  _matchCount,
+                ),
+                style: TextStyle(color: theme.text.muted, fontSize: 12),
+              ),
+              IconButton(
+                icon: const Icon(Icons.keyboard_arrow_up, size: 20),
+                color: theme.text.heading,
+                tooltip: localizations.briefSearchPreviousMatch,
+                onPressed: _goToPreviousMatch,
+              ),
+              IconButton(
+                icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                color: theme.text.heading,
+                tooltip: localizations.briefSearchNextMatch,
+                onPressed: _goToNextMatch,
+              ),
+            ],
+            if (hasQueryButNoMatches) ...[
+              const SizedBox(width: 12),
+              Text(
+                localizations.briefSearchNoMatches,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
               ),
             ],
           ],
@@ -386,7 +429,17 @@ class _BriefScreenState extends State<BriefScreen> {
           );
         }
 
-        final markdown = _applySearch(snapshot.data ?? '');
+        // Cache the resolved markdown in state so search-cycle controls can
+        // count matches synchronously. Scheduled after the current build so
+        // we don't call setState during build.
+        final data = snapshot.data ?? '';
+        if (_renderedMarkdown != data) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _onRenderCompleted(data);
+          });
+        }
+
+        final markdown = _applySearch(data);
 
         if (isWide) {
           return Row(
@@ -404,15 +457,83 @@ class _BriefScreenState extends State<BriefScreen> {
   }
 
   /// Wraps search matches in `<mark>` tags so markdown_widget renders them
-  /// highlighted. Case-insensitive. Returns the original string unchanged
-  /// when the query is empty.
+  /// highlighted. Case-insensitive. The current match (the one the user has
+  /// cycled to via Enter / the next-prev buttons) gets a stronger
+  /// `<curr-mark>` so it visually stands out from the other matches.
+  /// Returns the original string unchanged when the query is empty.
   String _applySearch(String markdown) {
     if (_searchQuery.isEmpty) return markdown;
     final pattern = RegExp(RegExp.escape(_searchQuery), caseSensitive: false);
-    return markdown.replaceAllMapped(
-      pattern,
-      (m) => '<mark>${m.group(0)}</mark>',
-    );
+    var i = 0;
+    return markdown.replaceAllMapped(pattern, (m) {
+      final tag = (i == _currentMatchIndex) ? 'curr-mark' : 'mark';
+      final wrapped = '<$tag>${m.group(0)}</$tag>';
+      i++;
+      return wrapped;
+    });
+  }
+
+  /// Recomputes [_matchCount] from the cached [_renderedMarkdown] and the
+  /// current [_searchQuery]. Clamps [_currentMatchIndex] into the new range.
+  void _recomputeMatchCount() {
+    final markdown = _renderedMarkdown;
+    if (markdown == null || _searchQuery.isEmpty) {
+      _matchCount = 0;
+      _currentMatchIndex = 0;
+      return;
+    }
+    final pattern = RegExp(RegExp.escape(_searchQuery), caseSensitive: false);
+    _matchCount = pattern.allMatches(markdown).length;
+    if (_currentMatchIndex >= _matchCount) {
+      _currentMatchIndex = _matchCount == 0 ? 0 : _matchCount - 1;
+    }
+  }
+
+  /// Called from the FutureBuilder once the renderer finishes. Caches the
+  /// markdown and recomputes the match count if the result changed.
+  void _onRenderCompleted(String markdown) {
+    if (!mounted) return;
+    if (_renderedMarkdown == markdown) return;
+    setState(() {
+      _renderedMarkdown = markdown;
+      _recomputeMatchCount();
+    });
+  }
+
+  void _goToNextMatch() {
+    if (_matchCount == 0) return;
+    setState(() {
+      _currentMatchIndex = (_currentMatchIndex + 1) % _matchCount;
+    });
+    _scheduleScrollToCurrentMatch();
+  }
+
+  void _goToPreviousMatch() {
+    if (_matchCount == 0) return;
+    setState(() {
+      _currentMatchIndex = (_currentMatchIndex - 1 + _matchCount) % _matchCount;
+    });
+    _scheduleScrollToCurrentMatch();
+  }
+
+  /// Schedules a post-frame scroll so the active `<curr-mark>` widget is
+  /// brought into view. The markdown re-renders after setState, then the
+  /// callback fires once the widget tree has settled. If the match's
+  /// widget isn't in the render tree (markdown_widget's ListView.builder
+  /// hasn't built that index yet), `currentContext` is null and we no-op.
+  void _scheduleScrollToCurrentMatch() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _currentMatchKey.currentContext;
+      if (ctx == null) return;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 200),
+        // Position the match a third of the way down the viewport so the
+        // reader has surrounding context above and below.
+        alignment: 0.3,
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Widget _buildTocSidebar(AppLocalizations localizations, BriefTheme theme) {
@@ -504,6 +625,7 @@ class _BriefScreenState extends State<BriefScreen> {
             data: markdown,
             theme: theme,
             tocController: _tocController,
+            currentMatchKey: _currentMatchKey,
           ),
         ),
       ),

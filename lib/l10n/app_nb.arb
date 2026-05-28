@@ -598,5 +598,21 @@
   "briefCodeCopyTooltip": "Kopier",
   "@briefCodeCopyTooltip": {
     "description": "Tooltip on the small copy icon inside an inline code chip in the brief."
+  },
+  "briefSearchMatchCount": "{current} av {total}",
+  "@briefSearchMatchCount": {
+    "description": "Position indicator in the brief search bar, e.g. '3 av 12'.",
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "briefSearchNextMatch": "Neste treff",
+  "@briefSearchNextMatch": {
+    "description": "Tooltip on the next-match arrow button in the brief search bar."
+  },
+  "briefSearchPreviousMatch": "Forrige treff",
+  "@briefSearchPreviousMatch": {
+    "description": "Tooltip on the previous-match arrow button in the brief search bar."
   }
 }

@@ -2407,6 +2407,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy'**
   String get briefCodeCopyTooltip;
+
+  /// Position indicator in the brief search bar, e.g. '3 of 12'.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String briefSearchMatchCount(int current, int total);
+
+  /// Tooltip on the next-match arrow button in the brief search bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Next match'**
+  String get briefSearchNextMatch;
+
+  /// Tooltip on the previous-match arrow button in the brief search bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous match'**
+  String get briefSearchPreviousMatch;
 }
 
 class _AppLocalizationsDelegate

@@ -82,6 +82,21 @@ class BriefAccent {
 }
 
 @immutable
+class BriefSearchHighlight {
+  const BriefSearchHighlight({required this.match, required this.current});
+
+  /// Flat background paint for every search match in the rendered brief
+  /// except the one the user is currently focused on. Painted by the
+  /// `<mark>` SpanNode.
+  final Color match;
+
+  /// Stronger background paint for the search match the user is currently
+  /// focused on (advanced to via the next/previous controls or Enter).
+  /// Painted by the `<curr-mark>` SpanNode.
+  final Color current;
+}
+
+@immutable
 class BriefTypography {
   const BriefTypography({
     required this.h1,
@@ -153,6 +168,7 @@ class BriefTheme {
     required this.code,
     required this.link,
     required this.accent,
+    required this.searchHighlight,
     required this.typography,
     required this.spacing,
   });
@@ -163,6 +179,7 @@ class BriefTheme {
   final BriefCodeStyle code;
   final BriefLinkStyle link;
   final BriefAccent accent;
+  final BriefSearchHighlight searchHighlight;
   final BriefTypography typography;
   final BriefSpacing spacing;
 
@@ -194,6 +211,13 @@ class BriefTheme {
     ),
     link: BriefLinkStyle(color: Color(0xFF334155), underlineOpacity: 0.4),
     accent: BriefAccent(activeStripe: Color(0xFF0F172A)),
+    // Search-match fills: a soft amber for non-current matches and a
+    // stronger amber for the current focused match. Both keep the slate
+    // body text readable on top.
+    searchHighlight: BriefSearchHighlight(
+      match: Color(0xFFFEF08A),
+      current: Color(0xFFFACC15),
+    ),
     typography: BriefTypography(
       h1: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, height: 1.20),
       h2: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, height: 1.30),
@@ -238,6 +262,12 @@ class BriefTheme {
     ),
     link: BriefLinkStyle(color: Color(0xFFCBD5E1), underlineOpacity: 0.6),
     accent: BriefAccent(activeStripe: Color(0xFFE5E7EB)),
+    // Darker amber on dark canvas so the search match is unmistakably
+    // visible without bleaching the surrounding text into white.
+    searchHighlight: BriefSearchHighlight(
+      match: Color(0xFFCA8A04),
+      current: Color(0xFFEAB308),
+    ),
     typography: BriefTypography(
       h1: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, height: 1.20),
       h2: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, height: 1.30),

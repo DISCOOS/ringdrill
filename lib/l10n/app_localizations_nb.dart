@@ -1400,4 +1400,15 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get briefCodeCopyTooltip => 'Kopier';
+
+  @override
+  String briefSearchMatchCount(int current, int total) {
+    return '$current av $total';
+  }
+
+  @override
+  String get briefSearchNextMatch => 'Neste treff';
+
+  @override
+  String get briefSearchPreviousMatch => 'Forrige treff';
 }

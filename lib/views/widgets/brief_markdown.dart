@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:markdown/markdown.dart' as m;
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
@@ -139,6 +140,93 @@ class _CodeChip extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Search highlight (<mark> / <curr-mark>)
+// ---------------------------------------------------------------------------
+//
+// BriefScreen wraps search matches in HTML-like `<mark>` (other matches) and
+// `<curr-mark>` (the active match the user has cycled to) tags. The base
+// markdown parser does not handle HTML tags, so we register two custom
+// inline syntaxes plus matching SpanNode generators. The rendered output is
+// a TextSpan styled with the BriefTheme.searchHighlight background color.
+
+class _HighlightInlineSyntax extends m.InlineSyntax {
+  _HighlightInlineSyntax({required this.tag, required String pattern})
+      : super(pattern, caseSensitive: false);
+
+  final String tag;
+
+  @override
+  bool onMatch(m.InlineParser parser, Match match) {
+    parser.addNode(m.Element.text(tag, match.group(1) ?? ''));
+    return true;
+  }
+}
+
+/// Renders a `<mark>` span (non-current search match) as a plain TextSpan
+/// with backgroundColor on the TextStyle. The flat fill is acceptable here
+/// because matches are usually short tokens and the background paints
+/// directly behind the glyphs without padding — which keeps line-wrapping
+/// well-behaved.
+class _HighlightNode extends ElementNode {
+  _HighlightNode(this.text, this.highlight);
+
+  final String text;
+  final Color highlight;
+
+  @override
+  TextStyle get style => (parentStyle ?? const TextStyle()).copyWith(
+        backgroundColor: highlight,
+      );
+
+  @override
+  InlineSpan build() => TextSpan(style: style, text: text);
+}
+
+/// Renders the `<curr-mark>` span — the search match the user has cycled
+/// to via Enter or the next/previous controls — as a WidgetSpan wrapping
+/// a Container.
+///
+/// The Container carries an externally-supplied [markerKey] so that
+/// `BriefScreen` can call `Scrollable.ensureVisible` against its build
+/// context after the index changes. There is at most one `<curr-mark>` in
+/// the rendered markdown at any time, so a single shared GlobalKey works.
+///
+/// Trade-off vs the flat-TextSpan path: the WidgetSpan can't be split
+/// mid-match by the line-wrapping algorithm. In practice search tokens
+/// are short enough that this isn't noticeable.
+class _CurrentHighlightNode extends ElementNode {
+  _CurrentHighlightNode(this.text, this.highlight, this.markerKey);
+
+  final String text;
+  final Color highlight;
+  final Key markerKey;
+
+  @override
+  TextStyle get style => parentStyle ?? const TextStyle();
+
+  @override
+  InlineSpan build() {
+    final merged = style;
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      baseline: TextBaseline.alphabetic,
+      child: Container(
+        key: markerKey,
+        decoration: BoxDecoration(
+          color: highlight,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 1),
+        child: Text(
+          text,
+          style: merged.copyWith(backgroundColor: Colors.transparent),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // BriefMarkdown
 // ---------------------------------------------------------------------------
 
@@ -162,11 +250,17 @@ class BriefMarkdown extends StatelessWidget {
     required this.data,
     required this.theme,
     this.tocController,
+    this.currentMatchKey,
   });
 
   final String data;
   final BriefTheme theme;
   final TocController? tocController;
+
+  /// Optional [GlobalKey] attached to the active search-match widget so
+  /// callers can call `Scrollable.ensureVisible` against it. Only used when
+  /// the rendered markdown contains a `<curr-mark>` tag.
+  final Key? currentMatchKey;
 
   @override
   Widget build(BuildContext context) {
@@ -175,6 +269,19 @@ class BriefMarkdown extends StatelessWidget {
       tocController: tocController,
       config: _buildConfig(),
       markdownGenerator: MarkdownGenerator(
+        // Register HTML-like `<mark>` and `<curr-mark>` inline syntaxes so
+        // BriefScreen's search-highlight wrapping renders as styled spans
+        // instead of plain literal text.
+        inlineSyntaxList: [
+          _HighlightInlineSyntax(
+            tag: 'curr-mark',
+            pattern: r'<curr-mark>(.*?)</curr-mark>',
+          ),
+          _HighlightInlineSyntax(
+            tag: 'mark',
+            pattern: r'<mark>(.*?)</mark>',
+          ),
+        ],
         generators: [
           // Override default `<code>` rendering with the padded-chip
           // generator defined above. Registering for the same tag replaces
@@ -183,6 +290,34 @@ class BriefMarkdown extends StatelessWidget {
             tag: MarkdownTag.code.name,
             generator: (e, config, _) =>
                 _CodeChipNode(e.textContent, config.code),
+          ),
+          // Search highlight generators. `<mark>` paints the non-current
+          // matches as a flat-background TextSpan. `<curr-mark>` paints the
+          // active match as a WidgetSpan attached to [currentMatchKey] so
+          // BriefScreen can scroll to it.
+          SpanNodeGeneratorWithTag(
+            tag: 'mark',
+            generator: (e, config, visitor) =>
+                _HighlightNode(e.textContent, theme.searchHighlight.match),
+          ),
+          SpanNodeGeneratorWithTag(
+            tag: 'curr-mark',
+            generator: (e, config, visitor) {
+              final key = currentMatchKey;
+              if (key == null) {
+                // No scroll target requested — fall through to a flat
+                // backgroundColor like the non-current matches.
+                return _HighlightNode(
+                  e.textContent,
+                  theme.searchHighlight.current,
+                );
+              }
+              return _CurrentHighlightNode(
+                e.textContent,
+                theme.searchHighlight.current,
+                key,
+              );
+            },
           ),
         ],
       ),
