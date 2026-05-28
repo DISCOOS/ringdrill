@@ -340,19 +340,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 ? Center(child: Text(localizations.noRoundsScheduled))
                 : _buildBody(event),
           ),
-          floatingActionButton: ExerciseControlButton(
-            // Stable identity so the Scaffold treats the play→stop swap as
-            // the same FAB and animates the position change instead of
-            // scaling the green FAB out and the red FAB in. Combined with
-            // [_SlideFloatingActionButtonAnimator] below this gives the
-            // hero-like glide from the corner to the centre of the status
-            // bar when the exercise is started, mirroring the player
-            // mockup in docs/design/mockups/coordinator-oversikt.html.
-            key: const ValueKey('coordinator-exercise-fab'),
-            exercise: _exercise!,
-            service: _exerciseService,
-            localizations: localizations,
-          ),
+          floatingActionButton: _isStarted
+              ? ExerciseControlButton(
+                  key: const ValueKey('coordinator-exercise-fab'),
+                  exercise: _exercise!,
+                  service: _exerciseService,
+                  localizations: localizations,
+                )
+              : null,
           floatingActionButtonLocation: _isStarted
               ? FloatingActionButtonLocation.centerDocked
               : FloatingActionButtonLocation.endFloat,
@@ -622,6 +617,30 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   ///   narrower screens we stack the card above the table instead, so
   ///   phone-portrait keeps working without horizontal scrolling.
   Widget _buildTopSection(ExerciseEvent event, {required bool showHero}) {
+    final localizations = AppLocalizations.of(context)!;
+    final child = _buildTopSectionContent(event, showHero: showHero);
+    if (_exerciseService.isStartedOn(widget.uuid)) return child;
+    return Stack(
+      children: [
+        Padding(padding: const EdgeInsets.only(bottom: 72), child: child),
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: ExerciseControlButton(
+            key: const ValueKey('coordinator-exercise-play'),
+            exercise: _exercise!,
+            service: _exerciseService,
+            localizations: localizations,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopSectionContent(
+    ExerciseEvent event, {
+    required bool showHero,
+  }) {
     if (!showHero) {
       return Align(
         alignment: Alignment.topCenter,
