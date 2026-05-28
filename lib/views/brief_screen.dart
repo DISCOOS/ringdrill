@@ -127,9 +127,13 @@ class _BriefScreenState extends State<BriefScreen> {
       );
     }
 
+    Exercise? exercise;
     if (widget.exerciseUuid != null) {
-      final found = program.exercises.any((e) => e.uuid == widget.exerciseUuid);
-      if (!found) {
+      exercise = program.exercises.cast<Exercise?>().firstWhere(
+            (e) => e?.uuid == widget.exerciseUuid,
+            orElse: () => null,
+          );
+      if (exercise == null) {
         return Scaffold(
           appBar: AppBar(title: Text(localizations.briefScreenTitle)),
           body: Center(child: Text(localizations.briefMissingExercise)),
@@ -143,6 +147,12 @@ class _BriefScreenState extends State<BriefScreen> {
         'active program ${program.uuid}; rendering active program.',
       );
     }
+
+    // Slim-app-bar title reflects what the reader is actually viewing.
+    // Single-exercise mode shows the exercise name; program mode shows the
+    // program name. Falls back to the generic localized label when neither
+    // resolves (e.g. before data is loaded).
+    final appBarTitle = exercise?.name ?? program.name;
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -162,7 +172,13 @@ class _BriefScreenState extends State<BriefScreen> {
             });
           }
           return Scaffold(
-            appBar: _buildAppBar(context, localizations, theme, isWide),
+            appBar: _buildAppBar(
+              context,
+              localizations,
+              theme,
+              isWide,
+              appBarTitle,
+            ),
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -183,6 +199,7 @@ class _BriefScreenState extends State<BriefScreen> {
     AppLocalizations localizations,
     BriefTheme theme,
     bool isWide,
+    String title,
   ) {
     return AppBar(
       leading: widget.isSheet
@@ -194,8 +211,10 @@ class _BriefScreenState extends State<BriefScreen> {
             )
           : null,
       title: Text(
-        localizations.briefScreenTitle,
+        title,
         style: theme.typography.h4.copyWith(color: theme.text.heading),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
       ),
       shape: Border(bottom: BorderSide(color: theme.borders.subtle)),
       bottom: _searchOpen ? _buildSearchBar(localizations, theme) : null,
@@ -420,6 +439,21 @@ class _BriefScreenState extends State<BriefScreen> {
                   final tag = data.toc.node.headingConfig.tag;
                   final level = headingTag2Level[tag] ?? 1;
                   if (level > 3) return const SizedBox.shrink();
+                  // The TocNode's own build() returns a TextSpan styled with
+                  // the heading's full h2/h3 typography (24/18 px). That is
+                  // far too big for a sidebar entry. Pull just the plain
+                  // text out and re-render it with a controlled compact
+                  // style — H2 entries are slightly bolder, H3 entries
+                  // sit in body color at the same size for visual nesting.
+                  final label = data.toc.node.build().toPlainText();
+                  final tocStyle = TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: level <= 2
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                    color: isActive ? theme.text.heading : theme.text.body,
+                  );
                   return GestureDetector(
                     onTap: () => data.refreshIndexCallback(data.index),
                     child: Row(
@@ -427,7 +461,7 @@ class _BriefScreenState extends State<BriefScreen> {
                       children: [
                         Container(
                           width: 2,
-                          height: 24,
+                          height: 20,
                           color: isActive
                               ? theme.accent.activeStripe
                               : Colors.transparent,
@@ -440,7 +474,12 @@ class _BriefScreenState extends State<BriefScreen> {
                               bottom: 4,
                               right: 8,
                             ),
-                            child: ProxyRichText(data.toc.node.build()),
+                            child: Text(
+                              label,
+                              style: tocStyle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
                           ),
                         ),
                       ],
@@ -508,6 +547,11 @@ class _BriefSheetLauncherState extends State<BriefSheetLauncher> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      // Material 3 defaults the modal bottom sheet to a max width of 640 dp
+      // on wide viewports. The Brief is the only reading surface in the app
+      // and is meant to feel like a fullscreen docs page on every viewport,
+      // so we override the constraint to fill the available width.
+      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (_) => _BriefSheetBody(
         exerciseUuid: widget.exerciseUuid,
         programUuid: widget.programUuid,

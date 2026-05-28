@@ -323,12 +323,15 @@ String _organisationBlock(
   AppLocalizations l10n,
 ) {
   final phases = rotationPhaseBreakdown(exercise);
+  // Ringløype line: keep config + legend on the same physical line so the
+  // legend doesn't wrap unnecessarily on wide screens. Markdown reflows the
+  // line if the viewport is too narrow to fit both.
   final buf = StringBuffer()
     ..writeln(
       '**${l10n.briefRingRoute}:** '
-      '${exercise.numberOfRounds} x ($phases)',
+      '${exercise.numberOfRounds} x ($phases) '
+      '_(${l10n.rotationShareLegendPhases})_',
     )
-    ..writeln('_(${l10n.rotationShareLegendPhases})_')
     ..writeln();
   if (program.beforeRoundMd != null && program.beforeRoundMd!.isNotEmpty) {
     buf
