@@ -72,3 +72,29 @@ V1 scope per `docs/design/exercise-player.md`:
 - ✅ Mounted above NavigationBar in MainScreen
 - ✅ Live exercise card in ProgramView routes to DrillPlayer
 - ✅ Widget tests covering all V1 surface
+
+---
+
+## Followup-01 Step 1: auto-close exercise ContextSheet (5c17d6d)
+- State established: `_ExerciseSheetBody` wraps CoordinatorScreen and closes the sheet when exercise goes live.
+- Next step inputs: `drill_mini_player.dart` needs per-second ticker.
+
+## Followup-01 Step 2: per-second countdown (f68cf16)
+- State established: `_DrillMiniPlayerState` has `_ticker` (Timer.periodic 1s) and `_now`; countdown is interpolated mm:ss.
+- Next step inputs: progress strip position swap.
+
+## Followup-01 Step 3: progress strip below row (4a0d569)
+- State established: Column children reordered — InkWell row first, progress strip second (Spotify-style).
+- Next step inputs: LiveAccent background tint.
+
+## Followup-01 Step 4: LiveAccent background (6c3c075)
+- State established: mini-bar wrapped in `Material(color: accent.background)`; text colours use `accent.foreground`.
+- Next step inputs: sheet test relocation.
+
+## Followup-01 Step 5: test grouping (86f2bf1)
+- State established: `drill_player_sheet_test.dart` moved to `test/views/drill_player/`.
+- Next step inputs: followup-02.
+
+## Followup-01 complete (86f2bf1)
+- Sheet auto-closes on live transition; mini-bar tickers per second; progress moved below row; mini-bar tinted with LiveAccent; tests grouped.
+- V2 backlog unchanged. See DESIGN-001 §"V1 scope" parked list.
