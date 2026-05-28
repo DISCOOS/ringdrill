@@ -107,18 +107,19 @@ class MapConfig {
   // Important! TileLayers are widgets! We need to get new layers
   // each time since we can not share them across multiple
   // FlutterMap instances (map may not show correctly)
-  static List<TileLayer> get layers => [topoLayer, osmLayer];
+  static List<TileLayer> get layers => [topoLayer, topoGrayLayer];
 
   // Important! We need to get new layers each time. See above!
-  static TileLayer get osmLayer => TileLayer(
-    key: const ValueKey('osm'),
-    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    userAgentPackageName: 'discoos.org/ringdrill',
+  static TileLayer get topoGrayLayer => TileLayer(
+    key: const ValueKey('topo-gray'),
+    urlTemplate:
+        'https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png',
     subdomains: const [],
+    userAgentPackageName: 'discoos.org/ringdrill',
     minZoom: 0,
     maxZoom: 19,
     minNativeZoom: 0,
-    maxNativeZoom: 19,
+    maxNativeZoom: 18,
   );
 
   // Important! We need to get new layers each time. See above!
