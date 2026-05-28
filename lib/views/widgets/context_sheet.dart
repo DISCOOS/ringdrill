@@ -125,14 +125,17 @@ class ContextSheetController {
   }
 
   void close() {
-    if (!_isOpen) return;
-    if (_navigator == null) {
-      _activeScope?.setTarget(null);
+    // In master-detail the controller's _isOpen can desync with the UI
+    // (e.g. exercise lifecycle events manipulate state without calling
+    // close). Always clear an active scope so the detail pane resets.
+    if (_activeScope != null) {
+      _activeScope!.setTarget(null);
       _target.value = null;
       _isOpen = false;
       _activeScope = null;
       return;
     }
+    if (!_isOpen) return;
     _navigator?.pop();
   }
 
