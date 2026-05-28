@@ -78,6 +78,13 @@ class SentryConfig {
     //     user-visible effect; it shows up as an uncaught error simply
     //     because the spec asks the browser to surface it.
     //
+    //   "Trying to render a disposed EngineFlutterView."
+    //     Flutter web can schedule one final draw frame while the browser
+    //     view is already being torn down during reload, tab close, hot
+    //     restart or PWA view disposal. The stack contains only engine and
+    //     scheduler frames, no RingDrill code, and there is no recovery
+    //     path inside the app once the view is disposed.
+    //
     //   "Non-Error promise rejection captured ..."
     //     A `Promise.reject(non-Error)` somewhere in third-party JS.
     //     Without a real Error there is nothing to debug from.
@@ -94,6 +101,7 @@ class SentryConfig {
       'Script error.',
       'ResizeObserver loop limit exceeded',
       'ResizeObserver loop completed with undelivered notifications',
+      'Trying to render a disposed EngineFlutterView.',
       'Non-Error promise rejection captured',
       'Invalid call to runtime.sendMessage()',
       'Extension context invalidated',
