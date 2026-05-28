@@ -32,7 +32,8 @@ import 'exercise_form_screen.dart';
 /// label/time pair become hard to read, so the layout falls back to
 /// the stacked variant.
 const double _kHeroSidebarWidth = 150;
-const double _kCoordinatorTwoColumnWidth = 1120;
+const double _kCoordinatorTwoColumnViewportWidth = 1120;
+const double _kCoordinatorTwoColumnContentWidth = 900;
 
 class CoordinatorScreen extends StatefulWidget {
   final String uuid;
@@ -390,7 +391,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         LayoutBuilder(
           builder: (context, constraints) {
             final isTwoColumn =
-                constraints.maxWidth >= _kCoordinatorTwoColumnWidth;
+                MediaQuery.sizeOf(context).width >=
+                    _kCoordinatorTwoColumnViewportWidth &&
+                constraints.maxWidth >= _kCoordinatorTwoColumnContentWidth;
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: isTwoColumn
