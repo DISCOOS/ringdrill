@@ -149,12 +149,28 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
               ),
             ),
           ),
+          // Custom strip instead of LinearProgressIndicator because the
+          // indicator's backgroundColor washed the phase colour out on the
+          // primaryContainer surface. A dark wash track maximises contrast
+          // with the saturated fill.
           SizedBox(
-            height: 3,
-            child: LinearProgressIndicator(
-              value: smoothedProgress,
-              backgroundColor: color.withValues(alpha: 0.25),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+            height: 4,
+            child: Stack(
+              children: [
+                // Track: a low-contrast dark wash so the bright phase-coloured
+                // fill on top pops on any background.
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.18),
+                  ),
+                ),
+                // Fill: solid phase colour, scaled by smoothedProgress.
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: smoothedProgress,
+                  child: Container(color: color),
+                ),
+              ],
             ),
           ),
         ],
