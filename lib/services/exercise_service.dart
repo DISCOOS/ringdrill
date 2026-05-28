@@ -247,9 +247,13 @@ class ExerciseService {
             }
           }
 
-          // Calculate total and round progress
+          // Calculate total and round progress.
+          // _totalProgress is the fraction of the exercise that has elapsed.
+          // Previously this divided per-phase remaining by total duration,
+          // which produced tiny values that anchored the mini-player's
+          // progress strip near the left and never moved meaningfully.
           _roundProgress = minutesInCurrentRound / roundTime;
-          _totalProgress = remainingTime / totalTime;
+          _totalProgress = (_elapsedMinutes / totalTime).clamp(0.0, 1.0);
 
           // Emit the current exercise event
           _raise(_exercise!, remainingTime);
