@@ -91,15 +91,15 @@ dev_dependencies:
 
 flutter_native_splash:
   color: "#1E3A8A" # Background color
-  image: assets/images/ringdrill-1024x1024.png
+  image: assets/images/ringdrill-v2-1254x1254.png
   android: true
   ios: true
   web: true
 
   android_12:
-    image: assets/images/ringdrill-1152x1152.png
+    image: assets/images/ringdrill-v2-1254x1254.png
     icon_background_color: "#1E3A8A"
-    image_dark: assets/images/ringdrill-1152x1152.png
+    image_dark: assets/images/ringdrill-v2-1254x1254.png
     icon_background_color_dark: "#1E3A8A"
 
 flutter_launcher_icons:
@@ -107,20 +107,20 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   ios:
     generate: true
-  image_path: "assets/images/ringdrill-1024x1024.png"
+  image_path: "assets/images/ringdrill-v2-1254x1254.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
-    image_path: "assets/images/ringdrill-1024x1024.png"
+    image_path: "assets/images/ringdrill-v2-1254x1254.png"
     background_color: "#ffffff"
     theme_color: "#ffffff"
   windows:
     generate: true
-    image_path: "assets/images/ringdrill-1024x1024.png"
+    image_path: "assets/images/ringdrill-v2-1254x1254.png"
     icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
-    image_path: "assets/images/ringdrill-1024x1024.png"
+    image_path: "assets/images/ringdrill-v2-1254x1254.png"
 
 flutter:
   # Enable localized messages generation
