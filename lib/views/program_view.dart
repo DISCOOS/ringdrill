@@ -14,7 +14,9 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
+import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 
@@ -126,9 +128,25 @@ class _ProgramViewState extends State<ProgramView> {
                     localizations: localizations,
                     markers: markers,
                     liveEvent: _liveEvent,
-                    onOpen: () => ContextSheet.of(
-                      context,
-                    ).show(context, ExerciseSheetTarget(exerciseUuid: exercise.uuid)),
+                    // V1: live card opens the DrillPlayer sheet (DESIGN-001).
+                    // All other cards keep the ContextSheet flow.
+                    onOpen: () {
+                      final isLive =
+                          _liveEvent?.exercise.uuid == exercise.uuid &&
+                              ExerciseService().isStarted;
+                      if (isLive) {
+                        showDrillPlayerSheet<void>(
+                          context: context,
+                          builder: (_) =>
+                              CoordinatorScreen(uuid: exercise.uuid),
+                        );
+                      } else {
+                        ContextSheet.of(context).show(
+                          context,
+                          ExerciseSheetTarget(exerciseUuid: exercise.uuid),
+                        );
+                      }
+                    },
                   ),
                 );
               },
