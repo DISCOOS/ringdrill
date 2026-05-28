@@ -159,8 +159,10 @@ GoRouter buildRouter(bool isFirstLaunch) {
                 path: ':exerciseId',
                 parentNavigatorKey: key,
                 builder: (BuildContext context, GoRouterState state) =>
-                    CoordinatorScreen(
-                      uuid: state.pathParameters['exerciseId']!,
+                    _ContextSheetRouteScope(
+                      child: CoordinatorScreen(
+                        uuid: state.pathParameters['exerciseId']!,
+                      ),
                     ),
                 routes: [
                   GoRoute(
@@ -403,6 +405,31 @@ class _ContextSheetDeepLinkLauncherState
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+class _ContextSheetRouteScope extends StatefulWidget {
+  const _ContextSheetRouteScope({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_ContextSheetRouteScope> createState() =>
+      _ContextSheetRouteScopeState();
+}
+
+class _ContextSheetRouteScopeState extends State<_ContextSheetRouteScope> {
+  late final ContextSheetController _controller = ContextSheetController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ContextSheet(controller: _controller, child: widget.child);
+  }
 }
 
 class Destination {

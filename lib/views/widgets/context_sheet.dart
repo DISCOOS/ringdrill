@@ -100,9 +100,7 @@ class ContextSheetController {
   }
 
   void dispose() {
-    if (ContextSheet._currentController == this) {
-      ContextSheet._currentController = null;
-    }
+    ContextSheet._unregisterController(this);
     _target.dispose();
   }
 }
@@ -118,20 +116,31 @@ class ContextSheet
        bodyBuilder = bodyBuilder,
        super(notifier: controller._target) {
     controller._bodyBuilder = bodyBuilder;
-    _currentController = controller;
+    _registerController(controller);
   }
 
   final ContextSheetController controller;
   final ContextSheetBodyBuilder? bodyBuilder;
-  static ContextSheetController? _currentController;
+  static final List<ContextSheetController> _controllerStack =
+      <ContextSheetController>[];
 
-  static ContextSheetController? get currentController => _currentController;
+  static ContextSheetController? get currentController =>
+      _controllerStack.isEmpty ? null : _controllerStack.last;
 
   static ContextSheetController of(BuildContext context) {
     final sheet = context.dependOnInheritedWidgetOfExactType<ContextSheet>();
-    final controller = sheet?.controller ?? _currentController;
+    final controller = sheet?.controller ?? currentController;
     assert(controller != null, 'No ContextSheet found in context');
     return controller!;
+  }
+
+  static void _registerController(ContextSheetController controller) {
+    _controllerStack.remove(controller);
+    _controllerStack.add(controller);
+  }
+
+  static void _unregisterController(ContextSheetController controller) {
+    _controllerStack.remove(controller);
   }
 
   static ContextSheetBodyBuilder? _bodyBuilderOf(BuildContext context) {
