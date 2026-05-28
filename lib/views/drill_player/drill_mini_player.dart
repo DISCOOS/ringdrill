@@ -73,14 +73,6 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          height: 3,
-          child: LinearProgressIndicator(
-            value: smoothedProgress,
-            backgroundColor: color.withValues(alpha: 0.25),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
         InkWell(
           onTap: widget.onOpen,
           child: SizedBox(
@@ -141,6 +133,14 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                 const SizedBox(width: 8),
               ],
             ),
+          ),
+        ),
+        SizedBox(
+          height: 3,
+          child: LinearProgressIndicator(
+            value: smoothedProgress,
+            backgroundColor: color.withValues(alpha: 0.25),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
       ],
