@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -199,15 +200,7 @@ class _BriefScreenState extends State<BriefScreen> {
               isWide,
               appBarTitle,
             ),
-            body: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!isWide) _buildNarrowAudienceToggle(localizations, theme),
-                Expanded(
-                  child: _buildContent(context, localizations, theme, isWide),
-                ),
-              ],
-            ),
+            body: _buildContent(context, localizations, theme, isWide),
           );
         },
       ),
@@ -239,8 +232,8 @@ class _BriefScreenState extends State<BriefScreen> {
       shape: Border(bottom: BorderSide(color: theme.borders.subtle)),
       bottom: _searchOpen ? _buildSearchBar(localizations, theme) : null,
       actions: [
-        if (isWide) _buildAudienceToggle(localizations, theme),
-        if (isWide) const SizedBox(width: 8),
+        _buildAudiencePicker(localizations, theme),
+        const SizedBox(width: 4),
         IconButton(
           icon: Icon(_searchOpen ? Icons.search_off : Icons.search),
           color: theme.text.heading,
@@ -356,57 +349,62 @@ class _BriefScreenState extends State<BriefScreen> {
     );
   }
 
-  Widget _buildNarrowAudienceToggle(
+  /// Compact audience picker that lives in the slim app bar. Replaces the
+  /// SegmentedButton variant because three side-by-side labels eat a lot
+  /// of horizontal space — especially in the sheet's slim bar — and the
+  /// visible difference between audiences is often subtle. The picker
+  /// shows the current audience label with a chevron and opens a
+  /// PopupMenu with the three options on tap.
+  Widget _buildAudiencePicker(
     AppLocalizations localizations,
     BriefTheme theme,
   ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: _buildAudienceToggle(localizations, theme),
-    );
-  }
+    String labelFor(BriefAudience a) {
+      switch (a) {
+        case BriefAudience.participant:
+          return localizations.briefAudienceParticipant;
+        case BriefAudience.instructor:
+          return localizations.briefAudienceInstructor;
+        case BriefAudience.director:
+          return localizations.briefAudienceDirector;
+      }
+    }
 
-  Widget _buildAudienceToggle(
-    AppLocalizations localizations,
-    BriefTheme theme,
-  ) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        segmentedButtonTheme: SegmentedButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return theme.surfaces.sidebar;
-              }
-              return Colors.transparent;
-            }),
-            foregroundColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return theme.text.heading;
-              }
-              return theme.text.body;
-            }),
-          ),
+    return PopupMenuButton<BriefAudience>(
+      initialValue: _audience,
+      onSelected: _setAudience,
+      tooltip: localizations.briefAudienceParticipant,
+      position: PopupMenuPosition.under,
+      itemBuilder: (context) => BriefAudience.values
+          .map(
+            (a) => CheckedPopupMenuItem<BriefAudience>(
+              value: a,
+              checked: a == _audience,
+              child: Text(labelFor(a)),
+            ),
+          )
+          .toList(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              labelFor(_audience),
+              style: TextStyle(
+                color: theme.text.heading,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 20,
+              color: theme.text.heading,
+            ),
+          ],
         ),
-      ),
-      child: SegmentedButton<BriefAudience>(
-        segments: [
-          ButtonSegment(
-            value: BriefAudience.participant,
-            label: Text(localizations.briefAudienceParticipant),
-          ),
-          ButtonSegment(
-            value: BriefAudience.instructor,
-            label: Text(localizations.briefAudienceInstructor),
-          ),
-          ButtonSegment(
-            value: BriefAudience.director,
-            label: Text(localizations.briefAudienceDirector),
-          ),
-        ],
-        selected: {_audience},
-        showSelectedIcon: false,
-        onSelectionChanged: (selection) => _setAudience(selection.first),
       ),
     );
   }
@@ -449,11 +447,13 @@ class _BriefScreenState extends State<BriefScreen> {
             children: [
               _buildTocSidebar(localizations, theme),
               VerticalDivider(width: 1, color: theme.borders.subtle),
-              Expanded(child: _buildMarkdown(markdown, theme)),
+              Expanded(
+                child: _buildMarkdown(markdown, theme, localizations, isWide),
+              ),
             ],
           );
         }
-        return _buildMarkdown(markdown, theme);
+        return _buildMarkdown(markdown, theme, localizations, isWide);
       },
     );
   }
@@ -516,6 +516,104 @@ class _BriefScreenState extends State<BriefScreen> {
       _currentMatchIndex = (_currentMatchIndex - 1 + _matchCount) % _matchCount;
     });
     _scheduleScrollToCurrentMatch();
+  }
+
+  /// Copies the current rendered brief markdown to the system clipboard.
+  /// Uses the cached `_renderedMarkdown` which is the renderer's raw output
+  /// — without the `<mark>` and `<curr-mark>` highlights that the search
+  /// path layers on top — so the pasted text is a clean markdown document.
+  Future<void> _copyMarkdownToClipboard() async {
+    final markdown = _renderedMarkdown;
+    if (markdown == null || markdown.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: markdown));
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(l10n.briefMarkdownCopied),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Opens a modal bottom sheet containing the same `TocWidget` shown in
+  /// the sidebar on wide screens. Tapping an entry jumps the document to
+  /// that heading and closes the sheet. Used by the floating TOC button
+  /// that appears in narrow mode where there is no persistent sidebar.
+  Future<void> _openTocSheet(AppLocalizations l10n, BriefTheme theme) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: theme.surfaces.sidebar,
+      useSafeArea: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.7,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text(
+                    l10n.briefToc,
+                    style: TextStyle(
+                      color: theme.text.heading,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Divider(height: 1, color: theme.borders.subtle),
+                Expanded(
+                  child: TocWidget(
+                    controller: _tocController,
+                    itemBuilder: (data) {
+                      final tag = data.toc.node.headingConfig.tag;
+                      final level = headingTag2Level[tag] ?? 1;
+                      if (level > 3) return const SizedBox.shrink();
+                      final label = data.toc.node.build().toPlainText();
+                      return ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.only(
+                          left: 16.0 + 16.0 * (level - 1),
+                          right: 16,
+                        ),
+                        title: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: level <= 2
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: theme.text.body,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                        onTap: () {
+                          _tocController.jumpToIndex(data.toc.widgetIndex);
+                          Navigator.of(sheetContext).pop();
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// Handles tap on a markdown link whose URL begins with `#`. Resolves
@@ -600,7 +698,13 @@ class _BriefScreenState extends State<BriefScreen> {
                     color: isActive ? theme.text.heading : theme.text.body,
                   );
                   return GestureDetector(
-                    onTap: () => data.refreshIndexCallback(data.index),
+                    onTap: () {
+                      // refreshIndexCallback only updates the highlighted
+                      // entry in the sidebar; jumpToIndex is what actually
+                      // scrolls the markdown to that heading.
+                      _tocController.jumpToIndex(data.toc.widgetIndex);
+                      data.refreshIndexCallback(data.index);
+                    },
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -639,18 +743,92 @@ class _BriefScreenState extends State<BriefScreen> {
     );
   }
 
-  Widget _buildMarkdown(String markdown, BriefTheme theme) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: theme.spacing.readingColumnMax),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
-          child: BriefMarkdown(
-            data: markdown,
+  Widget _buildMarkdown(
+    String markdown,
+    BriefTheme theme,
+    AppLocalizations l10n,
+    bool isWide,
+  ) {
+    return Stack(
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: theme.spacing.readingColumnMax,
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+              child: BriefMarkdown(
+                data: markdown,
+                theme: theme,
+                tocController: _tocController,
+                currentMatchKey: _currentMatchKey,
+                onAnchorTap: _onAnchorTap,
+              ),
+            ),
+          ),
+        ),
+        // Floating copy-markdown button at the top-right of the reading
+        // column. Visible on every viewport.
+        Positioned(
+          top: 8,
+          right: 8,
+          child: _FloatingActionIcon(
+            icon: Icons.content_copy,
+            tooltip: l10n.briefCopyMarkdown,
             theme: theme,
-            tocController: _tocController,
-            currentMatchKey: _currentMatchKey,
-            onAnchorTap: _onAnchorTap,
+            onPressed: _copyMarkdownToClipboard,
+          ),
+        ),
+        // Floating TOC button at the top-left, only when the sidebar is
+        // hidden (narrow viewport). Wide screens already show the TOC in
+        // the persistent sidebar.
+        if (!isWide)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: _FloatingActionIcon(
+              icon: Icons.toc,
+              tooltip: l10n.briefOpenToc,
+              theme: theme,
+              onPressed: () => _openTocSheet(l10n, theme),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// A small icon button styled as a soft floating affordance over the brief
+/// reading column. Used for the copy-markdown and open-TOC actions that
+/// sit on top of the markdown content rather than in the app bar.
+class _FloatingActionIcon extends StatelessWidget {
+  const _FloatingActionIcon({
+    required this.icon,
+    required this.tooltip,
+    required this.theme,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final BriefTheme theme;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: theme.surfaces.sidebar.withValues(alpha: 0.85),
+      elevation: 0,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onPressed,
+        child: Tooltip(
+          message: tooltip,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(icon, size: 18, color: theme.text.heading),
           ),
         ),
       ),

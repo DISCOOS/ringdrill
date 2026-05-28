@@ -614,5 +614,21 @@
   "briefSearchPreviousMatch": "Forrige treff",
   "@briefSearchPreviousMatch": {
     "description": "Tooltip on the previous-match arrow button in the brief search bar."
+  },
+  "briefStationNoPosition": "ingen posisjon",
+  "@briefStationNoPosition": {
+    "description": "Italic placeholder shown in the brief next to 'Post Nx plassering:' when a station has no UTM position set."
+  },
+  "briefCopyMarkdown": "Kopier som markdown",
+  "@briefCopyMarkdown": {
+    "description": "Tooltip on the floating copy-markdown button at the top-right of the brief reading column."
+  },
+  "briefMarkdownCopied": "Brief kopiert som markdown",
+  "@briefMarkdownCopied": {
+    "description": "Snackbar message after the user taps the copy-markdown button."
+  },
+  "briefOpenToc": "Innhold",
+  "@briefOpenToc": {
+    "description": "Tooltip on the floating TOC button shown at the top-left of the brief reading column on narrow screens."
   }
 }

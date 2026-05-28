@@ -1411,4 +1411,16 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get briefSearchPreviousMatch => 'Forrige treff';
+
+  @override
+  String get briefStationNoPosition => 'ingen posisjon';
+
+  @override
+  String get briefCopyMarkdown => 'Kopier som markdown';
+
+  @override
+  String get briefMarkdownCopied => 'Brief kopiert som markdown';
+
+  @override
+  String get briefOpenToc => 'Innhold';
 }

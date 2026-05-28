@@ -1415,4 +1415,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get briefSearchPreviousMatch => 'Previous match';
+
+  @override
+  String get briefStationNoPosition => 'no position';
+
+  @override
+  String get briefCopyMarkdown => 'Copy as markdown';
+
+  @override
+  String get briefMarkdownCopied => 'Brief copied as markdown';
+
+  @override
+  String get briefOpenToc => 'Contents';
 }

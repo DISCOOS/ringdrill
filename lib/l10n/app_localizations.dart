@@ -2425,6 +2425,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previous match'**
   String get briefSearchPreviousMatch;
+
+  /// Italic placeholder shown in the brief next to 'Post Nx plassering:' when a station has no UTM position set.
+  ///
+  /// In en, this message translates to:
+  /// **'no position'**
+  String get briefStationNoPosition;
+
+  /// Tooltip on the floating copy-markdown button at the top-right of the brief reading column.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as markdown'**
+  String get briefCopyMarkdown;
+
+  /// Snackbar message after the user taps the copy-markdown button.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief copied as markdown'**
+  String get briefMarkdownCopied;
+
+  /// Tooltip on the floating TOC button shown at the top-left of the brief reading column on narrow screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Contents'**
+  String get briefOpenToc;
 }
 
 class _AppLocalizationsDelegate

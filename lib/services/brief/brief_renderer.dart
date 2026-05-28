@@ -115,6 +115,7 @@ class BriefRenderer {
             .where((rp) => rp.stationIndex == station.index)
             .toList(),
         effectiveCommsMd: effectiveComms,
+        l10n: l10n,
       );
     }).toList();
 
@@ -146,9 +147,16 @@ class BriefRenderer {
     required Map<String, Actor> actorMap,
     required List<RolePlay> rolePlays,
     required String? effectiveCommsMd,
+    required AppLocalizations l10n,
   }) {
     final letter = _stationLetter(station);
     final utmStr = _formatUtm(station.position);
+    // Pre-formatted markdown for the "Post Nx plassering:" value. Renders as
+    // an inline-code chip when the station has a UTM position, or as a
+    // muted italic "no position" label when the position is null/empty.
+    final positionValue = utmStr.isEmpty
+        ? '_${l10n.briefStationNoPosition}_'
+        : '`$utmStr`';
     // Strip leading "Nx) " prefix — temporary workaround pending data cleanup.
     // The underlying Station.name is left unchanged.
     final cleanName = station.name.replaceFirst(_kStationNamePrefix, '');
@@ -206,6 +214,7 @@ class BriefRenderer {
       'stationLetter': letter,
       'stationAnchor': stationAnchor,
       'position': {'utm': utmStr},
+      'positionValue': positionValue,
       'stationDurationLabel': _stationDurationLabel(exercise),
       'equipmentMd': resolveField(station.equipmentMd),
       'situationMd': resolveField(station.situationMd),
