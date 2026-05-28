@@ -251,6 +251,9 @@ class _StationsViewState extends State<StationsView> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (constraints.maxWidth < 640) {
+          return mapColumn;
+        }
         final detailRatio = windowSizeClass == WindowSizeClass.expanded
             ? 1 / 3
             : 0.4;
