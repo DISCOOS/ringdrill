@@ -130,9 +130,6 @@ class BriefRenderer {
       'effectiveCommsMd': effectiveComms,
       'organisationBlock': _organisationBlock(program, exercise, l10n),
       'stations': stationContexts,
-      // Kept for backward compat with the old template until Step 4 swaps it.
-      'durationLabel': _exerciseDurationLabel(exercise, l10n),
-      'setupLabel': _legacySetupLabel(exercise),
     };
   }
 
@@ -205,8 +202,6 @@ class BriefRenderer {
       'stationAnchor': stationAnchor,
       'position': {'utm': utmStr},
       'stationDurationLabel': _stationDurationLabel(exercise),
-      // Kept for backward compat with the old template until Step 4 swaps it.
-      'durationLabel': _stationDurationLabel(exercise),
       'equipmentMd': resolveField(station.equipmentMd),
       'situationMd': resolveField(station.situationMd),
       'missionMd': resolveField(station.missionMd),
@@ -344,23 +339,6 @@ String _organisationBlock(
     );
   }
   return buf.toString().trimRight();
-}
-
-/// Legacy setup label kept until Step 4 replaces the template.
-String _legacySetupLabel(Exercise exercise) {
-  final config =
-      '${exercise.numberOfRounds} x (${exercise.executionTime} \\| '
-      '${exercise.evaluationTime} \\| ${exercise.rotationTime})';
-  final schedule = exercise.schedule;
-  if (schedule.isEmpty) return config;
-  final roundStarts = <String>[];
-  for (final round in schedule) {
-    if (round.isNotEmpty) {
-      roundStarts.add(round.first.toString());
-    }
-  }
-  if (roundStarts.isEmpty) return config;
-  return '$config<br>${roundStarts.join(', ')}';
 }
 
 /// Formats a UTM coordinate as "32V 0580414E 6552008N" — zone+band, then

@@ -149,6 +149,14 @@ void main() {
       final expectedUtm = BriefRenderer.formatUtm(const LatLng(58.99, 10.43));
       expect(normalized, contains('**Post 1a plassering:** $expectedUtm'));
 
+      // Station Varighet heading (new template: #### Varighet, not **Tid:** inline)
+      expect(normalized, contains('#### Varighet'));
+      expect(normalized, isNot(contains('**Tid:**')));
+
+      // Exercise-level Tid heading (clock-time span)
+      expect(normalized, contains('#### Tid'));
+      expect(normalized, contains('08:30–10:30'));
+
       // Station duration (phase breakdown)
       expect(normalized, contains('80 min (60 | 15 | 5)'));
 

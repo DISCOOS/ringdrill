@@ -333,6 +333,46 @@ void main() {
     );
   });
 
+  group('BriefScreen — TOC H4 filter', () {
+    testWidgets('wide layout TOC does not show H4 headings', (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+      await _awaitRender(tester);
+      await _awaitRender(
+        tester,
+      ); // second render after _wideTocSidebar transitions
+
+      // Sidebar is visible
+      expect(find.text('Contents'), findsOneWidget);
+
+      // H4 headings must not appear in the TocWidget
+      expect(
+        find.descendant(
+          of: find.byType(TocWidget),
+          matching: find.text('Varighet'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(TocWidget),
+          matching: find.text('Utstyrsbehov'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(TocWidget),
+          matching: find.text('Situasjon'),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
   group('BriefScreen — print button', () {
     testWidgets('print button is hidden on non-web', (tester) async {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));

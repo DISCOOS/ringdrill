@@ -419,6 +419,7 @@ class _BriefScreenState extends State<BriefScreen> {
                   final isActive = data.index == data.currentIndex;
                   final tag = data.toc.node.headingConfig.tag;
                   final level = headingTag2Level[tag] ?? 1;
+                  if (level > 3) return const SizedBox.shrink();
                   return GestureDetector(
                     onTap: () => data.refreshIndexCallback(data.index),
                     child: Row(

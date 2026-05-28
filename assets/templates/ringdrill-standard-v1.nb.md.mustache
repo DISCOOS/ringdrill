@@ -28,16 +28,44 @@
 {{#exercises}}
 ## {{name}}
 
-| | |
-|---|---|
-| Tid | {{durationLabel}} |
-{{#methodMd}}| Metode | {{{methodMd}}} |
-{{/methodMd}}{{#learningGoalsMd}}| Læringsmål | {{{learningGoalsMd}}} |
-{{/learningGoalsMd}}{{#trainingFocusMd}}| Øvingsmomenter | {{{trainingFocusMd}}} |
-{{/trainingFocusMd}}| Organisering | {{{setupLabel}}} |
-{{#orderFormatMd}}| Ordreformat | {{{orderFormatMd}}} |
-{{/orderFormatMd}}{{#executionTipsMd}}| Tips til gjennomføring | {{{executionTipsMd}}} |
-{{/executionTipsMd}}{{#effectiveCommsMd}}| Samband | {{{effectiveCommsMd}}} |
+#### Tid
+{{exerciseTimeLabel}}
+
+#### Varighet
+{{exerciseDurationLabel}}
+
+{{#methodMd}}
+#### Metode
+{{{methodMd}}}
+
+{{/methodMd}}
+{{#learningGoalsMd}}
+#### Læringsmål
+{{{learningGoalsMd}}}
+
+{{/learningGoalsMd}}
+{{#trainingFocusMd}}
+#### Øvingsmomenter
+{{{trainingFocusMd}}}
+
+{{/trainingFocusMd}}
+#### Organisering
+{{{organisationBlock}}}
+
+{{#orderFormatMd}}
+#### Ordreformat
+{{{orderFormatMd}}}
+
+{{/orderFormatMd}}
+{{#executionTipsMd}}
+#### Tips til gjennomføring
+{{{executionTipsMd}}}
+
+{{/executionTipsMd}}
+{{#effectiveCommsMd}}
+#### Samband
+{{{effectiveCommsMd}}}
+
 {{/effectiveCommsMd}}
 
 {{#stations}}
@@ -45,7 +73,8 @@
 
 **Post {{exerciseNumber}}{{stationLetter}} plassering:** {{position.utm}}
 
-**Tid:** {{durationLabel}}
+#### Varighet
+{{stationDurationLabel}}
 
 {{#equipmentMd}}
 #### Utstyrsbehov
