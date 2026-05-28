@@ -2449,6 +2449,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Contents'**
   String get briefOpenToc;
+
+  /// Tooltip on the overflow (three-dot) menu in the CoordinatorScreen app bar that groups edit and delete behind a single button.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get moreActions;
 }
 
 class _AppLocalizationsDelegate

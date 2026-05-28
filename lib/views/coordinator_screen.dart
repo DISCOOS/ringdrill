@@ -42,6 +42,14 @@ class CoordinatorScreen extends StatefulWidget {
 /// coordinator picks one via a SegmentedButton at the top of the body.
 enum _CoordinatorView { stations, teams }
 
+/// Entries in the appbar overflow menu. Edit and delete used to live as
+/// standalone icon buttons next to brief and the notification bell, but
+/// the four-icon row crowded the title out of the appbar on narrow
+/// devices. These two actions are structural or destructive and rarely
+/// used during an active exercise, so they're grouped behind a single
+/// three-dot trigger. See [_CoordinatorScreenState.build] for the wiring.
+enum _AppBarMenuAction { edit, delete }
+
 class _CoordinatorScreenState extends State<CoordinatorScreen> {
   late bool _isStarted;
 
@@ -238,7 +246,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               _exercise!.name,
             ), // Dynamic title shows the exercise's name
             actions: rdAppBarActions([
-              // Open Brief — scoped to this exercise
+              // Open Brief — scoped to this exercise. Always visible
+              // because the brief is the coordinator's reading material
+              // both before and during the exercise.
               IconButton(
                 icon: const Icon(Icons.menu_book),
                 padding: const EdgeInsets.all(8.0),
@@ -247,32 +257,71 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     context.push('$routeBrief/${widget.uuid}'),
               ),
 
-              IconButton(
-                icon: const Icon(Icons.notifications_on),
-                padding: const EdgeInsets.all(8.0),
-                onPressed: _promptShowNotification
-                    ? () {
-                        unawaited(NotificationService().initFromPrefs());
-                        setState(() {
-                          _promptShowNotification = false;
-                        });
-                      }
-                    : null,
-                tooltip: localizations.showNotification,
-              ),
+              // Notification re-show. `_promptShowNotification` is only
+              // raised by NotificationService events scoped to this
+              // exercise while it's running, so the bell has nothing to
+              // do outside of an active run. Hiding it (rather than
+              // showing it disabled) keeps the appbar uncluttered during
+              // setup/reading and frees up horizontal space so the
+              // exercise title stops getting ellipsized. The bell
+              // reappears as a third icon once the coordinator presses
+              // start, and toggles between enabled/disabled based on
+              // whether there's an actual notification to reshow.
+              if (_isStarted)
+                IconButton(
+                  icon: const Icon(Icons.notifications_on),
+                  padding: const EdgeInsets.all(8.0),
+                  onPressed: _promptShowNotification
+                      ? () {
+                          unawaited(NotificationService().initFromPrefs());
+                          setState(() {
+                            _promptShowNotification = false;
+                          });
+                        }
+                      : null,
+                  tooltip: localizations.showNotification,
+                ),
 
-              // Delete Exercise Button
-              IconButton(
-                icon: const Icon(Icons.delete),
-                padding: const EdgeInsets.all(8.0),
-                onPressed: _isStarted ? null : () => _deleteExercise(context),
-              ),
-
-              // Edit Exercise Button
-              IconButton(
-                icon: const Icon(Icons.edit),
-                padding: const EdgeInsets.all(8.0),
-                onPressed: _isStarted ? null : () => _editExercise(context),
+              // Overflow menu for edit + delete. These are admin actions
+              // that the original layout kept as standalone icon buttons,
+              // which pushed the title into ellipsis on narrow devices.
+              // Both are guarded by `_isStarted` so they keep parity with
+              // the previous disabled-during-run behaviour, just expressed
+              // once on the menu trigger instead of on each icon button.
+              PopupMenuButton<_AppBarMenuAction>(
+                tooltip: localizations.moreActions,
+                enabled: !_isStarted,
+                position: PopupMenuPosition.under,
+                onSelected: (action) {
+                  switch (action) {
+                    case _AppBarMenuAction.edit:
+                      _editExercise(context);
+                      break;
+                    case _AppBarMenuAction.delete:
+                      _deleteExercise(context);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem<_AppBarMenuAction>(
+                    value: _AppBarMenuAction.edit,
+                    child: ListTile(
+                      leading: const Icon(Icons.edit),
+                      title: Text(localizations.editExercise),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  PopupMenuItem<_AppBarMenuAction>(
+                    value: _AppBarMenuAction.delete,
+                    child: ListTile(
+                      leading: const Icon(Icons.delete),
+                      title: Text(localizations.deleteExercise),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                ],
               ),
             ]),
             actionsPadding: EdgeInsets.only(right: 16.0),
@@ -871,9 +920,22 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (description != null && description.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-              child: Text(description),
+            // Tap the description to open the full StationExerciseScreen
+            // for this station. Same destination + go_router pattern
+            // (`/stations/:uuid/:stationIndex`) used by stations_view.dart
+            // and station_list_view.dart, so deep-link state and back
+            // navigation stay consistent across entry points. InkWell is
+            // used (rather than a plain GestureDetector) so the description
+            // gets a Material ripple, which doubles as the affordance hint
+            // that the text is interactive.
+            InkWell(
+              onTap: () => context.push(
+                '$routeStations/${widget.uuid}/$stationIndex',
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                child: Text(description),
+              ),
             ),
           // Shared panel handles both the "Posisjon ... pin coords"
           // label row and the tappable mini-map (which opens the

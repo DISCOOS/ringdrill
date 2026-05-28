@@ -1427,4 +1427,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get briefOpenToc => 'Contents';
+
+  @override
+  String get moreActions => 'More actions';
 }

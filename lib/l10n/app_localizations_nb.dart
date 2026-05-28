@@ -1423,4 +1423,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get briefOpenToc => 'Innhold';
+
+  @override
+  String get moreActions => 'Flere handlinger';
 }

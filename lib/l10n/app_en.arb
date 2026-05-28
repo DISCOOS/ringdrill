@@ -1362,5 +1362,9 @@
   "briefOpenToc": "Contents",
   "@briefOpenToc": {
     "description": "Tooltip on the floating TOC button shown at the top-left of the brief reading column on narrow screens."
+  },
+  "moreActions": "More actions",
+  "@moreActions": {
+    "description": "Tooltip on the overflow (three-dot) menu in the CoordinatorScreen app bar that groups edit and delete behind a single button."
   }
 }

@@ -54,11 +54,12 @@ class RingDrillColors {
   // readable on both light surfaces and the dark brand surfaces.
 
   /// Foreground for disabled icons / labels that may sit on the dark
-  /// `brandDeep` AppBar in either theme. Tuned for visibility on `#002C3F`
-  /// first; on light card surfaces these will read as washed-out, which is
-  /// acceptable because most disabled IconButtons in this app sit in the
-  /// AppBar.
-  static const Color disabledOnDark = Color(0xFFB5D0DA);
+  /// `brandDeep` AppBar in either theme. Tuned to read clearly as "muted"
+  /// next to white enabled icons. Contrast against `#002C3F` is ~4.2:1
+  /// (icon-readable per WCAG AA non-text), while contrast against white
+  /// enabled icons is ~3.3:1 so the disabled state is visibly different
+  /// rather than just dimmer.
+  static const Color disabledOnDark = Color(0xFF5E7C8B);
 
   /// Foreground for disabled text / icons on light surfaces in light mode.
   static const Color disabledOnLight = Color(0xFF6E8390);
