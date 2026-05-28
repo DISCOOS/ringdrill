@@ -1374,5 +1374,21 @@
   "moreActions": "More actions",
   "@moreActions": {
     "description": "Tooltip on the overflow (three-dot) menu in the CoordinatorScreen app bar that groups edit and delete behind a single button."
+  },
+  "drillPlayerClose": "Close",
+  "@drillPlayerClose": {
+    "description": "Tooltip on the chevron-down close button in the DrillPlayer sheet."
+  },
+  "drillPlayerStartingIn": "Starting in",
+  "@drillPlayerStartingIn": {
+    "description": "Countdown label shown in the mini-player strip when the exercise is pending."
+  },
+  "drillPlayerRoundOf": "Round {current} / {total}",
+  "@drillPlayerRoundOf": {
+    "description": "Round indicator in the DrillMiniPlayer, e.g. 'Round 1 / 4'.",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
   }
 }

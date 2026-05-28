@@ -2467,6 +2467,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More actions'**
   String get moreActions;
+
+  /// Tooltip on the chevron-down close button in the DrillPlayer sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get drillPlayerClose;
+
+  /// Countdown label shown in the mini-player strip when the exercise is pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting in'**
+  String get drillPlayerStartingIn;
+
+  /// Round indicator in the DrillMiniPlayer, e.g. 'Round 1 / 4'.
+  ///
+  /// In en, this message translates to:
+  /// **'Round {current} / {total}'**
+  String drillPlayerRoundOf(int current, int total);
 }
 
 class _AppLocalizationsDelegate

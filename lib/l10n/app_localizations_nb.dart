@@ -1432,4 +1432,15 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get moreActions => 'Flere handlinger';
+
+  @override
+  String get drillPlayerClose => 'Lukk';
+
+  @override
+  String get drillPlayerStartingIn => 'Starter om';
+
+  @override
+  String drillPlayerRoundOf(int current, int total) {
+    return 'Runde $current / $total';
+  }
 }

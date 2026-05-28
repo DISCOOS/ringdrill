@@ -1436,4 +1436,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moreActions => 'More actions';
+
+  @override
+  String get drillPlayerClose => 'Close';
+
+  @override
+  String get drillPlayerStartingIn => 'Starting in';
+
+  @override
+  String drillPlayerRoundOf(int current, int total) {
+    return 'Round $current / $total';
+  }
 }

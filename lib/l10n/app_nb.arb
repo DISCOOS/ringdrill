@@ -636,5 +636,8 @@
   "moreActions": "Flere handlinger",
   "@moreActions": {
     "description": "Tooltip on the overflow (three-dot) menu in the CoordinatorScreen app bar that groups edit and delete behind a single button."
-  }
+  },
+  "drillPlayerClose": "Lukk",
+  "drillPlayerStartingIn": "Starter om",
+  "drillPlayerRoundOf": "Runde {current} / {total}"
 }
