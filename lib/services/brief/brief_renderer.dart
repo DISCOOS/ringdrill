@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:meta/meta.dart';
 import 'package:mustache_template/mustache_template.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
@@ -20,6 +21,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/template_registry.dart';
+import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/projection.dart';
 
 class BriefRenderer {
@@ -44,6 +46,7 @@ class BriefRenderer {
     required Program program,
     Exercise? exercise,
     required BriefAudience audience,
+    required AppLocalizations l10n,
     bool wideTocSidebar = false,
   }) async {
     final template = _registry.resolve(exercise?.templateId);
@@ -65,6 +68,7 @@ class BriefRenderer {
         audience: audience,
         actorMap: actorMap,
         rolePlays: rolePlaysByExercise[ex.uuid] ?? [],
+        l10n: l10n,
       );
     }).toList();
 
@@ -90,6 +94,7 @@ class BriefRenderer {
     required BriefAudience audience,
     required Map<String, Actor> actorMap,
     required List<RolePlay> rolePlays,
+    required AppLocalizations l10n,
   }) {
     final exNum = _exerciseNumber(program, exercise);
     final effectiveComms = _effectiveCommsMd(program, exercise);
@@ -115,15 +120,19 @@ class BriefRenderer {
       'name': exercise.name,
       'exerciseNumber': exNum,
       'exerciseAnchor': exerciseAnchor,
-      'durationLabel': _durationLabel(exercise),
+      'exerciseTimeLabel': _exerciseTimeLabel(exercise),
+      'exerciseDurationLabel': _exerciseDurationLabel(exercise, l10n),
       'methodMd': exercise.methodMd,
       'learningGoalsMd': exercise.learningGoalsMd,
       'trainingFocusMd': exercise.trainingFocusMd,
       'orderFormatMd': exercise.orderFormatMd,
       'executionTipsMd': exercise.executionTipsMd,
       'effectiveCommsMd': effectiveComms,
-      'setupLabel': _setupLabel(exercise),
+      'organisationBlock': _organisationBlock(program, exercise, l10n),
       'stations': stationContexts,
+      // Kept for backward compat with the old template until Step 4 swaps it.
+      'durationLabel': _exerciseDurationLabel(exercise, l10n),
+      'setupLabel': _legacySetupLabel(exercise),
     };
   }
 
@@ -138,12 +147,15 @@ class BriefRenderer {
   }) {
     final letter = _stationLetter(station);
     final utmStr = _formatUtm(station.position);
+    // Strip leading "Nx) " prefix — temporary workaround pending data cleanup.
+    // The underlying Station.name is left unchanged.
+    final cleanName = station.name.replaceFirst(_kStationNamePrefix, '');
 
     // Build a partial station context for cross-reference resolution inside
     // markdown fields (e.g. {{station.position.utm}} inside situationMd).
     final stationRefContext = {
       'station': {
-        'name': station.name,
+        'name': cleanName,
         'position': {'utm': utmStr},
       },
     };
@@ -181,18 +193,20 @@ class BriefRenderer {
     }).toList();
 
     final stationAnchor = _toAnchor(
-      '$exerciseNumber$letter – ${station.name}'
+      '$exerciseNumber$letter – $cleanName'
       '${station.variantSuffix != null ? ' – ${station.variantSuffix}' : ''}',
     );
 
     return {
-      'name': station.name,
+      'name': cleanName,
       'variantSuffix': station.variantSuffix,
       'exerciseNumber': exerciseNumber,
       'stationLetter': letter,
       'stationAnchor': stationAnchor,
       'position': {'utm': utmStr},
-      'durationLabel': _durationLabel(exercise),
+      'stationDurationLabel': _stationDurationLabel(exercise),
+      // Kept for backward compat with the old template until Step 4 swaps it.
+      'durationLabel': _stationDurationLabel(exercise),
       'equipmentMd': resolveField(station.equipmentMd),
       'situationMd': resolveField(station.situationMd),
       'missionMd': resolveField(station.missionMd),
@@ -223,19 +237,32 @@ class BriefRenderer {
   @visibleForTesting
   static String stationLetter(Station station) => _stationLetter(station);
 
-  /// Formats [exercise] duration as "60 min." (single round) or "4 x 60 min."
-  /// (multiple rounds). Uses [Exercise.executionTime] in minutes.
+  /// Clock-time span for the exercise: "08:30–10:30".
+  /// "Tid" in copy is reserved for clock-time, never duration.
   @visibleForTesting
-  static String durationLabel(Exercise exercise) => _durationLabel(exercise);
+  static String exerciseTimeLabel(Exercise exercise) =>
+      _exerciseTimeLabel(exercise);
 
-  /// Returns the ring-configuration string for [exercise].
-  /// Format: "4 x (60 | 15 | 5)" where the numbers are
-  /// numberOfRounds × (executionTime | evaluationTime | rotationTime).
-  /// When schedule entries exist, appends a comma-separated list of round
-  /// start times on the same line (separated by a newline suitable for a
-  /// markdown table cell).
+  /// Total duration plus per-round breakdown for the exercise.
+  /// Examples: "2 timer (60 min pr oppdrag)", "90 min (30 min pr oppdrag)".
   @visibleForTesting
-  static String setupLabel(Exercise exercise) => _setupLabel(exercise);
+  static String exerciseDurationLabel(
+    Exercise exercise,
+    AppLocalizations l10n,
+  ) => _exerciseDurationLabel(exercise, l10n);
+
+  /// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
+  @visibleForTesting
+  static String stationDurationLabel(Exercise exercise) =>
+      _stationDurationLabel(exercise);
+
+  /// Full Organisering markdown block.
+  @visibleForTesting
+  static String organisationBlock(
+    Program program,
+    Exercise exercise,
+    AppLocalizations l10n,
+  ) => _organisationBlock(program, exercise, l10n);
 
   /// Formats [latLng] as "32V 0580414E 6552008N" (UTM, easting before
   /// northing). Returns empty string when [latLng] is null.
@@ -248,6 +275,10 @@ class BriefRenderer {
 // static wrappers above)
 // ---------------------------------------------------------------------------
 
+// Matches leading "Nx) " or "Nxy) " station-name prefixes.
+// Workaround pending data cleanup of Station.name — see ADR-0023 follow-up 01.
+final _kStationNamePrefix = RegExp(r'^[0-9]+[a-z]\)\s*');
+
 int _exerciseNumber(Program program, Exercise exercise) {
   final idx = program.exercises.indexWhere((e) => e.uuid == exercise.uuid);
   return idx < 0 ? 1 : idx + 1;
@@ -257,31 +288,77 @@ String _stationLetter(Station station) {
   return String.fromCharCode('a'.codeUnitAt(0) + station.index);
 }
 
-String _durationLabel(Exercise exercise) {
-  final mins = exercise.executionTime;
-  if (exercise.numberOfRounds > 1) {
-    return '${exercise.numberOfRounds} x $mins min.';
-  }
-  return '$mins min.';
+/// Clock-time span for the exercise: "08:30–10:30".
+/// "Tid" in copy is reserved for clock-time, never duration.
+String _exerciseTimeLabel(Exercise exercise) {
+  return '${exercise.startTime}–${exercise.endTime}';
 }
 
-String _setupLabel(Exercise exercise) {
+/// Total duration with per-round breakdown.
+/// "2 timer (60 min pr oppdrag)" when total is a whole number of hours,
+/// "90 min (30 min pr oppdrag)" otherwise. Single-round exercises show
+/// just the total without the per-round suffix.
+String _exerciseDurationLabel(Exercise exercise, AppLocalizations l10n) {
+  final round =
+      exercise.executionTime + exercise.evaluationTime + exercise.rotationTime;
+  final total = exercise.numberOfRounds * round;
+  final totalStr = (total >= 60 && total % 60 == 0)
+      ? '${total ~/ 60} timer'
+      : '$total min';
+  if (exercise.numberOfRounds <= 1) return totalStr;
+  return '$totalStr ($round min ${l10n.briefPerStation})';
+}
+
+/// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
+String _stationDurationLabel(Exercise exercise) {
+  final round =
+      exercise.executionTime + exercise.evaluationTime + exercise.rotationTime;
+  return '$round min (${rotationPhaseBreakdown(exercise)})';
+}
+
+/// Full Organisering markdown block used in the brief template.
+String _organisationBlock(
+  Program program,
+  Exercise exercise,
+  AppLocalizations l10n,
+) {
+  final phases = rotationPhaseBreakdown(exercise);
+  final buf = StringBuffer()
+    ..writeln(
+      '**${l10n.briefRingRoute}:** '
+      '${exercise.numberOfRounds} x ($phases)',
+    )
+    ..writeln('_(${l10n.rotationShareLegendPhases})_')
+    ..writeln();
+  if (program.beforeRoundMd != null && program.beforeRoundMd!.isNotEmpty) {
+    buf
+      ..writeln(program.beforeRoundMd)
+      ..writeln();
+  }
+  buf
+    ..writeln('**${l10n.rotationShareTitle}**')
+    ..writeln();
+  for (final r in rotationRounds(exercise, l10n)) {
+    buf.writeln(
+      '- ${l10n.round(1)} ${r.index}: ${r.timesText} _(${r.suffix})_',
+    );
+  }
+  return buf.toString().trimRight();
+}
+
+/// Legacy setup label kept until Step 4 replaces the template.
+String _legacySetupLabel(Exercise exercise) {
   final config =
       '${exercise.numberOfRounds} x (${exercise.executionTime} \\| '
       '${exercise.evaluationTime} \\| ${exercise.rotationTime})';
-
   final schedule = exercise.schedule;
   if (schedule.isEmpty) return config;
-
-  // Each inner list is one round's time slots. We use the first slot of each
-  // round as the round-start time. Render as comma-separated HH:mm values.
   final roundStarts = <String>[];
   for (final round in schedule) {
     if (round.isNotEmpty) {
       roundStarts.add(round.first.toString());
     }
   }
-
   if (roundStarts.isEmpty) return config;
   return '$config<br>${roundStarts.join(', ')}';
 }

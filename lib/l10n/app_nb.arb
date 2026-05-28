@@ -582,5 +582,13 @@
   "briefToc": "Innhold",
   "briefAction": "Åpne brief",
   "briefClose": "Lukk",
-  "briefDragHandle": "Dra for å lukke"
+  "briefDragHandle": "Dra for å lukke",
+  "briefPerStation": "pr oppdrag",
+  "@briefPerStation": {
+    "description": "Suffix for exercise duration breakdown in the brief, e.g. '90 min (30 min pr oppdrag)'."
+  },
+  "briefRingRoute": "Ringløype",
+  "@briefRingRoute": {
+    "description": "Label for the ring-rotation configuration line in the brief Organisering section."
+  }
 }

@@ -1392,4 +1392,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get briefDragHandle => 'Drag to close';
+
+  @override
+  String get briefPerStation => 'per station';
+
+  @override
+  String get briefRingRoute => 'Ring route';
 }

@@ -1314,5 +1314,13 @@
   "briefDragHandle": "Drag to close",
   "@briefDragHandle": {
     "description": "Semantics label for the drag handle on the brief sheet."
+  },
+  "briefPerStation": "per station",
+  "@briefPerStation": {
+    "description": "Suffix for exercise duration breakdown in the brief, e.g. '90 min (30 min per station)'."
+  },
+  "briefRingRoute": "Ring route",
+  "@briefRingRoute": {
+    "description": "Label for the ring-rotation configuration line in the brief Organisering section."
   }
 }

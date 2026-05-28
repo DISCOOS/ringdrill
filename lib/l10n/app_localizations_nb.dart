@@ -1389,4 +1389,10 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get briefDragHandle => 'Dra for å lukke';
+
+  @override
+  String get briefPerStation => 'pr oppdrag';
+
+  @override
+  String get briefRingRoute => 'Ringløype';
 }

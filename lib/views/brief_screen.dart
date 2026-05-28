@@ -60,16 +60,17 @@ class _BriefScreenState extends State<BriefScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _wideTocSidebar = false;
 
-  // Re-assigned when audience changes so FutureBuilder re-runs.
+  // Re-assigned when audience or layout changes so FutureBuilder re-runs.
   late Future<String> _renderFuture;
 
   @override
-  void initState() {
-    super.initState();
-    _renderFuture = _buildRenderFuture();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-build on first mount (replaces initState) and whenever l10n changes.
+    _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
   }
 
-  Future<String> _buildRenderFuture() {
+  Future<String> _buildRenderFuture(AppLocalizations l10n) {
     final program = ProgramService().activeProgram;
     if (program == null) return Future.value('');
 
@@ -86,6 +87,7 @@ class _BriefScreenState extends State<BriefScreen> {
       program: program,
       exercise: exercise,
       audience: _audience,
+      l10n: l10n,
       wideTocSidebar: _wideTocSidebar,
     );
   }
@@ -93,7 +95,7 @@ class _BriefScreenState extends State<BriefScreen> {
   void _setAudience(BriefAudience audience) {
     setState(() {
       _audience = audience;
-      _renderFuture = _buildRenderFuture();
+      _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
     });
   }
 
@@ -101,7 +103,7 @@ class _BriefScreenState extends State<BriefScreen> {
     if (!mounted) return;
     setState(() {
       _wideTocSidebar = isWide;
-      _renderFuture = _buildRenderFuture();
+      _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
     });
   }
 

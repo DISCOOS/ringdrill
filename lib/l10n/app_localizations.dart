@@ -2383,6 +2383,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag to close'**
   String get briefDragHandle;
+
+  /// Suffix for exercise duration breakdown in the brief, e.g. '90 min (30 min per station)'.
+  ///
+  /// In en, this message translates to:
+  /// **'per station'**
+  String get briefPerStation;
+
+  /// Label for the ring-rotation configuration line in the brief Organisering section.
+  ///
+  /// In en, this message translates to:
+  /// **'Ring route'**
+  String get briefRingRoute;
 }
 
 class _AppLocalizationsDelegate

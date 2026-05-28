@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
@@ -111,6 +112,8 @@ Program _designProgram() => _emptyProgram().copyWith(
   actors: [_actor],
 );
 
+final _l10n = AppLocalizationsNb();
+
 /// Trims trailing whitespace from each line so whitespace-only differences
 /// at line endings don't cause false failures.
 String _normalizeLines(String s) =>
@@ -135,6 +138,7 @@ void main() {
       final result = await renderer.render(
         program: program,
         audience: BriefAudience.director,
+        l10n: _l10n,
       );
       final normalized = _normalizeLines(result);
 
@@ -145,8 +149,8 @@ void main() {
       final expectedUtm = BriefRenderer.formatUtm(const LatLng(58.99, 10.43));
       expect(normalized, contains('**Post 1a plassering:** $expectedUtm'));
 
-      // Duration
-      expect(normalized, contains('4 x 60 min.'));
+      // Station duration (phase breakdown)
+      expect(normalized, contains('80 min (60 | 15 | 5)'));
 
       // Equipment
       expect(
@@ -196,6 +200,7 @@ void main() {
       final result = await renderer.render(
         program: program,
         audience: BriefAudience.participant,
+        l10n: _l10n,
       );
 
       // Actor PII must be absent
@@ -218,6 +223,7 @@ void main() {
       final result = await renderer.render(
         program: program,
         audience: BriefAudience.instructor,
+        l10n: _l10n,
       );
 
       // Director notes must be present
@@ -257,6 +263,7 @@ void main() {
       final result = await renderer.render(
         program: program,
         audience: BriefAudience.participant,
+        l10n: _l10n,
       );
 
       expect(result, contains(expectedUtm));
@@ -290,6 +297,7 @@ void main() {
       final result = await renderer.render(
         program: program,
         audience: BriefAudience.participant,
+        l10n: _l10n,
       );
 
       expect(result, contains('#### Situasjon'));
@@ -325,6 +333,7 @@ void main() {
       final result = await renderer.render(
         program: programWithComms,
         audience: BriefAudience.participant,
+        l10n: _l10n,
       );
 
       // Exercise token must appear (in station Samband)
@@ -366,6 +375,7 @@ void main() {
       final result = await renderer.render(
         program: programWithComms,
         audience: BriefAudience.participant,
+        l10n: _l10n,
       );
       expect(result, contains('PROG COMMS'));
     });
@@ -402,11 +412,13 @@ void main() {
         program: programA,
         exercise: exerciseWithTemplate,
         audience: BriefAudience.participant,
+        l10n: _l10n,
       );
       final resultB = await renderer.render(
         program: programB,
         exercise: exerciseNoTemplate,
         audience: BriefAudience.participant,
+        l10n: _l10n,
       );
 
       // Same template used — structural output is equivalent after stripping uuid-derived anchors
@@ -423,6 +435,7 @@ void main() {
       final result = await renderer.render(
         program: program,
         audience: BriefAudience.participant,
+        l10n: _l10n,
         wideTocSidebar: false,
       );
       expect(result, contains('## Innholdsfortegnelse'));
@@ -434,6 +447,7 @@ void main() {
       final result = await renderer.render(
         program: program,
         audience: BriefAudience.participant,
+        l10n: _l10n,
         wideTocSidebar: true,
       );
       expect(result, isNot(contains('## Innholdsfortegnelse')));
@@ -454,7 +468,25 @@ void main() {
       }
     });
 
-    test('durationLabel formats single and multi-round exercises', () {
+    test('exerciseTimeLabel returns clock-time span', () {
+      final ex = Exercise(
+        uuid: 'e',
+        name: 'E',
+        startTime: SimpleTimeOfDay(hour: 17, minute: 0),
+        endTime: SimpleTimeOfDay(hour: 19, minute: 0),
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 60,
+        evaluationTime: 15,
+        rotationTime: 5,
+        stations: const [],
+        schedule: const [],
+      );
+      expect(BriefRenderer.exerciseTimeLabel(ex), '17:00–19:00');
+    });
+
+    test('exerciseDurationLabel — single round, exact hours', () {
+      // 1 × 120 min = "2 timer" (no per-round suffix for single round)
       final single = Exercise(
         uuid: 'e',
         name: 'E',
@@ -462,60 +494,77 @@ void main() {
         endTime: _end,
         numberOfTeams: 1,
         numberOfRounds: 1,
+        executionTime: 100,
+        evaluationTime: 15,
+        rotationTime: 5,
+        stations: const [],
+        schedule: const [],
+      );
+      expect(BriefRenderer.exerciseDurationLabel(single, _l10n), '2 timer');
+    });
+
+    test('exerciseDurationLabel — multi-round, exact hours', () {
+      // 2 × 60 min = "2 timer (60 min pr oppdrag)"
+      final ex = Exercise(
+        uuid: 'e',
+        name: 'E',
+        startTime: _start,
+        endTime: _end,
+        numberOfTeams: 2,
+        numberOfRounds: 2,
         executionTime: 45,
         evaluationTime: 10,
         rotationTime: 5,
         stations: const [],
         schedule: const [],
       );
-      expect(BriefRenderer.durationLabel(single), '45 min.');
-
-      final multi = single.copyWith(numberOfRounds: 4, executionTime: 60);
-      expect(BriefRenderer.durationLabel(multi), '4 x 60 min.');
+      expect(
+        BriefRenderer.exerciseDurationLabel(ex, _l10n),
+        '2 timer (60 min pr oppdrag)',
+      );
     });
 
-    test('setupLabel formats ring config string', () {
-      final exercise = Exercise(
+    test('exerciseDurationLabel — multi-round, non-hour total', () {
+      // 3 × 30 min = "90 min (30 min pr oppdrag)"
+      final ex = Exercise(
         uuid: 'e',
         name: 'E',
         startTime: _start,
         endTime: _end,
-        numberOfTeams: 4,
-        numberOfRounds: 4,
-        executionTime: 60,
-        evaluationTime: 15,
+        numberOfTeams: 3,
+        numberOfRounds: 3,
+        executionTime: 15,
+        evaluationTime: 10,
         rotationTime: 5,
         stations: const [],
         schedule: const [],
       );
-      expect(BriefRenderer.setupLabel(exercise), r'4 x (60 \| 15 \| 5)');
+      expect(
+        BriefRenderer.exerciseDurationLabel(ex, _l10n),
+        '90 min (30 min pr oppdrag)',
+      );
     });
 
-    test('setupLabel appends schedule round-start times when present', () {
-      final schedule = [
-        [SimpleTimeOfDay(hour: 8, minute: 30)],
-        [SimpleTimeOfDay(hour: 9, minute: 35)],
-        [SimpleTimeOfDay(hour: 10, minute: 40)],
-        [SimpleTimeOfDay(hour: 11, minute: 45)],
-      ];
-      final exercise = Exercise(
-        uuid: 'e',
-        name: 'E',
-        startTime: _start,
-        endTime: _end,
-        numberOfTeams: 4,
-        numberOfRounds: 4,
-        executionTime: 60,
-        evaluationTime: 15,
-        rotationTime: 5,
-        stations: const [],
-        schedule: schedule,
-      );
-      final label = BriefRenderer.setupLabel(exercise);
-      expect(label, startsWith(r'4 x (60 \| 15 \| 5)<br>'));
-      expect(label, contains('08:30'));
-      expect(label, contains('09:35'));
-    });
+    test(
+      'stationDurationLabel formats round duration with phase breakdown',
+      () {
+        // 15 + 10 + 5 = 30 min (15 | 10 | 5)
+        final ex = Exercise(
+          uuid: 'e',
+          name: 'E',
+          startTime: _start,
+          endTime: _end,
+          numberOfTeams: 4,
+          numberOfRounds: 4,
+          executionTime: 15,
+          evaluationTime: 10,
+          rotationTime: 5,
+          stations: const [],
+          schedule: const [],
+        );
+        expect(BriefRenderer.stationDurationLabel(ex), '30 min (15 | 10 | 5)');
+      },
+    );
 
     test('formatUtm returns empty string for null', () {
       expect(BriefRenderer.formatUtm(null), '');
