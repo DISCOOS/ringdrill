@@ -124,3 +124,16 @@ V1 scope per `docs/design/exercise-player.md`:
 - Mini-bar redesigned: exercise-number badge + mini round-row + countdown + phase-tinted play square. Rounded floating shape above navbar.
 - Removed from mini-bar: phase chip, "Runde X/Y" text, exercise name, phase-changing icon.
 - V2 backlog unchanged. See DESIGN-001 §"V1 scope" parked list.
+
+## Followup-03 complete (fef227a)
+- Mini-bar pending state shows "Starter om mm:ss" with per-second tick (drillPlayerStartingInWithCountdown ARB key).
+- ExerciseNumberBadge gained a `size` param (default 40); mini-bar passes 36 to match the play square.
+- Non-badge text bumped to titleMedium / 14 sp.
+- Phase label (ØVE/EVAL/RULL) restored to the left of the countdown when running; hidden in pending/done.
+- Progress strip rebuilt as a phase-coloured fill on a dark wash track for vivid contrast. Height 3→4 px.
+- MiniRoundRow now reads R{N} … {M} runder, matching the expanded-tile header pattern.
+- PhasesWidget gained a `cellSize` parameter; MiniRoundRow reuses it so completed phases stay filled.
+- DrillPlayer sheet renders body directly: no chevron, square corners, full viewport height. Body's AppBar X is the sole close affordance.
+- Bottom mini-bar strip tracks total exercise progress (previously phaseProgress); per-phase signal lives inside MiniRoundRow via PhasesWidget cell fills.
+- Play icon wrapped in an animated ring: pulse (_PulsingRing) in pending, spin (CircularProgressIndicator) in running. Decorative liveness signal.
+- V2 backlog unchanged. See DESIGN-001 §"V1 scope" parked list.
