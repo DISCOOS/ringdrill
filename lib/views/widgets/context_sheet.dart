@@ -80,8 +80,13 @@ class ContextSheetController {
     _target.value = target;
     _navigator = Navigator.of(context);
     _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
+    // Brief uses its own internal wide-layout split (TOC sidebar + body) and
+    // benefits from the full sheet width on large screens. Other targets keep
+    // the standard 720px readability cap from _ViewerBody.
+    final maxBodyWidth = target is BriefSheetTarget ? double.infinity : 720.0;
     await showRingdrillViewerSheet<void>(
       context: context,
+      maxBodyWidth: maxBodyWidth,
       builder: (context, scrollController) => ContextSheet(
         controller: this,
         bodyBuilder: _bodyBuilder,

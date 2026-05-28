@@ -67,7 +67,7 @@ String rotationPhaseBreakdown(Exercise exercise) =>
 ///    already paste by hand:
 ///
 ///    ```
-///    Generelt hver runde: 15 | 10 | 5 (øve | evaluere | rullere / inntransport)
+///    Generelt hver runde: 15 | 10 | 5 (øve | eval | rull / retur)
 ///
 ///    Rullering (klokkeslett)
 ///    Runde 1: 0930 | 0945 | 0955 (neste)

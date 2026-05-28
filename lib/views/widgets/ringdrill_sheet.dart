@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 
+/// Opens a draggable viewer sheet with the standard Ringdrill chrome (drag
+/// handle, rounded top corners, surface background).
+///
+/// [maxBodyWidth] caps the body width on wide screens so column-based content
+/// stays readable. Default 720 matches the original behaviour. Pass
+/// [double.infinity] to let the body fill the full sheet width — used by the
+/// brief sheet so its wide-layout TOC sidebar gets the room it needs.
 Future<T?> showRingdrillViewerSheet<T>({
   required BuildContext context,
   required Widget Function(BuildContext, ScrollController) builder,
+  double maxBodyWidth = 720,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -21,6 +29,7 @@ Future<T?> showRingdrillViewerSheet<T>({
           final body = _ViewerBody(
             scrollController: scrollController,
             builder: builder,
+            maxBodyWidth: maxBodyWidth,
           );
           return _RingdrillSheetSurface(child: body);
         },
@@ -94,19 +103,30 @@ class _DragHandle extends StatelessWidget {
 }
 
 class _ViewerBody extends StatelessWidget {
-  const _ViewerBody({required this.scrollController, required this.builder});
+  const _ViewerBody({
+    required this.scrollController,
+    required this.builder,
+    required this.maxBodyWidth,
+  });
 
   final ScrollController scrollController;
   final Widget Function(BuildContext, ScrollController) builder;
+
+  /// Caps the body width on wide screens. [double.infinity] disables the cap
+  /// and lets the body fill the full sheet width.
+  final double maxBodyWidth;
 
   @override
   Widget build(BuildContext context) {
     final child = builder(context, scrollController);
     final width = MediaQuery.sizeOf(context).width;
-    final body = width >= 600
+    // Skip the centering wrapper entirely when no cap is requested so the
+    // body's own LayoutBuilder sees the full host width (the brief sheet
+    // needs this to trigger its wide-layout TOC sidebar at >= 900px).
+    final body = (maxBodyWidth.isFinite && width >= 600)
         ? Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
+              constraints: BoxConstraints(maxWidth: maxBodyWidth),
               child: child,
             ),
           )
