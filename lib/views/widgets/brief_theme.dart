@@ -192,9 +192,9 @@ class BriefTheme {
     accent: BriefAccent(activeStripe: Color(0xFF0F172A)),
     typography: BriefTypography(
       h1: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, height: 1.20),
-      h2: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, height: 1.30),
-      h3: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, height: 1.40),
-      h4: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.40),
+      h2: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, height: 1.80),
+      h3: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, height: 2.10),
+      h4: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 2.40),
       body: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, height: 1.65),
       code: TextStyle(
         fontSize: 14,
@@ -233,9 +233,9 @@ class BriefTheme {
     accent: BriefAccent(activeStripe: Color(0xFFE5E7EB)),
     typography: BriefTypography(
       h1: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, height: 1.20),
-      h2: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, height: 1.30),
-      h3: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, height: 1.40),
-      h4: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.40),
+      h2: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, height: 1.80),
+      h3: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, height: 2.10),
+      h4: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 2.40),
       body: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, height: 1.65),
       code: TextStyle(
         fontSize: 14,

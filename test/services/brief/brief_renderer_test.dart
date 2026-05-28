@@ -145,9 +145,10 @@ void main() {
       // Station heading
       expect(normalized, contains('### 1a – Demens'));
 
-      // UTM placement — use actual computed value rather than DESIGN-004 example
+      // UTM placement — use actual computed value rather than DESIGN-004 example.
+      // UTM renders as inline code (backticks) so it stands out from prose.
       final expectedUtm = BriefRenderer.formatUtm(const LatLng(58.99, 10.43));
-      expect(normalized, contains('**Post 1a plassering:** $expectedUtm'));
+      expect(normalized, contains('**Post 1a plassering:** `$expectedUtm`'));
 
       // Station Varighet heading (new template: #### Varighet, not **Tid:** inline)
       expect(normalized, contains('#### Varighet'));
