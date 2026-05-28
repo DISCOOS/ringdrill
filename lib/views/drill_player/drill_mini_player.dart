@@ -17,6 +17,11 @@ class DrillMiniPlayer extends StatefulWidget {
 class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
   ExerciseEvent? _event;
   StreamSubscription<ExerciseEvent>? _sub;
+  // Per-second ticker interpolates between minute-granular service events so
+  // the countdown reads mm:ss and the progress bar moves smoothly.
+  // The service still emits per minute — see V1 followup-01 Gap 2.
+  Timer? _ticker;
+  DateTime _now = DateTime.now();
 
   @override
   void initState() {
@@ -26,10 +31,15 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
       if (!mounted) return;
       setState(() => _event = event);
     });
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _now = DateTime.now());
+    });
   }
 
   @override
   void dispose() {
+    _ticker?.cancel();
     _sub?.cancel();
     super.dispose();
   }
@@ -45,9 +55,20 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final phase = event.phase;
     final color = colorForPhase(phase);
     final icon = iconForPhase(phase);
-    final countdown = event.isPending
-        ? localizations.drillPlayerStartingIn
-        : '${event.remainingTime.toString().padLeft(2, '0')}:00';
+
+    final secondsSinceEvent =
+        _now.difference(event.when).inSeconds.clamp(0, 1 << 30);
+    final remainingSeconds =
+        (event.remainingTime * 60 - secondsSinceEvent).clamp(0, 1 << 30);
+    final mm = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final ss = (remainingSeconds % 60).toString().padLeft(2, '0');
+    final countdown =
+        event.isPending ? localizations.drillPlayerStartingIn : '$mm:$ss';
+
+    final phaseDurationSeconds = (event.currentDuration * 60).clamp(1, 1 << 30);
+    final smoothedProgress = (event.phaseProgress +
+            secondsSinceEvent / phaseDurationSeconds)
+        .clamp(0.0, 1.0);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -55,7 +76,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
         SizedBox(
           height: 3,
           child: LinearProgressIndicator(
-            value: event.phaseProgress,
+            value: smoothedProgress,
             backgroundColor: color.withValues(alpha: 0.25),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),

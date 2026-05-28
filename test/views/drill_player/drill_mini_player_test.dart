@@ -49,6 +49,11 @@ void main() {
     expect(find.text(exercise.name), findsOneWidget);
     expect(find.byType(InkWell), findsOneWidget);
 
+    // Exercise the per-second ticker; widget must not throw.
+    // Countdown shows mm:ss when running or drillPlayerStartingIn when pending
+    // — exact value depends on wall-clock position relative to fixture start.
+    await tester.pump(const Duration(seconds: 2));
+
     // Stop inside the FakeAsync zone so the periodic timer is cancelled
     // before the framework's pending-timer invariant check.
     ExerciseService().stop();
