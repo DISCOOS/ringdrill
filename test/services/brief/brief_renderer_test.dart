@@ -465,6 +465,79 @@ void main() {
     });
   });
 
+  group('BriefRenderer — single-exercise mode', () {
+    // Program with all three program-level intro fields populated so the
+    // assertions below distinguish "hidden by isSingleExercise" from "hidden
+    // because the field was null".
+    Program programWithIntro() => _designProgram().copyWith(
+          briefIntroMd: 'INTRO_BODY',
+          commsMd: 'PROGRAM_COMMS_TOKEN',
+        );
+
+    test(
+        'program intro (H1, description, TOC, briefIntroMd, commsMd, divider) is omitted',
+        () async {
+      final program = programWithIntro();
+      final exercise = program.exercises.first;
+
+      final result = await renderer.render(
+        program: program,
+        exercise: exercise,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+        wideTocSidebar: false,
+      );
+
+      // The program-level H1 (`# {{program.name}}`) is dropped. We assert
+      // against the leading `# ` form so we do not accidentally match `## `
+      // headings that share the program name in a sub-section.
+      expect(
+        result,
+        isNot(contains('# ${program.name}\n')),
+        reason: 'Program H1 should be hidden in single-exercise mode',
+      );
+      expect(
+        result,
+        isNot(contains('## Innholdsfortegnelse')),
+        reason: 'In-doc TOC should be hidden in single-exercise mode',
+      );
+      expect(
+        result,
+        isNot(contains('## Generelt om spill og øvingsledelse')),
+        reason: 'briefIntroMd block should be hidden in single-exercise mode',
+      );
+      expect(
+        result,
+        isNot(contains('## Talegrupper')),
+        reason: 'Program-level Talegrupper should be hidden in single-exercise '
+            'mode (exercise-level Samband still renders inside the exercise)',
+      );
+
+      // The exercise heading itself must still be present.
+      expect(
+        result,
+        contains('## ${exercise.name}'),
+        reason: 'Exercise heading should still render in single-exercise mode',
+      );
+    });
+
+    test('program intro IS present when no exercise is passed', () async {
+      final program = programWithIntro();
+
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+        wideTocSidebar: false,
+      );
+
+      expect(result, contains('# ${program.name}'));
+      expect(result, contains('## Innholdsfortegnelse'));
+      expect(result, contains('## Generelt om spill og øvingsledelse'));
+      expect(result, contains('## Talegrupper'));
+    });
+  });
+
   group('BriefRenderer helpers', () {
     test('stationLetter maps index 0..25 to a..z', () {
       for (var i = 0; i <= 25; i++) {

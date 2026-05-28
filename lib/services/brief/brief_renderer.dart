@@ -83,6 +83,11 @@ class BriefRenderer {
       'if_director': audience.includesActorPii,
       'if_instructor_or_director': audience.includesDirectorNotes,
       'if_in_doc_toc': !wideTocSidebar,
+      // Single-exercise mode skips the program-level header (H1, description,
+      // in-doc TOC, briefIntroMd, commsMd, divider) because the reader is
+      // looking at one exercise, not the whole program. The template wraps
+      // those blocks in an inverted section keyed on this flag.
+      'isSingleExercise': exercise != null,
     };
 
     return mustache.renderString(context);

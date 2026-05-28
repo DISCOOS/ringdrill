@@ -448,6 +448,16 @@ The `participant` render of the same station drops the actor PII line and the di
 
 A **Brief** action on `ExerciseScreen` and the Exercise tab opens `/brief/:exerciseUuid` (single exercise) or `/brief/program/:programUuid` (whole program). The route is reachable but not in the bottom nav. It is a read mode for an exercise, the same way `ExercisePlayer` is a run mode.
 
+### Program mode versus single-exercise mode
+
+The two routes share the renderer but produce different documents.
+
+**Program mode** (`/brief/program/:programUuid`) emits the full plan: the program title as `# {{program.name}}` (H1), the program description in italics, the in-doc table of contents (gated by the wide-screen sidebar flag — see "In-document TOC" below), `## Generelt om spill og øvingsledelse` populated from `program.briefIntroMd`, `## Talegrupper` populated from `program.commsMd`, a horizontal divider, then each exercise in order with its stations.
+
+**Single-exercise mode** (`/brief/:exerciseUuid`) skips the whole program-level intro block. The document starts directly with `## {{exercise.name}}` (H2) and contains only that exercise's metadata sections and its stations. No program title, no description, no in-doc TOC, no `briefIntroMd`/`commsMd`, no divider above the exercise. The reader who navigated to a specific exercise does not need the program-wide framing — they need the exercise itself.
+
+The split is implemented as a single mustache flag `isSingleExercise` in the renderer context. The template wraps the program-intro block in `{{^isSingleExercise}}...{{/isSingleExercise}}`. The exercises loop runs in both modes; in single mode the renderer pre-filters the exercises list to one entry. Exercise headings stay at H2 in both modes so the heading hierarchy is consistent across views.
+
 ### Presentation
 
 The brief is presented as a **fullscreen modal bottom sheet**, not as a regular pushed route. The route still exists and is the canonical entry point so deep links, web-print URLs and future shareable brief links stay viable, but its only job is to open the sheet on first frame. Closing the sheet pops the route.
