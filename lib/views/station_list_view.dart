@@ -106,6 +106,19 @@ class _StationListViewState extends State<StationListView> {
     return rows;
   }
 
+  /// Returns the set of `(exerciseUuid, stationIndex)` pairs that have at
+  /// least one [RolePlay] attached. Computed once per build so the badge
+  /// "has markører" treatment doesn't re-scan roleplays per row.
+  Set<(String, int)> _collectStationsWithRoles() {
+    final pairs = <(String, int)>{};
+    for (final rp in _programService.loadRolePlays()) {
+      final idx = rp.stationIndex;
+      if (idx == null) continue;
+      pairs.add((rp.exerciseUuid, idx));
+    }
+    return pairs;
+  }
+
   Exercise? _filterExercise() {
     final uuid = _controller.filterExerciseUuid.value;
     if (uuid == null) return null;
@@ -119,6 +132,7 @@ class _StationListViewState extends State<StationListView> {
     final hasAnyStation = allExercises.any((e) => e.stations.isNotEmpty);
 
     final rows = _collectRows();
+    final stationsWithRoles = _collectStationsWithRoles();
     final filterExercise = _filterExercise();
 
     final Widget body;
@@ -148,6 +162,9 @@ class _StationListViewState extends State<StationListView> {
         itemCount: rows.length,
         itemBuilder: (context, index) {
           final (exerciseNumber, exercise, station) = rows[index];
+          final hasRoles = stationsWithRoles.contains(
+            (exercise.uuid, station.index),
+          );
           return _buildRow(
             context,
             localizations,
@@ -155,6 +172,7 @@ class _StationListViewState extends State<StationListView> {
             exercise: exercise,
             station: station,
             rowIndex: index,
+            hasRoles: hasRoles,
           );
         },
       );
@@ -212,6 +230,7 @@ class _StationListViewState extends State<StationListView> {
     required Exercise exercise,
     required Station station,
     required int rowIndex,
+    required bool hasRoles,
   }) {
     final expanded = _expandedRowIndex == rowIndex;
     final colorScheme = Theme.of(context).colorScheme;
@@ -244,6 +263,7 @@ class _StationListViewState extends State<StationListView> {
         leading: StationCodeBadge(
           code: _stationCode(exerciseNumber, station),
           highlight: isLive,
+          hasRoles: hasRoles,
         ),
         title: Text(station.name, style: accent.textStyle),
         subtitle: Text(

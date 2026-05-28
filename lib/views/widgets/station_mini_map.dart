@@ -134,18 +134,25 @@ class _MapSheetHeader extends StatelessWidget {
     // header reads as "the same station, viewed bigger". The exercise
     // number is the 1-based position in the unfiltered exercises list;
     // fall back to just the station index if the lookup fails.
-    final exercises = ProgramService().loadExercises();
+    final service = ProgramService();
+    final exercises = service.loadExercises();
     final exerciseIndex = exercises.indexWhere(
       (e) => e.uuid == exercise.uuid,
     );
     final code = exerciseIndex < 0
         ? '${station.index + 1}'
         : '${exerciseIndex + 1}.${station.index + 1}';
+    // Mirror the Stations-tab badge: tertiary swatch when at least one
+    // RolePlay ("markør") points at this station, so the map sheet reads
+    // the same as the list row it was opened from.
+    final hasRoles = service.loadRolePlays().any(
+      (r) => r.exerciseUuid == exercise.uuid && r.stationIndex == station.index,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Row(
         children: [
-          StationCodeBadge(code: code),
+          StationCodeBadge(code: code, hasRoles: hasRoles),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
