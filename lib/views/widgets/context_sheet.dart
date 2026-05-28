@@ -291,6 +291,10 @@ class _ExerciseSheetBodyState extends State<_ExerciseSheetBody> {
       if (!mounted || _closed) return;
       if (event.exercise.uuid == widget.exerciseUuid &&
           ExerciseService().isStarted) {
+        // In master-detail the coordinator stays in the detail pane when the
+        // exercise starts. Closing would clear the scope target and prevent
+        // the play bar from reappearing when the exercise stops.
+        if (MasterDetailScope.maybeOf(context) != null) return;
         _closed = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -306,6 +310,7 @@ class _ExerciseSheetBodyState extends State<_ExerciseSheetBody> {
       if (last != null &&
           last.exercise.uuid == widget.exerciseUuid &&
           ExerciseService().isStarted) {
+        if (MasterDetailScope.maybeOf(context) != null) return;
         _closed = true;
         ContextSheet.of(context).close();
       }
