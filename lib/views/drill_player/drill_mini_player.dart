@@ -136,17 +136,36 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   ),
                   const SizedBox(width: 8),
                   // V2: stop button — see DESIGN-001 "V1 scope" parked list
-                  Container(
+                  // Ring is decorative — pulses in pending ('warming up'),
+                  // spins in running ('now playing'). Progress data is on the
+                  // bottom strip (totalProgress) and inside MiniRoundRow
+                  // (per-phase via PhasesWidget).
+                  SizedBox(
                     width: 36,
                     height: 36,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 22,
+                    child: Stack(
+                      children: [
+                        // Inner circular disc + play icon
+                        Center(
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: colorForPhase(event.phase),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                        // Animated ring (decorative liveness signal)
+                        SizedBox.expand(
+                          child: _PlayRing(phase: event.phase),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -180,6 +199,80 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Animated ring around the play icon
+// ---------------------------------------------------------------------------
+
+/// Switches between a pulsing ring (pending) and an indeterminate spinning
+/// ring (running/eval/rotation/done). Decorative only.
+class _PlayRing extends StatelessWidget {
+  const _PlayRing({required this.phase});
+  final ExercisePhase phase;
+
+  @override
+  Widget build(BuildContext context) {
+    final ringColor = colorForPhase(phase).withValues(alpha: 0.85);
+    if (phase == ExercisePhase.pending) {
+      return _PulsingRing(color: ringColor);
+    }
+    return CircularProgressIndicator(
+      strokeWidth: 2.5,
+      valueColor: AlwaysStoppedAnimation<Color>(ringColor),
+      backgroundColor: Colors.transparent,
+    );
+  }
+}
+
+/// Pulsing ring used in the pending state. Cycles opacity and stroke width
+/// on a ~1.2 s loop so the play icon reads as "warming up".
+class _PulsingRing extends StatefulWidget {
+  const _PulsingRing({required this.color});
+  final Color color;
+
+  @override
+  State<_PulsingRing> createState() => _PulsingRingState();
+}
+
+class _PulsingRingState extends State<_PulsingRing>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, _) {
+        final t = Curves.easeInOut.transform(_controller.value);
+        return Container(
+          key: const ValueKey('drill-mini-player-pulsing-ring'),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.color.withValues(alpha: 0.3 + 0.55 * t),
+              width: 2 + 1.5 * t,
+            ),
+          ),
+        );
+      },
     );
   }
 }

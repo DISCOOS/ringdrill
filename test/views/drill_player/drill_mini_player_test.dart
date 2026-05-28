@@ -44,21 +44,46 @@ void main() {
   testWidgets(
     'shows ExerciseNumberBadge, MiniRoundRow, countdown and play square when running',
     (tester) async {
-      ExerciseService().start(exercise);
+      // Use a fixture that is reliably in the running phase regardless of
+      // wall-clock time (start 5 minutes in the past).
+      final now = DateTime.now();
+      final pastMinutes = now.hour * 60 + now.minute - 5;
+      final runningExercise = Exercise(
+        uuid: 'test-uuid-running-ring',
+        name: 'Running Ring Exercise',
+        startTime: SimpleTimeOfDay(
+          hour: ((pastMinutes % 1440 + 1440) % 1440 ~/ 60),
+          minute: ((pastMinutes % 1440 + 1440) % 1440 % 60),
+        ),
+        endTime: SimpleTimeOfDay(
+          hour: (now.hour + 1) % 24,
+          minute: now.minute,
+        ),
+        numberOfTeams: 2,
+        numberOfRounds: 2,
+        executionTime: 10,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: [],
+        schedule: [],
+      );
+      ExerciseService().start(runningExercise);
 
       await tester.pumpWidget(_harness(onOpen: () {}));
-      await tester.pumpAndSettle();
+      // Use pump() not pumpAndSettle() — CircularProgressIndicator spins forever
+      await tester.pump();
 
       expect(find.byType(ExerciseNumberBadge), findsOneWidget);
       expect(find.byType(MiniRoundRow), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
       // Exercise name intentionally removed from mini-bar layout
-      expect(find.text(exercise.name), findsNothing);
+      expect(find.text(runningExercise.name), findsNothing);
       expect(find.byType(InkWell), findsOneWidget);
 
+      // Running state shows a spinning CircularProgressIndicator ring
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
       // Exercise the per-second ticker; widget must not throw.
-      // Countdown is mm:ss when running or drillPlayerStartingIn when pending
-      // — exact value depends on wall-clock position relative to fixture start.
       await tester.pump(const Duration(seconds: 2));
 
       // Stop inside the FakeAsync zone so the periodic timer is cancelled
@@ -73,7 +98,8 @@ void main() {
     var tapped = false;
 
     await tester.pumpWidget(_harness(onOpen: () => tapped = true));
-    await tester.pumpAndSettle();
+    // Use pump() not pumpAndSettle() — ring animation never settles
+    await tester.pump();
 
     // Tap the MiniRoundRow — whole strip is one tap target.
     // warnIfMissed: false because MiniRoundRow is not a hit-test target itself;
@@ -119,7 +145,8 @@ void main() {
 
     ExerciseService().start(pendingExercise);
     await tester.pumpWidget(_harness(onOpen: () {}));
-    await tester.pumpAndSettle();
+    // Use pump() not pumpAndSettle() — _PulsingRing animation never settles
+    await tester.pump();
 
     // The mini-bar must be visible (exercise is started)
     expect(find.byType(ExerciseNumberBadge), findsOneWidget);
@@ -143,7 +170,6 @@ void main() {
     // always emits a running event regardless of when the test runs.
     final now = DateTime.now();
     final pastMinutes = now.hour * 60 + now.minute - 5;
-    // Clamp to valid range — execution phase is 5 min, so -5 is within execution.
     final runningExercise = Exercise(
       uuid: 'test-uuid-running',
       name: 'Running Exercise',
@@ -166,7 +192,8 @@ void main() {
 
     ExerciseService().start(runningExercise);
     await tester.pumpWidget(_harness(onOpen: () {}));
-    await tester.pumpAndSettle();
+    // Use pump() not pumpAndSettle() — CircularProgressIndicator spins forever
+    await tester.pump();
 
     // The phase label (DRILL/EVAL/ROLL) must appear when running.
     // Check for any of the English phase labels — the test locale is English.
@@ -205,7 +232,8 @@ void main() {
 
     ExerciseService().start(pendingExercise);
     await tester.pumpWidget(_harness(onOpen: () {}));
-    await tester.pumpAndSettle();
+    // Use pump() not pumpAndSettle() — _PulsingRing animation never settles
+    await tester.pump();
 
     // No phase label in pending state — countdown starts with "Starts in"
     expect(find.text('DRILL'), findsNothing);
@@ -216,12 +244,54 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('pending state shows pulsing ring, not spinning indicator',
+      (tester) async {
+    final now = DateTime.now();
+    final futureMinutes = now.hour * 60 + now.minute + 5;
+    final pendingExercise = Exercise(
+      uuid: 'test-uuid-pending-ring',
+      name: 'Pending Ring Exercise',
+      startTime: SimpleTimeOfDay(
+        hour: (futureMinutes ~/ 60) % 24,
+        minute: futureMinutes % 60,
+      ),
+      endTime: SimpleTimeOfDay(
+        hour: ((futureMinutes ~/ 60) + 1) % 24,
+        minute: futureMinutes % 60,
+      ),
+      numberOfTeams: 2,
+      numberOfRounds: 2,
+      executionTime: 5,
+      evaluationTime: 3,
+      rotationTime: 2,
+      stations: [],
+      schedule: [],
+    );
+
+    ExerciseService().start(pendingExercise);
+    await tester.pumpWidget(_harness(onOpen: () {}));
+    // Use pump() not pumpAndSettle() — _PulsingRing animation never settles
+    await tester.pump();
+
+    // No spinning indicator in pending state
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    // Pulsing ring is present (keyed Container inside AnimatedBuilder)
+    expect(
+      find.byKey(const ValueKey('drill-mini-player-pulsing-ring')),
+      findsOneWidget,
+    );
+
+    ExerciseService().stop();
+    await tester.pump();
+  });
+
   testWidgets('no stop button in V1, play square is a Container not IconButton',
       (tester) async {
     ExerciseService().start(exercise);
 
     await tester.pumpWidget(_harness(onOpen: () {}));
-    await tester.pumpAndSettle();
+    // Use pump() not pumpAndSettle() — ring animation never settles
+    await tester.pump();
 
     // V1 has no stop button
     expect(find.byIcon(Icons.stop), findsNothing);
