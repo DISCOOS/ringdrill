@@ -193,6 +193,7 @@ class _AboutPageState extends State<AboutPage> {
                     );
                   }
                 },
+                trailing: const Icon(Icons.open_in_new, size: 18),
               ),
               const Divider(),
               ListTile(
@@ -201,6 +202,7 @@ class _AboutPageState extends State<AboutPage> {
                 subtitle: const Text(
                   '$projectUrl/privacy/',
                 ), // Your website URL
+                trailing: const Icon(Icons.open_in_new, size: 18),
                 onTap: () async {
                   if (!await launchUrl(Uri.parse('$projectUrl/privacy/'))) {
                     Sentry.captureException(
@@ -214,6 +216,7 @@ class _AboutPageState extends State<AboutPage> {
                 leading: const Icon(Icons.link_outlined),
                 title: Text(localizations.termsOfService),
                 subtitle: const Text('$projectUrl/tos/'), // Your website URL
+                trailing: const Icon(Icons.open_in_new, size: 18),
                 onTap: () async {
                   if (!await launchUrl(Uri.parse('$projectUrl/tos/'))) {
                     Sentry.captureException(
@@ -227,6 +230,7 @@ class _AboutPageState extends State<AboutPage> {
                 leading: const Icon(Icons.mail_outline),
                 title: Text(localizations.contactSupport),
                 subtitle: const Text('support@discoos.org'),
+                trailing: const Icon(Icons.open_in_new, size: 18),
                 onTap: () async {
                   if (!await launchUrl(
                     Uri.parse(
