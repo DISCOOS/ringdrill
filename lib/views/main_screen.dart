@@ -23,7 +23,9 @@ import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
+import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
@@ -611,7 +613,7 @@ class _MainScreenState extends State<MainScreen> {
             floatingActionButton: _wideScreen
                 ? null
                 : page.controller.buildFAB(context, constraints),
-            bottomNavigationBar: _buildNavBar(localizations),
+            bottomNavigationBar: _buildBottomChrome(context, localizations),
           ),
         );
       },
@@ -901,6 +903,32 @@ class _MainScreenState extends State<MainScreen> {
       ),
       Destination(icon: Icons.group, label: localizations.team(2)),
     ];
+  }
+
+  Widget? _buildBottomChrome(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    if (_wideScreen) {
+      // V2: render mini-bar in wide-screen layout — see DESIGN-001 "Wide-screen behavior"
+      return null;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DrillMiniPlayer(onOpen: () => _openDrillPlayer(context)),
+        _buildNavBar(localizations)!,
+      ],
+    );
+  }
+
+  void _openDrillPlayer(BuildContext context) {
+    final last = ExerciseService().last;
+    if (last == null) return;
+    showDrillPlayerSheet<void>(
+      context: context,
+      builder: (_) => CoordinatorScreen(uuid: last.exercise.uuid),
+    );
   }
 
   Widget? _buildNavBar(AppLocalizations localizations) {
