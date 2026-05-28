@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:go_router/go_router.dart';
@@ -236,7 +237,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             title: Text(
               _exercise!.name,
             ), // Dynamic title shows the exercise's name
-            actions: [
+            actions: rdAppBarActions([
               // Open Brief — scoped to this exercise
               IconButton(
                 icon: const Icon(Icons.menu_book),
@@ -273,7 +274,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 padding: const EdgeInsets.all(8.0),
                 onPressed: _isStarted ? null : () => _editExercise(context),
               ),
-            ],
+            ]),
             actionsPadding: EdgeInsets.only(right: 16.0),
           ),
           body: SafeArea(

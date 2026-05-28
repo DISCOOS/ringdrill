@@ -1,0 +1,215 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// ---------------------------------------------------------------------------
+// RingDrill brand palette
+// ---------------------------------------------------------------------------
+//
+// The palette is derived from the v2 app icon
+// (`assets/images/ringdrill-v2-1254x1254.png`):
+//
+//   * `#002C3F` — deep teal background (the canvas behind the ring)
+//   * `#00536E` — one shade above the background, used as the primary brand
+//                  fill in light mode where the icon background is too heavy
+//   * `#1F7B8A` — the inactive station markers on the ring
+//   * `#5FB1C0` — the dashed station-path between markers (also used as the
+//                  primary in dark mode where we need a lighter token)
+//   * `#F0982C` — the active station marker (tertiary / CTA / live-state)
+//   * `#C8D0D4` / `#8E9AA1` — the silver ring itself (cards / dividers)
+//
+// `error` is intentionally a real red rather than the previous amber, so it
+// stops colliding visually with the orange active-station accent.
+//
+// The brief view has its own palette per ADR-0023; nothing here flows into
+// `BriefTheme`.
+// ---------------------------------------------------------------------------
+
+class RingDrillColors {
+  RingDrillColors._();
+
+  static const Color brandDeep = Color(0xFF002C3F);
+  static const Color brandPrimary = Color(0xFF00536E);
+  static const Color brandSecondary = Color(0xFF1F7B8A);
+  static const Color brandAccent = Color(0xFFF0982C);
+  static const Color brandPath = Color(0xFF5FB1C0);
+
+  static const Color lightScaffold = Color(0xFFF4F7F9);
+  static const Color lightSurface = Color(0xFFE7EDF0);
+  static const Color lightOnSurface = Color(0xFF0B1F2A);
+  static const Color lightOnSurfaceVariant = Color(0xFF3E5560);
+
+  static const Color darkSurface = Color(0xFF073F54);
+  static const Color darkOnSurface = Color(0xFFE6EEF2);
+  static const Color darkOnSurfaceVariant = Color(0xFF9FB4BD);
+
+  static const Color errorLight = Color(0xFFB3261E);
+  static const Color errorDark = Color(0xFFFF7A45);
+
+  // Disabled states.
+  //
+  // The default Material 3 disabled treatment is `onSurface.withOpacity(0.38)`.
+  // In our light theme `onSurface` is a near-black teal, which becomes
+  // invisible when the disabled control sits on top of the dark AppBar
+  // (`brandDeep`). The tokens below are pre-blended mid-tones that stay
+  // readable on both light surfaces and the dark brand surfaces.
+
+  /// Foreground for disabled icons / labels that may sit on the dark
+  /// `brandDeep` AppBar in either theme. Tuned for visibility on `#002C3F`
+  /// first; on light card surfaces these will read as washed-out, which is
+  /// acceptable because most disabled IconButtons in this app sit in the
+  /// AppBar.
+  static const Color disabledOnDark = Color(0xFFB5D0DA);
+
+  /// Foreground for disabled text / icons on light surfaces in light mode.
+  static const Color disabledOnLight = Color(0xFF6E8390);
+
+  /// Background fill for disabled filled buttons in light mode.
+  static const Color disabledFillLight = Color(0xFFCBD5DA);
+
+  /// Background fill for disabled filled buttons in dark mode.
+  static const Color disabledFillDark = Color(0xFF1F4E63);
+}
+
+/// Wrap each [AppBar.actions] item in a local [IconButtonTheme] so the
+/// disabled-foreground override actually reaches the icons.
+///
+/// Why this exists: Material 3 [AppBar] internally wraps its `actions` in
+/// its own [IconButtonTheme] that copies `appBarTheme.foregroundColor` (and
+/// `actionsIconTheme.color`) into an [IconButton.styleFrom] with only the
+/// enabled `foregroundColor` set. Because [InheritedTheme.of] returns only
+/// the closest match, that local wrap fully shadows any global
+/// `theme.iconButtonTheme`. The disabled state therefore always falls back
+/// to the M3 default `colorScheme.onSurface.withOpacity(0.38)`, which on
+/// our dark `brandDeep` AppBar is nearly invisible in light mode.
+///
+/// The fix recommended by the Flutter team (issue #117918, PR #118216) is
+/// to wrap each action in a *closer* `IconButtonTheme`. This helper does
+/// exactly that, so screens can keep using vanilla [AppBar].
+///
+/// Usage:
+/// ```dart
+/// appBar: AppBar(
+///   title: Text(...),
+///   actions: rdAppBarActions([
+///     IconButton(icon: ..., onPressed: ...),
+///     IconButton(icon: ..., onPressed: null), // disabled bell stays visible
+///   ]),
+/// ),
+/// ```
+List<Widget>? rdAppBarActions(List<Widget>? actions) {
+  if (actions == null) return null;
+  return actions
+      .map<Widget>(
+        (action) => IconButtonTheme(
+          data: IconButtonThemeData(
+            style: IconButton.styleFrom(
+              foregroundColor: Colors.white,
+              disabledForegroundColor: RingDrillColors.disabledOnDark,
+            ),
+          ),
+          child: action,
+        ),
+      )
+      .toList(growable: false);
+}
+
+final ThemeData ringDrillTheme = ThemeData(
+  brightness: Brightness.light,
+  scaffoldBackgroundColor: RingDrillColors.lightScaffold,
+  primaryColor: RingDrillColors.brandPrimary,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: RingDrillColors.brandPrimary,
+    primary: RingDrillColors.brandPrimary,
+    onPrimary: Colors.white,
+    secondary: RingDrillColors.brandSecondary,
+    onSecondary: Colors.white,
+    tertiary: RingDrillColors.brandAccent,
+    onTertiary: const Color(0xFF1A0F00),
+    surface: RingDrillColors.lightSurface,
+    onSurface: RingDrillColors.lightOnSurface,
+    onSurfaceVariant: RingDrillColors.lightOnSurfaceVariant,
+    error: RingDrillColors.errorLight,
+    brightness: Brightness.light,
+  ),
+  textTheme: GoogleFonts.robotoFlexTextTheme(),
+  // ThemeData.disabledColor is used by older non-M3 widgets and as a
+  // baseline; M3 IconButton has its own resolution (see [rdAppBarActions]).
+  disabledColor: RingDrillColors.disabledOnLight,
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: RingDrillColors.brandPrimary,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: RingDrillColors.disabledFillLight,
+      disabledForegroundColor: RingDrillColors.disabledOnLight,
+      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+  ),
+  appBarTheme: const AppBarTheme(
+    // `foregroundColor` sets the enabled icon/text color via AppBar's
+    // internal IconButtonTheme wrap. The disabled state for AppBar action
+    // buttons is set per call via [rdAppBarActions] in `theme.dart`.
+    backgroundColor: RingDrillColors.brandDeep,
+    foregroundColor: Colors.white,
+    elevation: 2,
+  ),
+  cardTheme: const CardThemeData(
+    color: RingDrillColors.lightSurface,
+    surfaceTintColor: Colors.transparent,
+    elevation: 2,
+    shadowColor: Colors.black54,
+    margin: EdgeInsets.all(12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    ),
+    clipBehavior: Clip.antiAlias,
+  ),
+);
+
+final ThemeData ringDrillDarkTheme = ThemeData(
+  brightness: Brightness.dark,
+  scaffoldBackgroundColor: RingDrillColors.brandDeep,
+  primaryColor: RingDrillColors.brandPath,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: RingDrillColors.brandPath,
+    primary: RingDrillColors.brandPath,
+    primaryFixed: RingDrillColors.brandPrimary,
+    onPrimary: const Color(0xFF00202C),
+    secondary: const Color(0xFF87C7D3),
+    onSecondary: const Color(0xFF00202C),
+    tertiary: RingDrillColors.brandAccent,
+    onTertiary: const Color(0xFF1A0F00),
+    surface: RingDrillColors.darkSurface,
+    onSurface: RingDrillColors.darkOnSurface,
+    onSurfaceVariant: RingDrillColors.darkOnSurfaceVariant,
+    error: RingDrillColors.errorDark,
+    brightness: Brightness.dark,
+  ),
+  textTheme: GoogleFonts.robotoFlexTextTheme(ThemeData.dark().textTheme),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: RingDrillColors.brandPath,
+      foregroundColor: const Color(0xFF00202C),
+      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+  ),
+  appBarTheme: const AppBarTheme(
+    backgroundColor: RingDrillColors.brandDeep,
+    foregroundColor: Colors.white,
+    elevation: 0,
+  ),
+  cardTheme: const CardThemeData(
+    color: RingDrillColors.darkSurface,
+    surfaceTintColor: Colors.transparent,
+    elevation: 2,
+    shadowColor: Colors.black54,
+    margin: EdgeInsets.all(12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    ),
+    clipBehavior: Clip.antiAlias,
+  ),
+);

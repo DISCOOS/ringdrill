@@ -4,11 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart' show GoRouter;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/feedback.dart';
@@ -249,91 +249,3 @@ class _RingDrillAppState extends State<RingDrillApp> {
   }
 }
 
-final ThemeData ringDrillTheme = ThemeData(
-  brightness: Brightness.light,
-  scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-  primaryColor: const Color(0xFF1E3A8A),
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFF1E3A8A),
-    primary: const Color(0xFF1E3A8A),
-    secondary: const Color(0xFF4B5563),
-    surface: const Color(0xFFE5E7EB),
-    onPrimary: Colors.white,
-    onSecondary: Colors.white,
-    onSurface: const Color(0xFF111827),
-    onSurfaceVariant: const Color(0xFF374151),
-    error: const Color(0xFFF59E0B),
-    brightness: Brightness.light,
-  ),
-  textTheme: GoogleFonts.robotoFlexTextTheme(),
-  elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF1E3A8A),
-      foregroundColor: Colors.white,
-      textStyle: const TextStyle(fontWeight: FontWeight.w600),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-  ),
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF1E3A8A),
-    foregroundColor: Colors.white,
-    elevation: 2,
-  ),
-  cardTheme: const CardThemeData(
-    color: Color(0xFFE5E7EB),
-    surfaceTintColor: Colors.transparent,
-    elevation: 2,
-    shadowColor: Colors.black54,
-    margin: EdgeInsets.all(12),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(Radius.circular(8)),
-    ),
-    clipBehavior: Clip.antiAlias,
-  ),
-);
-
-final ThemeData ringDrillDarkTheme = ThemeData(
-  brightness: Brightness.dark,
-  scaffoldBackgroundColor: const Color(0xFF111827),
-  primaryColor: const Color(0xFF60A5FA),
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFF60A5FA),
-    primary: const Color(0xFF60A5FA),
-    primaryFixed: const Color(0xFF1E3A8A),
-    secondary: const Color(0xFF9CA3AF),
-    surface: const Color(0xFF1F2937),
-    onPrimary: Colors.black,
-    onSecondary: Colors.black,
-    onSurface: Colors.white,
-    onSurfaceVariant: Color(0xFF9CA3AF),
-    error: const Color(0xFFF5800B),
-    brightness: Brightness.dark,
-  ),
-  textTheme: GoogleFonts.robotoFlexTextTheme(ThemeData.dark().textTheme),
-  elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF60A5FA),
-      foregroundColor: Colors.black,
-      textStyle: const TextStyle(fontWeight: FontWeight.w600),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-  ),
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF1E3A8A),
-    foregroundColor: Colors.white,
-    elevation: 2,
-  ),
-  cardTheme: const CardThemeData(
-    color: Color(0xFF1F2937),
-    surfaceTintColor: Colors.transparent,
-    elevation: 2,
-    shadowColor: Colors.black54,
-    margin: EdgeInsets.all(12),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(Radius.circular(8)),
-    ),
-    clipBehavior: Clip.antiAlias,
-  ),
-);
