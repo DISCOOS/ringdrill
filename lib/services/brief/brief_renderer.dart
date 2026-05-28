@@ -268,6 +268,14 @@ class BriefRenderer {
   /// northing). Returns empty string when [latLng] is null.
   @visibleForTesting
   static String formatUtm(LatLng? latLng) => _formatUtm(latLng);
+
+  /// Converts [heading] to the same GitHub-flavored anchor id the template
+  /// emits as link targets in the in-doc table of contents (lowercase,
+  /// non-word characters dropped, runs of whitespace collapsed to a single
+  /// hyphen). Exposed so callers — primarily `BriefScreen` — can resolve
+  /// `#anchor` link taps against the rendered heading list without
+  /// duplicating the slug logic.
+  static String toAnchor(String heading) => _toAnchor(heading);
 }
 
 // ---------------------------------------------------------------------------

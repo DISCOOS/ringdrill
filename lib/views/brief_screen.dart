@@ -518,6 +518,28 @@ class _BriefScreenState extends State<BriefScreen> {
     _scheduleScrollToCurrentMatch();
   }
 
+  /// Handles tap on a markdown link whose URL begins with `#`. Resolves
+  /// the anchor against the TocController's heading list (using the same
+  /// slug algorithm the renderer used to emit the link target) and
+  /// scrolls the matching heading into view.
+  ///
+  /// Without this, tapping an in-doc TOC link would let
+  /// `url_launcher` navigate to `current-page#anchor`, which on Flutter
+  /// Web triggers a full page reload that fails because the router does
+  /// not recognise the fragment.
+  void _onAnchorTap(String anchor) {
+    final tocList = _tocController.tocList;
+    if (tocList.isEmpty) return;
+    final target = anchor.toLowerCase();
+    for (final toc in tocList) {
+      final headingText = toc.node.build().toPlainText();
+      if (BriefRenderer.toAnchor(headingText) == target) {
+        _tocController.jumpToIndex(toc.widgetIndex);
+        return;
+      }
+    }
+  }
+
   /// Schedules a post-frame scroll so the active `<curr-mark>` widget is
   /// brought into view. The markdown re-renders after setState, then the
   /// callback fires once the widget tree has settled. If the match's
@@ -628,6 +650,7 @@ class _BriefScreenState extends State<BriefScreen> {
             theme: theme,
             tocController: _tocController,
             currentMatchKey: _currentMatchKey,
+            onAnchorTap: _onAnchorTap,
           ),
         ),
       ),

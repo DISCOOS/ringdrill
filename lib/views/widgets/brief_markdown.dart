@@ -4,6 +4,15 @@ import 'package:markdown/markdown.dart' as m;
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+Future<void> _launchExternalLink(String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Private heading-config subclasses that suppress the built-in divider
@@ -251,6 +260,7 @@ class BriefMarkdown extends StatelessWidget {
     required this.theme,
     this.tocController,
     this.currentMatchKey,
+    this.onAnchorTap,
   });
 
   final String data;
@@ -261,6 +271,17 @@ class BriefMarkdown extends StatelessWidget {
   /// callers can call `Scrollable.ensureVisible` against it. Only used when
   /// the rendered markdown contains a `<curr-mark>` tag.
   final Key? currentMatchKey;
+
+  /// Called when the user taps a markdown link whose URL starts with `#`
+  /// (an in-doc anchor link, e.g. the table-of-contents entries). The
+  /// callback receives the anchor without the leading `#`. When `null` —
+  /// or when the URL is a regular http(s) link — the LinkConfig falls
+  /// back to its default `launchUrl` behaviour.
+  ///
+  /// Without this hook web builds reload the page when an anchor link is
+  /// tapped (the browser navigates to `current-url#anchor` which Flutter
+  /// Web treats as a full navigation).
+  final ValueChanged<String>? onAnchorTap;
 
   @override
   Widget build(BuildContext context) {
@@ -337,7 +358,10 @@ class BriefMarkdown extends StatelessWidget {
         // Paragraphs
         PConfig(textStyle: t.typography.body.copyWith(color: t.text.body)),
         // Links — body color with thin underline; distinction is the
-        // underline opacity, not a different hue.
+        // underline opacity, not a different hue. The onTap callback
+        // intercepts `#anchor` URLs and forwards them to [onAnchorTap]
+        // rather than letting the default LinkConfig dispatch a real
+        // navigation (which would reload the whole page on web).
         LinkConfig(
           style: TextStyle(
             color: t.link.color,
@@ -346,6 +370,18 @@ class BriefMarkdown extends StatelessWidget {
               alpha: t.link.underlineOpacity,
             ),
           ),
+          onTap: (url) {
+            if (url.startsWith('#')) {
+              onAnchorTap?.call(url.substring(1));
+              return;
+            }
+            // Non-anchor links fall through to the package's default
+            // url_launcher behaviour by re-dispatching to the LinkNode's
+            // internal handler. The simplest path: just launch directly
+            // here using the same logic.
+            // ignore: discarded_futures
+            _launchExternalLink(url);
+          },
         ),
         // Inline code
         CodeConfig(
