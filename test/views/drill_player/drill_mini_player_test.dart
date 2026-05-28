@@ -118,7 +118,8 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('pending state shows "Starts in mm:ss" countdown', (tester) async {
+  testWidgets('pending state shows bare mm:ss countdown (no "Starts in" prefix)',
+      (tester) async {
     // Build a fixture whose startTime is 5 minutes in the future so the
     // service always emits a pending event regardless of when the test runs.
     final now = DateTime.now();
@@ -151,12 +152,10 @@ void main() {
     // The mini-bar must be visible (exercise is started)
     expect(find.byType(ExerciseNumberBadge), findsOneWidget);
 
-    // Countdown must include the "Starts in" prefix followed by mm:ss.
-    expect(find.textContaining('Starts in'), findsOneWidget);
-    final countdownText = tester
-        .widget<Text>(find.textContaining('Starts in').first)
-        .data!;
-    expect(countdownText, matches(RegExp(r'^Starts in \d{2}:\d{2}$')));
+    // Pending no longer carries the "Starts in" prefix — the WAIT label
+    // next to the countdown already provides that context.
+    expect(find.textContaining('Starts in'), findsNothing);
+    expect(find.textContaining(RegExp(r'^\d{2}:\d{2}$')), findsOneWidget);
 
     // Exercise the per-second ticker — widget must not throw.
     await tester.pump(const Duration(seconds: 2));
@@ -207,7 +206,7 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('pending state hides phase label', (tester) async {
+  testWidgets('pending state shows WAIT phase label', (tester) async {
     final now = DateTime.now();
     final futureMinutes = now.hour * 60 + now.minute + 5;
     final pendingExercise = Exercise(
@@ -235,7 +234,10 @@ void main() {
     // Use pump() not pumpAndSettle() — _PulsingRing animation never settles
     await tester.pump();
 
-    // No phase label in pending state — countdown starts with "Starts in"
+    // The pending phase shows WAIT (Norwegian: VENT) so the countdown
+    // doesn't need a "Starts in" prefix.
+    expect(find.text('WAIT'), findsOneWidget);
+    // No running-phase labels in pending state
     expect(find.text('DRILL'), findsNothing);
     expect(find.text('EVAL'), findsNothing);
     expect(find.text('ROLL'), findsNothing);

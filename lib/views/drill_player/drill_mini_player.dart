@@ -59,36 +59,54 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final phase = event.phase;
     final color = colorForPhase(phase);
 
-    final secondsSinceEvent =
-        _now.difference(event.when).inSeconds.clamp(0, 1 << 30);
-    final remainingSeconds =
-        (event.remainingTime * 60 - secondsSinceEvent).clamp(0, 1 << 30);
-    final mm = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
-    final ss = (remainingSeconds % 60).toString().padLeft(2, '0');
-    final countdown = event.isPending
-        ? localizations.drillPlayerStartingInWithCountdown('$mm:$ss')
-        : '$mm:$ss';
+    final secondsSinceEvent = _now
+        .difference(event.when)
+        .inSeconds
+        .clamp(0, 1 << 30);
+    final remainingSeconds = (event.remainingTime * 60 - secondsSinceEvent)
+        .clamp(0, 1 << 30);
+    // Pending no longer carries the "Starter om" prefix — the phase label
+    // ("VENT") next to the countdown already provides that context. Past
+    // 90 minutes we drop the MM:SS reading because reading "94:12" mentally
+    // forces the user to do the divide; show "2 timer" instead.
+    final String countdown;
+    if (remainingSeconds >= 90 * 60) {
+      final hours = (remainingSeconds / 3600).round();
+      countdown = localizations.hour(hours);
+    } else {
+      final mm = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
+      final ss = (remainingSeconds % 60).toString().padLeft(2, '0');
+      countdown = '$mm:$ss';
+    }
 
     // Bottom strip = total exercise progress. Per-phase progress lives inside
     // MiniRoundRow via PhasesWidget cell fills (Step 7).
-    final totalDurationMinutes = event.exercise.numberOfRounds *
+    final totalDurationMinutes =
+        event.exercise.numberOfRounds *
         (event.exercise.executionTime +
             event.exercise.evaluationTime +
             event.exercise.rotationTime);
     final totalDurationSeconds = (totalDurationMinutes * 60).clamp(1, 1 << 30);
     final smoothedProgress =
-        (event.totalProgress + secondsSinceEvent / totalDurationSeconds)
-            .clamp(0.0, 1.0);
+        (event.totalProgress + secondsSinceEvent / totalDurationSeconds).clamp(
+          0.0,
+          1.0,
+        );
 
     final accent = LiveAccent.of(context, isLive: true);
+    // LiveAccent fields are nullable for `inactive()`, but `of(isLive: true)`
+    // always populates them. Capture the non-null colour once so we can use
+    // it for the overlay mask + gradient without `!` at every call site.
+    final accentBg =
+        accent.background ?? Theme.of(context).colorScheme.primaryContainer;
 
     final program = ProgramService().activeProgram;
     final exerciseNumber = program == null
         ? 1
         : program.exercises
-                .indexWhere((e) => e.uuid == event.exercise.uuid)
-                .clamp(0, 1 << 30) +
-            1;
+                  .indexWhere((e) => e.uuid == event.exercise.uuid)
+                  .clamp(0, 1 << 30) +
+              1;
 
     // The rounded shape is owned by the parent (MainScreen._buildBottomChrome).
     // This Material just fills the clipped area with the LiveAccent background.
@@ -101,74 +119,133 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
             onTap: widget.onOpen,
             child: SizedBox(
               height: 48,
-              child: Row(
+              // Stack layout: the round-row (badge + MiniRoundRow) scrolls
+              // horizontally on the bottom layer; the right cluster (phase
+              // label + countdown + play) floats on top with the accent
+              // background as a mask so scrolled content slides under it.
+              // This stops "n runder" / wide countdowns ("11 timer") from
+              // colliding with the play button — content that doesn't fit
+              // can be revealed by scrolling instead.
+              child: Stack(
+                // Center non-positioned children vertically so MiniRoundRow
+                // (which only needs 32px) lines up with the 36px play button
+                // instead of sticking to the top of the 48px strip.
+                alignment: Alignment.centerLeft,
                 children: [
-                  const SizedBox(width: 8),
-                  ExerciseNumberBadge(number: exerciseNumber, size: 36),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: MiniRoundRow(
-                      exercise: event.exercise,
-                      event: event,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Phase label restored after followup-02 dropped it; it lives
-                  // next to the countdown so the time reads with its phase context.
-                  if (!event.isPending && !event.isDone)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(
-                        event.getState(localizations),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: colorForPhase(event.phase),
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                    ),
-                  Text(
-                    countdown,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: accent.foreground,
-                          fontWeight: FontWeight.w600,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                  // Background layer: badge + scrollable MiniRoundRow.
+                  Row(
+                    children: [
+                      const SizedBox(width: 8),
+                      ExerciseNumberBadge(number: exerciseNumber, size: 36),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: MiniRoundRow(
+                            exercise: event.exercise,
+                            event: event,
+                          ),
                         ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  // V2: stop button — see DESIGN-001 "V1 scope" parked list
-                  // Ring is decorative — pulses in pending ('warming up'),
-                  // spins in running ('now playing'). Progress data is on the
-                  // bottom strip (totalProgress) and inside MiniRoundRow
-                  // (per-phase via PhasesWidget).
-                  SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: Stack(
+                  // Foreground overlay: phase label, countdown, play button.
+                  // Leading gradient fades scrolled content into the accent
+                  // background so the user gets a scroll affordance.
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      // Stretch children vertically so the gradient mask and
+                      // accent-background fill the full row height — otherwise
+                      // scrolled MiniRoundRow content leaks through the
+                      // top/bottom gap above and below the play button.
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Inner circular disc + play icon
-                        Center(
+                        IgnorePointer(
                           child: Container(
-                            width: 30,
-                            height: 30,
+                            width: 16,
                             decoration: BoxDecoration(
-                              color: colorForPhase(event.phase),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow,
-                              color: Colors.white,
-                              size: 18,
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  accentBg.withValues(alpha: 0.0),
+                                  accentBg,
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        // Animated ring (decorative liveness signal)
-                        SizedBox.expand(
-                          child: _PlayRing(phase: event.phase),
+                        ColoredBox(
+                          color: accentBg,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (!event.isDone)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Text(
+                                    event.getState(localizations),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: colorForPhase(event.phase),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                              Text(
+                                countdown,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: accent.foreground,
+                                      fontWeight: FontWeight.w600,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                              ),
+                              const SizedBox(width: 8),
+                              // V2: stop button — see DESIGN-001 "V1 scope"
+                              // parked list. Ring is decorative: pulses in
+                              // pending, spins in running.
+                              SizedBox(
+                                width: 36,
+                                height: 36,
+                                child: Stack(
+                                  children: [
+                                    Center(
+                                      child: Container(
+                                        width: 30,
+                                        height: 30,
+                                        decoration: BoxDecoration(
+                                          color: colorForPhase(event.phase),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox.expand(
+                                      child: _PlayRing(phase: event.phase),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
             ),
@@ -184,9 +261,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                 // Track: a low-contrast dark wash so the bright phase-coloured
                 // fill on top pops on any background.
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.18),
-                  ),
+                  child: Container(color: Colors.black.withValues(alpha: 0.18)),
                 ),
                 // Fill: solid phase colour, scaled by smoothedProgress.
                 FractionallySizedBox(
