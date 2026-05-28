@@ -53,13 +53,13 @@ The rest of this doc describes the full target state. V1 ships a much smaller su
 
 **In V1**
 
-* Mini-player strip above the `NavigationBar`. Tap-only, no stop button. Shows the same phase square, phase chip, round indicator, exercise name, countdown and top progress bar as described under [Mini-player](#mini-player).
+* Mini-player strip above the `NavigationBar`. Tap on the main strip opens the sheet; tap on the red stop circle stops the exercise immediately (no confirmation). Shows the same phase square, phase chip, round indicator, exercise name, countdown and top progress bar as described under [Mini-player](#mini-player). The ring animation around the stop circle (pulse in pending, spin while running) is retained pending visual review.
 * Tap opens a new "player sheet" with these properties:
   * No handle.
   * `enableDrag: false`, `isDismissible: false`.
   * Hides system status/navigation chrome via `SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky)` while open. Resets on close. iOS keeps standard fullscreen-sheet behavior since immersive mode is Android-only.
   * Chevron-down at the top-left closes the sheet back to the mini-bar without stopping the exercise.
-* Sheet body is the existing `CoordinatorScreen` content (round table, station/team segmented button, ExpansionTiles, `ExerciseControlButton`). It is reused as-is, not rewritten. The stop affordance lives inside the sheet via the existing `ExerciseControlButton`, not on the mini-bar.
+* Sheet body is the existing `CoordinatorScreen` content (round table, station/team segmented button, ExpansionTiles, `ExerciseControlButton`). It is reused as-is, not rewritten. The sheet's `ExerciseControlButton` remains the in-sheet stop affordance; it is duplicated by the mini-bar stop circle so the coordinator can stop without opening the sheet.
 * Routing change: when the live `ExerciseCard` in `ProgramView` is tapped, it opens the new player sheet instead of `ContextSheet` + `ExerciseSheetTarget`. All other (non-live) exercise cards keep their current `ContextSheet` flow.
 * Mini-bar is mounted in `MainScreen` between `body` and `bottomNavigationBar` so it survives tab switches and shares the bottom chrome with the navigation, Spotify-style.
 
@@ -69,7 +69,6 @@ The rest of this doc describes the full target state. V1 ships a much smaller su
 * The Overview tab and its hero / NEXT column / phase strip / round timeline visualization.
 * Observer player variants (team / station perspectives) and the perspective pill.
 * Wide-screen three-column mini-bar and `NavigationRail` layout.
-* Stop button on the mini-bar.
 * Drag-to-dismiss the sheet.
 * `PhaseTile` color-semantics rework.
 

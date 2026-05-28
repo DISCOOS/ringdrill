@@ -42,7 +42,7 @@ void main() {
   });
 
   testWidgets(
-    'shows ExerciseNumberBadge, MiniRoundRow, countdown and play square when running',
+    'shows ExerciseNumberBadge, MiniRoundRow, countdown and stop square when running',
     (tester) async {
       // Use a fixture that is reliably in the running phase regardless of
       // wall-clock time (start 5 minutes in the past).
@@ -75,7 +75,8 @@ void main() {
 
       expect(find.byType(ExerciseNumberBadge), findsOneWidget);
       expect(find.byType(MiniRoundRow), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+      expect(find.byIcon(Icons.stop), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow), findsNothing);
       // Exercise name intentionally removed from mini-bar layout
       expect(find.text(runningExercise.name), findsNothing);
       expect(find.byType(InkWell), findsOneWidget);
@@ -93,7 +94,8 @@ void main() {
     },
   );
 
-  testWidgets('onOpen fires when tapped anywhere on the strip', (tester) async {
+  testWidgets('onOpen fires when tapped on the strip, stop square stops the exercise',
+      (tester) async {
     ExerciseService().start(exercise);
     var tapped = false;
 
@@ -101,21 +103,23 @@ void main() {
     // Use pump() not pumpAndSettle() — ring animation never settles
     await tester.pump();
 
-    // Tap the MiniRoundRow — whole strip is one tap target.
+    // Tap the MiniRoundRow — main strip area opens the sheet.
     // warnIfMissed: false because MiniRoundRow is not a hit-test target itself;
     // the enclosing InkWell handles the gesture.
     await tester.tap(find.byType(MiniRoundRow), warnIfMissed: false);
     expect(tapped, isTrue);
 
-    // Reset and tap the play square — must also fire onOpen (not a separate button).
-    // warnIfMissed: false because the Container is not a direct hit-test target;
-    // the enclosing InkWell handles the gesture.
+    // Tapping the stop square must NOT open the sheet — the inner
+    // GestureDetector wins the gesture arena over the outer InkWell — and it
+    // must stop the exercise so the mini-bar hides itself.
     tapped = false;
-    await tester.tap(find.byIcon(Icons.play_arrow), warnIfMissed: false);
-    expect(tapped, isTrue);
-
-    ExerciseService().stop();
+    await tester.tap(find.byIcon(Icons.stop));
     await tester.pump();
+    expect(tapped, isFalse, reason: 'Stop tap must not bubble up to onOpen');
+    expect(ExerciseService().isStarted, isFalse,
+        reason: 'Stop tap must stop the exercise');
+    // Mini-bar hides itself when the service is no longer started.
+    expect(find.byType(ExerciseNumberBadge), findsNothing);
   });
 
   testWidgets('pending state shows bare mm:ss countdown (no "Starts in" prefix)',
@@ -287,7 +291,7 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('no stop button in V1, play square is a Container not IconButton',
+  testWidgets('stop square is the only stop affordance, not an IconButton',
       (tester) async {
     ExerciseService().start(exercise);
 
@@ -295,10 +299,10 @@ void main() {
     // Use pump() not pumpAndSettle() — ring animation never settles
     await tester.pump();
 
-    // V1 has no stop button
-    expect(find.byIcon(Icons.stop), findsNothing);
-    expect(find.byIcon(Icons.stop_circle), findsNothing);
-    // Play square is a Container, not an interactive button
+    // Exactly one stop glyph (the mini-bar circle); no play_arrow leaks.
+    expect(find.byIcon(Icons.stop), findsOneWidget);
+    expect(find.byIcon(Icons.play_arrow), findsNothing);
+    // Custom GestureDetector circle, not a Material IconButton.
     expect(find.byType(IconButton), findsNothing);
 
     ExerciseService().stop();

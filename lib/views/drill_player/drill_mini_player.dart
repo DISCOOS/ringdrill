@@ -210,33 +210,45 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                                     ),
                               ),
                               const SizedBox(width: 8),
-                              // V2: stop button — see DESIGN-001 "V1 scope"
-                              // parked list. Ring is decorative: pulses in
-                              // pending, spins in running.
-                              SizedBox(
-                                width: 36,
-                                height: 36,
-                                child: Stack(
-                                  children: [
-                                    Center(
-                                      child: Container(
-                                        width: 30,
-                                        height: 30,
-                                        decoration: BoxDecoration(
-                                          color: colorForPhase(event.phase),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.play_arrow,
-                                          color: Colors.white,
-                                          size: 18,
+                              // Stop button — red filled circle with a stop
+                              // glyph. Tap stops the exercise immediately; no
+                              // confirmation, matching the user's V1 brief.
+                              // GestureDetector wins the gesture arena over
+                              // the enclosing InkWell, so tapping the circle
+                              // does not also open the sheet.
+                              //
+                              // The ring around the circle is intentionally
+                              // kept (pulses in pending, spins while running)
+                              // pending visual review — it may be dropped in
+                              // a follow-up.
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => ExerciseService().stop(),
+                                child: SizedBox(
+                                  width: 36,
+                                  height: 36,
+                                  child: Stack(
+                                    children: [
+                                      Center(
+                                        child: Container(
+                                          width: 30,
+                                          height: 30,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.redAccent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.stop,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox.expand(
-                                      child: _PlayRing(phase: event.phase),
-                                    ),
-                                  ],
+                                      SizedBox.expand(
+                                        child: _PlayRing(phase: event.phase),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -254,22 +266,36 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
           // indicator's backgroundColor washed the phase colour out on the
           // primaryContainer surface. A dark wash track maximises contrast
           // with the saturated fill.
+          //
+          // Split the strip into two Expanded flex children rather than a
+          // Stack + FractionallySizedBox: the FSB was non-positioned, so the
+          // Stack shrank to FSB's partial width and the Positioned.fill
+          // wash track followed it, leaving the right side of the strip
+          // empty whenever progress < 1.
           SizedBox(
             height: 4,
-            child: Stack(
-              children: [
-                // Track: a low-contrast dark wash so the bright phase-coloured
-                // fill on top pops on any background.
-                Positioned.fill(
-                  child: Container(color: Colors.black.withValues(alpha: 0.18)),
-                ),
-                // Fill: solid phase colour, scaled by smoothedProgress.
-                FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: smoothedProgress,
-                  child: Container(color: color),
-                ),
-              ],
+            child: Builder(
+              builder: (context) {
+                final fillFlex =
+                    (smoothedProgress * 10000).round().clamp(0, 10000);
+                final trackFlex = 10000 - fillFlex;
+                return Row(
+                  children: [
+                    if (fillFlex > 0)
+                      Expanded(
+                        flex: fillFlex,
+                        child: Container(color: color),
+                      ),
+                    if (trackFlex > 0)
+                      Expanded(
+                        flex: trackFlex,
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.18),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ],
