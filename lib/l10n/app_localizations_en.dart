@@ -1398,4 +1398,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get briefRingRoute => 'Ring route';
+
+  @override
+  String get briefCodeCopied => 'Copied';
+
+  @override
+  String get briefCodeCopyTooltip => 'Copy';
 }

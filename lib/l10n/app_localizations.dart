@@ -2395,6 +2395,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ring route'**
   String get briefRingRoute;
+
+  /// Snackbar message shown after clicking an inline code chip in the brief copies its content to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get briefCodeCopied;
+
+  /// Tooltip on the small copy icon inside an inline code chip in the brief.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get briefCodeCopyTooltip;
 }
 
 class _AppLocalizationsDelegate

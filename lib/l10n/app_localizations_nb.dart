@@ -1394,4 +1394,10 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get briefRingRoute => 'Ringløype';
+
+  @override
+  String get briefCodeCopied => 'Kopiert';
+
+  @override
+  String get briefCodeCopyTooltip => 'Kopier';
 }

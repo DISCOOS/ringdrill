@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:markdown_widget/markdown_widget.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 
 // ---------------------------------------------------------------------------
@@ -59,19 +61,77 @@ class _CodeChipNode extends ElementNode {
     return WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       baseline: TextBaseline.alphabetic,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          // Chip fill comes from the merged TextStyle's backgroundColor; the
-          // Container paints it with horizontal padding and a 6 px radius.
-          color: merged.backgroundColor ?? const Color(0xCCEFF1F3),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        // Strip backgroundColor on the Text so we don't double-paint the
-        // chip color behind the glyphs.
-        child: Text(
-          text,
-          style: merged.copyWith(backgroundColor: Colors.transparent),
+      child: _CodeChip(
+        text: text,
+        // Strip backgroundColor on the Text so we don't double-paint the chip
+        // color behind the glyphs — the Container paints it instead.
+        textStyle: merged.copyWith(backgroundColor: Colors.transparent),
+        backgroundColor: merged.backgroundColor ?? const Color(0xCCEFF1F3),
+      ),
+    );
+  }
+}
+
+/// Visual + behavioural shell for an inline code chip.
+///
+/// Renders the code text inside a padded, rounded `Container` and adds a
+/// small copy icon to the right of the text. Tapping anywhere on the chip
+/// copies the code content to the clipboard and shows a `SnackBar`
+/// confirmation. Hovering over the chip on web/desktop shows a click cursor.
+class _CodeChip extends StatelessWidget {
+  const _CodeChip({
+    required this.text,
+    required this.textStyle,
+    required this.backgroundColor,
+  });
+
+  final String text;
+  final TextStyle textStyle;
+  final Color backgroundColor;
+
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(l10n.briefCodeCopied),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final iconColor = textStyle.color?.withValues(alpha: 0.7);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _copy(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(text, style: textStyle),
+              const SizedBox(width: 6),
+              Tooltip(
+                message: l10n.briefCodeCopyTooltip,
+                child: Icon(Icons.content_copy, size: 16, color: iconColor),
+              ),
+            ],
+          ),
         ),
       ),
     );

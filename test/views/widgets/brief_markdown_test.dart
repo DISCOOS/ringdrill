@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -31,6 +32,13 @@ void main() {
 
   Widget buildWidget({String? data}) {
     return MaterialApp(
+      // _CodeChip pulls AppLocalizations for the snackbar message and the
+      // copy-icon tooltip, so the test app needs localization delegates.
+      // Locale is pinned to en so the snackbar-text assertion below is
+      // predictable across host machines.
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: SizedBox(
           width: 600,
@@ -148,6 +156,44 @@ void main() {
         decoration.borderRadius,
         isNotNull,
         reason: 'Code chip should have rounded corners',
+      );
+    });
+
+    testWidgets('inline code chip carries a copy icon', (tester) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pump();
+
+      final copyIconFinder = find.byIcon(Icons.content_copy);
+      expect(
+        copyIconFinder,
+        findsAtLeastNWidgets(1),
+        reason: 'Inline code chip should display a copy icon next to the text',
+      );
+    });
+
+    testWidgets('tapping inline code chip shows a copied snackbar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pump();
+
+      final chipFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Container) return false;
+        final decoration = widget.decoration;
+        if (decoration is! BoxDecoration) return false;
+        return decoration.color == lightTheme.code.background;
+      });
+
+      await tester.tap(chipFinder.first);
+      await tester.pump();
+
+      // The snackbar message is the localized briefCodeCopied — "Copied"
+      // in English.
+      expect(
+        find.text('Copied'),
+        findsOneWidget,
+        reason:
+            'Tapping the code chip should show a SnackBar with the copied label',
       );
     });
   });

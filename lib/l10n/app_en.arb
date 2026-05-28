@@ -1322,5 +1322,13 @@
   "briefRingRoute": "Ring route",
   "@briefRingRoute": {
     "description": "Label for the ring-rotation configuration line in the brief Organisering section."
+  },
+  "briefCodeCopied": "Copied",
+  "@briefCodeCopied": {
+    "description": "Snackbar message shown after clicking an inline code chip in the brief copies its content to the clipboard."
+  },
+  "briefCodeCopyTooltip": "Copy",
+  "@briefCodeCopyTooltip": {
+    "description": "Tooltip on the small copy icon inside an inline code chip in the brief."
   }
 }
