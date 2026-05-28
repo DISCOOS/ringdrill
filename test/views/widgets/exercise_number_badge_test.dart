@@ -21,6 +21,14 @@ void main() {
     // pumpAndSettle completing without exception is the assertion.
   });
 
+  testWidgets('renders at custom size', (tester) async {
+    await tester.pumpWidget(_harness(const ExerciseNumberBadge(number: 1, size: 36)));
+    await tester.pumpAndSettle();
+    final size = tester.getSize(find.byType(ExerciseNumberBadge));
+    expect(size.width, 36.0);
+    expect(size.height, 36.0);
+  });
+
   testWidgets('highlight: true paints with primary background', (tester) async {
     await tester.pumpWidget(
       _harness(const ExerciseNumberBadge(number: 3, highlight: true)),

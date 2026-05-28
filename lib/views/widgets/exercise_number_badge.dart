@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Compact badge showing an exercise number as `#N`.
 ///
 /// Sibling of `StationCodeBadge` and `RoleCodeBadge`. The three badges form
-/// a visual family — same dimensions, same typography, same corner radius —
+/// a visual family — same corner radius, same typography, same padding —
 /// so users can quickly distinguish exercise / station / role tokens at a
 /// glance.
 ///
@@ -11,15 +11,27 @@ import 'package:flutter/material.dart';
 /// match `StationCodeBadge.highlight`. The mini-bar always passes
 /// `highlight: false` because the surrounding `LiveAccent` background already
 /// carries the "live" signal.
+///
+/// [size] controls the width and height of the badge. The default 40 matches
+/// the badge family used in list contexts (StationCodeBadge, RoleCodeBadge).
+/// Smaller values exist for embedded contexts — specifically the DrillPlayer
+/// mini-bar passes 36 to match the 36×36 play square on the right.
+/// FittedBox handles the scale-down so the font does not need to be threaded
+/// through size.
 class ExerciseNumberBadge extends StatelessWidget {
   const ExerciseNumberBadge({
     super.key,
     required this.number,
     this.highlight = false,
+    this.size = 40,
   });
 
   final int number;
   final bool highlight;
+
+  /// Width and height of the badge in logical pixels. Default 40 matches the
+  /// badge family. Pass 36 for the DrillPlayer mini-bar context.
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +47,8 @@ class ExerciseNumberBadge extends StatelessWidget {
     }
 
     return Container(
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(

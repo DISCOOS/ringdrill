@@ -99,7 +99,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
               child: Row(
                 children: [
                   const SizedBox(width: 8),
-                  ExerciseNumberBadge(number: exerciseNumber),
+                  ExerciseNumberBadge(number: exerciseNumber, size: 36),
                   const SizedBox(width: 8),
                   Expanded(
                     child: MiniRoundRow(
