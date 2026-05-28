@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/app_build_info.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -146,6 +147,32 @@ class _AboutPageState extends State<AboutPage> {
                 },
                 trailing: UpdateStatus.outdated == patchStatus
                     ? IconButton(onPressed: update, icon: Icon(Icons.update))
+                    : null,
+              ),
+              // Commit row. Always visible so the user can see which
+              // source tree produced the binary; the GitHub link is
+              // only wired up when --dart-define=GIT_COMMIT=... was
+              // passed at build time. On a bare `flutter run` the
+              // subtitle reads `dev` and the row is non-interactive.
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.commit),
+                title: Text(localizations.commit),
+                subtitle: Text(AppBuildInfo.commitShort),
+                trailing: AppBuildInfo.hasCommit
+                    ? const Icon(Icons.open_in_new, size: 18)
+                    : null,
+                enabled: AppBuildInfo.hasCommit,
+                onTap: AppBuildInfo.hasCommit
+                    ? () async {
+                        final url = AppBuildInfo.commitUrl;
+                        if (url == null) return;
+                        if (!await launchUrl(Uri.parse(url))) {
+                          Sentry.captureException(
+                            Exception('Could not launch $url'),
+                          );
+                        }
+                      }
                     : null,
               ),
               const Divider(),

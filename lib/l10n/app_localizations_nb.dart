@@ -454,6 +454,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get version => 'Versjon';
 
   @override
+  String get commit => 'Commit';
+
+  @override
+  String get viewOnGithub => 'Åpne i GitHub';
+
+  @override
   String get noExercisesYet => 'Ingen øvelser ennå!';
 
   @override

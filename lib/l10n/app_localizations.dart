@@ -782,6 +782,18 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
+  /// Label for the git commit SHA shown on the About page
+  ///
+  /// In en, this message translates to:
+  /// **'Commit'**
+  String get commit;
+
+  /// Tooltip on the About-page commit row that links to the GitHub commit
+  ///
+  /// In en, this message translates to:
+  /// **'Open in GitHub'**
+  String get viewOnGithub;
+
   /// Message
   ///
   /// In en, this message translates to:

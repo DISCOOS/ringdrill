@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:ringdrill/utils/app_build_info.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class SentryConfig {
@@ -17,8 +18,25 @@ class SentryConfig {
     // noise should never reach the prod project — they bury real reports
     // from users. Keep the SDK initialised so breadcrumbs, replay etc.
     // still work locally, just refuse to ship the event over the wire.
+    //
+    // The same hook tags every outgoing event with the git commit that
+    // produced the build. The release string (`ringdrill@1.0.2+16`)
+    // identifies the pubspec version + Android build number, which is
+    // not enough to bisect a regression because two patches on the same
+    // build share that release identifier. The `commit` tag carries the
+    // exact source tree, so we can jump from a Sentry issue straight to
+    // the GitHub commit shown on the About page.
     options.beforeSend = (event, hint) {
       if (!kReleaseMode) return null;
+      if (AppBuildInfo.hasCommit) {
+        // sentry-dart 9.x made data classes mutable, so adding tags is
+        // an in-place edit rather than a copyWith. Initialise the map
+        // when the event has no tags yet, then overlay the two
+        // commit-related entries.
+        final tags = event.tags ??= <String, String>{};
+        tags['commit'] = AppBuildInfo.commit;
+        tags['commit_short'] = AppBuildInfo.commitShort;
+      }
       return event;
     };
     options.beforeSendTransaction = (transaction, hint) {

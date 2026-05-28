@@ -457,6 +457,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
+  String get commit => 'Commit';
+
+  @override
+  String get viewOnGithub => 'Open in GitHub';
+
+  @override
   String get noExercisesYet => 'No exercises yet!';
 
   @override

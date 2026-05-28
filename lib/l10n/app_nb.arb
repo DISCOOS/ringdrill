@@ -122,6 +122,8 @@
   "settings": "Innstillinger",
   "about": "Om",
   "version": "Versjon",
+  "commit": "Commit",
+  "viewOnGithub": "Åpne i GitHub",
   "noExercisesYet": "Ingen øvelser ennå!",
   "stopExercise": "Stop øvelse",
   "noRoundsScheduled": "Ingen runder planlagt!",

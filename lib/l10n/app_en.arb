@@ -464,6 +464,14 @@
   "@version": {
     "description": "Label"
   },
+  "commit": "Commit",
+  "@commit": {
+    "description": "Label for the git commit SHA shown on the About page"
+  },
+  "viewOnGithub": "Open in GitHub",
+  "@viewOnGithub": {
+    "description": "Tooltip on the About-page commit row that links to the GitHub commit"
+  },
   "noExercisesYet": "No exercises yet!",
   "@noExercisesYet": {
     "description": "Message"
