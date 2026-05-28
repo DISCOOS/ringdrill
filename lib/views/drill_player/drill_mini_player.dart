@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/drill_player/phase_colors.dart';
+import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 
 class DrillMiniPlayer extends StatefulWidget {
@@ -55,7 +58,6 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final localizations = AppLocalizations.of(context)!;
     final phase = event.phase;
     final color = colorForPhase(phase);
-    final icon = iconForPhase(phase);
 
     final secondsSinceEvent =
         _now.difference(event.when).inSeconds.clamp(0, 1 << 30);
@@ -66,95 +68,82 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     final countdown =
         event.isPending ? localizations.drillPlayerStartingIn : '$mm:$ss';
 
-    final phaseDurationSeconds = (event.currentDuration * 60).clamp(1, 1 << 30);
-    final smoothedProgress = (event.phaseProgress +
-            secondsSinceEvent / phaseDurationSeconds)
-        .clamp(0.0, 1.0);
+    final phaseDurationSeconds =
+        (event.currentDuration * 60).clamp(1, 1 << 30);
+    final smoothedProgress =
+        (event.phaseProgress + secondsSinceEvent / phaseDurationSeconds)
+            .clamp(0.0, 1.0);
 
     final accent = LiveAccent.of(context, isLive: true);
 
+    final program = ProgramService().activeProgram;
+    final exerciseNumber = program == null
+        ? 1
+        : program.exercises
+                .indexWhere((e) => e.uuid == event.exercise.uuid)
+                .clamp(0, 1 << 30) +
+            1;
+
+    // The rounded shape is owned by the parent (MainScreen._buildBottomChrome).
+    // This Material just fills the clipped area with the LiveAccent background.
     return Material(
       color: accent.background,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-        InkWell(
-          onTap: widget.onOpen,
-          child: SizedBox(
-            height: 53,
-            child: Row(
-              children: [
-                const SizedBox(width: 8),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    event.getState(localizations),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+          InkWell(
+            onTap: widget.onOpen,
+            child: SizedBox(
+              height: 48,
+              child: Row(
+                children: [
+                  const SizedBox(width: 8),
+                  ExerciseNumberBadge(number: exerciseNumber),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: MiniRoundRow(
+                      exercise: event.exercise,
+                      event: event,
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  localizations.drillPlayerRoundOf(
-                    event.currentRound + 1,
-                    event.exercise.numberOfRounds,
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: accent.foreground,
-                      ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    event.exercise.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  const SizedBox(width: 8),
+                  Text(
+                    countdown,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: accent.foreground,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  countdown,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: accent.foreground,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                ),
-                // V2: stop button — see DESIGN-001 "V1 scope" parked list
-                const SizedBox(width: 8),
-              ],
+                  const SizedBox(width: 8),
+                  // V2: stop button — see DESIGN-001 "V1 scope" parked list
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
             ),
           ),
-        ),
-        SizedBox(
-          height: 3,
-          child: LinearProgressIndicator(
-            value: smoothedProgress,
-            backgroundColor: color.withValues(alpha: 0.25),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+          SizedBox(
+            height: 3,
+            child: LinearProgressIndicator(
+              value: smoothedProgress,
+              backgroundColor: color.withValues(alpha: 0.25),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
           ),
-        ),
-      ],
-    ),
+        ],
+      ),
     );
   }
 }
