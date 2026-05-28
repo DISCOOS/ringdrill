@@ -47,6 +47,34 @@ The model is borrowed from Spotify. `ExerciseService` is already a singleton tha
 * Does not change the data model. The number of teams, stations and rounds stays as is. The design assumes the team count never exceeds the station count (one team per station per round, no "waiting" row).
 * Does not touch notifications, exports or sharing. The player is a visual layer, not a new service.
 
+## V1 scope
+
+The rest of this doc describes the full target state. V1 ships a much smaller surface and parks the rest. This section is the ground truth for the first implementation pass. The detailed sections below (Overview tab, Observer player, Wide-screen behavior, NEXT columns and so on) describe the V2+ direction and are kept for reference, not for V1 work.
+
+**In V1**
+
+* Mini-player strip above the `NavigationBar`. Tap-only, no stop button. Shows the same phase square, phase chip, round indicator, exercise name, countdown and top progress bar as described under [Mini-player](#mini-player).
+* Tap opens a new "player sheet" with these properties:
+  * No handle.
+  * `enableDrag: false`, `isDismissible: false`.
+  * Hides system status/navigation chrome via `SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky)` while open. Resets on close. iOS keeps standard fullscreen-sheet behavior since immersive mode is Android-only.
+  * Chevron-down at the top-left closes the sheet back to the mini-bar without stopping the exercise.
+* Sheet body is the existing `CoordinatorScreen` content (round table, station/team segmented button, ExpansionTiles, `ExerciseControlButton`). It is reused as-is, not rewritten. The stop affordance lives inside the sheet via the existing `ExerciseControlButton`, not on the mini-bar.
+* Routing change: when the live `ExerciseCard` in `ProgramView` is tapped, it opens the new player sheet instead of `ContextSheet` + `ExerciseSheetTarget`. All other (non-live) exercise cards keep their current `ContextSheet` flow.
+* Mini-bar is mounted in `MainScreen` between `body` and `bottomNavigationBar` so it survives tab switches and shares the bottom chrome with the navigation, Spotify-style.
+
+**Parked to V2+**
+
+* Three-tab segmented control (Overview / Stations / Teams) inside the full-player. V1 shows whatever `CoordinatorScreen` renders today.
+* The Overview tab and its hero / NEXT column / phase strip / round timeline visualization.
+* Observer player variants (team / station perspectives) and the perspective pill.
+* Wide-screen three-column mini-bar and `NavigationRail` layout.
+* Stop button on the mini-bar.
+* Drag-to-dismiss the sheet.
+* `PhaseTile` color-semantics rework.
+
+When V1 lands, this doc is updated to reflect what actually shipped, and the V2 backlog is refined against the real running code.
+
 ## Rationale: why the "player" metaphor?
 
 `ExerciseService` has three properties that map to Spotify almost 1-to-1:
@@ -382,3 +410,4 @@ The mini-player is global, not per route. It is therefore placed in `MainScreen`
 * 2026-05-23 — Explicit note that per-round progress in the expanded body reuses the existing `PhaseTile` + `PhasesWidget`. The mockup's mini-bars are simplified illustration. Open question on `PhaseTile` color semantics (blueAccent vs the phase colors) added.
 * 2026-05-23 — Status bumped to **Accepted**. The design is locked as the direction for implementation. The mockups are frozen as reference. Open questions under "Open questions" are not blocking for the code architecture — they are decided as the implementation proceeds.
 * 2026-05-23 — Terminology alignment with [DESIGN-002](./stations-tab.md). Norwegian "post" maps to English "station". English prose, segmented-control labels, observer-variant names and identifiers in this doc now use "station(s)" throughout. Mockup filenames are kept (frozen assets). The Norwegian "Poster" / "post" label is unchanged in the localization layer.
+* 2026-05-28 — V1 scope locked. First implementation ships a tap-only mini-bar above `NavigationBar` plus an immersive sheet (no handle, no drag, chevron-down close) that wraps the existing `CoordinatorScreen` body. Three-tab segmented control, the Overview tab, observer player variants, wide-screen three-column layout, mini-bar stop button and drag-to-dismiss are all parked to V2+. See the new "V1 scope" section near the top of the doc.
