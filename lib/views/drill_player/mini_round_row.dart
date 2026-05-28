@@ -53,7 +53,7 @@ class MiniRoundRow extends StatelessWidget {
         child: Text(
           time,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             color: isActive
                 ? Colors.white
@@ -74,7 +74,7 @@ class MiniRoundRow extends StatelessWidget {
             child: Text(
               roundLabel,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),

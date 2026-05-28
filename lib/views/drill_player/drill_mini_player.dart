@@ -110,8 +110,9 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   const SizedBox(width: 8),
                   Text(
                     countdown,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: accent.foreground,
+                          fontWeight: FontWeight.w600,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                   ),
