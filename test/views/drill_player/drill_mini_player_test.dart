@@ -92,6 +92,52 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('pending state shows "Starts in mm:ss" countdown', (tester) async {
+    // Build a fixture whose startTime is 5 minutes in the future so the
+    // service always emits a pending event regardless of when the test runs.
+    final now = DateTime.now();
+    final futureMinutes = now.hour * 60 + now.minute + 5;
+    final pendingExercise = Exercise(
+      uuid: 'test-uuid-pending',
+      name: 'Pending Exercise',
+      startTime: SimpleTimeOfDay(
+        hour: (futureMinutes ~/ 60) % 24,
+        minute: futureMinutes % 60,
+      ),
+      endTime: SimpleTimeOfDay(
+        hour: ((futureMinutes ~/ 60) + 1) % 24,
+        minute: futureMinutes % 60,
+      ),
+      numberOfTeams: 2,
+      numberOfRounds: 2,
+      executionTime: 5,
+      evaluationTime: 3,
+      rotationTime: 2,
+      stations: [],
+      schedule: [],
+    );
+
+    ExerciseService().start(pendingExercise);
+    await tester.pumpWidget(_harness(onOpen: () {}));
+    await tester.pumpAndSettle();
+
+    // The mini-bar must be visible (exercise is started)
+    expect(find.byType(ExerciseNumberBadge), findsOneWidget);
+
+    // Countdown must include the "Starts in" prefix followed by mm:ss.
+    expect(find.textContaining('Starts in'), findsOneWidget);
+    final countdownText = tester
+        .widget<Text>(find.textContaining('Starts in').first)
+        .data!;
+    expect(countdownText, matches(RegExp(r'^Starts in \d{2}:\d{2}$')));
+
+    // Exercise the per-second ticker — widget must not throw.
+    await tester.pump(const Duration(seconds: 2));
+
+    ExerciseService().stop();
+    await tester.pump();
+  });
+
   testWidgets('no stop button in V1, play square is a Container not IconButton',
       (tester) async {
     ExerciseService().start(exercise);

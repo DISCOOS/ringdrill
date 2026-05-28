@@ -639,5 +639,6 @@
   },
   "drillPlayerClose": "Lukk",
   "drillPlayerStartingIn": "Starter om",
-  "drillPlayerRoundOf": "Runde {current} / {total}"
+  "drillPlayerRoundOf": "Runde {current} / {total}",
+  "drillPlayerStartingInWithCountdown": "Starter om {time}"
 }

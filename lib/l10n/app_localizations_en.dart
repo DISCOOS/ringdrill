@@ -1447,4 +1447,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String drillPlayerRoundOf(int current, int total) {
     return 'Round $current / $total';
   }
+
+  @override
+  String drillPlayerStartingInWithCountdown(String time) {
+    return 'Starts in $time';
+  }
 }

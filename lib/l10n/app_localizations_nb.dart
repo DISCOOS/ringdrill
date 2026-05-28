@@ -1443,4 +1443,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String drillPlayerRoundOf(int current, int total) {
     return 'Runde $current / $total';
   }
+
+  @override
+  String drillPlayerStartingInWithCountdown(String time) {
+    return 'Starter om $time';
+  }
 }

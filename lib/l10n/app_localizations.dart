@@ -2485,6 +2485,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Round {current} / {total}'**
   String drillPlayerRoundOf(int current, int total);
+
+  /// Countdown shown on the DrillPlayer mini-bar while an exercise is started but has not yet reached its scheduled start time. The {time} placeholder is mm:ss.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts in {time}'**
+  String drillPlayerStartingInWithCountdown(String time);
 }
 
 class _AppLocalizationsDelegate

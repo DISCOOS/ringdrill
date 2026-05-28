@@ -1390,5 +1390,12 @@
       "current": { "type": "int" },
       "total": { "type": "int" }
     }
+  },
+  "drillPlayerStartingInWithCountdown": "Starts in {time}",
+  "@drillPlayerStartingInWithCountdown": {
+    "description": "Countdown shown on the DrillPlayer mini-bar while an exercise is started but has not yet reached its scheduled start time. The {time} placeholder is mm:ss.",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
   }
 }

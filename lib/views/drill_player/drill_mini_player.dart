@@ -65,8 +65,9 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
         (event.remainingTime * 60 - secondsSinceEvent).clamp(0, 1 << 30);
     final mm = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final ss = (remainingSeconds % 60).toString().padLeft(2, '0');
-    final countdown =
-        event.isPending ? localizations.drillPlayerStartingIn : '$mm:$ss';
+    final countdown = event.isPending
+        ? localizations.drillPlayerStartingInWithCountdown('$mm:$ss')
+        : '$mm:$ss';
 
     final phaseDurationSeconds =
         (event.currentDuration * 60).clamp(1, 1 << 30);
