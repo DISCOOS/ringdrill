@@ -397,7 +397,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: isTwoColumn
-                  ? _buildTwoColumnBody(event, showHero: showHero)
+                  ? _buildTwoColumnBody(
+                      event,
+                      showHero: showHero,
+                      viewportHeight: constraints.maxHeight,
+                    )
                   : _buildSingleColumnBody(
                       event,
                       showHero: showHero,
@@ -474,7 +478,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     );
   }
 
-  Widget _buildTwoColumnBody(ExerciseEvent event, {required bool showHero}) {
+  Widget _buildTwoColumnBody(
+    ExerciseEvent event, {
+    required bool showHero,
+    required double viewportHeight,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -493,12 +501,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildExercisePositionMap(),
+        _buildExercisePositionMap(viewportHeight: viewportHeight),
       ],
     );
   }
 
-  Widget _buildExercisePositionMap() {
+  Widget _buildExercisePositionMap({required double viewportHeight}) {
     final markers = _exercise!.stations
         .where((station) => station.position != null)
         .map(
@@ -523,7 +531,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
-        height: 360,
+        height: viewportHeight,
         child: MapView<int>(
           layers: MapConfig.layers,
           withZoom: true,
