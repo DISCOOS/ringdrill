@@ -20,6 +20,10 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/shell/detail_empty_pane.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
@@ -443,10 +447,7 @@ class MainScreen extends StatefulWidget {
 
   static void showSettings(BuildContext context, [bool pop = false]) {
     if (pop) Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const SettingsPage()),
-    );
+    openFormSurface<void>(context, builder: (context) => const SettingsPage());
   }
 
   @override
@@ -489,7 +490,6 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   int _currentTab = 0;
-  bool _wideScreen = false;
   bool _migrationSnackBarChecked = false;
 
   @override
@@ -560,8 +560,6 @@ class _MainScreenState extends State<MainScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final double width = MediaQuery.sizeOf(context).width;
-    _wideScreen = width > 600;
     _showMigrationSnackBarOnce();
   }
 
@@ -579,6 +577,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final page = _pages[_currentTab];
+    final windowSizeClass = WindowSizeClass.of(context);
     // Off-screen mount point for the ShellRoute's nested Navigator. Hosts
     // the GlobalKey GoRouter walks during system back; not painted, never
     // hit-tested. The visible tab UI is the IndexedStack below.
@@ -595,9 +594,9 @@ class _MainScreenState extends State<MainScreen> {
             extendBody: true,
             extendBodyBehindAppBar: true,
             drawerEnableOpenDragGesture: true,
-            appBar: _wideScreen
+            appBar: windowSizeClass.hasRail
                 ? null
-                : _buildAppBar(context, constraints, page),
+                : _buildAppBar(context, constraints, page, hasRail: false),
             drawer: _buildDrawer(context, localizations),
             // StackFit.expand is load-bearing: without it the Stack sizes
             // itself to the biggest non-positioned child, but the only
@@ -609,8 +608,14 @@ class _MainScreenState extends State<MainScreen> {
             body: Stack(
               fit: StackFit.expand,
               children: [
-                _wideScreen
-                    ? _buildNavRail(context, constraints, localizations, page)
+                windowSizeClass.hasRail
+                    ? _buildNavRail(
+                        context,
+                        constraints,
+                        localizations,
+                        page,
+                        windowSizeClass,
+                      )
                     : SafeArea(
                         child:
                             // Keep all tabs in memory allowing
@@ -624,10 +629,14 @@ class _MainScreenState extends State<MainScreen> {
                 shellSentinel,
               ],
             ),
-            floatingActionButton: _wideScreen
+            floatingActionButton: windowSizeClass.hasRail
                 ? null
                 : page.controller.buildFAB(context, constraints),
-            bottomNavigationBar: _buildBottomChrome(context, localizations),
+            bottomNavigationBar: _buildBottomChrome(
+              context,
+              localizations,
+              windowSizeClass,
+            ),
           ),
         );
       },
@@ -637,8 +646,9 @@ class _MainScreenState extends State<MainScreen> {
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
     BoxConstraints constraints,
-    PageWidget<ScreenController> page,
-  ) {
+    PageWidget<ScreenController> page, {
+    required bool hasRail,
+  }) {
     final isCupertino = Theme.of(context).platform == TargetPlatform.iOS;
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
@@ -647,8 +657,8 @@ class _MainScreenState extends State<MainScreen> {
         paddingLeft: 0,
         child: AppBar(
           title: _buildAppBarTitle(context, page),
-          leadingWidth: _wideScreen ? 84 : null,
-          leading: _wideScreen
+          leadingWidth: hasRail ? 84 : null,
+          leading: hasRail
               ? Padding(
                   padding: EdgeInsets.only(left: isCupertino ? 32.0 : 20.0),
                   child: Column(
@@ -849,9 +859,9 @@ class _MainScreenState extends State<MainScreen> {
           title: localizations.about,
           onTap: () {
             Navigator.pop(context);
-            Navigator.push(
+            openFormSurface<void>(
               context,
-              MaterialPageRoute(builder: (context) => const AboutPage()),
+              builder: (context) => const AboutPage(),
             );
           },
         ),
@@ -897,6 +907,7 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _currentTab = tab;
     });
+    _contextSheetController.close();
     widget.router.go(widget.routes[tab]);
     // The StationsView is kept alive inside the IndexedStack, so its map
     // does not re-fit on tab switch on its own. Nudge it via the reselect
@@ -922,10 +933,10 @@ class _MainScreenState extends State<MainScreen> {
   Widget? _buildBottomChrome(
     BuildContext context,
     AppLocalizations localizations,
+    WindowSizeClass windowSizeClass,
   ) {
-    if (_wideScreen) {
-      // V2: render mini-bar in wide-screen layout — see DESIGN-001 "Wide-screen behavior"
-      return null;
+    if (windowSizeClass.hasRail) {
+      return _buildNavBar(localizations, windowSizeClass);
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -938,7 +949,7 @@ class _MainScreenState extends State<MainScreen> {
               child: DrillMiniPlayer(onOpen: () => _openDrillPlayer(context)),
             ),
           ),
-        _buildNavBar(localizations)!,
+        _buildNavBar(localizations, windowSizeClass)!,
       ],
     );
   }
@@ -952,8 +963,11 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget? _buildNavBar(AppLocalizations localizations) {
-    if (_wideScreen) return null;
+  Widget? _buildNavBar(
+    AppLocalizations localizations,
+    WindowSizeClass windowSizeClass,
+  ) {
+    if (windowSizeClass.hasRail) return null;
     return NavigationBar(
       selectedIndex: _currentTab,
       onDestinationSelected: _onDestinationSelected,
@@ -998,6 +1012,7 @@ class _MainScreenState extends State<MainScreen> {
     BoxConstraints constraints,
     AppLocalizations localizations,
     PageWidget page,
+    WindowSizeClass windowSizeClass,
   ) {
     final fab = page.controller.buildFAB(context, constraints);
     final rail = _removePadding(
@@ -1025,30 +1040,80 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    final masterWidth = windowSizeClass == WindowSizeClass.expanded
+        ? 360.0
+        : 280.0;
+    const railWidth = 72.0;
+    final detailWidth = constraints.maxWidth - railWidth - masterWidth;
+    if (detailWidth < 360) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildAppBar(context, constraints, page, hasRail: true),
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                rail,
+                Expanded(child: _buildIndexedTabs()),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
       children: [
-        _buildAppBar(context, constraints, page),
-        Expanded(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        rail,
+        SizedBox(
+          width: masterWidth,
+          child: Column(
             children: [
-              rail,
-              Expanded(
-                child:
-                    // Keep all tabs in memory allowing
-                    // state to persist between tab switches
-                    IndexedStack(
-                      key: _indexedTabsKey,
-                      index: _currentTab,
-                      children: _pages,
+              _buildAppBar(context, constraints, page, hasRail: true),
+              Expanded(child: _buildIndexedTabs()),
+              if (ExerciseService().isStarted)
+                SafeArea(
+                  top: false,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
                     ),
-              ),
+                    child: DrillMiniPlayer(
+                      onOpen: () => _openDrillPlayer(context),
+                    ),
+                  ),
+                ),
             ],
+          ),
+        ),
+        Expanded(
+          child: MasterDetailScope(
+            target: _contextSheetController.targetNotifier,
+            emptyPaneBuilder: _emptyPaneBuilderForCurrentTab,
+            child: const MasterDetailPane(),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildIndexedTabs() {
+    return IndexedStack(
+      key: _indexedTabsKey,
+      index: _currentTab,
+      children: _pages,
+    );
+  }
+
+  Widget _emptyPaneBuilderForCurrentTab(BuildContext context) {
+    return switch (_currentTab) {
+      0 => const ExerciseDetailEmpty(),
+      2 => const StationDetailEmpty(),
+      3 => const RolePlayDetailEmpty(),
+      4 => const TeamDetailEmpty(),
+      _ => const SizedBox.shrink(),
+    };
   }
 
   void _showConsentDialog() {
