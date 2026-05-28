@@ -126,6 +126,20 @@
   "viewOnGithub": "Åpne i GitHub",
   "noExercisesYet": "Ingen øvelser ennå!",
   "stopExercise": "Stop øvelse",
+  "exerciseAutoStoppedTitle": "Øvelse avsluttet",
+  "exerciseAutoStoppedBody": "Sluttiden for {exercise} er passert.",
+  "@exerciseAutoStoppedBody": {
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "exerciseAutoStoppedSnack": "{exercise} avsluttet automatisk",
+  "@exerciseAutoStoppedSnack": {
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "dismiss": "Lukk",
   "noRoundsScheduled": "Ingen runder planlagt!",
   "showNotification": "Vis varsel",
   "openNotification": "Åpne varsel",

@@ -19,6 +19,15 @@ class ExerciseEvent {
   final double roundProgress;
   final double totalProgress;
 
+  /// `true` when the `done` phase was reached automatically because
+  /// the exercise expired — either all rounds completed or the
+  /// configured `endTime` was reached. `false` for a manual stop and
+  /// for every non-`done` event.
+  ///
+  /// Subscribers (snackbar, persistent notification) use this to tell
+  /// "the user pressed stop" apart from "time ran out".
+  final bool autoStopped;
+
   int get currentDuration {
     return switch (phase) {
       ExercisePhase.pending => remainingTime,
@@ -70,6 +79,7 @@ class ExerciseEvent {
     required this.phaseProgress,
     required this.roundProgress,
     required this.totalProgress,
+    this.autoStopped = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -83,6 +93,7 @@ class ExerciseEvent {
       'phaseProgress': phaseProgress,
       'roundProgress': roundProgress,
       'totalProgress': totalProgress,
+      'autoStopped': autoStopped,
     };
   }
 }
@@ -201,12 +212,33 @@ class ExerciseService {
         } else {
           _elapsedMinutes = startTimeDelta;
 
-          if (_elapsedMinutes >= totalTime) {
+          // Two independent expiry conditions trigger an auto-stop:
+          //
+          // 1. `_elapsedMinutes >= totalTime` — every round has run
+          //    its execution + evaluation + rotation budget. This was
+          //    the only auto-stop until now.
+          //
+          // 2. `now >= endTime` — the wall-clock end of the exercise
+          //    has been reached. Whichever condition fires first wins.
+          //    Without this, a plan with `endTime` shorter than the
+          //    sum of round durations would run past its scheduled end.
+          final reachedEndTime = !currentTimeOfDay
+              .toDateTime()
+              .isBefore(endTime);
+          if (_elapsedMinutes >= totalTime || reachedEndTime) {
+            // Clamp to `totalTime`: when the endTime branch fires past
+            // the scheduled end, `_elapsedMinutes` can be negative
+            // (startTime gets rolled to tomorrow). Emitting a negative
+            // elapsed time would surface in the notification body and
+            // in any future analytics.
+            _elapsedMinutes = totalTime;
             _totalProgress = 1.0;
             _roundProgress = 1.0;
             _phaseProgress = 1.0;
-            // Timer has completed all rounds — end the exercise
-            stop();
+            // Mark the stop as automatic so the snackbar and the
+            // persistent notification know to fire — a manual stop
+            // (user pressed the stop button) does not need those.
+            stop(autoStopped: true);
             return;
           }
 
@@ -262,20 +294,31 @@ class ExerciseService {
     }
   }
 
-  /// Stop the timer and emit no more events
-  void stop() {
+  /// Stop the timer and emit no more events.
+  ///
+  /// [autoStopped] is `true` when the service stopped itself because
+  /// the exercise expired (all rounds completed or `endTime` reached).
+  /// Manual callers (the stop button, `start()` re-entry guard) leave
+  /// it at the default `false`. The emitted `done` event carries the
+  /// flag so listeners can decide between "show a passive snackbar"
+  /// (auto) and "stay silent" (manual).
+  void stop({bool autoStopped = false}) {
     _timer?.cancel();
     _timer = null;
 
     if (_exercise != null) {
       _currentPhase = ExercisePhase.done;
       // Emit a stop event with details of the last state
-      _raise(_exercise!, 0);
+      _raise(_exercise!, 0, autoStopped: autoStopped);
       _exercise = null;
     }
   }
 
-  void _raise(Exercise exercise, int remainingTime) {
+  void _raise(
+    Exercise exercise,
+    int remainingTime, {
+    bool autoStopped = false,
+  }) {
     return _eventController.add(
       _last = ExerciseEvent(
         exercise: exercise,
@@ -287,6 +330,7 @@ class ExerciseService {
         phaseProgress: _phaseProgress,
         roundProgress: _roundProgress,
         totalProgress: _totalProgress,
+        autoStopped: autoStopped,
       ),
     );
   }

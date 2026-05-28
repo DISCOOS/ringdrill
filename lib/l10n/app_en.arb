@@ -504,6 +504,28 @@
   "@stopExercise": {
     "description": "Label"
   },
+  "exerciseAutoStoppedTitle": "Exercise finished",
+  "@exerciseAutoStoppedTitle": {
+    "description": "Title shown when an exercise auto-stops because its end time was reached or every round completed."
+  },
+  "exerciseAutoStoppedBody": "End time for {exercise} has passed.",
+  "@exerciseAutoStoppedBody": {
+    "description": "Body of the persistent notification shown after an exercise auto-stops.",
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "exerciseAutoStoppedSnack": "{exercise} stopped automatically",
+  "@exerciseAutoStoppedSnack": {
+    "description": "SnackBar message shown when an exercise auto-stops.",
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "dismiss": "Dismiss",
+  "@dismiss": {
+    "description": "Generic dismiss-action label, e.g. on a SnackBar close button."
+  },
   "deleteExercise": "Delete Exercise",
   "@deleteExercise": {
     "description": "Label"

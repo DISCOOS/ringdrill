@@ -88,7 +88,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirm => 'CONFIRM';
 
   @override
-  String get dismiss => 'DISMISS';
+  String get dismiss => 'Dismiss';
 
   @override
   String get confirmDeleteExercise =>
@@ -485,6 +485,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stopExercise => 'Stop Exercise';
+
+  @override
+  String get exerciseAutoStoppedTitle => 'Exercise finished';
+
+  @override
+  String exerciseAutoStoppedBody(String exercise) {
+    return 'End time for $exercise has passed.';
+  }
+
+  @override
+  String exerciseAutoStoppedSnack(String exercise) {
+    return '$exercise stopped automatically';
+  }
 
   @override
   String get deleteExercise => 'Delete Exercise';

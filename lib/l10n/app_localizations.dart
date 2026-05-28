@@ -242,10 +242,10 @@ abstract class AppLocalizations {
   /// **'CONFIRM'**
   String get confirm;
 
-  /// Label
+  /// Generic dismiss-action label, e.g. on a SnackBar close button.
   ///
   /// In en, this message translates to:
-  /// **'DISMISS'**
+  /// **'Dismiss'**
   String get dismiss;
 
   /// Message
@@ -841,6 +841,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop Exercise'**
   String get stopExercise;
+
+  /// Title shown when an exercise auto-stops because its end time was reached or every round completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise finished'**
+  String get exerciseAutoStoppedTitle;
+
+  /// Body of the persistent notification shown after an exercise auto-stops.
+  ///
+  /// In en, this message translates to:
+  /// **'End time for {exercise} has passed.'**
+  String exerciseAutoStoppedBody(String exercise);
+
+  /// SnackBar message shown when an exercise auto-stops.
+  ///
+  /// In en, this message translates to:
+  /// **'{exercise} stopped automatically'**
+  String exerciseAutoStoppedSnack(String exercise);
 
   /// Label
   ///

@@ -304,7 +304,17 @@ class NotificationService {
     if (event.isDone) {
       _urgentCount = 0;
       _wasUrgent = false;
-      return cancel();
+      // Manual stop: drop every notification, the user already
+      // confirmed end-of-exercise via the stop button.
+      //
+      // Auto-stop (endTime / totalTime expired): swap the ongoing
+      // progress notification for a persistent, dismissible "finished"
+      // notification. It stays visible until the user taps or swipes
+      // it — which is what the user asked for.
+      if (!event.autoStopped) {
+        return cancel();
+      }
+      return _notifyAutoStopped(event);
     }
     bool isUrgent = !event.isDone && event.remainingTime <= _urgentThreshold;
 
@@ -368,6 +378,55 @@ class NotificationService {
       id: idExerciseNotification,
       title: event.exercise.name,
       body: _format(event),
+      notificationDetails: platformNotificationDetails,
+    );
+  }
+
+  /// Posts the "exercise finished" notification used when the service
+  /// auto-stops. Unlike the in-progress notification this one is NOT
+  /// ongoing — the user can swipe it away or tap it — and uses the
+  /// alarm category + sound + vibration so it actually grabs
+  /// attention when the app is in the background.
+  Future<void> _notifyAutoStopped(ExerciseEvent event) async {
+    // The "urgent" channel is reused so the audio attributes + DnD
+    // bypass already configured for last-minute warnings carry over.
+    // We force `_wasUrgent` to true so `_init()` rebuilds the channel
+    // with sound/vibration enabled before posting.
+    if (!_wasUrgent) {
+      _wasUrgent = true;
+      await _init();
+    }
+    final androidNotificationDetails = AndroidNotificationDetails(
+      _currentChannelId!,
+      'Exercise Notifications',
+      channelDescription: 'Updates for ongoing exercises',
+      // NOT ongoing — the user must be able to dismiss it. Swipe and
+      // tap both clear it; autoCancel covers the tap case.
+      ongoing: false,
+      autoCancel: true,
+      showWhen: true,
+      channelBypassDnd: true,
+      // No fullScreenIntent: the exercise is already over, we don't
+      // need to wake the screen, just leave a visible record.
+      fullScreenIntent: false,
+      priority: Priority.high,
+      importance: Importance.max,
+      playSound: _playSound,
+      enableVibration: _enableVibration,
+      visibility: NotificationVisibility.public,
+      category: AndroidNotificationCategory.alarm,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      // No actions: there is nothing left to do but acknowledge.
+    );
+
+    final platformNotificationDetails = NotificationDetails(
+      android: androidNotificationDetails,
+    );
+
+    await _flutterLocalNotificationsPlugin.show(
+      id: idExerciseNotification,
+      title: _localizations.exerciseAutoStoppedTitle,
+      body: _localizations.exerciseAutoStoppedBody(event.exercise.name),
       notificationDetails: platformNotificationDetails,
     );
   }

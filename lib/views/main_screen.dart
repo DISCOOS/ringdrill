@@ -512,10 +512,17 @@ class _MainScreenState extends State<MainScreen> {
       }),
     );
     // Rebuild bottom chrome when an exercise starts or stops so the floating
-    // mini-bar appears/disappears without a manual state push.
+    // mini-bar appears/disappears without a manual state push. Also show a
+    // passive snackbar when the service auto-stops the exercise (endTime or
+    // totalTime reached) — the persistent notification handles the
+    // "still has to be acknowledged" path.
     _subscriptions.add(
       ExerciseService().events.listen((event) {
-        if (mounted) setState(() {});
+        if (!mounted) return;
+        setState(() {});
+        if (event.isDone && event.autoStopped) {
+          _showAutoStoppedSnackBar(event);
+        }
       }),
     );
     // Gated startup validation: only when a stored active-program reference
@@ -1088,6 +1095,30 @@ class _MainScreenState extends State<MainScreen> {
         }
       }
     });
+  }
+
+  /// Passive notice that the auto-stop fired. The persistent
+  /// notification produced by `NotificationService` is what the user
+  /// actually has to acknowledge; this snackbar is the in-app
+  /// equivalent for whoever is staring at the running app when the
+  /// timer expires.
+  void _showAutoStoppedSnackBar(ExerciseEvent event) {
+    final localizations = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          showCloseIcon: true,
+          // endToStart swipe matches the migration snackbar above and
+          // mirrors the swipe gesture the notification supports, so
+          // the dismissal idiom is consistent.
+          dismissDirection: DismissDirection.endToStart,
+          content: Text(
+            localizations.exerciseAutoStoppedSnack(event.exercise.name),
+          ),
+        ),
+      );
   }
 
   void _showMigrationSnackBarOnce() {
