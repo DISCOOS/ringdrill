@@ -4,6 +4,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
+import 'package:ringdrill/views/phase_widget.dart';
 
 Exercise _makeExercise() => Exercise(
       uuid: 'test-uuid-row',
@@ -132,7 +133,7 @@ void main() {
   });
 
   testWidgets(
-    'renders three HH:MM cells from schedule[0] with active cell highlighted',
+    'renders three PhasesWidgets with HH:MM phase times from schedule[0]',
     (tester) async {
       final event = _makeEvent(
         exercise: exercise,
@@ -144,22 +145,63 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // All three phase start times must appear
+      // Exactly three PhasesWidgets — one per phase
+      expect(find.byType(PhasesWidget), findsNWidgets(3));
+
+      // All three phase start times must appear (rendered inside PhasesWidget)
       expect(find.text('08:00'), findsOneWidget);
       expect(find.text('08:05'), findsOneWidget);
       expect(find.text('08:08'), findsOneWidget);
 
-      // The active cell (index 0 for execution) has a blue background.
+      // The active phase (execution = phase 0) has a blue fill. Check that
+      // at least one Container in the PhasesWidget subtree carries blueAccent.
       final containers = tester.widgetList<Container>(
         find.descendant(
           of: find.byType(MiniRoundRow),
           matching: find.byType(Container),
         ),
       );
-      final hasBlue = containers.any((c) => c.color == Colors.blueAccent);
+      final hasBlue = containers.any(
+        (c) =>
+            (c.decoration as BoxDecoration?)?.color == Colors.blueAccent ||
+            c.color == Colors.blueAccent,
+      );
       expect(hasBlue, isTrue);
     },
   );
+
+  testWidgets('completed phase stays filled when exercise advances to rotation',
+      (tester) async {
+    // Rotation phase → execution (phase 0) and evaluation (phase 1) are done.
+    final event = _makeEvent(
+      exercise: exercise,
+      phase: ExercisePhase.rotation,
+      currentRound: 0,
+    );
+    await tester.pumpWidget(
+      _harness(MiniRoundRow(exercise: exercise, event: event)),
+    );
+    await tester.pumpAndSettle();
+
+    // At least two Containers with blueAccent exist — one for the completed
+    // execution cell and one for the completed evaluation cell.
+    final containers = tester.widgetList<Container>(
+      find.descendant(
+        of: find.byType(MiniRoundRow),
+        matching: find.byType(Container),
+      ),
+    ).toList();
+    final blueCount = containers
+        .where(
+          (c) =>
+              (c.decoration as BoxDecoration?)?.color == Colors.blueAccent ||
+              c.color == Colors.blueAccent,
+        )
+        .length;
+    expect(blueCount, greaterThanOrEqualTo(2),
+        reason:
+            'Execution and evaluation cells should remain filled after rotation starts');
+  });
 
   testWidgets('pending state renders row without any cell highlight',
       (tester) async {
@@ -173,14 +215,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // No blue active cell
+    // No blue active or completed fill (pending → isRunning == false → PhasesWidget
+    // renders with transparent backgrounds throughout)
     final containers = tester.widgetList<Container>(
       find.descendant(
         of: find.byType(MiniRoundRow),
         matching: find.byType(Container),
       ),
     );
-    final hasBlue = containers.any((c) => c.color == Colors.blueAccent);
+    final hasBlue = containers.any(
+      (c) =>
+          (c.decoration as BoxDecoration?)?.color == Colors.blueAccent ||
+          c.color == Colors.blueAccent,
+    );
     expect(hasBlue, isFalse);
   });
 }

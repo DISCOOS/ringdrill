@@ -13,6 +13,7 @@ class PhasesWidget extends StatelessWidget {
     this.isPortrait = true,
     this.decoration,
     this.mainAxisAlignment = MainAxisAlignment.center,
+    this.cellSize = 56.0,
   });
 
   final int roundIndex;
@@ -23,9 +24,13 @@ class PhasesWidget extends StatelessWidget {
   final TextDecoration? decoration;
   final MainAxisAlignment mainAxisAlignment;
 
+  /// Width per phase cell. Default 56 matches the round-table cell width in
+  /// PhaseTile. Smaller values are used by embedded contexts like the
+  /// DrillPlayer mini-bar.
+  final double cellSize;
+
   @override
   Widget build(BuildContext context) {
-    const cellSize = 56.0;
     final isCurrentRound = event.isRunning && roundIndex == event.currentRound;
     final isCurrentPhase =
         isCurrentRound && phaseIndex == event.phase.index - 1;
