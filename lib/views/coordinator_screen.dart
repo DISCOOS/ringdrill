@@ -1133,21 +1133,35 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             final title = none
                 ? '${localizations.station(1)} ×'
                 : _exercise!.stations[stationIndex].name;
+            // Mirror the description tap in _buildStationDetail: a round
+            // card here represents "team T at station S in round R", so a
+            // tap should open the same StationExerciseScreen the
+            // station-list path leads to. Rounds where the team has no
+            // station (`none`) keep their line-through styling and no
+            // tap handler so the dead cell can't trigger navigation.
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: PhaseTile(
-                  event: event,
-                  title: title,
-                  // Fixed width keeps station-name cells aligned across
-                  // rounds so the drill/eval/roll columns line up
-                  // vertically. Names longer than this are ellipsed.
-                  titleWidth: 120,
-                  roundIndex: roundIndex,
-                  exercise: _exercise!,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  decoration: none ? TextDecoration.lineThrough : null,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: none
+                    ? null
+                    : () => context.push(
+                        '$routeStations/${widget.uuid}/$stationIndex',
+                      ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: PhaseTile(
+                    event: event,
+                    title: title,
+                    // Fixed width keeps station-name cells aligned across
+                    // rounds so the drill/eval/roll columns line up
+                    // vertically. Names longer than this are ellipsed.
+                    titleWidth: 120,
+                    roundIndex: roundIndex,
+                    exercise: _exercise!,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    decoration: none ? TextDecoration.lineThrough : null,
+                  ),
                 ),
               ),
             );
