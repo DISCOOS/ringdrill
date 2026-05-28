@@ -71,6 +71,7 @@ class ContextSheetController {
   ContextSheetBodyBuilder? _bodyBuilder;
 
   ValueListenable<ContextSheetTarget?> get target => _target;
+  ValueNotifier<ContextSheetTarget?> get targetNotifier => _target;
 
   Future<void> show(BuildContext context, ContextSheetTarget target) async {
     if (target is! BriefSheetTarget) {
