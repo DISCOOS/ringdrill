@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
@@ -10,7 +11,7 @@ import 'package:ringdrill/views/vertical_divider_widget.dart';
 /// text) borrows the same visual language as PhaseTile without depending on
 /// its constructor.
 ///
-/// The row renders: `R{round+1}/{total} | start0 | start1 | start2`
+/// The row renders: `R{round+1} | start0 | start1 | start2 | {total} runder`
 class MiniRoundRow extends StatelessWidget {
   const MiniRoundRow({
     super.key,
@@ -23,9 +24,9 @@ class MiniRoundRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     // V2: localize if a target locale needs a different round abbreviation
-    final roundLabel =
-        'R${event.currentRound + 1}/${exercise.numberOfRounds}';
+    final roundLabel = 'R${event.currentRound + 1}';
 
     // schedule[round] has three entries: execution start, evaluation start,
     // rotation start (indices 0, 1, 2).
@@ -91,6 +92,17 @@ class MiniRoundRow extends StatelessWidget {
             isComplete: false,
           ),
           phaseCell(2),
+          VerticalDividerWidget(isCurrent: false, isComplete: false),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              '${exercise.numberOfRounds} ${localizations.round(exercise.numberOfRounds).toLowerCase()}',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
@@ -57,13 +58,29 @@ ExerciseEvent _makeEvent({
     );
 
 Widget _harness(Widget widget) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: Center(child: widget)),
     );
 
 void main() {
   final exercise = _makeExercise();
 
-  testWidgets('renders R1/4 label for currentRound 0 and numberOfRounds 4',
+  testWidgets('renders R1 (no /N) for currentRound 0', (tester) async {
+    final event = _makeEvent(
+      exercise: exercise,
+      phase: ExercisePhase.execution,
+      currentRound: 0,
+    );
+    await tester.pumpWidget(
+      _harness(MiniRoundRow(exercise: exercise, event: event)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('R1'), findsOneWidget);
+    expect(find.text('R1/4'), findsNothing);
+  });
+
+  testWidgets('appends total rounds cell after the three phase times',
       (tester) async {
     final event = _makeEvent(
       exercise: exercise,
@@ -74,7 +91,44 @@ void main() {
       _harness(MiniRoundRow(exercise: exercise, event: event)),
     );
     await tester.pumpAndSettle();
-    expect(find.text('R1/4'), findsOneWidget);
+    // English locale: "4 rounds" (plural)
+    expect(find.text('4 rounds'), findsOneWidget);
+    // Cell sits to the right of the last phase time cell (rotation: 08:08)
+    final roundsDx = tester.getTopLeft(find.text('4 rounds')).dx;
+    final lastPhaseDx = tester.getTopLeft(find.text('08:08')).dx;
+    expect(roundsDx, greaterThan(lastPhaseDx));
+  });
+
+  testWidgets('singular case: 1 round reads as "1 round"', (tester) async {
+    final singleRoundExercise = Exercise(
+      uuid: 'test-uuid-single',
+      name: 'Single Round Exercise',
+      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+      endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+      numberOfTeams: 2,
+      numberOfRounds: 1,
+      executionTime: 5,
+      evaluationTime: 3,
+      rotationTime: 2,
+      stations: [],
+      schedule: [
+        [
+          const SimpleTimeOfDay(hour: 8, minute: 0),
+          const SimpleTimeOfDay(hour: 8, minute: 5),
+          const SimpleTimeOfDay(hour: 8, minute: 8),
+        ],
+      ],
+    );
+    final event = _makeEvent(
+      exercise: singleRoundExercise,
+      phase: ExercisePhase.execution,
+      currentRound: 0,
+    );
+    await tester.pumpWidget(
+      _harness(MiniRoundRow(exercise: singleRoundExercise, event: event)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('1 round'), findsOneWidget);
   });
 
   testWidgets(
