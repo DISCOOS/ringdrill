@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
 /// Compact static preview of a role's position. Tapping opens a bottom sheet
@@ -51,12 +52,9 @@ class RoleMiniMap extends StatelessWidget {
   }
 
   Future<void> _openMapSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showRingdrillActionSheet<void>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => FractionallySizedBox(
+      builder: (context) => FractionallySizedBox(
         heightFactor: 1.0,
         child: MapView(
           layers: MapConfig.layers,

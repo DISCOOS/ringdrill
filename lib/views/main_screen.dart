@@ -24,6 +24,7 @@ import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
 import 'package:ringdrill/web/settings_page.dart'
@@ -305,14 +306,8 @@ void _showOpenFileBottomSheet(
   required String location,
   required String filePath,
 }) {
-  showModalBottomSheet(
+  showRingdrillActionSheet<void>(
     context: context,
-    useSafeArea: true,
-    showDragHandle: true,
-    isScrollControlled: true, // Allows the bottom sheet to resize properly
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-    ),
     builder: (context) {
       // REMEMBER! OpenFileWidget
       // requires a ProgramPageController

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
 /// Shows [builder] either as a [Dialog] (wide form factor) or as a modal
 /// bottom sheet (narrow form factor).
@@ -42,14 +43,8 @@ Future<T?> showResponsiveSheetOrDialog<T>(
     );
   }
 
-  return showModalBottomSheet<T>(
+  return showRingdrillActionSheet<T>(
     context: context,
-    useSafeArea: true,
-    showDragHandle: true,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-    ),
     builder: (context) {
       final body = builder(context);
       if (maximizeHeight) {

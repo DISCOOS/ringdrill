@@ -15,6 +15,7 @@ import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
 Future<void> showOpenPlanDialog(BuildContext context) {
@@ -36,14 +37,8 @@ Future<void> showOpenPlanDialog(BuildContext context) {
     );
   }
 
-  return showModalBottomSheet<void>(
+  return showRingdrillActionSheet<void>(
     context: context,
-    useSafeArea: true,
-    showDragHandle: true,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-    ),
     builder: (context) => SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.88,
       child: const _LibraryBody(),
@@ -276,9 +271,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                         mainAxisSize: MainAxisSize.min,
                         children: trailingChildren,
                       ),
-                      onTap: installed
-                          ? null
-                          : () => _installCatalog(item),
+                      onTap: installed ? null : () => _installCatalog(item),
                     );
                   },
                 );
@@ -392,10 +385,7 @@ class _LibraryBodyState extends State<_LibraryBody>
     ].join(' · ');
   }
 
-  String _catalogSubtitle(
-    AppLocalizations localizations,
-    MarketFeedItem item,
-  ) {
+  String _catalogSubtitle(AppLocalizations localizations, MarketFeedItem item) {
     final parts = <String>[
       localizations.librarySourceCatalog(item.slug),
       if (item.tags.isNotEmpty) item.tags.join(', '),
@@ -467,46 +457,43 @@ class _LibraryBodyState extends State<_LibraryBody>
   Future<void> _showPlanActions(BuildContext context, Program program) async {
     final localizations = AppLocalizations.of(context)!;
     final source = program.source.toJson();
-    final action = await showModalBottomSheet<String>(
+    final action = await showRingdrillActionSheet<String>(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: Text(localizations.libraryRename),
+            onTap: () => Navigator.pop(context, 'rename'),
+          ),
+          if (source['runtimeType'] == 'catalog')
             ListTile(
-              leading: const Icon(Icons.edit),
-              title: Text(localizations.libraryRename),
-              onTap: () => Navigator.pop(context, 'rename'),
+              leading: const Icon(Icons.refresh),
+              title: Text(localizations.libraryRefresh),
+              onTap: () => Navigator.pop(context, 'refresh'),
             ),
-            if (source['runtimeType'] == 'catalog')
-              ListTile(
-                leading: const Icon(Icons.refresh),
-                title: Text(localizations.libraryRefresh),
-                onTap: () => Navigator.pop(context, 'refresh'),
-              ),
-            ListTile(
-              leading: const Icon(Icons.ios_share),
-              title: Text(localizations.libraryExport),
-              onTap: () => Navigator.pop(context, 'export'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_upload_outlined),
-              title: Text(localizations.libraryPublish),
-              onTap: () => Navigator.pop(context, 'publish'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_sync_outlined),
-              title: Text(localizations.libraryPublishAs),
-              onTap: () => Navigator.pop(context, 'publishAs'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: Text(localizations.libraryDelete),
-              onTap: () => Navigator.pop(context, 'delete'),
-            ),
-          ],
-        ),
+          ListTile(
+            leading: const Icon(Icons.ios_share),
+            title: Text(localizations.libraryExport),
+            onTap: () => Navigator.pop(context, 'export'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_upload_outlined),
+            title: Text(localizations.libraryPublish),
+            onTap: () => Navigator.pop(context, 'publish'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: Text(localizations.libraryPublishAs),
+            onTap: () => Navigator.pop(context, 'publishAs'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete),
+            title: Text(localizations.libraryDelete),
+            onTap: () => Navigator.pop(context, 'delete'),
+          ),
+        ],
       ),
     );
     if (!context.mounted || action == null) return;

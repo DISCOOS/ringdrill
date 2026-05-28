@@ -15,6 +15,7 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/role_code_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _CastAction { edit, clear }
@@ -477,12 +478,9 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Future<void> _openCastPicker(RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
-    final actorUuid = await showModalBottomSheet<String>(
+    final actorUuid = await showRingdrillActionSheet<String>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => CastPickerSheet(rolePlay: rolePlay),
+      builder: (context) => CastPickerSheet(rolePlay: rolePlay),
     );
     if (actorUuid == null || !mounted) return;
     await _service.saveRolePlay(
@@ -578,12 +576,9 @@ class RolePlaysController extends ScreenController {
   }
 
   Future<void> _openCastRoster(BuildContext context) async {
-    await showModalBottomSheet<void>(
+    await showRingdrillActionSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => const FractionallySizedBox(
+      builder: (context) => const FractionallySizedBox(
         heightFactor: 1.0,
         child: CastRosterSheet(),
       ),
@@ -594,52 +589,48 @@ class RolePlaysController extends ScreenController {
     final localizations = AppLocalizations.of(context)!;
     final exercises = ProgramService().loadExercises();
     final current = filterExerciseUuid.value;
-    final selected = await showModalBottomSheet<_FilterChoice>(
+    final selected = await showRingdrillActionSheet<_FilterChoice>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
       builder: (sheetContext) {
         final groupValue = current == null
             ? const _FilterChoice.all()
             : _FilterChoice.one(current);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: RadioGroup<_FilterChoice>(
-              groupValue: groupValue,
-              onChanged: (choice) {
-                if (choice == null) return;
-                Navigator.pop(sheetContext, choice);
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Radio<_FilterChoice>(
-                      value: _FilterChoice.all(),
-                    ),
-                    title: Text(localizations.allExercises),
-                    onTap: () =>
-                        Navigator.pop(sheetContext, const _FilterChoice.all()),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: RadioGroup<_FilterChoice>(
+            groupValue: groupValue,
+            onChanged: (choice) {
+              if (choice == null) return;
+              Navigator.pop(sheetContext, choice);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Radio<_FilterChoice>(
+                    value: _FilterChoice.all(),
                   ),
-                  const Divider(height: 1),
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: exercises.length,
-                      itemBuilder: (context, index) {
-                        final ex = exercises[index];
-                        final choice = _FilterChoice.one(ex.uuid);
-                        return ListTile(
-                          leading: Radio<_FilterChoice>(value: choice),
-                          title: Text(ex.name),
-                          onTap: () => Navigator.pop(sheetContext, choice),
-                        );
-                      },
-                    ),
+                  title: Text(localizations.allExercises),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, const _FilterChoice.all()),
+                ),
+                const Divider(height: 1),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: exercises.length,
+                    itemBuilder: (context, index) {
+                      final ex = exercises[index];
+                      final choice = _FilterChoice.one(ex.uuid);
+                      return ListTile(
+                        leading: Radio<_FilterChoice>(value: choice),
+                        title: Text(ex.name),
+                        onTap: () => Navigator.pop(sheetContext, choice),
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );

@@ -7,6 +7,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
 import '../models/exercise.dart' show Exercise, StationLocation;
@@ -262,10 +263,8 @@ class _StationsViewState extends State<StationsView> {
     AppLocalizations l,
     List<Exercise> exercises,
   ) async {
-    await showModalBottomSheet<void>(
+    await showRingdrillActionSheet<void>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
@@ -286,100 +285,98 @@ class _StationsViewState extends State<StationsView> {
                   color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                 );
 
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: Text(l.filterShowOnMap, style: sectionLabelStyle),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Text(l.filterShowOnMap, style: sectionLabelStyle),
+                  ),
+                  SwitchListTile(
+                    value: _showStations,
+                    title: Text(l.showStations),
+                    onChanged: (value) {
+                      setSheetState(() => _showStations = value);
+                      setState(() => _showStations = value);
+                    },
+                  ),
+                  SwitchListTile(
+                    value: _showRoleplays,
+                    title: Text(l.showRoleplays),
+                    onChanged: (value) {
+                      setSheetState(() => _showRoleplays = value);
+                      setState(() => _showRoleplays = value);
+                    },
+                  ),
+                  SwitchListTile(
+                    value: _showLabels,
+                    title: Text(l.showLabels),
+                    onChanged: (value) {
+                      setSheetState(() => _showLabels = value);
+                      setState(() => _showLabels = value);
+                    },
+                  ),
+                  const Divider(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: Text(
+                      l.exercisesShownOfTotal(
+                        exercises.length - _hiddenExercises.length,
+                        exercises.length,
+                      ),
+                      style: Theme.of(sheetContext).textTheme.titleMedium,
                     ),
-                    SwitchListTile(
-                      value: _showStations,
-                      title: Text(l.showStations),
-                      onChanged: (value) {
-                        setSheetState(() => _showStations = value);
-                        setState(() => _showStations = value);
+                  ),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: exercises.length,
+                      itemBuilder: (context, index) {
+                        final ex = exercises[index];
+                        final isVisible = !_hiddenExercises.contains(ex.uuid);
+                        return SwitchListTile(
+                          value: isVisible,
+                          title: Text(ex.name),
+                          onChanged: (value) {
+                            setSheetState(() {
+                              if (value) {
+                                _hiddenExercises.remove(ex.uuid);
+                              } else {
+                                _hiddenExercises.add(ex.uuid);
+                              }
+                            });
+                            apply();
+                          },
+                        );
                       },
                     ),
-                    SwitchListTile(
-                      value: _showRoleplays,
-                      title: Text(l.showRoleplays),
-                      onChanged: (value) {
-                        setSheetState(() => _showRoleplays = value);
-                        setState(() => _showRoleplays = value);
-                      },
-                    ),
-                    SwitchListTile(
-                      value: _showLabels,
-                      title: Text(l.showLabels),
-                      onChanged: (value) {
-                        setSheetState(() => _showLabels = value);
-                        setState(() => _showLabels = value);
-                      },
-                    ),
-                    const Divider(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                      child: Text(
-                        l.exercisesShownOfTotal(
-                          exercises.length - _hiddenExercises.length,
-                          exercises.length,
-                        ),
-                        style: Theme.of(sheetContext).textTheme.titleMedium,
+                  ),
+                  const Divider(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: activeDimensions == 0
+                            ? null
+                            : () {
+                                setSheetState(() {
+                                  _hiddenExercises.clear();
+                                  _showStations = true;
+                                  _showRoleplays = true;
+                                  _showLabels = true;
+                                });
+                                apply();
+                                Navigator.pop(sheetContext);
+                              },
+                        child: Text(l.showAll),
                       ),
                     ),
-                    Flexible(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: exercises.length,
-                        itemBuilder: (context, index) {
-                          final ex = exercises[index];
-                          final isVisible = !_hiddenExercises.contains(ex.uuid);
-                          return SwitchListTile(
-                            value: isVisible,
-                            title: Text(ex.name),
-                            onChanged: (value) {
-                              setSheetState(() {
-                                if (value) {
-                                  _hiddenExercises.remove(ex.uuid);
-                                } else {
-                                  _hiddenExercises.add(ex.uuid);
-                                }
-                              });
-                              apply();
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const Divider(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: activeDimensions == 0
-                              ? null
-                              : () {
-                                  setSheetState(() {
-                                    _hiddenExercises.clear();
-                                    _showStations = true;
-                                    _showRoleplays = true;
-                                    _showLabels = true;
-                                  });
-                                  apply();
-                                  Navigator.pop(sheetContext);
-                                },
-                          child: Text(l.showAll),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },

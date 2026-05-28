@@ -12,6 +12,7 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/station_code_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
@@ -424,52 +425,48 @@ class StationListController extends ScreenController {
     final localizations = AppLocalizations.of(context)!;
     final exercises = ProgramService().loadExercises();
     final current = filterExerciseUuid.value;
-    final selected = await showModalBottomSheet<_FilterChoice>(
+    final selected = await showRingdrillActionSheet<_FilterChoice>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
       builder: (sheetContext) {
         final groupValue = current == null
             ? const _FilterChoice.all()
             : _FilterChoice.one(current);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: RadioGroup<_FilterChoice>(
-              groupValue: groupValue,
-              onChanged: (choice) {
-                if (choice == null) return;
-                Navigator.pop(sheetContext, choice);
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Radio<_FilterChoice>(
-                      value: _FilterChoice.all(),
-                    ),
-                    title: Text(localizations.allExercises),
-                    onTap: () =>
-                        Navigator.pop(sheetContext, const _FilterChoice.all()),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: RadioGroup<_FilterChoice>(
+            groupValue: groupValue,
+            onChanged: (choice) {
+              if (choice == null) return;
+              Navigator.pop(sheetContext, choice);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Radio<_FilterChoice>(
+                    value: _FilterChoice.all(),
                   ),
-                  const Divider(height: 1),
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: exercises.length,
-                      itemBuilder: (context, index) {
-                        final ex = exercises[index];
-                        final choice = _FilterChoice.one(ex.uuid);
-                        return ListTile(
-                          leading: Radio<_FilterChoice>(value: choice),
-                          title: Text(ex.name),
-                          onTap: () => Navigator.pop(sheetContext, choice),
-                        );
-                      },
-                    ),
+                  title: Text(localizations.allExercises),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, const _FilterChoice.all()),
+                ),
+                const Divider(height: 1),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: exercises.length,
+                    itemBuilder: (context, index) {
+                      final ex = exercises[index];
+                      final choice = _FilterChoice.one(ex.uuid);
+                      return ListTile(
+                        leading: Radio<_FilterChoice>(value: choice),
+                        title: Text(ex.name),
+                        onTap: () => Navigator.pop(sheetContext, choice),
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );

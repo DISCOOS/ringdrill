@@ -16,6 +16,7 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 class StationExerciseScreen extends StatefulWidget {
@@ -494,12 +495,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   Future<void> _openCastPicker(RolePlay r) async {
     final localizations = AppLocalizations.of(context)!;
-    final actorUuid = await showModalBottomSheet<String>(
+    final actorUuid = await showRingdrillActionSheet<String>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => CastPickerSheet(rolePlay: r),
+      builder: (context) => CastPickerSheet(rolePlay: r),
     );
     if (actorUuid != null && actorUuid != r.actorUuid) {
       await _programService.saveRolePlay(

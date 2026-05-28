@@ -16,12 +16,9 @@ import 'package:ringdrill/views/actor_form_screen.dart';
 ///
 /// Usage:
 /// ```dart
-/// final uuid = await showModalBottomSheet<String>(
+/// final uuid = await showRingdrillActionSheet<String>(
 ///   context: context,
-///   isScrollControlled: true,
-///   useSafeArea: true,
-///   showDragHandle: true,
-///   builder: (_) => CastPickerSheet(rolePlay: rolePlay),
+///   builder: (context) => CastPickerSheet(rolePlay: rolePlay),
 /// );
 /// ```
 class CastPickerSheet extends StatefulWidget {
@@ -81,9 +78,9 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
 
   Future<void> _createAndSelect() async {
     final localizations = AppLocalizations.of(context)!;
-    final created = await Navigator.of(context).push<Actor>(
-      MaterialPageRoute(builder: (_) => const ActorFormScreen()),
-    );
+    final created = await Navigator.of(
+      context,
+    ).push<Actor>(MaterialPageRoute(builder: (_) => const ActorFormScreen()));
     if (created == null || !mounted) return;
     await _service.saveActor(localizations, created);
     if (!mounted) return;

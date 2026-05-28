@@ -3,6 +3,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/station_code_badge.dart';
 
 /// Static preview of a single station's position. Tapping the preview
@@ -78,11 +79,8 @@ Future<void> openStationMapSheet(
   if (position == null) {
     return Future.value();
   }
-  return showModalBottomSheet<void>(
+  return showRingdrillActionSheet<void>(
     context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    useSafeArea: true,
     builder: (sheetContext) {
       // FractionallySizedBox with heightFactor 1.0 fills the maximum
       // height the bottom sheet can take, which (with useSafeArea +
@@ -109,9 +107,13 @@ Future<void> openStationMapSheet(
                     id: 0,
                     label: station.name,
                     point: position,
-                    child: const Icon(Icons.place, color: Colors.green, size: 32),
+                    child: const Icon(
+                      Icons.place,
+                      color: Colors.green,
+                      size: 32,
+                    ),
                   ),
-              ],
+                ],
               ),
             ),
           ],
@@ -136,9 +138,7 @@ class _MapSheetHeader extends StatelessWidget {
     // fall back to just the station index if the lookup fails.
     final service = ProgramService();
     final exercises = service.loadExercises();
-    final exerciseIndex = exercises.indexWhere(
-      (e) => e.uuid == exercise.uuid,
-    );
+    final exerciseIndex = exercises.indexWhere((e) => e.uuid == exercise.uuid);
     final code = exerciseIndex < 0
         ? '${station.index + 1}'
         : '${exerciseIndex + 1}.${station.index + 1}';

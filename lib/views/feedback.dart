@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 
@@ -12,15 +13,9 @@ Future<void> showFeedbackSheet(
   BuildContext context, {
   Map<String, dynamic>? appState, // exerciseId, phase, station, etc.
 }) async {
-  await showModalBottomSheet(
+  await showRingdrillActionSheet<void>(
     context: context,
-    useSafeArea: true,
-    showDragHandle: true,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-    ),
-    builder: (_) => _FeedbackSheet(appContext: appState ?? const {}),
+    builder: (context) => _FeedbackSheet(appContext: appState ?? const {}),
   );
 }
 

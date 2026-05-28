@@ -7,6 +7,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/program_diff_widgets.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> showAddExercisesDialog(BuildContext context) {
@@ -28,14 +29,8 @@ Future<void> showAddExercisesDialog(BuildContext context) {
     );
   }
 
-  return showModalBottomSheet<void>(
+  return showRingdrillActionSheet<void>(
     context: context,
-    useSafeArea: true,
-    showDragHandle: true,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-    ),
     builder: (context) => SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.88,
       child: const _AddExercisesBody(),
