@@ -14,6 +14,7 @@ class PhasesWidget extends StatelessWidget {
     this.decoration,
     this.mainAxisAlignment = MainAxisAlignment.center,
     this.cellSize = 56.0,
+    this.fontSize = 18.0,
   });
 
   final int roundIndex;
@@ -29,6 +30,11 @@ class PhasesWidget extends StatelessWidget {
   /// DrillPlayer mini-bar.
   final double cellSize;
 
+  /// Font size for the phase time label. Default 18 matches the round-table
+  /// in PhaseTile; the DrillPlayer mini-bar overrides this so the time text
+  /// stops dominating the compact row.
+  final double fontSize;
+
   @override
   Widget build(BuildContext context) {
     final isCurrentRound = event.isRunning && roundIndex == event.currentRound;
@@ -36,7 +42,7 @@ class PhasesWidget extends StatelessWidget {
         isCurrentRound && phaseIndex == event.phase.index - 1;
     final isComplete = isCurrentRound && event.phase.index > phaseIndex + 1;
     final textStyle = TextStyle(
-      fontSize: 18,
+      fontSize: fontSize,
       fontWeight: isCurrentRound
           ? FontWeight.bold
           : FontWeight.normal, // Emphasize current round

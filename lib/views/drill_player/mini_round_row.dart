@@ -16,11 +16,7 @@ import 'package:ringdrill/views/vertical_divider_widget.dart';
 /// the row renders as [SizedBox.shrink] so [PhasesWidget] is never given an
 /// invalid roundIndex.
 class MiniRoundRow extends StatelessWidget {
-  const MiniRoundRow({
-    super.key,
-    required this.exercise,
-    required this.event,
-  });
+  const MiniRoundRow({super.key, required this.exercise, required this.event});
 
   final Exercise exercise;
   final ExerciseEvent event;
@@ -41,22 +37,42 @@ class MiniRoundRow extends StatelessWidget {
     final isCurrentRound =
         event.isRunning && event.currentRound < exercise.schedule.length;
 
+    // Mirrors PhaseTile's structure: title cell carries the rounded LEFT
+    // edge and the active-round fill, a single leading divider sits between
+    // title and phase 0, dividers between phases use the same isComplete
+    // rules, and there is NO trailing divider after phase 2 (the rounded
+    // RIGHT edge lives on PhasesWidget for phaseIndex == 2). The total
+    // rounds label is rendered outside this row so it doesn't inherit the
+    // round-row pill geometry.
     return SizedBox(
       height: 32,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              roundLabel,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+          // Title cell — rounded LEFT, filled blueAccent when running on
+          // the current round (same treatment as PhaseTile's title cell).
+          Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            decoration: BoxDecoration(
+              color: isCurrentRound ? Colors.blueAccent : Colors.transparent,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                bottomLeft: Radius.circular(4),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                roundLabel,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isCurrentRound ? Colors.white : null,
+                ),
               ),
             ),
           ),
-          // Leading divider: active when on current round
+          // Single leading divider between title and phase 0 (matches PhaseTile)
           VerticalDividerWidget(
             isCurrent: isCurrentRound,
             isComplete: isCurrentRound,
@@ -67,6 +83,7 @@ class MiniRoundRow extends StatelessWidget {
             roundIndex: event.currentRound,
             phaseIndex: 0,
             cellSize: 48,
+            fontSize: 14,
           ),
           // Divider between phase 0 and phase 1: complete when past execution
           VerticalDividerWidget(
@@ -79,6 +96,7 @@ class MiniRoundRow extends StatelessWidget {
             roundIndex: event.currentRound,
             phaseIndex: 1,
             cellSize: 48,
+            fontSize: 14,
           ),
           // Divider between phase 1 and phase 2: complete when past evaluation
           VerticalDividerWidget(
@@ -91,12 +109,10 @@ class MiniRoundRow extends StatelessWidget {
             roundIndex: event.currentRound,
             phaseIndex: 2,
             cellSize: 48,
+            fontSize: 14,
           ),
-          // Trailing divider before the total-rounds cell
-          VerticalDividerWidget(
-            isCurrent: isCurrentRound,
-            isComplete: isCurrentRound && 2 < event.phase.index - 1,
-          ),
+          // No trailing divider — phase 2 already carries the rounded RIGHT
+          // edge via PhasesWidget. Total-rounds label sits outside the pill.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
