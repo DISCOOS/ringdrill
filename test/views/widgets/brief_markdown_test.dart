@@ -116,41 +116,38 @@ void main() {
     });
   });
 
-  group('BriefMarkdown — inline code background', () {
-    testWidgets('inline code has code.background applied', (tester) async {
+  group('BriefMarkdown — inline code chip', () {
+    testWidgets('inline code renders as a padded chip with code.background', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWidget());
       await tester.pump();
 
-      // Find any RichText that contains the word "code" and check for the
-      // code background color in its text spans.
-      final codeFinder = find.byWidgetPredicate((widget) {
-        if (widget is! RichText) return false;
-        return widget.text.toPlainText().contains('code');
+      // Inline `code` is rendered via a WidgetSpan that wraps the text in a
+      // padded, rounded Container. Look for a Container whose decoration
+      // carries the BriefTheme code.background color.
+      final chipFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Container) return false;
+        final decoration = widget.decoration;
+        if (decoration is! BoxDecoration) return false;
+        return decoration.color == lightTheme.code.background;
       });
 
-      expect(codeFinder, findsWidgets);
-
-      bool foundCodeBackground = false;
-      void checkSpan(InlineSpan span) {
-        final style = span.style;
-        if (style?.backgroundColor == lightTheme.code.background) {
-          foundCodeBackground = true;
-        }
-        if (span is TextSpan && span.children != null) {
-          for (final child in span.children!) {
-            checkSpan(child);
-          }
-        }
-      }
-
-      for (final rt in tester.widgetList<RichText>(codeFinder)) {
-        checkSpan(rt.text);
-      }
-
       expect(
-        foundCodeBackground,
-        isTrue,
-        reason: 'Inline code should have code.background applied',
+        chipFinder,
+        findsAtLeastNWidgets(1),
+        reason: 'Inline code should render inside a Container chip with '
+            'code.background as the fill',
+      );
+
+      // The chip should also have a non-zero border radius so it reads as a
+      // chip rather than a flat fill.
+      final chip = tester.widget<Container>(chipFinder.first);
+      final decoration = chip.decoration as BoxDecoration;
+      expect(
+        decoration.borderRadius,
+        isNotNull,
+        reason: 'Code chip should have rounded corners',
       );
     });
   });

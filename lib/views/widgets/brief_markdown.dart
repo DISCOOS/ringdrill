@@ -32,6 +32,53 @@ class _BriefH3Config extends H3Config {
 }
 
 // ---------------------------------------------------------------------------
+// Inline-code chip
+// ---------------------------------------------------------------------------
+//
+// markdown_widget's default `CodeNode` renders inline `` `code` `` as a plain
+// `TextSpan` styled with `TextStyle.backgroundColor`, which paints a flat,
+// no-padding strip behind the glyphs.  At our subtle slate-100 / slate-800
+// background colors the strip is barely visible against the canvas.
+//
+// To get a proper docs-site code chip (rounded corners, horizontal padding)
+// we override the `code` span generator with one that emits a `WidgetSpan`
+// wrapping the text in a padded, rounded `Container`.
+
+class _CodeChipNode extends ElementNode {
+  _CodeChipNode(this.text, this.codeConfig);
+
+  final String text;
+  final CodeConfig codeConfig;
+
+  @override
+  TextStyle get style => codeConfig.style.merge(parentStyle);
+
+  @override
+  InlineSpan build() {
+    final merged = style;
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      baseline: TextBaseline.alphabetic,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          // Chip fill comes from the merged TextStyle's backgroundColor; the
+          // Container paints it with horizontal padding and a 6 px radius.
+          color: merged.backgroundColor ?? const Color(0xCCEFF1F3),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        // Strip backgroundColor on the Text so we don't double-paint the
+        // chip color behind the glyphs.
+        child: Text(
+          text,
+          style: merged.copyWith(backgroundColor: Colors.transparent),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // BriefMarkdown
 // ---------------------------------------------------------------------------
 
@@ -67,6 +114,18 @@ class BriefMarkdown extends StatelessWidget {
       data: data,
       tocController: tocController,
       config: _buildConfig(),
+      markdownGenerator: MarkdownGenerator(
+        generators: [
+          // Override default `<code>` rendering with the padded-chip
+          // generator defined above. Registering for the same tag replaces
+          // the package's built-in CodeNode generator cleanly.
+          SpanNodeGeneratorWithTag(
+            tag: MarkdownTag.code.name,
+            generator: (e, config, _) =>
+                _CodeChipNode(e.textContent, config.code),
+          ),
+        ],
+      ),
     );
   }
 
