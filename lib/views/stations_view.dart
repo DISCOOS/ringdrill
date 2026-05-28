@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
 import '../models/exercise.dart' show Exercise, StationLocation;
@@ -123,9 +122,9 @@ class _StationsViewState extends State<StationsView> {
     // incorrectly (e.g. when the user reactivates an exercise from the
     // program tab, which fires programActivated and rebuilds this view in
     // the background even though it is not visible).
-    final hasAnyStation = _programService
-        .loadExercises()
-        .any((e) => e.stations.isNotEmpty);
+    final hasAnyStation = _programService.loadExercises().any(
+      (e) => e.stations.isNotEmpty,
+    );
     if (!hasAnyStation && !_notified) {
       _notified = true;
       scheduleMicrotask(() {
@@ -159,10 +158,7 @@ class _StationsViewState extends State<StationsView> {
     final scheme = Theme.of(context).colorScheme;
 
     final stationSpecs = _showStations
-        ? markers.toMarkerSpecs(
-            clusterGroup: 'markers',
-            onTap: _onStationTap,
-          )
+        ? markers.toMarkerSpecs(clusterGroup: 'markers', onTap: _onStationTap)
         : <MapMarkerSpec<(String, int)>>[];
 
     final roleplays = _programService
@@ -170,22 +166,24 @@ class _StationsViewState extends State<StationsView> {
         .where((rp) => rp.position != null)
         .toList();
     final roleSpecs = _showRoleplays
-        ? roleplays.map((rp) => MapMarkerSpec<(String, int)>(
+        ? roleplays.map(
+            (rp) => MapMarkerSpec<(String, int)>(
               id: (rp.exerciseUuid, rp.index),
               label: rp.name,
               point: rp.position!,
               child: const RoleMarker(),
               clusterGroup: 'markers',
-              onTap: () => context.push('$routeRolePlays/${rp.uuid}'),
-            ))
+              onTap: () => ContextSheet.of(
+                context,
+              ).show(context, RoleSheetTarget(rolePlayUuid: rp.uuid)),
+            ),
+          )
         : <MapMarkerSpec<(String, int)>>[];
 
     final allSpecs = [...stationSpecs, ...roleSpecs];
 
-    final hasFilterActive = hiddenCount > 0 ||
-        !_showStations ||
-        !_showRoleplays ||
-        !_showLabels;
+    final hasFilterActive =
+        hiddenCount > 0 || !_showStations || !_showRoleplays || !_showLabels;
     final onlyExercisesFiltered =
         hiddenCount > 0 && _showStations && _showRoleplays && _showLabels;
 
@@ -240,10 +238,11 @@ class _StationsViewState extends State<StationsView> {
     AppLocalizations l,
     List<Exercise> allExercises,
   ) {
-    final activeDimensions = (_hiddenExercises.isNotEmpty ? 1 : 0)
-        + (!_showStations ? 1 : 0)
-        + (!_showRoleplays ? 1 : 0)
-        + (!_showLabels ? 1 : 0);
+    final activeDimensions =
+        (_hiddenExercises.isNotEmpty ? 1 : 0) +
+        (!_showStations ? 1 : 0) +
+        (!_showRoleplays ? 1 : 0) +
+        (!_showLabels ? 1 : 0);
     final fab = FloatingActionButton(
       heroTag: 'filter',
       tooltip: l.filter,
@@ -274,15 +273,17 @@ class _StationsViewState extends State<StationsView> {
               setState(() {});
             }
 
-            final activeDimensions = (_hiddenExercises.isNotEmpty ? 1 : 0)
-                + (!_showStations ? 1 : 0)
-                + (!_showRoleplays ? 1 : 0)
-                + (!_showLabels ? 1 : 0);
+            final activeDimensions =
+                (_hiddenExercises.isNotEmpty ? 1 : 0) +
+                (!_showStations ? 1 : 0) +
+                (!_showRoleplays ? 1 : 0) +
+                (!_showLabels ? 1 : 0);
 
-            final sectionLabelStyle =
-                Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
-                  color:
-                      Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+            final sectionLabelStyle = Theme.of(sheetContext)
+                .textTheme
+                .titleSmall
+                ?.copyWith(
+                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                 );
 
             return SafeArea(
@@ -337,8 +338,7 @@ class _StationsViewState extends State<StationsView> {
                         itemCount: exercises.length,
                         itemBuilder: (context, index) {
                           final ex = exercises[index];
-                          final isVisible =
-                              !_hiddenExercises.contains(ex.uuid);
+                          final isVisible = !_hiddenExercises.contains(ex.uuid);
                           return SwitchListTile(
                             value: isVisible,
                             title: Text(ex.name),
@@ -555,10 +555,7 @@ class _StationsViewState extends State<StationsView> {
     if (fit != null) {
       _mapController.fitCamera(fit);
     } else {
-      _mapController.move(
-        siblingPoints.first,
-        _mapController.camera.zoom,
-      );
+      _mapController.move(siblingPoints.first, _mapController.camera.zoom);
     }
   }
 
@@ -653,7 +650,13 @@ class _StationsViewState extends State<StationsView> {
                     );
                   },
             onTagTap: (_) {
-              context.push('$routeStations/$exerciseUuid/$stationIndex');
+              ContextSheet.of(context).show(
+                context,
+                StationSheetTarget(
+                  exerciseUuid: exerciseUuid,
+                  stationIndex: stationIndex,
+                ),
+              );
             },
           ),
         );
@@ -666,7 +669,10 @@ class _StationsViewState extends State<StationsView> {
   void _onStationTap((String, int) id) {
     final exercise = _programService.getExercise(id.$1);
     if (exercise != null) {
-      context.push('$routeStations/${exercise.uuid}/${id.$2}');
+      ContextSheet.of(context).show(
+        context,
+        StationSheetTarget(exerciseUuid: exercise.uuid, stationIndex: id.$2),
+      );
     }
   }
 

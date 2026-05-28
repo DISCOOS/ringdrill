@@ -3,6 +3,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
@@ -243,12 +244,20 @@ class _StationRow extends StatelessWidget {
     final stations = exercise.stations as List<dynamic>;
     if (stationIndex! >= stations.length) return Text(noStation);
     final station = stations[stationIndex!];
-    return Row(
-      children: [
-        const Icon(Icons.place, size: 18),
-        const SizedBox(width: 8),
-        Text('Post: ${station.name}'),
-      ],
+    return InkWell(
+      onTap: () => ContextSheet.of(context).replace(
+        StationSheetTarget(
+          exerciseUuid: exercise.uuid as String,
+          stationIndex: stationIndex!,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.place, size: 18),
+          const SizedBox(width: 8),
+          Text('Post: ${station.name}'),
+        ],
+      ),
     );
   }
 }

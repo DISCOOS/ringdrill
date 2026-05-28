@@ -85,7 +85,7 @@ class _Harness extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorObservers: [if (observer != null) observer!],
+      navigatorObservers: [?observer],
       home: ContextSheet(
         controller: controller,
         bodyBuilder: (context, target) {

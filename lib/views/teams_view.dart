@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 class TeamsView extends StatefulWidget {
   const TeamsView({super.key});
@@ -64,7 +63,18 @@ class _TeamsViewState extends State<TeamsView> {
               ),
               subtitle: Text(parts.join(' · ')),
               onTap: () {
-                context.push('$routeTeams/${t.index}');
+                final exercise = _programService
+                    .loadExercises()
+                    .where((e) => e.numberOfTeams > t.index)
+                    .firstOrNull;
+                if (exercise == null) return;
+                ContextSheet.of(context).show(
+                  context,
+                  TeamSheetTarget(
+                    exerciseUuid: exercise.uuid,
+                    teamIndex: t.index,
+                  ),
+                );
               },
             ),
           );

@@ -1,16 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/station_code_badge.dart';
@@ -140,10 +139,7 @@ class _StationListViewState extends State<StationListView> {
       body = Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(
-            localizations.noStationsYet,
-            textAlign: TextAlign.center,
-          ),
+          child: Text(localizations.noStationsYet, textAlign: TextAlign.center),
         ),
       );
     } else if (rows.isEmpty) {
@@ -162,9 +158,10 @@ class _StationListViewState extends State<StationListView> {
         itemCount: rows.length,
         itemBuilder: (context, index) {
           final (exerciseNumber, exercise, station) = rows[index];
-          final hasRoles = stationsWithRoles.contains(
-            (exercise.uuid, station.index),
-          );
+          final hasRoles = stationsWithRoles.contains((
+            exercise.uuid,
+            station.index,
+          ));
           return _buildRow(
             context,
             localizations,
@@ -204,10 +201,7 @@ class _StationListViewState extends State<StationListView> {
     );
   }
 
-  Widget _buildFilterFab(
-    BuildContext context,
-    AppLocalizations localizations,
-  ) {
+  Widget _buildFilterFab(BuildContext context, AppLocalizations localizations) {
     return ValueListenableBuilder<String?>(
       valueListenable: _controller.filterExerciseUuid,
       builder: (context, active, _) {
@@ -297,10 +291,7 @@ class _StationListViewState extends State<StationListView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (hasDescription) ...[
-          Text(
-            station.description!,
-            style: theme.textTheme.bodyMedium,
-          ),
+          Text(station.description!, style: theme.textTheme.bodyMedium),
           const SizedBox(height: 12),
         ],
         // Shared "Posisjon" label + pin/coords row + tappable mini-map
@@ -316,10 +307,7 @@ class _StationListViewState extends State<StationListView> {
           ),
         ),
         const SizedBox(height: 12),
-        StationRoleSummary(
-          exercise: exercise,
-          stationIndex: station.index,
-        ),
+        StationRoleSummary(exercise: exercise, stationIndex: station.index),
       ],
     );
   }
@@ -366,8 +354,12 @@ class _StationListViewState extends State<StationListView> {
   }
 
   Future<void> _openStation(Exercise exercise, Station station) async {
-    await context.push(
-      '$routeStations/${exercise.uuid}/${station.index}',
+    await ContextSheet.of(context).show(
+      context,
+      StationSheetTarget(
+        exerciseUuid: exercise.uuid,
+        stationIndex: station.index,
+      ),
     );
   }
 
@@ -457,10 +449,8 @@ class StationListController extends ScreenController {
                       value: _FilterChoice.all(),
                     ),
                     title: Text(localizations.allExercises),
-                    onTap: () => Navigator.pop(
-                      sheetContext,
-                      const _FilterChoice.all(),
-                    ),
+                    onTap: () =>
+                        Navigator.pop(sheetContext, const _FilterChoice.all()),
                   ),
                   const Divider(height: 1),
                   Flexible(
@@ -498,8 +488,7 @@ class _FilterChoice {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _FilterChoice && other.uuid == uuid;
+      identical(this, other) || other is _FilterChoice && other.uuid == uuid;
 
   @override
   int get hashCode => uuid.hashCode;

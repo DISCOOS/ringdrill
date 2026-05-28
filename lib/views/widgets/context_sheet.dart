@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
+import 'package:ringdrill/views/roleplay_screen.dart';
+import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/team_exercise_screen.dart';
 
 sealed class ContextSheetTarget {
   const ContextSheetTarget();
@@ -210,14 +214,14 @@ class _DefaultContextSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final body = switch (target) {
-      StationSheetTarget(:final exerciseUuid, :final stationIndex) => Center(
-        child: Text('Station $exerciseUuid/$stationIndex'),
+      StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
+        StationExerciseScreen(uuid: exerciseUuid, stationIndex: stationIndex),
+      TeamSheetTarget(:final exerciseUuid, :final teamIndex) => _teamBody(
+        exerciseUuid,
+        teamIndex,
       ),
-      TeamSheetTarget(:final exerciseUuid, :final teamIndex) => Center(
-        child: Text('Team $exerciseUuid/$teamIndex'),
-      ),
-      RoleSheetTarget(:final rolePlayUuid) => Center(
-        child: Text('Role $rolePlayUuid'),
+      RoleSheetTarget(:final rolePlayUuid) => RolePlayScreen(
+        rolePlayUuid: rolePlayUuid,
       ),
       BriefSheetTarget(
         :final exerciseUuid,
@@ -231,5 +235,13 @@ class _DefaultContextSheetBody extends StatelessWidget {
         ),
     };
     return body;
+  }
+
+  Widget _teamBody(String exerciseUuid, int teamIndex) {
+    final exercise = ProgramService().getExercise(exerciseUuid);
+    if (exercise == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return TeamExerciseScreen(teamIndex: teamIndex, exercise: exercise);
   }
 }

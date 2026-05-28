@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 /// Read-only summary of roles (markørordrer) attached to a station.
 ///
@@ -14,9 +13,9 @@ import 'package:ringdrill/views/app_routes.dart';
 /// can drop this into any vertical layout without a local empty-check.
 ///
 /// This widget is intentionally **non-interactive** except for the row-body
-/// tap that opens [RolePlayScreen] via the registered `/roleplays/:roleUuid`
-/// route. There is no cast affordance, no swipe-to-edit, and no overflow menu.
-/// Authoring stays on the dedicated Station screen and the Markører tab.
+/// tap that opens the role sheet. There is no cast affordance, no
+/// swipe-to-edit, and no overflow menu. Authoring stays on the dedicated
+/// Station screen and the Markører tab.
 class StationRoleSummary extends StatelessWidget {
   const StationRoleSummary({
     super.key,
@@ -35,8 +34,10 @@ class StationRoleSummary extends StatelessWidget {
     final service = ProgramService();
     final roles = service
         .loadRolePlays()
-        .where((r) =>
-            r.exerciseUuid == exercise.uuid && r.stationIndex == stationIndex)
+        .where(
+          (r) =>
+              r.exerciseUuid == exercise.uuid && r.stationIndex == stationIndex,
+        )
         .toList();
     if (roles.isEmpty) return const SizedBox.shrink();
     final actors = {for (final a in service.loadActors()) a.uuid: a};
@@ -59,8 +60,9 @@ class StationRoleSummary extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '(${roles.length})',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -85,8 +87,9 @@ class _RoleSummaryRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final titleText =
-        role.age != null ? '${role.name}, ${role.age}' : role.name;
+    final titleText = role.age != null
+        ? '${role.name}, ${role.age}'
+        : role.name;
     final subtitleText = actor != null
         ? localizations.castedByLine(actor!.realName)
         : localizations.noCastLine;
@@ -98,7 +101,9 @@ class _RoleSummaryRow extends StatelessWidget {
     );
 
     return InkWell(
-      onTap: () => context.push('$routeRolePlays/${role.uuid}'),
+      onTap: () => ContextSheet.of(
+        context,
+      ).show(context, RoleSheetTarget(rolePlayUuid: role.uuid)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
@@ -115,11 +120,7 @@ class _RoleSummaryRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    titleText,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(titleText, maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text(
                     subtitleText,
                     style: subtitleStyle,

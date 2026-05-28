@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 class TeamExerciseScreen extends StatefulWidget {
   const TeamExerciseScreen({
@@ -130,8 +129,14 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
               ),
             ),
             onTap: () {
-              context.pushReplacement(
-                '$routeProgram/${widget.exercise.uuid}/station/$index',
+              ContextSheet.of(context).replace(
+                StationSheetTarget(
+                  exerciseUuid: widget.exercise.uuid,
+                  stationIndex: widget.exercise.stationIndex(
+                    widget.teamIndex,
+                    index,
+                  ),
+                ),
               );
             },
           ),

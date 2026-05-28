@@ -1,18 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/role_code_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
@@ -85,10 +84,9 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       final exercise = exercises[i];
       if (filterUuid != null && exercise.uuid != filterUuid) continue;
       final exerciseNumber = i + 1;
-      final roles = rolePlays
-          .where((rp) => rp.exerciseUuid == exercise.uuid)
-          .toList()
-        ..sort((a, b) => a.index.compareTo(b.index));
+      final roles =
+          rolePlays.where((rp) => rp.exerciseUuid == exercise.uuid).toList()
+            ..sort((a, b) => a.index.compareTo(b.index));
       for (final rp in roles) {
         rows.add((exerciseNumber, exercise, rp));
       }
@@ -269,7 +267,13 @@ class _RolePlaysViewState extends State<RolePlaysView> {
             _expandedRowIndex = expanded ? null : rowIndex;
           });
         },
-        body: _buildExpandedBody(context, localizations, exercise, rolePlay, actor),
+        body: _buildExpandedBody(
+          context,
+          localizations,
+          exercise,
+          rolePlay,
+          actor,
+        ),
       ),
     );
   }
@@ -360,9 +364,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                     Text(actor.realName, style: theme.textTheme.bodyMedium),
                     if (actor.phone != null)
                       InkWell(
-                        onTap: () => launchUrl(
-                          Uri.parse('tel:${actor.phone}'),
-                        ),
+                        onTap: () => launchUrl(Uri.parse('tel:${actor.phone}')),
                         child: Text(
                           actor.phone!,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -454,7 +456,9 @@ class _RolePlaysViewState extends State<RolePlaysView> {
   }
 
   Future<void> _openRolePlay(RolePlay rolePlay) async {
-    await context.push('$routeRolePlays/${rolePlay.uuid}');
+    await ContextSheet.of(
+      context,
+    ).show(context, RoleSheetTarget(rolePlayUuid: rolePlay.uuid));
     if (mounted) setState(() {});
   }
 
@@ -462,10 +466,8 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     final localizations = AppLocalizations.of(context)!;
     final updated = await Navigator.of(context).push<RolePlay>(
       MaterialPageRoute(
-        builder: (_) => RolePlayFormScreen(
-          rolePlay: rolePlay,
-          exercise: exercise,
-        ),
+        builder: (_) =>
+            RolePlayFormScreen(rolePlay: rolePlay, exercise: exercise),
       ),
     );
     if (updated == null || !mounted) return;
@@ -548,7 +550,9 @@ class _ExpandedFieldBlock extends StatelessWidget {
 class RolePlaysController extends ScreenController {
   RolePlaysController();
 
-  final ValueNotifier<String?> filterExerciseUuid = ValueNotifier<String?>(null);
+  final ValueNotifier<String?> filterExerciseUuid = ValueNotifier<String?>(
+    null,
+  );
 
   void dispose() {
     filterExerciseUuid.dispose();
@@ -615,10 +619,8 @@ class RolePlaysController extends ScreenController {
                       value: _FilterChoice.all(),
                     ),
                     title: Text(localizations.allExercises),
-                    onTap: () => Navigator.pop(
-                      sheetContext,
-                      const _FilterChoice.all(),
-                    ),
+                    onTap: () =>
+                        Navigator.pop(sheetContext, const _FilterChoice.all()),
                   ),
                   const Divider(height: 1),
                   Flexible(
@@ -631,8 +633,7 @@ class RolePlaysController extends ScreenController {
                         return ListTile(
                           leading: Radio<_FilterChoice>(value: choice),
                           title: Text(ex.name),
-                          onTap: () =>
-                              Navigator.pop(sheetContext, choice),
+                          onTap: () => Navigator.pop(sheetContext, choice),
                         );
                       },
                     ),
@@ -657,8 +658,7 @@ class _FilterChoice {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _FilterChoice && other.uuid == uuid;
+      identical(this, other) || other is _FilterChoice && other.uuid == uuid;
 
   @override
   int get hashCode => uuid.hashCode;

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -10,13 +9,13 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 class StationExerciseScreen extends StatefulWidget {
@@ -286,8 +285,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
               onTap: none
                   ? null
                   : () {
-                      context.push(
-                        '$routeProgram/${_exercise.uuid}/team/$teamIndex',
+                      ContextSheet.of(context).replace(
+                        TeamSheetTarget(
+                          exerciseUuid: _exercise.uuid,
+                          teamIndex: teamIndex,
+                        ),
                       );
                     },
               child: Padding(
@@ -318,9 +320,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final localizations = AppLocalizations.of(context)!;
     final roles = _programService
         .loadRolePlays()
-        .where((r) =>
-            r.exerciseUuid == _exercise.uuid &&
-            r.stationIndex == widget.stationIndex)
+        .where(
+          (r) =>
+              r.exerciseUuid == _exercise.uuid &&
+              r.stationIndex == widget.stationIndex,
+        )
         .toList();
     return Card(
       elevation: 1,
@@ -399,10 +403,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         final updated = await Navigator.push<RolePlay>(
           context,
           MaterialPageRoute(
-            builder: (_) => RolePlayFormScreen(
-              rolePlay: r,
-              exercise: _exercise,
-            ),
+            builder: (_) =>
+                RolePlayFormScreen(rolePlay: r, exercise: _exercise),
           ),
         );
         if (updated != null) {
@@ -412,7 +414,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         return false;
       },
       child: InkWell(
-        onTap: () => context.push('$routeRolePlays/${r.uuid}'),
+        onTap: () => ContextSheet.of(
+          context,
+        ).replace(RoleSheetTarget(rolePlayUuid: r.uuid)),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
@@ -478,10 +482,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final saved = await Navigator.push<RolePlay>(
       context,
       MaterialPageRoute(
-        builder: (_) => RolePlayFormScreen(
-          rolePlay: draft,
-          exercise: _exercise,
-        ),
+        builder: (_) =>
+            RolePlayFormScreen(rolePlay: draft, exercise: _exercise),
       ),
     );
     if (saved != null) {

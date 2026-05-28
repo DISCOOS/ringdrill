@@ -16,6 +16,7 @@ import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
@@ -253,8 +254,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 icon: const Icon(Icons.menu_book),
                 padding: const EdgeInsets.all(8.0),
                 tooltip: localizations.briefAction,
-                onPressed: () =>
-                    context.push('$routeBrief/${widget.uuid}'),
+                onPressed: () => context.push('$routeBrief/${widget.uuid}'),
               ),
 
               // Notification re-show. `_promptShowNotification` is only
@@ -920,17 +920,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (description != null && description.isNotEmpty)
-            // Tap the description to open the full StationExerciseScreen
-            // for this station. Same destination + go_router pattern
-            // (`/stations/:uuid/:stationIndex`) used by stations_view.dart
-            // and station_list_view.dart, so deep-link state and back
-            // navigation stay consistent across entry points. InkWell is
-            // used (rather than a plain GestureDetector) so the description
-            // gets a Material ripple, which doubles as the affordance hint
-            // that the text is interactive.
             InkWell(
-              onTap: () => context.push(
-                '$routeStations/${widget.uuid}/$stationIndex',
+              onTap: () => ContextSheet.of(context).show(
+                context,
+                StationSheetTarget(
+                  exerciseUuid: widget.uuid,
+                  stationIndex: stationIndex,
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
@@ -1145,8 +1141,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               child: InkWell(
                 onTap: none
                     ? null
-                    : () => context.push(
-                        '$routeStations/${widget.uuid}/$stationIndex',
+                    : () => ContextSheet.of(context).show(
+                        context,
+                        StationSheetTarget(
+                          exerciseUuid: widget.uuid,
+                          stationIndex: stationIndex,
+                        ),
                       ),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
