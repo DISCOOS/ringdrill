@@ -9,6 +9,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -103,27 +104,29 @@ Map<String, Object> _buildPrefs() {
   };
 }
 
-/// Wraps [StationRoleSummary] in a GoRouter so [context.push] calls work.
+/// Wraps [StationRoleSummary] in a GoRouter + [ContextSheet] so that
+/// [ContextSheet.of] resolves and [.show] can open a sheet whose body builder
+/// renders the same text the test expects.
 Widget _buildWidget({required int stationIndex}) {
+  final controller = ContextSheetController();
   final ex = _exercise();
   final router = GoRouter(
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => Scaffold(
-          body: StationRoleSummary(
-            exercise: ex,
-            stationIndex: stationIndex,
+        builder: (context, state) => ContextSheet(
+          controller: controller,
+          // Minimal body builder: renders the role-uuid text the test asserts on.
+          bodyBuilder: (ctx, target) => switch (target) {
+            RoleSheetTarget(:final rolePlayUuid) => Scaffold(
+                body: Center(child: Text('RolePlay $rolePlayUuid')),
+              ),
+            _ => const SizedBox.shrink(),
+          },
+          child: Scaffold(
+            body: StationRoleSummary(exercise: ex, stationIndex: stationIndex),
           ),
         ),
-        routes: [
-          GoRoute(
-            path: 'roleplays/:roleUuid',
-            builder: (context, state) => Scaffold(
-              body: Text('RolePlay ${state.pathParameters['roleUuid']}'),
-            ),
-          ),
-        ],
       ),
     ],
   );

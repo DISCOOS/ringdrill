@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
@@ -125,6 +126,18 @@ void main() {
   });
 
   group('BriefMarkdown — inline code chip', () {
+    setUp(() {
+      // Clipboard.setData goes through SystemChannels.platform; provide a
+      // no-op mock so the method channel resolves in tests.
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (_) async => null);
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
     testWidgets('inline code renders as a padded chip with code.background', (
       tester,
     ) async {
@@ -185,7 +198,9 @@ void main() {
       });
 
       await tester.tap(chipFinder.first);
-      await tester.pump();
+      // pumpAndSettle lets the async Clipboard.setData future resolve and the
+      // SnackBar animation complete before asserting.
+      await tester.pumpAndSettle();
 
       // The snackbar message is the localized briefCodeCopied — "Copied"
       // in English.
