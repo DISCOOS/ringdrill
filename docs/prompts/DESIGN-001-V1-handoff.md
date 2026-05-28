@@ -98,3 +98,29 @@ V1 scope per `docs/design/exercise-player.md`:
 ## Followup-01 complete (86f2bf1)
 - Sheet auto-closes on live transition; mini-bar tickers per second; progress moved below row; mini-bar tinted with LiveAccent; tests grouped.
 - V2 backlog unchanged. See DESIGN-001 §"V1 scope" parked list.
+
+---
+
+## Followup-02 Step 1: ExerciseNumberBadge (9f78397)
+- State established: `ExerciseNumberBadge` widget added as sibling to `StationCodeBadge`.
+- Next step inputs: `MiniRoundRow` widget.
+
+## Followup-02 Step 2: MiniRoundRow (82cfcb0)
+- State established: `MiniRoundRow` renders `R{n}/{total} | start0 | start1 | start2` with active-cell blue highlight.
+- Next step inputs: rebuilt DrillMiniPlayer using new widgets.
+
+## Followup-02 Step 3: DrillMiniPlayer rebuilt (958d373)
+- State established: mini-bar shows badge + mini-round-row + countdown + play square; exercise name, phase chip, and round text removed.
+- Next step inputs: floating shape in MainScreen.
+
+## Followup-02 Step 4: floating shape (28960ed)
+- State established: mini-bar wrapped in `Padding(fromLTRB(8,0,8,4), ClipRRect(r=12, ...))`; ExerciseService subscription in MainScreen rebuilds chrome on start/stop.
+- Next step inputs: test coverage.
+
+## Followup-02 Step 5: tests (3377d77)
+- State established: `mini_round_row_test.dart` and `exercise_number_badge_test.dart` added; `drill_mini_player_test.dart` updated for new layout.
+
+## Followup-02 complete (3377d77)
+- Mini-bar redesigned: exercise-number badge + mini round-row + countdown + phase-tinted play square. Rounded floating shape above navbar.
+- Removed from mini-bar: phase chip, "Runde X/Y" text, exercise name, phase-changing icon.
+- V2 backlog unchanged. See DESIGN-001 §"V1 scope" parked list.
