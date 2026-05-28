@@ -54,8 +54,8 @@ class RoleMiniMap extends StatelessWidget {
   Future<void> _openMapSheet(BuildContext context) {
     return showRingdrillActionSheet<void>(
       context: context,
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 1.0,
+      builder: (context) => SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.88,
         child: MapView(
           layers: MapConfig.layers,
           withZoom: true,

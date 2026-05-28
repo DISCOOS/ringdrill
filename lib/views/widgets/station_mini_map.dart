@@ -82,11 +82,10 @@ Future<void> openStationMapSheet(
   return showRingdrillActionSheet<void>(
     context: context,
     builder: (sheetContext) {
-      // FractionallySizedBox with heightFactor 1.0 fills the maximum
-      // height the bottom sheet can take, which (with useSafeArea +
-      // isScrollControlled) is the screen minus the system insets.
-      return FractionallySizedBox(
-        heightFactor: 1.0,
+      // The shared action-sheet shell is wrap-content, so this map sheet
+      // needs an explicit finite height before the Expanded MapView lays out.
+      return SizedBox(
+        height: MediaQuery.sizeOf(sheetContext).height * 0.88,
         child: Column(
           mainAxisSize: MainAxisSize.max,
           children: [

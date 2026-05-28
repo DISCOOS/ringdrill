@@ -578,9 +578,9 @@ class RolePlaysController extends ScreenController {
   Future<void> _openCastRoster(BuildContext context) async {
     await showRingdrillActionSheet<void>(
       context: context,
-      builder: (context) => const FractionallySizedBox(
-        heightFactor: 1.0,
-        child: CastRosterSheet(),
+      builder: (context) => SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.88,
+        child: const CastRosterSheet(),
       ),
     );
   }
