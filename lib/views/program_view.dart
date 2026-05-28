@@ -14,6 +14,7 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 
@@ -125,8 +126,9 @@ class _ProgramViewState extends State<ProgramView> {
                     localizations: localizations,
                     markers: markers,
                     liveEvent: _liveEvent,
-                    onOpen: () =>
-                        context.push('$routeProgram/${exercise.uuid}'),
+                    onOpen: () => ContextSheet.of(
+                      context,
+                    ).show(context, ExerciseSheetTarget(exerciseUuid: exercise.uuid)),
                   ),
                 );
               },

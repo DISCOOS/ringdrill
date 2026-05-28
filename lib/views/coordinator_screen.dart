@@ -17,6 +17,7 @@ import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
@@ -243,9 +244,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             ExerciseEvent.pending(_programService.getExercise(widget.uuid)!);
         return Scaffold(
           appBar: AppBar(
-            title: Text(
-              _exercise!.name,
-            ), // Dynamic title shows the exercise's name
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+              tooltip: localizations.briefClose,
+            ),
+            title: SheetTitle(primary: _exercise!.name),
             actions: rdAppBarActions([
               // Open Brief — scoped to this exercise. Always visible
               // because the brief is the coordinator's reading material

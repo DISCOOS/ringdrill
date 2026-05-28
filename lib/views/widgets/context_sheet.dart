@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
+import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/team_exercise_screen.dart';
@@ -10,6 +11,12 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
 sealed class ContextSheetTarget {
   const ContextSheetTarget();
+}
+
+class ExerciseSheetTarget extends ContextSheetTarget {
+  const ExerciseSheetTarget({required this.exerciseUuid});
+
+  final String exerciseUuid;
 }
 
 class StationSheetTarget extends ContextSheetTarget {
@@ -187,6 +194,9 @@ class _DefaultContextSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final body = switch (target) {
+      ExerciseSheetTarget(:final exerciseUuid) => CoordinatorScreen(
+        uuid: exerciseUuid,
+      ),
       StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
         StationExerciseScreen(uuid: exerciseUuid, stationIndex: stationIndex),
       TeamSheetTarget(:final exerciseUuid, :final teamIndex) => _teamBody(

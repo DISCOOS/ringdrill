@@ -112,6 +112,16 @@ On wide screens (`_wideScreen`, ≥ 600 px), the sheet is centred over the tab a
 * Good: No navigation.
 * Bad: Does not fit the dense detail content (map, roster, actions).
 
+## Revisions
+
+### 2026-05-28 (post-implementation)
+
+The initial decision kept `ProgramView` → `CoordinatorScreen` as a routed push, on the rationale that `CoordinatorScreen` is a working surface rather than a contextual lookup. In practice that left the Program tab as the one place in the app where a list tap pushed a full route, which read as inconsistent next to every other detail surface and reintroduced the back-stack mental model the ADR set out to remove.
+
+`ExerciseSheetTarget(exerciseUuid)` is added to the sealed `ContextSheetTarget`. `ProgramView` taps go through `ContextSheet.of(context).show(ExerciseSheetTarget(...))`, the deep-link route `/program/:exerciseId` resolves through the same `_ContextSheetDeepLinkLauncher` shim that the other detail routes already use, and `CoordinatorScreen`'s AppBar gains a `Icons.close` leading + `SheetTitle` title in line with the other viewer-sheet bodies.
+
+The navigation grammar tightens to: tabs + sheets + forms + the future fullscreen player. Push/back is reserved for forms (commit/cancel semantics) and the running-drill player (DESIGN-001, opens fullscreen when the coordinator taps play). The coordinator screen no longer doubles as the "running drill" surface — that role moves to the dedicated player.
+
 ## Links
 
 * Related ADRs:
