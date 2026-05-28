@@ -1,6 +1,6 @@
 You are working in the RingDrill repository. This is follow-up 01 on the DESIGN-001 V1 implementation that landed in commits `4d5b98b..468a9c1`. The V1 spec is locked at `docs/design/exercise-player.md` §"V1 scope". The implementation prompt that produced the current state is `docs/prompts/DESIGN-001-V1-implementation-prompt.md`. Read both before you start.
 
-Smoke-testing V1 surfaced three real gaps and one cleanup item. This follow-up closes all four. None of them require revisiting DESIGN-001's V2+ parked list.
+Smoke-testing V1 surfaced four real gaps and one cleanup item. This follow-up closes all five. None of them require revisiting DESIGN-001's V2+ parked list.
 
 ## Gaps to close
 
@@ -26,7 +26,16 @@ The user wants a true `mm:ss` countdown that ticks every second, Spotify-style. 
 
 Today the 3 px progress strip sits *above* the mini-bar row (Column child #0). On Spotify the progress bar sits at the *bottom* of the now-playing strip, hugging the navigation. Move it below the row so it lines up with the top edge of `NavigationBar`.
 
-### Gap 4 — Sheet test path is inconsistent
+### Gap 4 — Mini-bar background blends into the list above it
+
+The live `ExerciseCard` in `ProgramView` uses `LiveAccent.of(context, isLive: true)` for its `Card.color`, which resolves to `Theme.of(context).colorScheme.primaryContainer`. The mini-bar today uses the default `Material` colour and disappears visually into the scaffold background under the list, with no edge to read against.
+
+The user wants the mini-bar to pick up the same `LiveAccent` background as the live `ExerciseCard`. Two benefits:
+
+- The mini-bar and the live card read as one continuous "live" surface, separated only by the gap below the list (where the scaffold background shows through), which gives the mini-bar a natural edge.
+- The LiveAccent token already exists per [[feedback-design-tokens-pattern]]. Don't introduce a parallel colour constant.
+
+### Gap 5 — Sheet test path is inconsistent
 
 `drill_mini_player_test.dart` lives at `test/views/drill_player/drill_mini_player_test.dart` per the V1 prompt, but `drill_player_sheet_test.dart` landed at `test/views/widgets/drill_player_sheet_test.dart`. Both files cover the same feature; group them.
 
@@ -145,9 +154,29 @@ No test changes required (the existing tests do not assert ordering).
 
 Commit: `refactor(player): place mini-bar progress strip below the row, Spotify-style`.
 
-### Step 4. **test**: group DrillPlayer tests under `test/views/drill_player/`
+### Step 4. **player**: apply `LiveAccent` background to the mini-bar
 
-Close Gap 4.
+Close Gap 4 by tinting the mini-bar's surface with the same `colorScheme.primaryContainer` the live `ExerciseCard` already uses, so the two surfaces read together.
+
+**Files touched:**
+
+- `lib/views/drill_player/drill_mini_player.dart`:
+  - At the top of `build`, derive the live accent: `final accent = LiveAccent.of(context, isLive: true);`. Import `package:ringdrill/views/widgets/live_accent.dart`. The mini-bar is by construction only visible when an exercise is live, so the `isLive: true` literal is correct here — we are not branching on `ExerciseService` state, we are saying "this widget represents a live exercise".
+  - Wrap the returned `Column` in a `Material(color: accent.background, child: ...)`. `Material` rather than `Container` so the existing `InkWell` keeps its ripple. Do not also apply `accent.shape` — the mini-bar is a strip, not a card, and the bordered shape from `LiveAccent` is meant for `Card.shape`.
+  - Replace the literal `Colors.white` text colours and `Theme.of(context).textTheme.bodyMedium`-style defaults on the title, round indicator and countdown with `accent.foreground` (i.e. `colorScheme.onPrimaryContainer`). Specifically:
+    - Exercise name `Text` style: add `color: accent.foreground`.
+    - Round indicator `Text` style: add `color: accent.foreground`.
+    - Countdown `Text` style: add `color: accent.foreground`.
+  - **Do not** repaint the 36×36 phase-icon square or the phase chip. They keep their phase colours (`colorForPhase`) and white icon/text. The contrast between the phase-coloured glyphs and the `primaryContainer` background is the point.
+  - **Do not** repaint the progress strip. It keeps the phase colour so phase signal stays readable, the same way the live card's progress widgets keep their phase fills.
+
+No test changes required. The existing tests don't assert background colour.
+
+Commit: `feat(player): tint mini-bar with LiveAccent background`.
+
+### Step 5. **test**: group DrillPlayer tests under `test/views/drill_player/`
+
+Close Gap 5.
 
 **Files touched:**
 
@@ -158,17 +187,18 @@ Commit: `test(player): move sheet test next to mini-player test for consistency`
 
 ## When the loop is done
 
-After Step 4 lands clean:
+After Step 5 lands clean:
 
-1. Re-check the four gaps manually on a running app (Android device or emulator for the immersive-mode aspects, plus iOS simulator for parity):
+1. Re-check the five gaps manually on a running app (Android device or emulator for the immersive-mode aspects, plus iOS simulator for parity):
    - Start a non-live exercise from inside its ContextSheet → sheet auto-closes → mini-bar appears.
    - Mini-bar countdown reads `mm:ss` and ticks every second.
    - Progress strip is below the mini-bar row, touching the navbar's top edge.
+   - Mini-bar background is `primaryContainer`, matching the live `ExerciseCard` in the list above so the two surfaces read together with the scaffold gap forming the edge.
    - `flutter test test/views/drill_player/` runs both test files green.
 2. Append a final entry to `docs/prompts/DESIGN-001-V1-handoff.md`:
    ```
    ## Followup-01 complete (<final commit sha>)
-   - Sheet auto-closes on live transition; mini-bar tickers per second; progress moved below row; tests grouped.
+   - Sheet auto-closes on live transition; mini-bar tickers per second; progress moved below row; mini-bar tinted with LiveAccent; tests grouped.
    - V2 backlog unchanged. See DESIGN-001 §"V1 scope" parked list.
    ```
 3. Stop. Do not start V2 work in the same loop.
@@ -186,4 +216,4 @@ Everything in DESIGN-001 §"V1 scope" parked list remains parked. In particular 
 - `ExerciseService` event cadence (still per minute).
 - The deep-link path through `_ContextSheetDeepLinkLauncher` — the auto-close from Step 1 still applies there because it lives in the body, not the entry point.
 
-If a fifth gap surfaces while you're working, follow [[feedback-new-findings-own-prompt]]: split it into a new numbered follow-up (`DESIGN-001-V1-followup-02-...`) rather than stacking it on this one.
+If a sixth gap surfaces while you're working, follow [[feedback-new-findings-own-prompt]]: split it into a new numbered follow-up (`DESIGN-001-V1-followup-02-...`) rather than stacking it on this one.
