@@ -47,7 +47,7 @@ Chosen option: **Option A**.
 `showRingdrillViewerSheet<T>` — full-height, draggable, closable:
 
 * `DraggableScrollableSheet(initialChildSize: 0.92, minChildSize: 0.5, maxChildSize: 1.0, expand: false)`.
-* Optional slim header row with title + close-X (`Icons.close`). Close-X always present; title optional.
+* No header row at the helper level. The body owns its own AppBar with title, actions and the close affordance. See Revisions below.
 * Body builder receives the `ScrollController` from the draggable sheet.
 * Wide-screen: body centred and constrained to `maxWidth: 720` when `MediaQuery.sizeOf(context).width >= 600`.
 
@@ -74,7 +74,15 @@ Chosen option: **Option A**.
 * Bad: Map sheets and the cast roster, which today rely on `FractionallySizedBox(heightFactor: 1.0)` to fill, move to the viewer variant — slightly different gesture model (draggable) than today.
 * Bad: One-time touch of every sheet call site (≈ 15 files).
 
-## Links
+## Revisions
+
+### 2026-05-28 (post-implementation)
+
+The initial viewer variant rendered a slim header row (title + actions + close-X) on top of the body. Every body that the viewer surfaces (`StationExerciseScreen`, `TeamExerciseScreen`, `RolePlayScreen`, `BriefSheetBody`) already has its own AppBar with title, audience selector and action icons, plus a leading `Icons.arrow_back`. The result was two stacked headers and two close-ish affordances (X in the helper header, back-arrow in the body's AppBar) for the same action.
+
+Resolution: the helper drops its header row entirely. The viewer variant supplies only the drag-handle pill and the body. Each body's AppBar replaces its leading `Icons.arrow_back` with `Icons.close` so the dismiss affordance lives where the title and actions already live. "Back" carries no meaning inside a modal sheet anyway — there is no previous route to return to, only the sheet to close.
+
+`showRingdrillViewerSheet` consequently loses its `title`, `actions` and `onClose` parameters. They were never needed once the body owns the chrome.
 
 * Related ADRs:
   * [ADR-0026](./0026-sheet-based-context-navigation.md) — viewer variant is the existing ContextSheet host, formalised here.
