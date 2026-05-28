@@ -252,7 +252,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (MasterDetailScope.maybeOf(context) != null) {
+                  ContextSheet.of(context).close();
+                } else {
+                  Navigator.pop(context);
+                }
+              },
               tooltip: localizations.briefClose,
             ),
             title: SheetTitle(primary: _exercise!.name),
