@@ -294,6 +294,14 @@ No new ARB keys. The label "Innholdsfortegnelse" already exists in the template;
 * Good: Zero work.
 * Bad: Does not meet the reading-surface goal that motivated DESIGN-004 in the first place.
 
+## Revisions
+
+### 2026-05-28
+
+- **Reverses the "demote `#### Tid` to inline bold" decision** from the initial implementation. The sidebar TOC is now filtered to H2+H3 entries by a `level > 3` short-circuit in `BriefScreen`'s `TocWidget.itemBuilder`; `####` headings are restored throughout the template for all station-level and exercise-level metadata fields.
+- **`_durationLabel` split into three focused helpers**: `_exerciseTimeLabel` (clock-time span "HH:MM–HH:MM"), `_exerciseDurationLabel` (total duration with per-round breakdown, e.g. "2 timer (60 min pr oppdrag)"), `_stationDurationLabel` (per-round with phase breakdown "N min (e | v | r)"). "Tid" = clock-time; "Varighet" = duration — the two concepts no longer share a helper.
+- **Exercise-level markdown table removed** in favour of standalone `####` section headings per field. The `setupLabel <br>`-in-table escaping bug is dissolved as a consequence. `Program.beforeRoundMd` (ADR-0022 shape) is added to hold the "Før hver post" prose injected into the Organisering block.
+
 ## Links
 
 * Related ADRs:
@@ -308,7 +316,7 @@ No new ARB keys. The label "Innholdsfortegnelse" already exists in the template;
   * `lib/views/widgets/live_accent.dart` — pattern reference.
   * `lib/views/brief_screen.dart` — adopts `BriefTheme`/`BriefMarkdown`, gains slim app bar and reading-column layout.
   * `lib/services/brief/brief_renderer.dart` — gains optional `wideTocSidebar` parameter.
-  * `assets/templates/ringdrill-standard-v1.nb.md.mustache` — gates the in-doc TOC, demotes `#### Tid` to inline bold.
+  * `assets/templates/ringdrill-standard-v1.nb.md.mustache` — gates the in-doc TOC; all metadata fields use `####` headings; sidebar TOC filtered to H2+H3 in `BriefScreen`.
 * External references:
   * [Zudoku docs](https://zudoku.dev) — typography and palette reference for the dark mode and overall feel.
   * [Mintlify](https://mintlify.com) — secondary reference for the slim app bar and sidebar style.

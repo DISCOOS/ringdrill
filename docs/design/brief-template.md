@@ -114,20 +114,21 @@ Columns in the tables below:
 | Table of contents                | derived from exercises + stations     | derived  |
 | Intro ("Generelt om spill...")   | `program.briefIntroMd` (new)          | **new**  |
 | Comms ("Talegrupper")            | `program.commsMd` (new)               | **new**  |
+| "Før hver post" prose            | `program.beforeRoundMd` (new)         | **new**  |
 
-`briefIntroMd` and `commsMd` are program-level because the same intro and channels apply to every exercise.
+`briefIntroMd` and `commsMd` are program-level because the same intro and channels apply to every exercise. `beforeRoundMd` is injected into the Organisering block of every exercise that renders via the `nb` template.
 
 ### Exercise
 
 | Booklet field                  | Source                                                                                       | Status   |
 |--------------------------------|----------------------------------------------------------------------------------------------|----------|
 | Title                          | `exercise.name`                                                                              | existing |
-| Tid (duration)                 | derived                                                                                      | derived  |
+| Tid (clock-time span)          | derived via `_exerciseTimeLabel` (`startTime`–`endTime`)                                     | derived  |
+| Varighet (duration)            | derived via `_exerciseDurationLabel` (`numberOfRounds`, phase times)                         | derived  |
 | Metode (method)                | `exercise.methodMd` (new)                                                                    | **new**  |
 | Læringsmål (learning goals)    | `exercise.learningGoalsMd` (new)                                                             | **new**  |
 | Øvingsmomenter (training focus)| `exercise.trainingFocusMd` (new)                                                             | **new**  |
-| Organisering (ring config)     | derived (`numberOfRounds`, `executionTime`, `evaluationTime`, `rotationTime`, `numberOfStations`, `numberOfTeams`) | derived |
-| Organisering (schedule)        | derived (`schedule`)                                                                         | derived  |
+| Organisering                   | derived via `_organisationBlock` (`numberOfRounds`, phase times, `schedule`, `program.beforeRoundMd`) | derived |
 | Ordreformat (order format)     | `exercise.orderFormatMd` (new)                                                               | **new**  |
 | Tips til gjennomføring         | `exercise.executionTipsMd` (new)                                                             | **new**  |
 | Samband (comms)                | `exercise.commsMd` (new), falls back to `program.commsMd`                                    | **new**  |
@@ -180,6 +181,7 @@ The existing fields `behavior`, `background` and `actor.notes` migrate from JSON
 // Program
 @JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd;
 @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd;
+@JsonKey(includeFromJson: false, includeToJson: false) String? beforeRoundMd; // new
 
 // Exercise
 @JsonKey(includeFromJson: false, includeToJson: false) String? methodMd;
@@ -527,10 +529,11 @@ The sidebar only exists on wide screens. On narrow screens there is no sidebar a
 | `## `          | "Generelt om spill og øvingsledelse" (when present) | yes               |
 | `## `          | "Talegrupper" (when present)                        | yes               |
 | `### `         | station heading                                     | yes               |
-| `#### `        | "Markørspill", "Situasjon", "Oppdrag", "Samband", "Administrasjon og forsyninger", "Kritiske spørsmål", "Forslag til svar..." | yes (under station) |
-| inline bold    | "Tid", "Utstyrsbehov" (one-liner metadata)          | no                |
+| `#### `        | exercise-level: "Tid", "Varighet", "Metode", "Læringsmål", "Øvingsmomenter", "Organisering", "Ordreformat", "Tips", "Samband" | no (filtered by `level > 3` in `TocWidget.itemBuilder`) |
+| `#### `        | station-level: "Varighet", "Utstyrsbehov", "Markørspill", "Situasjon", "Oppdrag", "Samband", "Administrasjon og forsyninger", "Kritiske spørsmål", "Forslag til svar..." | no (filtered by `level > 3`) |
+| inline bold    | subsections within Organisering block ("Ringløype", "Rullering (klokkeslett)") | no |
 
-`#### Tid` becomes `**Tid:** {{durationLabel}}`. `#### Utstyrsbehov` keeps the heading when the field is multi-paragraph, but the line that follows is no longer a separate heading. The `_renderer_` helpers table earlier in this document is unchanged; only the template emission shape changes.
+All station-level and exercise-level metadata uses `####` headings. The sidebar TOC filters them out via a `level > 3` short-circuit in `BriefScreen`'s `TocWidget.itemBuilder`, so only H2 (exercise) and H3 (station) entries appear in the outline. This was introduced in the ADR-0023 follow-up (2026-05-28) after the initial implementation demoted headings to inline bold.
 
 ### Code spans
 
@@ -566,7 +569,7 @@ Each stage is a separate PR.
 
 **Stage 2 — Template engine.** Add a `mustache_template` dependency. Register `ringdrill-standard-v1` in `TemplateRegistry`. Add `BriefRenderer` under `lib/services/`. Unit-test against a fixture program.
 
-**Stage 3 — Brief route.** Add `/brief/...` routes. The route opens the brief as a fullscreen modal bottom sheet on first frame and pops itself when the sheet closes (see Presentation above). Sheet content uses `markdown_widget` wrapped by `BriefMarkdown` and themed by `BriefTheme` ([ADR-0023](../adrs/0023-brief-theme-tokens.md)). Add the audience toggle in the slim sheet top bar. Sidebar TOC on wide screens, in-doc TOC on narrow screens, never both at the same time. Template emits `**Tid:**` inline instead of `#### Tid`. Drag-to-dismiss is wired only to the drag handle, not the markdown body.
+**Stage 3 — Brief route.** Add `/brief/...` routes. The route opens the brief as a fullscreen modal bottom sheet on first frame and pops itself when the sheet closes (see Presentation above). Sheet content uses `markdown_widget` wrapped by `BriefMarkdown` and themed by `BriefTheme` ([ADR-0023](../adrs/0023-brief-theme-tokens.md)). Add the audience toggle in the slim sheet top bar. Sidebar TOC on wide screens, in-doc TOC on narrow screens, never both at the same time. Drag-to-dismiss is wired only to the drag handle, not the markdown body. An ADR-0023 follow-up (2026-05-28) restored `####` headings throughout and added the Tid/Varighet helper split and H2+H3 sidebar filter — see the Revisions section in that ADR.
 
 **Stage 4 — Form fields.** Add the per-section editors. Group under a collapsible "Brief" section on each form.
 
