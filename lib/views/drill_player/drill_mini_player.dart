@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/drill_player/phase_colors.dart';
+import 'package:ringdrill/views/widgets/live_accent.dart';
 
 class DrillMiniPlayer extends StatefulWidget {
   const DrillMiniPlayer({super.key, required this.onOpen});
@@ -70,9 +71,13 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
             secondsSinceEvent / phaseDurationSeconds)
         .clamp(0.0, 1.0);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    final accent = LiveAccent.of(context, isLive: true);
+
+    return Material(
+      color: accent.background,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
         InkWell(
           onTap: widget.onOpen,
           child: SizedBox(
@@ -112,20 +117,25 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                     event.currentRound + 1,
                     event.exercise.numberOfRounds,
                   ),
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: accent.foreground,
+                      ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     event.exercise.name,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: accent.foreground,
+                        ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   countdown,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: accent.foreground,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                 ),
@@ -144,6 +154,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
           ),
         ),
       ],
+    ),
     );
   }
 }
