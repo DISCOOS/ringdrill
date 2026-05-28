@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
@@ -679,7 +681,22 @@ class _BriefSheetLauncherState extends State<BriefSheetLauncher> {
         programUuid: widget.programUuid,
       ),
     );
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    // Popping the underlying transparent route works when the user reached
+    // the brief from another tab (the previous route is still on the
+    // stack). When the app was deep-linked directly into /brief/... — for
+    // example by typing the URL into the browser, opening a shared link
+    // or restarting on this page — the brief is the only route on the
+    // GoRouter stack, and `pop()` would leave the navigator with nothing
+    // to show ("You have popped the last page off of the stack"). Fall
+    // back to the program route in that case so the user lands on a real
+    // screen instead of crashing.
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      context.go(routeProgram);
+    }
   }
 
   @override
