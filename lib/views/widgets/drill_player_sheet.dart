@@ -14,9 +14,12 @@
 ///   restored to [SystemUiMode.edgeToEdge] on close.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 
 /// Opens a fullscreen, non-dismissible DrillPlayer sheet over [context].
 ///
@@ -42,10 +45,8 @@ Future<T?> showDrillPlayerSheet<T>({
       maxHeight: screenHeight,
       maxWidth: double.infinity,
     ),
-    builder: (sheetContext) => _DrillPlayerSheetBody(
-      builder: builder,
-      sheetContext: sheetContext,
-    ),
+    builder: (sheetContext) =>
+        _DrillPlayerSheetBody(builder: builder, sheetContext: sheetContext),
   );
 }
 
@@ -71,14 +72,21 @@ class _DrillPlayerSheetBody extends StatefulWidget {
 }
 
 class _DrillPlayerSheetBodyState extends State<_DrillPlayerSheetBody> {
+  StreamSubscription<ExerciseEvent>? _exerciseSubscription;
+
   @override
   void initState() {
     super.initState();
+    _exerciseSubscription = ExerciseService().events.listen((event) {
+      if (!mounted || !event.isDone) return;
+      Navigator.of(context).pop();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _enterImmersive());
   }
 
   @override
   void dispose() {
+    _exerciseSubscription?.cancel();
     _exitImmersive();
     super.dispose();
   }

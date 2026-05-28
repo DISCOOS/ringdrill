@@ -1,28 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 
+Exercise _makeExercise() => Exercise(
+  uuid: 'test-uuid-player-sheet',
+  name: 'Player Sheet Exercise',
+  startTime: SimpleTimeOfDay(hour: 10, minute: 0),
+  endTime: SimpleTimeOfDay(hour: 11, minute: 0),
+  numberOfTeams: 2,
+  numberOfRounds: 1,
+  executionTime: 5,
+  evaluationTime: 3,
+  rotationTime: 2,
+  stations: [],
+  schedule: [],
+);
+
 Widget _harness() => MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => TextButton(
-            onPressed: () => showDrillPlayerSheet<void>(
-              context: context,
-              builder: (_) => Container(
-                key: const ValueKey('test-body'),
-                child: const Center(child: Text('sheet body')),
-              ),
-            ),
-            child: const Text('open'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(
+    body: Builder(
+      builder: (context) => TextButton(
+        onPressed: () => showDrillPlayerSheet<void>(
+          context: context,
+          builder: (_) => Container(
+            key: const ValueKey('test-body'),
+            child: const Center(child: Text('sheet body')),
           ),
         ),
+        child: const Text('open'),
       ),
-    );
+    ),
+  ),
+);
 
 void main() {
+  tearDown(() {
+    ExerciseService().stop();
+  });
+
   testWidgets('wraps builder body without adding chrome', (tester) async {
     await tester.pumpWidget(_harness());
 
@@ -55,11 +75,7 @@ void main() {
 
     expect(find.text('sheet body'), findsOneWidget);
 
-    await tester.fling(
-      find.text('sheet body'),
-      const Offset(0, 400),
-      800,
-    );
+    await tester.fling(find.text('sheet body'), const Offset(0, 400), 800);
     await tester.pumpAndSettle();
 
     // Sheet must still be visible — drag is disabled
@@ -90,13 +106,30 @@ void main() {
       }
       return false;
     });
-    expect(hasRoundedCorners, isFalse,
-        reason: 'Sheet body must not introduce rounded corners');
+    expect(
+      hasRoundedCorners,
+      isFalse,
+      reason: 'Sheet body must not introduce rounded corners',
+    );
 
     // Sheet height fills the viewport
     final bodySize = tester.getSize(find.byKey(const ValueKey('test-body')));
     final viewportHeight =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
     expect(bodySize.height, closeTo(viewportHeight, 2.0));
+  });
+
+  testWidgets('closes when the active exercise stops', (tester) async {
+    ExerciseService().start(_makeExercise());
+    await tester.pumpWidget(_harness());
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('sheet body'), findsOneWidget);
+
+    ExerciseService().stop();
+    await tester.pumpAndSettle();
+
+    expect(find.text('sheet body'), findsNothing);
   });
 }
