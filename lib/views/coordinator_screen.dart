@@ -34,6 +34,7 @@ import 'exercise_form_screen.dart';
 const double _kHeroSidebarWidth = 150;
 const double _kCoordinatorTwoColumnViewportWidth = 1120;
 const double _kCoordinatorTwoColumnContentWidth = 900;
+const double _kCoordinatorBodyPadding = 16;
 
 class CoordinatorScreen extends StatefulWidget {
   final String uuid;
@@ -395,7 +396,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                     _kCoordinatorTwoColumnViewportWidth &&
                 constraints.maxWidth >= _kCoordinatorTwoColumnContentWidth;
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
               child: isTwoColumn
                   ? _buildTwoColumnBody(
                       event,
@@ -531,7 +532,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
-        height: viewportHeight,
+        height: (viewportHeight - _kCoordinatorBodyPadding * 2).clamp(
+          240.0,
+          double.infinity,
+        ),
         child: MapView<int>(
           layers: MapConfig.layers,
           withZoom: true,
