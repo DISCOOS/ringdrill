@@ -511,6 +511,13 @@ class _MainScreenState extends State<MainScreen> {
         if (mounted) setState(() {});
       }),
     );
+    // Rebuild bottom chrome when an exercise starts or stops so the floating
+    // mini-bar appears/disappears without a manual state push.
+    _subscriptions.add(
+      ExerciseService().events.listen((event) {
+        if (mounted) setState(() {});
+      }),
+    );
     // Gated startup validation: only when a stored active-program reference
     // exists. Skipped on fresh install so no auto-created plan appears.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -916,7 +923,14 @@ class _MainScreenState extends State<MainScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        DrillMiniPlayer(onOpen: () => _openDrillPlayer(context)),
+        if (ExerciseService().isStarted)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: DrillMiniPlayer(onOpen: () => _openDrillPlayer(context)),
+            ),
+          ),
         _buildNavBar(localizations)!,
       ],
     );
