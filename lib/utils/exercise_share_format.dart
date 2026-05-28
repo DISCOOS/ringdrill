@@ -1,6 +1,51 @@
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 
+/// Formats [t] as a four-digit clock string without a colon ("0930").
+/// Used in rotation blocks and the phase breakdown for share/brief output.
+String _hhmm(SimpleTimeOfDay t) =>
+    '${t.hour.toString().padLeft(2, '0')}'
+    '${t.minute.toString().padLeft(2, '0')}';
+
+/// One round in the rotation block. [index] is 1-based.
+/// [timesText] is the pre-formatted `"HHMM | HHMM | HHMM"` joined string.
+/// [suffix] is the resolved `neste` / `retur` label from l10n (no parens).
+class RotationRound {
+  const RotationRound({
+    required this.index,
+    required this.timesText,
+    required this.suffix,
+  });
+
+  final int index;
+  final String timesText;
+  final String suffix;
+}
+
+/// Returns one [RotationRound] per entry in [exercise.schedule].
+/// The last round gets [AppLocalizations.rotationShareReturn]; all others
+/// get [AppLocalizations.rotationShareNext].
+List<RotationRound> rotationRounds(Exercise exercise, AppLocalizations l10n) {
+  final rounds = exercise.schedule.length;
+  return [
+    for (var r = 0; r < rounds; r++)
+      RotationRound(
+        index: r + 1,
+        timesText: exercise.schedule[r].map(_hhmm).join(' | '),
+        suffix: (r == rounds - 1)
+            ? l10n.rotationShareReturn
+            : l10n.rotationShareNext,
+      ),
+  ];
+}
+
+/// Returns the phase pipe-join string for [exercise]:
+/// `"executionTime | evaluationTime | rotationTime"` (all in minutes).
+String rotationPhaseBreakdown(Exercise exercise) =>
+    '${exercise.executionTime} | '
+    '${exercise.evaluationTime} | '
+    '${exercise.rotationTime}';
+
 /// Formats [exercise] as a single multi-line string suitable for pasting
 /// into chat clients like Slack, Microsoft Teams or Messenger.
 ///
@@ -45,10 +90,6 @@ import 'package:ringdrill/models/exercise.dart';
 /// can be unit-tested against a golden string without spinning up a
 /// widget tree.
 String formatExerciseForShare(Exercise exercise, AppLocalizations l10n) {
-  String hhmm(SimpleTimeOfDay t) =>
-      '${t.hour.toString().padLeft(2, '0')}'
-      '${t.minute.toString().padLeft(2, '0')}';
-
   final buf = StringBuffer();
 
   // 1. Header
@@ -93,24 +134,19 @@ String formatExerciseForShare(Exercise exercise, AppLocalizations l10n) {
   // been pasting by hand for months.
   buf.writeln(
     '${l10n.rotationShareEachRound}: '
-    '${exercise.executionTime} | '
-    '${exercise.evaluationTime} | '
-    '${exercise.rotationTime} '
+    '${rotationPhaseBreakdown(exercise)} '
     '(${l10n.rotationShareLegendPhases})',
   );
   buf.writeln();
   buf.writeln(l10n.rotationShareTitle);
 
-  final rounds = exercise.schedule.length;
-  for (var r = 0; r < rounds; r++) {
-    final times = exercise.schedule[r].map(hhmm).join(' | ');
-    final suffix = (r == rounds - 1)
-        ? l10n.rotationShareReturn
-        : l10n.rotationShareNext;
-    final line = '${l10n.round(1)} ${r + 1}: $times ($suffix)';
+  final rounds = rotationRounds(exercise, l10n);
+  for (var i = 0; i < rounds.length; i++) {
+    final r = rounds[i];
+    final line = '${l10n.round(1)} ${r.index}: ${r.timesText} (${r.suffix})';
     // No trailing newline on the last round so paste targets don't gain
     // a dangling blank line.
-    if (r == rounds - 1) {
+    if (i == rounds.length - 1) {
       buf.write(line);
     } else {
       buf.writeln(line);
