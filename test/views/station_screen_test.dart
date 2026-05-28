@@ -11,6 +11,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
@@ -186,15 +187,24 @@ void main() {
     expect(find.byType(RolePlayFormScreen), findsOneWidget);
   });
 
-  testWidgets('tapping row body navigates to role detail', (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+  testWidgets('tapping row body opens role sheet via ContextSheet', (tester) async {
+    // Tap path now calls ContextSheet.of(context).replace(RoleSheetTarget(...))
+    // instead of pushing a GoRouter route, so the screen must be hosted inside
+    // an open ContextSheet for the replace assertion to hold.
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const _StationSheetHarness(stationIndex: 0),
+    ));
+    await tester.pump(); // post-frame callback fires → show()
+    await tester.pump(); // showModalBottomSheet starts
     await tester.pumpAndSettle();
 
     // The InkWell wrapping row content (title text is tappable)
     await tester.tap(find.text('Pasient A'));
     await tester.pumpAndSettle();
 
-    // Stub route renders the UUID
+    // Stub body builder renders the UUID after replace(RoleSheetTarget(...)).
     expect(find.text('RolePlay ${_roleAtStation0.uuid}'), findsOneWidget);
   });
 
@@ -287,4 +297,57 @@ void main() {
       );
     }
   });
+}
+
+/// Hosts [StationExerciseScreen] inside an open [ContextSheet] so role-row
+/// taps that call `ContextSheet.of(context).replace(RoleSheetTarget(...))`
+/// resolve and update the sheet body. The body builder maps RoleSheetTarget
+/// to a plain Text widget so the test can assert against the UUID.
+class _StationSheetHarness extends StatefulWidget {
+  const _StationSheetHarness({required this.stationIndex});
+
+  final int stationIndex;
+
+  @override
+  State<_StationSheetHarness> createState() => _StationSheetHarnessState();
+}
+
+class _StationSheetHarnessState extends State<_StationSheetHarness> {
+  final _controller = ContextSheetController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.show(
+        context,
+        StationSheetTarget(
+          exerciseUuid: _exerciseUuid,
+          stationIndex: widget.stationIndex,
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ContextSheet(
+      controller: _controller,
+      bodyBuilder: (ctx, target) => switch (target) {
+        StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
+          StationExerciseScreen(uuid: exerciseUuid, stationIndex: stationIndex),
+        RoleSheetTarget(:final rolePlayUuid) => Scaffold(
+          body: Center(child: Text('RolePlay $rolePlayUuid')),
+        ),
+        _ => const SizedBox.shrink(),
+      },
+      child: const Scaffold(body: SizedBox.shrink()),
+    );
+  }
 }

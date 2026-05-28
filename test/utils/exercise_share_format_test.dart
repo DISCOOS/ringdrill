@@ -27,7 +27,7 @@ void main() {
           '3. Stasjon C\n'
           '\n'
           'Generelt hver runde: 15 | 10 | 5 '
-          '(øve | evaluere | rullere / inntransport)\n'
+          '(øve | eval | rull / retur)\n'
           '\n'
           'Rullering (klokkeslett)\n'
           'Runde 1: 0930 | 0945 | 0955 (neste)\n'

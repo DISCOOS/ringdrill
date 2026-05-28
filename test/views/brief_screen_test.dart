@@ -150,13 +150,11 @@ String _markdownData(WidgetTester tester) {
   return tester.widget<MarkdownWidget>(find.byType(MarkdownWidget)).data;
 }
 
-/// Tap the segmented button segment matching [label] and pump.
+/// Open the audience PopupMenuButton and tap the menu item with [label].
 Future<void> _tapAudience(WidgetTester tester, String label) async {
-  final btn = find.descendant(
-    of: find.byType(SegmentedButton<BriefAudience>),
-    matching: find.text(label),
-  );
-  await tester.tap(btn);
+  await tester.tap(find.byType(PopupMenuButton<BriefAudience>));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
   await _awaitRender(tester);
 }
 
@@ -257,7 +255,7 @@ void main() {
   });
 
   group('BriefScreen — layout', () {
-    testWidgets('narrow layout puts audience toggle in the body', (
+    testWidgets('narrow layout keeps audience picker in the app bar', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(400, 800);
@@ -267,19 +265,19 @@ void main() {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
       await _awaitRender(tester);
 
-      final segButton = find.byType(SegmentedButton<BriefAudience>);
-      expect(segButton, findsOneWidget);
+      final picker = find.byType(PopupMenuButton<BriefAudience>);
+      expect(picker, findsOneWidget);
 
-      final appBar = find.byType(AppBar);
-      expect(appBar, findsOneWidget);
-
-      final appBarBottom = tester.getBottomLeft(appBar).dy;
-      final toggleTop = tester.getTopLeft(segButton).dy;
-      expect(toggleTop, greaterThanOrEqualTo(appBarBottom));
+      // Audience picker lives in the AppBar regardless of width — the slim
+      // PopupMenuButton replaces the old SegmentedButton-in-body layout.
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: picker),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
-      'wide layout puts audience toggle in app bar and shows TOC sidebar',
+      'wide layout shows audience picker in app bar and TOC sidebar',
       (tester) async {
         tester.view.physicalSize = const Size(1200, 800);
         tester.view.devicePixelRatio = 1.0;
@@ -288,15 +286,15 @@ void main() {
         await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
         await _awaitRender(tester);
 
-        final segButton = find.byType(SegmentedButton<BriefAudience>);
-        expect(segButton, findsOneWidget);
+        final picker = find.byType(PopupMenuButton<BriefAudience>);
+        expect(picker, findsOneWidget);
 
         // TOC sidebar heading visible
         expect(find.text('Contents'), findsOneWidget);
 
-        // The segmented button must be inside the AppBar widget tree
+        // The picker must be inside the AppBar widget tree
         expect(
-          find.descendant(of: find.byType(AppBar), matching: segButton),
+          find.descendant(of: find.byType(AppBar), matching: picker),
           findsOneWidget,
         );
       },
@@ -317,7 +315,7 @@ void main() {
     });
 
     testWidgets(
-      'typing a query wraps matches in <mark> tags in MarkdownWidget.data',
+      'typing a query wraps matches in <mark>/<curr-mark> tags in MarkdownWidget.data',
       (tester) async {
         await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
         await _awaitRender(tester);
@@ -328,7 +326,16 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Anne');
         await tester.pump();
 
-        expect(_markdownData(tester), contains('<mark>Anne'));
+        // BriefScreen wraps the active match in <curr-mark> and any remaining
+        // matches in <mark>. With a single match the wrapping tag is always
+        // <curr-mark>; accept either to keep the assertion stable across
+        // fixtures with more or fewer matches.
+        final md = _markdownData(tester);
+        expect(
+          md.contains('<mark>Anne') || md.contains('<curr-mark>Anne'),
+          isTrue,
+          reason: 'expected one of <mark>Anne / <curr-mark>Anne in: $md',
+        );
       },
     );
   });
@@ -432,7 +439,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+      // The in-doc TOC only renders in multi-exercise (program) mode; the
+      // single-exercise template suppresses the program-level header block
+      // entirely. Use programUuid so isSingleExercise=false and the
+      // {{#if_in_doc_toc}} block emits the "## Innholdsfortegnelse" section.
+      await tester.pumpWidget(_buildScreen(programUuid: _programUuid));
       await _awaitRender(tester);
 
       expect(
