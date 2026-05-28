@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/views/brief_screen.dart';
 
 sealed class ContextSheetTarget {
   const ContextSheetTarget();
@@ -63,7 +64,7 @@ class ContextSheetController {
     _isOpen = true;
     _target.value = target;
     _navigator = Navigator.of(context);
-    _bodyBuilder = ContextSheet._bodyBuilderOf(context);
+    _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -103,10 +104,16 @@ class ContextSheet
     ContextSheetBodyBuilder? bodyBuilder,
   }) : controller = controller,
        bodyBuilder = bodyBuilder,
-       super(notifier: controller._target);
+       super(notifier: controller._target) {
+    controller._bodyBuilder = bodyBuilder;
+    _currentController = controller;
+  }
 
   final ContextSheetController controller;
   final ContextSheetBodyBuilder? bodyBuilder;
+  static ContextSheetController? _currentController;
+
+  static ContextSheetController? get currentController => _currentController;
 
   static ContextSheetController of(BuildContext context) {
     final sheet = context.dependOnInheritedWidgetOfExactType<ContextSheet>();
@@ -202,15 +209,27 @@ class _DefaultContextSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = switch (target) {
-      StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
-        'Station $exerciseUuid/$stationIndex',
-      TeamSheetTarget(:final exerciseUuid, :final teamIndex) =>
-        'Team $exerciseUuid/$teamIndex',
-      RoleSheetTarget(:final rolePlayUuid) => 'Role $rolePlayUuid',
-      BriefSheetTarget(:final exerciseUuid, :final programUuid) =>
-        'Brief ${exerciseUuid ?? programUuid}',
+    final body = switch (target) {
+      StationSheetTarget(:final exerciseUuid, :final stationIndex) => Center(
+        child: Text('Station $exerciseUuid/$stationIndex'),
+      ),
+      TeamSheetTarget(:final exerciseUuid, :final teamIndex) => Center(
+        child: Text('Team $exerciseUuid/$teamIndex'),
+      ),
+      RoleSheetTarget(:final rolePlayUuid) => Center(
+        child: Text('Role $rolePlayUuid'),
+      ),
+      BriefSheetTarget(
+        :final exerciseUuid,
+        :final programUuid,
+        :final audience,
+      ) =>
+        BriefSheetBody(
+          exerciseUuid: exerciseUuid,
+          programUuid: programUuid,
+          audience: audience,
+        ),
     };
-    return Center(child: Text(label));
+    return body;
   }
 }

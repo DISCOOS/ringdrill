@@ -1,14 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
@@ -28,6 +26,7 @@ class BriefScreen extends StatefulWidget {
     super.key,
     this.exerciseUuid,
     this.programUuid,
+    this.initialAudience,
     this.isSheet = false,
     this.onClose,
   }) : assert(
@@ -42,6 +41,8 @@ class BriefScreen extends StatefulWidget {
   /// only; the active program is resolved via `ProgramService` because the
   /// app holds at most one active program at a time.
   final String? programUuid;
+
+  final BriefAudience? initialAudience;
 
   /// When `true`, the AppBar leading icon becomes a close button that calls
   /// [onClose]. Use this when the screen is embedded in a modal sheet.
@@ -83,6 +84,12 @@ class _BriefScreenState extends State<BriefScreen> {
 
   // Re-assigned when audience or layout changes so FutureBuilder re-runs.
   late Future<String> _renderFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _audience = widget.initialAudience ?? BriefAudience.participant;
+  }
 
   @override
   void didChangeDependencies() {
@@ -151,9 +158,9 @@ class _BriefScreenState extends State<BriefScreen> {
     Exercise? exercise;
     if (widget.exerciseUuid != null) {
       exercise = program.exercises.cast<Exercise?>().firstWhere(
-            (e) => e?.uuid == widget.exerciseUuid,
-            orElse: () => null,
-          );
+        (e) => e?.uuid == widget.exerciseUuid,
+        orElse: () => null,
+      );
       if (exercise == null) {
         return Scaffold(
           appBar: AppBar(title: Text(localizations.briefScreenTitle)),
@@ -265,7 +272,9 @@ class _BriefScreenState extends State<BriefScreen> {
   ) {
     final hasMatches = _matchCount > 0;
     final hasQueryButNoMatches =
-        _searchQuery.isNotEmpty && _renderedMarkdown != null && _matchCount == 0;
+        _searchQuery.isNotEmpty &&
+        _renderedMarkdown != null &&
+        _matchCount == 0;
 
     return PreferredSize(
       preferredSize: const Size.fromHeight(48),
@@ -398,11 +407,7 @@ class _BriefScreenState extends State<BriefScreen> {
               ),
             ),
             const SizedBox(width: 4),
-            Icon(
-              Icons.arrow_drop_down,
-              size: 20,
-              color: theme.text.heading,
-            ),
+            Icon(Icons.arrow_drop_down, size: 20, color: theme.text.heading),
           ],
         ),
       ),
@@ -704,9 +709,7 @@ class _BriefScreenState extends State<BriefScreen> {
                   final tocStyle = TextStyle(
                     fontSize: 13,
                     height: 1.4,
-                    fontWeight: level <= 2
-                        ? FontWeight.w600
-                        : FontWeight.w400,
+                    fontWeight: level <= 2 ? FontWeight.w600 : FontWeight.w400,
                     color: isActive ? theme.text.heading : theme.text.body,
                   );
                   return GestureDetector(
@@ -850,133 +853,28 @@ class _FloatingActionIcon extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// BriefSheetLauncher — transparent route that immediately opens BriefScreen
-// as a fullscreen modal bottom sheet and pops itself when the sheet closes.
+// BriefSheetBody — the draggable sheet wrapping BriefScreen
 // ---------------------------------------------------------------------------
 
-/// Transparent route widget that opens [BriefScreen] as a fullscreen modal
-/// bottom sheet. Used by the `/brief` GoRoutes so the brief is presented as a
-/// sheet on top of the current page instead of a full navigation push.
-class BriefSheetLauncher extends StatefulWidget {
-  const BriefSheetLauncher({super.key, this.exerciseUuid, this.programUuid})
-    : assert(
-        (exerciseUuid == null) != (programUuid == null),
-        'exactly one of exerciseUuid or programUuid must be provided',
-      );
+class BriefSheetBody extends StatelessWidget {
+  const BriefSheetBody({
+    super.key,
+    this.exerciseUuid,
+    this.programUuid,
+    this.audience,
+  });
 
   final String? exerciseUuid;
   final String? programUuid;
-
-  @override
-  State<BriefSheetLauncher> createState() => _BriefSheetLauncherState();
-}
-
-class _BriefSheetLauncherState extends State<BriefSheetLauncher> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openSheet());
-  }
-
-  Future<void> _openSheet() async {
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      // Material 3 defaults the modal bottom sheet to a max width of 640 dp
-      // on wide viewports. The Brief is the only reading surface in the app
-      // and is meant to feel like a fullscreen docs page on every viewport,
-      // so we override the constraint to fill the available width.
-      constraints: const BoxConstraints(maxWidth: double.infinity),
-      builder: (_) => _BriefSheetBody(
-        exerciseUuid: widget.exerciseUuid,
-        programUuid: widget.programUuid,
-      ),
-    );
-    if (!mounted) return;
-    // Popping the underlying transparent route works when the user reached
-    // the brief from another tab (the previous route is still on the
-    // stack). When the app was deep-linked directly into /brief/... — for
-    // example by typing the URL into the browser, opening a shared link
-    // or restarting on this page — the brief is the only route on the
-    // GoRouter stack, and `pop()` would leave the navigator with nothing
-    // to show ("You have popped the last page off of the stack"). Fall
-    // back to the program route in that case so the user lands on a real
-    // screen instead of crashing.
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    } else {
-      context.go(routeProgram);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
-}
-
-// ---------------------------------------------------------------------------
-// _BriefSheetBody — the draggable sheet wrapping BriefScreen
-// ---------------------------------------------------------------------------
-
-class _BriefSheetBody extends StatelessWidget {
-  const _BriefSheetBody({this.exerciseUuid, this.programUuid});
-
-  final String? exerciseUuid;
-  final String? programUuid;
+  final BriefAudience? audience;
 
   @override
   Widget build(BuildContext context) {
-    final theme = BriefTheme.of(context);
-    final localizations = AppLocalizations.of(context)!;
-
-    return DraggableScrollableSheet(
-      initialChildSize: 1.0,
-      minChildSize: 0.5,
-      maxChildSize: 1.0,
-      expand: false,
-      builder: (sheetContext, scrollController) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          child: ColoredBox(
-            color: theme.surfaces.canvas,
-            child: CustomScrollView(
-              controller: scrollController,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Semantics(
-                    label: localizations.briefDragHandle,
-                    child: SizedBox(
-                      height: 32,
-                      child: Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: theme.borders.subtle,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: BriefScreen(
-                    exerciseUuid: exerciseUuid,
-                    programUuid: programUuid,
-                    isSheet: true,
-                    onClose: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    return BriefScreen(
+      exerciseUuid: exerciseUuid,
+      programUuid: programUuid,
+      initialAudience: audience,
+      isSheet: false,
     );
   }
 }

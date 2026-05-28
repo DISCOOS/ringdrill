@@ -11,6 +11,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -89,11 +90,53 @@ Widget _buildLauncher({String? exerciseUuid, String? programUuid}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: BriefSheetLauncher(
+    home: _BriefSheetHarness(
       exerciseUuid: exerciseUuid,
       programUuid: programUuid,
     ),
   );
+}
+
+class _BriefSheetHarness extends StatefulWidget {
+  const _BriefSheetHarness({this.exerciseUuid, this.programUuid});
+
+  final String? exerciseUuid;
+  final String? programUuid;
+
+  @override
+  State<_BriefSheetHarness> createState() => _BriefSheetHarnessState();
+}
+
+class _BriefSheetHarnessState extends State<_BriefSheetHarness> {
+  final _controller = ContextSheetController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.show(
+        context,
+        BriefSheetTarget(
+          exerciseUuid: widget.exerciseUuid,
+          programUuid: widget.programUuid,
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ContextSheet(
+      controller: _controller,
+      child: const Scaffold(body: SizedBox.shrink()),
+    );
+  }
 }
 
 /// Wait for the sheet to fully open: the post-frame callback schedules the

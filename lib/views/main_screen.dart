@@ -28,6 +28,7 @@ import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/team_exercise_screen.dart';
 import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/teams_view.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
 import 'package:ringdrill/web/settings_page.dart'
@@ -99,8 +100,11 @@ GoRouter buildRouter(bool isFirstLaunch) {
               opaque: false,
               barrierColor: Colors.transparent,
               transitionsBuilder: (_, _, _, child) => child,
-              child: BriefSheetLauncher(
-                programUuid: state.pathParameters['programUuid']!,
+              child: _BriefDeepLinkLauncher(
+                target: BriefSheetTarget(
+                  programUuid: state.pathParameters['programUuid']!,
+                ),
+                fallbackRoute: routeProgram,
               ),
             ),
       ),
@@ -112,8 +116,11 @@ GoRouter buildRouter(bool isFirstLaunch) {
               opaque: false,
               barrierColor: Colors.transparent,
               transitionsBuilder: (_, _, _, child) => child,
-              child: BriefSheetLauncher(
-                exerciseUuid: state.pathParameters['exerciseUuid']!,
+              child: _BriefDeepLinkLauncher(
+                target: BriefSheetTarget(
+                  exerciseUuid: state.pathParameters['exerciseUuid']!,
+                ),
+                fallbackRoute: routeProgram,
               ),
             ),
       ),
@@ -297,6 +304,47 @@ void _showOpenFileBottomSheet(
   );
 }
 
+class _BriefDeepLinkLauncher extends StatefulWidget {
+  const _BriefDeepLinkLauncher({
+    required this.target,
+    required this.fallbackRoute,
+  });
+
+  final BriefSheetTarget target;
+  final String fallbackRoute;
+
+  @override
+  State<_BriefDeepLinkLauncher> createState() => _BriefDeepLinkLauncherState();
+}
+
+class _BriefDeepLinkLauncherState extends State<_BriefDeepLinkLauncher> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openSheet());
+  }
+
+  Future<void> _openSheet() async {
+    if (!mounted) return;
+    final controller = ContextSheet.currentController;
+    if (controller == null) {
+      context.go(widget.fallbackRoute);
+      return;
+    }
+    await controller.show(context, widget.target);
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      context.go(widget.fallbackRoute);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
 class Destination {
   const Destination({required this.icon, required this.label});
   final IconData icon;
@@ -355,6 +403,8 @@ class _MainScreenState extends State<MainScreen> {
       StationListController();
 
   late final RolePlaysController _rolePlaysController = RolePlaysController();
+  late final ContextSheetController _contextSheetController =
+      ContextSheetController();
 
   /// Order matches [routeProgram, routeMap, routeStations, routeRolePlays, routeTeams].
   /// Note: Map tab (StationsView) was previously at position 4; it moved to
@@ -438,11 +488,12 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
-    super.dispose();
+    _contextSheetController.dispose();
     _stationListController.dispose();
     for (var e in _subscriptions) {
       e.cancel();
     }
+    super.dispose();
   }
 
   @override
@@ -458,42 +509,47 @@ class _MainScreenState extends State<MainScreen> {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Scaffold(
-          key: _scaffoldKey,
-          extendBody: true,
-          extendBodyBehindAppBar: true,
-          drawerEnableOpenDragGesture: true,
-          appBar: _wideScreen ? null : _buildAppBar(context, constraints, page),
-          drawer: _buildDrawer(context, localizations),
-          // StackFit.expand is load-bearing: without it the Stack sizes
-          // itself to the biggest non-positioned child, but the only
-          // non-positioned child here is the Offstage shell sentinel
-          // (which has zero size by design), so the Stack collapses to
-          // 0x0 and the visible Positioned.fill child has nothing to
-          // fill. Result: tabs render fine but at zero size, so the UI
-          // looks completely empty even though no exception is thrown.
-          body: Stack(
-            fit: StackFit.expand,
-            children: [
-              _wideScreen
-                  ? _buildNavRail(context, constraints, localizations, page)
-                  : SafeArea(
-                      child:
-                          // Keep all tabs in memory allowing
-                          // state to persist between tab switches
-                          IndexedStack(
-                            key: _indexedTabsKey,
-                            index: _currentTab,
-                            children: _pages,
-                          ),
-                    ),
-              shellSentinel,
-            ],
+        return ContextSheet(
+          controller: _contextSheetController,
+          child: Scaffold(
+            key: _scaffoldKey,
+            extendBody: true,
+            extendBodyBehindAppBar: true,
+            drawerEnableOpenDragGesture: true,
+            appBar: _wideScreen
+                ? null
+                : _buildAppBar(context, constraints, page),
+            drawer: _buildDrawer(context, localizations),
+            // StackFit.expand is load-bearing: without it the Stack sizes
+            // itself to the biggest non-positioned child, but the only
+            // non-positioned child here is the Offstage shell sentinel
+            // (which has zero size by design), so the Stack collapses to
+            // 0x0 and the visible Positioned.fill child has nothing to
+            // fill. Result: tabs render fine but at zero size, so the UI
+            // looks completely empty even though no exception is thrown.
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                _wideScreen
+                    ? _buildNavRail(context, constraints, localizations, page)
+                    : SafeArea(
+                        child:
+                            // Keep all tabs in memory allowing
+                            // state to persist between tab switches
+                            IndexedStack(
+                              key: _indexedTabsKey,
+                              index: _currentTab,
+                              children: _pages,
+                            ),
+                      ),
+                shellSentinel,
+              ],
+            ),
+            floatingActionButton: _wideScreen
+                ? null
+                : page.controller.buildFAB(context, constraints),
+            bottomNavigationBar: _buildNavBar(localizations),
           ),
-          floatingActionButton: _wideScreen
-              ? null
-              : page.controller.buildFAB(context, constraints),
-          bottomNavigationBar: _buildNavBar(localizations),
         );
       },
     );
