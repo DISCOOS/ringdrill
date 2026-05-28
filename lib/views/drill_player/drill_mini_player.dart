@@ -108,6 +108,19 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  // Phase label restored after followup-02 dropped it; it lives
+                  // next to the countdown so the time reads with its phase context.
+                  if (!event.isPending && !event.isDone)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        event.getState(localizations),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: colorForPhase(event.phase),
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
                   Text(
                     countdown,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
