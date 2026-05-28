@@ -908,6 +908,7 @@ class _MainScreenState extends State<MainScreen> {
       _currentTab = tab;
     });
     _contextSheetController.close();
+    stationsMapDetailClearTick.value = stationsMapDetailClearTick.value + 1;
     widget.router.go(widget.routes[tab]);
     // The StationsView is kept alive inside the IndexedStack, so its map
     // does not re-fit on tab switch on its own. Nudge it via the reselect
@@ -1045,6 +1046,15 @@ class _MainScreenState extends State<MainScreen> {
         : 280.0;
     const railWidth = 72.0;
     final detailWidth = constraints.maxWidth - railWidth - masterWidth;
+    if (_currentTab == 1) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          rail,
+          Expanded(child: _buildIndexedTabs()),
+        ],
+      );
+    }
     if (detailWidth < 360) {
       return Column(
         mainAxisSize: MainAxisSize.min,

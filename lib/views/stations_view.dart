@@ -4,9 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/views/coordinator_screen.dart';
+import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
@@ -18,6 +24,7 @@ import 'map_view.dart';
 /// already-mounted [StationsView] (kept alive by IndexedStack) can re-fit
 /// the camera to the current set of stations.
 final ValueNotifier<int> stationsTabReselectTick = ValueNotifier<int>(0);
+final ValueNotifier<int> stationsMapDetailClearTick = ValueNotifier<int>(0);
 
 class StationsView extends StatefulWidget {
   const StationsView({super.key});
@@ -45,6 +52,7 @@ class _StationsViewState extends State<StationsView> {
   final _mapController = MapController();
   final _programService = ProgramService();
   final _mapKey = GlobalKey<_StationsViewState>();
+  final _detailTarget = ValueNotifier<ContextSheetTarget?>(null);
   StreamSubscription<ProgramEvent>? _programSubscription;
 
   bool _notified = false;
@@ -76,6 +84,11 @@ class _StationsViewState extends State<StationsView> {
     // this hook, IndexedStack just toggles visibility and the map keeps
     // whatever pan/zoom the user last left it on.
     stationsTabReselectTick.addListener(_recenter);
+    stationsMapDetailClearTick.addListener(_clearDetail);
+  }
+
+  void _clearDetail() {
+    _detailTarget.value = null;
   }
 
   void _recenter() {
@@ -188,7 +201,7 @@ class _StationsViewState extends State<StationsView> {
     final onlyExercisesFiltered =
         hiddenCount > 0 && _showStations && _showRoleplays && _showLabels;
 
-    return Column(
+    final mapColumn = Column(
       children: [
         if (_pickFor != null) _buildPickBanner(context, _pickFor!),
         Expanded(
@@ -228,6 +241,59 @@ class _StationsViewState extends State<StationsView> {
                 )
               : _buildCombinedFilterBanner(context),
       ],
+    );
+    return _buildResponsiveMap(context, mapColumn);
+  }
+
+  Widget _buildResponsiveMap(BuildContext context, Widget mapColumn) {
+    final windowSizeClass = WindowSizeClass.of(context);
+    if (!windowSizeClass.hasMasterDetail) return mapColumn;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final detailRatio = windowSizeClass == WindowSizeClass.expanded
+            ? 1 / 3
+            : 0.4;
+        final desiredDetailWidth = constraints.maxWidth * detailRatio;
+        final detailWidth = desiredDetailWidth.clamp(
+          360.0,
+          constraints.maxWidth,
+        );
+        final mapWidth = constraints.maxWidth - detailWidth;
+        if (detailWidth < 360 || mapWidth < 280) {
+          return mapColumn;
+        }
+
+        return MasterDetailScope(
+          target: _detailTarget,
+          emptyPaneBuilder: (_) => const SizedBox.shrink(),
+          child: Row(
+            children: [
+              SizedBox(
+                width: mapWidth,
+                child: Column(
+                  children: [
+                    Expanded(child: mapColumn),
+                    if (ExerciseService().isStarted)
+                      SafeArea(
+                        top: false,
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: DrillMiniPlayer(
+                            onOpen: () => _openDrillPlayer(context),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(width: detailWidth, child: const MasterDetailPane()),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -324,9 +390,7 @@ class _StationsViewState extends State<StationsView> {
                               exercises.length - _hiddenExercises.length,
                               exercises.length,
                             ),
-                            style: Theme.of(
-                              sheetContext,
-                            ).textTheme.titleMedium,
+                            style: Theme.of(sheetContext).textTheme.titleMedium,
                           ),
                         ),
                         TextButton(
@@ -339,8 +403,7 @@ class _StationsViewState extends State<StationsView> {
                           child: Text(l.showAll),
                         ),
                         TextButton(
-                          onPressed:
-                              _hiddenExercises.length == exercises.length
+                          onPressed: _hiddenExercises.length == exercises.length
                               ? null
                               : () {
                                   setSheetState(() {
@@ -670,17 +733,55 @@ class _StationsViewState extends State<StationsView> {
   void _onStationTap((String, int) id) {
     final exercise = _programService.getExercise(id.$1);
     if (exercise != null) {
-      ContextSheet.of(context).show(
-        context,
-        StationSheetTarget(exerciseUuid: exercise.uuid, stationIndex: id.$2),
+      final target = StationSheetTarget(
+        exerciseUuid: exercise.uuid,
+        stationIndex: id.$2,
       );
+      if (_targetsEqual(_detailTarget.value, target)) {
+        _detailTarget.value = null;
+        return;
+      }
+      ContextSheet.of(context).show(context, target);
     }
+  }
+
+  bool _targetsEqual(ContextSheetTarget? a, ContextSheetTarget b) {
+    return switch ((a, b)) {
+      (
+        StationSheetTarget(
+          exerciseUuid: final aExerciseUuid,
+          stationIndex: final aStationIndex,
+        ),
+        StationSheetTarget(
+          exerciseUuid: final bExerciseUuid,
+          stationIndex: final bStationIndex,
+        ),
+      ) =>
+        aExerciseUuid == bExerciseUuid && aStationIndex == bStationIndex,
+      (
+        RoleSheetTarget(rolePlayUuid: final aRolePlayUuid),
+        RoleSheetTarget(rolePlayUuid: final bRolePlayUuid),
+      ) =>
+        aRolePlayUuid == bRolePlayUuid,
+      _ => false,
+    };
+  }
+
+  void _openDrillPlayer(BuildContext context) {
+    final last = ExerciseService().last;
+    if (last == null) return;
+    showDrillPlayerSheet<void>(
+      context: context,
+      builder: (_) => CoordinatorScreen(uuid: last.exercise.uuid),
+    );
   }
 
   @override
   void dispose() {
     stationsTabReselectTick.removeListener(_recenter);
+    stationsMapDetailClearTick.removeListener(_clearDetail);
     _programSubscription?.cancel();
+    _detailTarget.dispose();
     _mapController.dispose();
     super.dispose();
   }

@@ -68,6 +68,7 @@ class ContextSheetController {
       ValueNotifier<ContextSheetTarget?>(null);
   bool _isOpen = false;
   NavigatorState? _navigator;
+  MasterDetailScope? _activeScope;
   ContextSheetBodyBuilder? _bodyBuilder;
 
   ValueListenable<ContextSheetTarget?> get target => _target;
@@ -78,8 +79,10 @@ class ContextSheetController {
       final scope = MasterDetailScope.maybeOf(context);
       if (scope != null) {
         scope.setTarget(target);
+        _target.value = target;
         _isOpen = true;
         _navigator = null;
+        _activeScope = scope;
         _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
         return;
       }
@@ -111,19 +114,23 @@ class ContextSheetController {
     _target.value = null;
     _isOpen = false;
     _navigator = null;
+    _activeScope = null;
     _bodyBuilder = null;
   }
 
   void replace(ContextSheetTarget target) {
     assert(_isOpen, 'ContextSheetController.replace requires an open sheet');
     _target.value = target;
+    _activeScope?.setTarget(target);
   }
 
   void close() {
     if (!_isOpen) return;
     if (_navigator == null) {
+      _activeScope?.setTarget(null);
       _target.value = null;
       _isOpen = false;
+      _activeScope = null;
       return;
     }
     _navigator?.pop();
