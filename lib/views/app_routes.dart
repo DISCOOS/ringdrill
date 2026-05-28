@@ -14,15 +14,20 @@ const String routeMap = '/map';
 
 /// Stations list tab — flat list of `(Exercise, Station)` pairs with
 /// expandable rows. The deep-link subpath
-/// `/stations/:exerciseUuid/:stationIndex` still resolves to
-/// [StationExerciseScreen] regardless of which tab the navigation
-/// started from.
+/// `/stations/:exerciseUuid/:stationIndex` opens the matching station in a
+/// ContextSheet on this tab. Internal callers use ContextSheet directly
+/// instead of pushing this URL.
 const String routeStations = '/stations';
 
+/// Teams tab. The `/:teamIndex` subpath is a deep-link-only entry point that
+/// opens a ContextSheet on this tab. Internal callers use ContextSheet
+/// directly instead of pushing this URL.
 const String routeTeams = '/teams';
 
 /// RolePlays tab — flat list of RolePlay rows across all exercises.
-/// Introduced in DESIGN-003.
+/// The `/:roleUuid` subpath is a deep-link-only entry point that opens a
+/// ContextSheet on this tab. Internal callers use ContextSheet directly
+/// instead of pushing this URL.
 const String routeRolePlays = '/roleplays';
 
 /// Brief route — read-mode renderer of an exercise or program as a

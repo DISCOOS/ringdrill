@@ -19,13 +19,9 @@ import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
-import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
-import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/stations_view.dart';
-import 'package:ringdrill/views/team_exercise_screen.dart';
-import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/web/platform_widget.dart'
@@ -170,11 +166,14 @@ GoRouter buildRouter(bool isFirstLaunch) {
                     path: 'station/:stationIndex',
                     parentNavigatorKey: key,
                     builder: (BuildContext context, GoRouterState state) =>
-                        StationExerciseScreen(
-                          uuid: state.pathParameters['exerciseId']!,
-                          stationIndex: int.parse(
-                            state.pathParameters['stationIndex']!,
+                        _ContextSheetDeepLinkLauncher(
+                          target: StationSheetTarget(
+                            exerciseUuid: state.pathParameters['exerciseId']!,
+                            stationIndex: int.parse(
+                              state.pathParameters['stationIndex']!,
+                            ),
                           ),
+                          fallbackRoute: routeProgram,
                         ),
                   ),
                   GoRoute(
@@ -192,9 +191,12 @@ GoRouter buildRouter(bool isFirstLaunch) {
                           body: const Center(child: Text('Not found')),
                         );
                       }
-                      return TeamExerciseScreen(
-                        teamIndex: teamIndex,
-                        exercise: exercise,
+                      return _ContextSheetDeepLinkLauncher(
+                        target: TeamSheetTarget(
+                          exerciseUuid: exercise.uuid,
+                          teamIndex: teamIndex,
+                        ),
+                        fallbackRoute: routeProgram,
                       );
                     },
                   ),
@@ -226,11 +228,14 @@ GoRouter buildRouter(bool isFirstLaunch) {
                 path: ':exerciseId/:stationIndex',
                 parentNavigatorKey: key,
                 builder: (BuildContext context, GoRouterState state) =>
-                    StationExerciseScreen(
-                      uuid: state.pathParameters['exerciseId']!,
-                      stationIndex: int.parse(
-                        state.pathParameters['stationIndex']!,
+                    _ContextSheetDeepLinkLauncher(
+                      target: StationSheetTarget(
+                        exerciseUuid: state.pathParameters['exerciseId']!,
+                        stationIndex: int.parse(
+                          state.pathParameters['stationIndex']!,
+                        ),
                       ),
+                      fallbackRoute: routeStations,
                     ),
               ),
             ],
@@ -247,10 +252,25 @@ GoRouter buildRouter(bool isFirstLaunch) {
               GoRoute(
                 path: ':teamIndex',
                 parentNavigatorKey: key,
-                builder: (BuildContext context, GoRouterState state) =>
-                    TeamScreen(
-                      teamIndex: int.parse(state.pathParameters['teamIndex']!),
+                builder: (BuildContext context, GoRouterState state) {
+                  final teamIndex = int.parse(
+                    state.pathParameters['teamIndex']!,
+                  );
+                  final exercise = ProgramService()
+                      .loadExercises()
+                      .where((e) => e.numberOfTeams > teamIndex)
+                      .firstOrNull;
+                  if (exercise == null) {
+                    return const SizedBox.shrink();
+                  }
+                  return _ContextSheetDeepLinkLauncher(
+                    target: TeamSheetTarget(
+                      exerciseUuid: exercise.uuid,
+                      teamIndex: teamIndex,
                     ),
+                    fallbackRoute: routeTeams,
+                  );
+                },
               ),
             ],
           ),
@@ -265,8 +285,11 @@ GoRouter buildRouter(bool isFirstLaunch) {
                 path: ':roleUuid',
                 parentNavigatorKey: key,
                 builder: (BuildContext context, GoRouterState state) =>
-                    RolePlayScreen(
-                      rolePlayUuid: state.pathParameters['roleUuid']!,
+                    _ContextSheetDeepLinkLauncher(
+                      target: RoleSheetTarget(
+                        rolePlayUuid: state.pathParameters['roleUuid']!,
+                      ),
+                      fallbackRoute: routeRolePlays,
                     ),
               ),
             ],
@@ -317,6 +340,49 @@ class _BriefDeepLinkLauncher extends StatefulWidget {
 }
 
 class _BriefDeepLinkLauncherState extends State<_BriefDeepLinkLauncher> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openSheet());
+  }
+
+  Future<void> _openSheet() async {
+    if (!mounted) return;
+    final controller = ContextSheet.currentController;
+    if (controller == null) {
+      context.go(widget.fallbackRoute);
+      return;
+    }
+    await controller.show(context, widget.target);
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      context.go(widget.fallbackRoute);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+class _ContextSheetDeepLinkLauncher extends StatefulWidget {
+  const _ContextSheetDeepLinkLauncher({
+    required this.target,
+    required this.fallbackRoute,
+  });
+
+  final ContextSheetTarget target;
+  final String fallbackRoute;
+
+  @override
+  State<_ContextSheetDeepLinkLauncher> createState() =>
+      _ContextSheetDeepLinkLauncherState();
+}
+
+class _ContextSheetDeepLinkLauncherState
+    extends State<_ContextSheetDeepLinkLauncher> {
   @override
   void initState() {
     super.initState();
