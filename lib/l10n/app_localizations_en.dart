@@ -1493,4 +1493,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String drillPlayerStartingInWithCountdown(String time) {
     return 'Starts in $time';
   }
+
+  @override
+  String get detailEmptyExercise => 'Select an exercise';
+
+  @override
+  String get detailEmptyStation => 'Select a station to see details';
+
+  @override
+  String get detailEmptyRolePlay => 'Select a role';
+
+  @override
+  String get detailEmptyTeam => 'Select a team';
 }

@@ -2551,6 +2551,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Starts in {time}'**
   String drillPlayerStartingInWithCountdown(String time);
+
+  /// Empty detail pane text shown on the exercises tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an exercise'**
+  String get detailEmptyExercise;
+
+  /// Empty detail pane text shown on the stations tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a station to see details'**
+  String get detailEmptyStation;
+
+  /// Empty detail pane text shown on the role-plays tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a role'**
+  String get detailEmptyRolePlay;
+
+  /// Empty detail pane text shown on the teams tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a team'**
+  String get detailEmptyTeam;
 }
 
 class _AppLocalizationsDelegate

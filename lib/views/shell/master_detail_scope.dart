@@ -52,7 +52,6 @@ class MasterDetailPane extends StatelessWidget {
       valueListenable: scope.target,
       builder: (context, target, _) {
         if (target == null || target is BriefSheetTarget) {
-          // TODO(adr-0030): replace with tab-specific empty pane widgets.
           return scope.emptyPaneBuilder(context);
         }
         return AnimatedSwitcher(

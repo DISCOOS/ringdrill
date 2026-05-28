@@ -1489,4 +1489,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String drillPlayerStartingInWithCountdown(String time) {
     return 'Starter om $time';
   }
+
+  @override
+  String get detailEmptyExercise => 'Velg en øvelse';
+
+  @override
+  String get detailEmptyStation => 'Velg en post for å se detaljer';
+
+  @override
+  String get detailEmptyRolePlay => 'Velg en markør';
+
+  @override
+  String get detailEmptyTeam => 'Velg et lag';
 }

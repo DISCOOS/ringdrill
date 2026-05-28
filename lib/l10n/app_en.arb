@@ -1441,5 +1441,21 @@
     "placeholders": {
       "time": { "type": "String" }
     }
+  },
+  "detailEmptyExercise": "Select an exercise",
+  "@detailEmptyExercise": {
+    "description": "Empty detail pane text shown on the exercises tab."
+  },
+  "detailEmptyStation": "Select a station to see details",
+  "@detailEmptyStation": {
+    "description": "Empty detail pane text shown on the stations tab."
+  },
+  "detailEmptyRolePlay": "Select a role",
+  "@detailEmptyRolePlay": {
+    "description": "Empty detail pane text shown on the role-plays tab."
+  },
+  "detailEmptyTeam": "Select a team",
+  "@detailEmptyTeam": {
+    "description": "Empty detail pane text shown on the teams tab."
   }
 }

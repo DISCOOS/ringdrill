@@ -676,5 +676,21 @@
   "drillPlayerClose": "Lukk",
   "drillPlayerStartingIn": "Starter om",
   "drillPlayerRoundOf": "Runde {current} / {total}",
-  "drillPlayerStartingInWithCountdown": "Starter om {time}"
+  "drillPlayerStartingInWithCountdown": "Starter om {time}",
+  "detailEmptyExercise": "Velg en øvelse",
+  "@detailEmptyExercise": {
+    "description": "Empty detail pane text shown on the exercises tab."
+  },
+  "detailEmptyStation": "Velg en post for å se detaljer",
+  "@detailEmptyStation": {
+    "description": "Empty detail pane text shown on the stations tab."
+  },
+  "detailEmptyRolePlay": "Velg en markør",
+  "@detailEmptyRolePlay": {
+    "description": "Empty detail pane text shown on the role-plays tab."
+  },
+  "detailEmptyTeam": "Velg et lag",
+  "@detailEmptyTeam": {
+    "description": "Empty detail pane text shown on the teams tab."
+  }
 }
