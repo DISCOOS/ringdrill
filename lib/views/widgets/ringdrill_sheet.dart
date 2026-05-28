@@ -63,6 +63,31 @@ Future<T?> showRingdrillActionSheet<T>({
   );
 }
 
+Future<T?> showRingdrillFormDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  final viewport = MediaQuery.sizeOf(context);
+  return showDialog<T>(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 8,
+        insetPadding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 720,
+            maxHeight: viewport.height * 0.88,
+          ),
+          child: builder(context),
+        ),
+      );
+    },
+  );
+}
+
 class _RingdrillSheetSurface extends StatelessWidget {
   const _RingdrillSheetSurface({required this.child});
 
