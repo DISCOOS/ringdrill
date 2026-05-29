@@ -1,3 +1,9 @@
+## 1.0.3+18 - 2026-05-29
+
+Changes since 1.0.3+17:
+
+- Improve cast picker actor management (1832a82)
+
 ## 1.0.3+17 - 2026-05-29
 
 Changes since 1.0.2+16:
