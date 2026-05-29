@@ -53,6 +53,10 @@ class _StationsViewState extends State<StationsView> {
   final _programService = ProgramService();
   final _mapKey = GlobalKey<_StationsViewState>();
   final _detailTarget = ValueNotifier<ContextSheetTarget?>(null);
+  // Context captured from inside MasterDetailScope so that tap handlers
+  // (which run on the state's context, above the scope) can find the scope
+  // via MasterDetailScope.maybeOf. Null when not in wide/responsive layout.
+  BuildContext? _scopeContext;
   StreamSubscription<ProgramEvent>? _programSubscription;
 
   bool _notified = false;
@@ -187,9 +191,13 @@ class _StationsViewState extends State<StationsView> {
               point: rp.position!,
               child: const RoleMarker(),
               clusterGroup: 'markers',
-              onTap: () => ContextSheet.of(
-                context,
-              ).show(context, RoleSheetTarget(rolePlayUuid: rp.uuid)),
+              onTap: () {
+                final ctx = _scopeContext ?? context;
+                ContextSheet.of(ctx).show(
+                  ctx,
+                  RoleSheetTarget(rolePlayUuid: rp.uuid),
+                );
+              },
             ),
           )
         : <MapMarkerSpec<(String, int)>>[];
@@ -247,11 +255,15 @@ class _StationsViewState extends State<StationsView> {
 
   Widget _buildResponsiveMap(BuildContext context, Widget mapColumn) {
     final windowSizeClass = WindowSizeClass.of(context);
-    if (!windowSizeClass.hasMasterDetail) return mapColumn;
+    if (!windowSizeClass.hasMasterDetail) {
+      _scopeContext = null;
+      return mapColumn;
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 640) {
+          _scopeContext = null;
           return mapColumn;
         }
         final detailRatio = windowSizeClass == WindowSizeClass.expanded
@@ -264,36 +276,60 @@ class _StationsViewState extends State<StationsView> {
         );
         final mapWidth = constraints.maxWidth - detailWidth;
         if (detailWidth < 360 || mapWidth < 280) {
+          _scopeContext = null;
           return mapColumn;
         }
 
+        // MasterDetailScope must always be present so _onStationTap can find
+        // the scope via ContextSheet.of(context).show(). The Builder captures
+        // a context that is a descendant of the scope (the state's own context
+        // is an ancestor and would miss it). The ValueListenableBuilder on
+        // _detailTarget controls width: full-width map when nothing is
+        // selected, split layout when a station/role is showing.
         return MasterDetailScope(
           target: _detailTarget,
           emptyPaneBuilder: (_) => const SizedBox.shrink(),
-          child: Row(
-            children: [
-              SizedBox(
-                width: mapWidth,
-                child: Column(
-                  children: [
-                    Expanded(child: mapColumn),
-                    if (ExerciseService().isStarted)
-                      SafeArea(
-                        top: false,
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
-                          ),
-                          child: DrillMiniPlayer(
-                            onOpen: () => _openDrillPlayer(context),
-                          ),
+          child: Builder(
+            builder: (scopeContext) {
+              _scopeContext = scopeContext;
+              return ValueListenableBuilder<ContextSheetTarget?>(
+                valueListenable: _detailTarget,
+                builder: (context, target, _) {
+                  final hasDetail = target != null;
+                  final activeMapWidth =
+                      hasDetail ? mapWidth : constraints.maxWidth;
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: activeMapWidth,
+                        child: Column(
+                          children: [
+                            Expanded(child: mapColumn),
+                            if (ExerciseService().isStarted)
+                              SafeArea(
+                                top: false,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                  child: DrillMiniPlayer(
+                                    onOpen: () => _openDrillPlayer(context),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                  ],
-                ),
-              ),
-              SizedBox(width: detailWidth, child: const MasterDetailPane()),
-            ],
+                      if (hasDetail)
+                        SizedBox(
+                          width: detailWidth,
+                          child: const MasterDetailPane(),
+                        ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         );
       },
@@ -741,10 +777,16 @@ class _StationsViewState extends State<StationsView> {
         stationIndex: id.$2,
       );
       if (_targetsEqual(_detailTarget.value, target)) {
-        _detailTarget.value = null;
+        // Toggle: tap same station again → close the detail pane.
+        final ctx = _scopeContext ?? context;
+        ContextSheet.of(ctx).close();
         return;
       }
-      ContextSheet.of(context).show(context, target);
+      // Use _scopeContext (below MasterDetailScope) in wide layout so
+      // show() finds the scope and opens the inline detail pane instead
+      // of a bottom sheet.
+      final ctx = _scopeContext ?? context;
+      ContextSheet.of(ctx).show(ctx, target);
     }
   }
 

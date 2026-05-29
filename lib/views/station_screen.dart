@@ -16,6 +16,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
@@ -102,7 +103,13 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (MasterDetailScope.maybeOf(context) != null) {
+              ContextSheet.of(context).close();
+            } else {
+              Navigator.pop(context);
+            }
+          },
           tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,

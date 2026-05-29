@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -12,7 +11,6 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
@@ -138,11 +136,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     // status-bar at the bottom of the screen already shows the same info
     // (round, phase, remaining time) more prominently and without dismissing
     // itself after a few seconds.
+    // Re-read isStartedOn so that events from other exercises (e.g. a
+    // different exercise starting) correctly flip _isStarted to false for
+    // this coordinator without having to filter by UUID here.
     _subscriptions.add(
-      _exerciseService.events.listen((event) {
+      _exerciseService.events.listen((_) {
         if (mounted) {
           setState(() {
-            _isStarted = event.isRunning || event.isPending;
+            _isStarted = _exerciseService.isStartedOn(widget.uuid);
           });
         }
       }),
@@ -245,9 +246,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
       stream: _exerciseService.events,
       initialData: _exerciseService.last,
       builder: (context, asyncSnapshot) {
+        // Only use the service event if it belongs to this exercise.
+        // Events from a different running exercise must not bleed into
+        // this coordinator's progress colours and phase display.
+        final raw = asyncSnapshot.data;
         final event =
-            asyncSnapshot.data ??
-            ExerciseEvent.pending(_programService.getExercise(widget.uuid)!);
+            (raw != null && raw.exercise.uuid == widget.uuid)
+            ? raw
+            : ExerciseEvent.pending(_programService.getExercise(widget.uuid)!);
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
@@ -270,7 +276,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 icon: const Icon(Icons.menu_book),
                 padding: const EdgeInsets.all(8.0),
                 tooltip: localizations.briefAction,
-                onPressed: () => context.push('$routeBrief/${widget.uuid}'),
+                onPressed: () => ContextSheet.of(context).show(
+                  context,
+                  BriefSheetTarget(exerciseUuid: widget.uuid),
+                ),
               ),
 
               // Notification re-show. `_promptShowNotification` is only

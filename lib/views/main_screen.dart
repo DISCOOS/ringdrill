@@ -649,7 +649,6 @@ class _MainScreenState extends State<MainScreen> {
     PageWidget<ScreenController> page, {
     required bool hasRail,
   }) {
-    final isCupertino = Theme.of(context).platform == TargetPlatform.iOS;
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
       child: _removePadding(
@@ -657,24 +656,10 @@ class _MainScreenState extends State<MainScreen> {
         paddingLeft: 0,
         child: AppBar(
           title: _buildAppBarTitle(context, page),
-          leadingWidth: hasRail ? 84 : null,
-          leading: hasRail
-              ? Padding(
-                  padding: EdgeInsets.only(left: isCupertino ? 32.0 : 20.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.menu),
-                        onPressed: () {
-                          _scaffoldKey.currentState?.openDrawer();
-                        },
-                      ),
-                    ],
-                  ),
-                )
-              : null,
+          // In wide layout the hamburger lives at the top of the NavigationRail;
+          // suppress the AppBar's leading slot entirely so it doesn't duplicate.
+          leadingWidth: hasRail ? 0 : null,
+          leading: hasRail ? const SizedBox.shrink() : null,
           actions: [
             const PlanStatusBadge(),
             ...?page.controller.buildActions(context, constraints),
@@ -1021,6 +1006,14 @@ class _MainScreenState extends State<MainScreen> {
       child: NavigationRail(
         selectedIndex: _currentTab,
         onDestinationSelected: _onDestinationSelected,
+        leading: Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          ),
+        ),
         destinations: _buildDestinations(localizations)
             .map<NavigationRailDestination>((d) {
               return NavigationRailDestination(

@@ -5,6 +5,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 
@@ -39,7 +40,13 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (MasterDetailScope.maybeOf(context) != null) {
+              ContextSheet.of(context).close();
+            } else {
+              Navigator.pop(context);
+            }
+          },
           tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,

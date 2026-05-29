@@ -4,6 +4,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
@@ -69,7 +70,13 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (MasterDetailScope.maybeOf(context) != null) {
+              ContextSheet.of(context).close();
+            } else {
+              Navigator.pop(context);
+            }
+          },
           tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,

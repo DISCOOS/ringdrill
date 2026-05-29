@@ -86,22 +86,63 @@ class ContextSheetController {
         _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
         return;
       }
+      // A non-brief target while a sheet is already open: navigate within it.
+      if (_isOpen) {
+        _target.value = target;
+        return;
+      }
     }
-    if (_isOpen) {
-      _target.value = target;
+    if (target is BriefSheetTarget) {
+      // BriefSheetTarget always opens its own modal sheet, even when _isOpen is
+      // true (e.g. brief tapped from inside a detail pane in wide layout).
+      // Save prior state so the detail pane is fully restored after brief closes.
+      final savedTarget = _target.value;
+      final savedIsOpen = _isOpen;
+      final savedNavigator = _navigator;
+      final savedActiveScope = _activeScope;
+      final savedBodyBuilder = _bodyBuilder;
+
+      _isOpen = true;
+      // Do NOT set _target.value = BriefSheetTarget. The ValueNotifier drives
+      // the master-detail detail pane, and MasterDetailScope treats
+      // BriefSheetTarget as "no target", which would blank the detail pane.
+      // The brief modal builds its body directly from [target] instead.
+      _navigator = Navigator.of(context);
+      _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
+      // Brief uses its own internal wide-layout split (TOC sidebar + body) and
+      // benefits from the full sheet width on large screens.
+      await showRingdrillViewerSheet<void>(
+        context: context,
+        maxBodyWidth: double.infinity,
+        builder: (context, scrollController) => ContextSheet(
+          controller: this,
+          bodyBuilder: _bodyBuilder,
+          child: PrimaryScrollController(
+            key: ValueKey(target),
+            controller: scrollController,
+            child: _bodyBuilder?.call(context, target) ??
+                _DefaultContextSheetBody(target: target),
+          ),
+        ),
+      );
+      // Restore prior state so the detail pane re-appears.
+      _target.value = savedTarget;
+      _isOpen = savedIsOpen;
+      _navigator = savedNavigator;
+      _activeScope = savedActiveScope;
+      _bodyBuilder = savedBodyBuilder;
       return;
     }
+
+    // Non-brief target with no scope and no open sheet: open a new modal.
     _isOpen = true;
     _target.value = target;
     _navigator = Navigator.of(context);
     _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
-    // Brief uses its own internal wide-layout split (TOC sidebar + body) and
-    // benefits from the full sheet width on large screens. Other targets keep
-    // the standard 720px readability cap from _ViewerBody.
-    final maxBodyWidth = target is BriefSheetTarget ? double.infinity : 720.0;
+    // Other targets keep the standard 720px readability cap.
     await showRingdrillViewerSheet<void>(
       context: context,
-      maxBodyWidth: maxBodyWidth,
+      maxBodyWidth: 720.0,
       builder: (context, scrollController) => ContextSheet(
         controller: this,
         bodyBuilder: _bodyBuilder,
