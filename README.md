@@ -64,13 +64,34 @@ To get started with developing for RingDrill using Flutter, follow these steps:
    make patch-android
    ```
 
-8. **Run the Application**:  
+8. **Cut a Release Tag**:
+   When the working tree is clean and you want to mark a new release, bump
+   `pubspec.yaml`, prepend a `CHANGELOG.md` entry, commit and tag in one step:
+   ```bash
+   make release-tag VERSION=1.0.3+17
+   ```
+   `VERSION` must follow Flutter's `X.Y.Z+N` shape. The changelog window is
+   `git log <last-tag>..HEAD --no-merges`, so each release lines up with the
+   previous tag. The target refuses to run on a dirty tree, to overwrite an
+   existing tag, or to "bump" to the version `pubspec.yaml` is already on.
+   Push afterwards with:
+   ```bash
+   git push --follow-tags
+   ```
+   To tag a previous commit (e.g. retroactively tag the commit that bumped
+   to `1.0.2+16`), pass the SHA to `git tag` directly:
+   ```bash
+   git tag -a "1.0.2+16" <sha> -m "Released 1.0.2+16"
+   git push origin 1.0.2+16
+   ```
+
+9. **Run the Application**:  
    Start the project on your desired emulator or physical device:
    ```bash
    flutter run
    ```
    
-9. **Run the Admin CLI**:
+10. **Run the Admin CLI**:
    To activate: 
     ```bash
    dart pub global activate -s path .
@@ -80,7 +101,7 @@ To get started with developing for RingDrill using Flutter, follow these steps:
    ringdrill -h
     ```
 
-10. **Run the Netlify backend locally**:
+11. **Run the Netlify backend locally**:
     Start the Netlify function host (with emulated blob store) on your machine:
     ```bash
     make netlify-dev

@@ -20,6 +20,7 @@ flutter run -d chrome                          # run PWA locally
 make web                                       # production web build (canvaskit, offline-first)
 make release-android                           # Shorebird Android release
 make patch-android                             # Shorebird OTA patch
+make release-tag VERSION=X.Y.Z+N               # bump pubspec, prepend CHANGELOG.md, commit, annotated tag
 dart pub global activate -s path .             # install CLI from this checkout
 ringdrill -h                                   # CLI usage (needs RINGDRILL_ADMIN_TOKEN)
 ```
