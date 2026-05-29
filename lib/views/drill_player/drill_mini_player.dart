@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
@@ -10,7 +11,12 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 
 class DrillMiniPlayer extends StatefulWidget {
-  const DrillMiniPlayer({super.key, required this.onOpen});
+  const DrillMiniPlayer({super.key, this.exercise, required this.onOpen});
+
+  /// Optional exercise to show in idle (not-yet-started) state. When set,
+  /// the mini player displays the first round and a play button instead of
+  /// collapsing to [SizedBox.shrink]. Ignored when an exercise is running.
+  final Exercise? exercise;
 
   final VoidCallback onOpen;
 
@@ -50,13 +56,20 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final event = _event;
-    if (event == null || !ExerciseService().isStarted) {
+    final isStarted = ExerciseService().isStarted;
+    final event = isStarted ? _event : null;
+    final idleExercise = !isStarted ? widget.exercise : null;
+
+    if (event == null && idleExercise == null) {
       return const SizedBox.shrink();
     }
 
+    if (idleExercise != null) {
+      return _buildIdle(context, idleExercise);
+    }
+
     final localizations = AppLocalizations.of(context)!;
-    final phase = event.phase;
+    final phase = event!.phase;
     final color = colorForPhase(phase);
 
     final secondsSinceEvent = _now
@@ -299,6 +312,110 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Idle state: first round + play button. Same layout structure as the
+  /// playing state so the transition is seamless.
+  Widget _buildIdle(BuildContext context, Exercise exercise) {
+    final event = ExerciseEvent.pending(exercise);
+    final scheme = Theme.of(context).colorScheme;
+
+    final program = ProgramService().activeProgram;
+    final exerciseNumber = program == null
+        ? 1
+        : program.exercises
+                  .indexWhere((e) => e.uuid == exercise.uuid)
+                  .clamp(0, 1 << 30) +
+              1;
+
+    return Material(
+      color: scheme.surfaceContainerHigh,
+      child: InkWell(
+        onTap: widget.onOpen,
+        child: SizedBox(
+          height: 48,
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Row(
+                children: [
+                  const SizedBox(width: 8),
+                  ExerciseNumberBadge(number: exerciseNumber, size: 36),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: MiniRoundRow(
+                        exercise: exercise,
+                        event: event,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Positioned(
+                top: 0,
+                bottom: 0,
+                right: 0,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    IgnorePointer(
+                      child: Container(
+                        width: 16,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              scheme.surfaceContainerHigh.withValues(alpha: 0.0),
+                              scheme.surfaceContainerHigh,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    ColoredBox(
+                      color: scheme.surfaceContainerHigh,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => ExerciseService().start(exercise),
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Center(
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.greenAccent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
