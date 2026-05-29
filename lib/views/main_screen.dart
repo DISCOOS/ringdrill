@@ -1111,14 +1111,15 @@ class _MainScreenState extends State<MainScreen> {
                                 ),
                                 child: DrillMiniPlayer(
                                   exercise: idleExercise,
-                                  onOpen: () {
-                                    final last = ExerciseService().last;
-                                    if (last == null) return;
-                                    _contextSheetController.targetNotifier
-                                        .value = ExerciseSheetTarget(
-                                      exerciseUuid: last.exercise.uuid,
-                                    );
-                                  },
+                                  onPlay: idleExercise == null
+                                      ? null
+                                      : () {
+                                          ExerciseService().start(
+                                            idleExercise,
+                                          );
+                                          _openDrillPlayer(context);
+                                        },
+                                  onOpen: () => _openDrillPlayer(context),
                                 ),
                               ),
                             );

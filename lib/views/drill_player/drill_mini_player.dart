@@ -11,12 +11,21 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 
 class DrillMiniPlayer extends StatefulWidget {
-  const DrillMiniPlayer({super.key, this.exercise, required this.onOpen});
+  const DrillMiniPlayer({
+    super.key,
+    this.exercise,
+    this.onPlay,
+    required this.onOpen,
+  });
 
   /// Optional exercise to show in idle (not-yet-started) state. When set,
   /// the mini player displays the first round and a play button instead of
   /// collapsing to [SizedBox.shrink]. Ignored when an exercise is running.
   final Exercise? exercise;
+
+  /// Called when the play button is tapped in idle state. When null, falls
+  /// back to calling [ExerciseService().start] directly.
+  final VoidCallback? onPlay;
 
   final VoidCallback onOpen;
 
@@ -385,7 +394,13 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                         children: [
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
-                            onTap: () => ExerciseService().start(exercise),
+                            onTap: () {
+                              if (widget.onPlay != null) {
+                                widget.onPlay!();
+                              } else {
+                                ExerciseService().start(exercise);
+                              }
+                            },
                             child: SizedBox(
                               width: 36,
                               height: 36,
