@@ -2,6 +2,7 @@
 	build watch release \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
+	release-tag \
 	require-clean-tree \
 	netlify-dev catalog-seed catalog-feed catalog-reset
 
@@ -168,4 +169,70 @@ catalog-feed:
 catalog-reset:
 	rm -rf .netlify/blobs-serve
 	@echo "Local blob store cleared. Restart 'make netlify-dev'."
+
+# Bump pubspec version, prepend a changelog entry, commit and tag.
+# Usage:
+#   make release-tag VERSION=1.0.3+17
+#
+# VERSION must follow Flutter's `X.Y.Z+N` shape (semver + build number),
+# matching the format already used for the existing `1.0.0+2` tag and for
+# the `version:` line in pubspec.yaml.
+#
+# The changelog window is `git log <last-tag>..HEAD`. We use the most
+# recent annotated/lightweight tag rather than scanning pubspec history,
+# so each release-tag invocation lines up cleanly with the previous one
+# even if someone hand-edited pubspec.yaml in between. `--no-merges`
+# keeps the entry to actual feature/fix commits.
+#
+# The annotated tag (`git tag -a`) means `git describe` keeps working and
+# GitHub renders a Release page out of the box. Push afterwards with:
+#   git push --follow-tags
+#
+# Guard rails:
+#   - require-clean-tree first, so the version bump commit is the only
+#     thing on top of the previous release;
+#   - VERSION must be supplied and shaped correctly;
+#   - refuses to overwrite an existing tag;
+#   - refuses to "bump" to the version pubspec.yaml is already on (would
+#     produce an empty commit and a misleading tag).
+release-tag: require-clean-tree
+	@test -n "$(VERSION)" || { \
+		echo "ERROR: set VERSION=X.Y.Z+N (e.g. make release-tag VERSION=1.0.3+17)"; \
+		exit 1; \
+	}
+	@echo "$(VERSION)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$$' || { \
+		echo "ERROR: VERSION must look like 1.2.3+45, got '$(VERSION)'"; \
+		exit 1; \
+	}
+	@if git rev-parse --verify --quiet "refs/tags/$(VERSION)" >/dev/null; then \
+		echo "ERROR: tag $(VERSION) already exists"; \
+		exit 1; \
+	fi
+	@CURRENT=$$(awk '/^version:/ {print $$2; exit}' pubspec.yaml); \
+	if [ "$$CURRENT" = "$(VERSION)" ]; then \
+		echo "ERROR: pubspec.yaml is already at $(VERSION); pick a higher version"; \
+		exit 1; \
+	fi; \
+	echo "Bumping pubspec.yaml: $$CURRENT -> $(VERSION)"
+	@sed -i.bak -E 's/^version: .+/version: $(VERSION)/' pubspec.yaml && rm pubspec.yaml.bak
+	@PREV_TAG=$$(git describe --tags --abbrev=0 2>/dev/null || true); \
+	if [ -n "$$PREV_TAG" ]; then RANGE="$$PREV_TAG..HEAD"; else RANGE="HEAD"; fi; \
+	DATE=$$(date +%F); \
+	{ \
+		echo "## $(VERSION) - $$DATE"; \
+		echo ""; \
+		if [ -n "$$PREV_TAG" ]; then echo "Changes since $$PREV_TAG:"; \
+		else echo "Initial changelog entry."; fi; \
+		echo ""; \
+		git log --no-merges --pretty=format:'- %s (%h)' $$RANGE; \
+		echo ""; \
+		echo ""; \
+		if [ -f CHANGELOG.md ]; then cat CHANGELOG.md; fi; \
+	} > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md
+	@git add pubspec.yaml CHANGELOG.md
+	@git commit -m "Released $(VERSION)"
+	@git tag -a "$(VERSION)" -m "Released $(VERSION)"
+	@echo ""
+	@echo "Created tag $(VERSION). Push with:"
+	@echo "  git push --follow-tags"
 
