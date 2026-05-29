@@ -1355,6 +1355,14 @@ class AppLocalizationsNb extends AppLocalizations {
   String get actorNotes => 'Notater';
 
   @override
+  String get deleteActor => 'Slett markør';
+
+  @override
+  String confirmDeleteActor(String name) {
+    return 'Dette sletter $name fra markørlisten. Fortsette?';
+  }
+
+  @override
   String get addRolePlay => 'Legg til markørordre';
 
   @override

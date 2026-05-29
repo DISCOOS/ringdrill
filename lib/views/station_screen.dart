@@ -502,17 +502,20 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   Future<void> _openCastPicker(RolePlay r) async {
     final localizations = AppLocalizations.of(context)!;
-    final actorUuid = await showRingdrillActionSheet<String>(
+    final result = await showRingdrillActionSheet<CastPickerResult>(
       context: context,
       builder: (context) => CastPickerSheet(rolePlay: r),
     );
-    if (actorUuid != null && actorUuid != r.actorUuid) {
-      await _programService.saveRolePlay(
-        localizations,
-        r.copyWith(actorUuid: actorUuid),
-      );
-      if (mounted) setState(() {});
-    }
+    if (result == null || !mounted) return;
+    final updated = switch (result) {
+      CastPickerSelect(:final actorUuid) =>
+        actorUuid == r.actorUuid ? null : r.copyWith(actorUuid: actorUuid),
+      CastPickerClear() =>
+        r.actorUuid == null ? null : r.copyWith(actorUuid: null),
+    };
+    if (updated == null) return;
+    await _programService.saveRolePlay(localizations, updated);
+    if (mounted) setState(() {});
   }
 
   /// Function to handle editing the exercise

@@ -7,6 +7,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
@@ -85,6 +86,47 @@ void main() {
     expect(find.text(_actorCast.realName), findsOneWidget);
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.newActor), findsOneWidget);
+    expect(find.text(l10n.clearCast), findsNothing);
+  });
+
+  testWidgets('shows clear row and selected actor when role has actor', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildPicker(_roleB));
+    await tester.pump();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.clearCast), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text(l10n.newActor)).dy,
+      lessThan(tester.getTopLeft(find.text(l10n.clearCast)).dy),
+    );
+    expect(
+      tester.getTopLeft(find.byType(Divider)).dy,
+      greaterThan(tester.getTopLeft(find.text(l10n.clearCast)).dy),
+    );
+    expect(
+      tester.getTopLeft(find.byType(Divider)).dy,
+      lessThan(tester.getTopLeft(find.text(_actorUncast.realName)).dy),
+    );
+
+    final selectedTile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text(_actorCast.realName),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(selectedTile.selected, isTrue);
+    expect(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text(_actorCast.realName),
+          matching: find.byType(ListTile),
+        ),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('cross-cast annotation shown for actor cast to sibling role', (
@@ -95,10 +137,7 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     // _actorCast is cast to _roleB; _roleA is in the same exercise
-    expect(
-      find.text(l10n.alreadyCastAs(_roleB.name)),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.alreadyCastAs(_roleB.name)), findsOneWidget);
   });
 
   testWidgets('search filters by realName', (tester) async {
@@ -115,7 +154,7 @@ void main() {
   testWidgets('selecting an actor closes picker and returns uuid', (
     tester,
   ) async {
-    String? result;
+    CastPickerResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -123,7 +162,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await showModalBottomSheet<String>(
+              result = await showModalBottomSheet<CastPickerResult>(
                 context: ctx,
                 builder: (_) => CastPickerSheet(rolePlay: _roleA),
               );
@@ -140,6 +179,86 @@ void main() {
     await tester.tap(find.text(_actorUncast.realName));
     await tester.pumpAndSettle();
 
-    expect(result, _actorUncast.uuid);
+    expect(
+      result,
+      isA<CastPickerSelect>().having(
+        (result) => result.actorUuid,
+        'actorUuid',
+        _actorUncast.uuid,
+      ),
+    );
+  });
+
+  testWidgets('clear row closes picker and returns clear result', (
+    tester,
+  ) async {
+    CastPickerResult? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              result = await showModalBottomSheet<CastPickerResult>(
+                context: ctx,
+                builder: (_) => CastPickerSheet(rolePlay: _roleB),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await tester.tap(find.text(l10n.clearCast));
+    await tester.pumpAndSettle();
+
+    expect(result, isA<CastPickerClear>());
+  });
+
+  testWidgets('opens inside Ringdrill action sheet without layout errors', (
+    tester,
+  ) async {
+    CastPickerResult? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              result = await showRingdrillActionSheet<CastPickerResult>(
+                context: ctx,
+                builder: (_) => CastPickerSheet(rolePlay: _roleA),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text(_actorUncast.realName), findsOneWidget);
+
+    await tester.tap(find.text(_actorUncast.realName));
+    await tester.pumpAndSettle();
+
+    expect(
+      result,
+      isA<CastPickerSelect>().having(
+        (result) => result.actorUuid,
+        'actorUuid',
+        _actorUncast.uuid,
+      ),
+    );
   });
 }

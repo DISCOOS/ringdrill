@@ -10,9 +10,9 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 ///
 /// Each row shows the actor's name and phone, with a footer listing the roles
 /// they are currently cast to. Tapping a row opens [ActorFormScreen] (edit).
-/// Swipe-left reveals a delete action that is blocked when the actor is cast
-/// in one or more roles (uses [castDeleteBlocked] ARB key). The FAB inside
-/// the sheet opens [ActorFormScreen] in create mode.
+/// Swipe-left and the edit form reveal delete actions that are blocked when
+/// the actor is cast in one or more roles (uses [castDeleteBlocked] ARB key).
+/// The FAB inside the sheet opens [ActorFormScreen] in create mode.
 ///
 /// All mutations are immediately persisted via [ProgramService]. The sheet
 /// rebuilds its state after each mutation via [setState].
@@ -50,24 +50,31 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
 
   Future<void> _openEdit(Actor actor) async {
     final localizations = AppLocalizations.of(context)!;
-    final updated = await openFormSurface<Actor>(
+    final result = await openFormSurface<ActorFormResult>(
       context,
       builder: (_) => ActorFormScreen(actor: actor),
     );
-    if (updated == null) return;
-    await _service.saveActor(localizations, updated);
+    if (result == null || !mounted) return;
+    switch (result) {
+      case ActorFormSave(:final actor):
+        await _service.saveActor(localizations, actor);
+      case ActorFormDelete(:final actor):
+        await _tryDelete(context, actor);
+    }
     if (!mounted) return;
     _reload();
   }
 
   Future<void> _openCreate() async {
     final localizations = AppLocalizations.of(context)!;
-    final created = await openFormSurface<Actor>(
+    final result = await openFormSurface<ActorFormResult>(
       context,
       builder: (_) => const ActorFormScreen(),
     );
-    if (created == null) return;
-    await _service.saveActor(localizations, created);
+    if (result == null) return;
+    if (result case ActorFormSave(:final actor)) {
+      await _service.saveActor(localizations, actor);
+    }
     if (!mounted) return;
     _reload();
   }

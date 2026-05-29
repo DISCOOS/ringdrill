@@ -40,7 +40,7 @@ void main() {
   testWidgets('save pops with new actor containing entered name', (
     tester,
   ) async {
-    Actor? result;
+    ActorFormResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -48,11 +48,9 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<Actor>(
+              result = await Navigator.push<ActorFormResult>(
                 ctx,
-                MaterialPageRoute(
-                  builder: (_) => const ActorFormScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const ActorFormScreen()),
               );
             },
             child: const Text('Open'),
@@ -66,21 +64,27 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.byWidgetPredicate(
-        (w) => w is EditableText && w.controller.text == '',
-      ).first,
+      find
+          .byWidgetPredicate(
+            (w) => w is EditableText && w.controller.text == '',
+          )
+          .first,
       'Ole Hansen',
     );
 
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
 
-    expect(result?.realName, 'Ole Hansen');
-    expect(result?.uuid, isNotNull);
+    expect(
+      result,
+      isA<ActorFormSave>()
+          .having((result) => result.actor.realName, 'realName', 'Ole Hansen')
+          .having((result) => result.actor.uuid, 'uuid', isNotNull),
+    );
   });
 
   testWidgets('save pops with updated actor preserving uuid', (tester) async {
-    Actor? result;
+    ActorFormResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -88,7 +92,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<Actor>(
+              result = await Navigator.push<ActorFormResult>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => ActorFormScreen(actor: _existingActor),
@@ -111,7 +115,101 @@ void main() {
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
 
-    expect(result?.realName, 'Kari Hansen');
-    expect(result?.uuid, _existingActor.uuid);
+    expect(
+      result,
+      isA<ActorFormSave>()
+          .having((result) => result.actor.realName, 'realName', 'Kari Hansen')
+          .having((result) => result.actor.uuid, 'uuid', _existingActor.uuid),
+    );
+  });
+
+  testWidgets('delete action is hidden for new actors', (tester) async {
+    await tester.pumpWidget(_buildForm());
+    await tester.pump();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.byTooltip(l10n.deleteActor), findsNothing);
+  });
+
+  testWidgets('delete confirmation can be cancelled', (tester) async {
+    ActorFormResult? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              result = await Navigator.push<ActorFormResult>(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) => ActorFormScreen(actor: _existingActor),
+                ),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip(l10n.deleteActor));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(l10n.confirmDeleteActor(_existingActor.realName)),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text(l10n.cancel));
+    await tester.pumpAndSettle();
+
+    expect(result, isNull);
+    expect(find.byType(ActorFormScreen), findsOneWidget);
+  });
+
+  testWidgets('delete confirmation pops with delete result', (tester) async {
+    ActorFormResult? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              result = await Navigator.push<ActorFormResult>(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) => ActorFormScreen(actor: _existingActor),
+                ),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip(l10n.deleteActor));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.delete));
+    await tester.pumpAndSettle();
+
+    expect(
+      result,
+      isA<ActorFormDelete>().having(
+        (result) => result.actor.uuid,
+        'uuid',
+        _existingActor.uuid,
+      ),
+    );
   });
 }

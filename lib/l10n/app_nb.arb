@@ -554,6 +554,17 @@
   "@actorNotes": {
     "description": "Feltetikett for private notater om markøren i ActorFormScreen."
   },
+  "deleteActor": "Slett markør",
+  "@deleteActor": {
+    "description": "Button and dialog title for deleting an Actor record from ActorFormScreen."
+  },
+  "confirmDeleteActor": "Dette sletter {name} fra markørlisten. Fortsette?",
+  "@confirmDeleteActor": {
+    "description": "Confirmation message shown before deleting an Actor record from ActorFormScreen.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
 
   "addRolePlay": "Legg til markørordre",
   "@addRolePlay": {

@@ -1254,6 +1254,17 @@
   "@actorNotes": {
     "description": "Field label for private notes about the actor in ActorFormScreen."
   },
+  "deleteActor": "Delete actor",
+  "@deleteActor": {
+    "description": "Button and dialog title for deleting an Actor record from ActorFormScreen."
+  },
+  "confirmDeleteActor": "This will delete {name} from the actor roster. Continue?",
+  "@confirmDeleteActor": {
+    "description": "Confirmation message shown before deleting an Actor record from ActorFormScreen.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
 
   "addRolePlay": "Add role",
   "@addRolePlay": {

@@ -1359,6 +1359,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actorNotes => 'Notes';
 
   @override
+  String get deleteActor => 'Delete actor';
+
+  @override
+  String confirmDeleteActor(String name) {
+    return 'This will delete $name from the actor roster. Continue?';
+  }
+
+  @override
   String get addRolePlay => 'Add role';
 
   @override

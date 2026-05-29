@@ -6,7 +6,8 @@ import 'package:ringdrill/models/actor.dart';
 /// Form for creating or editing an [Actor] record.
 ///
 /// Accepts an existing [actor] (edit mode) or null (create mode).
-/// Pops with the final [Actor] on save, or null on cancel.
+/// Pops with [ActorFormSave] on save, [ActorFormDelete] on delete, or null on
+/// cancel.
 ///
 /// When [modal] is true the caller provided a bottom-sheet context and the
 /// save button text is "Add" rather than "Save". The widget is stateless
@@ -24,6 +25,22 @@ class ActorFormScreen extends StatefulWidget {
 
   @override
   State<ActorFormScreen> createState() => _ActorFormScreenState();
+}
+
+sealed class ActorFormResult {
+  const ActorFormResult();
+}
+
+final class ActorFormSave extends ActorFormResult {
+  const ActorFormSave(this.actor);
+
+  final Actor actor;
+}
+
+final class ActorFormDelete extends ActorFormResult {
+  const ActorFormDelete(this.actor);
+
+  final Actor actor;
 }
 
 class _ActorFormScreenState extends State<ActorFormScreen> {
@@ -67,6 +84,12 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
         ),
         title: Text(title),
         actions: [
+          if (!isNew)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: localizations.deleteActor,
+              onPressed: _confirmDelete,
+            ),
           ElevatedButton(onPressed: _save, child: Text(localizations.save)),
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
@@ -148,6 +171,33 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
                 : _notesController.text.trim(),
           );
 
-    Navigator.of(context).pop(saved);
+    Navigator.of(context).pop(ActorFormSave(saved));
+  }
+
+  Future<void> _confirmDelete() async {
+    final actor = widget.actor;
+    if (actor == null) return;
+
+    final localizations = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(localizations.deleteActor),
+        content: Text(localizations.confirmDeleteActor(actor.realName)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(localizations.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(localizations.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop(ActorFormDelete(actor));
+    }
   }
 }

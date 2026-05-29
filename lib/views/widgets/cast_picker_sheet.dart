@@ -13,11 +13,12 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 /// appears below their name (still selectable). A sticky "New actor" row at
 /// the top lets the user create an actor inline via [ActorFormScreen].
 ///
-/// Returns the selected [Actor.uuid] on selection, or null on cancel.
+/// Returns [CastPickerSelect] when an actor is selected, [CastPickerClear]
+/// when the current actor is removed, or null on cancel.
 ///
 /// Usage:
 /// ```dart
-/// final uuid = await showRingdrillActionSheet<String>(
+/// final result = await showRingdrillActionSheet<CastPickerResult>(
 ///   context: context,
 ///   builder: (context) => CastPickerSheet(rolePlay: rolePlay),
 /// );
@@ -29,6 +30,20 @@ class CastPickerSheet extends StatefulWidget {
 
   @override
   State<CastPickerSheet> createState() => _CastPickerSheetState();
+}
+
+sealed class CastPickerResult {
+  const CastPickerResult();
+}
+
+final class CastPickerSelect extends CastPickerResult {
+  const CastPickerSelect(this.actorUuid);
+
+  final String actorUuid;
+}
+
+final class CastPickerClear extends CastPickerResult {
+  const CastPickerClear();
 }
 
 class _CastPickerSheetState extends State<CastPickerSheet> {
@@ -79,95 +94,114 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
 
   Future<void> _createAndSelect() async {
     final localizations = AppLocalizations.of(context)!;
-    final created = await openFormSurface<Actor>(
+    final result = await openFormSurface<ActorFormResult>(
       context,
       builder: (_) => const ActorFormScreen(),
     );
-    if (created == null || !mounted) return;
-    await _service.saveActor(localizations, created);
-    if (!mounted) return;
-    Navigator.of(context).pop(created.uuid);
+    if (result == null || !mounted) return;
+    if (result case ActorFormSave(:final actor)) {
+      await _service.saveActor(localizations, actor);
+      if (!mounted) return;
+      Navigator.of(context).pop(CastPickerSelect(actor.uuid));
+    }
   }
 
-  void _select(String actorUuid) => Navigator.of(context).pop(actorUuid);
+  void _select(String actorUuid) {
+    Navigator.of(context).pop(CastPickerSelect(actorUuid));
+  }
+
+  void _clear() {
+    Navigator.of(context).pop(const CastPickerClear());
+  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final filtered = _filtered;
+    final hasCurrentActor = widget.rolePlay.actorUuid != null;
+    final sheetHeight = MediaQuery.sizeOf(context).height * 0.6;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 1.0,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            // Title
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Text(
-                localizations.castPickerTitle(widget.rolePlay.name),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+    return SizedBox(
+      height: sheetHeight,
+      child: Column(
+        children: [
+          // Title
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              localizations.castPickerTitle(widget.rolePlay.name),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
+          ),
 
-            // Search field
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: localizations.castRoster,
-                  prefixIcon: const Icon(Icons.search),
-                  isDense: true,
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (v) => setState(() => _query = v),
+          // Search field
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: localizations.castRoster,
+                prefixIcon: const Icon(Icons.search),
+                isDense: true,
+                border: const OutlineInputBorder(),
               ),
+              onChanged: (v) => setState(() => _query = v),
             ),
+          ),
 
-            // Actor list
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: filtered.length + 1, // +1 for "New actor" row
-                itemBuilder: (context, index) {
-                  // Sticky new-actor row at top
-                  if (index == 0) {
-                    return ListTile(
-                      leading: const Icon(Icons.person_add),
-                      title: Text(localizations.newActor),
-                      onTap: _createAndSelect,
-                    );
-                  }
-
-                  final actor = filtered[index - 1];
-                  final crossCast = _crossCastName(actor.uuid);
-
+          // Actor list
+          Expanded(
+            child: ListView.builder(
+              itemCount: filtered.length + 2 + (hasCurrentActor ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == 0) {
                   return ListTile(
-                    leading: const Icon(Icons.face),
-                    title: Text(actor.realName),
-                    subtitle: crossCast != null
-                        ? Text(
-                            localizations.alreadyCastAs(crossCast),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          )
-                        : (actor.phone != null ? Text(actor.phone!) : null),
-                    onTap: () => _select(actor.uuid),
+                    leading: const Icon(Icons.person_add),
+                    title: Text(localizations.newActor),
+                    onTap: _createAndSelect,
                   );
-                },
-              ),
+                }
+
+                if (hasCurrentActor && index == 1) {
+                  return ListTile(
+                    leading: const Icon(Icons.person_remove),
+                    title: Text(localizations.clearCast),
+                    onTap: _clear,
+                  );
+                }
+
+                final dividerIndex = hasCurrentActor ? 2 : 1;
+                if (index == dividerIndex) {
+                  return const Divider(height: 1);
+                }
+
+                final actor = filtered[index - dividerIndex - 1];
+                final crossCast = _crossCastName(actor.uuid);
+                final isSelected = actor.uuid == widget.rolePlay.actorUuid;
+
+                return ListTile(
+                  selected: isSelected,
+                  leading: const Icon(Icons.face),
+                  title: Text(actor.realName),
+                  subtitle: crossCast != null
+                      ? Text(
+                          localizations.alreadyCastAs(crossCast),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : (actor.phone != null ? Text(actor.phone!) : null),
+                  trailing: isSelected ? const Icon(Icons.check) : null,
+                  onTap: () => _select(actor.uuid),
+                );
+              },
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }

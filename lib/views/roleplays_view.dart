@@ -495,15 +495,21 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Future<void> _openCastPicker(RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
-    final actorUuid = await showRingdrillActionSheet<String>(
+    final result = await showRingdrillActionSheet<CastPickerResult>(
       context: context,
       builder: (context) => CastPickerSheet(rolePlay: rolePlay),
     );
-    if (actorUuid == null || !mounted) return;
-    await _service.saveRolePlay(
-      localizations,
-      rolePlay.copyWith(actorUuid: actorUuid),
-    );
+    if (result == null || !mounted) return;
+    final updated = switch (result) {
+      CastPickerSelect(:final actorUuid) =>
+        actorUuid == rolePlay.actorUuid
+            ? null
+            : rolePlay.copyWith(actorUuid: actorUuid),
+      CastPickerClear() =>
+        rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
+    };
+    if (updated == null) return;
+    await _service.saveRolePlay(localizations, updated);
     if (mounted) setState(() {});
   }
 
@@ -518,12 +524,28 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Future<void> _editCast(Actor actor, RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
-    final updated = await openFormSurface<Actor>(
+    final result = await openFormSurface<ActorFormResult>(
       context,
       builder: (_) => ActorFormScreen(actor: actor),
     );
-    if (updated == null || !mounted) return;
-    await _service.saveActor(localizations, updated);
+    if (result == null || !mounted) return;
+    switch (result) {
+      case ActorFormSave(:final actor):
+        await _service.saveActor(localizations, actor);
+      case ActorFormDelete(:final actor):
+        final roles = _service.loadRolePlays().where(
+          (rolePlay) => rolePlay.actorUuid == actor.uuid,
+        );
+        if (roles.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.castDeleteBlocked(roles.length)),
+            ),
+          );
+          return;
+        }
+        await _service.deleteActor(actor.uuid);
+    }
     if (mounted) setState(() {});
   }
 }

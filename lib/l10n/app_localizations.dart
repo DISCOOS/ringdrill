@@ -2300,6 +2300,18 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get actorNotes;
 
+  /// Button and dialog title for deleting an Actor record from ActorFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete actor'**
+  String get deleteActor;
+
+  /// Confirmation message shown before deleting an Actor record from ActorFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'This will delete {name} from the actor roster. Continue?'**
+  String confirmDeleteActor(String name);
+
   /// Button label in the Markører section on StationExerciseScreen to create a new RolePlay at this post.
   ///
   /// In en, this message translates to:
