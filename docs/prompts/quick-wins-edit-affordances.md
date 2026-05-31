@@ -228,13 +228,14 @@ For team rows: add a new private `_editTeam(int teamIndex)` that:
 
 ---
 
-## Step 6 — Align exercise card swipe chrome with the row edit-affordance reference pattern
+## Step 6 — Align exercise card swipe chrome and add long-press editing
 
-The exercise card in `program_view.dart` already has a `Dismissible(endToStart)` that opens `ExerciseFormScreen`, but it was added before ADR-0031 and uses different chrome from the rest of the listings: `colorScheme.primary` background with no label, versus the `colorScheme.secondaryContainer` + label + icon pattern used in `station_list_view.dart`, `roleplays_view.dart`, and the new `teams_view.dart`. Bring it in line.
+The exercise card in `program_view.dart` already has a `Dismissible(endToStart)` that opens `ExerciseFormScreen`, but it was added before ADR-0031 and uses different chrome from the rest of the listings: `colorScheme.primary` background with no label, versus the `colorScheme.secondaryContainer` + label + icon pattern used in `station_list_view.dart`, `roleplays_view.dart`, and the new `teams_view.dart`. It also lacks the corresponding long-press edit path. Bring both behaviors in line.
 
 **Files touched**
 
 * `lib/views/program_view.dart`
+* `test/views/widgets/exercise_card_test.dart`
 
 **Content**
 
@@ -247,15 +248,16 @@ In `program_view.dart` (around lines 99-110), replace the `background` `Containe
 
 `localizations.editExercise` already exists in both `app_en.arb` ("Edit Exercise") and `app_nb.arb` ("Endre øvelse"). Do not add a new l10n key.
 
-The gesture itself, the `confirmDismiss` handler, and the `Navigator` flow are unchanged. This is a chrome-only fix.
+Extract the existing `confirmDismiss` form flow into one private `_openExerciseForm(...)` helper. Pass that same helper to `ExerciseCard.onLongPress`, and forward the optional callback from `ExerciseCard` to its underlying `ExpandableTile.onLongPress`. Keep the callback optional so exercise-picker cards remain read-only.
 
 **Verification**
 
 * `flutter analyze` clean.
 * `flutter test` clean.
-* Manual: swipe an exercise card on the Exercises tab and confirm the background is now muted (`secondaryContainer`) with the label "Endre øvelse" / "Edit Exercise" + pencil icon, matching the visual treatment of station, roleplay and team row swipes.
+* Widget test: long-pressing an `ExerciseCard` fires `onLongPress` without firing `onOpen`.
+* Manual: swipe an exercise card on the Exercises tab and confirm the background is now muted (`secondaryContainer`) with the label "Endre øvelse" / "Edit Exercise" + pencil icon, matching the visual treatment of station, roleplay and team row swipes. Long-press the same card and confirm the edit form opens directly.
 
-**Commit**: `refactor(program): align exercise card swipe chrome with ADR-0031 reference pattern`
+**Commit**: `fix(program): open exercise edit form on long-press`
 
 ---
 

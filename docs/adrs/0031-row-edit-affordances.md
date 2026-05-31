@@ -72,7 +72,7 @@ ExpandableTile(
 | `teams_view.dart` rows                  | tap-opens-sheet only                     | Dismissible swipe + `ListTile.onLongPress`               |
 | `coordinator_screen.dart` station rows  | tap-opens-sheet only                     | Dismissible swipe + `ExpandableTile.onLongPress`         |
 | `coordinator_screen.dart` team rows     | tap-opens-sheet only                     | `ExpandableTile.onLongPress` (no swipe today)            |
-| `program_view.dart` exercise card       | Dismissible (primary bg, no label)       | Dismissible (`secondaryContainer` bg + `editExercise` label) |
+| `program_view.dart` exercise card       | Dismissible (primary bg, no label)       | Dismissible (`secondaryContainer` bg + `editExercise` label) + `ExerciseCard.onLongPress` |
 | Detail screens' `AppBar.actions`        | `IconButton(Icons.edit)`                 | unchanged                                                |
 
 Out of scope: chart cells, table cells, map markers, brief-view sections, settings rows.

@@ -121,18 +121,7 @@ class _ProgramViewState extends State<ProgramView> {
               ),
             ),
             confirmDismiss: (direction) async {
-              final numberOfTeams = _programService.loadTeams().length;
-              final updated = await openFormSurface<Exercise>(
-                context,
-                builder: (_) => ExerciseFormScreen(
-                  exercise: exercise,
-                  numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
-                ),
-              );
-              if (updated != null && context.mounted) {
-                await _programService.saveExercise(localizations, updated);
-                setState(_initExercises);
-              }
+              await _openExerciseForm(context, localizations, exercise);
               // Always return false — the item should not be removed.
               return false;
             },
@@ -142,6 +131,8 @@ class _ProgramViewState extends State<ProgramView> {
               markers: markers,
               liveEvent: _liveEvent,
               selected: isSelected,
+              onLongPress: () =>
+                  _openExerciseForm(context, localizations, exercise),
               // V1: live card opens the DrillPlayer sheet (DESIGN-001).
               // All other cards keep the ContextSheet flow.
               onOpen: () {
@@ -187,6 +178,25 @@ class _ProgramViewState extends State<ProgramView> {
     _exercises = _programService.loadExercises();
   }
 
+  Future<void> _openExerciseForm(
+    BuildContext context,
+    AppLocalizations localizations,
+    Exercise exercise,
+  ) async {
+    final numberOfTeams = _programService.loadTeams().length;
+    final updated = await openFormSurface<Exercise>(
+      context,
+      builder: (_) => ExerciseFormScreen(
+        exercise: exercise,
+        numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
+      ),
+    );
+    if (updated != null && context.mounted) {
+      await _programService.saveExercise(localizations, updated);
+      setState(_initExercises);
+    }
+  }
+
   /// Returns `event` only when it represents a currently-live exercise.
   /// A `done` event is dropped so the list view stops styling the
   /// stopped exercise as live (no "FERDIG" subtitle, no blue card).
@@ -206,6 +216,7 @@ class ExerciseCard extends StatefulWidget {
     this.liveEvent,
     this.selected = false,
     this.onOpen,
+    this.onLongPress,
   });
 
   final Widget? trailing;
@@ -229,6 +240,10 @@ class ExerciseCard extends StatefulWidget {
   /// the inline map preview instead (used by the export/import picker
   /// where there is no detail screen to navigate to).
   final VoidCallback? onOpen;
+
+  /// Fires when the row is long-pressed. The exercises tab uses this as
+  /// its direct edit gesture; picker cards leave it unset.
+  final VoidCallback? onLongPress;
 
   @override
   State<ExerciseCard> createState() => _ExerciseCardState();
@@ -269,6 +284,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
       subtitle: Text(subtitleParts.join(' | '), style: accent.textStyle),
       trailing: widget.trailing,
       onOpen: widget.onOpen,
+      onLongPress: widget.onLongPress,
       onToggle: hasMap ? _toggleExpanded : null,
       expanded: _expanded,
       body: hasMap
