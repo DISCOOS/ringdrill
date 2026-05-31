@@ -267,13 +267,21 @@ GoRouter buildRouter(bool isFirstLaunch) {
                   final teamIndex = int.parse(
                     state.pathParameters['teamIndex']!,
                   );
-                  final exercise = ProgramService()
+                  final candidates = ProgramService()
                       .loadExercises()
                       .where((e) => e.numberOfTeams > teamIndex)
-                      .firstOrNull;
-                  if (exercise == null) {
+                      .toList();
+                  if (candidates.isEmpty) {
                     return const SizedBox.shrink();
                   }
+                  // Prefer the running exercise (match on uuid), not the
+                  // first one by index, so the team detail reflects live
+                  // state. Falls back to the first when none is started.
+                  final exerciseService = ExerciseService();
+                  final exercise = candidates.firstWhere(
+                    (e) => exerciseService.isStartedOn(e.uuid),
+                    orElse: () => candidates.first,
+                  );
                   return _ContextSheetDeepLinkLauncher(
                     target: TeamSheetTarget(
                       exerciseUuid: exercise.uuid,

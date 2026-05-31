@@ -98,11 +98,20 @@ class _TeamsViewState extends State<TeamsView> {
                 subtitle: Text(parts.join(' · ')),
                 onLongPress: () => _openTeamForm(t),
                 onTap: () {
-                  final exercise = _programService
+                  final candidates = _programService
                       .loadExercises()
                       .where((e) => e.numberOfTeams > t.index)
-                      .firstOrNull;
-                  if (exercise == null) return;
+                      .toList();
+                  if (candidates.isEmpty) return;
+                  // A team can take part in several exercises. Prefer the
+                  // one that is actually running so the detail's StreamBuilder
+                  // picks up its live event immediately; only fall back to the
+                  // first by index when none of them is started.
+                  final exerciseService = ExerciseService();
+                  final exercise = candidates.firstWhere(
+                    (e) => exerciseService.isStartedOn(e.uuid),
+                    orElse: () => candidates.first,
+                  );
                   ContextSheet.of(context).show(
                     context,
                     TeamSheetTarget(

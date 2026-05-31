@@ -175,7 +175,18 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
 
   ExerciseEvent _initialData() {
     final last = ExerciseService().last;
-    if (last?.exercise == widget.exercise) return last!;
+    // Match the live exercise by `uuid`, not by full-object equality.
+    // The `Exercise` held by the service is captured at `start()` time
+    // and can differ field-for-field from the freshly-loaded instance
+    // passed to this screen, so value equality misses the live event and
+    // the status only corrects itself once the next stream event lands.
+    // A `done` event is treated as "not live" so a stopped exercise
+    // starts from `pending`, matching `TeamScreen`.
+    if (last != null &&
+        last.exercise.uuid == widget.exercise.uuid &&
+        !last.isDone) {
+      return last;
+    }
     return ExerciseEvent.pending(widget.exercise);
   }
 
