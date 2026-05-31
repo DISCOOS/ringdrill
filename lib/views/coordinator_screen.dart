@@ -54,10 +54,13 @@ class CoordinatorScreen extends StatefulWidget {
   State<CoordinatorScreen> createState() => _CoordinatorScreenState();
 }
 
-/// Which list the coordinator is currently looking at. The two columns
-/// (station rotations / team rotations) are mutually exclusive now, so the
-/// coordinator picks one via a SegmentedButton at the top of the body.
-enum _CoordinatorView { stations, teams }
+/// Which view the coordinator is currently looking at. Station rotations,
+/// team rotations and (in the single-column / mobile body) an all-stations
+/// map are mutually exclusive; the coordinator picks one via a
+/// SegmentedButton at the top of the body. [map] is only offered in the
+/// single-column layout — the wide two-column body always shows the map
+/// below the lists, so it has no map segment.
+enum _CoordinatorView { stations, teams, map }
 
 /// Entries in the appbar overflow menu. Edit and delete used to live as
 /// standalone icon buttons next to brief and the notification bell, but
@@ -76,6 +79,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Exercise? _exercise;
   bool _promptShowNotification = false;
   _CoordinatorView _view = _CoordinatorView.stations;
+
+  /// The map view only exists in the single-column (mobile) body. When the
+  /// wide two-column body is shown it has no map segment, so a `map`
+  /// selection (e.g. left over after a resize from narrow to wide) falls
+  /// back to the stations list/segment there.
+  _CoordinatorView get _viewWithoutMap =>
+      _view == _CoordinatorView.map ? _CoordinatorView.stations : _view;
 
   // Mutual-exclusive expansion state for the station and team lists.
   // At most one row may be expanded in either list at any time.
@@ -384,6 +394,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                       event,
                       showHero: showHero,
                       localizations: localizations,
+                      viewportHeight: constraints.maxHeight,
                     ),
             );
           },
@@ -415,17 +426,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
+    required double viewportHeight,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildTopSection(event, showHero: showHero),
         const SizedBox(height: 16),
-        _buildViewSelector(localizations),
+        _buildViewSelector(localizations, includeMap: true),
         const SizedBox(height: 8),
-        _view == _CoordinatorView.stations
-            ? _buildStationList(event)
-            : _buildTeamList(event),
+        switch (_view) {
+          _CoordinatorView.stations => _buildStationList(event),
+          _CoordinatorView.teams => _buildTeamList(event),
+          _CoordinatorView.map => _buildSingleColumnMap(viewportHeight),
+        },
       ],
     );
   }
@@ -435,33 +449,63 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// master-detail detail pane) keeps the same way to reach the team
   /// rotations — without it the two-column body could only ever show
   /// stations.
-  Widget _buildViewSelector(AppLocalizations localizations) {
-    return Center(
-      child: SegmentedButton<_CoordinatorView>(
-        segments: [
-          ButtonSegment<_CoordinatorView>(
-            value: _CoordinatorView.stations,
-            label: Text(
-              '${localizations.stationRotations}'
-              ' (${_exercise!.stations.length})',
-            ),
-            icon: const Icon(Icons.location_on),
+  Widget _buildViewSelector(
+    AppLocalizations localizations, {
+    required bool includeMap,
+  }) {
+    // The map segment is only offered in the single-column body; the wide
+    // two-column body always shows the map below the lists. `selected` is
+    // coerced via [_viewWithoutMap] so a stale `map` selection does not feed
+    // SegmentedButton a value missing from its segments after a resize.
+    final selectedView = includeMap ? _view : _viewWithoutMap;
+    final button = SegmentedButton<_CoordinatorView>(
+      segments: [
+        ButtonSegment<_CoordinatorView>(
+          value: _CoordinatorView.stations,
+          label: Text(
+            '${localizations.stationRotations}'
+            ' (${_exercise!.stations.length})',
           ),
-          ButtonSegment<_CoordinatorView>(
-            value: _CoordinatorView.teams,
-            label: Text(
-              '${localizations.teamRotations}'
-              ' (${_exercise!.numberOfTeams})',
-            ),
-            icon: const Icon(Icons.group),
+          icon: const Icon(Icons.location_on),
+        ),
+        ButtonSegment<_CoordinatorView>(
+          value: _CoordinatorView.teams,
+          label: Text(
+            '${localizations.teamRotations}'
+            ' (${_exercise!.numberOfTeams})',
           ),
-        ],
-        selected: <_CoordinatorView>{_view},
-        showSelectedIcon: false,
-        onSelectionChanged: (selection) {
-          setState(() => _view = selection.first);
-        },
-      ),
+          icon: const Icon(Icons.group),
+        ),
+        if (includeMap)
+          ButtonSegment<_CoordinatorView>(
+            value: _CoordinatorView.map,
+            label: Text(localizations.mapTab),
+            icon: const Icon(Icons.map),
+          ),
+      ],
+      selected: <_CoordinatorView>{selectedView},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) {
+        setState(() => _view = selection.first);
+      },
+    );
+    // Two segments comfortably fit and stay centered. The three-segment
+    // (single-column) variant can exceed a narrow phone's width once the
+    // rotation labels carry their counts, so wrap it in a horizontal
+    // scroll view whose content is forced to at least the viewport width:
+    // it centers when it fits and scrolls instead of overflowing when it
+    // does not.
+    if (!includeMap) return Center(child: button);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: Center(child: button),
+          ),
+        );
+      },
     );
   }
 
@@ -471,6 +515,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     required double viewportHeight,
   }) {
     final localizations = AppLocalizations.of(context)!;
+    final positionMap = _buildExercisePositionMap(
+      height:
+          (viewportHeight -
+                  _kCoordinatorBodyPadding * 2 -
+                  _kCoordinatorWideTopSectionHeight)
+              .clamp(240.0, double.infinity),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -493,9 +544,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildViewSelector(localizations),
+                  _buildViewSelector(localizations, includeMap: false),
                   const SizedBox(height: 8),
-                  _view == _CoordinatorView.stations
+                  _viewWithoutMap == _CoordinatorView.stations
                       ? _buildStationList(event)
                       : _buildTeamList(event),
                 ],
@@ -514,15 +565,47 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           ],
         ),
         const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: _buildExercisePositionMap(viewportHeight: viewportHeight),
-        ),
+        if (positionMap != null)
+          Padding(padding: const EdgeInsets.all(8.0), child: positionMap),
       ],
     );
   }
 
-  Widget _buildExercisePositionMap({required double viewportHeight}) {
+  /// Map subview for the single-column (mobile) body, shown when the map
+  /// segment is selected. Reuses the same all-stations map as the wide
+  /// body and falls back to a short placeholder when no station has a
+  /// position yet.
+  Widget _buildSingleColumnMap(double viewportHeight) {
+    final localizations = AppLocalizations.of(context)!;
+    // The map renders below the top section (round table + selector) inside
+    // the scrolling body, so it must leave room for that content — otherwise
+    // a near-full-viewport map pushes the page well past one screen. Reserve
+    // a chunk for the chrome above so the map stays inside the viewport
+    // rather than dominating it.
+    final map = _buildExercisePositionMap(
+      height: (viewportHeight - 320).clamp(240.0, double.infinity),
+    );
+    if (map != null) {
+      return Padding(padding: const EdgeInsets.all(8.0), child: map);
+    }
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Center(
+        child: Text(
+          _exercise!.stations.isEmpty
+              ? localizations.notStationsCreated
+              : localizations.noLocation,
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  /// All-stations map for this exercise. Returns null when no station has a
+  /// position so callers can omit the block (wide body) or show a
+  /// placeholder (mobile map subview). [height] is the fixed height the map
+  /// box occupies inside the scrolling body.
+  Widget? _buildExercisePositionMap({required double height}) {
     final markers = _exercise!.stations
         .where((station) => station.position != null)
         .map(
@@ -541,17 +624,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           ),
         )
         .toList();
-    if (markers.isEmpty) return const SizedBox.shrink();
+    if (markers.isEmpty) return null;
 
     final points = markers.map((marker) => marker.point).toList();
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
-        height:
-            (viewportHeight -
-                    _kCoordinatorBodyPadding * 2 -
-                    _kCoordinatorWideTopSectionHeight)
-                .clamp(240.0, double.infinity),
+        height: height,
         child: MapView<int>(
           layers: MapConfig.layers,
           withZoom: true,
