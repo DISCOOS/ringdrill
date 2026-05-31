@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -21,6 +22,7 @@ import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -1093,65 +1095,93 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           // Mirrors the live styling used in TeamScreen._ExerciseSection.
           final isLive = event.isRunning;
           final accent = LiveAccent.of(context, isLive: isLive);
-          return ExpandableTile(
-            // Use ValueKey (not PageStorageKey) — see the comment
-            // on the station ExpandableTile above for the reason.
-            key: ValueKey<String>('coordinator-team-$teamIndex'),
-            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-            accent: accent,
-            leading: accent.indicator,
-            title: Text(
-              '${localizations.team(1)} ${teamIndex + 1}',
-              style: TextStyle(fontSize: 18, color: accent.foreground),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: currentStationName == null
-                ? null
-                : Text(
-                    '→ $currentStationName',
-                    style:
-                        accent.textStyle ??
-                        TextStyle(
-                          color: context.colors.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
+          final teamName =
+              _programService.getTeam(teamIndex)?.name ??
+              '${localizations.team(1)} ${teamIndex + 1}';
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onLongPress: () => _editTeam(teamIndex),
+            child: ExpandableTile(
+              // Use ValueKey (not PageStorageKey) — see the comment
+              // on the station ExpandableTile above for the reason.
+              key: ValueKey<String>('coordinator-team-$teamIndex'),
+              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+              accent: accent,
+              leading: accent.indicator,
+              title: Text(
+                teamName,
+                style: TextStyle(fontSize: 18, color: accent.foreground),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: currentStationName == null
+                  ? null
+                  : Text(
+                      '→ $currentStationName',
+                      style:
+                          accent.textStyle ??
+                          TextStyle(
+                            color: context.colors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: VerticalDividerWidget(),
                   ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: VerticalDividerWidget(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Text(
-                    localizations.station(1),
-                    style: TextStyle(fontSize: 18, color: accent.foreground),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      localizations.station(1),
+                      style: TextStyle(fontSize: 18, color: accent.foreground),
+                    ),
                   ),
-                ),
-                ...List<Widget>.generate(_exercise!.schedule.length, (
-                  roundIndex,
-                ) {
-                  final isCurrent =
-                      event.isRunning && roundIndex == event.currentRound;
-                  return TeamStationWidget(
-                    isCurrent: isCurrent,
-                    exercise: _exercise!,
-                    teamIndex: teamIndex,
-                    roundIndex: roundIndex,
-                  );
-                }),
-              ],
+                  ...List<Widget>.generate(_exercise!.schedule.length, (
+                    roundIndex,
+                  ) {
+                    final isCurrent =
+                        event.isRunning && roundIndex == event.currentRound;
+                    return TeamStationWidget(
+                      isCurrent: isCurrent,
+                      exercise: _exercise!,
+                      teamIndex: teamIndex,
+                      roundIndex: roundIndex,
+                    );
+                  }),
+                ],
+              ),
+              expanded: _expandedTeamIndex == teamIndex,
+              onToggle: () => _toggleTeam(teamIndex),
+              body: _buildTeamDetail(teamIndex, event),
             ),
-            expanded: _expandedTeamIndex == teamIndex,
-            onToggle: () => _toggleTeam(teamIndex),
-            body: _buildTeamDetail(teamIndex, event),
           );
         }),
       ),
     );
+  }
+
+  Future<void> _editTeam(int teamIndex) async {
+    final localizations = context.l10n;
+    if (_isStarted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(localizations.stopExerciseFirst(_exercise!.name)),
+        ),
+      );
+      return;
+    }
+    final team = _programService.getTeam(teamIndex);
+    if (team == null) return;
+    final updated = await openFormSurface<Team>(
+      context,
+      builder: (_) => TeamFormScreen(team: team),
+    );
+    if (!mounted || updated == null) return;
+    await _programService.saveTeam(localizations, updated);
+    if (mounted) setState(() {});
   }
 
   /// Inline detail for a team row in the coordinator team list. Shown when
