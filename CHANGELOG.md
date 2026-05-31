@@ -1,3 +1,45 @@
+## 1.0.3+19 - 2026-05-31
+
+Changes since 1.0.3+18:
+
+- fix(team): match live exercise by uuid in TeamExerciseScreen (ff13c17)
+- docs(adr): add ADR-0032 program-scoped routing (1c5bc6b)
+- docs(design): add DESIGN-006 program tab consolidation, supersede 002/003 (35350ec)
+- feat(coordinator): add all-stations map segment to mobile body (2d50f1e)
+- feat(map): hide app bar on Map tab in compact layout (7cf1c2e)
+- fix(coordinator): center round table + status tile and pin status background (9f05c90)
+- feat(program): move new-exercise FAB to extended label in master pane (346379a)
+- feat(coordinator): replace status bar + FAB with a docked tile mini-player (56ce8ac)
+- fix(coordinator): show view selector in wide layout, anchored to list column (c3345bf)
+- feat(program): expand stations inline in ExerciseCard + extract ExerciseMiniMap (87c6f3a)
+- feat(program): inline station list in ExerciseCard with edit + open gestures (8795b07)
+- fix(program): open exercise edit form on long-press (ba7f950)
+- refactor(program): align exercise card swipe chrome with ADR-0031 reference pattern (a1f7f91)
+- docs(row-edit-affordances): tighten ADR-0031 and extend prompt with program_view alignment (153b7b7)
+- refactor(widgets): centralize ExpandableTile long-press handling (019fa7a)
+- feat(rows): add long-press editing to stations and roleplays (235a39f)
+- feat(coordinator): long-press edit team rows (5eaa1f6)
+- feat(coordinator): swipe-to-edit station rows in exercise overview (0d395d9)
+- feat(teams): edit team via swipe, long-press, and detail-sheet action (e603ddf)
+- feat(team): add TeamFormScreen for editing team name, members, position (c3c1b88)
+- feat(program-service): public saveTeam wrapper + teamSaved event (f4301a7)
+- docs(prompts): add DEBT-0005 context-extension sweep prompt (cb49b95)
+- docs(prompts): add DEBT-0005 context-extension sweep prompt (3bedd73)
+- docs(debts): update DEBT-0002/0004/0005/0006 statuses (b48b4df)
+- refactor: migrate coordinator lists to ExpandableTile + LiveAccent (DEBT-0002) (acacad7)
+- refactor: add SubscriptionBag mixin and adopt in main/stations (DEBT-0006) (2108ac0)
+- refactor: extract shared destructive-confirm dialog (DEBT-0004) (8c86914)
+- refactor: add BuildContext extension for l10n/colors/texts (DEBT-0005) (497e530)
+- docs(prompts): add coordinator-consolidation debt paydown prompt (6a78faf)
+- fix(shell): clear detail pane when exercise starts in master/detail (3f70c4c)
+- fix(wide): make master cards pop in dark wide layout (87039fb)
+- fix(wide): rework mini player placement and narrow-mode fallback (df811a7)
+- fix: remove dead expression in generateSchedule and correct test docs (b4df8e5)
+- docs(debts): record nine tech-debt entries from codebase review (dc6d09c)
+- feat(wide): unified visual hierarchy across master/detail panes (f238661)
+- fix(shell): make NavigationRail span full height in narrow medium layout (4e45d1e)
+- docs(prompts): add ADR-0021 implementation prompt (cfecf4b)
+
 ## 1.0.3+18 - 2026-05-29
 
 Changes since 1.0.3+17:
