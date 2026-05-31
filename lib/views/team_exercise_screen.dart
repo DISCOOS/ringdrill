@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 
@@ -24,6 +28,9 @@ class TeamExerciseScreen extends StatefulWidget {
 }
 
 class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
+  final _exerciseService = ExerciseService();
+  final _programService = ProgramService();
+
   int currentIndex = 0;
 
   @override
@@ -35,7 +42,9 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final teamLabel = '${localizations.team(1)} ${currentIndex + 1}';
+    final team = _programService.getTeam(widget.teamIndex);
+    final teamLabel =
+        team?.name ?? '${localizations.team(1)} ${widget.teamIndex + 1}';
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -50,10 +59,18 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
           tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,
-        title: SheetTitle(
-          primary: teamLabel,
-          secondary: widget.exercise.name,
-        ),
+        title: SheetTitle(primary: teamLabel, secondary: widget.exercise.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            padding: const EdgeInsets.all(8),
+            onPressed: _exerciseService.isStarted ? null : _editTeam,
+            tooltip: _exerciseService.isStarted
+                ? localizations.stopExerciseFirst(widget.exercise.name)
+                : localizations.editTeam,
+          ),
+        ],
+        actionsPadding: const EdgeInsets.only(right: 16),
       ),
       body: SafeArea(
         child: StreamBuilder(
@@ -160,5 +177,18 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     final last = ExerciseService().last;
     if (last?.exercise == widget.exercise) return last!;
     return ExerciseEvent.pending(widget.exercise);
+  }
+
+  Future<void> _editTeam() async {
+    final localizations = AppLocalizations.of(context)!;
+    final team = _programService.getTeam(widget.teamIndex);
+    if (team == null) return;
+    final updated = await openFormSurface<Team>(
+      context,
+      builder: (_) => TeamFormScreen(team: team),
+    );
+    if (!mounted || updated == null) return;
+    await _programService.saveTeam(localizations, updated);
+    if (mounted) setState(() {});
   }
 }

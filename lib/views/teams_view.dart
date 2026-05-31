@@ -2,9 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 class TeamsView extends StatefulWidget {
@@ -59,29 +63,55 @@ class _TeamsViewState extends State<TeamsView> {
           final isSelected =
               selectedTarget is TeamSheetTarget &&
               selectedTarget.teamIndex == t.index;
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: ListTile(
-              selected: isSelected,
-              title: Text(
-                t.name,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(parts.join(' · ')),
-              onTap: () {
-                final exercise = _programService
-                    .loadExercises()
-                    .where((e) => e.numberOfTeams > t.index)
-                    .firstOrNull;
-                if (exercise == null) return;
-                ContextSheet.of(context).show(
-                  context,
-                  TeamSheetTarget(
-                    exerciseUuid: exercise.uuid,
-                    teamIndex: t.index,
+          final colorScheme = Theme.of(context).colorScheme;
+          return Dismissible(
+            key: ValueKey('team-row-${t.uuid}'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              color: colorScheme.secondaryContainer,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    localizations.editTeam,
+                    style: TextStyle(color: colorScheme.onSecondaryContainer),
                   ),
-                );
-              },
+                  const SizedBox(width: 8),
+                  Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
+                ],
+              ),
+            ),
+            confirmDismiss: (_) async {
+              await _openTeamForm(t);
+              return false;
+            },
+            child: Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                selected: isSelected,
+                title: Text(
+                  t.name,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(parts.join(' · ')),
+                onLongPress: () => _openTeamForm(t),
+                onTap: () {
+                  final exercise = _programService
+                      .loadExercises()
+                      .where((e) => e.numberOfTeams > t.index)
+                      .firstOrNull;
+                  if (exercise == null) return;
+                  ContextSheet.of(context).show(
+                    context,
+                    TeamSheetTarget(
+                      exerciseUuid: exercise.uuid,
+                      teamIndex: t.index,
+                    ),
+                  );
+                },
+              ),
             ),
           );
         }).toList(),
@@ -100,6 +130,28 @@ class _TeamsViewState extends State<TeamsView> {
               builder: (context, target, _) => buildList(target),
             ),
     );
+  }
+
+  Future<void> _openTeamForm(Team team) async {
+    final localizations = AppLocalizations.of(context)!;
+    final exerciseService = ExerciseService();
+    if (exerciseService.isStarted) {
+      final exerciseName = exerciseService.last?.exercise.name;
+      if (exerciseName != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.stopExerciseFirst(exerciseName)),
+          ),
+        );
+      }
+      return;
+    }
+    final updated = await openFormSurface<Team>(
+      context,
+      builder: (_) => TeamFormScreen(team: team),
+    );
+    if (!mounted || updated == null) return;
+    await _programService.saveTeam(localizations, updated);
   }
 }
 
