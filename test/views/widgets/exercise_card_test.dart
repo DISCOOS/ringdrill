@@ -128,8 +128,12 @@ void main() {
     final tiles = tester.widgetList<ExpandableTile>(
       find.byType(ExpandableTile),
     );
+    // Tap opens the detail sheet, long-press edits, and the chevron
+    // expands the inline detail (description / position / roles).
     expect(tiles.last.onOpen, isNotNull);
     expect(tiles.last.onLongPress, isNotNull);
+    expect(tiles.last.onToggle, isNotNull);
+    expect(tiles.last.body, isNotNull);
     expect(
       tiles.last.color,
       Theme.of(
@@ -162,12 +166,15 @@ void main() {
   ) async {
     await tester.pumpWidget(_mutexHarness());
 
-    await tester.tap(find.byType(IconButton).at(0));
+    // Tap the card header (onOpen is null in this harness, so a row tap
+    // toggles) by its title text. Indexing IconButtons would be fragile
+    // now that expanded station rows add their own chevron buttons.
+    await tester.tap(find.text('Exercise A'));
     await tester.pumpAndSettle();
     expect(find.text('Station A'), findsOneWidget);
     expect(find.text('Station B'), findsNothing);
 
-    await tester.tap(find.byType(IconButton).at(1));
+    await tester.tap(find.text('Exercise B'));
     await tester.pumpAndSettle();
     expect(find.text('Station A'), findsNothing);
     expect(find.text('Station B'), findsOneWidget);

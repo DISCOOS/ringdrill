@@ -13,7 +13,6 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
-import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
@@ -22,8 +21,11 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_mini_map.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
 import 'exercise_form_screen.dart';
 
@@ -283,6 +285,12 @@ class ExerciseCard extends StatefulWidget {
 class _ExerciseCardState extends State<ExerciseCard> {
   bool _expanded = false;
 
+  /// Index of the station row whose inline detail is currently open, or
+  /// null when all rows are collapsed. Single-value because each card
+  /// shows exactly one exercise, so opening a row collapses the previous
+  /// one — same mutex behaviour as `StationListView`.
+  int? _expandedStationIndex;
+
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
 
   @override
@@ -344,18 +352,9 @@ class _ExerciseCardState extends State<ExerciseCard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (markers.isNotEmpty) ...[
-          SizedBox(
-            height: 200,
-            child: IgnorePointer(
-              child: MapView(
-                layers: MapConfig.layers,
-                withToggle: false,
-                withClustering: false,
-                markers: markers.toMarkerSpecs(),
-                initialFit: markers.fit(),
-                initialCenter: markers.average(),
-              ),
-            ),
+          ExerciseMiniMap(
+            markers: markers,
+            mapKey: ValueKey<String>('exercise-card-map-${exercise.uuid}'),
           ),
           if (showStations) const SizedBox(height: 8),
         ],
@@ -405,6 +404,13 @@ class _ExerciseCardState extends State<ExerciseCard> {
           onOpen: () => _openStation(context, exercise, station),
           onLongPress: () =>
               _openStationForm(context, localizations, exercise, station),
+          expanded: _expandedStationIndex == stationIndex,
+          onToggle: () => setState(() {
+            _expandedStationIndex = _expandedStationIndex == stationIndex
+                ? null
+                : stationIndex;
+          }),
+          body: _buildStationDetail(exercise, station),
         );
         return Dismissible(
           key: ValueKey<String>(
@@ -501,6 +507,36 @@ class _ExerciseCardState extends State<ExerciseCard> {
     await programService.saveExercise(
       localizations,
       current.copyWith(stations: stations),
+    );
+  }
+
+  /// Inline detail shown when a station row is expanded. Mirrors the
+  /// `StationListView` / `CoordinatorScreen` body: description, the shared
+  /// position panel (label row + tappable mini-map) and the role summary.
+  /// The mini-map height is kept compact (140) so the detail stays tight
+  /// inside the already-expanded card.
+  Widget _buildStationDetail(Exercise exercise, Station station) {
+    final description = station.description;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (description != null && description.trim().isNotEmpty) ...[
+          Text(description, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 12),
+        ],
+        StationPositionPanel(
+          exercise: exercise,
+          station: station,
+          mapHeight: 140,
+          miniMapKey: ValueKey<String>(
+            'exercise-card-station-map-${exercise.uuid}-${station.index}',
+          ),
+        ),
+        const SizedBox(height: 12),
+        StationRoleSummary(exercise: exercise, stationIndex: station.index),
+      ],
     );
   }
 }
