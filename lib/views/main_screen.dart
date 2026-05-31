@@ -1260,6 +1260,14 @@ class _MainScreenState extends State<MainScreen> {
                               ? null
                               : () {
                                   ExerciseService().start(idleExercise);
+                                  // Clear the detail target so the master/detail
+                                  // pane empties once the exercise goes live —
+                                  // the running exercise lives in the fullscreen
+                                  // drill player, not the detail pane. Without
+                                  // this the started exercise's coordinator stays
+                                  // pinned in the detail pane after the player is
+                                  // closed, until another item is selected.
+                                  _contextSheetController.close();
                                   _openDrillPlayer(context);
                                 },
                           onOpen: () => _openDrillPlayer(context),
