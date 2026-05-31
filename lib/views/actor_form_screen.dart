@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/utils/context_extensions.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 
 /// Form for creating or editing an [Actor] record.
 ///
@@ -178,25 +180,14 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
     final actor = widget.actor;
     if (actor == null) return;
 
-    final localizations = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.deleteActor),
-        content: Text(localizations.confirmDeleteActor(actor.realName)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(localizations.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(localizations.delete),
-          ),
-        ],
-      ),
+    final localizations = context.l10n;
+    final confirmed = await confirmDestructive(
+      context,
+      title: localizations.deleteActor,
+      message: localizations.confirmDeleteActor(actor.realName),
+      confirmLabel: localizations.delete,
     );
-    if (confirmed == true && mounted) {
+    if (confirmed && mounted) {
       Navigator.of(context).pop(ActorFormDelete(actor));
     }
   }

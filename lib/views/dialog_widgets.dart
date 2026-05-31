@@ -1,5 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+
+Future<bool> confirmDestructive(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+}) async {
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(context.l10n.cancel),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                confirmLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+}
 
 /// Shows [builder] either as a [Dialog] (wide form factor) or as a modal
 /// bottom sheet (narrow form factor).

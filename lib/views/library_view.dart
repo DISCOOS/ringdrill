@@ -11,6 +11,7 @@ import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
@@ -422,31 +423,18 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 
   Future<bool> _confirmDelete(BuildContext context, Program program) async {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = context.l10n;
     if (_programService.activeProgramUuid == program.uuid &&
         ExerciseService().isStarted) {
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
       return false;
     }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.confirm),
-        content: Text(localizations.confirmDeleteExercise),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(localizations.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(localizations.delete),
-          ),
-        ],
-      ),
+    return confirmDestructive(
+      context,
+      title: localizations.confirm,
+      message: localizations.confirmDeleteExercise,
+      confirmLabel: localizations.delete,
     );
-    return confirmed ?? false;
   }
 
   Future<void> _deleteProgram(Program program) async {

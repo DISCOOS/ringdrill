@@ -8,10 +8,12 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
+import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -177,36 +179,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
 
   /// Function to handle editing the exercise
   void _deleteExercise(BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
-    final confirmed = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.confirm),
-        content: Text(localizations.confirmDeleteExercise),
-        actions: [
-          // Cancel Button
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(false);
-            },
-            child: Text(localizations.cancel),
-          ),
-          // Delete Button
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Navigator.of(context).pop(true);
-            },
-            child: Text(
-              localizations.delete,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final localizations = context.l10n;
+    final confirmed = await confirmDestructive(
+      context,
+      title: localizations.confirm,
+      message: localizations.confirmDeleteExercise,
+      confirmLabel: localizations.delete,
     );
 
     if (context.mounted && confirmed) {
@@ -250,8 +228,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         // Events from a different running exercise must not bleed into
         // this coordinator's progress colours and phase display.
         final raw = asyncSnapshot.data;
-        final event =
-            (raw != null && raw.exercise.uuid == widget.uuid)
+        final event = (raw != null && raw.exercise.uuid == widget.uuid)
             ? raw
             : ExerciseEvent.pending(_programService.getExercise(widget.uuid)!);
         return Scaffold(
@@ -281,10 +258,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
                 icon: const Icon(Icons.menu_book),
                 padding: const EdgeInsets.all(8.0),
                 tooltip: localizations.briefAction,
-                onPressed: () => ContextSheet.of(context).show(
+                onPressed: () => ContextSheet.of(
                   context,
-                  BriefSheetTarget(exerciseUuid: widget.uuid),
-                ),
+                ).show(context, BriefSheetTarget(exerciseUuid: widget.uuid)),
               ),
 
               // Notification re-show. `_promptShowNotification` is only
@@ -363,13 +339,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           ),
           floatingActionButton:
               _isStarted && MasterDetailScope.maybeOf(context) == null
-                  ? ExerciseControlButton(
-                      key: const ValueKey('coordinator-exercise-fab'),
-                      exercise: _exercise!,
-                      service: _exerciseService,
-                      localizations: localizations,
-                    )
-                  : null,
+              ? ExerciseControlButton(
+                  key: const ValueKey('coordinator-exercise-fab'),
+                  exercise: _exercise!,
+                  service: _exerciseService,
+                  localizations: localizations,
+                )
+              : null,
           floatingActionButtonLocation: _isStarted
               ? FloatingActionButtonLocation.centerDocked
               : FloatingActionButtonLocation.endFloat,

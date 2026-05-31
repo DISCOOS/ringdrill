@@ -12,8 +12,10 @@ import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
@@ -77,32 +79,20 @@ Future<void> renameActivePlan(BuildContext context) async {
 /// library when confirmed. Refuses with a snackbar if the program is active
 /// and an exercise is currently running.
 Future<void> deletePlan(BuildContext context, Program program) async {
-  final localizations = AppLocalizations.of(context)!;
+  final localizations = context.l10n;
   final programService = ProgramService();
   if (programService.activeProgramUuid == program.uuid &&
       ExerciseService().isStarted) {
     _showSnackBar(context, localizations.libraryCannotSwitchRunning);
     return;
   }
-  final confirmed = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      title: Text(localizations.confirm),
-      content: Text(localizations.confirmDeleteExercise),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(localizations.cancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(localizations.delete),
-        ),
-      ],
-    ),
+  final confirmed = await confirmDestructive(
+    context,
+    title: localizations.confirm,
+    message: localizations.confirmDeleteExercise,
+    confirmLabel: localizations.delete,
   );
-  if (confirmed != true) return;
+  if (!confirmed) return;
   await programService.deleteProgram(program.uuid);
 }
 

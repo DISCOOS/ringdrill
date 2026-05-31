@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 
 class ExerciseFormScreen extends StatefulWidget {
   const ExerciseFormScreen({super.key, this.exercise, this.numberOfTeams});
@@ -341,7 +343,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       final executionTime = int.parse(_executionTimeController.text);
       final evaluationTime = int.parse(_evaluationTimeController.text);
       final rotationTime = int.parse(_rotationTimeController.text);
-      final localizations = AppLocalizations.of(context)!;
+      final localizations = context.l10n;
 
       final existingExercise = widget.exercise;
       if (existingExercise != null &&
@@ -358,29 +360,16 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         });
 
         if (dropsUserVisibleContent) {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(localizations.confirmReduceStationsTitle),
-              content: Text(
-                localizations.confirmReduceStationsBody(
-                  existingExercise.stations.length - numberOfStations,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(localizations.cancel),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(localizations.yes),
-                ),
-              ],
+          final confirmed = await confirmDestructive(
+            context,
+            title: localizations.confirmReduceStationsTitle,
+            message: localizations.confirmReduceStationsBody(
+              existingExercise.stations.length - numberOfStations,
             ),
+            confirmLabel: localizations.yes,
           );
           if (!mounted) return;
-          if (confirmed != true) {
+          if (!confirmed) {
             return;
           }
         }
