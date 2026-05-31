@@ -100,12 +100,24 @@ class _ProgramViewState extends State<ProgramView> {
             key: ValueKey(exercise.uuid),
             direction: DismissDirection.endToStart,
             background: Container(
-              color: Theme.of(context).colorScheme.primary,
+              color: Theme.of(context).colorScheme.secondaryContainer,
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Icon(
-                Icons.edit,
-                color: Theme.of(context).colorScheme.onPrimary,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    localizations.editExercise,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.edit,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ],
               ),
             ),
             confirmDismiss: (direction) async {
