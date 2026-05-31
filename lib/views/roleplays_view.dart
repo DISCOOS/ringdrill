@@ -5,6 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
@@ -257,44 +258,48 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         await _openRolePlayForm(exercise, rolePlay);
         return false;
       },
-      child: ExpandableTile(
-        selected: selected,
-        leading: RoleCodeBadge(
-          code: '$exerciseNumber.${rolePlay.index + 1}',
-          highlight: actor != null,
-        ),
-        title: Text(
-          () {
-            final tb = StringBuffer(rolePlay.name);
-            if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
-            if (actor != null) tb.write(' (${actor.realName})');
-            return tb.toString();
-          }(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          (rolePlay.stationIndex != null &&
-                  rolePlay.stationIndex! < exercise.stations.length)
-              ? localizations.roleSubtitleStation(
-                  exercise.stations[rolePlay.stationIndex!].name,
-                )
-              : localizations.roleSubtitleExercise(exercise.name),
-        ),
-        trailing: _buildCastChip(context, localizations, rolePlay, actor),
-        expanded: expanded,
-        onOpen: () => _openRolePlay(rolePlay),
-        onToggle: () {
-          setState(() {
-            _expandedRowIndex = expanded ? null : rowIndex;
-          });
-        },
-        body: _buildExpandedBody(
-          context,
-          localizations,
-          exercise,
-          rolePlay,
-          actor,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onLongPress: () => _openRolePlayForm(exercise, rolePlay),
+        child: ExpandableTile(
+          selected: selected,
+          leading: RoleCodeBadge(
+            code: '$exerciseNumber.${rolePlay.index + 1}',
+            highlight: actor != null,
+          ),
+          title: Text(
+            () {
+              final tb = StringBuffer(rolePlay.name);
+              if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
+              if (actor != null) tb.write(' (${actor.realName})');
+              return tb.toString();
+            }(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            (rolePlay.stationIndex != null &&
+                    rolePlay.stationIndex! < exercise.stations.length)
+                ? localizations.roleSubtitleStation(
+                    exercise.stations[rolePlay.stationIndex!].name,
+                  )
+                : localizations.roleSubtitleExercise(exercise.name),
+          ),
+          trailing: _buildCastChip(context, localizations, rolePlay, actor),
+          expanded: expanded,
+          onOpen: () => _openRolePlay(rolePlay),
+          onToggle: () {
+            setState(() {
+              _expandedRowIndex = expanded ? null : rowIndex;
+            });
+          },
+          body: _buildExpandedBody(
+            context,
+            localizations,
+            exercise,
+            rolePlay,
+            actor,
+          ),
         ),
       ),
     );
@@ -486,6 +491,20 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Future<void> _openRolePlayForm(Exercise exercise, RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
+    final exerciseService = ExerciseService();
+    if (exerciseService.isStarted) {
+      final runningExercise = exerciseService.last?.exercise;
+      if (runningExercise != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.stopExerciseFirst(runningExercise.name),
+            ),
+          ),
+        );
+      }
+      return;
+    }
     final updated = await openFormSurface<RolePlay>(
       context,
       builder: (_) =>

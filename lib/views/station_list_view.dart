@@ -286,27 +286,31 @@ class _StationListViewState extends State<StationListView> {
         await _openStationForm(exercise, station);
         return false;
       },
-      child: ExpandableTile(
-        leading: StationCodeBadge(
-          code: _stationCode(exerciseNumber, station),
-          highlight: isLive,
-          hasRoles: hasRoles,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onLongPress: () => _openStationForm(exercise, station),
+        child: ExpandableTile(
+          leading: StationCodeBadge(
+            code: _stationCode(exerciseNumber, station),
+            highlight: isLive,
+            hasRoles: hasRoles,
+          ),
+          title: Text(station.name, style: accent.textStyle),
+          subtitle: Text(
+            '${localizations.exercise(1)}: ${exercise.name}',
+            style: accent.textStyle,
+          ),
+          accent: accent,
+          selected: selected,
+          expanded: expanded,
+          onOpen: () => _openStation(exercise, station),
+          onToggle: () {
+            setState(() {
+              _expandedRowIndex = expanded ? null : rowIndex;
+            });
+          },
+          body: _buildExpandedBody(context, localizations, exercise, station),
         ),
-        title: Text(station.name, style: accent.textStyle),
-        subtitle: Text(
-          '${localizations.exercise(1)}: ${exercise.name}',
-          style: accent.textStyle,
-        ),
-        accent: accent,
-        selected: selected,
-        expanded: expanded,
-        onOpen: () => _openStation(exercise, station),
-        onToggle: () {
-          setState(() {
-            _expandedRowIndex = expanded ? null : rowIndex;
-          });
-        },
-        body: _buildExpandedBody(context, localizations, exercise, station),
       ),
     );
   }
@@ -399,6 +403,20 @@ class _StationListViewState extends State<StationListView> {
 
   Future<void> _openStationForm(Exercise exercise, Station station) async {
     final localizations = AppLocalizations.of(context)!;
+    final exerciseService = ExerciseService();
+    if (exerciseService.isStarted) {
+      final runningExercise = exerciseService.last?.exercise;
+      if (runningExercise != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.stopExerciseFirst(runningExercise.name),
+            ),
+          ),
+        );
+      }
+      return;
+    }
     final newStation = await openFormSurface<Station>(
       context,
       builder: (_) => StationFormScreen(
