@@ -414,33 +414,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       children: [
         _buildTopSection(event, showHero: showHero),
         const SizedBox(height: 16),
-        Center(
-          child: SegmentedButton<_CoordinatorView>(
-            segments: [
-              ButtonSegment<_CoordinatorView>(
-                value: _CoordinatorView.stations,
-                label: Text(
-                  '${localizations.stationRotations}'
-                  ' (${_exercise!.stations.length})',
-                ),
-                icon: const Icon(Icons.location_on),
-              ),
-              ButtonSegment<_CoordinatorView>(
-                value: _CoordinatorView.teams,
-                label: Text(
-                  '${localizations.teamRotations}'
-                  ' (${_exercise!.numberOfTeams})',
-                ),
-                icon: const Icon(Icons.group),
-              ),
-            ],
-            selected: <_CoordinatorView>{_view},
-            showSelectedIcon: false,
-            onSelectionChanged: (selection) {
-              setState(() => _view = selection.first);
-            },
-          ),
-        ),
+        _buildViewSelector(localizations),
         const SizedBox(height: 8),
         _view == _CoordinatorView.stations
             ? _buildStationList(event)
@@ -449,18 +423,69 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
+  /// Stations/teams switch shown at the top of the list. Shared by the
+  /// single- and two-column bodies so the wide layout (e.g. the
+  /// master-detail detail pane) keeps the same way to reach the team
+  /// rotations — without it the two-column body could only ever show
+  /// stations.
+  Widget _buildViewSelector(AppLocalizations localizations) {
+    return Center(
+      child: SegmentedButton<_CoordinatorView>(
+        segments: [
+          ButtonSegment<_CoordinatorView>(
+            value: _CoordinatorView.stations,
+            label: Text(
+              '${localizations.stationRotations}'
+              ' (${_exercise!.stations.length})',
+            ),
+            icon: const Icon(Icons.location_on),
+          ),
+          ButtonSegment<_CoordinatorView>(
+            value: _CoordinatorView.teams,
+            label: Text(
+              '${localizations.teamRotations}'
+              ' (${_exercise!.numberOfTeams})',
+            ),
+            icon: const Icon(Icons.group),
+          ),
+        ],
+        selected: <_CoordinatorView>{_view},
+        showSelectedIcon: false,
+        onSelectionChanged: (selection) {
+          setState(() => _view = selection.first);
+        },
+      ),
+    );
+  }
+
   Widget _buildTwoColumnBody(
     ExerciseEvent event, {
     required bool showHero,
     required double viewportHeight,
   }) {
+    final localizations = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 6, child: _buildStationList(event)),
+            // Selector sits at the top of the list column so it stays
+            // attached to the stations/teams list it switches. The right
+            // column (round table) top-aligns with it.
+            Expanded(
+              flex: 6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildViewSelector(localizations),
+                  const SizedBox(height: 8),
+                  _view == _CoordinatorView.stations
+                      ? _buildStationList(event)
+                      : _buildTeamList(event),
+                ],
+              ),
+            ),
             const SizedBox(width: 24),
             Expanded(
               flex: 5,
