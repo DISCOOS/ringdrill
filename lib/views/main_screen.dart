@@ -1194,16 +1194,35 @@ class _MainScreenState extends State<MainScreen> {
                       Expanded(
                         child: ColoredBox(
                           color: masterAccent,
-                          child: Column(
-                            children: [
-                              _buildAppBar(
-                                context,
-                                constraints,
-                                page,
-                                hasRail: true,
-                              ),
-                              Expanded(child: _buildIndexedTabs()),
-                            ],
+                          // In dark + rail, override `cardTheme.color` to
+                          // `brandDeep` so cards in the master list sit one
+                          // tone darker than `masterAccentDark` and clearly
+                          // pop out as content tiles. Without this override
+                          // cards default to `darkSurface` which is nearly
+                          // the same lightness as the master accent. The
+                          // narrow (no-rail) layout keeps the default
+                          // `darkSurface` cards on the `brandDeep` scaffold.
+                          child: Theme(
+                            data: isDark
+                                ? Theme.of(context).copyWith(
+                                    cardTheme: Theme.of(context)
+                                        .cardTheme
+                                        .copyWith(
+                                          color: RingDrillColors.brandDeep,
+                                        ),
+                                  )
+                                : Theme.of(context),
+                            child: Column(
+                              children: [
+                                _buildAppBar(
+                                  context,
+                                  constraints,
+                                  page,
+                                  hasRail: true,
+                                ),
+                                Expanded(child: _buildIndexedTabs()),
+                              ],
+                            ),
                           ),
                         ),
                       ),
