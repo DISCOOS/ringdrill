@@ -563,10 +563,11 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // produced the "multiple heroes that share the same tag" assertion seen
     // when bouncing between /program and /stations. Disabling the Hero wrapper
     // entirely is the safe fix.
-    return FloatingActionButton(
+    return FloatingActionButton.extended(
       heroTag: null,
       onPressed: () => _navigateToCreateExercise(context),
-      child: const Icon(Icons.add),
+      icon: const Icon(Icons.add),
+      label: Text(AppLocalizations.of(context)!.newExercise),
     );
   }
 

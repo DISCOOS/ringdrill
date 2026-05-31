@@ -848,6 +848,12 @@ abstract class AppLocalizations {
   /// **'Create Exercise'**
   String get createExercise;
 
+  /// Label for the FAB that creates a new exercise
+  ///
+  /// In en, this message translates to:
+  /// **'New exercise'**
+  String get newExercise;
+
   /// Label
   ///
   /// In en, this message translates to:

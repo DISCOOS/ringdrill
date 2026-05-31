@@ -490,6 +490,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createExercise => 'Create Exercise';
 
   @override
+  String get newExercise => 'New exercise';
+
+  @override
   String get editExercise => 'Edit Exercise';
 
   @override

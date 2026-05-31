@@ -487,6 +487,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get createExercise => 'Opprett øvelse';
 
   @override
+  String get newExercise => 'Ny øvelse';
+
+  @override
   String get editExercise => 'Endre øvelse';
 
   @override

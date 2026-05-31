@@ -1123,14 +1123,10 @@ class _MainScreenState extends State<MainScreen>
               );
             })
             .toList(),
-        trailing: fab != null
-            ? Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [fab, SizedBox(height: 16)],
-                ),
-              )
-            : SizedBox(height: 16),
+        // The exercises FAB no longer lives in the rail trailing slot — in
+        // the wide layout it floats at the bottom-right of the master pane
+        // (see the Stack below). The rail just keeps a little bottom padding.
+        trailing: const SizedBox(height: 16),
       ),
     );
 
@@ -1205,7 +1201,24 @@ class _MainScreenState extends State<MainScreen>
                                   page,
                                   hasRail: true,
                                 ),
-                                Expanded(child: _buildIndexedTabs()),
+                                // Stack so the active tab's FAB (only the
+                                // exercises tab has one) floats at the
+                                // bottom-right of the master pane, above the
+                                // docked mini player which sits below this
+                                // region in the outer Column.
+                                Expanded(
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(child: _buildIndexedTabs()),
+                                      if (fab != null)
+                                        Positioned(
+                                          right: 16,
+                                          bottom: 16,
+                                          child: fab,
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),

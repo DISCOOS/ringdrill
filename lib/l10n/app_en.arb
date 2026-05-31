@@ -508,6 +508,10 @@
   "@createExercise": {
     "description": "Label"
   },
+  "newExercise": "New exercise",
+  "@newExercise": {
+    "description": "Label for the FAB that creates a new exercise"
+  },
   "editExercise": "Edit Exercise",
   "@editExercise": {
     "description": "Label"
