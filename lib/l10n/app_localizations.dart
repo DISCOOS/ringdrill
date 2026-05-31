@@ -1388,6 +1388,36 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{now} =1{1 year} other{{count} years}}'**
   String year(num count);
 
+  /// Subtitle under the elapsed-time tile in the coordinator mini-player.
+  ///
+  /// In en, this message translates to:
+  /// **'So far'**
+  String get elapsedLabel;
+
+  /// Subtitle under the total-duration tile in the coordinator mini-player.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get totalLabel;
+
+  /// Round counter on the coordinator mini-player, e.g. 1 of 6.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String roundOfTotal(int current, int total);
+
+  /// Compact hours and minutes duration, e.g. 2 h 30 min.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String hoursMinutesShort(int hours, int minutes);
+
+  /// Subtitle under the current wall-clock time tile in the coordinator mini-player.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get clockLabel;
+
   /// number of minutes left
   ///
   /// In en, this message translates to:

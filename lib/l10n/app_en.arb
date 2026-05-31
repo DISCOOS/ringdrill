@@ -908,6 +908,34 @@
   "@year": {
     "description": "number of years"
   },
+  "elapsedLabel": "So far",
+  "@elapsedLabel": {
+    "description": "Subtitle under the elapsed-time tile in the coordinator mini-player."
+  },
+  "totalLabel": "Total",
+  "@totalLabel": {
+    "description": "Subtitle under the total-duration tile in the coordinator mini-player."
+  },
+  "roundOfTotal": "{current} of {total}",
+  "@roundOfTotal": {
+    "description": "Round counter on the coordinator mini-player, e.g. 1 of 6.",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "hoursMinutesShort": "{hours} h {minutes} min",
+  "@hoursMinutesShort": {
+    "description": "Compact hours and minutes duration, e.g. 2 h 30 min.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "clockLabel": "Now",
+  "@clockLabel": {
+    "description": "Subtitle under the current wall-clock time tile in the coordinator mini-player."
+  },
   "minutesLeft": "{count} min left",
   "@minutesLeft": {
     "description": "number of minutes left"

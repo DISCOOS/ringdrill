@@ -10,6 +10,19 @@ import 'package:ringdrill/views/drill_player/phase_colors.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 
+/// Builds the central content of a [DrillMiniPlayer], replacing the default
+/// [MiniRoundRow]. [remainingSeconds] is the per-second-smoothed countdown of
+/// the current phase and [elapsedSeconds] the per-second-smoothed time since
+/// the exercise started (both 0 while idle), so a custom body can tick
+/// smoothly.
+typedef DrillMiniPlayerBodyBuilder =
+    Widget Function(
+      BuildContext context,
+      ExerciseEvent event,
+      int remainingSeconds,
+      int elapsedSeconds,
+    );
+
 class DrillMiniPlayer extends StatefulWidget {
   const DrillMiniPlayer({
     super.key,
@@ -17,7 +30,29 @@ class DrillMiniPlayer extends StatefulWidget {
     this.onPlay,
     required this.onOpen,
     this.height = 48,
+    this.bodyBuilder,
+    this.showInlineStatus = true,
   });
+
+  /// Overrides the content shown in the central, flexible area that
+  /// defaults to a horizontally-scrollable [MiniRoundRow]. Receives the
+  /// current [ExerciseEvent] (a pending event in the idle state, the live
+  /// event while running) and the per-second-smoothed seconds remaining in
+  /// the current phase (0 in the idle state), so the override can render a
+  /// smooth countdown of its own. Returns the widget placed inside the
+  /// `Expanded` slot — it is NOT wrapped in a scroll view, so the override
+  /// owns its own overflow handling.
+  ///
+  /// When null the default scrollable round row is used, so existing
+  /// callers are unaffected.
+  final DrillMiniPlayerBodyBuilder? bodyBuilder;
+
+  /// When `true` (the default) the running state shows the inline phase
+  /// label and countdown to the left of the stop button. Callers that move
+  /// that information into [bodyBuilder] (e.g. the coordinator's tile row)
+  /// pass `false` so the trailing cluster collapses to just the stop
+  /// button — keeping the floating mini-bar elsewhere unchanged.
+  final bool showInlineStatus;
 
   /// Height of the tappable strip (excluding the 4px progress bar at the
   /// bottom). Defaults to 48 for the narrow/portrait floating mini bar; the
@@ -167,12 +202,29 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                       ExerciseNumberBadge(number: exerciseNumber, size: 36),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: MiniRoundRow(
-                            exercise: event.exercise,
-                            event: event,
+                        child: Padding(
+                          // When the inline status is hidden, the trailing
+                          // overlay shrinks to just the stop button. Reserve
+                          // its width so a full-width custom body (e.g. the
+                          // coordinator tiles) does not slide under it.
+                          padding: EdgeInsets.only(
+                            right: widget.showInlineStatus ? 0 : 60,
                           ),
+                          child:
+                              widget.bodyBuilder?.call(
+                                context,
+                                event,
+                                remainingSeconds,
+                                (smoothedProgress * totalDurationSeconds)
+                                    .round(),
+                              ) ??
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: MiniRoundRow(
+                                  exercise: event.exercise,
+                                  event: event,
+                                ),
+                              ),
                         ),
                       ),
                     ],
@@ -212,73 +264,35 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (!event.isDone)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: Text(
-                                    event.getState(localizations),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: colorForPhase(event.phase),
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                ),
-                              Text(
-                                countdown,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      color: accent.foreground,
-                                      fontWeight: FontWeight.w600,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures(),
-                                      ],
+                              if (widget.showInlineStatus) ...[
+                                if (!event.isDone)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Text(
+                                      event.getState(localizations),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            color: colorForPhase(event.phase),
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Stop button — red filled circle with a stop
-                              // glyph. Tap stops the exercise immediately; no
-                              // confirmation, matching the user's V1 brief.
-                              // GestureDetector wins the gesture arena over
-                              // the enclosing InkWell, so tapping the circle
-                              // does not also open the sheet.
-                              //
-                              // The ring around the circle is intentionally
-                              // kept (pulses in pending, spins while running)
-                              // pending visual review — it may be dropped in
-                              // a follow-up.
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () => ExerciseService().stop(),
-                                child: SizedBox(
-                                  width: 36,
-                                  height: 36,
-                                  child: Stack(
-                                    children: [
-                                      Center(
-                                        child: Container(
-                                          width: 30,
-                                          height: 30,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.redAccent,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.stop,
-                                            color: Colors.white,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox.expand(
-                                        child: _PlayRing(phase: event.phase),
-                                      ),
-                                    ],
                                   ),
+                                Text(
+                                  countdown,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        color: accent.foreground,
+                                        fontWeight: FontWeight.w600,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                              ],
+                              _buildStopSquare(event.phase),
                               const SizedBox(width: 8),
                             ],
                           ),
@@ -331,6 +345,38 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
     );
   }
 
+  /// Stop button — red filled circle with a stop glyph. Tap stops the
+  /// exercise immediately; no confirmation, matching the V1 brief. The
+  /// [GestureDetector] wins the gesture arena over the enclosing [InkWell],
+  /// so tapping the circle does not also fire [onOpen]. The ring pulses in
+  /// pending and spins while running.
+  Widget _buildStopSquare(ExercisePhase phase) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => ExerciseService().stop(),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: Stack(
+          children: [
+            Center(
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.stop, color: Colors.white, size: 18),
+              ),
+            ),
+            SizedBox.expand(child: _PlayRing(phase: phase)),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Idle state: first round + play button. Same layout structure as the
   /// playing state so the transition is seamless.
   Widget _buildIdle(BuildContext context, Exercise exercise) {
@@ -360,13 +406,15 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   ExerciseNumberBadge(number: exerciseNumber, size: 36),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: MiniRoundRow(
-                        exercise: exercise,
-                        event: event,
-                      ),
-                    ),
+                    child:
+                        widget.bodyBuilder?.call(context, event, 0, 0) ??
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: MiniRoundRow(
+                            exercise: exercise,
+                            event: event,
+                          ),
+                        ),
                   ),
                 ],
               ),

@@ -837,6 +837,25 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get elapsedLabel => 'Til nå';
+
+  @override
+  String get totalLabel => 'Totalt';
+
+  @override
+  String roundOfTotal(int current, int total) {
+    return '$current av $total';
+  }
+
+  @override
+  String hoursMinutesShort(int hours, int minutes) {
+    return '$hours t $minutes min';
+  }
+
+  @override
+  String get clockLabel => 'Tid nå';
+
+  @override
   String minutesLeft(Object count) {
     return '$count min igjen';
   }

@@ -17,6 +17,7 @@ import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -32,7 +33,6 @@ import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
-import 'exercise_control_button.dart';
 import 'exercise_form_screen.dart';
 
 /// Width of the combined hero card when it's used as a sidebar to the
@@ -313,21 +313,28 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 ? Center(child: Text(localizations.noRoundsScheduled))
                 : _buildBody(event),
           ),
-          floatingActionButton:
-              _isStarted && MasterDetailScope.maybeOf(context) == null
-              ? ExerciseControlButton(
-                  key: const ValueKey('coordinator-exercise-fab'),
-                  exercise: _exercise!,
-                  service: _exerciseService,
-                  localizations: localizations,
+          // Standalone / modal player surface: the docked mini-player owns
+          // play, stop and progress, so the floating control button is
+          // dropped here. In master-detail the play control lives in the
+          // master column and the mini-player is anchored there, so the
+          // detail pane keeps the lightweight status strip instead.
+          bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
+              ? SafeArea(
+                  top: false,
+                  child: DrillMiniPlayer(
+                    key: const ValueKey('coordinator-mini-player'),
+                    exercise: _exercise,
+                    height: 64,
+                    // The tile row owns the phase/countdown, so the trailing
+                    // cluster collapses to just the stop button here.
+                    showInlineStatus: false,
+                    // We are already inside the player; tapping the bar
+                    // should not try to re-open it.
+                    onOpen: () {},
+                    bodyBuilder: _buildMiniPlayerBody,
+                  ),
                 )
-              : null,
-          floatingActionButtonLocation: _isStarted
-              ? FloatingActionButtonLocation.centerDocked
-              : FloatingActionButtonLocation.endFloat,
-          floatingActionButtonAnimator:
-              const _SlideFloatingActionButtonAnimator(),
-          bottomNavigationBar: _buildExerciseStatus(event),
+              : _buildExerciseStatus(event),
         );
       },
     );
@@ -616,27 +623,229 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   ///   narrower screens we stack the card above the table instead, so
   ///   phone-portrait keeps working without horizontal scrolling.
   Widget _buildTopSection(ExerciseEvent event, {required bool showHero}) {
+    // Play and stop now live in the docked mini-player (or, in
+    // master-detail, in the master column), so the top section is purely
+    // informational in every layout.
+    return _buildTopSectionContent(event, showHero: showHero);
+  }
+
+  /// Override for [DrillMiniPlayer]'s central area (replacing the default
+  /// round row, which would duplicate the rotation table). Pending: show
+  /// when the exercise starts. Running: show elapsed/total alongside the
+  /// finish time, mirroring the total-progress strip below.
+  /// Override for [DrillMiniPlayer]'s central area: a row of tiles (big
+  /// value, small subtitle). Pending shows the wait countdown and start
+  /// time; running shows elapsed/total, round and the phase countdown.
+  /// [remainingSeconds] is the per-second-smoothed phase countdown so the
+  /// "Fase"/"VENT" tile ticks rather than jumping per minute.
+  Widget _buildMiniPlayerBody(
+    BuildContext context,
+    ExerciseEvent event,
+    int remainingSeconds,
+    int elapsedSeconds,
+  ) {
     final localizations = AppLocalizations.of(context)!;
-    final child = _buildTopSectionContent(event, showHero: showHero);
-    if (_exerciseService.isStartedOn(widget.uuid)) return child;
-    // In master-detail layout the play control lives in the master column;
-    // don't add it here so the coordinator is purely informational.
-    if (MasterDetailScope.maybeOf(context) != null) return child;
-    return Stack(
-      children: [
-        Padding(padding: const EdgeInsets.only(bottom: 72), child: child),
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: ExerciseControlButton(
-            key: const ValueKey('coordinator-exercise-play'),
-            exercise: _exercise!,
-            service: _exerciseService,
-            localizations: localizations,
+    final accent = LiveAccent.of(context, isLive: true);
+    final fg =
+        accent.foreground ?? Theme.of(context).colorScheme.onPrimaryContainer;
+    final exercise = event.exercise;
+
+    // One `now` shared by the clock tile and the phase countdown so they
+    // tick on the same instant. The service schedules phases on whole
+    // wall-clock minutes, so we anchor the countdown to the whole minute of
+    // the event rather than its exact (sub-second) emission time — that
+    // keeps the countdown seconds the exact complement of the clock seconds
+    // instead of drifting by ±1s. The smoothed `remainingSeconds` from the
+    // player is still used to tell idle (0) from a ticking pending state.
+    final now = DateTime.now();
+    final whenMinute = DateTime(
+      event.when.year,
+      event.when.month,
+      event.when.day,
+      event.when.hour,
+      event.when.minute,
+    );
+    final phaseRemaining = whenMinute
+        .add(Duration(minutes: event.remainingTime))
+        .difference(now)
+        .inSeconds
+        .clamp(0, 1 << 30);
+
+    if (event.isPending) {
+      // Idle (not started yet) carries no live countdown, so only the
+      // scheduled start time is shown. Once pending starts ticking
+      // (remainingSeconds > 0) the wait countdown joins it.
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          reverse: true,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (remainingSeconds > 0) ...[
+                _buildMiniTile(
+                  context,
+                  value: _formatCountdown(phaseRemaining),
+                  subtitle: event.getState(localizations),
+                  fg: fg,
+                ),
+                const SizedBox(width: 32),
+              ],
+              _buildMiniTile(
+                context,
+                value: exercise.startTime.toString(),
+                subtitle: localizations.startTime,
+                fg: fg,
+              ),
+              const SizedBox(width: 32),
+              _buildMiniTile(
+                context,
+                value: _formatClock(now),
+                subtitle: localizations.clockLabel,
+                fg: fg,
+              ),
+            ],
           ),
+        ),
+      );
+    }
+
+    final totalMinutes =
+        exercise.numberOfRounds *
+        (exercise.executionTime +
+            exercise.evaluationTime +
+            exercise.rotationTime);
+    final totalSeconds = totalMinutes * 60;
+    final clampedElapsed = elapsedSeconds.clamp(0, totalSeconds);
+    // All tiles are grouped on the right, next to the stop button, so only
+    // the exercise badge sits on the left. 32px between tiles. The row is
+    // horizontally scrollable (reverse, so it pins to the right and reveals
+    // the leftmost tiles on scroll) — same overflow handling as the default
+    // MiniRoundRow, instead of clipping when the tiles get wide.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        reverse: true,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildMiniTile(
+              context,
+              value: _formatDuration(localizations, clampedElapsed),
+              subtitle: localizations.elapsedLabel,
+              fg: fg,
+            ),
+            const SizedBox(width: 32),
+            _buildMiniTile(
+              context,
+              value: _formatDuration(localizations, totalSeconds),
+              subtitle: localizations.totalLabel,
+              fg: fg,
+            ),
+            const SizedBox(width: 32),
+            _buildMiniTile(
+              context,
+              value: localizations.roundOfTotal(
+                event.currentRound + 1,
+                exercise.numberOfRounds,
+              ),
+              subtitle: localizations.round(1),
+              fg: fg,
+            ),
+            const SizedBox(width: 32),
+            _buildMiniTile(
+              context,
+              value: _formatClock(now),
+              subtitle: localizations.clockLabel,
+              fg: fg,
+            ),
+            const SizedBox(width: 32),
+            _buildMiniTile(
+              context,
+              value: _formatCountdown(phaseRemaining),
+              subtitle: event.getState(localizations),
+              fg: fg,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// One mini-player tile: a large value over a small subtitle.
+  Widget _buildMiniTile(
+    BuildContext context, {
+    required String value,
+    required String subtitle,
+    required Color fg,
+  }) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: fg,
+            fontWeight: FontWeight.w700,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: fg.withValues(alpha: 0.7),
+            letterSpacing: 0.3,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
+  }
+
+  /// Wall-clock `HH:MM` label for the current-time tile.
+  String _formatClock(DateTime time) {
+    final h = time.hour.toString().padLeft(2, '0');
+    final m = time.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  /// Human-readable duration label for the elapsed/total tiles:
+  /// under a minute "x sek", under an hour "x min", whole hours
+  /// "1 time"/"2 timer", and hours with a remainder "2 t 30 min".
+  String _formatDuration(AppLocalizations localizations, int seconds) {
+    final s = seconds < 0 ? 0 : seconds;
+    if (s < 60) return localizations.second(s);
+    final totalMinutes = s ~/ 60;
+    if (totalMinutes < 60) return localizations.minute(totalMinutes);
+    final h = totalMinutes ~/ 60;
+    final m = totalMinutes % 60;
+    if (m == 0) return localizations.hour(h);
+    return localizations.hoursMinutesShort(h, m);
+  }
+
+  /// Countdown label from seconds. Under an hour reads `MM:SS`; an hour or
+  /// more collapses to `H:MM` so the tile stays narrow (the phase-name
+  /// subtitle disambiguates it from a wall-clock time).
+  String _formatCountdown(int seconds) {
+    final s = seconds < 0 ? 0 : seconds;
+    if (s >= 3600) {
+      final h = s ~/ 3600;
+      final m = ((s % 3600) ~/ 60).toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+    final m = (s ~/ 60).toString().padLeft(2, '0');
+    final ss = (s % 60).toString().padLeft(2, '0');
+    return '$m:$ss';
   }
 
   Widget _buildTopSectionContent(
@@ -1258,37 +1467,4 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       ),
     );
   }
-}
-
-/// Animator that slides the [FloatingActionButton] between
-/// [FloatingActionButtonLocation]s instead of the default scale-out /
-/// scale-in. The position is interpolated with an ease-in-out curve and the
-/// scale is held at `1.0`, so the FAB visually glides from the previous
-/// location to the new one. This gives the same visual effect as a Hero
-/// transition, but inside the Scaffold instead of across routes.
-///
-/// Used on [CoordinatorScreen] so the play/stop FAB glides from the corner
-/// to the centre of the bottom status bar when an exercise starts (and back
-/// when it stops), matching the player-style design in
-/// `docs/design/mockups/coordinator-oversikt.html`.
-class _SlideFloatingActionButtonAnimator extends FloatingActionButtonAnimator {
-  const _SlideFloatingActionButtonAnimator();
-
-  @override
-  Offset getOffset({
-    required Offset begin,
-    required Offset end,
-    required double progress,
-  }) {
-    final eased = Curves.easeInOut.transform(progress);
-    return Offset.lerp(begin, end, eased)!;
-  }
-
-  @override
-  Animation<double> getScaleAnimation({required Animation<double> parent}) =>
-      const AlwaysStoppedAnimation<double>(1.0);
-
-  @override
-  Animation<double> getRotationAnimation({required Animation<double> parent}) =>
-      const AlwaysStoppedAnimation<double>(1.0);
 }

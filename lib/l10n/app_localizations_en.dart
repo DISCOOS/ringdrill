@@ -842,6 +842,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get elapsedLabel => 'So far';
+
+  @override
+  String get totalLabel => 'Total';
+
+  @override
+  String roundOfTotal(int current, int total) {
+    return '$current of $total';
+  }
+
+  @override
+  String hoursMinutesShort(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String get clockLabel => 'Now';
+
+  @override
   String minutesLeft(Object count) {
     return '$count min left';
   }
