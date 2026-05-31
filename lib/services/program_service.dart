@@ -24,6 +24,7 @@ typedef OnSelectExercises =
 enum ProgramEventType {
   exerciseAdded,
   exerciseDeleted,
+  teamSaved,
   programOpened,
   programImported,
   programExported,
@@ -75,9 +76,10 @@ class ProgramEvent {
   final DrillFile? file;
   final Program program;
   final Exercise? exercise;
+  final Team? team;
   final ProgramEventType type;
 
-  ProgramEvent(this.type, this.program, {this.file, this.exercise});
+  ProgramEvent(this.type, this.program, {this.file, this.exercise, this.team});
 
   factory ProgramEvent.added(Program program, Exercise exercise) =>
       ProgramEvent(ProgramEventType.exerciseAdded, program, exercise: exercise);
@@ -88,6 +90,9 @@ class ProgramEvent {
         program,
         exercise: exercise,
       );
+
+  factory ProgramEvent.teamSaved(Program program, Team team) =>
+      ProgramEvent(ProgramEventType.teamSaved, program, team: team);
 
   factory ProgramEvent.opened(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programOpened, program, file: file);
@@ -270,6 +275,18 @@ class ProgramService {
     final program = activeProgram;
     if (program != null) {
       _controller.add(ProgramEvent.added(program, exercise));
+    }
+  }
+
+  Future<void> saveTeam(
+    AppLocalizations localizations,
+    Team team,
+  ) async {
+    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _repo.saveTeam(team);
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent.teamSaved(program, team));
     }
   }
 
