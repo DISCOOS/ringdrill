@@ -6,6 +6,7 @@ import 'package:ringdrill/views/widgets/role_code_badge.dart';
 Widget _buildTile({
   required bool expanded,
   VoidCallback? onOpen,
+  VoidCallback? onLongPress,
   VoidCallback? onToggle,
   Widget? trailing,
   Widget? body = const Text('body content'),
@@ -20,6 +21,7 @@ Widget _buildTile({
         body: body,
         expanded: expanded,
         onOpen: onOpen,
+        onLongPress: onLongPress,
         onToggle: onToggle,
       ),
     ),
@@ -84,6 +86,25 @@ void main() {
     expect(openCount, 0);
   });
 
+  testWidgets('long-pressing row fires onLongPress only', (tester) async {
+    var openCount = 0;
+    var longPressCount = 0;
+    var toggleCount = 0;
+    await tester.pumpWidget(
+      _buildTile(
+        expanded: false,
+        onOpen: () => openCount++,
+        onLongPress: () => longPressCount++,
+        onToggle: () => toggleCount++,
+      ),
+    );
+    await tester.longPress(find.text('Anna Hansen'));
+    await tester.pump();
+    expect(longPressCount, 1);
+    expect(openCount, 0);
+    expect(toggleCount, 0);
+  });
+
   testWidgets('trailing slot renders when provided', (tester) async {
     await tester.pumpWidget(
       _buildTile(
@@ -99,11 +120,7 @@ void main() {
   testWidgets('row tap toggles when onOpen is null', (tester) async {
     var toggleCount = 0;
     await tester.pumpWidget(
-      _buildTile(
-        expanded: false,
-        onOpen: null,
-        onToggle: () => toggleCount++,
-      ),
+      _buildTile(expanded: false, onOpen: null, onToggle: () => toggleCount++),
     );
     // With onOpen null, tapping the row falls through to onToggle.
     await tester.tap(find.text('Anna Hansen'));
@@ -113,12 +130,7 @@ void main() {
 
   testWidgets('chevron is hidden when body is null', (tester) async {
     await tester.pumpWidget(
-      _buildTile(
-        expanded: false,
-        onOpen: () {},
-        onToggle: () {},
-        body: null,
-      ),
+      _buildTile(expanded: false, onOpen: () {}, onToggle: () {}, body: null),
     );
     // No body means no expand affordance, regardless of onToggle.
     expect(find.byType(IconButton), findsNothing);

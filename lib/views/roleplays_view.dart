@@ -258,48 +258,45 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         await _openRolePlayForm(exercise, rolePlay);
         return false;
       },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
+      child: ExpandableTile(
         onLongPress: () => _openRolePlayForm(exercise, rolePlay),
-        child: ExpandableTile(
-          selected: selected,
-          leading: RoleCodeBadge(
-            code: '$exerciseNumber.${rolePlay.index + 1}',
-            highlight: actor != null,
-          ),
-          title: Text(
-            () {
-              final tb = StringBuffer(rolePlay.name);
-              if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
-              if (actor != null) tb.write(' (${actor.realName})');
-              return tb.toString();
-            }(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Text(
-            (rolePlay.stationIndex != null &&
-                    rolePlay.stationIndex! < exercise.stations.length)
-                ? localizations.roleSubtitleStation(
-                    exercise.stations[rolePlay.stationIndex!].name,
-                  )
-                : localizations.roleSubtitleExercise(exercise.name),
-          ),
-          trailing: _buildCastChip(context, localizations, rolePlay, actor),
-          expanded: expanded,
-          onOpen: () => _openRolePlay(rolePlay),
-          onToggle: () {
-            setState(() {
-              _expandedRowIndex = expanded ? null : rowIndex;
-            });
-          },
-          body: _buildExpandedBody(
-            context,
-            localizations,
-            exercise,
-            rolePlay,
-            actor,
-          ),
+        selected: selected,
+        leading: RoleCodeBadge(
+          code: '$exerciseNumber.${rolePlay.index + 1}',
+          highlight: actor != null,
+        ),
+        title: Text(
+          () {
+            final tb = StringBuffer(rolePlay.name);
+            if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
+            if (actor != null) tb.write(' (${actor.realName})');
+            return tb.toString();
+          }(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          (rolePlay.stationIndex != null &&
+                  rolePlay.stationIndex! < exercise.stations.length)
+              ? localizations.roleSubtitleStation(
+                  exercise.stations[rolePlay.stationIndex!].name,
+                )
+              : localizations.roleSubtitleExercise(exercise.name),
+        ),
+        trailing: _buildCastChip(context, localizations, rolePlay, actor),
+        expanded: expanded,
+        onOpen: () => _openRolePlay(rolePlay),
+        onToggle: () {
+          setState(() {
+            _expandedRowIndex = expanded ? null : rowIndex;
+          });
+        },
+        body: _buildExpandedBody(
+          context,
+          localizations,
+          exercise,
+          rolePlay,
+          actor,
         ),
       ),
     );

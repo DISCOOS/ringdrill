@@ -38,6 +38,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0028 | [Group `lib/views/` by feature and distribute shared domain widgets](./0028-feature-first-views-layout.md) | Accepted |
 | ADR-0029 | [Surface a live mini player via ActivityKit on iOS and a foreground service notification on Android](./0029-live-activity-and-foreground-service.md) | Accepted |
 | ADR-0030 | [Adopt a Material 3 master/detail layout on medium and expanded viewports, promote forms to modal dialogs and anchor the drill mini-player to the master column](./0030-wide-screen-master-detail-layout.md) | Accepted |
+| ADR-0031 | [Row edit affordances use swipe and long-press; pencil reserved for AppBar](./0031-row-edit-affordances.md) | Proposed |
 
 ## When to write an ADR
 

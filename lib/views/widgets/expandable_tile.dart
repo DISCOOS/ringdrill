@@ -37,6 +37,7 @@ class ExpandableTile extends StatelessWidget {
     this.expanded = false,
     this.selected = false,
     this.onOpen,
+    this.onLongPress,
     this.onToggle,
     this.accent = const LiveAccent.inactive(),
     this.margin = const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
@@ -81,6 +82,11 @@ class ExpandableTile extends StatelessWidget {
   /// Fires when the row body is tapped. When null, row taps fall
   /// through to [onToggle] (or do nothing if both are null).
   final VoidCallback? onOpen;
+
+  /// Fires when the row body is long-pressed. Editable rows use this as
+  /// their direct-to-form affordance while preserving [onOpen] for read-only
+  /// detail navigation.
+  final VoidCallback? onLongPress;
 
   /// Fires when the chevron is tapped, or when the whole row is tapped
   /// while [onOpen] is null.
@@ -134,6 +140,7 @@ class ExpandableTile extends StatelessWidget {
         children: [
           InkWell(
             onTap: rowTap,
+            onLongPress: onLongPress,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [

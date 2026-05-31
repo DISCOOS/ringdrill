@@ -906,75 +906,69 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               await _editStation(stationIndex);
               return false;
             },
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
+            child: ExpandableTile(
               onLongPress: () => _editStation(stationIndex),
-              child: ExpandableTile(
-                // Do NOT use a PageStorageKey here: any SelectableText below
-                // (e.g. UtmWidget inside the station detail) reads from the
-                // same bucket-path for its scroll offset, casting an
-                // expansion bool to double? and crashing at
-                // didChangeDependencies.
-                key: ValueKey<String>('coordinator-station-$stationIndex'),
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-                accent: accent,
-                leading: accent.indicator,
-                title: Text(
-                  station.name,
-                  style: TextStyle(fontSize: 18, color: accent.foreground),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: VerticalDividerWidget(),
+              // Do NOT use a PageStorageKey here: any SelectableText below
+              // (e.g. UtmWidget inside the station detail) reads from the
+              // same bucket-path for its scroll offset, casting an
+              // expansion bool to double? and crashing at
+              // didChangeDependencies.
+              key: ValueKey<String>('coordinator-station-$stationIndex'),
+              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+              accent: accent,
+              leading: accent.indicator,
+              title: Text(
+                station.name,
+                style: TextStyle(fontSize: 18, color: accent.foreground),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: VerticalDividerWidget(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      localizations.team(1),
+                      style: TextStyle(fontSize: 18, color: accent.foreground),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
+                  ),
+                  ...List<Widget>.generate(_exercise!.schedule.length, (
+                    roundIndex,
+                  ) {
+                    final isCurrent =
+                        event.isRunning && roundIndex == event.currentRound;
+                    final teamIndex =
+                        _exercise!.teamIndex(stationIndex, roundIndex) + 1;
+                    final none = teamIndex == 0;
+                    return Container(
+                      padding: const EdgeInsets.all(4),
+                      color: isCurrent
+                          ? none
+                                ? Colors.grey
+                                : Colors.blueAccent
+                          : Colors.transparent,
                       child: Text(
-                        localizations.team(1),
+                        '${none ? '×' : teamIndex}',
                         style: TextStyle(
                           fontSize: 18,
-                          color: accent.foreground,
+                          fontWeight: isCurrent
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isCurrent ? Colors.white : accent.foreground,
                         ),
                       ),
-                    ),
-                    ...List<Widget>.generate(_exercise!.schedule.length, (
-                      roundIndex,
-                    ) {
-                      final isCurrent =
-                          event.isRunning && roundIndex == event.currentRound;
-                      final teamIndex =
-                          _exercise!.teamIndex(stationIndex, roundIndex) + 1;
-                      final none = teamIndex == 0;
-                      return Container(
-                        padding: const EdgeInsets.all(4),
-                        color: isCurrent
-                            ? none
-                                  ? Colors.grey
-                                  : Colors.blueAccent
-                            : Colors.transparent,
-                        child: Text(
-                          '${none ? '×' : teamIndex}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: isCurrent
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isCurrent ? Colors.white : accent.foreground,
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-                expanded: _expandedStationIndex == stationIndex,
-                onToggle: () => _toggleStation(stationIndex),
-                body: _buildStationDetail(stationIndex),
+                    );
+                  }),
+                ],
               ),
+              expanded: _expandedStationIndex == stationIndex,
+              onToggle: () => _toggleStation(stationIndex),
+              body: _buildStationDetail(stationIndex),
             ),
           );
         }),
@@ -1098,65 +1092,62 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           final teamName =
               _programService.getTeam(teamIndex)?.name ??
               '${localizations.team(1)} ${teamIndex + 1}';
-          return GestureDetector(
-            behavior: HitTestBehavior.translucent,
+          return ExpandableTile(
             onLongPress: () => _editTeam(teamIndex),
-            child: ExpandableTile(
-              // Use ValueKey (not PageStorageKey) — see the comment
-              // on the station ExpandableTile above for the reason.
-              key: ValueKey<String>('coordinator-team-$teamIndex'),
-              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-              accent: accent,
-              leading: accent.indicator,
-              title: Text(
-                teamName,
-                style: TextStyle(fontSize: 18, color: accent.foreground),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: currentStationName == null
-                  ? null
-                  : Text(
-                      '→ $currentStationName',
-                      style:
-                          accent.textStyle ??
-                          TextStyle(
-                            color: context.colors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: VerticalDividerWidget(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      localizations.station(1),
-                      style: TextStyle(fontSize: 18, color: accent.foreground),
-                    ),
-                  ),
-                  ...List<Widget>.generate(_exercise!.schedule.length, (
-                    roundIndex,
-                  ) {
-                    final isCurrent =
-                        event.isRunning && roundIndex == event.currentRound;
-                    return TeamStationWidget(
-                      isCurrent: isCurrent,
-                      exercise: _exercise!,
-                      teamIndex: teamIndex,
-                      roundIndex: roundIndex,
-                    );
-                  }),
-                ],
-              ),
-              expanded: _expandedTeamIndex == teamIndex,
-              onToggle: () => _toggleTeam(teamIndex),
-              body: _buildTeamDetail(teamIndex, event),
+            // Use ValueKey (not PageStorageKey) — see the comment
+            // on the station ExpandableTile above for the reason.
+            key: ValueKey<String>('coordinator-team-$teamIndex'),
+            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+            accent: accent,
+            leading: accent.indicator,
+            title: Text(
+              teamName,
+              style: TextStyle(fontSize: 18, color: accent.foreground),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
+            subtitle: currentStationName == null
+                ? null
+                : Text(
+                    '→ $currentStationName',
+                    style:
+                        accent.textStyle ??
+                        TextStyle(
+                          color: context.colors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: VerticalDividerWidget(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Text(
+                    localizations.station(1),
+                    style: TextStyle(fontSize: 18, color: accent.foreground),
+                  ),
+                ),
+                ...List<Widget>.generate(_exercise!.schedule.length, (
+                  roundIndex,
+                ) {
+                  final isCurrent =
+                      event.isRunning && roundIndex == event.currentRound;
+                  return TeamStationWidget(
+                    isCurrent: isCurrent,
+                    exercise: _exercise!,
+                    teamIndex: teamIndex,
+                    roundIndex: roundIndex,
+                  );
+                }),
+              ],
+            ),
+            expanded: _expandedTeamIndex == teamIndex,
+            onToggle: () => _toggleTeam(teamIndex),
+            body: _buildTeamDetail(teamIndex, event),
           );
         }),
       ),

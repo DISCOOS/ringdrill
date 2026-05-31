@@ -286,31 +286,28 @@ class _StationListViewState extends State<StationListView> {
         await _openStationForm(exercise, station);
         return false;
       },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
+      child: ExpandableTile(
         onLongPress: () => _openStationForm(exercise, station),
-        child: ExpandableTile(
-          leading: StationCodeBadge(
-            code: _stationCode(exerciseNumber, station),
-            highlight: isLive,
-            hasRoles: hasRoles,
-          ),
-          title: Text(station.name, style: accent.textStyle),
-          subtitle: Text(
-            '${localizations.exercise(1)}: ${exercise.name}',
-            style: accent.textStyle,
-          ),
-          accent: accent,
-          selected: selected,
-          expanded: expanded,
-          onOpen: () => _openStation(exercise, station),
-          onToggle: () {
-            setState(() {
-              _expandedRowIndex = expanded ? null : rowIndex;
-            });
-          },
-          body: _buildExpandedBody(context, localizations, exercise, station),
+        leading: StationCodeBadge(
+          code: _stationCode(exerciseNumber, station),
+          highlight: isLive,
+          hasRoles: hasRoles,
         ),
+        title: Text(station.name, style: accent.textStyle),
+        subtitle: Text(
+          '${localizations.exercise(1)}: ${exercise.name}',
+          style: accent.textStyle,
+        ),
+        accent: accent,
+        selected: selected,
+        expanded: expanded,
+        onOpen: () => _openStation(exercise, station),
+        onToggle: () {
+          setState(() {
+            _expandedRowIndex = expanded ? null : rowIndex;
+          });
+        },
+        body: _buildExpandedBody(context, localizations, exercise, station),
       ),
     );
   }
