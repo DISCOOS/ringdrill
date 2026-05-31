@@ -593,6 +593,12 @@ class _MainScreenState extends State<MainScreen>
         final useRail =
             windowSizeClass.hasRail &&
             (constraints.maxWidth - railWidth - masterWidth) >= 360;
+        // The Map tab (index 1) is rendered without an AppBar so the map
+        // gets the full height. The wide/master-detail layout already does
+        // this via the `_currentTab == 1` branch in [_buildNavRail]; mirror
+        // it here for the compact layout so the bottom-nav Map tab also goes
+        // chrome-free at the top. Every other tab keeps its AppBar.
+        final isMapTab = _currentTab == 1;
         return ContextSheet(
           controller: _contextSheetController,
           child: Scaffold(
@@ -600,7 +606,7 @@ class _MainScreenState extends State<MainScreen>
             extendBody: true,
             extendBodyBehindAppBar: true,
             drawerEnableOpenDragGesture: true,
-            appBar: useRail
+            appBar: (useRail || isMapTab)
                 ? null
                 : _buildAppBar(context, constraints, page, hasRail: false),
             drawer: _buildDrawer(context, localizations),
