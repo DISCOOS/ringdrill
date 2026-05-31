@@ -8,9 +8,19 @@ Reduce the click count required to edit a station or a team from within an activ
 
 1. Expose a public `ProgramService.saveTeam` so callers outside the service can persist team edits.
 2. Add a `TeamFormScreen` so a team's name, member count, and position can be edited (today there is no edit path for teams).
-3. Expose editing through left-swipe (Dismissible) and a visible inline pencil button on rows, mirroring what is already in place on the Stations tab and the RolePlays tab.
+3. Expose editing through left-swipe (Dismissible) and a long-press gesture on rows, mirroring what is already in place on the Stations tab and the RolePlays tab.
 
 The pattern must mirror what is already established in `lib/views/station_list_view.dart` (Dismissible + `confirmDismiss` → form, plus `onOpen` → ContextSheet for read-only view). Do not introduce new widgets or abstractions.
+
+## Row edit-affordance convention
+
+This PR is the first to land under [ADR-0031](../adrs/0031-row-edit-affordances.md): row edit affordances are `Dismissible(endToStart, confirmDismiss: ...)` swipe and/or `onLongPress`. Do **not** place a pencil `IconButton` inside `ListTile`, `ExpansionTile`, `ExpandableTile`, or any other row widget. `Icons.edit` is reserved for `AppBar.actions` and overflow menus on detail screens.
+
+Implementation reminders (full rationale and site list lives in the ADR):
+
+* For `ListTile`, use the built-in `onLongPress` parameter directly.
+* For `ExpandableTile` rows, pass the handler through its built-in `onLongPress` parameter. The shared widget owns the row `InkWell`, so tap-to-expand still fires without an outer gesture wrapper.
+* The same handler is used for both swipe and long-press. The disabled-state rule from `station_screen.dart:117-128` (`_isStarted` guard + `stopExerciseFirst` snackbar) applies to long-press as well.
 
 ## File-format check (already done, do not re-verify)
 
@@ -27,7 +37,7 @@ The `.drill` archive already round-trips `Team` objects: `lib/data/drill_file.da
 
 ## Commit discipline
 
-Each of the six steps below is one commit. After every commit, `git status` must be clean — no untracked or modified files left behind. Each commit body must list the files touched explicitly. Commit message format: conventional commits (`feat(...)`, `refactor(...)`, etc.). Do not bundle steps into a single commit.
+Each of the seven steps below is one commit. After every commit, `git status` must be clean — no untracked or modified files left behind. Each commit body must list the files touched explicitly. Commit message format: conventional commits (`feat(...)`, `refactor(...)`, etc.). Do not bundle steps into a single commit.
 
 After every commit: run `flutter analyze && flutter test`. If something breaks, fix it in the same commit (amend), not in a follow-up.
 
@@ -128,7 +138,7 @@ In `teams_view.dart`:
 
 * Wrap each team `Card` / `ListTile` (around lines 62-86) in a `Dismissible(direction: DismissDirection.endToStart, confirmDismiss: ...)`, mirroring `station_list_view.dart:262-311`. The background should display `Icons.edit` + `localizations.editTeam` on the trailing edge, painted with `colorScheme.secondaryContainer`.
 * `confirmDismiss` calls a private `_openTeamForm(Team team)` that opens `openFormSurface<Team>(context, builder: (_) => TeamFormScreen(team: team))`, and on a non-null return calls `ProgramService().saveTeam(localizations, updated)` (the public wrapper added in Step 1). Always return `false` from `confirmDismiss` (the row must not be removed).
-* Add a trailing `IconButton(Icons.edit)` to the `ListTile.trailing` slot that calls the same `_openTeamForm`. Tooltip: `localizations.editTeam`.
+* Set `ListTile.onLongPress` to the same `_openTeamForm` handler. The existing `onTap` (which opens the `TeamSheetTarget` ContextSheet) stays. Per the project rule, do **not** add a pencil `IconButton` to the row.
 
 In `team_exercise_screen.dart`:
 
@@ -139,9 +149,9 @@ In `team_exercise_screen.dart`:
 
 * `flutter analyze` clean.
 * `flutter test` clean.
-* Manual: swipe a team row → form → save; tap the inline pencil → form → save; tap the pencil in the detail sheet's app bar → form → save. Confirm the name updates in the list and in the sheet title without a tab switch.
+* Manual: swipe a team row → form → save; long-press a team row → form → save; tap the pencil in the detail sheet's app bar → form → save. Confirm the name updates in the list and in the sheet title without a tab switch.
 
-**Commit**: `feat(teams): edit team via swipe, inline pencil, and detail-sheet action`
+**Commit**: `feat(teams): edit team via swipe, long-press, and detail-sheet action`
 
 ---
 
@@ -155,7 +165,7 @@ In `team_exercise_screen.dart`:
 
 In `_buildStationList` (around lines 1000-1060, before the `_buildStationDetail` call):
 
-* Wrap each station `Card` / `ExpansionTile` row in `Dismissible(direction: DismissDirection.endToStart, confirmDismiss: ...)`. Use `ValueKey('coordinator-station-dismiss-$stationIndex')` to avoid collision with the expansion controller's own key.
+* Wrap each station `ExpandableTile` row in `Dismissible(direction: DismissDirection.endToStart, confirmDismiss: ...)`. Use `ValueKey('coordinator-station-dismiss-$stationIndex')` to avoid collision with the tile's own key.
 * Background: mirror `station_list_view.dart:268-284`.
 * `confirmDismiss` calls a new private `_editStation(int stationIndex)` that:
   1. Returns immediately if `_isStarted` is `true`, surfacing a snackbar with `localizations.stopExerciseFirst(_exercise!.name)`.
@@ -163,7 +173,7 @@ In `_buildStationList` (around lines 1000-1060, before the `_buildStationDetail`
   3. On a non-null return, persists using the same pattern as `station_list_view.dart:412-422`: build a new `stations` list, swap the entry, then call `_programService.saveExercise(localizations, updatedExercise)`. Reuse any existing helper in `program_service` if one is already there.
 * Always return `false` from `confirmDismiss`.
 
-Note: the expansion controller in `_stationControllers` must not be triggered by the swipe — the Dismissible must wrap *around* the `ExpansionTile`, not sit as a `child` inside it.
+Note: the Dismissible must wrap *around* the `ExpandableTile` so the swipe gesture does not interfere with the tile's tap-to-expand behaviour.
 
 **Verification**
 
@@ -176,7 +186,7 @@ Note: the expansion controller in `_stationControllers` must not be triggered by
 
 ---
 
-## Step 5 — Inline pencil on station and team rows inside CoordinatorScreen
+## Step 5 — Long-press to edit station and team rows inside CoordinatorScreen
 
 **Files touched**
 
@@ -184,31 +194,75 @@ Note: the expansion controller in `_stationControllers` must not be triggered by
 
 **Content**
 
-In `_buildStationList`'s `ExpansionTile.title` Row (around lines 1020-1055): add an `IconButton(Icons.edit, ...)` as the last child, before the round-indicator columns. Tooltip and disabled-state mirror `station_screen.dart:117-128`. Click handler: the same `_editStation` introduced in Step 4.
+For both `_buildStationList` (around lines 1000-1060) and `_buildTeamList` (around lines 1121-1269), the per-row affordance is a long-press gesture passed through `ExpandableTile.onLongPress`. Per the project rule, do **not** add a pencil `IconButton` inside the tile.
 
-In `_buildTeamList`'s `ExpansionTile.title` Row (around lines 1185-1262): add an `IconButton(Icons.edit, ...)` as the last child, before the round columns. Click handler: a new private `_editTeam(int teamIndex)` that:
+Implementation pattern (apply to both lists):
+
+```dart
+ExpandableTile(
+  onLongPress: () => _editStation(stationIndex), // or _editTeam(teamIndex)
+  // existing tile content unchanged
+  ...
+)
+```
+
+`ExpandableTile` owns the row `InkWell`, so the built-in callback handles the hold gesture while a regular tap still routes through to expansion.
+
+For station rows: reuse the `_editStation` handler introduced in Step 4. The Step 4 swipe and the long-press call the same code path.
+
+For team rows: add a new private `_editTeam(int teamIndex)` that:
 
 1. Resolves the team via `_programService.loadTeams()[teamIndex]`.
-2. Opens `openFormSurface<Team>(context, builder: (_) => TeamFormScreen(team: team))`.
-3. On a non-null return, calls `_programService.saveTeam(localizations, updated)` and `setState({})`.
-4. Disabled with the same `_isStarted` rule as the station pencil.
-
-Make sure the `IconButton` does not steal taps from the `ExpansionTile`. Either move the button into `ExpansionTile.trailing` if that slot is currently free (check), or keep it in the Row and rely on `IconButton`'s own hit area, which stops tap propagation by default.
+2. If `_isStarted`, surfaces `localizations.stopExerciseFirst(_exercise!.name)` as a snackbar and returns without opening the form (mirrors `_editStation`).
+3. Opens `openFormSurface<Team>(context, builder: (_) => TeamFormScreen(team: team))`.
+4. On a non-null return, calls `_programService.saveTeam(localizations, updated)` and `setState({})`.
 
 **Verification**
 
 * `flutter analyze` clean.
 * `flutter test` clean.
-* Manual: open an exercise; tap the pencil on a station row → form opens directly (no intermediate sheet); tap the pencil on a team row → form opens directly. Confirm that tapping the row itself still expands the tile as before.
+* Manual: open an exercise; long-press a station row → form opens directly (no intermediate sheet); long-press a team row → form opens directly. Confirm that a regular tap on the row still expands the tile.
+* Long-press while the exercise is running surfaces the `stopExerciseFirst` snackbar and does not open the form.
 
-**Commit**: `feat(coordinator): inline edit pencil on station and team rows`
+**Commit**: `feat(coordinator): long-press to edit station and team rows`
 
 ---
 
-## Step 6 — Final verification
+## Step 6 — Align exercise card swipe chrome with the row edit-affordance reference pattern
+
+The exercise card in `program_view.dart` already has a `Dismissible(endToStart)` that opens `ExerciseFormScreen`, but it was added before ADR-0031 and uses different chrome from the rest of the listings: `colorScheme.primary` background with no label, versus the `colorScheme.secondaryContainer` + label + icon pattern used in `station_list_view.dart`, `roleplays_view.dart`, and the new `teams_view.dart`. Bring it in line.
+
+**Files touched**
+
+* `lib/views/program_view.dart`
+
+**Content**
+
+In `program_view.dart` (around lines 99-110), replace the `background` `Container` with the same `Row` layout used by `station_list_view.dart:268-284`:
+
+* `color`: `colorScheme.secondaryContainer`
+* `alignment`: `Alignment.centerRight`
+* `padding`: `EdgeInsets.symmetric(horizontal: 20)`
+* Child: `Row(mainAxisAlignment: MainAxisAlignment.end, children: [Text(localizations.editExercise, style: TextStyle(color: colorScheme.onSecondaryContainer)), const SizedBox(width: 8), Icon(Icons.edit, color: colorScheme.onSecondaryContainer)])`
+
+`localizations.editExercise` already exists in both `app_en.arb` ("Edit Exercise") and `app_nb.arb` ("Endre øvelse"). Do not add a new l10n key.
+
+The gesture itself, the `confirmDismiss` handler, and the `Navigator` flow are unchanged. This is a chrome-only fix.
+
+**Verification**
+
+* `flutter analyze` clean.
+* `flutter test` clean.
+* Manual: swipe an exercise card on the Exercises tab and confirm the background is now muted (`secondaryContainer`) with the label "Endre øvelse" / "Edit Exercise" + pencil icon, matching the visual treatment of station, roleplay and team row swipes.
+
+**Commit**: `refactor(program): align exercise card swipe chrome with ADR-0031 reference pattern`
+
+---
+
+## Step 7 — Final verification
 
 * Run `flutter analyze && flutter test` one last time.
-* Run `git log --oneline -6` and confirm the five feature commits above are in order, each with an explicit file list in the body.
+* Run `git log --oneline -7` and confirm the six feature commits above are in order, each with an explicit file list in the body.
 * Run `git status` and confirm it is clean.
 * Manual: replay the click-count exercise from the analysis for these four tasks.
   1. Create an exercise + set the name on its first station.
