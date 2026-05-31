@@ -1,9 +1,11 @@
 ---
 id: DESIGN-002
 title: Stations tab
-status: Accepted
+status: Superseded
 started: 2026-05-23
 accepted: 2026-05-23
+superseded: 2026-05-31
+superseded_by: DESIGN-006
 owners: ["kengu"]
 related_code:
   - lib/views/main_screen.dart
@@ -18,6 +20,8 @@ related_designs:
 ---
 
 # Stations tab
+
+> **Superseded by [DESIGN-006](./006-program-tab-consolidation.md) (2026-05-31).** The standalone Stations root tab is retired. The flat station list, the exercise filter (badge + banner + picker), the mutex expansion and the `StationExpansionTile` / `StationMiniMap` shared widgets survive, relocated into the **Poster** segment of the Program tab. This doc is kept for the component-level specs the new design reuses.
 
 > Terminology note: Norwegian UI uses **"Poster" / "post"**. English UI and all code use **"Stations" / "station"**. This doc is in English, so the entity is referred to as a *station* throughout. The Norwegian label is shown in the localization-keys table.
 

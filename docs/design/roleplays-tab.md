@@ -1,10 +1,12 @@
 ---
 id: DESIGN-003
 title: RolePlays tab
-status: Accepted
+status: Superseded
 started: 2026-05-23
 accepted: 2026-05-23
 revised: 2026-05-24
+superseded: 2026-05-31
+superseded_by: DESIGN-006
 owners: ["kengu"]
 related_code:
   - lib/views/main_screen.dart
@@ -24,6 +26,8 @@ related_adrs:
 ---
 
 # RolePlays tab
+
+> **Superseded by [DESIGN-006](./006-program-tab-consolidation.md) (2026-05-31).** The standalone RolePlays root tab is retired. The role roster moves into the **Markører** segment of the Program tab, and the cast side (`Actor` records, the "cast roster") becomes the **Roster** tab (`nb` "Bemanning"). This doc is kept for the component-level specs the new design reuses, including `RoleExpansionTile`'s Role/Cast split.
 
 > Terminology note (Norwegian UI). In SAR practice, a *markørordre* is the briefing document for one role at one location, the role half of what this design covers. A *markør* is the human enacting that order. The model maps cleanly: **`RolePlay`** is the digital markørordre (publishable, scenario fields), **`Actor`** is the markør (local, PII). The Norwegian UI follows a simple rule:
 >

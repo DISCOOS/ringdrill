@@ -9,10 +9,11 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | ID         | Title                                                   | Status   | Started    |
 |------------|---------------------------------------------------------|----------|------------|
 | DESIGN-001 | [Exercise Player](./exercise-player.md)                 | Accepted | 2026-05-23 |
-| DESIGN-002 | [Stations tab](./stations-tab.md)                       | Accepted | 2026-05-23 |
-| DESIGN-003 | [RolePlays tab](./roleplays-tab.md)                     | Accepted | 2026-05-23 |
+| DESIGN-002 | [Stations tab](./stations-tab.md)                       | Superseded | 2026-05-23 |
+| DESIGN-003 | [RolePlays tab](./roleplays-tab.md)                     | Superseded | 2026-05-23 |
 | DESIGN-004 | [Exercise brief template](./brief-template.md)          | Accepted | 2026-05-25 |
 | DESIGN-005 | [Wide-screen layout](./wide-screen-layout.md)           | Accepted | 2026-05-29 |
+| DESIGN-006 | [Program tab consolidation](./006-program-tab-consolidation.md) | Accepted | 2026-05-31 |
 
 ## Folder layout
 
