@@ -16,7 +16,13 @@ class DrillMiniPlayer extends StatefulWidget {
     this.exercise,
     this.onPlay,
     required this.onOpen,
+    this.height = 48,
   });
+
+  /// Height of the tappable strip (excluding the 4px progress bar at the
+  /// bottom). Defaults to 48 for the narrow/portrait floating mini bar; the
+  /// wide/extended docked bar passes a taller value for more breathing room.
+  final double height;
 
   /// Optional exercise to show in idle (not-yet-started) state. When set,
   /// the mini player displays the first round and a play button instead of
@@ -140,7 +146,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
           InkWell(
             onTap: widget.onOpen,
             child: SizedBox(
-              height: 48,
+              height: widget.height,
               // Stack layout: the round-row (badge + MiniRoundRow) scrolls
               // horizontally on the bottom layer; the right cluster (phase
               // label + countdown + play) floats on top with the accent
@@ -344,7 +350,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
       child: InkWell(
         onTap: widget.onOpen,
         child: SizedBox(
-          height: 48,
+          height: widget.height,
           child: Stack(
             alignment: Alignment.centerLeft,
             children: [

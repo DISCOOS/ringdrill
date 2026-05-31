@@ -589,6 +589,21 @@ class _MainScreenState extends State<MainScreen> {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
+        // The rail + master/detail layout only earns its keep when there is
+        // also room for a usable (>=360) detail pane. In narrower medium
+        // widths the detail pane would be too cramped — and previously had no
+        // home at all: detail opened only as a bottom sheet and the mini
+        // player wasn't shown. So fall back to the compact narrow layout
+        // there: bottom NavigationBar, floating mini player, detail via the
+        // context sheet. This keeps `useRail` and `windowSizeClass.hasRail`
+        // distinct — the size class still says "medium" but we render narrow.
+        const railWidth = 72.0;
+        final masterWidth = windowSizeClass == WindowSizeClass.expanded
+            ? 420.0
+            : 320.0;
+        final useRail =
+            windowSizeClass.hasRail &&
+            (constraints.maxWidth - railWidth - masterWidth) >= 360;
         return ContextSheet(
           controller: _contextSheetController,
           child: Scaffold(
@@ -596,7 +611,7 @@ class _MainScreenState extends State<MainScreen> {
             extendBody: true,
             extendBodyBehindAppBar: true,
             drawerEnableOpenDragGesture: true,
-            appBar: windowSizeClass.hasRail
+            appBar: useRail
                 ? null
                 : _buildAppBar(context, constraints, page, hasRail: false),
             drawer: _buildDrawer(context, localizations),
@@ -610,7 +625,7 @@ class _MainScreenState extends State<MainScreen> {
             body: Stack(
               fit: StackFit.expand,
               children: [
-                windowSizeClass.hasRail
+                useRail
                     ? _buildNavRail(
                         context,
                         constraints,
@@ -631,13 +646,13 @@ class _MainScreenState extends State<MainScreen> {
                 shellSentinel,
               ],
             ),
-            floatingActionButton: windowSizeClass.hasRail
+            floatingActionButton: useRail
                 ? null
                 : page.controller.buildFAB(context, constraints),
             bottomNavigationBar: _buildBottomChrome(
               context,
               localizations,
-              windowSizeClass,
+              useRail,
             ),
           ),
         );
@@ -979,10 +994,10 @@ class _MainScreenState extends State<MainScreen> {
   Widget? _buildBottomChrome(
     BuildContext context,
     AppLocalizations localizations,
-    WindowSizeClass windowSizeClass,
+    bool useRail,
   ) {
-    if (windowSizeClass.hasRail) {
-      return _buildNavBar(localizations, windowSizeClass);
+    if (useRail) {
+      return _buildNavBar(localizations, useRail);
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -995,7 +1010,7 @@ class _MainScreenState extends State<MainScreen> {
               child: DrillMiniPlayer(onOpen: () => _openDrillPlayer(context)),
             ),
           ),
-        _buildNavBar(localizations, windowSizeClass)!,
+        _buildNavBar(localizations, useRail)!,
       ],
     );
   }
@@ -1009,11 +1024,8 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget? _buildNavBar(
-    AppLocalizations localizations,
-    WindowSizeClass windowSizeClass,
-  ) {
-    if (windowSizeClass.hasRail) return null;
+  Widget? _buildNavBar(AppLocalizations localizations, bool useRail) {
+    if (useRail) return null;
     return NavigationBar(
       selectedIndex: _currentTab,
       onDestinationSelected: _onDestinationSelected,
@@ -1140,7 +1152,10 @@ class _MainScreenState extends State<MainScreen> {
         ? 420.0
         : 320.0;
     const railWidth = 72.0;
-    final detailWidth = constraints.maxWidth - railWidth - masterWidth;
+    // The build() gate (`useRail`) guarantees we only reach the rail layout
+    // when there is room for a usable detail pane. Narrower widths render the
+    // compact narrow layout instead, so there is no longer a "rail without
+    // detail" branch here.
     if (_currentTab == 1) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -1150,107 +1165,97 @@ class _MainScreenState extends State<MainScreen> {
         ],
       );
     }
-    if (detailWidth < 360) {
-      // Rail must be outermost so it spans the full height of the screen
-      // (same pattern as the _currentTab == 1 branch and the wide
-      // master/detail branch below). AppBar lives in the right-hand column
-      // so it only spans the content area, not the rail.
-      // Whole content area uses the master accent — there is no detail
-      // pane in this branch (detail opens as a bottom sheet), so the
-      // entire column reads as one connected "active section" linked to
-      // the selected rail indicator.
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          rail,
-          Expanded(
-            child: ColoredBox(
-              color: masterAccent,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildAppBar(context, constraints, page, hasRail: true),
-                  Expanded(child: _buildIndexedTabs()),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    }
 
-    return Row(
-      children: [
-        rail,
-        Expanded(
-          child: MasterDetailScope(
-            target: _contextSheetController.targetNotifier,
-            emptyPaneBuilder: _emptyPaneBuilderForCurrentTab,
-            child: Row(
+    return MasterDetailScope(
+      target: _contextSheetController.targetNotifier,
+      emptyPaneBuilder: _emptyPaneBuilderForCurrentTab,
+      child: Row(
+        children: [
+          // Left region: navigation rail + master pane stacked above the
+          // mini player. The mini player docks at the bottom of this region,
+          // spanning under the rail and the master view but NOT the detail
+          // pane — the same shape as Spotify's now-playing bar sitting over
+          // the left columns while the main view runs full height beside it.
+          SizedBox(
+            width: railWidth + masterWidth,
+            child: Column(
               children: [
-                // Master pane is painted with the master-accent tone so
-                // the selected rail indicator pill, the master AppBar and
-                // the master body all share a single colour and read as
-                // one connected "active section". The detail pane keeps
-                // the scaffold background. Cards inside the master list
-                // use `*Surface` which stays distinct against the accent.
-                ColoredBox(
-                  color: masterAccent,
-                  child: SizedBox(
-                    width: masterWidth,
-                    child: Column(
-                      children: [
-                        _buildAppBar(context, constraints, page, hasRail: true),
-                        Expanded(child: _buildIndexedTabs()),
-                        ValueListenableBuilder<ContextSheetTarget?>(
-                          valueListenable:
-                              _contextSheetController.targetNotifier,
-                          builder: (context, target, _) {
-                            // Resolve the exercise for the idle (not-yet-started)
-                            // mini player. Null when target isn't an exercise or
-                            // the exercise isn't found.
-                            final idleExercise =
-                                target is ExerciseSheetTarget
-                                    ? ProgramService().getExercise(
-                                        target.exerciseUuid,
-                                      )
-                                    : null;
-                            if (ExerciseService().isStarted ||
-                                idleExercise != null) {
-                              return SafeArea(
-                                top: false,
-                                child: ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12),
-                                  ),
-                                  child: DrillMiniPlayer(
-                                    exercise: idleExercise,
-                                    onPlay: idleExercise == null
-                                        ? null
-                                        : () {
-                                            ExerciseService().start(
-                                              idleExercise,
-                                            );
-                                            _openDrillPlayer(context);
-                                          },
-                                    onOpen: () => _openDrillPlayer(context),
-                                  ),
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
+                Expanded(
+                  child: Row(
+                    children: [
+                      rail,
+                      // Master pane is painted with the master-accent tone so
+                      // the selected rail indicator pill, the master AppBar
+                      // and the master body all share a single colour and read
+                      // as one connected "active section". The detail pane
+                      // keeps the scaffold background. Cards inside the master
+                      // list use `*Surface` which stays distinct against the
+                      // accent.
+                      Expanded(
+                        child: ColoredBox(
+                          color: masterAccent,
+                          child: Column(
+                            children: [
+                              _buildAppBar(
+                                context,
+                                constraints,
+                                page,
+                                hasRail: true,
+                              ),
+                              Expanded(child: _buildIndexedTabs()),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                const Expanded(child: MasterDetailPane()),
+                // Mini player spans the left region (rail + master) and is
+                // pinned to the bottom. It deliberately does not extend into
+                // the detail pane.
+                ValueListenableBuilder<ContextSheetTarget?>(
+                  valueListenable: _contextSheetController.targetNotifier,
+                  builder: (context, target, _) {
+                    // Resolve the exercise for the idle (not-yet-started)
+                    // mini player. Null when target isn't an exercise or
+                    // the exercise isn't found.
+                    final idleExercise = target is ExerciseSheetTarget
+                        ? ProgramService().getExercise(target.exerciseUuid)
+                        : null;
+                    if (ExerciseService().isStarted || idleExercise != null) {
+                      // No rounded corners in the wide/extended layout — the
+                      // mini player is a flush bottom bar docked under the rail
+                      // + master. Rounded corners are reserved for the narrow
+                      // (portrait/mobile) floating mini bar in
+                      // [_buildBottomChrome]. SafeArea honours any bottom inset
+                      // (no extra padding, so the bar stays flush against the
+                      // edge rather than leaving a mismatched gap below it).
+                      return SafeArea(
+                        top: false,
+                        child: DrillMiniPlayer(
+                          // Taller than the narrow floating bar (48) so the
+                          // docked wide bar has more breathing room.
+                          height: 64,
+                          exercise: idleExercise,
+                          onPlay: idleExercise == null
+                              ? null
+                              : () {
+                                  ExerciseService().start(idleExercise);
+                                  _openDrillPlayer(context);
+                                },
+                          onOpen: () => _openDrillPlayer(context),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
               ],
             ),
           ),
-        ),
-      ],
+          const Expanded(child: MasterDetailPane()),
+        ],
+      ),
     );
   }
 

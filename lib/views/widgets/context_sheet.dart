@@ -86,8 +86,20 @@ class ContextSheetController {
         _bodyBuilder = ContextSheet._bodyBuilderOf(context) ?? _bodyBuilder;
         return;
       }
-      // A non-brief target while a sheet is already open: navigate within it.
-      if (_isOpen) {
+      // No MasterDetailScope in this context. If we previously latched onto a
+      // scope (wide layout) that has since been torn down — e.g. the window
+      // was resized from wide to narrow — the "open" state is stale. Drop it
+      // so we fall through to opening a modal sheet instead of silently
+      // updating a detail pane that no longer exists.
+      if (_activeScope != null) {
+        _activeScope = null;
+        _isOpen = false;
+        _target.value = null;
+      }
+      // A non-brief target while a *modal* sheet is already open: navigate
+      // within it. Gated on `_navigator` so a stale scope-mode `_isOpen`
+      // (cleared just above) can't masquerade as an open modal.
+      if (_isOpen && _navigator != null) {
         _target.value = target;
         return;
       }
