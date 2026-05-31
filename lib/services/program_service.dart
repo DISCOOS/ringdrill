@@ -809,9 +809,6 @@ class ProgramService {
           2 => calcFromTimes ? evaluationTime : rotationTime,
           _ => throw UnimplementedError(),
         };
-        phaseIndex == 0
-            ? executionTime
-            : (phaseIndex == 1 ? evaluationTime : rotationTime);
         final phaseTime = _addMinutesToTime(currentStartTime, phaseDuration);
 
         currentStartTime = phaseTime;

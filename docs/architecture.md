@@ -85,10 +85,10 @@ Localization files are generated automatically by Flutter (`flutter: generate: t
 
 ## Tests
 
-`flutter test` is the canonical command. Two test files exist:
+`flutter test` is the canonical command. The suite under `test/` has grown to cover models, `data/`, `utils/`, services (including the brief renderer and catalog refresh), and a range of views and widgets. Mirror the layout of `lib/` under `test/` when adding new files.
 
 * `test/projection_test.dart` covers `lib/utils/projection.dart`. Keep this passing when you touch projection or UTM code.
-* `test/widget_test.dart` is the default Flutter counter-app smoke test and is stale (it expects a `+` button that does not exist in `RingDrillApp`). Treat it as a known-broken placeholder. If you have spare cycles, replace it with a real `RingDrillApp` smoke test.
+* The default Flutter counter-app `test/widget_test.dart` has been removed. Do not reintroduce it; add real `RingDrillApp`-level tests instead.
 
 When adding tests, prefer pure-Dart unit tests against `models/`, `data/` and `utils/` over widget tests. Widget tests should be added only for non-trivial UI logic.
 
