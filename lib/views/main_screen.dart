@@ -1049,15 +1049,19 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
     if (detailWidth < 360) {
-      return Column(
+      // Rail must be outermost so it spans the full height of the screen
+      // (same pattern as the _currentTab == 1 branch and the wide
+      // master/detail branch below). AppBar lives in the right-hand column
+      // so it only spans the content area, not the rail.
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildAppBar(context, constraints, page, hasRail: true),
+          rail,
           Expanded(
-            child: Row(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                rail,
+                _buildAppBar(context, constraints, page, hasRail: true),
                 Expanded(child: _buildIndexedTabs()),
               ],
             ),
