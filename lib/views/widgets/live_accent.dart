@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/theme.dart';
 
-/// Shared design tokens for the "blue live" accent used on cards whose
+/// Shared design tokens for the "orange live" accent used on cards whose
 /// underlying exercise is currently being executed.
 ///
 /// The accent originated on the team detail screen (see
@@ -32,15 +33,18 @@ class LiveAccent {
     required this.shape,
   });
 
-  /// Card background colour. Matches `colorScheme.primaryContainer`.
+  /// Card background colour. Warm peach in light, deep warm brown in
+  /// dark. Pairs with a [brandAccent] border so the running state reads
+  /// as a distinct warm accent against the cool teal surroundings.
   final Color? background;
 
   /// Recommended text colour for content sitting on [background].
-  /// Matches `colorScheme.onPrimaryContainer`.
+  /// Dark teal in light mode, white in dark mode.
   final Color? foreground;
 
   /// Colour for the live indicator icon (and any other accent glyph).
-  /// Matches `colorScheme.primary` so it pops against [background].
+  /// Always [RingDrillColors.brandAccent] (orange) so it pops on the
+  /// warm background regardless of theme.
   final Color? iconColor;
 
   /// Card shape with the primary-coloured border. Use it on `Card.shape`
@@ -68,15 +72,27 @@ class LiveAccent {
   /// Builds the live accent for the given `BuildContext`. When
   /// `isLive` is `false`, returns [LiveAccent.inactive] so the same
   /// expression can be reused regardless of state.
+  ///
+  /// The accent is colour-coded on [RingDrillColors.brandAccent]
+  /// (orange) — the brand's canonical "live / active marker" tone — so
+  /// running cards read as a distinct warm accent against the cool teal
+  /// surrounding cards (regular and selected).
   factory LiveAccent.of(BuildContext context, {required bool isLive}) {
     if (!isLive) return const LiveAccent.inactive();
-    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return LiveAccent._(
-      background: scheme.primaryContainer,
-      foreground: scheme.onPrimaryContainer,
-      iconColor: scheme.primary,
+      background: isDark
+          ? RingDrillColors.liveBackgroundDark
+          : RingDrillColors.liveBackgroundLight,
+      // White on the dark warm background; the brand's `onTertiary` dark
+      // brown on the light warm background. Both keep AA contrast.
+      foreground: isDark ? Colors.white : const Color(0xFF1A0F00),
+      iconColor: RingDrillColors.brandAccent,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: scheme.primary, width: 1.5),
+        side: const BorderSide(
+          color: RingDrillColors.brandAccent,
+          width: 2.5,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
     );

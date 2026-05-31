@@ -157,7 +157,10 @@ class _ProgramViewState extends State<ProgramView> {
     final programs = _exercises.isEmpty
         ? Center(child: Text(localizations.noExercisesYet))
         : Padding(
-            padding: const EdgeInsets.only(top: 4.0),
+            // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
+            // detail body's `EdgeInsets.all(16)` so the first row of master
+            // and detail align in the wide layout.
+            padding: const EdgeInsets.only(top: 11.0),
             child: targetNotifier == null
                 ? buildList(null)
                 : ValueListenableBuilder<ContextSheetTarget?>(

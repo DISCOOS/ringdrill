@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Unified header height for the main shell AppBar when the master/detail
+/// layout is active. Matches the `toolbarHeight: 72` used by the detail
+/// screens (`StationScreen`, `TeamExerciseScreen`, `RolePlayScreen`,
+/// `CoordinatorScreen`) so the first content row of master and detail
+/// align vertically. Compact (no-rail) layout keeps the default
+/// `kToolbarHeight = 56` to preserve vertical space on phones.
+const double kRingdrillHeaderHeight = 72.0;
+
 // ---------------------------------------------------------------------------
 // RingDrill brand palette
 // ---------------------------------------------------------------------------
@@ -33,14 +41,64 @@ class RingDrillColors {
   static const Color brandAccent = Color(0xFFF0982C);
   static const Color brandPath = Color(0xFF5FB1C0);
 
-  static const Color lightScaffold = Color(0xFFF4F7F9);
-  static const Color lightSurface = Color(0xFFE7EDF0);
+  // Light palette stays in the brand's cool blue-teal family — lifted to
+  // high luminance values so the page reads as airy without drifting
+  // into warm cream or pure white. Same hue family as `brandDeep` /
+  // `brandPrimary` / `brandPath`, just up the lightness scale.
+  static const Color lightScaffold = Color(0xFFE9EFF1);
+  static const Color lightSurface = Color(0xFFD5DEE2);
   static const Color lightOnSurface = Color(0xFF0B1F2A);
   static const Color lightOnSurfaceVariant = Color(0xFF3E5560);
 
   static const Color darkSurface = Color(0xFF073F54);
   static const Color darkOnSurface = Color(0xFFE6EEF2);
   static const Color darkOnSurfaceVariant = Color(0xFF9FB4BD);
+
+  /// Sidebar tone for the NavigationRail body in the wide master/detail
+  /// layout. Sits one step away from `*Scaffold` so the rail reads as a
+  /// distinct sidebar surface while staying compatible with the active
+  /// `masterAccent*` indicator pill that extends from the selected tab
+  /// into the master pane.
+  ///
+  /// Light: cool blue-gray, between `lightSurface` and `lightScaffold`.
+  /// Dark: between `brandDeep` (scaffold #002C3F) and `darkSurface` (#073F54).
+  static const Color panelLight = Color(0xFFDDE5E8);
+  static const Color panelDark = Color(0xFF053547);
+
+  /// Active-surface tone shared by the NavigationRail selection indicator,
+  /// the master pane background and the master AppBar in the wide
+  /// master/detail layout. The selected tab's indicator pill visually
+  /// "extends" into the master so the active section reads as one block.
+  ///
+  /// Light: cool blue-gray, one tonal step darker than [panelLight] but
+  /// in the same brand-teal hue family. Requires dark foreground on the
+  /// AppBar — the shell flips `appBarTheme.foregroundColor` in light
+  /// hasRail mode.
+  /// Dark: subtle lift from [panelDark] toward [brandPrimary]. White
+  /// foreground still works, no flip needed.
+  static const Color masterAccentLight = Color(0xFFC5D1D6);
+  static const Color masterAccentDark = Color(0xFF093E55);
+
+  /// Background for a selected row in the master list, sitting against
+  /// the `masterAccent*` pane. Tuned to pop clearly from the regular card
+  /// (`*Surface`) so the user can see which row is active in the detail
+  /// pane. Paired with a thick `primary`-coloured border for visibility.
+  ///
+  /// Light: pure white — brighter than the warm eggshell `lightSurface`
+  /// so the selection visibly lifts off the page.
+  /// Dark: bolder lifted teal — clearly brighter than `darkSurface`
+  /// (#073F54).
+  static const Color selectedRowLight = Color(0xFFFFFFFF);
+  static const Color selectedRowDark = Color(0xFF1A6885);
+
+  /// Background tones for the live/running exercise card. Paired with a
+  /// thick `brandAccent` (orange) border so the running state reads as a
+  /// distinct "warm" accent against the cool teal surrounding cards.
+  ///
+  /// Light: warm peach — clearly orange-tinted on the eggshell page.
+  /// Dark: deep warm brown — orange-tinted against the dark teal page.
+  static const Color liveBackgroundLight = Color(0xFFFFE0B5);
+  static const Color liveBackgroundDark = Color(0xFF4A3010);
 
   static const Color errorLight = Color(0xFFB3261E);
   static const Color errorDark = Color(0xFFFF7A45);
@@ -80,32 +138,41 @@ class RingDrillColors {
 /// enabled `foregroundColor` set. Because [InheritedTheme.of] returns only
 /// the closest match, that local wrap fully shadows any global
 /// `theme.iconButtonTheme`. The disabled state therefore always falls back
-/// to the M3 default `colorScheme.onSurface.withOpacity(0.38)`, which on
-/// our dark `brandDeep` AppBar is nearly invisible in light mode.
+/// to the M3 default `colorScheme.onSurface.withOpacity(0.38)` — invisible
+/// on the dark `brandDeep` AppBar (dark mode) and now invisible on the
+/// light `lightScaffold` AppBar (light mode) as well.
 ///
 /// The fix recommended by the Flutter team (issue #117918, PR #118216) is
 /// to wrap each action in a *closer* `IconButtonTheme`. This helper does
-/// exactly that, so screens can keep using vanilla [AppBar].
+/// exactly that, picking the enabled and disabled tones from the active
+/// theme brightness so the same call works in both modes.
 ///
 /// Usage:
 /// ```dart
 /// appBar: AppBar(
 ///   title: Text(...),
-///   actions: rdAppBarActions([
+///   actions: rdAppBarActions(context, [
 ///     IconButton(icon: ..., onPressed: ...),
-///     IconButton(icon: ..., onPressed: null), // disabled bell stays visible
+///     IconButton(icon: ..., onPressed: null), // disabled stays visible
 ///   ]),
 /// ),
 /// ```
-List<Widget>? rdAppBarActions(List<Widget>? actions) {
+List<Widget>? rdAppBarActions(BuildContext context, List<Widget>? actions) {
   if (actions == null) return null;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final enabledForeground = isDark
+      ? Colors.white
+      : RingDrillColors.lightOnSurface;
+  final disabledForeground = isDark
+      ? RingDrillColors.disabledOnDark
+      : RingDrillColors.disabledOnLight;
   return actions
       .map<Widget>(
         (action) => IconButtonTheme(
           data: IconButtonThemeData(
             style: IconButton.styleFrom(
-              foregroundColor: Colors.white,
-              disabledForegroundColor: RingDrillColors.disabledOnDark,
+              foregroundColor: enabledForeground,
+              disabledForegroundColor: disabledForeground,
             ),
           ),
           child: action,
@@ -148,12 +215,16 @@ final ThemeData ringDrillTheme = ThemeData(
     ),
   ),
   appBarTheme: const AppBarTheme(
-    // `foregroundColor` sets the enabled icon/text color via AppBar's
-    // internal IconButtonTheme wrap. The disabled state for AppBar action
-    // buttons is set per call via [rdAppBarActions] in `theme.dart`.
-    backgroundColor: RingDrillColors.brandDeep,
-    foregroundColor: Colors.white,
-    elevation: 2,
+    // Light mode mirrors dark's "AppBar merges with detail body" pattern:
+    // detail AppBar background equals `lightScaffold` (same as the
+    // detail Scaffold body) so there is no visible seam between header
+    // and content. The master AppBar overrides this back to its accent
+    // tone in the wide layout via `MainScreen._buildAppBar`. The
+    // disabled state for action buttons is handled per call via
+    // [rdAppBarActions].
+    backgroundColor: RingDrillColors.lightScaffold,
+    foregroundColor: RingDrillColors.lightOnSurface,
+    elevation: 0,
   ),
   cardTheme: const CardThemeData(
     color: RingDrillColors.lightSurface,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 
 /// Card-style row with an optional expandable [body] section.
@@ -105,13 +106,25 @@ class ExpandableTile extends StatelessWidget {
 
     final scheme = Theme.of(context).colorScheme;
     final useSelected = selected && !accent.isActive;
+    // Selected row uses an explicit lifted background + 2px primary
+    // border. The M3-derived `surfaceContainerHighest`/`outlineVariant`
+    // pair was too close to the regular card surface to read as
+    // selection — invisible in light, barely visible in dark — when the
+    // row sits against the master pane accent.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selectedBackground = isDark
+        ? RingDrillColors.selectedRowDark
+        : RingDrillColors.selectedRowLight;
     return Card(
       elevation: elevation,
       margin: margin,
-      color: useSelected ? scheme.surfaceContainerHighest : accent.background,
+      color: useSelected ? selectedBackground : accent.background,
       shape: useSelected
           ? RoundedRectangleBorder(
-              side: BorderSide(color: scheme.outlineVariant),
+              // 3px so the selection reads at a glance against any
+              // master pane / card combination. 2px was getting lost on
+              // light master + light card pairings.
+              side: BorderSide(color: scheme.primary, width: 3),
               borderRadius: BorderRadius.circular(12),
             )
           : accent.shape,

@@ -152,7 +152,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
       Widget buildList(ContextSheetTarget? selectedTarget) {
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 4, bottom: 96),
+          // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
+          // detail body's `EdgeInsets.all(16)` so the first row of master
+          // and detail align in the wide layout.
+          padding: const EdgeInsets.only(top: 11, bottom: 96),
           itemCount: rows.length,
           itemBuilder: (context, index) {
             final (exerciseNumber, exercise, rolePlay) = rows[index];

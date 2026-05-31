@@ -7,6 +7,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/about_page.dart';
@@ -31,6 +32,7 @@ import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
 import 'package:ringdrill/web/settings_page.dart'
@@ -649,34 +651,87 @@ class _MainScreenState extends State<MainScreen> {
     PageWidget<ScreenController> page, {
     required bool hasRail,
   }) {
+    // Master AppBar adopts the same 72px height as the detail screens'
+    // `SheetTitle` AppBar when the master/detail layout is active, so the
+    // first content row on each side starts at the same Y. Compact stays
+    // 56 to preserve vertical space on phones.
+    final toolbarHeight = hasRail ? kRingdrillHeaderHeight : kToolbarHeight;
+    // In rail mode the master AppBar carries the masterAccent tone so the
+    // selected NavigationRail indicator pill, the master AppBar and the
+    // master pane body all share a single colour. Compact keeps the
+    // theme default (`brandDeep` in dark, `lightScaffold` in light, so
+    // detail AppBars merge with detail body in both modes).
+    final appBarBackground = hasRail ? _masterAccent(context) : null;
+    // In light hasRail mode the master accent is a light eggshell tone,
+    // so the AppBar's white foreground must flip to dark for legibility.
+    // Dark mode keeps the default white from `appBarTheme.foregroundColor`.
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final appBarForeground = hasRail && !isDark
+        ? RingDrillColors.lightOnSurface
+        : null;
+
+    Widget appBar = AppBar(
+      toolbarHeight: toolbarHeight,
+      backgroundColor: appBarBackground,
+      foregroundColor: appBarForeground,
+      title: _buildAppBarTitle(context, page, hasRail: hasRail),
+      // In wide layout the hamburger lives at the top of the NavigationRail;
+      // suppress the AppBar's leading slot entirely so it doesn't duplicate.
+      leadingWidth: hasRail ? 0 : null,
+      leading: hasRail ? const SizedBox.shrink() : null,
+      actions: [
+        const PlanStatusBadge(),
+        ...?page.controller.buildActions(context, constraints),
+      ],
+      actionsPadding: EdgeInsets.only(right: 16.0),
+    );
+
+    // PlanStatusBadge reads `theme.appBarTheme.foregroundColor` from the
+    // inherited theme rather than the AppBar widget property, so we
+    // additionally override the theme in light hasRail mode so the badge
+    // flips alongside the rest of the AppBar foreground.
+    if (appBarForeground != null) {
+      appBar = Theme(
+        data: theme.copyWith(
+          appBarTheme: theme.appBarTheme.copyWith(
+            foregroundColor: appBarForeground,
+            backgroundColor: appBarBackground,
+          ),
+        ),
+        child: appBar,
+      );
+    }
+
     return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
+      preferredSize: Size.fromHeight(toolbarHeight),
       child: _removePadding(
         context: context,
         paddingLeft: 0,
-        child: AppBar(
-          title: _buildAppBarTitle(context, page),
-          // In wide layout the hamburger lives at the top of the NavigationRail;
-          // suppress the AppBar's leading slot entirely so it doesn't duplicate.
-          leadingWidth: hasRail ? 0 : null,
-          leading: hasRail ? const SizedBox.shrink() : null,
-          actions: [
-            const PlanStatusBadge(),
-            ...?page.controller.buildActions(context, constraints),
-          ],
-          actionsPadding: EdgeInsets.only(right: 16.0),
-        ),
+        child: appBar,
       ),
     );
   }
 
   Widget _buildAppBarTitle(
     BuildContext context,
-    PageWidget<ScreenController> page,
-  ) {
-    final title = Text(page.controller.title(context));
+    PageWidget<ScreenController> page, {
+    required bool hasRail,
+  }) {
+    final pageTitle = page.controller.title(context);
+    // In master/detail mode, mirror the detail-screen `SheetTitle` pattern:
+    // primary = tab title (e.g. "Markører"), secondary = active plan name.
+    // The active plan was previously only visible via the tooltip on the
+    // program tab title, which made cross-tab orientation invisible.
+    final activePlanName = hasRail
+        ? ProgramService().activeProgram?.name
+        : null;
+    final Widget titleChild = hasRail
+        ? SheetTitle(primary: pageTitle, secondary: activePlanName)
+        : Text(pageTitle);
+
     final controller = page.controller;
-    if (controller is! ProgramPageControllerBase) return title;
+    if (controller is! ProgramPageControllerBase) return titleChild;
     final localizations = AppLocalizations.of(context)!;
     return Tooltip(
       message: localizations.libraryRename,
@@ -685,7 +740,7 @@ class _MainScreenState extends State<MainScreen> {
         onTap: () => active_actions.renameActivePlan(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          child: title,
+          child: titleChild,
         ),
       ),
     );
@@ -700,7 +755,12 @@ class _MainScreenState extends State<MainScreen> {
       elevation: 8,
       children: [
         Container(
-          color: Theme.of(context).appBarTheme.backgroundColor,
+          // Hardcode the brand-deep tone here regardless of theme so the
+          // drawer header remains a distinct brand surface. Was
+          // `appBarTheme.backgroundColor`, which now resolves to the
+          // light scaffold tone in light mode and would render the
+          // hardcoded white app-name text invisible.
+          color: RingDrillColors.brandDeep,
           padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 16.0),
           child: Row(
             children: [
@@ -965,6 +1025,25 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  /// Panel tone for the NavigationRail body in the wide layout. The rail
+  /// reads as a distinct sidebar surface; the selected tab's indicator
+  /// pill ([_masterAccent]) "extends" into the master pane.
+  Color _panelColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? RingDrillColors.panelDark
+        : RingDrillColors.panelLight;
+  }
+
+  /// Active-surface tone shared by the rail selection indicator, the
+  /// master pane background and the master AppBar. Visually links the
+  /// selected tab to the master content so the active section reads as
+  /// one connected block.
+  Color _masterAccent(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? RingDrillColors.masterAccentDark
+        : RingDrillColors.masterAccentLight;
+  }
+
   Widget _removePadding({
     required BuildContext context,
     required Widget child,
@@ -982,7 +1061,7 @@ class _MainScreenState extends State<MainScreen> {
       removeLeft: removeForRail,
       removeRight: removeForRail,
       child: ColoredBox(
-        color: Theme.of(context).colorScheme.surface, // rail bg
+        color: _panelColor(context), // rail bg, continuous with master pane
         child: Padding(
           padding: removeForRail
               ? EdgeInsets.only(left: paddingLeft)
@@ -1001,15 +1080,38 @@ class _MainScreenState extends State<MainScreen> {
     WindowSizeClass windowSizeClass,
   ) {
     final fab = page.controller.buildFAB(context, constraints);
+    final panelColor = _panelColor(context);
+    final masterAccent = _masterAccent(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Explicit rail icon colours so the selected icon stays legible on
+    // the `masterAccent` indicator pill (which is a light eggshell in
+    // light mode, where M3's auto-derived `onSecondaryContainer` was
+    // landing too close to the indicator background). In dark mode the
+    // default white still works.
+    final selectedIconColor =
+        isDark ? Colors.white : RingDrillColors.lightOnSurface;
+    final unselectedIconColor = isDark
+        ? RingDrillColors.darkOnSurfaceVariant
+        : RingDrillColors.lightOnSurfaceVariant;
     final rail = _removePadding(
       context: context,
       child: NavigationRail(
+        // Explicit so the rail body paints with the same tone as the
+        // surrounding ColoredBox in `_removePadding`. The selection
+        // indicator picks up `masterAccent` so the selected tab visually
+        // extends into the master pane on the right.
+        backgroundColor: panelColor,
+        indicatorColor: masterAccent,
+        selectedIconTheme: IconThemeData(color: selectedIconColor),
+        unselectedIconTheme: IconThemeData(color: unselectedIconColor),
         selectedIndex: _currentTab,
         onDestinationSelected: _onDestinationSelected,
         leading: Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 4),
           child: IconButton(
-            icon: const Icon(Icons.menu),
+            // Hamburger doesn't sit on the indicator pill but it lives
+            // on the same rail panel, so it uses the unselected tone.
+            icon: Icon(Icons.menu, color: unselectedIconColor),
             tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
@@ -1053,17 +1155,24 @@ class _MainScreenState extends State<MainScreen> {
       // (same pattern as the _currentTab == 1 branch and the wide
       // master/detail branch below). AppBar lives in the right-hand column
       // so it only spans the content area, not the rail.
+      // Whole content area uses the master accent — there is no detail
+      // pane in this branch (detail opens as a bottom sheet), so the
+      // entire column reads as one connected "active section" linked to
+      // the selected rail indicator.
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           rail,
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildAppBar(context, constraints, page, hasRail: true),
-                Expanded(child: _buildIndexedTabs()),
-              ],
+            child: ColoredBox(
+              color: masterAccent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAppBar(context, constraints, page, hasRail: true),
+                  Expanded(child: _buildIndexedTabs()),
+                ],
+              ),
             ),
           ),
         ],
@@ -1079,52 +1188,61 @@ class _MainScreenState extends State<MainScreen> {
             emptyPaneBuilder: _emptyPaneBuilderForCurrentTab,
             child: Row(
               children: [
-                SizedBox(
-                  width: masterWidth,
-                  child: Column(
-                    children: [
-                      _buildAppBar(context, constraints, page, hasRail: true),
-                      Expanded(child: _buildIndexedTabs()),
-                      ValueListenableBuilder<ContextSheetTarget?>(
-                        valueListenable:
-                            _contextSheetController.targetNotifier,
-                        builder: (context, target, _) {
-                          // Resolve the exercise for the idle (not-yet-started)
-                          // mini player. Null when target isn't an exercise or
-                          // the exercise isn't found.
-                          final idleExercise =
-                              target is ExerciseSheetTarget
-                                  ? ProgramService().getExercise(
-                                      target.exerciseUuid,
-                                    )
-                                  : null;
-                          if (ExerciseService().isStarted ||
-                              idleExercise != null) {
-                            return SafeArea(
-                              top: false,
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12),
+                // Master pane is painted with the master-accent tone so
+                // the selected rail indicator pill, the master AppBar and
+                // the master body all share a single colour and read as
+                // one connected "active section". The detail pane keeps
+                // the scaffold background. Cards inside the master list
+                // use `*Surface` which stays distinct against the accent.
+                ColoredBox(
+                  color: masterAccent,
+                  child: SizedBox(
+                    width: masterWidth,
+                    child: Column(
+                      children: [
+                        _buildAppBar(context, constraints, page, hasRail: true),
+                        Expanded(child: _buildIndexedTabs()),
+                        ValueListenableBuilder<ContextSheetTarget?>(
+                          valueListenable:
+                              _contextSheetController.targetNotifier,
+                          builder: (context, target, _) {
+                            // Resolve the exercise for the idle (not-yet-started)
+                            // mini player. Null when target isn't an exercise or
+                            // the exercise isn't found.
+                            final idleExercise =
+                                target is ExerciseSheetTarget
+                                    ? ProgramService().getExercise(
+                                        target.exerciseUuid,
+                                      )
+                                    : null;
+                            if (ExerciseService().isStarted ||
+                                idleExercise != null) {
+                              return SafeArea(
+                                top: false,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                  child: DrillMiniPlayer(
+                                    exercise: idleExercise,
+                                    onPlay: idleExercise == null
+                                        ? null
+                                        : () {
+                                            ExerciseService().start(
+                                              idleExercise,
+                                            );
+                                            _openDrillPlayer(context);
+                                          },
+                                    onOpen: () => _openDrillPlayer(context),
+                                  ),
                                 ),
-                                child: DrillMiniPlayer(
-                                  exercise: idleExercise,
-                                  onPlay: idleExercise == null
-                                      ? null
-                                      : () {
-                                          ExerciseService().start(
-                                            idleExercise,
-                                          );
-                                          _openDrillPlayer(context);
-                                        },
-                                  onOpen: () => _openDrillPlayer(context),
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ],
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const Expanded(child: MasterDetailPane()),

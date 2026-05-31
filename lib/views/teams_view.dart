@@ -89,7 +89,10 @@ class _TeamsViewState extends State<TeamsView> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      // top: 11 + Card.margin.top (4) = 15 ≈ 16, matching the detail body's
+      // `EdgeInsets.all(16)` so the first row of master and detail align in
+      // the wide layout. Side/bottom padding stays at 8.
+      padding: const EdgeInsets.fromLTRB(8, 11, 8, 8),
       child: targetNotifier == null
           ? buildList(null)
           : ValueListenableBuilder<ContextSheetTarget?>(

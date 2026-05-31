@@ -256,6 +256,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
             : ExerciseEvent.pending(_programService.getExercise(widget.uuid)!);
         return Scaffold(
           appBar: AppBar(
+            // Matches the other detail screens (`StationScreen`,
+            // `TeamExerciseScreen`, `RolePlayScreen`) and the master
+            // AppBar so the first content row aligns across master and
+            // detail in the wide layout.
+            toolbarHeight: kRingdrillHeaderHeight,
             leading: IconButton(
               icon: const Icon(Icons.close),
               onPressed: () {
@@ -268,7 +273,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
               tooltip: localizations.briefClose,
             ),
             title: SheetTitle(primary: _exercise!.name),
-            actions: rdAppBarActions([
+            actions: rdAppBarActions(context, [
               // Open Brief — scoped to this exercise. Always visible
               // because the brief is the coordinator's reading material
               // both before and during the exercise.
