@@ -344,6 +344,18 @@
   "@editStation": {
     "description": "Label"
   },
+  "editTeam": "Edit Team",
+  "@editTeam": {
+    "description": "Label"
+  },
+  "teamName": "Team name",
+  "@teamName": {
+    "description": "Label"
+  },
+  "numberOfMembers": "Number of members",
+  "@numberOfMembers": {
+    "description": "Label"
+  },
   "stationDescription": "Station Description",
   "@stationDescription": {
     "description": "Label"

@@ -331,6 +331,15 @@ class AppLocalizationsNb extends AppLocalizations {
   String get editStation => 'Endre post';
 
   @override
+  String get editTeam => 'Endre lag';
+
+  @override
+  String get teamName => 'Navn på lag';
+
+  @override
+  String get numberOfMembers => 'Antall medlemmer';
+
+  @override
   String get stationDescription => 'Postbeskrivelse';
 
   @override

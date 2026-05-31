@@ -605,6 +605,24 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
+  /// **'Edit Team'**
+  String get editTeam;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Team name'**
+  String get teamName;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Number of members'**
+  String get numberOfMembers;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
   /// **'Station Description'**
   String get stationDescription;
 

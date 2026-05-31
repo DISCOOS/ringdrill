@@ -331,6 +331,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editStation => 'Edit Station';
 
   @override
+  String get editTeam => 'Edit Team';
+
+  @override
+  String get teamName => 'Team name';
+
+  @override
+  String get numberOfMembers => 'Number of members';
+
+  @override
   String get stationDescription => 'Station Description';
 
   @override
