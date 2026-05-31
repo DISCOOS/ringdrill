@@ -216,7 +216,7 @@ Roster holds real people, so the whole tab is the stripped-on-publish PII layer.
 * **Supersedes [DESIGN-003](./roleplays-tab.md) (RolePlays tab).** The role list moves into the Markører segment, the cast side moves to Roster.
 * **Extends [DESIGN-004](./brief-template.md).** Adds the master-pane overview as a new read-only surface for `program.briefIntroMd` / `commsMd`, and "Åpne brief" as an entry point. No change to DESIGN-004's fields, renderer or storage.
 * **Works within [DESIGN-005](./wide-screen-layout.md) / [ADR-0030](../adrs/0030-wide-screen-master-detail-layout.md).** Master pane only.
-* **Lands with [ADR-0028](../adrs/0028-feature-first-views-layout.md).** The `lib/views/` feature-first refactor is the natural moment to relocate the station / roleplay / team views into Program-tab segments.
+* **Precedes [ADR-0028](../adrs/0028-feature-first-views-layout.md).** The `lib/views/` feature-first refactor is deferred until DESIGN-006 is complete, because this design moves the feature boundaries the refactor would group by (Stations and RolePlays become segments, Roster is new). DESIGN-006 is built on the current flat structure, and ADR-0028 then runs once against the settled shape, with its grouping plan reviewed against this outcome first.
 
 DESIGN-002 and DESIGN-003 are Superseded by this doc as of acceptance (2026-05-31).
 
@@ -235,7 +235,9 @@ DESIGN-002 and DESIGN-003 are Superseded by this doc as of acceptance (2026-05-3
 
 ## Implementation notes
 
-Sequenced so each stage is shippable and reviewable on its own. Aligns with the [ADR-0028](../adrs/0028-feature-first-views-layout.md) refactor.
+Sequenced so each stage is shippable and reviewable on its own.
+
+**Delivery.** Work proceeds on `main` with local commits, no feature branch. Stage 1 on its own is an awkward user-facing state (the segmented Program tab coexists with the still-present Stations, RolePlays and Teams tabs, so the surfaces are duplicated), so **stages 1 and 2 are one release unit**: nothing is pushed to GitHub until both are complete and the navigation is clean. Stages 3 and 4 are additive and main-safe on their own, so they push as normal once 1+2 have landed. The ADR-0028 views refactor is deferred until after DESIGN-006 (see the relationship note above), so it does not contend for `main_screen.dart` during this work.
 
 **Stage 1 — Segmented Program tab.** Wrap `ProgramView` in a `CustomScrollView` with the pinned `SegmentedButton` and the four segment bodies (reusing `ProgramView`'s list, `StationListView`, the role list and `TeamsView` bodies). Make the FAB and AppBar actions follow the active segment. No navigation change yet, the other tabs still exist.
 
