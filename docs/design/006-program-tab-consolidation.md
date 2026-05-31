@@ -30,6 +30,7 @@ related_adrs:
   - 0022-markdown-content-as-files.md
   - 0028-feature-first-views-layout.md
   - 0030-wide-screen-master-detail-layout.md
+  - 0032-program-scoped-routing.md
 supersedes:
   - DESIGN-002
   - DESIGN-003
@@ -238,7 +239,7 @@ Sequenced so each stage is shippable and reviewable on its own. Aligns with the 
 
 **Stage 1 — Segmented Program tab.** Wrap `ProgramView` in a `CustomScrollView` with the pinned `SegmentedButton` and the four segment bodies (reusing `ProgramView`'s list, `StationListView`, the role list and `TeamsView` bodies). Make the FAB and AppBar actions follow the active segment. No navigation change yet, the other tabs still exist.
 
-**Stage 2 — Collapse the navigation.** Remove the Stations, RolePlays and Teams root destinations. Reduce `routes` to `[routeProgram, routeMap, routeRoster]`. Keep the deep-link subpaths (`/program/:exerciseId/...`, station and team detail links) working, redirected under `/program`. Update `_buildDestinations`, `_pages`, `_initTab` and the empty-pane builder.
+**Stage 2 — Collapse the navigation.** Remove the Stations, RolePlays and Teams root destinations. Reduce `routes` to `[routeProgram, routeMap, routeRoster]`. Adopt the program-scoped routing scheme from [ADR-0032](../adrs/0032-program-scoped-routing.md): every program-scoped path carries `/program/:uuid/`, rendering it activates that program, and the old un-prefixed paths (`/stations/...`, `/teams/...`, `/roleplays/...`) become back-compat redirects that resolve the owning program and forward to the canonical path. Update `_buildDestinations`, `_pages`, `_initTab` and the empty-pane builder.
 
 **Stage 3 — Overview sliver.** Add the read-only overview above the switcher. Team count and `description` first. Wire "Åpne brief" to the brief sheet and move the brief AppBar action into it.
 
