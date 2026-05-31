@@ -40,6 +40,7 @@ class ExpandableTile extends StatelessWidget {
     this.onLongPress,
     this.onToggle,
     this.accent = const LiveAccent.inactive(),
+    this.color,
     this.margin = const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
     this.elevation = 2,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -97,6 +98,10 @@ class ExpandableTile extends StatelessWidget {
   /// an `isLive` flag at the call site.
   final LiveAccent accent;
 
+  /// Optional neutral card background. Live and selected states override it.
+  /// Nested rows use this to pick a darker container tone than their parent.
+  final Color? color;
+
   final EdgeInsetsGeometry? margin;
   final double? elevation;
   final EdgeInsetsGeometry padding;
@@ -124,7 +129,7 @@ class ExpandableTile extends StatelessWidget {
     return Card(
       elevation: elevation,
       margin: margin,
-      color: useSelected ? selectedBackground : accent.background,
+      color: useSelected ? selectedBackground : accent.background ?? color,
       shape: useSelected
           ? RoundedRectangleBorder(
               // 3px so the selection reads at a glance against any

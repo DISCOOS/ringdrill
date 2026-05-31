@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
@@ -17,6 +19,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
@@ -39,6 +42,7 @@ class _ProgramViewState extends State<ProgramView> {
   final List<StreamSubscription> _subscriptions = [];
   List<Exercise> _exercises = [];
   ExerciseEvent? _liveEvent;
+  String? _expandedExerciseUuid;
 
   @override
   void initState() {
@@ -131,6 +135,14 @@ class _ProgramViewState extends State<ProgramView> {
               markers: markers,
               liveEvent: _liveEvent,
               selected: isSelected,
+              expanded: _expandedExerciseUuid == exercise.uuid,
+              onToggle: () {
+                setState(() {
+                  _expandedExerciseUuid = _expandedExerciseUuid == exercise.uuid
+                      ? null
+                      : exercise.uuid;
+                });
+              },
               onLongPress: () =>
                   _openExerciseForm(context, localizations, exercise),
               // V1: live card opens the DrillPlayer sheet (DESIGN-001).
@@ -215,8 +227,11 @@ class ExerciseCard extends StatefulWidget {
     required this.markers,
     this.liveEvent,
     this.selected = false,
+    this.expanded,
     this.onOpen,
     this.onLongPress,
+    this.onToggle,
+    this.allowStationActions = true,
   });
 
   final Widget? trailing;
@@ -236,6 +251,11 @@ class ExerciseCard extends StatefulWidget {
   /// layout. Forwarded to [ExpandableTile.selected].
   final bool selected;
 
+  /// Controlled expansion state. List owners set this together with
+  /// [onToggle] so opening one card can collapse the previously-open card.
+  /// Standalone cards leave it null and use local state.
+  final bool? expanded;
+
   /// Fires when the row is tapped. When `null`, tapping the row toggles
   /// the inline map preview instead (used by the export/import picker
   /// where there is no detail screen to navigate to).
@@ -244,6 +264,17 @@ class ExerciseCard extends StatefulWidget {
   /// Fires when the row is long-pressed. The exercises tab uses this as
   /// its direct edit gesture; picker cards leave it unset.
   final VoidCallback? onLongPress;
+
+  /// Controlled expansion callback. See [expanded].
+  final VoidCallback? onToggle;
+
+  /// Whether the expanded station list offers edit (swipe / long-press)
+  /// and tap-to-open-detail gestures. The exercises tab enables them so
+  /// the inline station list mirrors `StationListView` and the
+  /// `CoordinatorScreen` station list. The export/import picker leaves it
+  /// `false`: there the card is a read-only selection row, so the
+  /// expanded body shows the map preview only.
+  final bool allowStationActions;
 
   @override
   State<ExerciseCard> createState() => _ExerciseCardState();
@@ -260,6 +291,10 @@ class _ExerciseCardState extends State<ExerciseCard> {
     final localizations = widget.localizations;
     final markers = widget.markers;
     final hasMap = markers.isNotEmpty;
+    // The picker disables station actions, so it falls back to the
+    // map-only preview rather than rendering an interactive station list.
+    final showStations =
+        widget.allowStationActions && exercise.stations.isNotEmpty;
     final st = exercise.startTime.toMaterial();
     final et = exercise.endTime.toMaterial();
     final liveEvent = widget.liveEvent;
@@ -285,23 +320,187 @@ class _ExerciseCardState extends State<ExerciseCard> {
       trailing: widget.trailing,
       onOpen: widget.onOpen,
       onLongPress: widget.onLongPress,
-      onToggle: hasMap ? _toggleExpanded : null,
-      expanded: _expanded,
-      body: hasMap
-          ? SizedBox(
-              height: 200,
-              child: IgnorePointer(
-                child: MapView(
-                  layers: MapConfig.layers,
-                  withToggle: false,
-                  withClustering: false,
-                  markers: markers.toMarkerSpecs(),
-                  initialFit: markers.fit(),
-                  initialCenter: markers.average(),
-                ),
-              ),
-            )
+      onToggle: showStations || hasMap
+          ? widget.onToggle ?? _toggleExpanded
           : null,
+      expanded: widget.expanded ?? _expanded,
+      body: showStations || hasMap
+          ? _buildExpandedBody(exercise, markers, showStations)
+          : null,
+    );
+  }
+
+  Widget _buildExpandedBody(
+    Exercise exercise,
+    List<StationLocation> markers,
+    bool showStations,
+  ) {
+    final liveEvent = widget.liveEvent?.exercise.uuid == exercise.uuid
+        ? widget.liveEvent
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (markers.isNotEmpty) ...[
+          SizedBox(
+            height: 200,
+            child: IgnorePointer(
+              child: MapView(
+                layers: MapConfig.layers,
+                withToggle: false,
+                withClustering: false,
+                markers: markers.toMarkerSpecs(),
+                initialFit: markers.fit(),
+                initialCenter: markers.average(),
+              ),
+            ),
+          ),
+          if (showStations) const SizedBox(height: 8),
+        ],
+        if (showStations)
+          for (
+            var stationIndex = 0;
+            stationIndex < exercise.stations.length;
+            stationIndex++
+          )
+            _buildStationRow(exercise, stationIndex, liveEvent),
+      ],
+    );
+  }
+
+  /// One station row inside the expanded card. Mirrors the
+  /// `CoordinatorScreen` station list: swipe end-to-start or long-press to
+  /// edit the station, and tap the row to open `StationScreen` in the
+  /// context sheet. The round-by-round rotation strip is deliberately
+  /// omitted here — the exercises list is an overview, so per-round team
+  /// allocation belongs to the live player, not this card.
+  Widget _buildStationRow(
+    Exercise exercise,
+    int stationIndex,
+    ExerciseEvent? liveEvent,
+  ) {
+    return Builder(
+      builder: (context) {
+        final localizations = AppLocalizations.of(context)!;
+        final station = exercise.stations[stationIndex];
+        final isLive =
+            liveEvent?.isRunning == true &&
+            exercise.teamIndex(stationIndex, liveEvent!.currentRound) >= 0;
+        final accent = LiveAccent.of(context, isLive: isLive);
+        final tile = ExpandableTile(
+          margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? RingDrillColors.brandDeep
+              : Theme.of(context).colorScheme.surfaceContainerHigh,
+          accent: accent,
+          leading: accent.indicator,
+          title: Text(
+            station.name,
+            style: TextStyle(fontSize: 18, color: accent.foreground),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          onOpen: () => _openStation(context, exercise, station),
+          onLongPress: () =>
+              _openStationForm(context, localizations, exercise, station),
+        );
+        return Dismissible(
+          key: ValueKey<String>(
+            'exercise-card-station-${exercise.uuid}-${station.index}',
+          ),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  localizations.editStation,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.edit,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              ],
+            ),
+          ),
+          confirmDismiss: (_) async {
+            await _openStationForm(context, localizations, exercise, station);
+            return false;
+          },
+          child: tile,
+        );
+      },
+    );
+  }
+
+  /// Opens the station detail in the context sheet (or detail pane on
+  /// wide layouts), matching the tap behaviour of `StationListView`.
+  Future<void> _openStation(
+    BuildContext context,
+    Exercise exercise,
+    Station station,
+  ) async {
+    await ContextSheet.of(context).show(
+      context,
+      StationSheetTarget(
+        exerciseUuid: exercise.uuid,
+        stationIndex: station.index,
+      ),
+    );
+  }
+
+  /// Opens the station form, guarding against edits while an exercise is
+  /// running, then persists the edited station back into its exercise.
+  /// Same flow as `StationListView._openStationForm`.
+  Future<void> _openStationForm(
+    BuildContext context,
+    AppLocalizations localizations,
+    Exercise exercise,
+    Station station,
+  ) async {
+    final programService = ProgramService();
+    final exerciseService = ExerciseService();
+    if (exerciseService.isStarted) {
+      final runningExercise = exerciseService.last?.exercise;
+      if (runningExercise != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.stopExerciseFirst(runningExercise.name),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    final newStation = await openFormSurface<Station>(
+      context,
+      builder: (_) => StationFormScreen(
+        station: station,
+        markers: programService.getLocations().toMarkerSpecs(),
+      ),
+    );
+    if (!mounted || newStation == null) return;
+
+    final current = programService.getExercise(exercise.uuid);
+    if (current == null) return;
+    final stations = [...current.stations];
+    final idxInList = stations.indexWhere((s) => s.index == station.index);
+    if (idxInList < 0) return;
+    stations[idxInList] = newStation;
+    await programService.saveExercise(
+      localizations,
+      current.copyWith(stations: stations),
     );
   }
 }
@@ -395,6 +594,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
         ? exercises.map((e) => e.uuid).toList()
         : <String>[];
     final allUuids = exercises.map((e) => e.uuid).toList();
+    String? expandedExerciseUuid;
 
     // We rely on the popped return value (not the mutated [selected] list) to
     // tell cancel from confirm. The list is pre-populated when
@@ -471,6 +671,16 @@ abstract class ProgramPageControllerBase extends ScreenController {
                                 exercise: exercise,
                                 localizations: localizations,
                                 markers: markers,
+                                allowStationActions: false,
+                                expanded: expandedExerciseUuid == uuid,
+                                onToggle: () {
+                                  setState(() {
+                                    expandedExerciseUuid =
+                                        expandedExerciseUuid == uuid
+                                        ? null
+                                        : uuid;
+                                  });
+                                },
                                 trailing: Switch(
                                   value: selected.contains(uuid),
                                   onChanged: (bool? value) {
