@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +8,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
+import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
@@ -456,11 +455,10 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen>
+    with SubscriptionBag<MainScreen> {
   static final GlobalKey _indexedTabsKey = GlobalKey();
   static final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
-
-  final List<StreamSubscription> _subscriptions = [];
 
   // Held as a field so the page and the view can share the same
   // instance. Passing it through PageWidget's InheritedWidget only
@@ -499,34 +497,28 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _initTab();
     if (widget.isFirstLaunch) _showConsentDialog();
-    _subscriptions.add(
-      NotificationService().events.listen((event) {
-        if (event.action == NotificationAction.showSettings) {
-          if (mounted) {
-            MainScreen.showSettings(context);
-          }
+    listen(NotificationService().events, (event) {
+      if (event.action == NotificationAction.showSettings) {
+        if (mounted) {
+          MainScreen.showSettings(context);
         }
-      }),
-    );
-    _subscriptions.add(
-      ProgramService().events.listen((event) {
-        if (mounted) setState(() {});
-      }),
-    );
+      }
+    });
+    listen(ProgramService().events, (event) {
+      if (mounted) setState(() {});
+    });
     // Rebuild bottom chrome when an exercise starts or stops so the floating
     // mini-bar appears/disappears without a manual state push. Also show a
     // passive snackbar when the service auto-stops the exercise (endTime or
     // totalTime reached) — the persistent notification handles the
     // "still has to be acknowledged" path.
-    _subscriptions.add(
-      ExerciseService().events.listen((event) {
-        if (!mounted) return;
-        setState(() {});
-        if (event.isDone && event.autoStopped) {
-          _showAutoStoppedSnackBar(event);
-        }
-      }),
-    );
+    listen(ExerciseService().events, (event) {
+      if (!mounted) return;
+      setState(() {});
+      if (event.isDone && event.autoStopped) {
+        _showAutoStoppedSnackBar(event);
+      }
+    });
     // Gated startup validation: only when a stored active-program reference
     // exists. Skipped on fresh install so no auto-created plan appears.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -569,9 +561,6 @@ class _MainScreenState extends State<MainScreen> {
   void dispose() {
     _contextSheetController.dispose();
     _stationListController.dispose();
-    for (var e in _subscriptions) {
-      e.cancel();
-    }
     super.dispose();
   }
 
@@ -720,11 +709,7 @@ class _MainScreenState extends State<MainScreen> {
 
     return PreferredSize(
       preferredSize: Size.fromHeight(toolbarHeight),
-      child: _removePadding(
-        context: context,
-        paddingLeft: 0,
-        child: appBar,
-      ),
+      child: _removePadding(context: context, paddingLeft: 0, child: appBar),
     );
   }
 
@@ -1100,8 +1085,9 @@ class _MainScreenState extends State<MainScreen> {
     // light mode, where M3's auto-derived `onSecondaryContainer` was
     // landing too close to the indicator background). In dark mode the
     // default white still works.
-    final selectedIconColor =
-        isDark ? Colors.white : RingDrillColors.lightOnSurface;
+    final selectedIconColor = isDark
+        ? Colors.white
+        : RingDrillColors.lightOnSurface;
     final unselectedIconColor = isDark
         ? RingDrillColors.darkOnSurfaceVariant
         : RingDrillColors.lightOnSurfaceVariant;
@@ -1205,8 +1191,7 @@ class _MainScreenState extends State<MainScreen> {
                           child: Theme(
                             data: isDark
                                 ? Theme.of(context).copyWith(
-                                    cardTheme: Theme.of(context)
-                                        .cardTheme
+                                    cardTheme: Theme.of(context).cardTheme
                                         .copyWith(
                                           color: RingDrillColors.brandDeep,
                                         ),
@@ -1399,4 +1384,3 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 }
-

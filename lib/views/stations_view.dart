@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/page_widget.dart';
@@ -17,7 +18,7 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
 import '../models/exercise.dart' show Exercise, StationLocation;
-import '../services/program_service.dart' show ProgramEvent, ProgramService;
+import '../services/program_service.dart' show ProgramService;
 import 'map_view.dart';
 
 /// Bumped by MainScreen every time the Stations tab is activated, so the
@@ -48,7 +49,8 @@ class _PendingPick {
   });
 }
 
-class _StationsViewState extends State<StationsView> {
+class _StationsViewState extends State<StationsView>
+    with SubscriptionBag<StationsView> {
   final _mapController = MapController();
   final _programService = ProgramService();
   final _mapKey = GlobalKey<_StationsViewState>();
@@ -57,8 +59,6 @@ class _StationsViewState extends State<StationsView> {
   // (which run on the state's context, above the scope) can find the scope
   // via MasterDetailScope.maybeOf. Null when not in wide/responsive layout.
   BuildContext? _scopeContext;
-  StreamSubscription<ProgramEvent>? _programSubscription;
-
   bool _notified = false;
   _PendingPick? _pickFor;
 
@@ -77,7 +77,7 @@ class _StationsViewState extends State<StationsView> {
     // MainScreen keeps tabs alive in an IndexedStack with identical widget
     // instances, so its own setState does not propagate here. See
     // active_plan_actions.dart and ProgramService.setActive/installFromFile.
-    _programSubscription = _programService.events.listen((_) {
+    listen(_programService.events, (_) {
       if (mounted) {
         setState(() {
           _notified = false;
@@ -193,10 +193,9 @@ class _StationsViewState extends State<StationsView> {
               clusterGroup: 'markers',
               onTap: () {
                 final ctx = _scopeContext ?? context;
-                ContextSheet.of(ctx).show(
+                ContextSheet.of(
                   ctx,
-                  RoleSheetTarget(rolePlayUuid: rp.uuid),
-                );
+                ).show(ctx, RoleSheetTarget(rolePlayUuid: rp.uuid));
               },
             ),
           )
@@ -296,8 +295,9 @@ class _StationsViewState extends State<StationsView> {
                 valueListenable: _detailTarget,
                 builder: (context, target, _) {
                   final hasDetail = target != null;
-                  final activeMapWidth =
-                      hasDetail ? mapWidth : constraints.maxWidth;
+                  final activeMapWidth = hasDetail
+                      ? mapWidth
+                      : constraints.maxWidth;
                   return Row(
                     children: [
                       SizedBox(
@@ -825,7 +825,6 @@ class _StationsViewState extends State<StationsView> {
   void dispose() {
     stationsTabReselectTick.removeListener(_recenter);
     stationsMapDetailClearTick.removeListener(_clearDetail);
-    _programSubscription?.cancel();
     _detailTarget.dispose();
     _mapController.dispose();
     super.dispose();
