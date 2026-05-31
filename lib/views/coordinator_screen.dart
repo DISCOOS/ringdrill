@@ -475,11 +475,19 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // Center the row's cross axis so the shorter column (normally the
+          // round-table/status group on the right) is vertically centered
+          // against the taller one (normally the stations/teams list). The
+          // body lives in a vertical SingleChildScrollView, so the row height
+          // is unbounded — `CrossAxisAlignment.center` measures each child at
+          // its natural height and centers the shorter one. (An `Align`
+          // inside the Expanded can't do this: with unbounded height it
+          // shrink-wraps to its child and has no spare room to center within.)
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Selector sits at the top of the list column so it stays
-            // attached to the stations/teams list it switches. The right
-            // column (round table) top-aligns with it.
+            // The list column keeps its own top-down packing (the selector
+            // stays pinned above its list); only the whole column is centered
+            // against the row, which is a no-op while it is the taller side.
             Expanded(
               flex: 6,
               child: Column(
@@ -494,10 +502,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               ),
             ),
             const SizedBox(width: 24),
+            // Align(center) only handles the horizontal centering of the
+            // group inside its cell; the Row above owns the vertical centering.
             Expanded(
               flex: 5,
               child: Align(
-                alignment: Alignment.topCenter,
+                alignment: Alignment.center,
                 child: _buildTopSection(event, showHero: showHero),
               ),
             ),
@@ -854,7 +864,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }) {
     if (!showHero) {
       return Align(
-        alignment: Alignment.topCenter,
+        alignment: Alignment.center,
         child: _buildRoundTable(event, true),
       );
     }
@@ -867,30 +877,38 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         final wideEnough =
             constraints.maxWidth >= _kHeroSidebarWidth + 12 + 300;
         if (wideEnough) {
-          return IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Round table keeps its natural width. We need
-                // IntrinsicWidth here because PhaseTile and
-                // PhaseHeaders are `Row` widgets with the default
-                // `MainAxisSize.max`, which would otherwise try to fill
-                // the unbounded width that Row gives non-flex children.
-                // IntrinsicWidth measures the table's natural width and
-                // supplies it as a tight constraint so those inner rows
-                // have something finite to fill.
-                IntrinsicWidth(child: _buildRoundTable(event, true)),
-                const SizedBox(width: 12),
-                // Fixed-width sidebar so the typography stays stable
-                // regardless of how wide the parent is. Any leftover
-                // horizontal space falls to the right of the card,
-                // which keeps the table-and-card group anchored to the
-                // left of the screen.
-                SizedBox(
-                  width: _kHeroSidebarWidth,
-                  child: _buildCombinedHeroCard(event, isSidebar: true),
-                ),
-              ],
+          // Center the table-and-card group horizontally. `mainAxisSize.min`
+          // lets the Row shrink to its content so the surrounding Center has
+          // spare width to distribute symmetrically; any leftover space now
+          // falls on both sides instead of only to the right.
+          return Center(
+            child: IntrinsicHeight(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                // `stretch` makes the shorter card grow to the table's
+                // height so the status panel reads as a full-height tile,
+                // and its own `mainAxisAlignment.center` centers the
+                // content vertically within that tile.
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Round table keeps its natural width. We need
+                  // IntrinsicWidth here because PhaseTile and
+                  // PhaseHeaders are `Row` widgets with the default
+                  // `MainAxisSize.max`, which would otherwise try to fill
+                  // the unbounded width that Row gives non-flex children.
+                  // IntrinsicWidth measures the table's natural width and
+                  // supplies it as a tight constraint so those inner rows
+                  // have something finite to fill.
+                  IntrinsicWidth(child: _buildRoundTable(event, true)),
+                  const SizedBox(width: 12),
+                  // Fixed-width sidebar so the typography stays stable
+                  // regardless of how wide the parent is.
+                  SizedBox(
+                    width: _kHeroSidebarWidth,
+                    child: _buildCombinedHeroCard(event, isSidebar: true),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -902,10 +920,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           children: [
             _buildCombinedHeroCard(event, isSidebar: false),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.topCenter,
-              child: _buildRoundTable(event, true),
-            ),
+            Center(child: _buildRoundTable(event, true)),
           ],
         );
       },
@@ -917,8 +932,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// so the sidebar reads as a single unit. See the user-supplied
   /// design with the card placed to the right of the round table.
   Widget _buildCombinedHeroCard(ExerciseEvent event, {bool isSidebar = false}) {
+    // Pin the background to `colorScheme.surface` instead of inheriting the
+    // ambient `cardTheme.color`. The wide master/detail layout deliberately
+    // hijacks `cardTheme.color` to `brandDeep` for the master pane (see
+    // MainScreen._buildWideBody). If that theme scope ever reaches this tile
+    // — e.g. through element reuse while the desktop window is resized — the
+    // card would paint `brandDeep`, the same tone as the scaffold, and the
+    // status tile would visually disappear. `colorScheme` is never
+    // overridden, so reading the surface from it keeps the tile stable in
+    // every layout and across resizes.
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 2,
+      color: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Padding(
