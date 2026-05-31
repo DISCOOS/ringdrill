@@ -34,6 +34,11 @@ extension RingdrillContextX on BuildContext {
 
 Call sites become `context.l10n.briefAction` and `context.colors.primaryContainer`. Introduce incrementally; no behavioural change.
 
+## Progress
+
+`lib/utils/context_extensions.dart` now provides `l10n`, `colors`, and `texts`.
+The remaining work is mechanical adoption across existing call sites.
+
 ## Links
 
 * Related ADRs: none

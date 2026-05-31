@@ -9,11 +9,11 @@ A debt entry is not an ADR. ADRs record decisions and their consequences. Debt e
 | ID        | Title                                                          | Severity | Status | Discovered |
 |-----------|----------------------------------------------------------------|----------|--------|------------|
 | DEBT-0001 | [Orphan HTTPS App-Link for `/o` path](./0001-orphan-https-app-link-for-o-path.md) | Low      | Resolved | 2026-05-22 |
-| DEBT-0002 | [Coordinator screen not on `ExpandableTile` + `LiveAccent`](./0002-coordinator-screen-not-on-expandable-tile.md) | Medium | Open | 2026-05-31 |
+| DEBT-0002 | [Coordinator screen not on `ExpandableTile` + `LiveAccent`](./0002-coordinator-screen-not-on-expandable-tile.md) | Medium | Resolved | 2026-05-31 |
 | DEBT-0003 | [Duplicated SnackBar notice idiom](./0003-duplicated-snackbar-idiom.md) | Low | Open | 2026-05-31 |
-| DEBT-0004 | [Duplicated destructive-confirm dialog](./0004-duplicated-destructive-confirm-dialog.md) | Low | Open | 2026-05-31 |
+| DEBT-0004 | [Duplicated destructive-confirm dialog](./0004-duplicated-destructive-confirm-dialog.md) | Low | Resolved | 2026-05-31 |
 | DEBT-0005 | [Repeated context lookups, no shared extension](./0005-repeated-context-lookups-no-extension.md) | Low | Open | 2026-05-31 |
-| DEBT-0006 | [Manual `StreamSubscription` lifecycle is leak-prone](./0006-manual-stream-subscription-lifecycle.md) | Medium | Open | 2026-05-31 |
+| DEBT-0006 | [Manual `StreamSubscription` lifecycle is leak-prone](./0006-manual-stream-subscription-lifecycle.md) | Medium | Resolved | 2026-05-31 |
 | DEBT-0007 | [`ProgramService` is a god class](./0007-program-service-god-class.md) | Medium | Open | 2026-05-31 |
 | DEBT-0008 | [ADR-0028 feature-folder refactor not executed](./0008-feature-folder-refactor-not-executed.md) | Low | Open | 2026-05-31 |
 | DEBT-0009 | [`main_screen.dart` mixes routing and shell](./0009-main-screen-mixes-routing-and-shell.md) | Low | Open | 2026-05-31 |

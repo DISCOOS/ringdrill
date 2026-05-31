@@ -1,8 +1,8 @@
 ---
-status: open
+status: resolved
 severity: medium
 discovered: 2026-05-31
-resolved: null
+resolved: 2026-05-31
 related_adrs: []
 ---
 
