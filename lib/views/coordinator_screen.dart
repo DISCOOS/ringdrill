@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -19,6 +20,7 @@ import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -877,70 +879,130 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               event.isRunning &&
               _exercise!.teamIndex(stationIndex, event.currentRound) >= 0;
           final accent = LiveAccent.of(context, isLive: isLive);
-          return ExpandableTile(
-            // Do NOT use a PageStorageKey here: any SelectableText below
-            // (e.g. UtmWidget inside the station detail) reads from the same
-            // bucket-path for its scroll offset, casting an expansion bool
-            // to double? and crashing at didChangeDependencies.
-            key: ValueKey<String>('coordinator-station-$stationIndex'),
-            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-            accent: accent,
-            leading: accent.indicator,
-            title: Text(
-              station.name,
-              style: TextStyle(fontSize: 18, color: accent.foreground),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: VerticalDividerWidget(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Text(
-                    localizations.team(1),
-                    style: TextStyle(fontSize: 18, color: accent.foreground),
+          return Dismissible(
+            key: ValueKey<String>('coordinator-station-dismiss-$stationIndex'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              color: context.colors.secondaryContainer,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    localizations.editStation,
+                    style: TextStyle(
+                      color: context.colors.onSecondaryContainer,
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.edit, color: context.colors.onSecondaryContainer),
+                ],
+              ),
+            ),
+            confirmDismiss: (_) async {
+              await _editStation(stationIndex);
+              return false;
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onLongPress: () => _editStation(stationIndex),
+              child: ExpandableTile(
+                // Do NOT use a PageStorageKey here: any SelectableText below
+                // (e.g. UtmWidget inside the station detail) reads from the
+                // same bucket-path for its scroll offset, casting an
+                // expansion bool to double? and crashing at
+                // didChangeDependencies.
+                key: ValueKey<String>('coordinator-station-$stationIndex'),
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+                accent: accent,
+                leading: accent.indicator,
+                title: Text(
+                  station.name,
+                  style: TextStyle(fontSize: 18, color: accent.foreground),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                ...List<Widget>.generate(_exercise!.schedule.length, (
-                  roundIndex,
-                ) {
-                  final isCurrent =
-                      event.isRunning && roundIndex == event.currentRound;
-                  final teamIndex =
-                      _exercise!.teamIndex(stationIndex, roundIndex) + 1;
-                  final none = teamIndex == 0;
-                  return Container(
-                    padding: const EdgeInsets.all(4),
-                    color: isCurrent
-                        ? none
-                              ? Colors.grey
-                              : Colors.blueAccent
-                        : Colors.transparent,
-                    child: Text(
-                      '${none ? '×' : teamIndex}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: isCurrent
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isCurrent ? Colors.white : accent.foreground,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: VerticalDividerWidget(),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Text(
+                        localizations.team(1),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: accent.foreground,
+                        ),
                       ),
                     ),
-                  );
-                }),
-              ],
+                    ...List<Widget>.generate(_exercise!.schedule.length, (
+                      roundIndex,
+                    ) {
+                      final isCurrent =
+                          event.isRunning && roundIndex == event.currentRound;
+                      final teamIndex =
+                          _exercise!.teamIndex(stationIndex, roundIndex) + 1;
+                      final none = teamIndex == 0;
+                      return Container(
+                        padding: const EdgeInsets.all(4),
+                        color: isCurrent
+                            ? none
+                                  ? Colors.grey
+                                  : Colors.blueAccent
+                            : Colors.transparent,
+                        child: Text(
+                          '${none ? '×' : teamIndex}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: isCurrent
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isCurrent ? Colors.white : accent.foreground,
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+                expanded: _expandedStationIndex == stationIndex,
+                onToggle: () => _toggleStation(stationIndex),
+                body: _buildStationDetail(stationIndex),
+              ),
             ),
-            expanded: _expandedStationIndex == stationIndex,
-            onToggle: () => _toggleStation(stationIndex),
-            body: _buildStationDetail(stationIndex),
           );
         }),
       ),
+    );
+  }
+
+  Future<void> _editStation(int stationIndex) async {
+    final localizations = context.l10n;
+    if (_isStarted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(localizations.stopExerciseFirst(_exercise!.name)),
+        ),
+      );
+      return;
+    }
+    final updated = await openFormSurface<Station>(
+      context,
+      builder: (_) => StationFormScreen(
+        station: _exercise!.stations[stationIndex],
+        markers: _programService.getLocations().toMarkerSpecs(),
+      ),
+    );
+    if (!mounted || updated == null) return;
+    final stations = [..._exercise!.stations];
+    stations[stationIndex] = updated;
+    await _programService.saveExercise(
+      localizations,
+      _exercise!.copyWith(stations: stations),
     );
   }
 
