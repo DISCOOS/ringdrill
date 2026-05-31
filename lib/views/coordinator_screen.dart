@@ -11,6 +11,7 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
@@ -21,6 +22,8 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
@@ -60,60 +63,33 @@ enum _CoordinatorView { stations, teams }
 /// three-dot trigger. See [_CoordinatorScreenState.build] for the wiring.
 enum _AppBarMenuAction { edit, delete }
 
-class _CoordinatorScreenState extends State<CoordinatorScreen> {
+class _CoordinatorScreenState extends State<CoordinatorScreen>
+    with SubscriptionBag<CoordinatorScreen> {
   late bool _isStarted;
 
   final _programService = ProgramService();
   final _exerciseService = ExerciseService();
-  final _subscriptions = <StreamSubscription>[];
-
   Exercise? _exercise;
   bool _promptShowNotification = false;
   _CoordinatorView _view = _CoordinatorView.stations;
 
   // Mutual-exclusive expansion state for the station and team lists.
-  // At most one row may be expanded in either list at any time. We keep
-  // a pool of [ExpansibleController]s so we can programmatically
-  // collapse the previously-expanded row when the coordinator taps a
-  // different one — `initiallyExpanded` alone only sets state on the
-  // first mount, so a controller is needed for later updates.
-  final _stationControllers = <ExpansibleController>[];
-  final _teamControllers = <ExpansibleController>[];
+  // At most one row may be expanded in either list at any time.
   int? _expandedStationIndex;
   int? _expandedTeamIndex;
 
-  ExpansibleController _controllerFor(
-    List<ExpansibleController> pool,
-    int index,
-  ) {
-    while (pool.length <= index) {
-      pool.add(ExpansibleController());
-    }
-    return pool[index];
+  void _toggleStation(int stationIndex) {
+    setState(() {
+      _expandedStationIndex = _expandedStationIndex == stationIndex
+          ? null
+          : stationIndex;
+    });
   }
 
-  /// Handles an `onExpansionChanged` callback so only one row in [pool]
-  /// is expanded at a time. [readIndex]/[writeIndex] read and update the
-  /// state field that tracks the expanded index for this list. Calling
-  /// `controller.collapse()` re-enters `onExpansionChanged(false)` for
-  /// the previous tile, but by then `readIndex()` no longer matches its
-  /// index so the recursive call is a no-op.
-  void _handleExpansionChange({
-    required bool expanded,
-    required int tappedIndex,
-    required List<ExpansibleController> pool,
-    required int? Function() readIndex,
-    required void Function(int?) writeIndex,
-  }) {
-    if (expanded) {
-      final prev = readIndex();
-      setState(() => writeIndex(tappedIndex));
-      if (prev != null && prev != tappedIndex && prev < pool.length) {
-        pool[prev].collapse();
-      }
-    } else if (readIndex() == tappedIndex) {
-      setState(() => writeIndex(null));
-    }
+  void _toggleTeam(int teamIndex) {
+    setState(() {
+      _expandedTeamIndex = _expandedTeamIndex == teamIndex ? null : teamIndex;
+    });
   }
 
   @override
@@ -121,17 +97,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     _isStarted = _exerciseService.isStartedOn(widget.uuid);
 
     // Listen to ProgramService state changes
-    _subscriptions.add(
-      _programService.events.listen((event) {
-        if (event.exercise?.uuid == widget.uuid) {
-          if (mounted) {
-            setState(() {
-              _exercise = event.exercise;
-            });
-          }
+    listen(_programService.events, (event) {
+      if (event.exercise?.uuid == widget.uuid) {
+        if (mounted) {
+          setState(() {
+            _exercise = event.exercise;
+          });
         }
-      }),
-    );
+      }
+    });
 
     // Listen to ExerciseService state changes. The phase transition snackbar
     // that used to live here has been removed because the persistent
@@ -141,29 +115,27 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
     // Re-read isStartedOn so that events from other exercises (e.g. a
     // different exercise starting) correctly flip _isStarted to false for
     // this coordinator without having to filter by UUID here.
-    _subscriptions.add(
-      _exerciseService.events.listen((_) {
-        if (mounted) {
-          setState(() {
-            _isStarted = _exerciseService.isStartedOn(widget.uuid);
-          });
-        }
-      }),
-    );
+    listen(_exerciseService.events, (_) {
+      if (mounted) {
+        setState(() {
+          _isStarted = _exerciseService.isStartedOn(widget.uuid);
+        });
+      }
+    });
 
     // Listen to Notification Events
-    _subscriptions.add(
+    listen(
       NotificationService().events
           .where((_) => _exercise != null)
           .where((e) => e.action == NotificationAction.promptReshow)
-          .where((e) => e.exercise?.uuid == _exercise?.uuid)
-          .listen((event) {
-            if (mounted) {
-              setState(() {
-                _promptShowNotification = true;
-              });
-            }
-          }),
+          .where((e) => e.exercise?.uuid == _exercise?.uuid),
+      (event) {
+        if (mounted) {
+          setState(() {
+            _promptShowNotification = true;
+          });
+        }
+      },
     );
 
     super.initState();
@@ -885,7 +857,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   }
 
   Widget _buildStationList(ExerciseEvent event) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = context.l10n;
     // The list is rendered as a plain Column instead of a ListView so it
     // can take part in the parent SingleChildScrollView. Station counts
     // are small (typically <20) so eager-building every card is cheaper
@@ -898,139 +870,74 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           stationIndex,
         ) {
           final station = _exercise!.stations[stationIndex];
-          final colorScheme = Theme.of(context).colorScheme;
           // A station is "live" when the current round assigns a team to
-          // it. Used to auto-expand the relevant row so the coordinator
-          // sees the active station's detail without an extra tap, and
-          // to highlight the card so the active station is recognisable
-          // even when collapsed. Mirrors the live styling used in
-          // TeamScreen._ExerciseSection.
+          // it. The shared accent highlights the card so the active station
+          // is recognisable even when collapsed.
           final isLive =
               event.isRunning &&
               _exercise!.teamIndex(stationIndex, event.currentRound) >= 0;
-          return Card(
-            elevation: 2,
+          final accent = LiveAccent.of(context, isLive: isLive);
+          return ExpandableTile(
+            // Do NOT use a PageStorageKey here: any SelectableText below
+            // (e.g. UtmWidget inside the station detail) reads from the same
+            // bucket-path for its scroll offset, casting an expansion bool
+            // to double? and crashing at didChangeDependencies.
+            key: ValueKey<String>('coordinator-station-$stationIndex'),
             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-            clipBehavior: Clip.antiAlias,
-            color: isLive ? colorScheme.primaryContainer : null,
-            shape: isLive
-                ? RoundedRectangleBorder(
-                    side: BorderSide(color: colorScheme.primary, width: 1.5),
-                    borderRadius: BorderRadius.circular(12),
-                  )
-                : null,
-            child: ExpansionTile(
-              // Do NOT use a PageStorageKey here: ExpansionTile would
-              // write a bool into the PageStorageBucket, and any
-              // SelectableText below (e.g. UtmWidget inside the
-              // station detail) reads from the same bucket-path for
-              // its scroll offset, casting the bool to double? and
-              // crashing at didChangeDependencies. Widget identity
-              // already keeps the expanded state stable across
-              // exercise-event rebuilds.
-              key: ValueKey<String>('coordinator-station-$stationIndex'),
-              controller: _controllerFor(_stationControllers, stationIndex),
-              // Mutual exclusivity: only the row matching
-              // `_expandedStationIndex` is expanded. The previous
-              // `initiallyExpanded: isLive` would auto-expand every
-              // station that had a team assigned in the current round,
-              // which conflicts with one-row-at-a-time. The live
-              // styling below (border, primaryContainer fill, play
-              // icon) still makes active stations easy to spot when
-              // collapsed.
-              initiallyExpanded: _expandedStationIndex == stationIndex,
-              onExpansionChanged: (expanded) => _handleExpansionChange(
-                expanded: expanded,
-                tappedIndex: stationIndex,
-                pool: _stationControllers,
-                readIndex: () => _expandedStationIndex,
-                writeIndex: (v) => _expandedStationIndex = v,
-              ),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-              childrenPadding: EdgeInsets.zero,
-              iconColor: isLive ? colorScheme.primary : null,
-              collapsedIconColor: isLive ? colorScheme.primary : null,
-              textColor: isLive ? colorScheme.onPrimaryContainer : null,
-              collapsedTextColor: isLive
-                  ? colorScheme.onPrimaryContainer
-                  : null,
-              leading: isLive
-                  ? Icon(Icons.play_circle_fill, color: colorScheme.primary)
-                  : null,
-              title: Row(
-                // Row fills the title slot so the station name can claim
-                // the leftover space via Expanded. Without this the Row
-                // would shrink-wrap its children and the team-count
-                // columns on the right would line up with the end of
-                // each station name, drifting horizontally between rows
-                // with different name lengths. Same idea as the
-                // titleWidth/Expanded treatment in [PhaseTile] used by
-                // `_buildTeamDetail`.
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  // Station name takes a fixed minimum width and grows
-                  // to fill whatever horizontal space the team-count
-                  // columns leave behind. Names longer than the
-                  // available width are ellipsed so the columns to the
-                  // right stay anchored at the same x offset across
-                  // rows.
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minWidth: 120),
-                        child: Text(
-                          station.name,
-                          style: const TextStyle(fontSize: 18),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: VerticalDividerWidget(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      localizations.team(1),
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                  ...List<Widget>.generate(_exercise!.schedule.length, (
-                    roundIndex,
-                  ) {
-                    final isCurrent =
-                        event.isRunning && roundIndex == event.currentRound;
-                    final teamIndex =
-                        _exercise!.teamIndex(stationIndex, roundIndex) + 1;
-                    final none = teamIndex == 0;
-                    return Container(
-                      padding: EdgeInsets.all(4),
-                      color: isCurrent
-                          ? none
-                                ? Colors.grey
-                                : Colors.blueAccent
-                          : Colors.transparent,
-                      child: Text(
-                        '${none ? '×' : teamIndex}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: isCurrent
-                              ? FontWeight.bold
-                              : FontWeight.normal, // Emphasize current round
-                          color: isCurrent ? Colors.white : null,
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-              children: [_buildStationDetail(stationIndex)],
+            accent: accent,
+            leading: accent.indicator,
+            title: Text(
+              station.name,
+              style: TextStyle(fontSize: 18, color: accent.foreground),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: VerticalDividerWidget(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Text(
+                    localizations.team(1),
+                    style: TextStyle(fontSize: 18, color: accent.foreground),
+                  ),
+                ),
+                ...List<Widget>.generate(_exercise!.schedule.length, (
+                  roundIndex,
+                ) {
+                  final isCurrent =
+                      event.isRunning && roundIndex == event.currentRound;
+                  final teamIndex =
+                      _exercise!.teamIndex(stationIndex, roundIndex) + 1;
+                  final none = teamIndex == 0;
+                  return Container(
+                    padding: const EdgeInsets.all(4),
+                    color: isCurrent
+                        ? none
+                              ? Colors.grey
+                              : Colors.blueAccent
+                        : Colors.transparent,
+                    child: Text(
+                      '${none ? '×' : teamIndex}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: isCurrent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isCurrent ? Colors.white : accent.foreground,
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+            expanded: _expandedStationIndex == stationIndex,
+            onToggle: () => _toggleStation(stationIndex),
+            body: _buildStationDetail(stationIndex),
           );
         }),
       ),
@@ -1038,7 +945,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   }
 
   /// Inline detail for a station row in the coordinator station list. Shown
-  /// when the user expands the [ExpansionTile] for that station. Shows
+  /// when the user expands the [ExpandableTile] for that station. Shows
   /// description and a [StationPositionPanel] (label row + mini-map that
   /// opens the interactive bottom sheet). The round-by-round time table
   /// is intentionally NOT repeated here — that information already lives
@@ -1095,7 +1002,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   }
 
   Widget _buildTeamList(ExerciseEvent event) {
-    final localizations = AppLocalizations.of(context)!;
+    final localizations = context.l10n;
     // See `_buildStationList`: rendered as a Column so the parent
     // SingleChildScrollView owns the scrolling. Team counts are bounded
     // by exercise configuration and stay small in practice.
@@ -1106,9 +1013,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         children: List<Widget>.generate(event.exercise.numberOfTeams, (
           teamIndex,
         ) {
-          final colorScheme = Theme.of(context).colorScheme;
           // The team's current station, in plain text. Shown as the
-          // ExpansionTile subtitle while the exercise is running so
+          // ExpandableTile subtitle while the exercise is running so
           // the coordinator can read off where each team is without
           // scanning the rotation matrix column-by-column. The matrix
           // already highlights the current round, but the subtitle is
@@ -1124,120 +1030,62 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
           // A team is "live" when the exercise is live.
           // Mirrors the live styling used in TeamScreen._ExerciseSection.
           final isLive = event.isRunning;
-          return Card(
-            elevation: 2,
+          final accent = LiveAccent.of(context, isLive: isLive);
+          return ExpandableTile(
+            // Use ValueKey (not PageStorageKey) — see the comment
+            // on the station ExpandableTile above for the reason.
+            key: ValueKey<String>('coordinator-team-$teamIndex'),
             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-            clipBehavior: Clip.antiAlias,
-            color: isLive ? colorScheme.primaryContainer : null,
-            shape: isLive
-                ? RoundedRectangleBorder(
-                    side: BorderSide(color: colorScheme.primary, width: 1.5),
-                    borderRadius: BorderRadius.circular(12),
-                  )
-                : null,
-            child: ExpansionTile(
-              // Use ValueKey (not PageStorageKey) — see the comment
-              // on the station ExpansionTile above for the reason.
-              // Teams are NOT auto-expanded on "live": every team
-              // always has a station via the rotation, so a naive
-              // isLive check would expand every row at once. Leave
-              // the team list collapsed and let the coordinator
-              // pick which team to focus on.
-              key: ValueKey<String>('coordinator-team-$teamIndex'),
-              controller: _controllerFor(_teamControllers, teamIndex),
-              // Mutual exclusivity: only one team row stays open at a
-              // time. See `_handleExpansionChange` for how the prior
-              // tile is collapsed.
-              initiallyExpanded: _expandedTeamIndex == teamIndex,
-              onExpansionChanged: (expanded) => _handleExpansionChange(
-                expanded: expanded,
-                tappedIndex: teamIndex,
-                pool: _teamControllers,
-                readIndex: () => _expandedTeamIndex,
-                writeIndex: (v) => _expandedTeamIndex = v,
-              ),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-              childrenPadding: EdgeInsets.zero,
-              title: Row(
-                // Same layout treatment as the station list above:
-                // fill the title slot and let the team label claim
-                // the leftover space via Expanded so the rotation
-                // columns get pushed to the right edge of the row
-                // instead of crowding up against "Lag N".
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  // "Lag N → Stasjonsnavn" sits in the leading cell.
-                  // The arrow is the current-rotation hint that used
-                  // to live in the ExpansionTile subtitle; placing it
-                  // immediately after the team label reads naturally
-                  // as "from Lag N to Stasjon X". minWidth: 120
-                  // matches the station list for symmetry. Long
-                  // station names ellipsize so the rotation columns
-                  // stay anchored to the right edge.
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minWidth: 120),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${localizations.team(1)} ${teamIndex + 1}',
-                              style: const TextStyle(fontSize: 18),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (currentStationName != null) ...[
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  '→ $currentStationName',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: VerticalDividerWidget(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      localizations.station(1),
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                  ...List<Widget>.generate(_exercise!.schedule.length, (
-                    roundIndex,
-                  ) {
-                    final isCurrent =
-                        event.isRunning && roundIndex == event.currentRound;
-                    return TeamStationWidget(
-                      isCurrent: isCurrent,
-                      exercise: _exercise!,
-                      teamIndex: teamIndex,
-                      roundIndex: roundIndex,
-                    );
-                  }),
-                ],
-              ),
-              children: [_buildTeamDetail(teamIndex, event)],
+            accent: accent,
+            leading: accent.indicator,
+            title: Text(
+              '${localizations.team(1)} ${teamIndex + 1}',
+              style: TextStyle(fontSize: 18, color: accent.foreground),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
+            subtitle: currentStationName == null
+                ? null
+                : Text(
+                    '→ $currentStationName',
+                    style:
+                        accent.textStyle ??
+                        TextStyle(
+                          color: context.colors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: VerticalDividerWidget(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Text(
+                    localizations.station(1),
+                    style: TextStyle(fontSize: 18, color: accent.foreground),
+                  ),
+                ),
+                ...List<Widget>.generate(_exercise!.schedule.length, (
+                  roundIndex,
+                ) {
+                  final isCurrent =
+                      event.isRunning && roundIndex == event.currentRound;
+                  return TeamStationWidget(
+                    isCurrent: isCurrent,
+                    exercise: _exercise!,
+                    teamIndex: teamIndex,
+                    roundIndex: roundIndex,
+                  );
+                }),
+              ],
+            ),
+            expanded: _expandedTeamIndex == teamIndex,
+            onToggle: () => _toggleTeam(teamIndex),
+            body: _buildTeamDetail(teamIndex, event),
           );
         }),
       ),
@@ -1245,7 +1093,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
   }
 
   /// Inline detail for a team row in the coordinator team list. Shown when
-  /// the user expands the [ExpansionTile] for that team. Lists the station
+  /// the user expands the [ExpandableTile] for that team. Lists the station
   /// rotation per round so the coordinator can track where the team is going
   /// without leaving the overview.
   Widget _buildTeamDetail(int teamIndex, ExerciseEvent event) {
@@ -1301,24 +1149,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    for (final it in _subscriptions) {
-      it.cancel();
-    }
-    // ExpansibleController extends ChangeNotifier, so each pool entry
-    // holds listener resources that must be released explicitly. The
-    // deprecated ExpansionTileController didn't require this, which is
-    // why earlier revisions skipped the cleanup.
-    for (final it in _stationControllers) {
-      it.dispose();
-    }
-    for (final it in _teamControllers) {
-      it.dispose();
-    }
-    super.dispose();
   }
 }
 
