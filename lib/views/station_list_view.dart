@@ -238,7 +238,7 @@ class _StationListViewState extends State<StationListView> {
       valueListenable: _controller.filterExerciseUuid,
       builder: (context, active, _) {
         final fab = FloatingActionButton(
-          heroTag: 'stationFilter',
+          heroTag: null, // no hero animation; prevents tag collision if two instances are live
           tooltip: localizations.selectExercises,
           onPressed: () => _controller.openFilterSheet(context),
           child: const Icon(Icons.tune),

@@ -209,7 +209,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       valueListenable: _controller.filterExerciseUuid,
       builder: (context, active, _) {
         final fab = FloatingActionButton(
-          heroTag: 'rolePlayFilter',
+          heroTag: null, // no hero animation; prevents tag collision if two instances are live
           tooltip: localizations.selectExercises,
           onPressed: () => _controller.openFilterSheet(context),
           child: const Icon(Icons.filter_list),
