@@ -1584,4 +1584,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailEmptyTeam => 'Select a team';
+
+  @override
+  String get rosterTab => 'Roster';
+
+  @override
+  String get detailEmptyRoster => 'Select an actor to see details';
 }

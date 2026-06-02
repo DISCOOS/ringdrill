@@ -747,5 +747,14 @@
   "pickExerciseForRole": "Velg øvelse",
   "@pickExerciseForRole": {
     "description": "Tittel på øvelsesvelger-arket som åpnes før man oppretter en ny markørordre fra Markører-segmentet."
+  },
+
+  "rosterTab": "Bemanning",
+  "@rosterTab": {
+    "description": "Bunnnavigeringsmerke for Roster-fanen (Bemanning) introdusert i DESIGN-006 steg 4."
+  },
+  "detailEmptyRoster": "Velg en markør for å se detaljer",
+  "@detailEmptyRoster": {
+    "description": "Tom detaljrute vist i Roster-fanen i bred layout."
   }
 }

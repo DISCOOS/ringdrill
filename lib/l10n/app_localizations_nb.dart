@@ -1581,4 +1581,10 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get detailEmptyTeam => 'Velg et lag';
+
+  @override
+  String get rosterTab => 'Bemanning';
+
+  @override
+  String get detailEmptyRoster => 'Velg en markør for å se detaljer';
 }

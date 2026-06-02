@@ -1553,5 +1553,14 @@
   "detailEmptyTeam": "Select a team",
   "@detailEmptyTeam": {
     "description": "Empty detail pane text shown on the teams tab."
+  },
+
+  "rosterTab": "Roster",
+  "@rosterTab": {
+    "description": "Bottom-nav label for the Roster (Bemanning) tab introduced in DESIGN-006 stage 4."
+  },
+  "detailEmptyRoster": "Select an actor to see details",
+  "@detailEmptyRoster": {
+    "description": "Empty detail pane text shown on the Roster tab in the wide layout."
   }
 }

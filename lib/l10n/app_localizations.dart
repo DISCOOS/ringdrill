@@ -2701,6 +2701,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a team'**
   String get detailEmptyTeam;
+
+  /// Bottom-nav label for the Roster (Bemanning) tab introduced in DESIGN-006 stage 4.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster'**
+  String get rosterTab;
+
+  /// Empty detail pane text shown on the Roster tab in the wide layout.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an actor to see details'**
+  String get detailEmptyRoster;
 }
 
 class _AppLocalizationsDelegate
