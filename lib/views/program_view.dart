@@ -348,7 +348,7 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
                     _segment(
                       value: ProgramSegment.script,
                       icon: Icons.theater_comedy,
-                      label: localizations.rolePlaysTab,
+                      label: localizations.scriptSegment,
                       iconOnly: iconOnly,
                     ),
                     _segment(

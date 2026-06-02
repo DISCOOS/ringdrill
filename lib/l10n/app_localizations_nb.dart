@@ -1289,6 +1289,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rolePlaysTab => 'Markører';
 
   @override
+  String get scriptSegment => 'Spill';
+
+  @override
   String get roleSection => 'Markørordre';
 
   @override

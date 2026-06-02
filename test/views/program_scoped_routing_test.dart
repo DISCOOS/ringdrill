@@ -206,11 +206,11 @@ void main() {
     expect(_location(router), programPath(_programUuid));
   });
 
-  testWidgets('Markører segment still opens cast roster', (tester) async {
+  testWidgets('Script (Spill) segment still opens cast roster', (tester) async {
     await _pumpRouter(tester);
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    await tester.tap(find.text(l10n.rolePlaysTab));
+    await tester.tap(find.text(l10n.scriptSegment));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.recent_actors));
     await tester.pumpAndSettle();

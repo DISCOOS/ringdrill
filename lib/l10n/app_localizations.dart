@@ -2174,6 +2174,12 @@ abstract class AppLocalizations {
   /// **'RolePlays'**
   String get rolePlaysTab;
 
+  /// Program-tab segment label for the publishable scenario layer (Spill/Script). Holds the RolePlay roster today; SilentWitness later. Distinct from rolePlaysTab, which names the Markører role roster inside the segment.
+  ///
+  /// In en, this message translates to:
+  /// **'Script'**
+  String get scriptSegment;
+
   /// Section header for the publishable role fields in the expanded tile and detail screen.
   ///
   /// In en, this message translates to:

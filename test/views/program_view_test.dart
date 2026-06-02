@@ -293,7 +293,7 @@ void main() {
       find
           .descendant(
             of: find.byType(SegmentedButton<ProgramSegment>),
-            matching: find.text(l10n.rolePlaysTab),
+            matching: find.text(l10n.scriptSegment),
           )
           .hitTestable(),
     );
