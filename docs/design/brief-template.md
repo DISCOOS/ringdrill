@@ -473,12 +473,14 @@ Audience selector, search and print actions stay where ADR-0023 put them. The re
 
 ### Where the data is edited
 
-Each new field gets a markdown editor on the relevant form screen:
+**Revised 2026-06-02 (DESIGN-006): base fields + addable optional fields.** Each entity form always shows its base fields (**name** and **description**) and offers the new markdown fields as **optional sections the author adds on demand**, replacing the earlier fixed "collapsible Brief section" grouping. This reuses the pattern `RolePlayFormScreen` already ships: optional sections start hidden, an `Icons.add` button per not-yet-added section reveals its editor, and each added field carries a remove affordance (its `_Section` / `_activeSections` mechanism). Generalize that into a reusable form component shared by all entity forms:
 
-* `ProgramFormScreen`: `briefIntroMd`, `commsMd`.
-* `ExerciseFormScreen`: `methodMd`, `learningGoalsMd`, `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `commsMd`. Grouped under a collapsible "Brief" section.
-* `StationFormScreen`: all new station fields, grouped the same way.
-* `RolePlayFormScreen`: `propsMd`. The existing `behavior` and `background` fields are reinterpreted as markdown.
+* **`ProgramFormScreen`** (new — today the only plan editor is the name rename): base name + description, addable `briefIntroMd`, `commsMd`, `beforeRoundMd`.
+* **`ExerciseFormScreen`**: addable `methodMd`, `learningGoalsMd`, `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `commsMd`.
+* **`StationFormScreen`**: addable `equipmentMd`, `situationMd`, `missionMd`, `logisticsMd`, `criticalQuestionsMd`, `leaderAnswersMd`, `directorNotesMd`.
+* **`RolePlayFormScreen`**: `propsMd` plus its existing optional sections; this is the reference implementation. `behavior` and `background` remain markdown.
+
+The `RolePlayFormScreen` reference uses plain multi-line `TextFormField`s, so the `appflowy_editor` choice below is revisited: a plain text field per section is the current direction unless a richer editor proves necessary.
 
 **Editor library: `appflowy_editor` primary, `super_editor` backup.** Both are native-Flutter, document-first editors with first-class markdown import/export. Their mental model is "writing a document", which matches how the brief renders. `appflowy_editor` wins on production maturity (it powers the AppFlowy app on desktop and mobile) and on a polished out-of-the-box UX (slash-commands, drag handles, blocks). `super_editor` is leaner and is the fallback if AppFlowy struggles with our mustache syntax or with several editor instances on the same form.
 

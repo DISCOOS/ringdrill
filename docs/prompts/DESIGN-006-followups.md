@@ -21,3 +21,11 @@
 11. **Roster actor subtitle does not refresh when the actor is cast in the script.** In the Roster tab, an `Actor` row's subtitle (its role-play assignment) does not update when the actor is cast to or uncast from a `RolePlay` in the Spill segment. The Roster view needs to rebuild on the relevant `ProgramService` event (rolePlay/cast change), or recompute the assignment on those events, rather than reading the assignment once.
 
 12. **PlanStatusBadge InkWell is not right.** The tappable badge wraps its content in an `InkWell` with `borderRadius: 4` (`lib/views/plan_status_badge.dart` ~line 195) but no clipping `Material`/`Ink` with a matching shape, so the tap ripple/highlight is not confined to the badge bounds and bleeds onto the AppBar. Give it a transparent `Material` (or `Ink`/`ClipRRect`) shaped to the badge so the splash clips correctly, and verify the hit area matches the visible badge.
+
+13. **Shared addable-field form pattern for Plan, Exercise and Station forms (DESIGN-004 amendment).** `RolePlayFormScreen` already has the right pattern: base fields always shown, plus optional sections that start hidden, with an `Icons.add` button per not-yet-added section and a remove affordance on each added field (`_Section` / `_activeSections` + add-section buttons). Generalize this into a reusable form component and apply it to every entity form, each with **name** + **description** always shown and the DESIGN-004 markdown fields addable on demand:
+
+    - **`ProgramFormScreen`** (new — no plan editor exists today beyond the name rename via `renamePlan`): addable `briefIntroMd`, `commsMd`, `beforeRoundMd`. Closes item 7.
+    - **`ExerciseFormScreen`**: addable `methodMd`, `learningGoalsMd`, `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `commsMd`.
+    - **`StationFormScreen`** (today only name/description/position): addable `equipmentMd`, `situationMd`, `missionMd`, `logisticsMd`, `criticalQuestionsMd`, `leaderAnswersMd`, `directorNotesMd`.
+
+    DESIGN-004's "Where the data is edited" section is **amended (2026-06-02)** to this base-fields + add-on-demand pattern with the RolePlay reference; DESIGN-004 is amended, not superseded (its brief rendering, audience and markdown fields stand). This item is the implementation.
