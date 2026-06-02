@@ -589,6 +589,9 @@ class _MainScreenState extends State<MainScreen>
     );
     _programPageController.dispose();
     _stationListController.dispose();
+    // Field-held controller, never disposed before. Its filterExerciseUuid
+    // ValueNotifier leaked on shell teardown. (DESIGN-006 stage 1 follow-up.)
+    _rolePlaysController.dispose();
     super.dispose();
   }
 

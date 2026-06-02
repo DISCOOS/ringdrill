@@ -1,1 +1,1 @@
-1. `MainScreen.dispose()` does not dispose its field-held `RolePlaysController`, leaving `filterExerciseUuid` undisposed after the shell is torn down.
+1. ~~`MainScreen.dispose()` does not dispose its field-held `RolePlaysController`, leaving `filterExerciseUuid` undisposed after the shell is torn down.~~ **Resolved** in the stage 1 switcher fix (`_rolePlaysController.dispose()` added to `MainScreen.dispose()`).

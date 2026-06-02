@@ -277,6 +277,10 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
                 width: double.infinity,
                 child: SegmentedButton<ProgramSegment>(
                   expandedInsets: EdgeInsets.zero,
+                  // No check on the selected segment. It would add width on
+                  // the selected item and wrap its label in the narrow
+                  // master pane.
+                  showSelectedIcon: false,
                   segments: [
                     _segment(
                       value: ProgramSegment.exercises,
@@ -324,8 +328,19 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
   }) {
     return ButtonSegment<ProgramSegment>(
       value: value,
-      icon: Tooltip(message: label, child: Icon(icon)),
-      label: iconOnly ? null : Text(label),
+      // Never show icon and label together: four icon+label segments
+      // overflow the master pane (320-420 px) and wrap the label. Show the
+      // label only in normal mode, and fall back to icon-only (with a
+      // tooltip) when the pane is too narrow for text.
+      icon: iconOnly ? Tooltip(message: label, child: Icon(icon)) : null,
+      label: iconOnly
+          ? null
+          : Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
     );
   }
 }
