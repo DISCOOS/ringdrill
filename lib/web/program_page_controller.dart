@@ -13,7 +13,11 @@ import 'package:ringdrill/web/web_env.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ProgramPageController extends ProgramPageControllerBase {
-  ProgramPageController();
+  ProgramPageController({
+    required super.stationListController,
+    required super.rolePlaysController,
+    required super.teamsPageController,
+  });
 
   // FilePicker.saveFile with `bytes:` triggers the File System Access API on
   // Chrome/Edge and falls back to a plain download elsewhere — both reliable

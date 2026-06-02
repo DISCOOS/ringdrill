@@ -477,8 +477,14 @@ class _MainScreenState extends State<MainScreen>
       StationListController();
 
   late final RolePlaysController _rolePlaysController = RolePlaysController();
+  late final TeamsPageController _teamsPageController =
+      const TeamsPageController();
   late final ProgramPageController _programPageController =
-      ProgramPageController();
+      ProgramPageController(
+        stationListController: _stationListController,
+        rolePlaysController: _rolePlaysController,
+        teamsPageController: _teamsPageController,
+      );
   late final ContextSheetController _contextSheetController =
       ContextSheetController();
 
@@ -503,7 +509,7 @@ class _MainScreenState extends State<MainScreen>
       controller: _rolePlaysController,
       child: RolePlaysView(controller: _rolePlaysController),
     ),
-    PageWidget(controller: TeamsPageController(), child: TeamsView()),
+    PageWidget(controller: _teamsPageController, child: TeamsView()),
   ];
 
   int _currentTab = 0;
@@ -513,6 +519,7 @@ class _MainScreenState extends State<MainScreen>
   void initState() {
     super.initState();
     _initTab();
+    _programPageController.activeSegment.addListener(_onProgramSegmentChanged);
     if (widget.isFirstLaunch) _showConsentDialog();
     listen(NotificationService().events, (event) {
       if (event.action == NotificationAction.showSettings) {
@@ -577,9 +584,16 @@ class _MainScreenState extends State<MainScreen>
   @override
   void dispose() {
     _contextSheetController.dispose();
+    _programPageController.activeSegment.removeListener(
+      _onProgramSegmentChanged,
+    );
     _programPageController.dispose();
     _stationListController.dispose();
     super.dispose();
+  }
+
+  void _onProgramSegmentChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -1320,7 +1334,15 @@ class _MainScreenState extends State<MainScreen>
 
   Widget _emptyPaneBuilderForCurrentTab(BuildContext context) {
     return switch (_currentTab) {
-      0 => const ExerciseDetailEmpty(),
+      0 => ValueListenableBuilder<ProgramSegment>(
+        valueListenable: _programPageController.activeSegment,
+        builder: (context, segment, _) => switch (segment) {
+          ProgramSegment.exercises => const ExerciseDetailEmpty(),
+          ProgramSegment.stations => const StationDetailEmpty(),
+          ProgramSegment.roleplays => const RolePlayDetailEmpty(),
+          ProgramSegment.teams => const TeamDetailEmpty(),
+        },
+      ),
       2 => const StationDetailEmpty(),
       3 => const RolePlayDetailEmpty(),
       4 => const TeamDetailEmpty(),

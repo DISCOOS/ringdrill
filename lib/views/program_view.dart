@@ -652,10 +652,17 @@ class _ExerciseCardState extends State<ExerciseCard> {
 }
 
 abstract class ProgramPageControllerBase extends ScreenController {
-  ProgramPageControllerBase();
+  ProgramPageControllerBase({
+    required this.stationListController,
+    required this.rolePlaysController,
+    required this.teamsPageController,
+  });
 
   @protected
   final programService = ProgramService();
+  final StationListController stationListController;
+  final RolePlaysController rolePlaysController;
+  final TeamsPageController teamsPageController;
   final ValueNotifier<ProgramSegment> activeSegment =
       ValueNotifier<ProgramSegment>(ProgramSegment.exercises);
 
@@ -670,6 +677,24 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
+    return switch (activeSegment.value) {
+      ProgramSegment.exercises => _buildExercisesFAB(context),
+      ProgramSegment.stations => stationListController.buildFAB(
+        context,
+        constraints,
+      ),
+      ProgramSegment.roleplays => rolePlaysController.buildFAB(
+        context,
+        constraints,
+      ),
+      ProgramSegment.teams => teamsPageController.buildFAB(
+        context,
+        constraints,
+      ),
+    };
+  }
+
+  Widget _buildExercisesFAB(BuildContext context) {
     // heroTag is intentionally null. The FAB pushes ExerciseFormScreen via a
     // The destination has no FAB to morph into, so there is no hero
     // animation to preserve. With an explicit string tag the Scaffold's
@@ -705,6 +730,24 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
+    return switch (activeSegment.value) {
+      ProgramSegment.exercises => _buildExercisesActions(context),
+      ProgramSegment.stations => stationListController.buildActions(
+        context,
+        constraints,
+      ),
+      ProgramSegment.roleplays => rolePlaysController.buildActions(
+        context,
+        constraints,
+      ),
+      ProgramSegment.teams => teamsPageController.buildActions(
+        context,
+        constraints,
+      ),
+    };
+  }
+
+  List<Widget>? _buildExercisesActions(BuildContext context) {
     final activeProgram = programService.activeProgram;
     if (activeProgram == null) return null;
     final localizations = AppLocalizations.of(context)!;

@@ -14,7 +14,11 @@ import 'package:universal_io/io.dart';
 const String baseUrl = 'https://ringdrill.app';
 
 class ProgramPageController extends ProgramPageControllerBase {
-  ProgramPageController();
+  ProgramPageController({
+    required super.stationListController,
+    required super.rolePlaysController,
+    required super.teamsPageController,
+  });
 
   // Direct-to-disk export via FilePicker.getDirectoryPath + dart:io. Disabled
   // on Android because Storage Access Framework URIs returned there can't be
