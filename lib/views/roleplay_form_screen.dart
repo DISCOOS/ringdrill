@@ -5,6 +5,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/position_form_field.dart';
+import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/role_code_badge.dart';
 
 /// Optional long-form sections that can be added to a [RolePlay].
@@ -89,6 +90,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     });
   }
 
+  void _removeSection(_Section section) {
+    setState(() {
+      _activeSections.remove(section);
+      _controllerFor(section).clear();
+    });
+  }
+
   FocusNode _focusFor(_Section section) => switch (section) {
     _Section.signalement => _signalementFocus,
     _Section.background => _backgroundFocus,
@@ -125,9 +133,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         ? localizations.newRolePlayTitle
         : widget.rolePlay.name;
 
-    final missingSections = _Section.values
-        .where((s) => !_activeSections.contains(s))
-        .toList();
+    final sectionSpecs = [
+      for (final section in _Section.values)
+        OptionalFieldSection<_Section>(
+          id: section,
+          label: _labelFor(section, localizations),
+          controller: _controllerFor(section),
+          focusNode: _focusFor(section),
+        ),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -237,45 +251,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 const Divider(height: 24),
 
                 // Optional sections — only shown when added
-                for (final section in _Section.values)
-                  if (_activeSections.contains(section)) ...[
-                    TextFormField(
-                      focusNode: _focusFor(section),
-                      controller: _controllerFor(section),
-                      keyboardType: TextInputType.multiline,
-                      minLines: 2,
-                      maxLines: 8,
-                      decoration: InputDecoration(
-                        labelText: _labelFor(section, localizations),
-                        alignLabelWithHint: true,
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => setState(() {
-                            _activeSections.remove(section);
-                            _controllerFor(section).clear();
-                          }),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                // Add section buttons for sections not yet added
-                if (missingSections.isNotEmpty) ...[
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      for (final section in missingSections)
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.add, size: 16),
-                          label: Text(_labelFor(section, localizations)),
-                          onPressed: () => _addSection(section),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                OptionalFieldSections<_Section>(
+                  sections: sectionSpecs,
+                  activeIds: _activeSections,
+                  onAdd: _addSection,
+                  onRemove: _removeSection,
+                ),
+                const SizedBox(height: 4),
               ],
             ),
           ),
