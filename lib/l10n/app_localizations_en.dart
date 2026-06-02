@@ -1580,6 +1580,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newRole => 'New role';
 
   @override
+  String get newPlay => 'New play';
+
+  @override
   String get pickExerciseForRole => 'Select exercise';
 
   @override

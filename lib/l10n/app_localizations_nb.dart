@@ -1577,6 +1577,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get newRole => 'Ny rolle';
 
   @override
+  String get newPlay => 'Nytt spill';
+
+  @override
   String get pickExerciseForRole => 'Velg øvelse';
 
   @override

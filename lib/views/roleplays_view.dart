@@ -202,7 +202,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                     heroTag: null,
                     onPressed: () => _controller.openCreateRolePlay(context),
                     icon: const Icon(Icons.add),
-                    label: Text(localizations.newRole),
+                    label: Text(localizations.newPlay),
                   ),
                 ),
             ],

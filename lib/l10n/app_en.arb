@@ -1546,6 +1546,10 @@
   "@newRole": {
     "description": "FAB label on the Markører segment that creates a new RolePlay."
   },
+  "newPlay": "New play",
+  "@newPlay": {
+    "description": "FAB label on the Spill (Script) segment for creating a new scenario entry. Creates a RolePlay today; when SilentWitness lands this becomes a choice. Mirrors the segment name (scriptSegment)."
+  },
   "pickExerciseForRole": "Select exercise",
   "@pickExerciseForRole": {
     "description": "Title of the exercise-picker sheet opened before creating a new role from the Markører segment."

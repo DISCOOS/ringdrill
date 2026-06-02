@@ -2690,6 +2690,12 @@ abstract class AppLocalizations {
   /// **'New role'**
   String get newRole;
 
+  /// FAB label on the Spill (Script) segment for creating a new scenario entry. Creates a RolePlay today; when SilentWitness lands this becomes a choice. Mirrors the segment name (scriptSegment).
+  ///
+  /// In en, this message translates to:
+  /// **'New play'**
+  String get newPlay;
+
   /// Title of the exercise-picker sheet opened before creating a new role from the Markører segment.
   ///
   /// In en, this message translates to:

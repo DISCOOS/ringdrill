@@ -744,6 +744,10 @@
   "@newRole": {
     "description": "FAB-etikett i Markører-segmentet for å opprette en ny markørordre."
   },
+  "newPlay": "Nytt spill",
+  "@newPlay": {
+    "description": "FAB-etikett i Spill-segmentet for å opprette en ny scenarioenhet. Oppretter en markørordre (RolePlay) i dag; når Tause vitner (SilentWitness) kommer, blir dette et valg. Speiler segmentnavnet (scriptSegment)."
+  },
   "pickExerciseForRole": "Velg øvelse",
   "@pickExerciseForRole": {
     "description": "Tittel på øvelsesvelger-arket som åpnes før man oppretter en ny markørordre fra Markører-segmentet."

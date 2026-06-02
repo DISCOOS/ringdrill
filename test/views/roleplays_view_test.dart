@@ -250,13 +250,13 @@ void main() {
       expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
 
-    testWidgets('"Ny rolle" FAB is present when active program exists',
+    testWidgets('"Nytt spill" FAB is present when active program exists',
         (tester) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.newRole), findsOneWidget);
+      expect(find.text(l10n.newPlay), findsOneWidget);
     });
   });
 
