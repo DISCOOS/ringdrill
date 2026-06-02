@@ -40,6 +40,32 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_io/io.dart';
 
+String _activeProgramPath() {
+  final uuid = ProgramService().activeProgramUuid;
+  return uuid == null ? routeProgram : programPath(uuid);
+}
+
+Future<String?> _activateCanonicalProgramPath(String location) async {
+  final segments = Uri.parse(location).pathSegments;
+  if (segments.length < 2 || segments.first != 'program') return null;
+
+  final candidateUuid = segments[1];
+  final service = ProgramService();
+  if (service.loadProgram(candidateUuid) == null) {
+    // Before the legacy redirect layer lands, keep `/program/:exerciseId`
+    // and its nested station route working against the active program.
+    if (service.activeProgramUuid != null &&
+        service.getExercise(candidateUuid) != null) {
+      return null;
+    }
+    return _activeProgramPath();
+  }
+  if (service.activeProgramUuid != candidateUuid) {
+    await service.setActive(candidateUuid);
+  }
+  return null;
+}
+
 GoRouter buildRouter(bool isFirstLaunch) {
   final key = GlobalKey<NavigatorState>();
   // Explicit key for the ShellRoute's internal Navigator. GoRouter creates
@@ -55,7 +81,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
   return GoRouter(
     navigatorKey: key,
     debugLogDiagnostics: kDebugMode,
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final location = state.uri.path;
       debugPrint('[$GoRouter] redirect >> $location');
       if (location.startsWith('/i/')) {
@@ -66,7 +92,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
             handleInstallLink(context, slug);
           }
         });
-        return routeProgram;
+        return _activeProgramPath();
       }
       if (location.startsWith('/o/')) {
         final filePath = Uri.decodeComponent(location.replaceFirst('/o', ''));
@@ -77,7 +103,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
             _showOpenFileBottomSheet(
               context,
               filePath: filePath,
-              location: routeProgram,
+              location: _activeProgramPath(),
             );
           }
         });
@@ -85,12 +111,12 @@ GoRouter buildRouter(bool isFirstLaunch) {
         // ProgramPageController instance
         // to exist in widget tree. Always
         // redirect to programs page!
-        return routeProgram;
+        return _activeProgramPath();
       }
-      return null;
+      return _activateCanonicalProgramPath(location);
     },
     routes: [
-      GoRoute(path: '/i/:slug', redirect: (_, _) => routeProgram),
+      GoRoute(path: '/i/:slug', redirect: (_, _) => _activeProgramPath()),
       // Brief routes — not tabs; pushed over the root navigator as a
       // fullscreen modal bottom sheet. The program variant is listed first so
       // go_router matches the more specific `program/` path before the bare
@@ -152,7 +178,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
           );
         },
         routes: [
-          GoRoute(path: '/', redirect: (_, _) => routeProgram),
+          GoRoute(path: '/', redirect: (_, _) => _activeProgramPath()),
           GoRoute(
             path: routeProgram,
             // ShellRoute's child is ignored by MainScreen (IndexedStack).
@@ -163,53 +189,158 @@ GoRouter buildRouter(bool isFirstLaunch) {
                 const SizedBox.shrink(),
             routes: [
               GoRoute(
-                path: ':exerciseId',
+                path: ':programUuid',
                 parentNavigatorKey: key,
-                builder: (BuildContext context, GoRouterState state) =>
-                    _ContextSheetDeepLinkLauncher(
-                      target: ExerciseSheetTarget(
-                        exerciseUuid: state.pathParameters['exerciseId']!,
-                      ),
-                      fallbackRoute: routeProgram,
-                    ),
+                builder: (BuildContext context, GoRouterState state) {
+                  final candidate = state.pathParameters['programUuid']!;
+                  if (ProgramService().loadProgram(candidate) != null) {
+                    return const SizedBox.shrink();
+                  }
+                  return _ContextSheetDeepLinkLauncher(
+                    target: ExerciseSheetTarget(exerciseUuid: candidate),
+                    fallbackRoute: _activeProgramPath(),
+                  );
+                },
                 routes: [
+                  GoRoute(
+                    path: 'map',
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const SizedBox.shrink(),
+                  ),
+                  GoRoute(
+                    path: 'brief',
+                    parentNavigatorKey: key,
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        CustomTransitionPage(
+                          opaque: false,
+                          barrierColor: Colors.transparent,
+                          transitionsBuilder: (_, _, _, child) => child,
+                          child: _BriefDeepLinkLauncher(
+                            target: BriefSheetTarget(
+                              programUuid: state.pathParameters['programUuid']!,
+                            ),
+                            fallbackRoute: programPath(
+                              state.pathParameters['programUuid']!,
+                            ),
+                          ),
+                        ),
+                  ),
+                  GoRoute(
+                    path: 'exercise/:exerciseId',
+                    parentNavigatorKey: key,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        _ContextSheetDeepLinkLauncher(
+                          target: ExerciseSheetTarget(
+                            exerciseUuid: state.pathParameters['exerciseId']!,
+                          ),
+                          fallbackRoute: programPath(
+                            state.pathParameters['programUuid']!,
+                          ),
+                        ),
+                    routes: [
+                      GoRoute(
+                        path: 'station/:stationIndex',
+                        parentNavigatorKey: key,
+                        builder: (BuildContext context, GoRouterState state) =>
+                            _ContextSheetDeepLinkLauncher(
+                              target: StationSheetTarget(
+                                exerciseUuid:
+                                    state.pathParameters['exerciseId']!,
+                                stationIndex: int.parse(
+                                  state.pathParameters['stationIndex']!,
+                                ),
+                              ),
+                              fallbackRoute: programPath(
+                                state.pathParameters['programUuid']!,
+                              ),
+                            ),
+                      ),
+                      GoRoute(
+                        path: 'team/:teamIndex',
+                        redirect: (context, state) => programTeamPath(
+                          state.pathParameters['programUuid']!,
+                          int.parse(state.pathParameters['teamIndex']!),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'brief',
+                        parentNavigatorKey: key,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) =>
+                                CustomTransitionPage(
+                                  opaque: false,
+                                  barrierColor: Colors.transparent,
+                                  transitionsBuilder: (_, _, _, child) => child,
+                                  child: _BriefDeepLinkLauncher(
+                                    target: BriefSheetTarget(
+                                      exerciseUuid:
+                                          state.pathParameters['exerciseId']!,
+                                    ),
+                                    fallbackRoute: programPath(
+                                      state.pathParameters['programUuid']!,
+                                    ),
+                                  ),
+                                ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'team/:teamIndex',
+                    parentNavigatorKey: key,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final teamIndex = int.parse(
+                        state.pathParameters['teamIndex']!,
+                      );
+                      final candidates = ProgramService()
+                          .loadExercises()
+                          .where((e) => e.numberOfTeams > teamIndex)
+                          .toList();
+                      if (candidates.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      final exerciseService = ExerciseService();
+                      final exercise = candidates.firstWhere(
+                        (e) => exerciseService.isStartedOn(e.uuid),
+                        orElse: () => candidates.first,
+                      );
+                      return _ContextSheetDeepLinkLauncher(
+                        target: TeamSheetTarget(
+                          exerciseUuid: exercise.uuid,
+                          teamIndex: teamIndex,
+                        ),
+                        fallbackRoute: programPath(
+                          state.pathParameters['programUuid']!,
+                        ),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'roleplay/:roleUuid',
+                    parentNavigatorKey: key,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        _ContextSheetDeepLinkLauncher(
+                          target: RoleSheetTarget(
+                            rolePlayUuid: state.pathParameters['roleUuid']!,
+                          ),
+                          fallbackRoute: programPath(
+                            state.pathParameters['programUuid']!,
+                          ),
+                        ),
+                  ),
+                  // Legacy `/program/:exerciseId/station/:stationIndex`.
                   GoRoute(
                     path: 'station/:stationIndex',
                     parentNavigatorKey: key,
                     builder: (BuildContext context, GoRouterState state) =>
                         _ContextSheetDeepLinkLauncher(
                           target: StationSheetTarget(
-                            exerciseUuid: state.pathParameters['exerciseId']!,
+                            exerciseUuid: state.pathParameters['programUuid']!,
                             stationIndex: int.parse(
                               state.pathParameters['stationIndex']!,
                             ),
                           ),
-                          fallbackRoute: routeProgram,
+                          fallbackRoute: _activeProgramPath(),
                         ),
-                  ),
-                  GoRoute(
-                    path: 'team/:teamIndex',
-                    parentNavigatorKey: key,
-                    builder: (BuildContext context, GoRouterState state) {
-                      final uuid = state.pathParameters['exerciseId']!;
-                      final teamIndex = int.parse(
-                        state.pathParameters['teamIndex']!,
-                      );
-                      final exercise = ProgramService().getExercise(uuid);
-                      if (exercise == null) {
-                        return Scaffold(
-                          appBar: AppBar(),
-                          body: const Center(child: Text('Not found')),
-                        );
-                      }
-                      return _ContextSheetDeepLinkLauncher(
-                        target: TeamSheetTarget(
-                          exerciseUuid: exercise.uuid,
-                          teamIndex: teamIndex,
-                        ),
-                        fallbackRoute: routeProgram,
-                      );
-                    },
                   ),
                 ],
               ),
@@ -557,9 +688,15 @@ class _MainScreenState extends State<MainScreen>
 
   void _initTab() {
     final loc = widget.location;
-    // Match either an exact tab path (/program) or any nested
-    // detail path (/program/<exerciseId>/...). This keeps the
-    // correct tab selected when a detail screen is on top.
+    final activeUuid = ProgramService().activeProgramUuid;
+    if (activeUuid != null && loc == programMapPath(activeUuid)) {
+      _currentTab = 1;
+      return;
+    }
+    if (loc.startsWith('$routeProgram/')) {
+      _currentTab = 0;
+      return;
+    }
     _currentTab = widget.routes.indexWhere(
       (r) => loc == r || loc.startsWith('$r/'),
     );
@@ -1002,13 +1139,23 @@ class _MainScreenState extends State<MainScreen>
     });
     _contextSheetController.close();
     stationsMapDetailClearTick.value = stationsMapDetailClearTick.value + 1;
-    widget.router.go(widget.routes[tab]);
+    widget.router.go(_routeForTab(tab));
     // The StationsView is kept alive inside the IndexedStack, so its map
     // does not re-fit on tab switch on its own. Nudge it via the reselect
     // tick whenever the Map tab is (re)activated.
-    if (widget.routes[tab] == routeMap) {
+    if (tab == 1) {
       stationsTabReselectTick.value = stationsTabReselectTick.value + 1;
     }
+  }
+
+  String _routeForTab(int tab) {
+    final activeUuid = ProgramService().activeProgramUuid;
+    if (activeUuid == null) return widget.routes[tab];
+    return switch (tab) {
+      0 => programPath(activeUuid),
+      1 => programMapPath(activeUuid),
+      _ => widget.routes[tab],
+    };
   }
 
   List<Destination> _buildDestinations(AppLocalizations localizations) {

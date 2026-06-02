@@ -5,6 +5,31 @@
 
 const String routeProgram = '/program';
 
+String programPath(String programUuid) => '$routeProgram/$programUuid';
+
+String programMapPath(String programUuid) => '${programPath(programUuid)}/map';
+
+String programExercisePath(String programUuid, String exerciseUuid) =>
+    '${programPath(programUuid)}/exercise/$exerciseUuid';
+
+String programStationPath(
+  String programUuid,
+  String exerciseUuid,
+  int stationIndex,
+) => '${programExercisePath(programUuid, exerciseUuid)}/station/$stationIndex';
+
+String programTeamPath(String programUuid, int teamIndex) =>
+    '${programPath(programUuid)}/team/$teamIndex';
+
+String programRolePlayPath(String programUuid, String rolePlayUuid) =>
+    '${programPath(programUuid)}/roleplay/$rolePlayUuid';
+
+String programBriefPath(String programUuid) =>
+    '${programPath(programUuid)}/brief';
+
+String programExerciseBriefPath(String programUuid, String exerciseUuid) =>
+    '${programExercisePath(programUuid, exerciseUuid)}/brief';
+
 /// Map tab — formerly known as the "Stations" tab. The widget at this
 /// route is [StationsView], which renders every station with a
 /// position as a marker on a shared map. Per DESIGN-002 the path was

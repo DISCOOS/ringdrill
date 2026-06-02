@@ -770,9 +770,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
       IconButton(
         icon: const Icon(Icons.menu_book),
         tooltip: localizations.briefAction,
-        onPressed: () => GoRouter.of(
-          context,
-        ).push('$routeBrief/program/${activeProgram.uuid}'),
+        onPressed: () =>
+            GoRouter.of(context).push(programBriefPath(activeProgram.uuid)),
       ),
     ];
   }

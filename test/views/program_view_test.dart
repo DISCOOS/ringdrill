@@ -266,7 +266,7 @@ void main() {
       find
           .descendant(
             of: find.byType(SegmentedButton<ProgramSegment>),
-            matching: find.byIcon(Icons.place),
+            matching: find.text(l10n.stationsTab),
           )
           .hitTestable(),
     );
@@ -285,7 +285,7 @@ void main() {
       find
           .descendant(
             of: find.byType(SegmentedButton<ProgramSegment>),
-            matching: find.byIcon(Icons.theater_comedy),
+            matching: find.text(l10n.rolePlaysTab),
           )
           .hitTestable(),
     );
@@ -296,7 +296,7 @@ void main() {
       find
           .descendant(
             of: find.byType(SegmentedButton<ProgramSegment>),
-            matching: find.byIcon(Icons.group),
+            matching: find.text(l10n.team(2)),
           )
           .hitTestable(),
     );
