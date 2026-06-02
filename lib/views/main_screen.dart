@@ -45,7 +45,8 @@ String _activeProgramPath() {
   return uuid == null ? routeProgram : programPath(uuid);
 }
 
-String? _legacyProgramRedirect(String location) {
+@visibleForTesting
+String? legacyProgramRedirect(String location) {
   final segments = Uri.parse(location).pathSegments;
   final service = ProgramService();
   final activeUuid = service.activeProgramUuid;
@@ -108,12 +109,6 @@ Future<String?> _activateCanonicalProgramPath(String location) async {
   final candidateUuid = segments[1];
   final service = ProgramService();
   if (service.loadProgram(candidateUuid) == null) {
-    // Before the legacy redirect layer lands, keep `/program/:exerciseId`
-    // and its nested station route working against the active program.
-    if (service.activeProgramUuid != null &&
-        service.getExercise(candidateUuid) != null) {
-      return null;
-    }
     return _activeProgramPath();
   }
   if (service.activeProgramUuid != candidateUuid) {
@@ -169,7 +164,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
         // redirect to programs page!
         return _activeProgramPath();
       }
-      final legacyRedirect = _legacyProgramRedirect(location);
+      final legacyRedirect = legacyProgramRedirect(location);
       if (legacyRedirect != null && legacyRedirect != location) {
         return legacyRedirect;
       }
@@ -222,13 +217,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
               isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
               location: state.matchedLocation,
-              routes: [
-                routeProgram,
-                routeMap,
-                routeStations,
-                routeRolePlays,
-                routeTeams,
-              ],
+              routes: [routeProgram, routeMap],
               // The shell's nested Navigator (identified by
               // [shellNavigatorKey]). MainScreen mounts it offstage so the
               // GlobalKey gets attached — see the comment on
@@ -250,17 +239,8 @@ GoRouter buildRouter(bool isFirstLaunch) {
             routes: [
               GoRoute(
                 path: ':programUuid',
-                parentNavigatorKey: key,
-                builder: (BuildContext context, GoRouterState state) {
-                  final candidate = state.pathParameters['programUuid']!;
-                  if (ProgramService().loadProgram(candidate) != null) {
-                    return const SizedBox.shrink();
-                  }
-                  return _ContextSheetDeepLinkLauncher(
-                    target: ExerciseSheetTarget(exerciseUuid: candidate),
-                    fallbackRoute: _activeProgramPath(),
-                  );
-                },
+                builder: (BuildContext context, GoRouterState state) =>
+                    const SizedBox.shrink(),
                 routes: [
                   GoRoute(
                     path: 'map',
@@ -286,6 +266,47 @@ GoRouter buildRouter(bool isFirstLaunch) {
                         ),
                   ),
                   GoRoute(
+                    path: 'exercise/:exerciseId/station/:stationIndex',
+                    parentNavigatorKey: key,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        _ContextSheetDeepLinkLauncher(
+                          target: StationSheetTarget(
+                            exerciseUuid: state.pathParameters['exerciseId']!,
+                            stationIndex: int.parse(
+                              state.pathParameters['stationIndex']!,
+                            ),
+                          ),
+                          fallbackRoute: programPath(
+                            state.pathParameters['programUuid']!,
+                          ),
+                        ),
+                  ),
+                  GoRoute(
+                    path: 'exercise/:exerciseId/team/:teamIndex',
+                    redirect: (context, state) => programTeamPath(
+                      state.pathParameters['programUuid']!,
+                      int.parse(state.pathParameters['teamIndex']!),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'exercise/:exerciseId/brief',
+                    parentNavigatorKey: key,
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        CustomTransitionPage(
+                          opaque: false,
+                          barrierColor: Colors.transparent,
+                          transitionsBuilder: (_, _, _, child) => child,
+                          child: _BriefDeepLinkLauncher(
+                            target: BriefSheetTarget(
+                              exerciseUuid: state.pathParameters['exerciseId']!,
+                            ),
+                            fallbackRoute: programPath(
+                              state.pathParameters['programUuid']!,
+                            ),
+                          ),
+                        ),
+                  ),
+                  GoRoute(
                     path: 'exercise/:exerciseId',
                     parentNavigatorKey: key,
                     builder: (BuildContext context, GoRouterState state) =>
@@ -297,52 +318,6 @@ GoRouter buildRouter(bool isFirstLaunch) {
                             state.pathParameters['programUuid']!,
                           ),
                         ),
-                    routes: [
-                      GoRoute(
-                        path: 'station/:stationIndex',
-                        parentNavigatorKey: key,
-                        builder: (BuildContext context, GoRouterState state) =>
-                            _ContextSheetDeepLinkLauncher(
-                              target: StationSheetTarget(
-                                exerciseUuid:
-                                    state.pathParameters['exerciseId']!,
-                                stationIndex: int.parse(
-                                  state.pathParameters['stationIndex']!,
-                                ),
-                              ),
-                              fallbackRoute: programPath(
-                                state.pathParameters['programUuid']!,
-                              ),
-                            ),
-                      ),
-                      GoRoute(
-                        path: 'team/:teamIndex',
-                        redirect: (context, state) => programTeamPath(
-                          state.pathParameters['programUuid']!,
-                          int.parse(state.pathParameters['teamIndex']!),
-                        ),
-                      ),
-                      GoRoute(
-                        path: 'brief',
-                        parentNavigatorKey: key,
-                        pageBuilder:
-                            (BuildContext context, GoRouterState state) =>
-                                CustomTransitionPage(
-                                  opaque: false,
-                                  barrierColor: Colors.transparent,
-                                  transitionsBuilder: (_, _, _, child) => child,
-                                  child: _BriefDeepLinkLauncher(
-                                    target: BriefSheetTarget(
-                                      exerciseUuid:
-                                          state.pathParameters['exerciseId']!,
-                                    ),
-                                    fallbackRoute: programPath(
-                                      state.pathParameters['programUuid']!,
-                                    ),
-                                  ),
-                                ),
-                      ),
-                    ],
                   ),
                   GoRoute(
                     path: 'team/:teamIndex',
@@ -385,21 +360,6 @@ GoRouter buildRouter(bool isFirstLaunch) {
                           fallbackRoute: programPath(
                             state.pathParameters['programUuid']!,
                           ),
-                        ),
-                  ),
-                  // Legacy `/program/:exerciseId/station/:stationIndex`.
-                  GoRoute(
-                    path: 'station/:stationIndex',
-                    parentNavigatorKey: key,
-                    builder: (BuildContext context, GoRouterState state) =>
-                        _ContextSheetDeepLinkLauncher(
-                          target: StationSheetTarget(
-                            exerciseUuid: state.pathParameters['programUuid']!,
-                            stationIndex: int.parse(
-                              state.pathParameters['stationIndex']!,
-                            ),
-                          ),
-                          fallbackRoute: _activeProgramPath(),
                         ),
                   ),
                 ],
@@ -679,9 +639,8 @@ class _MainScreenState extends State<MainScreen>
   late final ContextSheetController _contextSheetController =
       ContextSheetController();
 
-  /// Order matches [routeProgram, routeMap, routeStations, routeRolePlays, routeTeams].
-  /// Note: Map tab (StationsView) was previously at position 4; it moved to
-  /// position 2 when RolePlays was added. See DESIGN-003.
+  /// Order matches [routeProgram, routeMap]. Station, roleplay and team views
+  /// remain reachable as Program segments rather than standalone shell tabs.
   late final List<PageWidget> _pages = [
     PageWidget(
       controller: _programPageController,
@@ -692,15 +651,6 @@ class _MainScreenState extends State<MainScreen>
       ),
     ),
     PageWidget(controller: StationsPageController(), child: StationsView()),
-    PageWidget(
-      controller: _stationListController,
-      child: StationListView(controller: _stationListController),
-    ),
-    PageWidget(
-      controller: _rolePlaysController,
-      child: RolePlaysView(controller: _rolePlaysController),
-    ),
-    PageWidget(controller: _teamsPageController, child: TeamsView()),
   ];
 
   int _currentTab = 0;
@@ -1222,12 +1172,6 @@ class _MainScreenState extends State<MainScreen>
     return [
       Destination(icon: Icons.update, label: localizations.exercise(2)),
       Destination(icon: Icons.map, label: localizations.mapTab),
-      Destination(icon: Icons.place, label: localizations.stationsTab),
-      Destination(
-        icon: Icons.theater_comedy,
-        label: localizations.rolePlaysTab,
-      ),
-      Destination(icon: Icons.group, label: localizations.team(2)),
     ];
   }
 
@@ -1560,9 +1504,6 @@ class _MainScreenState extends State<MainScreen>
           ProgramSegment.teams => const TeamDetailEmpty(),
         },
       ),
-      2 => const StationDetailEmpty(),
-      3 => const RolePlayDetailEmpty(),
-      4 => const TeamDetailEmpty(),
       _ => const SizedBox.shrink(),
     };
   }

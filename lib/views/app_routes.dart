@@ -30,35 +30,19 @@ String programBriefPath(String programUuid) =>
 String programExerciseBriefPath(String programUuid, String exerciseUuid) =>
     '${programExercisePath(programUuid, exerciseUuid)}/brief';
 
-/// Map tab — formerly known as the "Stations" tab. The widget at this
-/// route is [StationsView], which renders every station with a
-/// position as a marker on a shared map. Per DESIGN-002 the path was
-/// moved off `/stations` so the canonical list of stations can take
-/// that URL.
+/// Legacy Map tab path. New navigation uses [programMapPath].
 const String routeMap = '/map';
 
-/// Stations list tab — flat list of `(Exercise, Station)` pairs with
-/// expandable rows. The deep-link subpath
-/// `/stations/:exerciseUuid/:stationIndex` opens the matching station in a
-/// ContextSheet on this tab. Internal callers use ContextSheet directly
-/// instead of pushing this URL.
+/// Legacy Stations tab path. Redirected into the matching Program segment or
+/// canonical station detail route.
 const String routeStations = '/stations';
 
-/// Teams tab. The `/:teamIndex` subpath is a deep-link-only entry point that
-/// opens a ContextSheet on this tab. Internal callers use ContextSheet
-/// directly instead of pushing this URL.
+/// Legacy Teams tab path. Redirected into the Program tab.
 const String routeTeams = '/teams';
 
-/// RolePlays tab — flat list of RolePlay rows across all exercises.
-/// The `/:roleUuid` subpath is a deep-link-only entry point that opens a
-/// ContextSheet on this tab. Internal callers use ContextSheet directly
-/// instead of pushing this URL.
+/// Legacy RolePlays tab path. Redirected into the Program tab.
 const String routeRolePlays = '/roleplays';
 
-/// Brief route — read-mode renderer of an exercise or program as a
-/// markdown document. Reachable as `/brief/program/:programUuid` for
-/// the whole program and `/brief/:exerciseUuid` for a single exercise.
-/// Not in the bottom navigation; pushed onto the root navigator from
-/// the Brief action on `CoordinatorScreen` and `ProgramView`. See
-/// DESIGN-004.
+/// Legacy Brief route prefix. New navigation uses [programBriefPath] and
+/// [programExerciseBriefPath].
 const String routeBrief = '/brief';
