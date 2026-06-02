@@ -236,6 +236,14 @@
   "@showAll": {
     "description": "Action that makes every exercise visible on the map"
   },
+  "showMore": "Show more",
+  "@showMore": {
+    "description": "Expands a truncated text block in the program overview"
+  },
+  "showLess": "Show less",
+  "@showLess": {
+    "description": "Collapses an expanded text block in the program overview"
+  },
   "hideAll": "Hide all",
   "@hideAll": {
     "description": "Action that hides every exercise on the map"

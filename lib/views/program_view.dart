@@ -62,6 +62,9 @@ class _ProgramViewState extends State<ProgramView> {
   // The collapsing overview hides while the active segment list scrolls down
   // and reappears on scroll up. The switcher stays pinned as a normal row.
   bool _overviewVisible = true;
+  // Whether the overview prose is expanded ("show more"). Held here so it
+  // survives the overview being hidden/shown by the scroll collapse.
+  bool _overviewExpanded = false;
 
   @override
   void initState() {
@@ -227,7 +230,12 @@ class _ProgramViewState extends State<ProgramView> {
             duration: const Duration(milliseconds: 200),
             alignment: Alignment.topCenter,
             child: _overviewVisible
-                ? _ProgramOverview(controller: widget.controller)
+                ? _ProgramOverview(
+                    expanded: _overviewExpanded,
+                    onToggleExpanded: () => setState(
+                      () => _overviewExpanded = !_overviewExpanded,
+                    ),
+                  )
                 : const SizedBox(width: double.infinity),
           ),
           _ProgramSegmentSwitcher(controller: widget.controller),
@@ -377,72 +385,113 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
 /// Collapsing read-only overview rendered above the segment switcher.
 /// Scrolls off as the user moves down the active segment list.
 class _ProgramOverview extends StatelessWidget {
-  const _ProgramOverview({required this.controller});
+  const _ProgramOverview({
+    required this.expanded,
+    required this.onToggleExpanded,
+  });
 
-  final ProgramPageControllerBase controller;
+  /// Whether the prose is shown in full. Owned by [_ProgramViewState] so it
+  /// survives the overview being hidden and shown by the scroll collapse.
+  final bool expanded;
+  final VoidCallback onToggleExpanded;
+
+  static const int _collapsedLines = 3;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controller.activeSegment,
-      builder: (context, activeSegment, _) {
-        final program = ProgramService().activeProgram;
-        if (program == null) return const SizedBox.shrink();
+    final program = ProgramService().activeProgram;
+    if (program == null) return const SizedBox.shrink();
 
-        final service = ProgramService();
-        final teamCount = service.loadTeams().length;
+    final description = program.description.trim();
+    final briefIntro = _firstParagraphText(program.briefIntroMd);
+    if (description.isEmpty && briefIntro == null) {
+      return const SizedBox.shrink();
+    }
 
-        final String? segmentCountPhrase = switch (activeSegment) {
-          ProgramSegment.exercises => l10n.exercise(service.loadExercises().length),
-          ProgramSegment.stations => l10n.station(
-              service.loadExercises().fold(0, (n, e) => n + e.stations.length),
-            ),
-          ProgramSegment.roleplays => l10n.roleplay(service.loadRolePlays().length),
-          ProgramSegment.teams => null,
-        };
+    final textTheme = Theme.of(context).textTheme;
+    final maxLines = expanded ? null : _collapsedLines;
+    final overflow = expanded ? TextOverflow.clip : TextOverflow.ellipsis;
 
-        final summaryParts = [l10n.team(teamCount), ?segmentCountPhrase];
-        final summary = summaryParts.join(' · ');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxWidth = constraints.maxWidth;
+          final truncatable =
+              (description.isNotEmpty &&
+                  _exceedsLines(
+                    context,
+                    description,
+                    textTheme.bodyMedium,
+                    maxWidth,
+                  )) ||
+              (briefIntro != null &&
+                  _exceedsLines(
+                    context,
+                    briefIntro,
+                    textTheme.bodySmall,
+                    maxWidth,
+                  ));
 
-        final description = program.description.trim();
-        final briefIntro = _firstParagraphText(program.briefIntroMd);
-
-        final textTheme = Theme.of(context).textTheme;
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Column(
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(summary, style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-              if (description.isNotEmpty) ...[
-                const SizedBox(height: 6),
+              if (description.isNotEmpty)
                 Text(
                   description,
                   style: textTheme.bodyMedium,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: maxLines,
+                  overflow: overflow,
                 ),
-              ],
               if (briefIntro != null) ...[
-                const SizedBox(height: 6),
+                if (description.isNotEmpty) const SizedBox(height: 6),
                 Text(
                   briefIntro,
                   style: textTheme.bodySmall,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: maxLines,
+                  overflow: overflow,
                 ),
               ],
               // TODO(DESIGN-004): render program.commsMd preview here when
-              // program-level brief fields land.
-              // The brief entry point lives in the AppBar action, not here.
+              // program-level brief fields land. Brief is opened from the
+              // AppBar action, not here.
+              if (truncatable)
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: const Size(0, 32),
+                    ),
+                    onPressed: onToggleExpanded,
+                    child: Text(expanded ? l10n.showLess : l10n.showMore),
+                  ),
+                ),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
+  }
+
+  /// Whether [text] would exceed [_collapsedLines] at [maxWidth], used to
+  /// decide whether the "show more" toggle is needed.
+  bool _exceedsLines(
+    BuildContext context,
+    String text,
+    TextStyle? style,
+    double maxWidth,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: _collapsedLines,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: maxWidth);
+    return painter.didExceedMaxLines;
   }
 
   /// Returns the first paragraph of a markdown string stripped of leading

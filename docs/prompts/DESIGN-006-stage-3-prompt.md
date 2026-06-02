@@ -14,7 +14,7 @@ Stage 3 adds the overview region at the top of the Program tab. It is additive a
 
 - A **collapsing read-only overview** at the top of the Program tab that scrolls away as the user moves down a long segment list.
 - The segment switcher stays **pinned** below the overview, always reachable even after the overview has scrolled off.
-- Overview content (all read-only): a plan summary line (team count `numberOfTeams` plus a count for the active segment, e.g. station count for Poster), the active plan's `description` when present, and a `briefIntroMd` preview.
+- Overview content (all read-only): the active plan's `description` when set and a `briefIntroMd` preview, with a "Les mer" / "Vis mindre" toggle that expands and collapses the prose (shown only when it is long enough to truncate). No counts summary line.
 - The brief stays an `Icons.menu_book` AppBar action on the Øvelser lens (its original home). (An earlier revision of this stage moved it into the overview as an "Åpne brief" affordance; it read poorly there and was reverted.)
 
 **Out of scope (do not touch):**
@@ -29,7 +29,7 @@ Stage 3 adds the overview region at the top of the Program tab. It is additive a
 
 Read `AGENTS.md` and follow every numbered rule. The ones that bite here:
 
-- **Localize every user-visible string.** New labels ("Åpne brief", the summary-line units) go in both `app_en.arb` and `app_nb.arb`. Reuse existing count nouns (`team(n)`, `station(n)`, etc.) where they exist. Norwegian for *station* stays "post"/"poster".
+- **Localize every user-visible string.** The "Les mer" / "Vis mindre" toggle uses new `showMore` / `showLess` keys in both `app_en.arb` and `app_nb.arb`; run `make build` (gen-l10n) after editing the arb files. Norwegian for *station* stays "post"/"poster".
 - **CLI must stay Flutter-free.** Widget-layer only.
 - **Mobile-safe imports.** No `dart:html` / `package:web`.
 - **No new Sentry/analytics calls.**
@@ -68,7 +68,7 @@ Conventional Commits, scope `program`. One commit per step, `git status` clean b
 
 ### Step 1 — `feat(program)`: collapsing overview and pinned switcher
 
-Restructure the Program tab body so the read-only overview sits above a pinned switcher, scrolling away as the active segment list scrolls. Overview shows the summary line (team count + active-segment count), the active plan's `description` when present, and a compact preview of `program.briefIntroMd` when non-empty. Render the preview in plain Material style as truncated plain text (a couple of lines with ellipsis), **not** `BriefMarkdown` / `BriefTheme` — the docs-site palette (ADR-0023) stays in the brief sheet. Omit each part when its source is empty. Handle the near-empty case gracefully (a fresh plan may have only the summary line); the switcher must stay present and pinned regardless.
+Restructure the Program tab body so the read-only overview sits above an always-visible switcher, hiding as the active segment list scrolls. Overview shows the active plan's `description` and a compact preview of `program.briefIntroMd` when non-empty, plus a "Les mer" / "Vis mindre" toggle (shown only when the prose truncates at a few lines) that expands and collapses the full text. Render the prose in plain Material style, **not** `BriefMarkdown` / `BriefTheme` — the docs-site palette (ADR-0023) stays in the brief sheet. There is no counts summary line. Omit each part when its source is empty (the overview collapses to nothing for a bare plan); the switcher must stay present regardless.
 
 Gates green. Commit.
 
@@ -80,7 +80,7 @@ Gates green. Commit.
 
 ### Step 3 — `test(program)`: cover the overview
 
-Widget tests under `test/`: the overview renders the summary line and description; it renders the `briefIntroMd` preview when non-empty and omits it when empty; the summary's segment count follows the active segment; scrolling the segment list collapses the overview while the switcher stays visible and usable; the Øvelser AppBar shows the brief action and switching segments retains each segment's State. Do not add coverage for unrelated surrounding code.
+Widget tests under `test/`: the overview renders the description and the `briefIntroMd` preview when non-empty and omits each when empty; the "Les mer" toggle appears only when the prose truncates and expands/collapses it; scrolling the segment list collapses the overview while the switcher stays visible and usable; the Øvelser AppBar shows the brief action and switching segments retains each segment's State. Do not add coverage for unrelated surrounding code.
 
 Gates green. Commit.
 

@@ -211,6 +211,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get showAll => 'Vis alle';
 
   @override
+  String get showMore => 'Les mer';
+
+  @override
+  String get showLess => 'Vis mindre';
+
+  @override
   String get hideAll => 'Skjul alle';
 
   @override

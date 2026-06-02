@@ -34,6 +34,8 @@
   "filter": "Filter",
   "filterShowOnMap": "Vis på kart",
   "showAll": "Vis alle",
+  "showMore": "Les mer",
+  "showLess": "Vis mindre",
   "hideAll": "Skjul alle",
   "showLabels": "Vis etiketter",
   "hideLabels": "Skjul etiketter",

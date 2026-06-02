@@ -452,6 +452,18 @@ abstract class AppLocalizations {
   /// **'Show all'**
   String get showAll;
 
+  /// Expands a truncated text block in the program overview
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get showMore;
+
+  /// Collapses an expanded text block in the program overview
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get showLess;
+
   /// Action that hides every exercise on the map
   ///
   /// In en, this message translates to:

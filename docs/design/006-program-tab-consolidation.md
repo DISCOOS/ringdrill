@@ -90,8 +90,8 @@ The Program tab holds the four structural sets of the plan, viewable one at a ti
 │  AppBar: <plan name>            [brief?]  ⋮    │
 ├───────────────────────────────────────────────┤
 │  ┌─ overview (collapses on scroll) ─────────┐  │
-│  │  4 lag · 5 poster                        │  │
-│  │  <briefIntro preview, when present>      │  │  ← read-only projection
+│  │  <plan description / brief intro>        │  │  ← read-only
+│  │  Les mer ▾                               │  │
 │  └──────────────────────────────────────────┘  │
 │  ┌─ pinned ─────────────────────────────────┐  │
 │  │  [ Øvelser | Poster | Markører | Team ]  │  │  ← segmented switcher
@@ -111,18 +111,19 @@ The Program tab holds the four structural sets of the plan, viewable one at a ti
 
 ### Collapsing overview
 
-A sliver header at the top of the master pane summarizing the active plan. It scrolls away as the user moves down a long list, so the list gets the full height when it needs it.
+A region at the top of the master pane showing read-only context for the active plan. It hides as the user scrolls the active list down and reappears on scroll up, so the list gets the full height when it needs it.
 
 Content, all read-only:
 
-* Plan summary line: team count (`numberOfTeams`) and a count for the active segment (e.g. station count).
-* A compact, truncated preview of the program-level brief intro (`program.briefIntroMd`) when present. Rendered in plain Material style, **not** the `BriefTheme` docs-site look from [ADR-0023](../adrs/0023-brief-theme-tokens.md). That palette stays confined to the brief sheet so it does not clash with the working surfaces around it.
+* The active plan's `description` when set.
+* A compact preview of the program-level brief intro (`program.briefIntroMd`) when present. Rendered in plain Material style, **not** the `BriefTheme` docs-site look from [ADR-0023](../adrs/0023-brief-theme-tokens.md), so that palette stays confined to the brief sheet.
+* A **"Les mer" / "Vis mindre"** toggle at the bottom, shown only when the prose is long enough to be truncated, that expands and collapses the full text.
 
-The brief is reached from the existing **`Icons.menu_book` AppBar action on the Øvelser lens** (its original home), not from the overview. An earlier revision moved it into the overview as an "Åpne brief" affordance, but it looked out of place there, so it was returned to the AppBar.
+There is no plan-counts summary line. An earlier revision showed a "team count · segment count" line, but it added little and was removed.
 
-Because the overview is read-only, editing routes out the way it does today. Tapping the summary opens the relevant form (the exercise edit form, or `ProgramFormScreen` for the brief fields once they exist).
+The brief is reached from the existing **`Icons.menu_book` AppBar action on the Øvelser lens** (its original home), not from the overview. An earlier revision moved it into the overview, but it looked out of place there, so it was returned to the AppBar.
 
-The program-level `briefIntroMd` field exists on the model and is loaded at runtime (`program/intro.md`, [ADR-0022](../adrs/0022-markdown-content-as-files.md)), so the overview renders a compact read-only preview of it when non-empty alongside the summary line and `description`. The `*Md` fields are omitted when empty, so a fresh plan's overview may be just the summary line. The header must collapse gracefully when nearly empty, and the switcher below is always present. Editing these fields is a separate concern (a markdown editor on `ProgramFormScreen`, DESIGN-004 stage 4) and is not part of this read-only surface.
+The overview is read-only. Plan rename stays on the AppBar title tap, and field editing happens in the relevant form. `briefIntroMd` exists on the model and loads at runtime (`program/intro.md`, [ADR-0022](../adrs/0022-markdown-content-as-files.md)); editing it is the DESIGN-004 stage 4 markdown editor on `ProgramFormScreen`, not part of this surface. When the plan has no description or brief intro, the overview is empty and collapses to nothing, and the switcher below is always present.
 
 ### Segmented switcher
 
@@ -243,7 +244,7 @@ Sequenced so each stage is shippable and reviewable on its own.
 
 **Stage 2 — Collapse the navigation.** Remove the Stations, RolePlays and Teams root destinations, reducing the navigation to **Program + Map** (`routes` becomes `[routeProgram, routeMap]`). The Roster tab is **not** introduced here — it arrives in stage 4 once it has a body, so stage 2 leaves a clean two-tab navigation rather than an empty Roster tab. Adopt the program-scoped routing scheme from [ADR-0032](../adrs/0032-program-scoped-routing.md): every program-scoped path carries `/program/:uuid/`, rendering it activates that program, and the old un-prefixed paths (`/stations/...`, `/teams/...`, `/roleplays/...`) become back-compat redirects that forward to the canonical path. Resolving an old un-prefixed entity path is active-program-relative, matching today's semantics (those links never carried a program uuid), not a cross-program scan. Update `_buildDestinations`, `_pages`, `_initTab`, `_onDestinationSelected` and the empty-pane builder.
 
-**Stage 3 — Overview.** Add the read-only overview above the switcher (summary line, `description`, and the `briefIntroMd` preview). Collapse it on scroll while keeping the switcher visible. The brief stays an AppBar action on the Øvelser lens. Implemented as a manual collapse (overview hides on scroll-down, reappears on scroll-up) with the segment body kept as an `IndexedStack`, rather than a pinned `SliverPersistentHeader` — the sliver forced a fixed switcher height and an opaque background that did not match the master pane, and its active-only body dropped per-segment state.
+**Stage 3 — Overview.** Add the read-only overview above the switcher (`description` and the `briefIntroMd` preview, with a "Les mer" / "Vis mindre" toggle, no counts summary line). Collapse it on scroll while keeping the switcher visible. The brief stays an AppBar action on the Øvelser lens. Implemented as a manual collapse (overview hides on scroll-down, reappears on scroll-up) with the segment body kept as an `IndexedStack`, rather than a pinned `SliverPersistentHeader` — the sliver forced a fixed switcher height and an opaque background that did not match the master pane, and its active-only body dropped per-segment state.
 
 **Stage 4 — Roster tab (view shell).** Add `/roster` and a flat list of `Actor` entries as the people registry. Read and edit via the existing actor flow. This already fixes the hidden-actor problem before the person-with-role model exists.
 
@@ -253,3 +254,4 @@ Sequenced so each stage is shippable and reviewable on its own.
 
 * 2026-05-31 — Drafted from design dialogue and **Accepted** the same day. Captures the three-tab navigation, the four-segment Program switcher, the read-only overview, per-segment FAB and actions, and the Roster people layer (`nb` "Bemanning"). DESIGN-002 and DESIGN-003 superseded on acceptance. Open items carried into implementation: narrow-master switcher control, tab order, Map's place.
 * 2026-06-02 — Stage 3 review revisions. `briefIntroMd` already exists in code, so the overview previews it rather than shipping description-only. The overview collapse is a manual hide-on-scroll with the switcher as an always-visible row and the body kept as an `IndexedStack`, replacing a pinned `SliverPersistentHeader` that forced an enlarged switcher, a mismatched opaque background and an active-only body that lost per-segment state. The brief returns to its AppBar action on the Øvelser lens after the overview "Åpne brief" affordance read poorly.
+* 2026-06-02 — Overview content trimmed. Dropped the "team count · segment count" summary line (it rendered as bare nouns and added little) and added a "Les mer" / "Vis mindre" toggle that expands and collapses the description/brief-intro prose, shown only when the text is long enough to truncate. New `showMore` / `showLess` localization keys.
