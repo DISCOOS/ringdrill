@@ -472,9 +472,12 @@ class _SegmentSwitcherDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return ColoredBox(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: _ProgramSegmentSwitcher(controller: controller),
+    return SizedBox(
+      height: maxExtent,
+      child: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: _ProgramSegmentSwitcher(controller: controller),
+      ),
     );
   }
 
