@@ -25,6 +25,7 @@ enum ProgramEventType {
   exerciseAdded,
   exerciseDeleted,
   teamSaved,
+  rolePlaySaved,
   programOpened,
   programImported,
   programExported,
@@ -77,9 +78,17 @@ class ProgramEvent {
   final Program program;
   final Exercise? exercise;
   final Team? team;
+  final RolePlay? rolePlay;
   final ProgramEventType type;
 
-  ProgramEvent(this.type, this.program, {this.file, this.exercise, this.team});
+  ProgramEvent(
+    this.type,
+    this.program, {
+    this.file,
+    this.exercise,
+    this.team,
+    this.rolePlay,
+  });
 
   factory ProgramEvent.added(Program program, Exercise exercise) =>
       ProgramEvent(ProgramEventType.exerciseAdded, program, exercise: exercise);
@@ -93,6 +102,13 @@ class ProgramEvent {
 
   factory ProgramEvent.teamSaved(Program program, Team team) =>
       ProgramEvent(ProgramEventType.teamSaved, program, team: team);
+
+  factory ProgramEvent.rolePlaySaved(Program program, RolePlay rolePlay) =>
+      ProgramEvent(
+        ProgramEventType.rolePlaySaved,
+        program,
+        rolePlay: rolePlay,
+      );
 
   factory ProgramEvent.opened(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programOpened, program, file: file);
@@ -225,6 +241,12 @@ class ProgramService {
   ) async {
     await _ensureActiveProgram(localizations.defaultPlanName);
     await _repo.saveRolePlay(rolePlay);
+    // Notify listeners so views that depend on RolePlay state (e.g. the
+    // Roster tab's actor→roles subtitle) can refresh on cast / uncast.
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent.rolePlaySaved(program, rolePlay));
+    }
   }
 
   Future<RolePlay?> deleteRolePlay(String uuid) => _repo.deleteRolePlay(uuid);

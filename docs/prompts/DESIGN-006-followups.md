@@ -18,7 +18,7 @@
 
 10. ~~**Rename the Spill segment's create FAB from "Ny rolle" to "Nytt spill".**~~ **Resolved.** New `newPlay` localization key (nb "Nytt spill", en "New play" — mirrors the `scriptSegment` label) is wired into the Spill segment's create FAB. The FAB still calls `openCreateRolePlay` and creates a `RolePlay` for now; when `SilentWitness` / tause vitner lands (item 8), the handler is the seam where this becomes a choice.
 
-11. **Roster actor subtitle does not refresh when the actor is cast in the script.** In the Roster tab, an `Actor` row's subtitle (its role-play assignment) does not update when the actor is cast to or uncast from a `RolePlay` in the Spill segment. The Roster view needs to rebuild on the relevant `ProgramService` event (rolePlay/cast change), or recompute the assignment on those events, rather than reading the assignment once.
+11. ~~**Roster actor subtitle does not refresh when the actor is cast in the script.**~~ **Resolved.** `ProgramService.saveRolePlay` now emits a `ProgramEvent.rolePlaySaved` (new `ProgramEventType.rolePlaySaved` + `rolePlay` payload field). `RosterView` already listened to `ProgramService.events` and recomputes the actor→roles mapping from `_rolePlays` on each build, so the rebuild now follows automatically when a role is cast or uncast in the Spill segment. New widget test in `test/views/roster_view_test.dart` casts/uncasts a role and asserts the `castedAs` subtitle updates.
 
 12. ~~**PlanStatusBadge InkWell is not right.**~~ **Resolved.** The badge's `InkWell` is now wrapped in a transparent `Material` (`MaterialType.transparency`) with a matching `BorderRadius.circular(4)` and `Clip.antiAlias`, so the splash clips to the badge bounds instead of bleeding onto the AppBar.
 

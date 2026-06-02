@@ -145,4 +145,38 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.castDeleteBlocked(1)), findsOneWidget);
   });
+
+  testWidgets(
+    'actor subtitle updates when the role is uncast / re-cast in the Spill segment',
+    (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+
+      // Initial state from _buildPrefs: _castRole carries actorUuid =
+      // _actorUuid, so the Roster row's subtitle shows castedAs("Markør 1").
+      expect(find.text(l10n.castedAs(_castRole.name)), findsOneWidget);
+
+      // Uncast: persist the role with actorUuid: null. Before this fix
+      // saveRolePlay was silent and the Roster's "Cast as …" line stayed
+      // stale; with the rolePlaySaved event the view reloads and the line
+      // disappears.
+      await ProgramService().saveRolePlay(
+        l10n,
+        _castRole.copyWith(actorUuid: null),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.castedAs(_castRole.name)), findsNothing);
+
+      // Re-cast restores the original fixture state and the subtitle line
+      // reappears, so the test leaves no residual mutation for the rest of
+      // the file.
+      await ProgramService().saveRolePlay(l10n, _castRole);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.castedAs(_castRole.name)), findsOneWidget);
+    },
+  );
 }
