@@ -107,11 +107,32 @@ Map<String, Object> _buildPrefs() {
 }
 
 Widget _buildView() {
+  final controller = RolePlaysController();
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(
-      body: RolePlaysView(controller: RolePlaysController()),
+    home: Builder(
+      builder: (context) => Scaffold(
+        // Wire the controller's AppBar actions so tests can assert on
+        // the filter icon that moved off the body FAB in Step 2.
+        appBar: AppBar(
+          actions: controller.buildActions(
+                context,
+                BoxConstraints.loose(const Size(400, 56)),
+              ) ??
+              [],
+        ),
+        body: RolePlaysView(controller: controller),
+        // Wire the controller FAB so tests can assert on "Ny rolle".
+        floatingActionButton: Builder(
+          builder: (fabContext) =>
+              controller.buildFAB(
+                fabContext,
+                BoxConstraints.loose(const Size(400, 56)),
+              ) ??
+              const SizedBox.shrink(),
+        ),
+      ),
     ),
   );
 }
@@ -227,12 +248,22 @@ void main() {
       expect(find.text(l10n.noActiveProgramHint), findsNothing);
     });
 
-    testWidgets('filter FAB is present when active program exists',
+    testWidgets('filter icon is in AppBar actions when active program exists',
         (tester) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      // Filter moved from body FAB to AppBar action in Step 2.
+      expect(find.byIcon(Icons.filter_list), findsOneWidget);
+    });
+
+    testWidgets('"Ny rolle" FAB is present when active program exists',
+        (tester) async {
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.newRole), findsOneWidget);
     });
   });
 

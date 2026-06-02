@@ -1234,9 +1234,9 @@
   "@noStationAssigned": {
     "description": "Placeholder shown in the Role section when stationIndex is null."
   },
-  "noRolesInProgram": "No roles yet. Open a post in the Stations tab to add one.",
+  "noRolesInProgram": "No roles yet. Tap + to add the first one.",
   "@noRolesInProgram": {
-    "description": "Empty-state shown in the RolePlays tab when the program has no RolePlay records."
+    "description": "Empty-state shown in the Markører segment when the program has no RolePlay records."
   },
   "noRolesInExercise": "No roles in this exercise.",
   "@noRolesInExercise": {
@@ -1510,6 +1510,15 @@
   "detailEmptyRolePlay": "Select a role",
   "@detailEmptyRolePlay": {
     "description": "Empty detail pane text shown on the role-plays tab."
+  },
+
+  "newRole": "New role",
+  "@newRole": {
+    "description": "FAB label on the Markører segment that creates a new RolePlay."
+  },
+  "pickExerciseForRole": "Select exercise",
+  "@pickExerciseForRole": {
+    "description": "Title of the exercise-picker sheet opened before creating a new role from the Markører segment."
   },
   "detailEmptyTeam": "Select a team",
   "@detailEmptyTeam": {

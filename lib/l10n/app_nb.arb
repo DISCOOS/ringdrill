@@ -499,9 +499,9 @@
   "@noStationAssigned": {
     "description": "Placeholder shown when stationIndex is null."
   },
-  "noRolesInProgram": "Ingen markører ennå. Åpne en post i Poster-fanen for å legge til en.",
+  "noRolesInProgram": "Ingen markørordre ennå. Trykk + for å legge til den første.",
   "@noRolesInProgram": {
-    "description": "Empty-state when program has no RolePlay records."
+    "description": "Tom-tilstand i Markører-segmentet når planen ikke har noen markørordrer."
   },
   "noRolesInExercise": "Ingen markører for denne øvelsen.",
   "@noRolesInExercise": {
@@ -714,5 +714,14 @@
   "detailEmptyTeam": "Velg et lag",
   "@detailEmptyTeam": {
     "description": "Empty detail pane text shown on the teams tab."
+  },
+
+  "newRole": "Ny rolle",
+  "@newRole": {
+    "description": "FAB-etikett i Markører-segmentet for å opprette en ny markørordre."
+  },
+  "pickExerciseForRole": "Velg øvelse",
+  "@pickExerciseForRole": {
+    "description": "Tittel på øvelsesvelger-arket som åpnes før man oppretter en ny markørordre fra Markører-segmentet."
   }
 }

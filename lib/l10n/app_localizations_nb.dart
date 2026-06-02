@@ -1344,7 +1344,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get noRolesInProgram =>
-      'Ingen markører ennå. Åpne en post i Poster-fanen for å legge til en.';
+      'Ingen markørordre ennå. Trykk + for å legge til den første.';
 
   @override
   String get noRolesInExercise => 'Ingen markører for denne øvelsen.';
@@ -1544,6 +1544,12 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get detailEmptyRolePlay => 'Velg en markør';
+
+  @override
+  String get newRole => 'Ny rolle';
+
+  @override
+  String get pickExerciseForRole => 'Velg øvelse';
 
   @override
   String get detailEmptyTeam => 'Velg et lag';

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -186,37 +187,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
     return Column(
       children: [
-        Expanded(
-          child: Stack(
-            children: [
-              Positioned.fill(child: body),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: _buildFilterFab(context, localizations),
-              ),
-            ],
-          ),
-        ),
+        Expanded(child: body),
         if (filterExercise != null)
           _buildFilterBanner(context, localizations, filterExercise),
       ],
-    );
-  }
-
-  Widget _buildFilterFab(BuildContext context, AppLocalizations localizations) {
-    return ValueListenableBuilder<String?>(
-      valueListenable: _controller.filterExerciseUuid,
-      builder: (context, active, _) {
-        final fab = FloatingActionButton(
-          heroTag: null, // no hero animation; prevents tag collision if two instances are live
-          tooltip: localizations.selectExercises,
-          onPressed: () => _controller.openFilterSheet(context),
-          child: const Icon(Icons.filter_list),
-        );
-        if (active == null) return fab;
-        return Badge.count(count: 1, child: fab);
-      },
     );
   }
 
@@ -619,11 +593,116 @@ class RolePlaysController extends ScreenController {
   String title(BuildContext context) =>
       AppLocalizations.of(context)!.rolePlaysTab;
 
+  // FAB: "Ny rolle" — opens an exercise-picker sheet then [RolePlayFormScreen].
+  // The body filter FAB that used to sit here has moved to the AppBar (below).
+  @override
+  Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
+    final hasActiveProgram = ProgramService().activeProgramUuid != null;
+    if (!hasActiveProgram) return null;
+    return FloatingActionButton.extended(
+      heroTag: null,
+      onPressed: () => _openCreateRolePlay(context),
+      icon: const Icon(Icons.add),
+      label: Text(AppLocalizations.of(context)!.newRole),
+    );
+  }
+
+  Future<void> _openCreateRolePlay(BuildContext context) async {
+    final localizations = AppLocalizations.of(context)!;
+    final service = ProgramService();
+    final exercises = service.loadExercises();
+
+    // No exercises yet — nothing to attach a role to.
+    if (exercises.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.noExercisesYet)),
+      );
+      return;
+    }
+
+    // Pick the exercise to create the role in.
+    final exercise = await showRingdrillActionSheet<Exercise>(
+      context: context,
+      builder: (sheetContext) => _buildExercisePickerSheet(
+        sheetContext,
+        localizations,
+        exercises,
+      ),
+    );
+    if (exercise == null || !context.mounted) return;
+
+    // Build a blank draft with the next available index.
+    final existingCount = service
+        .loadRolePlays()
+        .where((r) => r.exerciseUuid == exercise.uuid)
+        .length;
+    final draft = RolePlay(
+      uuid: nanoid(10),
+      index: existingCount,
+      exerciseUuid: exercise.uuid,
+      name: '',
+    );
+
+    final saved = await openFormSurface<RolePlay>(
+      context,
+      builder: (_) => RolePlayFormScreen(rolePlay: draft, exercise: exercise),
+    );
+    if (saved == null || !context.mounted) return;
+    await service.saveRolePlay(localizations, saved);
+  }
+
+  Widget _buildExercisePickerSheet(
+    BuildContext context,
+    AppLocalizations localizations,
+    List<Exercise> exercises,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            localizations.pickExerciseForRole,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        const Divider(height: 1),
+        Flexible(
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: exercises.length,
+            itemBuilder: (context, index) {
+              final ex = exercises[index];
+              return ListTile(
+                title: Text(ex.name),
+                onTap: () => Navigator.pop(context, ex),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
     final localizations = AppLocalizations.of(context)!;
     final hasActiveProgram = ProgramService().activeProgramUuid != null;
     return [
+      // Filter by exercise — moved from the body FAB to the AppBar.
+      ValueListenableBuilder<String?>(
+        valueListenable: filterExerciseUuid,
+        builder: (context, active, _) {
+          final button = IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: localizations.selectExercises,
+            onPressed: hasActiveProgram ? () => openFilterSheet(context) : null,
+          );
+          if (active == null) return button;
+          return Badge.count(count: 1, child: button);
+        },
+      ),
       IconButton(
         icon: const Icon(Icons.recent_actors),
         tooltip: hasActiveProgram

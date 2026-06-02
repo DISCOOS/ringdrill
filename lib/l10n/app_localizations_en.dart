@@ -1347,8 +1347,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStationAssigned => 'No station';
 
   @override
-  String get noRolesInProgram =>
-      'No roles yet. Open a post in the Stations tab to add one.';
+  String get noRolesInProgram => 'No roles yet. Tap + to add the first one.';
 
   @override
   String get noRolesInExercise => 'No roles in this exercise.';
@@ -1548,6 +1547,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailEmptyRolePlay => 'Select a role';
+
+  @override
+  String get newRole => 'New role';
+
+  @override
+  String get pickExerciseForRole => 'Select exercise';
 
   @override
   String get detailEmptyTeam => 'Select a team';

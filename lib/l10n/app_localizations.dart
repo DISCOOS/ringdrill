@@ -2276,10 +2276,10 @@ abstract class AppLocalizations {
   /// **'No station'**
   String get noStationAssigned;
 
-  /// Empty-state shown in the RolePlays tab when the program has no RolePlay records.
+  /// Empty-state shown in the Markører segment when the program has no RolePlay records.
   ///
   /// In en, this message translates to:
-  /// **'No roles yet. Open a post in the Stations tab to add one.'**
+  /// **'No roles yet. Tap + to add the first one.'**
   String get noRolesInProgram;
 
   /// Empty-state shown in the RolePlays tab when the active exercise filter excludes every role.
@@ -2647,6 +2647,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a role'**
   String get detailEmptyRolePlay;
+
+  /// FAB label on the Markører segment that creates a new RolePlay.
+  ///
+  /// In en, this message translates to:
+  /// **'New role'**
+  String get newRole;
+
+  /// Title of the exercise-picker sheet opened before creating a new role from the Markører segment.
+  ///
+  /// In en, this message translates to:
+  /// **'Select exercise'**
+  String get pickExerciseForRole;
 
   /// Empty detail pane text shown on the teams tab.
   ///
