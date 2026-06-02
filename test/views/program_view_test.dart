@@ -163,7 +163,7 @@ void main() {
     await tester.pump();
     expect(find.text('Segment Station').hitTestable(), findsOneWidget);
 
-    _select(controllers, ProgramSegment.roleplays);
+    _select(controllers, ProgramSegment.script);
     await tester.pump();
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
 
@@ -192,7 +192,7 @@ void main() {
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
 
     // Switching away and back keeps the expansion.
-    _select(controllers, ProgramSegment.roleplays);
+    _select(controllers, ProgramSegment.script);
     await tester.pump();
     _select(controllers, ProgramSegment.stations);
     await tester.pumpAndSettle();
@@ -225,7 +225,7 @@ void main() {
     expect(find.byIcon(Icons.filter_list).hitTestable(), findsOneWidget);
     expect(appBarBrief(), findsOneWidget);
 
-    _select(controllers, ProgramSegment.roleplays);
+    _select(controllers, ProgramSegment.script);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.filter_list).hitTestable(), findsOneWidget);
     expect(find.byIcon(Icons.recent_actors).hitTestable(), findsOneWidget);

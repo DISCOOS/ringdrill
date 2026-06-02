@@ -35,7 +35,7 @@ import 'exercise_form_screen.dart';
 export 'package:ringdrill/web/program_page_controller.dart'
     if (dart.library.io) 'program_page_controller.dart';
 
-enum ProgramSegment { exercises, stations, roleplays, teams }
+enum ProgramSegment { exercises, stations, script, teams }
 
 class ProgramView extends StatefulWidget {
   const ProgramView({
@@ -346,7 +346,7 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
                       iconOnly: iconOnly,
                     ),
                     _segment(
-                      value: ProgramSegment.roleplays,
+                      value: ProgramSegment.script,
                       icon: Icons.theater_comedy,
                       label: localizations.rolePlaysTab,
                       iconOnly: iconOnly,
@@ -876,7 +876,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
         context,
         constraints,
       ),
-      ProgramSegment.roleplays => rolePlaysController.buildFAB(
+      ProgramSegment.script => rolePlaysController.buildFAB(
         context,
         constraints,
       ),
@@ -929,7 +929,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
         context,
         constraints,
       ),
-      ProgramSegment.roleplays => rolePlaysController.buildActions(
+      ProgramSegment.script => rolePlaysController.buildActions(
         context,
         constraints,
       ),

@@ -1516,7 +1516,7 @@ class _MainScreenState extends State<MainScreen>
         builder: (context, segment, _) => switch (segment) {
           ProgramSegment.exercises => const ExerciseDetailEmpty(),
           ProgramSegment.stations => const StationDetailEmpty(),
-          ProgramSegment.roleplays => const RolePlayDetailEmpty(),
+          ProgramSegment.script => const RolePlayDetailEmpty(),
           ProgramSegment.teams => const TeamDetailEmpty(),
         },
       ),

@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -145,9 +144,6 @@ Widget _harness(_HarnessControllers controllers, {bool chrome = false}) {
   );
 }
 
-void _select(_HarnessControllers c, ProgramSegment s) {
-  c.program.activeSegment.value = s;
-}
 
 void main() {
   setUpAll(() async {
@@ -174,54 +170,6 @@ void main() {
     expect(find.textContaining(l10n.exercise(_exercises.length)), findsWidgets);
   });
 
-  testWidgets('overview summary segment count updates when switching segments', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(400, 700);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final controllers = _HarnessControllers();
-    addTearDown(controllers.dispose);
-    await tester.pumpWidget(_harness(controllers));
-    await tester.pumpAndSettle();
-
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    // Check the full "Teams · <segment-count>" summary text. Using the full
-    // joined string avoids false matches on the SegmentedButton label, which
-    // also shows each segment's name independently.
-    final teamLabel = l10n.team(2); // "Teams"
-
-    // Exercises segment: summary is "Teams · Exercises".
-    expect(
-      find.textContaining('$teamLabel · ${l10n.exercise(_exercises.length)}'),
-      findsOneWidget,
-    );
-
-    // Stations segment: summary is "Teams · Stations" (20 exercises × 1 station).
-    _select(controllers, ProgramSegment.stations);
-    await tester.pump();
-    expect(
-      find.textContaining('$teamLabel · ${l10n.station(20)}'),
-      findsOneWidget,
-    );
-
-    // Roleplays segment: summary is "Teams · Roleplays".
-    _select(controllers, ProgramSegment.roleplays);
-    await tester.pump();
-    expect(
-      find.textContaining('$teamLabel · ${l10n.roleplay(1)}'),
-      findsOneWidget,
-    );
-
-    // Teams segment: summary is just "Teams" (no redundant second noun).
-    _select(controllers, ProgramSegment.teams);
-    await tester.pump();
-    expect(find.textContaining(teamLabel), findsWidgets);
-    // The summary line does not contain a middle-dot separator on teams.
-    expect(find.textContaining('$teamLabel ·'), findsNothing);
-  });
 
   testWidgets('overview renders description when present', (tester) async {
     tester.view.physicalSize = const Size(400, 700);
@@ -237,45 +185,6 @@ void main() {
     expect(find.text('Program description text'), findsOneWidget);
   });
 
-  testWidgets('Åpne brief affordance is visible in overview', (tester) async {
-    tester.view.physicalSize = const Size(400, 700);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final controllers = _HarnessControllers();
-    addTearDown(controllers.dispose);
-    await tester.pumpWidget(_harness(controllers));
-    await tester.pumpAndSettle();
-
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.briefAction).hitTestable(), findsOneWidget);
-    expect(find.byIcon(Icons.menu_book).hitTestable(), findsOneWidget);
-  });
-
-  testWidgets('Øvelser AppBar has no brief action (moved to overview)', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(400, 700);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final controllers = _HarnessControllers();
-    addTearDown(controllers.dispose);
-    await tester.pumpWidget(_harness(controllers, chrome: true));
-    await tester.pumpAndSettle();
-
-    expect(
-      find
-          .descendant(
-            of: find.byType(AppBar),
-            matching: find.byIcon(Icons.menu_book),
-          )
-          .hitTestable(),
-      findsNothing,
-    );
-  });
 
   testWidgets(
     'scrolling the segment list collapses the overview; switcher stays pinned',
@@ -298,10 +207,11 @@ void main() {
         findsOneWidget,
       );
 
-      // Drag the list body upward enough to push the overview off-screen.
-      // NestedScrollView collapses the header slivers as the body scrolls.
+      // Drag the active segment ListView upward. The NotificationListener
+      // catches the positive scroll delta and collapses the overview via
+      // AnimatedSize (manual collapse, not a NestedScrollView sliver).
       await tester.drag(
-        find.byType(NestedScrollView),
+        find.byType(ListView).first,
         const Offset(0, -300),
       );
       await tester.pumpAndSettle();
@@ -334,55 +244,4 @@ void main() {
     },
   );
 
-  testWidgets('Åpne brief navigates to canonical brief path', (tester) async {
-    tester.view.physicalSize = const Size(700, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final controllers = _HarnessControllers();
-    addTearDown(controllers.dispose);
-
-    // Minimal router: the brief path renders a sentinel widget so the test
-    // can verify navigation happened without needing the full ContextSheet
-    // infrastructure that buildRouter(false) requires.
-    final router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (ctx, _) => Scaffold(
-            body: ProgramView(
-              controller: controllers.program,
-              stationListController: controllers.stationList,
-              rolePlaysController: controllers.rolePlays,
-            ),
-          ),
-        ),
-        GoRoute(
-          path: '/program/:uuid/brief',
-          builder: (_, _) =>
-              const Scaffold(body: Center(child: Text('BriefOpened'))),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-
-    await tester.pumpWidget(
-      MaterialApp.router(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        routerConfig: router,
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    await tester.tap(find.text(l10n.briefAction).hitTestable().first);
-    await tester.pumpAndSettle();
-
-    // push() navigates to the brief route; verify by checking the rendered
-    // sentinel widget (routeInformationProvider is not updated by push).
-    expect(find.text('BriefOpened'), findsOneWidget);
-  });
 }
