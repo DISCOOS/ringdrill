@@ -760,5 +760,86 @@
   "detailEmptyRoster": "Velg en markør for å se detaljer",
   "@detailEmptyRoster": {
     "description": "Tom detaljrute vist i Roster-fanen i bred layout."
+  },
+
+  "editProgram": "Endre plan",
+  "@editProgram": {
+    "description": "AppBar-tittel i ProgramFormScreen ved redigering av aktiv plan."
+  },
+  "programName": "Plannavn",
+  "@programName": {
+    "description": "Feltetikett for Program.name i ProgramFormScreen."
+  },
+  "programDescription": "Undertittel",
+  "@programDescription": {
+    "description": "Feltetikett for Program.description i ProgramFormScreen. Vises under tittelen i briefen."
+  },
+  "programDescriptionHint": "Kort undertittel som vises under plannavnet i briefen",
+  "@programDescriptionHint": {
+    "description": "Plassholdertekst for Program.description-feltet."
+  },
+  "briefSectionProgramIntro": "Generelt om spill og øvingsledelse",
+  "@briefSectionProgramIntro": {
+    "description": "Etikett for valgfri seksjon for Program.briefIntroMd i ProgramFormScreen. Speiler heftet."
+  },
+  "briefSectionProgramComms": "Talegrupper",
+  "@briefSectionProgramComms": {
+    "description": "Etikett for valgfri seksjon for Program.commsMd i ProgramFormScreen."
+  },
+  "briefSectionProgramBeforeRound": "Før hver post",
+  "@briefSectionProgramBeforeRound": {
+    "description": "Etikett for valgfri seksjon for Program.beforeRoundMd i ProgramFormScreen."
+  },
+  "briefSectionExerciseMethod": "Metode",
+  "@briefSectionExerciseMethod": {
+    "description": "Etikett for valgfri seksjon for Exercise.methodMd."
+  },
+  "briefSectionExerciseLearningGoals": "Læringsmål",
+  "@briefSectionExerciseLearningGoals": {
+    "description": "Etikett for valgfri seksjon for Exercise.learningGoalsMd."
+  },
+  "briefSectionExerciseTrainingFocus": "Øvingsmomenter",
+  "@briefSectionExerciseTrainingFocus": {
+    "description": "Etikett for valgfri seksjon for Exercise.trainingFocusMd."
+  },
+  "briefSectionExerciseOrderFormat": "Ordreformat",
+  "@briefSectionExerciseOrderFormat": {
+    "description": "Etikett for valgfri seksjon for Exercise.orderFormatMd."
+  },
+  "briefSectionExerciseExecutionTips": "Tips til gjennomføring",
+  "@briefSectionExerciseExecutionTips": {
+    "description": "Etikett for valgfri seksjon for Exercise.executionTipsMd."
+  },
+  "briefSectionExerciseComms": "Samband",
+  "@briefSectionExerciseComms": {
+    "description": "Etikett for valgfri seksjon for Exercise.commsMd. Overstyrer Program.commsMd."
+  },
+  "briefSectionStationEquipment": "Utstyrsbehov",
+  "@briefSectionStationEquipment": {
+    "description": "Etikett for valgfri seksjon for Station.equipmentMd."
+  },
+  "briefSectionStationSituation": "Situasjon",
+  "@briefSectionStationSituation": {
+    "description": "Etikett for valgfri seksjon for Station.situationMd."
+  },
+  "briefSectionStationMission": "Oppdrag",
+  "@briefSectionStationMission": {
+    "description": "Etikett for valgfri seksjon for Station.missionMd."
+  },
+  "briefSectionStationLogistics": "Administrasjon og forsyninger",
+  "@briefSectionStationLogistics": {
+    "description": "Etikett for valgfri seksjon for Station.logisticsMd."
+  },
+  "briefSectionStationCriticalQuestions": "Kritiske spørsmål",
+  "@briefSectionStationCriticalQuestions": {
+    "description": "Etikett for valgfri seksjon for Station.criticalQuestionsMd."
+  },
+  "briefSectionStationLeaderAnswers": "Forslag til svar",
+  "@briefSectionStationLeaderAnswers": {
+    "description": "Etikett for valgfri seksjon for Station.leaderAnswersMd."
+  },
+  "briefSectionStationDirectorNotes": "Notater",
+  "@briefSectionStationDirectorNotes": {
+    "description": "Etikett for valgfri seksjon for Station.directorNotesMd. Skjules fra deltakere."
   }
 }

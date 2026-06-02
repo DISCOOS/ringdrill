@@ -1593,4 +1593,65 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailEmptyRoster => 'Select an actor to see details';
+
+  @override
+  String get editProgram => 'Edit plan';
+
+  @override
+  String get programName => 'Plan name';
+
+  @override
+  String get programDescription => 'Subtitle';
+
+  @override
+  String get programDescriptionHint =>
+      'Short subtitle shown under the plan name in the brief';
+
+  @override
+  String get briefSectionProgramIntro => 'Intro';
+
+  @override
+  String get briefSectionProgramComms => 'Comms';
+
+  @override
+  String get briefSectionProgramBeforeRound => 'Before each station';
+
+  @override
+  String get briefSectionExerciseMethod => 'Method';
+
+  @override
+  String get briefSectionExerciseLearningGoals => 'Learning goals';
+
+  @override
+  String get briefSectionExerciseTrainingFocus => 'Training focus';
+
+  @override
+  String get briefSectionExerciseOrderFormat => 'Order format';
+
+  @override
+  String get briefSectionExerciseExecutionTips => 'Execution tips';
+
+  @override
+  String get briefSectionExerciseComms => 'Comms';
+
+  @override
+  String get briefSectionStationEquipment => 'Equipment';
+
+  @override
+  String get briefSectionStationSituation => 'Situation';
+
+  @override
+  String get briefSectionStationMission => 'Mission';
+
+  @override
+  String get briefSectionStationLogistics => 'Administration and supplies';
+
+  @override
+  String get briefSectionStationCriticalQuestions => 'Critical questions';
+
+  @override
+  String get briefSectionStationLeaderAnswers => 'Suggested answers';
+
+  @override
+  String get briefSectionStationDirectorNotes => 'Notes';
 }

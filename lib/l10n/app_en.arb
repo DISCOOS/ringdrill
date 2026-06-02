@@ -1566,5 +1566,86 @@
   "detailEmptyRoster": "Select an actor to see details",
   "@detailEmptyRoster": {
     "description": "Empty detail pane text shown on the Roster tab in the wide layout."
+  },
+
+  "editProgram": "Edit plan",
+  "@editProgram": {
+    "description": "AppBar title for ProgramFormScreen when editing the active plan."
+  },
+  "programName": "Plan name",
+  "@programName": {
+    "description": "Field label for Program.name in ProgramFormScreen."
+  },
+  "programDescription": "Subtitle",
+  "@programDescription": {
+    "description": "Field label for Program.description in ProgramFormScreen. Renders below the title in the brief."
+  },
+  "programDescriptionHint": "Short subtitle shown under the plan name in the brief",
+  "@programDescriptionHint": {
+    "description": "Hint text for the Program.description field."
+  },
+  "briefSectionProgramIntro": "Intro",
+  "@briefSectionProgramIntro": {
+    "description": "Optional section label for Program.briefIntroMd in ProgramFormScreen. Booklet label: \"Generelt om spill og øvingsledelse\"."
+  },
+  "briefSectionProgramComms": "Comms",
+  "@briefSectionProgramComms": {
+    "description": "Optional section label for Program.commsMd in ProgramFormScreen. Booklet label: \"Talegrupper\"."
+  },
+  "briefSectionProgramBeforeRound": "Before each station",
+  "@briefSectionProgramBeforeRound": {
+    "description": "Optional section label for Program.beforeRoundMd in ProgramFormScreen. Booklet label: \"Før hver post\"."
+  },
+  "briefSectionExerciseMethod": "Method",
+  "@briefSectionExerciseMethod": {
+    "description": "Optional section label for Exercise.methodMd. Booklet label: \"Metode\"."
+  },
+  "briefSectionExerciseLearningGoals": "Learning goals",
+  "@briefSectionExerciseLearningGoals": {
+    "description": "Optional section label for Exercise.learningGoalsMd. Booklet label: \"Læringsmål\"."
+  },
+  "briefSectionExerciseTrainingFocus": "Training focus",
+  "@briefSectionExerciseTrainingFocus": {
+    "description": "Optional section label for Exercise.trainingFocusMd. Booklet label: \"Øvingsmomenter\"."
+  },
+  "briefSectionExerciseOrderFormat": "Order format",
+  "@briefSectionExerciseOrderFormat": {
+    "description": "Optional section label for Exercise.orderFormatMd. Booklet label: \"Ordreformat\"."
+  },
+  "briefSectionExerciseExecutionTips": "Execution tips",
+  "@briefSectionExerciseExecutionTips": {
+    "description": "Optional section label for Exercise.executionTipsMd. Booklet label: \"Tips til gjennomføring\"."
+  },
+  "briefSectionExerciseComms": "Comms",
+  "@briefSectionExerciseComms": {
+    "description": "Optional section label for Exercise.commsMd. Booklet label: \"Samband\". Overrides Program.commsMd."
+  },
+  "briefSectionStationEquipment": "Equipment",
+  "@briefSectionStationEquipment": {
+    "description": "Optional section label for Station.equipmentMd. Booklet label: \"Utstyrsbehov\"."
+  },
+  "briefSectionStationSituation": "Situation",
+  "@briefSectionStationSituation": {
+    "description": "Optional section label for Station.situationMd. Booklet label: \"Situasjon\"."
+  },
+  "briefSectionStationMission": "Mission",
+  "@briefSectionStationMission": {
+    "description": "Optional section label for Station.missionMd. Booklet label: \"Oppdrag\"."
+  },
+  "briefSectionStationLogistics": "Administration and supplies",
+  "@briefSectionStationLogistics": {
+    "description": "Optional section label for Station.logisticsMd. Booklet label: \"Administrasjon og forsyninger\"."
+  },
+  "briefSectionStationCriticalQuestions": "Critical questions",
+  "@briefSectionStationCriticalQuestions": {
+    "description": "Optional section label for Station.criticalQuestionsMd. Booklet label: \"Kritiske spørsmål\"."
+  },
+  "briefSectionStationLeaderAnswers": "Suggested answers",
+  "@briefSectionStationLeaderAnswers": {
+    "description": "Optional section label for Station.leaderAnswersMd. Booklet label: \"Forslag til svar\"."
+  },
+  "briefSectionStationDirectorNotes": "Notes",
+  "@briefSectionStationDirectorNotes": {
+    "description": "Optional section label for Station.directorNotesMd. Booklet label: \"Notater\". Hidden from participant audiences."
   }
 }

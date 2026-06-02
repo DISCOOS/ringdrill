@@ -2719,6 +2719,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select an actor to see details'**
   String get detailEmptyRoster;
+
+  /// AppBar title for ProgramFormScreen when editing the active plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit plan'**
+  String get editProgram;
+
+  /// Field label for Program.name in ProgramFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan name'**
+  String get programName;
+
+  /// Field label for Program.description in ProgramFormScreen. Renders below the title in the brief.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitle'**
+  String get programDescription;
+
+  /// Hint text for the Program.description field.
+  ///
+  /// In en, this message translates to:
+  /// **'Short subtitle shown under the plan name in the brief'**
+  String get programDescriptionHint;
+
+  /// Optional section label for Program.briefIntroMd in ProgramFormScreen. Booklet label: "Generelt om spill og øvingsledelse".
+  ///
+  /// In en, this message translates to:
+  /// **'Intro'**
+  String get briefSectionProgramIntro;
+
+  /// Optional section label for Program.commsMd in ProgramFormScreen. Booklet label: "Talegrupper".
+  ///
+  /// In en, this message translates to:
+  /// **'Comms'**
+  String get briefSectionProgramComms;
+
+  /// Optional section label for Program.beforeRoundMd in ProgramFormScreen. Booklet label: "Før hver post".
+  ///
+  /// In en, this message translates to:
+  /// **'Before each station'**
+  String get briefSectionProgramBeforeRound;
+
+  /// Optional section label for Exercise.methodMd. Booklet label: "Metode".
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get briefSectionExerciseMethod;
+
+  /// Optional section label for Exercise.learningGoalsMd. Booklet label: "Læringsmål".
+  ///
+  /// In en, this message translates to:
+  /// **'Learning goals'**
+  String get briefSectionExerciseLearningGoals;
+
+  /// Optional section label for Exercise.trainingFocusMd. Booklet label: "Øvingsmomenter".
+  ///
+  /// In en, this message translates to:
+  /// **'Training focus'**
+  String get briefSectionExerciseTrainingFocus;
+
+  /// Optional section label for Exercise.orderFormatMd. Booklet label: "Ordreformat".
+  ///
+  /// In en, this message translates to:
+  /// **'Order format'**
+  String get briefSectionExerciseOrderFormat;
+
+  /// Optional section label for Exercise.executionTipsMd. Booklet label: "Tips til gjennomføring".
+  ///
+  /// In en, this message translates to:
+  /// **'Execution tips'**
+  String get briefSectionExerciseExecutionTips;
+
+  /// Optional section label for Exercise.commsMd. Booklet label: "Samband". Overrides Program.commsMd.
+  ///
+  /// In en, this message translates to:
+  /// **'Comms'**
+  String get briefSectionExerciseComms;
+
+  /// Optional section label for Station.equipmentMd. Booklet label: "Utstyrsbehov".
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get briefSectionStationEquipment;
+
+  /// Optional section label for Station.situationMd. Booklet label: "Situasjon".
+  ///
+  /// In en, this message translates to:
+  /// **'Situation'**
+  String get briefSectionStationSituation;
+
+  /// Optional section label for Station.missionMd. Booklet label: "Oppdrag".
+  ///
+  /// In en, this message translates to:
+  /// **'Mission'**
+  String get briefSectionStationMission;
+
+  /// Optional section label for Station.logisticsMd. Booklet label: "Administrasjon og forsyninger".
+  ///
+  /// In en, this message translates to:
+  /// **'Administration and supplies'**
+  String get briefSectionStationLogistics;
+
+  /// Optional section label for Station.criticalQuestionsMd. Booklet label: "Kritiske spørsmål".
+  ///
+  /// In en, this message translates to:
+  /// **'Critical questions'**
+  String get briefSectionStationCriticalQuestions;
+
+  /// Optional section label for Station.leaderAnswersMd. Booklet label: "Forslag til svar".
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested answers'**
+  String get briefSectionStationLeaderAnswers;
+
+  /// Optional section label for Station.directorNotesMd. Booklet label: "Notater". Hidden from participant audiences.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get briefSectionStationDirectorNotes;
 }
 
 class _AppLocalizationsDelegate

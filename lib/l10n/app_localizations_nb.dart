@@ -1590,4 +1590,65 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get detailEmptyRoster => 'Velg en markør for å se detaljer';
+
+  @override
+  String get editProgram => 'Endre plan';
+
+  @override
+  String get programName => 'Plannavn';
+
+  @override
+  String get programDescription => 'Undertittel';
+
+  @override
+  String get programDescriptionHint =>
+      'Kort undertittel som vises under plannavnet i briefen';
+
+  @override
+  String get briefSectionProgramIntro => 'Generelt om spill og øvingsledelse';
+
+  @override
+  String get briefSectionProgramComms => 'Talegrupper';
+
+  @override
+  String get briefSectionProgramBeforeRound => 'Før hver post';
+
+  @override
+  String get briefSectionExerciseMethod => 'Metode';
+
+  @override
+  String get briefSectionExerciseLearningGoals => 'Læringsmål';
+
+  @override
+  String get briefSectionExerciseTrainingFocus => 'Øvingsmomenter';
+
+  @override
+  String get briefSectionExerciseOrderFormat => 'Ordreformat';
+
+  @override
+  String get briefSectionExerciseExecutionTips => 'Tips til gjennomføring';
+
+  @override
+  String get briefSectionExerciseComms => 'Samband';
+
+  @override
+  String get briefSectionStationEquipment => 'Utstyrsbehov';
+
+  @override
+  String get briefSectionStationSituation => 'Situasjon';
+
+  @override
+  String get briefSectionStationMission => 'Oppdrag';
+
+  @override
+  String get briefSectionStationLogistics => 'Administrasjon og forsyninger';
+
+  @override
+  String get briefSectionStationCriticalQuestions => 'Kritiske spørsmål';
+
+  @override
+  String get briefSectionStationLeaderAnswers => 'Forslag til svar';
+
+  @override
+  String get briefSectionStationDirectorNotes => 'Notater';
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -14,6 +15,7 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
@@ -249,6 +251,7 @@ class _ProgramViewState extends State<ProgramView> {
                     onToggleExpanded: () => setState(
                       () => _overviewExpanded = !_overviewExpanded,
                     ),
+                    onEdit: () => _openProgramForm(context, localizations),
                   )
                 : const SizedBox(width: double.infinity),
           ),
@@ -278,6 +281,26 @@ class _ProgramViewState extends State<ProgramView> {
 
   void _initExercises() {
     _exercises = _programService.loadExercises();
+  }
+
+  Future<void> _openProgramForm(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) async {
+    final program = _programService.activeProgram;
+    if (program == null) return;
+    final updated = await openFormSurface<Program>(
+      context,
+      builder: (_) => ProgramFormScreen(program: program),
+    );
+    if (updated != null && context.mounted) {
+      await _programService.replaceProgram(updated);
+      // The overview reads from ProgramService.activeProgram on each build,
+      // but the description/briefIntro shown comes from that snapshot —
+      // setState forces a rebuild so the new prose appears immediately
+      // instead of waiting for the next external event.
+      setState(() {});
+    }
   }
 
   Future<void> _openExerciseForm(
@@ -402,12 +425,18 @@ class _ProgramOverview extends StatelessWidget {
   const _ProgramOverview({
     required this.expanded,
     required this.onToggleExpanded,
+    required this.onEdit,
   });
 
   /// Whether the prose is shown in full. Owned by [_ProgramViewState] so it
   /// survives the overview being hidden and shown by the scroll collapse.
   final bool expanded;
   final VoidCallback onToggleExpanded;
+
+  /// Opens the [ProgramFormScreen] so the active plan's description and brief
+  /// markdown sections can be edited from the overview. The AppBar title still
+  /// owns the quick-rename action; this is the deeper edit entry point.
+  final VoidCallback onEdit;
 
   static const int _collapsedLines = 3;
 
@@ -419,74 +448,97 @@ class _ProgramOverview extends StatelessWidget {
 
     final description = program.description.trim();
     final briefIntro = _firstParagraphText(program.briefIntroMd);
-    if (description.isEmpty && briefIntro == null) {
-      return const SizedBox.shrink();
+    final hasContent = description.isNotEmpty || briefIntro != null;
+    if (!hasContent) {
+      // Locally-created plans start with no description and no brief content.
+      // Surface the form anyway so the user has a discoverable entry point,
+      // rather than returning to the silent SizedBox.shrink the overview used
+      // to render in this state.
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            icon: const Icon(Icons.edit_outlined, size: 16),
+            label: Text(l10n.editProgram),
+            onPressed: onEdit,
+          ),
+        ),
+      );
     }
 
     final textTheme = Theme.of(context).textTheme;
     final maxLines = expanded ? null : _collapsedLines;
     final overflow = expanded ? TextOverflow.clip : TextOverflow.ellipsis;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final maxWidth = constraints.maxWidth;
-          final truncatable =
-              (description.isNotEmpty &&
-                  _exceedsLines(
-                    context,
-                    description,
-                    textTheme.bodyMedium,
-                    maxWidth,
-                  )) ||
-              (briefIntro != null &&
-                  _exceedsLines(
-                    context,
-                    briefIntro,
-                    textTheme.bodySmall,
-                    maxWidth,
-                  ));
+    return InkWell(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth;
+            final truncatable =
+                (description.isNotEmpty &&
+                    _exceedsLines(
+                      context,
+                      description,
+                      textTheme.bodyMedium,
+                      maxWidth,
+                    )) ||
+                (briefIntro != null &&
+                    _exceedsLines(
+                      context,
+                      briefIntro,
+                      textTheme.bodySmall,
+                      maxWidth,
+                    ));
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (description.isNotEmpty)
-                Text(
-                  description,
-                  style: textTheme.bodyMedium,
-                  maxLines: maxLines,
-                  overflow: overflow,
-                ),
-              if (briefIntro != null) ...[
-                if (description.isNotEmpty) const SizedBox(height: 6),
-                Text(
-                  briefIntro,
-                  style: textTheme.bodySmall,
-                  maxLines: maxLines,
-                  overflow: overflow,
-                ),
-              ],
-              // TODO(DESIGN-004): render program.commsMd preview here when
-              // program-level brief fields land. Brief is opened from the
-              // AppBar action, not here.
-              if (truncatable)
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      minimumSize: const Size(0, 32),
-                    ),
-                    onPressed: onToggleExpanded,
-                    child: Text(expanded ? l10n.showLess : l10n.showMore),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (description.isNotEmpty)
+                  Text(
+                    description,
+                    style: textTheme.bodyMedium,
+                    maxLines: maxLines,
+                    overflow: overflow,
                   ),
-                ),
-            ],
-          );
-        },
+                if (briefIntro != null) ...[
+                  if (description.isNotEmpty) const SizedBox(height: 6),
+                  Text(
+                    briefIntro,
+                    style: textTheme.bodySmall,
+                    maxLines: maxLines,
+                    overflow: overflow,
+                  ),
+                ],
+                // TODO(DESIGN-004): render program.commsMd preview here when
+                // program-level brief fields land. Brief is opened from the
+                // AppBar action, not here.
+                if (truncatable)
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        minimumSize: const Size(0, 32),
+                      ),
+                      onPressed: onToggleExpanded,
+                      child: Text(expanded ? l10n.showLess : l10n.showMore),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
