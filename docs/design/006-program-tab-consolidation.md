@@ -94,7 +94,7 @@ The Program tab holds the four structural sets of the plan, viewable one at a ti
 │  │  Les mer ▾                               │  │
 │  └──────────────────────────────────────────┘  │
 │  ┌─ pinned ─────────────────────────────────┐  │
-│  │  [ Øvelser | Poster | Markører | Team ]  │  │  ← segmented switcher
+│  │  [ Øvelser | Poster |  Spill   | Team ]  │  │  ← segmented switcher
 │  └──────────────────────────────────────────┘  │
 │                                                 │
 │   <segment body: list for the active lens>      │
@@ -135,12 +135,14 @@ The four segments are three lenses on the exercise tree plus the team set:
 |----------------|---------------------------------------------------|------------------------------|
 | **Øvelser**    | Grouped: the exercise→station tree, expandable    | `ProgramView` (current)      |
 | **Poster**     | Flat list of every station                        | `StationListView`            |
-| **Markører**   | Flat list of every role (roles only, not cast)    | `RolePlaysView` (role part)  |
+| **Spill**      | Publishable scenario elements (roles; see note)   | `RolePlaysView` (role part)  |
 | **Team**       | Flat team list                                    | `TeamsView`                  |
 
-Øvelser, Poster and Markører are three flatten-levels of the same `exercise → station → roleplay` tree, with increasing granularity. Team is a parallel set rather than a deeper level, an acceptable asymmetry.
+Øvelser, Poster and Spill are three flatten-levels of the same `exercise → station → roleplay` tree, with increasing granularity. Team is a parallel set rather than a deeper level, an acceptable asymmetry.
 
-**Markører shows roles only.** `RoleExpansionTile` ([DESIGN-003](./roleplays-tab.md)) already splits the Role section from the Cast section inside each tile. This design folds the Role section into the Markører segment and leaves cast binding to the Roster tab. The seam the tile already drew internally becomes the seam between the two tabs.
+**Script layer (Spill).** The Spill segment is the publishable scenario layer of the plan. Its current content is **Markører** (`RolePlay`) — a flat list of roles (no cast, no actor PII). A future sibling is **Tause vitner** (`SilentWitness`): a scenario element with description/story/purpose/info and position, but no actor assignment; details are out of scope for this design. Consider a shared scenario-element base when `SilentWitness` lands. The segment is named Spill (en "Script") rather than Markører to make the second content type a natural addition, not an exception.
+
+**Markører shows roles only.** `RoleExpansionTile` ([DESIGN-003](./roleplays-tab.md)) already splits the Role section from the Cast section inside each tile. This design folds the Role section into the Spill segment and leaves cast binding to the Roster tab. The seam the tile already drew internally becomes the seam between the two tabs.
 
 #### Open UX question: four labeled segments in a narrow master pane
 
@@ -160,10 +162,10 @@ This is where the crowding is actually solved. With one tab, the FAB follows the
 |-----------|---------------|----------------------------------|
 | Øvelser   | "Ny øvelse"   | —                                |
 | Poster    | —             | Exercise filter                  |
-| Markører  | "Ny rolle"    | Exercise filter, cast roster     |
+| Spill     | "Ny rolle"    | Exercise filter, cast roster     |
 | Team      | —             | —                                |
 
-The **brief** (`Icons.menu_book`) is a constant action on **every** segment, pinned rightmost next to the status badge, because it renders the whole plan and is segment-independent. The exercise **filter** is an AppBar action on **both** Poster and Markører (the same badge + banner + picker pattern from DESIGN-002), keeping the FAB slot free for "create" actions. Earlier the Poster filter was a body FAB and only Markører's was an action; they were unified to an action so the design matches and the FAB no longer covers the filter banner.
+The **brief** (`Icons.menu_book`) is a constant action on **every** segment, pinned rightmost next to the status badge, because it renders the whole plan and is segment-independent. The exercise **filter** is an AppBar action on **both** Poster and Spill (the same badge + banner + picker pattern from DESIGN-002), keeping the FAB slot free for "create" actions. Earlier the Poster filter was a body FAB and only the Markører/Spill segment's was an action; they were unified to an action so the design matches and the FAB no longer covers the filter banner.
 
 ### Sliver structure
 
@@ -208,13 +210,13 @@ Roster holds real people, so the whole tab is the stripped-on-publish PII layer.
 ## Terminology
 
 * **Roster** (`nb` "Bemanning") is the new tab and the people layer. "Roster" is not the literal translation of "bemanning" (that is "staffing" or "manning"), but it reads better as a label and is continuous with the "cast roster" already used in [DESIGN-003](./roleplays-tab.md) for the list of `Actor` records, which this tab promotes to a destination. The earlier "ikke Bemanning" note in [[feedback_roleplay_actor_terminology]] rejected "Bemanning" only as a name for the markør role list, which still holds.
-* **Markører** stays the name of the role list and the Program-tab segment. To keep it distinct from the **Roster** tab, this doc avoids the bare word "roster" for the markør list and calls it the role list or the Markører segment.
+* **Spill** (`en` "Script") is the third Program-tab segment — the publishable scenario layer. **Markører** stays the name of the role list *inside* the Spill segment. The segment is no longer called Markører to leave room for `SilentWitness` as a future second scenario element. This doc uses "Spill segment" for the segment itself and "the Markører role list" or "Markørrolle" for the content entity.
 * Code and English prose keep `RolePlay` / `Actor` / `Station` / `Team`. No `Person` or `RolePlayer` in the model layer.
 
 ## Relationship to other designs
 
 * **Supersedes [DESIGN-002](./stations-tab.md) (Stations tab).** The flat station list, the exercise filter (badge + banner + picker), the mutex expansion and the `StationExpansionTile` / `StationMiniMap` shared widgets all survive, relocated into the Poster segment. The standalone `/stations` root tab and its label are retired.
-* **Supersedes [DESIGN-003](./roleplays-tab.md) (RolePlays tab).** The role list moves into the Markører segment, the cast side moves to Roster.
+* **Supersedes [DESIGN-003](./roleplays-tab.md) (RolePlays tab).** The role list moves into the Spill segment (as the Markør/Markørrolle roster), the cast side moves to Roster.
 * **Extends [DESIGN-004](./brief-template.md).** Adds the master-pane overview as a new read-only surface previewing `program.briefIntroMd`. No change to DESIGN-004's fields, renderer or storage, and the brief is still reached from its AppBar action.
 * **Works within [DESIGN-005](./wide-screen-layout.md) / [ADR-0030](../adrs/0030-wide-screen-master-detail-layout.md).** Master pane only.
 * **Precedes [ADR-0028](../adrs/0028-feature-first-views-layout.md).** The `lib/views/` feature-first refactor is deferred until DESIGN-006 is complete, because this design moves the feature boundaries the refactor would group by (Stations and RolePlays become segments, Roster is new). DESIGN-006 is built on the current flat structure, and ADR-0028 then runs once against the settled shape, with its grouping plan reviewed against this outcome first.
@@ -232,7 +234,7 @@ DESIGN-002 and DESIGN-003 are Superseded by this doc as of acceptance (2026-05-3
 
 1. **Map's place in three tabs.** Map stays a root tab. Confirm it should not also become a Program segment. The current thinking is no, because Map is a lens with its own internal split (DESIGN-005) and pulls markers from every set at once, not one structural set.
 2. **Tab order.** `[Program, Map, Roster]` versus `[Program, Roster, Map]`. Map sat at index 1 historically, so keeping it there is the low-surprise choice.
-3. **What "Ny rolle" creates from the Markører segment** given roles are station-anchored. Likely the same flow as today, just relocated.
+3. **What "Ny rolle" creates from the Spill segment** given roles are station-anchored. Likely the same flow as today, just relocated.
 
 ## Implementation notes
 
@@ -256,3 +258,4 @@ Sequenced so each stage is shippable and reviewable on its own.
 * 2026-06-02 — Stage 3 review revisions. `briefIntroMd` already exists in code, so the overview previews it rather than shipping description-only. The overview collapse is a manual hide-on-scroll with the switcher as an always-visible row and the body kept as an `IndexedStack`, replacing a pinned `SliverPersistentHeader` that forced an enlarged switcher, a mismatched opaque background and an active-only body that lost per-segment state. The brief returns to its AppBar action on the Øvelser lens after the overview "Åpne brief" affordance read poorly.
 * 2026-06-02 — Action/FAB rationalization. The brief becomes a constant AppBar action on every segment (it renders the whole plan, so scoping it to one lens was illogical). The Poster filter moves from a body FAB to an AppBar action, matching Markører, so both filter the same way and the FAB slot is reserved for "create"; this also fixes the filter FAB covering the filter banner. The Markører "Ny rolle" create FAB renders inside the view body above the filter banner (not as a Scaffold FAB), so the banner pushes it up instead of being covered.
 * 2026-06-02 — Overview content trimmed. Dropped the "team count · segment count" summary line (it rendered as bare nouns and added little) and added a "Les mer" / "Vis mindre" toggle that expands and collapses the description/brief-intro prose, shown only when the text is long enough to truncate. New `showMore` / `showLess` localization keys.
+* 2026-06-02 — Third segment renamed from **Markører** to **Spill** (`en` "Script", `ProgramSegment.script`). The segment is the publishable scenario layer of the plan; Markører (`RolePlay`) is its current content. `SilentWitness` ("Tause vitner") is reserved as a future sibling scenario element. `rolePlaysTab` l10n key and all `RolePlay*` code remain unchanged — only the segment label and enum identifier were renamed.
