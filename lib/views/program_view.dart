@@ -32,8 +32,12 @@ import 'exercise_form_screen.dart';
 export 'package:ringdrill/web/program_page_controller.dart'
     if (dart.library.io) 'program_page_controller.dart';
 
+enum ProgramSegment { exercises, stations, roleplays, teams }
+
 class ProgramView extends StatefulWidget {
-  const ProgramView({super.key});
+  const ProgramView({super.key, required this.controller});
+
+  final ProgramPageControllerBase controller;
 
   @override
   State<ProgramView> createState() => _ProgramViewState();
@@ -171,7 +175,7 @@ class _ProgramViewState extends State<ProgramView> {
       );
     }
 
-    final programs = _exercises.isEmpty
+    final exercises = _exercises.isEmpty
         ? Center(child: Text(localizations.noExercisesYet))
         : Padding(
             // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
@@ -185,7 +189,30 @@ class _ProgramViewState extends State<ProgramView> {
                     builder: (context, target, _) => buildList(target),
                   ),
           );
-    return kIsWeb ? programs : SharedFileWidget(child: programs);
+    final exerciseBody = kIsWeb
+        ? exercises
+        : SharedFileWidget(child: exercises);
+    return Column(
+      children: [
+        _ProgramSegmentSwitcher(controller: widget.controller),
+        Expanded(
+          child: ValueListenableBuilder<ProgramSegment>(
+            valueListenable: widget.controller.activeSegment,
+            builder: (context, activeSegment, _) {
+              return IndexedStack(
+                index: activeSegment.index,
+                children: [
+                  exerciseBody,
+                  const SizedBox.shrink(),
+                  const SizedBox.shrink(),
+                  const SizedBox.shrink(),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   void _initExercises() {
@@ -217,6 +244,79 @@ class _ProgramViewState extends State<ProgramView> {
   ExerciseEvent? _filterLive(ExerciseEvent? event) {
     if (event == null || event.isDone) return null;
     return event;
+  }
+}
+
+class _ProgramSegmentSwitcher extends StatelessWidget {
+  const _ProgramSegmentSwitcher({required this.controller});
+
+  final ProgramPageControllerBase controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final iconOnly = constraints.maxWidth < 340;
+        return ValueListenableBuilder<ProgramSegment>(
+          valueListenable: controller.activeSegment,
+          builder: (context, activeSegment, _) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<ProgramSegment>(
+                  expandedInsets: EdgeInsets.zero,
+                  segments: [
+                    _segment(
+                      value: ProgramSegment.exercises,
+                      icon: Icons.update,
+                      label: localizations.exercise(2),
+                      iconOnly: iconOnly,
+                    ),
+                    _segment(
+                      value: ProgramSegment.stations,
+                      icon: Icons.place,
+                      label: localizations.stationsTab,
+                      iconOnly: iconOnly,
+                    ),
+                    _segment(
+                      value: ProgramSegment.roleplays,
+                      icon: Icons.theater_comedy,
+                      label: localizations.rolePlaysTab,
+                      iconOnly: iconOnly,
+                    ),
+                    _segment(
+                      value: ProgramSegment.teams,
+                      icon: Icons.group,
+                      label: localizations.team(2),
+                      iconOnly: iconOnly,
+                    ),
+                  ],
+                  selected: {activeSegment},
+                  onSelectionChanged: (selected) {
+                    controller.activeSegment.value = selected.single;
+                  },
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  ButtonSegment<ProgramSegment> _segment({
+    required ProgramSegment value,
+    required IconData icon,
+    required String label,
+    required bool iconOnly,
+  }) {
+    return ButtonSegment<ProgramSegment>(
+      value: value,
+      icon: Tooltip(message: label, child: Icon(icon)),
+      label: iconOnly ? null : Text(label),
+    );
   }
 }
 
@@ -546,6 +646,12 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @protected
   final programService = ProgramService();
+  final ValueNotifier<ProgramSegment> activeSegment =
+      ValueNotifier<ProgramSegment>(ProgramSegment.exercises);
+
+  void dispose() {
+    activeSegment.dispose();
+  }
 
   @override
   String title(BuildContext context) =>
@@ -637,144 +743,140 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // tell cancel from confirm. The list is pre-populated when
     // [preselectAll] is true, so reading it directly would treat a cancel
     // as "everything selected" and trigger an unintended export/import.
-    final List<String>? popped =
-        await showResponsiveSheetOrDialog<List<String>>(
-          context,
-          maximizeHeight: true,
-          builder: (context) {
-            return StatefulBuilder(
-              builder: (context, setState) {
-                final headerLabelStyle = Theme.of(context).textTheme.titleSmall
-                    ?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    );
-                return Padding(
-                  padding: EdgeInsets.only(
-                    left: 20.0,
-                    right: 20.0,
-                    top: 8.0,
-                    bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
-                  ),
-                  child: SafeArea(
-                    child: Column(
-                      children: [
-                        if (showSelectAllControls) ...[
-                          const SizedBox(height: 8.0),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  localizations.selectedOfTotal(
-                                    selected.length,
-                                    exercises.length,
-                                  ),
-                                  style: headerLabelStyle,
-                                ),
+    final List<String>?
+    popped = await showResponsiveSheetOrDialog<List<String>>(
+      context,
+      maximizeHeight: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final headerLabelStyle = Theme.of(context).textTheme.titleSmall
+                ?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                );
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20.0,
+                right: 20.0,
+                top: 8.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
+              ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    if (showSelectAllControls) ...[
+                      const SizedBox(height: 8.0),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              localizations.selectedOfTotal(
+                                selected.length,
+                                exercises.length,
                               ),
-                              TextButton(
-                                onPressed: selected.length == exercises.length
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          selected
-                                            ..clear()
-                                            ..addAll(allUuids);
-                                        });
-                                      },
-                                child: Text(localizations.selectAll),
-                              ),
-                              TextButton(
-                                onPressed: selected.isEmpty
-                                    ? null
-                                    : () {
-                                        setState(() => selected.clear());
-                                      },
-                                child: Text(localizations.selectNone),
-                              ),
-                            ],
+                              style: headerLabelStyle,
+                            ),
                           ),
-                          const Divider(height: 16.0),
-                        ] else
-                          const SizedBox(height: 16.0),
-                        Expanded(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: exercises.length,
-                            itemBuilder: (context, index) {
-                              final exercise = exercises[index];
-                              final uuid = exercise.uuid;
-                              final markers = exercise.getLocations(false);
-                              return ExerciseCard(
-                                exercise: exercise,
-                                localizations: localizations,
-                                markers: markers,
-                                allowStationActions: false,
-                                expanded: expandedExerciseUuid == uuid,
-                                onToggle: () {
-                                  setState(() {
-                                    expandedExerciseUuid =
-                                        expandedExerciseUuid == uuid
-                                        ? null
-                                        : uuid;
-                                  });
-                                },
-                                trailing: Switch(
-                                  value: selected.contains(uuid),
-                                  onChanged: (bool? value) {
+                          TextButton(
+                            onPressed: selected.length == exercises.length
+                                ? null
+                                : () {
                                     setState(() {
-                                      if (value == true) {
-                                        selected.add(uuid);
-                                      } else {
-                                        selected.remove(uuid);
-                                      }
+                                      selected
+                                        ..clear()
+                                        ..addAll(allUuids);
                                     });
                                   },
-                                ),
-                              );
+                            child: Text(localizations.selectAll),
+                          ),
+                          TextButton(
+                            onPressed: selected.isEmpty
+                                ? null
+                                : () {
+                                    setState(() => selected.clear());
+                                  },
+                            child: Text(localizations.selectNone),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 16.0),
+                    ] else
+                      const SizedBox(height: 16.0),
+                    Expanded(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: exercises.length,
+                        itemBuilder: (context, index) {
+                          final exercise = exercises[index];
+                          final uuid = exercise.uuid;
+                          final markers = exercise.getLocations(false);
+                          return ExerciseCard(
+                            exercise: exercise,
+                            localizations: localizations,
+                            markers: markers,
+                            allowStationActions: false,
+                            expanded: expandedExerciseUuid == uuid,
+                            onToggle: () {
+                              setState(() {
+                                expandedExerciseUuid =
+                                    expandedExerciseUuid == uuid ? null : uuid;
+                              });
                             },
+                            trailing: Switch(
+                              value: selected.contains(uuid),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    selected.add(uuid);
+                                  } else {
+                                    selected.remove(uuid);
+                                  }
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: headerLabelStyle,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
-                        const SizedBox(height: 20.0),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                title,
-                                style: headerLabelStyle,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                            const SizedBox(width: 12.0),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context, null);
-                              },
-                              child: Text(localizations.cancel),
-                            ),
-                            const SizedBox(width: 8.0),
-                            FilledButton(
-                              onPressed: selected.isEmpty
-                                  ? null
-                                  : () {
-                                      Navigator.pop(context, selected);
-                                    },
-                              child: Text(
-                                confirmLabel ?? localizations.confirm,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 12.0),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context, null);
+                          },
+                          child: Text(localizations.cancel),
                         ),
-                        const SizedBox(height: 8.0),
+                        const SizedBox(width: 8.0),
+                        FilledButton(
+                          onPressed: selected.isEmpty
+                              ? null
+                              : () {
+                                  Navigator.pop(context, selected);
+                                },
+                          child: Text(confirmLabel ?? localizations.confirm),
+                        ),
                       ],
                     ),
-                  ),
-                );
-              },
+                    const SizedBox(height: 8.0),
+                  ],
+                ),
+              ),
             );
           },
         );
+      },
+    );
 
     return popped ?? <String>[];
   }

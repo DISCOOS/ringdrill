@@ -477,6 +477,8 @@ class _MainScreenState extends State<MainScreen>
       StationListController();
 
   late final RolePlaysController _rolePlaysController = RolePlaysController();
+  late final ProgramPageController _programPageController =
+      ProgramPageController();
   late final ContextSheetController _contextSheetController =
       ContextSheetController();
 
@@ -484,7 +486,10 @@ class _MainScreenState extends State<MainScreen>
   /// Note: Map tab (StationsView) was previously at position 4; it moved to
   /// position 2 when RolePlays was added. See DESIGN-003.
   late final List<PageWidget> _pages = [
-    PageWidget(controller: ProgramPageController(), child: ProgramView()),
+    PageWidget(
+      controller: _programPageController,
+      child: ProgramView(controller: _programPageController),
+    ),
     PageWidget(controller: StationsPageController(), child: StationsView()),
     PageWidget(
       controller: _stationListController,
@@ -568,6 +573,7 @@ class _MainScreenState extends State<MainScreen>
   @override
   void dispose() {
     _contextSheetController.dispose();
+    _programPageController.dispose();
     _stationListController.dispose();
     super.dispose();
   }
@@ -1223,7 +1229,9 @@ class _MainScreenState extends State<MainScreen>
                                 Expanded(
                                   child: Stack(
                                     children: [
-                                      Positioned.fill(child: _buildIndexedTabs()),
+                                      Positioned.fill(
+                                        child: _buildIndexedTabs(),
+                                      ),
                                       if (fab != null)
                                         Positioned(
                                           right: 16,
