@@ -30,8 +30,14 @@ String programBriefPath(String programUuid) =>
 String programExerciseBriefPath(String programUuid, String exerciseUuid) =>
     '${programExercisePath(programUuid, exerciseUuid)}/brief';
 
+String programRosterPath(String programUuid) =>
+    '${programPath(programUuid)}/roster';
+
 /// Legacy Map tab path. New navigation uses [programMapPath].
 const String routeMap = '/map';
+
+/// Legacy Roster tab path. New navigation uses [programRosterPath].
+const String routeRoster = '/roster';
 
 /// Legacy Stations tab path. Redirected into the matching Program segment or
 /// canonical station detail route.

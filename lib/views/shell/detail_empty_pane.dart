@@ -49,6 +49,18 @@ class TeamDetailEmpty extends StatelessWidget {
   }
 }
 
+class RosterDetailEmpty extends StatelessWidget {
+  const RosterDetailEmpty({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailEmptyPane(
+      icon: Icons.badge,
+      label: AppLocalizations.of(context)!.detailEmptyRoster,
+    );
+  }
+}
+
 class _DetailEmptyPane extends StatelessWidget {
   const _DetailEmptyPane({required this.icon, required this.label});
 

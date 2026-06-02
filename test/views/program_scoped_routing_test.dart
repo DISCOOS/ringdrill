@@ -194,7 +194,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('shell renders only Program and Map destinations', (
+  testWidgets('shell renders Program, Map and Roster destinations', (
     tester,
   ) async {
     final router = await _pumpRouter(tester);
@@ -202,7 +202,7 @@ void main() {
       find.byType(NavigationBar),
     );
 
-    expect(navigationBar.destinations, hasLength(2));
+    expect(navigationBar.destinations, hasLength(3));
     expect(_location(router), programPath(_programUuid));
   });
 

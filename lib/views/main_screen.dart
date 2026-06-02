@@ -20,6 +20,7 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roster_view.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -57,6 +58,7 @@ String? legacyProgramRedirect(String location) {
     return switch (segments.first) {
       'program' => programPath(activeUuid),
       'map' => programMapPath(activeUuid),
+      'roster' => programRosterPath(activeUuid),
       'stations' || 'teams' || 'roleplays' => programPath(activeUuid),
       _ => null,
     };
@@ -233,7 +235,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
               isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
               location: state.matchedLocation,
-              routes: [routeProgram, routeMap],
+              routes: [routeProgram, routeMap, routeRoster],
               // The shell's nested Navigator (identified by
               // [shellNavigatorKey]). MainScreen mounts it offstage so the
               // GlobalKey gets attached — see the comment on
@@ -260,6 +262,13 @@ GoRouter buildRouter(bool isFirstLaunch) {
                 routes: [
                   GoRoute(
                     path: 'map',
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const SizedBox.shrink(),
+                  ),
+                  GoRoute(
+                    path: 'roster',
+                    // ShellRoute's child is ignored by MainScreen (IndexedStack).
+                    // Stub builder avoids constructing a second RosterController.
                     builder: (BuildContext context, GoRouterState state) =>
                         const SizedBox.shrink(),
                   ),
@@ -388,6 +397,13 @@ GoRouter buildRouter(bool isFirstLaunch) {
             // Stub builder avoids constructing a second StationsPageController
             // that would only ever be mounted inside the offstage shell
             // sentinel.
+            builder: (BuildContext context, GoRouterState state) =>
+                const SizedBox.shrink(),
+          ),
+          GoRoute(
+            path: routeRoster,
+            // ShellRoute's child is ignored by MainScreen (IndexedStack).
+            // Stub builder avoids constructing a second RosterController.
             builder: (BuildContext context, GoRouterState state) =>
                 const SizedBox.shrink(),
           ),
@@ -646,6 +662,7 @@ class _MainScreenState extends State<MainScreen>
   late final RolePlaysController _rolePlaysController = RolePlaysController();
   late final TeamsPageController _teamsPageController =
       const TeamsPageController();
+  late final RosterController _rosterController = RosterController();
   late final ProgramPageController _programPageController =
       ProgramPageController(
         stationListController: _stationListController,
@@ -655,8 +672,9 @@ class _MainScreenState extends State<MainScreen>
   late final ContextSheetController _contextSheetController =
       ContextSheetController();
 
-  /// Order matches [routeProgram, routeMap]. Station, roleplay and team views
-  /// remain reachable as Program segments rather than standalone shell tabs.
+  /// Order matches [routeProgram, routeMap, routeRoster]. Station, roleplay
+  /// and team views remain reachable as Program segments rather than
+  /// standalone shell tabs.
   late final List<PageWidget> _pages = [
     PageWidget(
       controller: _programPageController,
@@ -667,6 +685,10 @@ class _MainScreenState extends State<MainScreen>
       ),
     ),
     PageWidget(controller: StationsPageController(), child: StationsView()),
+    PageWidget(
+      controller: _rosterController,
+      child: RosterView(controller: _rosterController),
+    ),
   ];
 
   int _currentTab = 0;
@@ -719,6 +741,10 @@ class _MainScreenState extends State<MainScreen>
       _currentTab = 1;
       return;
     }
+    if (activeUuid != null && loc == programRosterPath(activeUuid)) {
+      _currentTab = 2;
+      return;
+    }
     if (loc.startsWith('$routeProgram/')) {
       _currentTab = 0;
       return;
@@ -755,6 +781,7 @@ class _MainScreenState extends State<MainScreen>
     // Field-held controller, never disposed before. Its filterExerciseUuid
     // ValueNotifier leaked on shell teardown. (DESIGN-006 stage 1 follow-up.)
     _rolePlaysController.dispose();
+    _rosterController.dispose();
     super.dispose();
   }
 
@@ -1180,6 +1207,7 @@ class _MainScreenState extends State<MainScreen>
     return switch (tab) {
       0 => programPath(activeUuid),
       1 => programMapPath(activeUuid),
+      2 => programRosterPath(activeUuid),
       _ => widget.routes[tab],
     };
   }
@@ -1188,6 +1216,7 @@ class _MainScreenState extends State<MainScreen>
     return [
       Destination(icon: Icons.update, label: localizations.exercise(2)),
       Destination(icon: Icons.map, label: localizations.mapTab),
+      Destination(icon: Icons.badge, label: localizations.rosterTab),
     ];
   }
 
@@ -1520,6 +1549,7 @@ class _MainScreenState extends State<MainScreen>
           ProgramSegment.teams => const TeamDetailEmpty(),
         },
       ),
+      2 => const RosterDetailEmpty(),
       _ => const SizedBox.shrink(),
     };
   }
