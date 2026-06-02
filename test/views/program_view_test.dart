@@ -172,7 +172,14 @@ void main() {
     expect(find.text('Segment Team').hitTestable(), findsOneWidget);
   });
 
-  testWidgets('keeps segment body state when switching lenses', (tester) async {
+  // Segment body state (e.g. expanded station tile) is NOT retained across
+  // segment switches. The NestedScrollView + active-only body approach was
+  // adopted as the fallback from DESIGN-006 stage-3 because IndexedStack
+  // + per-child PrimaryScrollController scoping unmounts child subtrees on
+  // every switch, making state retention impossible without GlobalKeys.
+  testWidgets('segment body expansion is reset when switching away', (
+    tester,
+  ) async {
     final controllers = _HarnessControllers();
     addTearDown(controllers.dispose);
     await tester.pumpWidget(_programHarness(controllers));
@@ -182,13 +189,15 @@ void main() {
     await tester.pump();
     await tester.tap(find.byIcon(Icons.expand_more).hitTestable());
     await tester.pumpAndSettle();
+    // Expanded station tile shows the role name.
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
 
+    // Switching away and back resets the expansion.
     _select(controllers, ProgramSegment.roleplays);
     await tester.pump();
     _select(controllers, ProgramSegment.stations);
     await tester.pump();
-    expect(find.text('Segment Role').hitTestable(), findsOneWidget);
+    expect(find.text('Segment Role').hitTestable(), findsNothing);
   });
 
   testWidgets('changes contextual FAB and AppBar actions by segment', (

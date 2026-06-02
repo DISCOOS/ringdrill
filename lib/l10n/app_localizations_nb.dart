@@ -1268,6 +1268,18 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exerciseCopyTooltip => 'Kopier øvelse';
 
   @override
+  String roleplay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Markører',
+      one: 'Markør',
+      zero: 'Markør',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get rolePlaysTab => 'Markører';
 
   @override

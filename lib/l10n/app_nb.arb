@@ -400,6 +400,15 @@
     "description": "Tooltip on the copy IconButton overlaid at the top-right of the scrollable list on the coordinator screen."
   },
 
+  "roleplay": "{count, plural, =0{Markør} =1{Markør} other{Markører}}",
+  "@roleplay": {
+    "description": "Roleplay count noun for the Program tab overview summary line.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rolePlaysTab": "Markører",
   "@rolePlaysTab": {
     "description": "Bottom-nav label for the RolePlays (Markører) tab introduced in DESIGN-003."

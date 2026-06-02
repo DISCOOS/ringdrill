@@ -2150,6 +2150,12 @@ abstract class AppLocalizations {
   /// **'Copy exercise'**
   String get exerciseCopyTooltip;
 
+  /// Roleplay count noun for the Program tab overview summary line.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Roleplay} =1{Roleplay} other{Roleplays}}'**
+  String roleplay(int count);
+
   /// Bottom-nav label for the RolePlays (Markører) tab introduced in DESIGN-003.
   ///
   /// In en, this message translates to:

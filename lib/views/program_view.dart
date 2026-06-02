@@ -202,26 +202,31 @@ class _ProgramViewState extends State<ProgramView> {
     final exerciseBody = kIsWeb
         ? exercises
         : SharedFileWidget(child: exercises);
-    return Column(
-      children: [
-        _ProgramSegmentSwitcher(controller: widget.controller),
-        Expanded(
-          child: ValueListenableBuilder<ProgramSegment>(
-            valueListenable: widget.controller.activeSegment,
-            builder: (context, activeSegment, _) {
-              return IndexedStack(
-                index: activeSegment.index,
-                children: [
-                  exerciseBody,
-                  StationListView(controller: widget.stationListController),
-                  RolePlaysView(controller: widget.rolePlaysController),
-                  const TeamsView(),
-                ],
-              );
-            },
+    return NestedScrollView(
+      headerSliverBuilder: (context, _) => [
+        SliverToBoxAdapter(
+          child: _ProgramOverview(controller: widget.controller),
+        ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _SegmentSwitcherDelegate(
+            controller: widget.controller,
           ),
         ),
       ],
+      body: ValueListenableBuilder<ProgramSegment>(
+        valueListenable: widget.controller.activeSegment,
+        builder: (context, activeSegment, _) {
+          return switch (activeSegment) {
+            ProgramSegment.exercises => exerciseBody,
+            ProgramSegment.stations =>
+              StationListView(controller: widget.stationListController),
+            ProgramSegment.roleplays =>
+              RolePlaysView(controller: widget.rolePlaysController),
+            ProgramSegment.teams => const TeamsView(),
+          };
+        },
+      ),
     );
   }
 
@@ -343,6 +348,124 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
             ),
     );
   }
+}
+
+// Height of _ProgramSegmentSwitcher: Padding(top: 8) + SegmentedButton (M3 ~40).
+const double _kSwitcherHeight = 48.0;
+
+/// Collapsing read-only overview rendered above the pinned segment switcher.
+/// Scrolls off as the user moves down the active segment list.
+class _ProgramOverview extends StatelessWidget {
+  const _ProgramOverview({required this.controller});
+
+  final ProgramPageControllerBase controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ValueListenableBuilder<ProgramSegment>(
+      valueListenable: controller.activeSegment,
+      builder: (context, activeSegment, _) {
+        final program = ProgramService().activeProgram;
+        if (program == null) return const SizedBox.shrink();
+
+        final service = ProgramService();
+        final teamCount = service.loadTeams().length;
+
+        final String? segmentCountPhrase = switch (activeSegment) {
+          ProgramSegment.exercises => l10n.exercise(service.loadExercises().length),
+          ProgramSegment.stations => l10n.station(
+              service.loadExercises().fold(0, (n, e) => n + e.stations.length),
+            ),
+          ProgramSegment.roleplays => l10n.roleplay(service.loadRolePlays().length),
+          ProgramSegment.teams => null,
+        };
+
+        final summaryParts = [l10n.team(teamCount), ?segmentCountPhrase];
+        final summary = summaryParts.join(' · ');
+
+        final description = program.description.trim();
+        final briefIntro = _firstParagraphText(program.briefIntroMd);
+
+        final textTheme = Theme.of(context).textTheme;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(summary, style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: textTheme.bodyMedium,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (briefIntro != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  briefIntro,
+                  style: textTheme.bodySmall,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              // TODO(DESIGN-004): render program.commsMd preview here when
+              // program-level brief fields land.
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Returns the first paragraph of a markdown string stripped of leading
+  /// markers (`#`, `>`, `-`), or null when the input is null or empty.
+  String? _firstParagraphText(String? md) {
+    if (md == null || md.trim().isEmpty) return null;
+    final first = md.trim().split('\n\n').first.trim();
+    // Strip leading markdown markers from each line.
+    final stripped = first
+        .split('\n')
+        .map((l) => l.replaceFirst(RegExp(r'^[#>*-]+\s*'), '').trim())
+        .where((l) => l.isNotEmpty)
+        .join(' ');
+    return stripped.isEmpty ? null : stripped;
+  }
+}
+
+/// Pinned [SliverPersistentHeaderDelegate] wrapping [_ProgramSegmentSwitcher].
+/// Uses a fixed height so only the overview sliver above it scrolls off.
+class _SegmentSwitcherDelegate extends SliverPersistentHeaderDelegate {
+  const _SegmentSwitcherDelegate({required this.controller});
+
+  final ProgramPageControllerBase controller;
+
+  @override
+  double get minExtent => _kSwitcherHeight;
+
+  @override
+  double get maxExtent => _kSwitcherHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _ProgramSegmentSwitcher(controller: controller),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SegmentSwitcherDelegate old) =>
+      controller != old.controller;
 }
 
 class ExerciseCard extends StatefulWidget {
