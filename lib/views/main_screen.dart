@@ -45,6 +45,62 @@ String _activeProgramPath() {
   return uuid == null ? routeProgram : programPath(uuid);
 }
 
+String? _legacyProgramRedirect(String location) {
+  final segments = Uri.parse(location).pathSegments;
+  final service = ProgramService();
+  final activeUuid = service.activeProgramUuid;
+  if (activeUuid == null) return null;
+
+  if (segments.isEmpty) return programPath(activeUuid);
+  if (segments.length == 1) {
+    return switch (segments.first) {
+      'program' => programPath(activeUuid),
+      'map' => programMapPath(activeUuid),
+      'stations' || 'teams' || 'roleplays' => programPath(activeUuid),
+      _ => null,
+    };
+  }
+  if (segments.first == 'program' &&
+      service.loadProgram(segments[1]) == null &&
+      service.getExercise(segments[1]) != null) {
+    if (segments.length == 2) {
+      return programExercisePath(activeUuid, segments[1]);
+    }
+    if (segments.length == 4 && segments[2] == 'station') {
+      final stationIndex = int.tryParse(segments[3]);
+      return stationIndex == null
+          ? null
+          : programStationPath(activeUuid, segments[1], stationIndex);
+    }
+    if (segments.length == 4 && segments[2] == 'team') {
+      final teamIndex = int.tryParse(segments[3]);
+      return teamIndex == null ? null : programTeamPath(activeUuid, teamIndex);
+    }
+  }
+  if (segments.first == 'stations' && segments.length == 3) {
+    final stationIndex = int.tryParse(segments[2]);
+    return stationIndex == null
+        ? null
+        : programStationPath(activeUuid, segments[1], stationIndex);
+  }
+  if (segments.first == 'teams' && segments.length == 2) {
+    final teamIndex = int.tryParse(segments[1]);
+    return teamIndex == null ? null : programTeamPath(activeUuid, teamIndex);
+  }
+  if (segments.first == 'roleplays' && segments.length == 2) {
+    return programRolePlayPath(activeUuid, segments[1]);
+  }
+  if (segments.first == 'brief') {
+    if (segments.length == 3 && segments[1] == 'program') {
+      return programBriefPath(segments[2]);
+    }
+    if (segments.length == 2) {
+      return programExerciseBriefPath(activeUuid, segments[1]);
+    }
+  }
+  return null;
+}
+
 Future<String?> _activateCanonicalProgramPath(String location) async {
   final segments = Uri.parse(location).pathSegments;
   if (segments.length < 2 || segments.first != 'program') return null;
@@ -112,6 +168,10 @@ GoRouter buildRouter(bool isFirstLaunch) {
         // to exist in widget tree. Always
         // redirect to programs page!
         return _activeProgramPath();
+      }
+      final legacyRedirect = _legacyProgramRedirect(location);
+      if (legacyRedirect != null && legacyRedirect != location) {
+        return legacyRedirect;
       }
       return _activateCanonicalProgramPath(location);
     },
