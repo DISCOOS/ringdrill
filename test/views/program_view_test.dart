@@ -228,13 +228,14 @@ void main() {
     _select(controllers, ProgramSegment.script);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.filter_list).hitTestable(), findsOneWidget);
-    expect(find.byIcon(Icons.recent_actors).hitTestable(), findsOneWidget);
+    // The cast-roster shortcut (Icons.recent_actors) was retired once the
+    // Roster tab became the actor registry's home; only the filter stays.
+    expect(find.byIcon(Icons.recent_actors), findsNothing);
     expect(appBarBrief(), findsOneWidget);
 
     _select(controllers, ProgramSegment.teams);
     await tester.pumpAndSettle();
     expect(find.byType(FloatingActionButton).hitTestable(), findsNothing);
-    expect(find.byIcon(Icons.recent_actors).hitTestable(), findsNothing);
     expect(appBarBrief(), findsOneWidget);
   });
 

@@ -11,7 +11,6 @@ import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/main_screen.dart';
-import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _programUuid = 'routing-program';
@@ -206,15 +205,20 @@ void main() {
     expect(_location(router), programPath(_programUuid));
   });
 
-  testWidgets('Script (Spill) segment still opens cast roster', (tester) async {
-    await _pumpRouter(tester);
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  testWidgets(
+    'Script (Spill) segment no longer carries the cast-roster action',
+    (tester) async {
+      await _pumpRouter(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    await tester.tap(find.text(l10n.scriptSegment));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.recent_actors));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.scriptSegment));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(CastRosterSheet), findsOneWidget);
-  });
+      // The cast-roster shortcut (Icons.recent_actors) was retired once the
+      // Roster tab became the actor registry's home. Only the exercise
+      // filter remains as a Spill-segment AppBar action.
+      expect(find.byIcon(Icons.recent_actors), findsNothing);
+      expect(find.byIcon(Icons.filter_list), findsOneWidget);
+    },
+  );
 }

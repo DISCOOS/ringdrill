@@ -162,7 +162,7 @@ This is where the crowding is actually solved. With one tab, the FAB follows the
 |-----------|---------------|----------------------------------|
 | Øvelser   | "Ny øvelse"   | —                                |
 | Poster    | —             | Exercise filter                  |
-| Spill     | "Ny rolle"    | Exercise filter, cast roster     |
+| Spill     | "Nytt spill"  | Exercise filter                  |
 | Team      | —             | —                                |
 
 The **brief** (`Icons.menu_book`) is a constant action on **every** segment, pinned rightmost next to the status badge, because it renders the whole plan and is segment-independent. The exercise **filter** is an AppBar action on **both** Poster and Spill (the same badge + banner + picker pattern from DESIGN-002), keeping the FAB slot free for "create" actions. Earlier the Poster filter was a body FAB and only the Markører/Spill segment's was an action; they were unified to an action so the design matches and the FAB no longer covers the filter banner.

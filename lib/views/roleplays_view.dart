@@ -13,7 +13,6 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
-import 'package:ringdrill/views/widgets/cast_roster_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
@@ -700,6 +699,9 @@ class RolePlaysController extends ScreenController {
     final hasActiveProgram = ProgramService().activeProgramUuid != null;
     return [
       // Filter by exercise — moved from the body FAB to the AppBar.
+      // The cast-roster action (Icons.recent_actors) that used to live here
+      // was retired once the Roster tab became the actor registry's home;
+      // the per-role cast picker stays on each role.
       ValueListenableBuilder<String?>(
         valueListenable: filterExerciseUuid,
         builder: (context, active, _) {
@@ -712,24 +714,7 @@ class RolePlaysController extends ScreenController {
           return Badge.count(count: 1, child: button);
         },
       ),
-      IconButton(
-        icon: const Icon(Icons.recent_actors),
-        tooltip: hasActiveProgram
-            ? localizations.castSection
-            : localizations.noActiveProgramHint,
-        onPressed: hasActiveProgram ? () => _openCastRoster(context) : null,
-      ),
     ];
-  }
-
-  Future<void> _openCastRoster(BuildContext context) async {
-    await showRingdrillActionSheet<void>(
-      context: context,
-      builder: (context) => SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.88,
-        child: const CastRosterSheet(),
-      ),
-    );
   }
 
   Future<void> openFilterSheet(BuildContext context) async {
