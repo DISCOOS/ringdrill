@@ -18,6 +18,8 @@ import 'package:ringdrill/views/install_link_handler.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
+import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/roster_view.dart';
@@ -972,16 +974,31 @@ class _MainScreenState extends State<MainScreen>
     if (controller is! ProgramPageControllerBase) return titleChild;
     final localizations = AppLocalizations.of(context)!;
     return Tooltip(
-      message: localizations.libraryRename,
+      message: localizations.editProgram,
       child: InkWell(
         borderRadius: BorderRadius.circular(4),
-        onTap: () => active_actions.renameActivePlan(context),
+        onTap: () => _openProgramForm(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: titleChild,
         ),
       ),
     );
+  }
+
+  /// Opens the full [ProgramFormScreen] for the active plan (name,
+  /// description and the addable brief sections), replacing the old
+  /// name-only rename dialog on the AppBar title tap.
+  Future<void> _openProgramForm(BuildContext context) async {
+    final program = ProgramService().activeProgram;
+    if (program == null) return;
+    final updated = await openFormSurface<Program>(
+      context,
+      builder: (_) => ProgramFormScreen(program: program),
+    );
+    if (updated != null && context.mounted) {
+      await ProgramService().replaceProgram(updated);
+    }
   }
 
   Widget? _buildDrawer(BuildContext context, AppLocalizations localizations) {

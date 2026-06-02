@@ -98,6 +98,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             },
           ),
         ],
+        actionsPadding: const EdgeInsets.only(right: 16),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
