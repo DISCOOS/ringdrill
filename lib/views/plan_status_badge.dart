@@ -192,10 +192,18 @@ class _BadgeChip extends StatelessWidget {
     );
     final wrapped = onTap == null
         ? content
-        : InkWell(
-            onTap: onTap,
+        // Wrap in a transparent Material with a matching borderRadius so the
+        // InkWell splash and highlight clip to the badge bounds instead of
+        // bleeding onto the AppBar surface behind it.
+        : Material(
+            type: MaterialType.transparency,
             borderRadius: BorderRadius.circular(4),
-            child: content,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(4),
+              child: content,
+            ),
           );
     return Tooltip(message: tooltip, child: wrapped);
   }
