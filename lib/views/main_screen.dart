@@ -726,8 +726,10 @@ class _MainScreenState extends State<MainScreen>
       leadingWidth: hasRail ? 0 : null,
       leading: hasRail ? const SizedBox.shrink() : null,
       actions: [
-        const PlanStatusBadge(),
+        // Segment/page actions first, then the plan status badge pinned
+        // furthest right.
         ...?page.controller.buildActions(context, constraints),
+        const PlanStatusBadge(),
       ],
       actionsPadding: EdgeInsets.only(right: 16.0),
     );
@@ -767,8 +769,13 @@ class _MainScreenState extends State<MainScreen>
     final activePlanName = hasRail
         ? ProgramService().activeProgram?.name
         : null;
+    // Suppress the secondary line when it would just repeat the primary.
+    // The Program tab's title already is the active plan name, so without
+    // this it printed the plan name twice. Other tabs (Map, Roster) keep
+    // the plan name as orientation because their primary is a section name.
+    final secondary = activePlanName == pageTitle ? null : activePlanName;
     final Widget titleChild = hasRail
-        ? SheetTitle(primary: pageTitle, secondary: activePlanName)
+        ? SheetTitle(primary: pageTitle, secondary: secondary)
         : Text(pageTitle);
 
     final controller = page.controller;

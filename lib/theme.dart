@@ -225,6 +225,9 @@ final ThemeData ringDrillTheme = ThemeData(
     backgroundColor: RingDrillColors.lightScaffold,
     foregroundColor: RingDrillColors.lightOnSurface,
     elevation: 0,
+    // Left-align titles app-wide. Without this, iOS centers AppBar titles
+    // while Android left-aligns them, so the layout differs per platform.
+    centerTitle: false,
   ),
   cardTheme: const CardThemeData(
     color: RingDrillColors.lightSurface,
@@ -272,6 +275,8 @@ final ThemeData ringDrillDarkTheme = ThemeData(
     backgroundColor: RingDrillColors.brandDeep,
     foregroundColor: Colors.white,
     elevation: 0,
+    // Left-align titles app-wide (iOS centers by default).
+    centerTitle: false,
   ),
   cardTheme: const CardThemeData(
     color: RingDrillColors.darkSurface,

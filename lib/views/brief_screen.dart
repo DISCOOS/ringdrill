@@ -190,7 +190,11 @@ class _BriefScreenState extends State<BriefScreen> {
           backgroundColor: theme.surfaces.appBar,
           foregroundColor: theme.text.heading,
           elevation: 0,
+          // copyWith replaces the global AppBarTheme wholesale, so restate
+          // the app-wide left alignment here too.
+          centerTitle: false,
         ),
+
         scaffoldBackgroundColor: theme.surfaces.canvas,
       ),
       child: LayoutBuilder(
