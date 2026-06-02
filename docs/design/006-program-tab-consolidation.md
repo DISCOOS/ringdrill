@@ -64,7 +64,7 @@ Three problems converge.
 ## Non-goals
 
 * **No detail-view changes.** Only the master view changes. The detail/context-sheet flow (`ContextSheet`, `MasterDetailPane`) and every form screen are untouched. Editing happens exactly where it does today.
-* **No new data-model fields in this design.** The overview reserves space for the program-level brief fields from [DESIGN-004](./brief-template.md) (`program.briefIntroMd`, `program.commsMd`) but does not introduce them. The Roster "person with role" generalization is described as a direction, not built here.
+* **No new data-model fields in this design.** The overview renders the existing program-level brief field from [DESIGN-004](./brief-template.md) (`program.briefIntroMd`) read-only, but adds no new fields and no editor. The Roster "person with role" generalization is described as a direction, not built here.
 * **No bidirectional editing.** The overview is a read-only projection, consistent with DESIGN-004's stance that entities are the source of truth and the brief is a projection.
 
 ## Information architecture
@@ -122,7 +122,7 @@ Content, all read-only:
 
 Because the overview is read-only, editing routes out the way it does today. Tapping the summary opens the relevant form (the exercise edit form, or `ProgramFormScreen` for the brief fields once they exist).
 
-The brief fields do not exist in code yet (`program.dart` has only `description`), so the overview ships with the summary line and `description` and grows to include the brief preview later (see [Deferred decisions](#deferred-decisions)). The `*Md` fields are omitted when empty, so a fresh plan's overview may be just the summary line. The header must collapse gracefully when nearly empty, and the switcher below is always present.
+The program-level `briefIntroMd` field exists on the model and is loaded at runtime (`program/intro.md`, [ADR-0022](../adrs/0022-markdown-content-as-files.md)), so the overview renders a compact read-only preview of it when non-empty alongside the summary line and `description`. The `*Md` fields are omitted when empty, so a fresh plan's overview may be just the summary line. The header must collapse gracefully when nearly empty, and the switcher below is always present. Editing these fields is a separate concern (a markdown editor on `ProgramFormScreen`, DESIGN-004 stage 4) and is not part of this read-only surface.
 
 ### Segmented switcher
 
@@ -224,7 +224,7 @@ DESIGN-002 and DESIGN-003 are Superseded by this doc as of acceptance (2026-05-3
 
 1. **Person-with-role model.** The generalization of `Actor` into a staffed person is a future data-model design. Reserved, not built.
 2. **Team members vs. count.** Whether the Team segment ever surfaces the people filling a team (which would touch Roster) or stays a structural list. Today `numberOfMembers` is a count, so the structural view is enough.
-3. **Brief fields in the overview.** Depend on DESIGN-004 stages 1b/4. Until then the overview shows the summary line and `description`.
+3. **Editing the brief fields from the overview.** The overview renders `briefIntroMd` read-only (the field exists and loads). In-app editing of it depends on the DESIGN-004 stage 4 markdown editor on `ProgramFormScreen` and is out of scope for the overview.
 4. **Segmented switcher control at narrow master width.** See the open UX question above.
 
 ## Open questions

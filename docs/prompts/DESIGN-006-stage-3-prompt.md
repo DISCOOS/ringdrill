@@ -19,8 +19,8 @@ Stage 3 adds the overview region at the top of the Program tab. It is additive a
 
 **Out of scope (do not touch):**
 
-- **No new data-model fields.** DESIGN-006 reserves overview space for the program-level brief fields `program.briefIntroMd` / `program.commsMd` (DESIGN-004), but those do not exist in code yet (`program.dart` has only `description`). Ship the overview with the summary line and `description`, and leave a clear seam to add the brief-intro preview when those fields land. Do not add them here.
-- **No inline editing and no new `ProgramFormScreen`.** The overview is read-only. Plan rename already exists via the AppBar title tap (`active_actions.renameActivePlan`); do not build a new edit surface. Full brief-field editing is a separate follow-up.
+- **No new data-model fields.** `program.briefIntroMd` already exists on the model and is loaded at runtime from `program/intro.md` (`lib/data/drill_file.dart`, ADR-0022), so render a compact read-only preview of it when non-empty (see step 1). Do not add new fields and do not run codegen. `commsMd` stays out of the overview — only the brief intro is previewed, per DESIGN-006.
+- **No inline editing and no new `ProgramFormScreen`.** The overview is read-only. Editing `briefIntroMd` is the DESIGN-004 stage 4 markdown editor, out of scope here. Plan rename already exists via the AppBar title tap (`active_actions.renameActivePlan`); do not build a new edit surface. Full brief-field editing is a separate follow-up.
 - No routing change (stage 2 done) — reuse the canonical brief path helper.
 - No Roster tab (stage 4).
 - No `BriefTheme`. Render the overview in plain Material style. The docs-site `BriefTheme` palette (ADR-0023) stays confined to the brief sheet so it does not clash with the working surfaces around it.
@@ -49,9 +49,16 @@ Append a short note of what you found to `docs/prompts/DESIGN-006-stage-3-handof
 
 ### Recommended approach (adopt unless investigation shows a cheaper path)
 
-- Restructure the Program tab body as a `NestedScrollView`: `headerSliverBuilder` returns the overview as a collapsing sliver (a `SliverToBoxAdapter`, or a `SliverAppBar`-style region that scrolls off) followed by the switcher as a **pinned** `SliverPersistentHeader`; the `body` is the existing `IndexedStack` of segment bodies. This keeps the box-scrollable segment bodies as-is and gets the "overview scrolls away, switcher stays" behaviour for free.
-- **Validate the caveat:** `NestedScrollView` coordinates with the body's scrollable, and the body here is an `IndexedStack` keeping all four bodies alive. Confirm the active segment's list drives the header collapse cleanly (you may need `SliverOverlapAbsorber` / the inner controller, or to wrap each body so it participates). If `NestedScrollView` fights the `IndexedStack`, the fallback is to render only the active segment's body inside the `NestedScrollView` body (dropping per-segment scroll-position retention) rather than forcing every segment view into slivers.
+`NestedScrollView` does **not** fit here. It coordinates the header collapse with a single inner `PrimaryScrollController`, but the body is an `IndexedStack` keeping all four segment `ListView`s alive, and they cannot share one controller. The naive workaround (render only the active segment in the body) is rejected: it tears the other three views out of the tree, so it loses each segment view's State — the expansion mutex (`_expandedRowIndex`) and scroll position — and re-subscribes to `ProgramService` on every switch. That is a regression from the stage 1 `IndexedStack`.
+
+Do the collapse manually instead, keeping the `IndexedStack`:
+
+- Keep the Program tab body as `Column[overview, switcher, Expanded[IndexedStack[...]]]`. The switcher stays a normal always-visible widget above the body, which satisfies the "switcher always reachable" goal without a `SliverPersistentHeader`. (The spec's `SliverPersistentHeader` was a suggested mechanism, not the goal.)
+- Thread a `ScrollController` into each segment's list (add a `controller` parameter to the exercise list, `StationListView`, `RolePlaysView`, `TeamsView`). Keep one controller per segment so each retains its own offset.
+- Collapse or hide the overview based on the **active** segment's scroll offset (or scroll direction, like an app bar hiding on scroll-down and reappearing on scroll-up), driven by listening to the active controller. Swap which controller drives the collapse when the active segment changes.
 - The overview reads `controller.activeSegment` to choose which count to show alongside the team count, and rebuilds with it.
+
+All four views stay alive, so no State is lost on switch. If a true continuous sliver-flight collapse is wanted later, that is the heavier path (segments as `CustomScrollView`s with `SliverOverlapInjector` under a `NestedScrollView`, TabBarView-style, keeping `AutomaticKeepAlive`), which means converting every segment body — including the filter banner and the `Positioned` FAB in the Stack — into slivers. Defer it unless the manual collapse feels insufficient.
 
 ## Commits
 
@@ -61,7 +68,7 @@ Conventional Commits, scope `program`. One commit per step, `git status` clean b
 
 ### Step 1 — `feat(program)`: collapsing overview and pinned switcher
 
-Restructure the Program tab body so the read-only overview sits above a pinned switcher, scrolling away as the active segment list scrolls. Overview shows the summary line (team count + active-segment count) and the active plan's `description` when present, in plain Material style. Leave a clearly-commented seam where the `briefIntroMd` preview will go once that field exists. Handle the near-empty case gracefully (a fresh plan may have only the summary line); the switcher must stay present and pinned regardless.
+Restructure the Program tab body so the read-only overview sits above a pinned switcher, scrolling away as the active segment list scrolls. Overview shows the summary line (team count + active-segment count), the active plan's `description` when present, and a compact preview of `program.briefIntroMd` when non-empty. Render the preview in plain Material style as truncated plain text (a couple of lines with ellipsis), **not** `BriefMarkdown` / `BriefTheme` — the docs-site palette (ADR-0023) stays in the brief sheet. Omit each part when its source is empty. Handle the near-empty case gracefully (a fresh plan may have only the summary line); the switcher must stay present and pinned regardless.
 
 Gates green. Commit.
 
@@ -73,13 +80,13 @@ Gates green. Commit.
 
 ### Step 3 — `test(program)`: cover the overview
 
-Widget tests under `test/`: the overview renders the summary line and description; the summary's segment count follows the active segment; scrolling the segment list collapses the overview while the switcher stays pinned and usable; "Åpne brief" navigates to the canonical brief path; the Øvelser AppBar no longer shows the brief action. Do not add coverage for unrelated surrounding code.
+Widget tests under `test/`: the overview renders the summary line and description; it renders the `briefIntroMd` preview when non-empty and omits it when empty; the summary's segment count follows the active segment; scrolling the segment list collapses the overview while the switcher stays pinned and usable; "Åpne brief" navigates to the canonical brief path; the Øvelser AppBar no longer shows the brief action. Do not add coverage for unrelated surrounding code.
 
 Gates green. Commit.
 
 ## When you finish or get stuck
 
-- Append a closing entry to `docs/prompts/DESIGN-006-stage-3-handoff.md` summarizing the landed state and the reserved brief-field seam.
+- Append a closing entry to `docs/prompts/DESIGN-006-stage-3-handoff.md` summarizing the landed state, including how the `briefIntroMd` preview is rendered.
 - Off-scope findings go to `docs/prompts/DESIGN-006-followups.md` (one line each). New defects become their own numbered follow-up, not extra steps here.
-- If a step is blocked by an ambiguous spec or unmet precondition (for example `NestedScrollView` not coordinating with the `IndexedStack`), stop and write a one-paragraph note to `docs/prompts/DESIGN-006-stage-3-blockers.md`, then exit rather than guessing.
+- If a step is blocked by an ambiguous spec or unmet precondition, stop and write a one-paragraph note to `docs/prompts/DESIGN-006-stage-3-blockers.md`, then exit rather than guessing.
 - Stage 3 is additive and post-release-unit, so it may be pushed once green.
