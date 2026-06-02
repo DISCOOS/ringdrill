@@ -398,6 +398,10 @@ class ProgramService {
       source: ProgramSource.imported(fileName: file.fileName),
       metadata: incoming.metadata.copyWith(updated: now),
       contentHash: incoming.computeContentHash(),
+      // Keep the local cast roster when re-opening a plan we already have.
+      // A catalog download has actors/ stripped server-side (ADR-0018), so
+      // without this the existing actors would be wiped on every reinstall.
+      actors: _mergeLocalActors(incoming.uuid, incoming.actors),
     );
     await _repo.saveProgram(installed);
     if (activate) {
@@ -788,9 +792,34 @@ class ProgramService {
         installedAt: DateTime.now(),
       ),
       contentHash: remote.computeContentHash(),
+      // The remote copy never carries actors (stripped server-side per
+      // ADR-0018). Merge in the locally-stored cast so a refresh does not
+      // silently destroy the user's roster and break role↔actor links.
+      actors: _mergeLocalActors(local.uuid, remote.actors),
     );
     await _repo.saveProgram(merged);
     _controller.add(ProgramEvent(ProgramEventType.programRefreshed, merged));
+  }
+
+  /// Actors are local-only PII: the catalog strips the `actors/` folder
+  /// server-side (ADR-0018), so any program fetched from the catalog arrives
+  /// with an empty actor list. Replacing the local copy wholesale would then
+  /// destroy the cast roster built on this device — the data loss behind
+  /// "the marker list had a name yesterday, it's empty today".
+  ///
+  /// This merges [incoming] over the actors already stored for [programUuid]
+  /// by uuid: incoming entries win, and local-only actors (those absent from
+  /// [incoming]) are retained. A first install has no existing actors, so it
+  /// returns [incoming] unchanged. A genuine peer-to-peer `.drill` that
+  /// legitimately carries actors still imports them.
+  List<Actor> _mergeLocalActors(String programUuid, List<Actor> incoming) {
+    final existing = _repo.loadActors(programUuid);
+    if (existing.isEmpty) return incoming;
+    final incomingUuids = {for (final a in incoming) a.uuid};
+    return [
+      ...incoming,
+      ...existing.where((a) => !incomingUuids.contains(a.uuid)),
+    ];
   }
 
   static Exercise generateSchedule({
