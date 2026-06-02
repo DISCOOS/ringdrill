@@ -22,7 +22,7 @@ Stage 4 restores the third tab — the **Roster** — that stage 2 deliberately 
 
 - **No person-with-role model.** Stage 4 lists `Actor`s only (the markør cast). The generalization to a "person with named role" (øvelsesleder / veileder / deltaker) is stage 5. Do not add roles, do not add `Actor` fields.
 - **No drill-format / schema change.** `Actor` is unchanged. This is UI + routing only.
-- **Do not remove the cast-roster sheet/action in the Spill segment.** It stays for quick casting context while editing a role; the Roster tab is an additional, primary home for the same `Actor` records.
+- **Do not remove the cast-roster sheet/action in the Spill segment.** It stays for quick casting context while editing a role; the Roster tab is an additional, primary home for the same `Actor` records. (Retiring the redundant cast-roster action is a separate follow-up.)
 - No new `ContextSheet` target for actors — tapping a row opens `ActorFormScreen` via the existing form flow (modal on wide per ADR-0030), the same way the cast-roster sheet edits them today.
 
 ## Ground rules

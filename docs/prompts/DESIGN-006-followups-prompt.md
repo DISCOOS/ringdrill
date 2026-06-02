@@ -26,13 +26,20 @@ Conventional Commits with a scope. One commit per step, `git status` clean betwe
 
 ## Steps
 
-### Step 1 — `fix(widget)`: drop fixed hero tags on the filter FABs
+**Status: all four steps are already DONE (see the markers). This prompt has nothing left to implement.**
+
+### Step 1 — ✅ DONE — `fix(widget)`: drop fixed hero tags on the filter FABs
+
+**Resolved (moot).** Both filter FABs were removed entirely — filtering moved to AppBar actions (`Icons.filter_list`) on `StationListController` and `RolePlaysController` — so there are no longer any FABs with fixed hero tags. The only FABs left (the exercises FAB and the "Ny rolle" FAB) already use `heroTag: null`. Nothing to do. Original step below for context:
+
 
 `station_list_view.dart` (`_buildFilterFab`, ~line 241) and `roleplays_view.dart` (~line 212) build a `FloatingActionButton` with a fixed `heroTag` (`'stationFilter'` / `'rolePlayFilter'`). When two instances of a view were mounted at once (the stage 1 transitional state), a `PageRoute` push scanned the hero subtree and hit "multiple heroes that share the same tag". Stage 2 removed the duplicate standalone tabs, so the collision is currently resolved, but the fixed global tag is fragile. Set `heroTag: null` on both filter FABs (these FABs do not fly to anything, so no animation is lost), matching the precedent already documented on the exercises FAB in `program_view.dart` (~line 713). If step 2 lands first and moves the roleplay filter off the FAB, this step only needs the station FAB.
 
 Gates green. Commit.
 
-### Step 2 — `feat(roleplay)`: add a "Ny rolle" FAB to the Markører segment
+### Step 2 — ✅ DONE — `feat(roleplay)`: add a "Ny rolle" FAB to the Markører segment
+
+**Resolved.** `RolePlaysController` has a "Ny rolle" `buildFAB` (exercise-picker sheet → `RolePlayFormScreen` with a blank draft), and filtering moved to a `buildActions` AppBar action (`Icons.filter_list`). The FAB renders inside `RolePlaysView`'s body above the filter banner. The Poster filter was likewise moved to an action. Original step below for context:
 
 Today roles are created only from the Station screen (a DESIGN-003 non-goal). DESIGN-006 makes the Markører segment the home for roles, and its FAB table calls for a "Ny rolle" create action. Add it.
 
@@ -44,13 +51,17 @@ Free the FAB slot: the Markører segment currently shows the body filter FAB. Mo
 
 Gates green. Commit.
 
-### Step 3 — `fix(brief)`: default the brief audience to Øvelsesleder
+### Step 3 — ✅ DONE — `fix(brief)`: default the brief audience to Øvelsesleder
+
+**Resolved.** `brief_screen.dart` initState defaults `_audience` to `BriefAudience.director` (and reads the stored app-user role per step 4). Original step below for context:
 
 The brief opens on `participant`. In practice only staff (øvelsesleder, veileder) use the app — there is no observed case of a participant using it themselves — so default the `BriefAudience` selector to `director` (full content). The PII in the director view is shown to trusted staff on the local device, which is acceptable. This is a small default change in the brief screen's initial audience state. If you are also doing step 4, fold this into it instead.
 
 Gates green. Commit.
 
-### Step 4 — `feat(settings)`: staff-only app-user role, driving the brief default
+### Step 4 — ✅ DONE — `feat(settings)`: staff-only app-user role, driving the brief default
+
+**Resolved.** `AppUserRole` (`lib/services/app_user_role.dart`) maps director→director and instructor→instructor `BriefAudience`; `AppUserRoleSettings` in `settings_page.dart` offers the two staff roles (not participant), stored via `AppConfig.keyAppUserRole`; `brief_screen.dart` reads it to set the default audience. Original step below for context:
 
 Add a small local preference for the role the device user holds. Because participants do not use the app, this is **staff-only**: Øvelsesleder and Veileder. `participant` remains a brief audience for export/print, not an app-user role. The selector's real job is gating actor PII: an Øvelsesleder default maps to the `director` brief audience (shows `realName`/`phone`), a Veileder maps to `instructor` (hides actor PII). Use the stored role to set the brief's default audience (subsumes step 3).
 
