@@ -6,7 +6,7 @@
 
 4. ~~**App-user role selector, staff-only (DESIGN-004 + DESIGN-006 Roster axis).**~~ **Resolved.** `AppUserRole` (`lib/services/app_user_role.dart`) with a `briefAudience` mapping, an `AppUserRoleSettings` selector offering Øvelsesleder + Veileder (not participant) stored via `AppConfig.keyAppUserRole`, and `brief_screen.dart` reads it to set the default audience.
 
-5. **Compact detail sheet: `PhaseTile` overflows horizontally.** Rendering a station detail sheet at a 700 px viewport leaves a 314 px content width and overflows the `Row` in `lib/views/phase_tile.dart` by 10 px. Keep this separate from the routing migration.
+5. ~~**Compact detail sheet: `PhaseTile` overflows horizontally.**~~ **Resolved.** The title cell now uses `BoxConstraints(maxWidth: painter.width + 24)` (instead of a fixed `width:`) and is wrapped in `Flexible(fit: FlexFit.loose)` in the non-`titleWidth` mode. The cell renders at its natural width when the row has room and shrinks gracefully (text ellipsizes) when the row is too narrow — fixing the ~10 px overflow at ~314 px content width in the station detail sheet.
 
 6. ~~**Stage 3: per-segment scroll/expansion state lost on segment switch.**~~ **Resolved.** The stage 3 manual-collapse rework dropped the `NestedScrollView` for a `Column` + `NotificationListener` + `IndexedStack`, so every segment stays mounted and keeps its expansion/scroll state across switches.
 

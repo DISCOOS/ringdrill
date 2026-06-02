@@ -66,10 +66,15 @@ class PhaseTile extends StatelessWidget {
 
     final titleCell = Container(
       height: 32,
+      // In fixed mode, use maxWidth (not width) so the cell can shrink
+      // below its natural size when the surrounding row is too narrow to
+      // fit title + phase columns (e.g. station detail sheet at 314 px
+      // content width). Combined with Flexible(loose) below, the cell
+      // renders at painter.width + 24 when there's room and shrinks the
+      // Text (already ellipsized) when there isn't.
       constraints: hasFlexibleWidth
           ? BoxConstraints(minWidth: titleWidth!)
-          : null,
-      width: hasFlexibleWidth ? null : painter.width + 24,
+          : BoxConstraints(maxWidth: painter.width + 24),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: isCurrent ? Colors.blueAccent : Colors.transparent,
@@ -100,7 +105,14 @@ class PhaseTile extends StatelessWidget {
       mainAxisAlignment: mainAxisAlignment,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (hasFlexibleWidth) Expanded(child: titleCell) else titleCell,
+        if (hasFlexibleWidth)
+          Expanded(child: titleCell)
+        else
+          // FlexFit.loose lets the title cell stay at its natural width
+          // (painter.width + 24) when the row has room, but shrink when
+          // the row is too narrow. The phase columns and dividers stay at
+          // their fixed widths; only the title gives way.
+          Flexible(fit: FlexFit.loose, child: titleCell),
         VerticalDividerWidget(isCurrent: isCurrent, isComplete: isCurrent),
         ...List<Widget>.generate(phaseCount, (phaseIndex) {
           final isComplete = isCurrent && phaseIndex < event.phase.index - 1;
