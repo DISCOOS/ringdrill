@@ -20,3 +20,22 @@
 **Detail-empty pattern.** `lib/views/shell/detail_empty_pane.dart` — four stateless widgets delegating to private `_DetailEmptyPane(icon, label)`. Add `RosterDetailEmpty` as the fifth. Icon `Icons.badge`. Label `localizations.detailEmptyRoster`.
 
 **Test infrastructure.** No `main_screen_test.dart` exists. The closest working test to mirror is `test/views/cast_roster_sheet_test.dart` (seeded SharedPreferences + real ProgramService singleton). Actor storage key prefix: `pa:` (inferred from the cast_roster_sheet_test patterns and the `pa:` prefix seen in roleplays_view_test fixtures).
+
+---
+
+## Post-implementation landing summary (2026-06-02)
+
+**Three commits landed** on `main`:
+
+1. `feat(roster)` — `RosterView` + `RosterController` in `lib/views/roster_view.dart`; ARB keys `rosterTab` / `detailEmptyRoster` added and `flutter gen-l10n` regenerated; `RosterDetailEmpty` added to `lib/views/shell/detail_empty_pane.dart`.
+
+2. `feat(navigation)` — Roster wired as tab 2 in `lib/views/main_screen.dart` (FAB, destinations, initTab, routeForTab, emptyPaneBuilder, dispose); `programRosterPath` + `routeRoster` added to `lib/views/app_routes.dart`; `legacyProgramRedirect` maps bare `/roster` to canonical path; existing routing test updated from 2 → 3 destinations.
+
+3. `test(roster) + docs(design)` — `test/views/roster_view_test.dart` (6 tests, all green); DESIGN-006 stage 4 section and changelog updated.
+
+**Surprises / non-obvious decisions:**
+
+- `tester.drag` with `Offset(-300, 0)` on the default 800 px test screen falls just short of the Dismissible 40 % threshold (320 px). Fixed by using `-400`.
+- `flutter gen-l10n` is NOT run by `make build` (only `build_runner build` runs). Must be invoked separately after ARB edits.
+- `ProgramService._isReady` guard means `init()` is a no-op after the first call. All test groups in `roster_view_test.dart` share a single `setUpAll` fixture — separate `setUp` seed-swaps are invisible to the singleton's already-opened repo.
+- Actor CRUD (`saveActor` / `deleteActor`) emits no `ProgramService.events`. `RosterController._reloadTick` (`ValueNotifier<int>`, exposed as `reloadSignal`) is the refresh signal for FAB-initiated creates; view-initiated edits/deletes call `_reload()` directly.
