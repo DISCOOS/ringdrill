@@ -488,7 +488,11 @@ class _MainScreenState extends State<MainScreen>
   late final List<PageWidget> _pages = [
     PageWidget(
       controller: _programPageController,
-      child: ProgramView(controller: _programPageController),
+      child: ProgramView(
+        controller: _programPageController,
+        stationListController: _stationListController,
+        rolePlaysController: _rolePlaysController,
+      ),
     ),
     PageWidget(controller: StationsPageController(), child: StationsView()),
     PageWidget(

@@ -19,6 +19,9 @@ import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/station_list_view.dart';
+import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart';
@@ -35,9 +38,16 @@ export 'package:ringdrill/web/program_page_controller.dart'
 enum ProgramSegment { exercises, stations, roleplays, teams }
 
 class ProgramView extends StatefulWidget {
-  const ProgramView({super.key, required this.controller});
+  const ProgramView({
+    super.key,
+    required this.controller,
+    required this.stationListController,
+    required this.rolePlaysController,
+  });
 
   final ProgramPageControllerBase controller;
+  final StationListController stationListController;
+  final RolePlaysController rolePlaysController;
 
   @override
   State<ProgramView> createState() => _ProgramViewState();
@@ -203,9 +213,9 @@ class _ProgramViewState extends State<ProgramView> {
                 index: activeSegment.index,
                 children: [
                   exerciseBody,
-                  const SizedBox.shrink(),
-                  const SizedBox.shrink(),
-                  const SizedBox.shrink(),
+                  StationListView(controller: widget.stationListController),
+                  RolePlaysView(controller: widget.rolePlaysController),
+                  const TeamsView(),
                 ],
               );
             },
