@@ -10,7 +10,7 @@
 
 6. ~~**Stage 3: per-segment scroll/expansion state lost on segment switch.**~~ **Resolved.** The stage 3 manual-collapse rework dropped the `NestedScrollView` for a `Column` + `NotificationListener` + `IndexedStack`, so every segment stays mounted and keeps its expansion/scroll state across switches.
 
-7. **Stage 3: `Program.briefIntroMd` / `commsMd` never populated by `ProgramService.activeProgram`.** Sidecar markdown fields are only hydrated when reading from a `.drill` archive. Locally-created programs always have them null. The `commsMd` seam in `_ProgramOverview` is ready; when DESIGN-004 populates these fields in the repository, the overview preview renders automatically.
+7. ~~**Stage 3: `Program.briefIntroMd` / `commsMd` never populated by `ProgramService.activeProgram`.**~~ **Resolved by item 13.** `ProgramFormScreen` now writes the program-level brief fields (`briefIntroMd`, `commsMd`, `beforeRoundMd`) directly via the program save path, so locally-created plans pick them up without going through a `.drill` archive. The `_ProgramOverview` preview keeps the seam for `commsMd`; archive-side hydration is a separate DESIGN-004 Stage 1b/1a concern.
 
 8. **`SilentWitness` / "Tause vitner" — future Spill segment sibling.** A scenario element with description/story/purpose/info + position, no actor assignment. Publishable (lives in the Spill/Script segment alongside `RolePlay`). Distinct from `Actor` (no PII, no cast). Consider a shared `ScenarioElement` base when designing. See `docs/prompts/DESIGN-006-script-rename-handoff.md` for context.
 
@@ -22,10 +22,4 @@
 
 12. ~~**PlanStatusBadge InkWell is not right.**~~ **Resolved.** The badge's `InkWell` is now wrapped in a transparent `Material` (`MaterialType.transparency`) with a matching `BorderRadius.circular(4)` and `Clip.antiAlias`, so the splash clips to the badge bounds instead of bleeding onto the AppBar.
 
-13. **Shared addable-field form pattern for Plan, Exercise and Station forms (DESIGN-004 amendment).** `RolePlayFormScreen` already has the right pattern: base fields always shown, plus optional sections that start hidden, with an `Icons.add` button per not-yet-added section and a remove affordance on each added field (`_Section` / `_activeSections` + add-section buttons). Generalize this into a reusable form component and apply it to every entity form, each with **name** + **description** always shown and the DESIGN-004 markdown fields addable on demand:
-
-    - **`ProgramFormScreen`** (new — no plan editor exists today beyond the name rename via `renamePlan`): addable `briefIntroMd`, `commsMd`, `beforeRoundMd`. Closes item 7.
-    - **`ExerciseFormScreen`**: addable `methodMd`, `learningGoalsMd`, `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `commsMd`.
-    - **`StationFormScreen`** (today only name/description/position): addable `equipmentMd`, `situationMd`, `missionMd`, `logisticsMd`, `criticalQuestionsMd`, `leaderAnswersMd`, `directorNotesMd`.
-
-    DESIGN-004's "Where the data is edited" section is **amended (2026-06-02)** to this base-fields + add-on-demand pattern with the RolePlay reference; DESIGN-004 is amended, not superseded (its brief rendering, audience and markdown fields stand). This item is the implementation.
+13. ~~**Shared addable-field form pattern for Plan, Exercise and Station forms (DESIGN-004 amendment).**~~ **Resolved.** The addable-section pattern from `RolePlayFormScreen` is now a shared widget (`lib/views/widgets/optional_field_sections.dart`) consumed by every entity form: `RolePlayFormScreen` (refactored, behaviour-preserving), the new `ProgramFormScreen`, and the extended `ExerciseFormScreen` / `StationFormScreen` (with the DESIGN-004 markdown brief sections each form is responsible for). The program form is opened by tapping `_ProgramOverview` on the program view; when overview content is empty an explicit "Edit plan" button surfaces the form. DESIGN-004's "Where the data is edited" section is **implemented 2026-06-03** with a one-line changelog entry there.

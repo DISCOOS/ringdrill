@@ -75,3 +75,35 @@ exists.
 - Step 3: extend `ExerciseFormScreen`.
 - Step 4: extend `StationFormScreen`.
 - Step 5: tests + DESIGN-004 + followups status updates.
+
+## Closing notes (2026-06-03)
+
+All five steps landed on `main` across five commits:
+
+1. `refactor(widget): extract OptionalFieldSections from RolePlayFormScreen`
+2. `feat(program): add ProgramFormScreen and wire it from the overview`
+3. `feat(exercise): addable brief sections on ExerciseFormScreen`
+4. `feat(station): addable brief sections on StationFormScreen`
+5. `test(forms): cover OptionalFieldSections + brief-field round-trips`
+
+Tests added under `test/views/`:
+
+- `widgets/optional_field_sections_test.dart` (add/remove flow on the shared widget)
+- `program_form_screen_test.dart` (base + brief field round-trip, remove clears)
+- `exercise_form_screen_brief_test.dart` (seeded `methodMd` round-trip, remove clears)
+- `station_form_screen_brief_test.dart` (seeded `equipmentMd` round-trip, remove clears)
+
+DESIGN-004 "Where the data is edited" updated from *amend planned* to
+*implemented 2026-06-03* with a one-line changelog entry; items 7 and 13 in
+`DESIGN-006-followups.md` marked resolved.
+
+### Off-scope finding (worth a future follow-up)
+
+`StationFormScreen` already has an English-locale layout overflow: the
+fixed 230 px position panel + `PositionFormField`'s `Row(Text(label) +
+Spacer + Text("Pick a Location") + ...)` outgrows the panel. The
+station-form brief tests work around it by draining the
+`RenderFlex overflowed` exception from `tester.takeException()`. This
+pre-existed this change set; recording it here so a future pass can fix
+the panel (e.g. ellipsize the label, or widen the panel on wide screens)
+and drop the test workaround.
