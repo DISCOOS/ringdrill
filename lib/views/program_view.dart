@@ -98,10 +98,24 @@ class _ProgramViewState extends State<ProgramView> {
         });
       }),
     );
+
+    // Reveal the overview again on every segment switch. `_overviewVisible` is
+    // a single flag, so once it is hidden by scrolling one segment down it
+    // would otherwise stay hidden on a freshly-selected segment (which has no
+    // scroll-up event to bring it back). Each new lens starts with the
+    // overview shown; scrolling that lens down hides it again.
+    widget.controller.activeSegment.addListener(_onSegmentChanged);
+  }
+
+  void _onSegmentChanged() {
+    if (mounted && !_overviewVisible) {
+      setState(() => _overviewVisible = true);
+    }
   }
 
   @override
   void dispose() {
+    widget.controller.activeSegment.removeListener(_onSegmentChanged);
     super.dispose();
     for (var e in _subscriptions) {
       e.cancel();
