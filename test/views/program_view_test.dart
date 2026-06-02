@@ -227,13 +227,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final router = GoRouter(
       routes: [
-        for (final route in [
-          routeProgram,
-          routeMap,
-          routeStations,
-          routeRolePlays,
-          routeTeams,
-        ])
+        for (final route in [routeProgram, routeMap])
           GoRoute(path: route, builder: (_, _) => const SizedBox.shrink()),
       ],
     );
@@ -244,13 +238,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: MainScreen(
           router: router,
-          routes: const [
-            routeProgram,
-            routeMap,
-            routeStations,
-            routeRolePlays,
-            routeTeams,
-          ],
+          routes: const [routeProgram, routeMap],
           location: routeProgram,
           navigatorKey: GlobalKey<NavigatorState>(),
           isFirstLaunch: false,
