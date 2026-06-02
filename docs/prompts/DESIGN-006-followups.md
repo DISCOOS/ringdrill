@@ -11,3 +11,5 @@
 6. ~~**Stage 3: per-segment scroll/expansion state lost on segment switch.**~~ **Resolved.** The stage 3 manual-collapse rework dropped the `NestedScrollView` for a `Column` + `NotificationListener` + `IndexedStack`, so every segment stays mounted and keeps its expansion/scroll state across switches.
 
 7. **Stage 3: `Program.briefIntroMd` / `commsMd` never populated by `ProgramService.activeProgram`.** Sidecar markdown fields are only hydrated when reading from a `.drill` archive. Locally-created programs always have them null. The `commsMd` seam in `_ProgramOverview` is ready; when DESIGN-004 populates these fields in the repository, the overview preview renders automatically.
+
+8. **`SilentWitness` / "Tause vitner" — future Spill segment sibling.** A scenario element with description/story/purpose/info + position, no actor assignment. Publishable (lives in the Spill/Script segment alongside `RolePlay`). Distinct from `Actor` (no PII, no cast). Consider a shared `ScenarioElement` base when designing. See `docs/prompts/DESIGN-006-script-rename-handoff.md` for context.
