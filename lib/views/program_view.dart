@@ -923,8 +923,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
-    return switch (activeSegment.value) {
-      ProgramSegment.exercises => _buildExercisesActions(context),
+    final segmentActions = switch (activeSegment.value) {
+      ProgramSegment.exercises => null,
       ProgramSegment.stations => stationListController.buildActions(
         context,
         constraints,
@@ -938,11 +938,13 @@ abstract class ProgramPageControllerBase extends ScreenController {
         constraints,
       ),
     };
+    // The brief renders the whole plan and is segment-independent, so it shows
+    // on every lens, pinned rightmost (next to the status badge). Segment
+    // actions (filter, cast roster) sit to its left.
+    return [...?segmentActions, ...?_briefAction(context)];
   }
 
-  // Brief lives as an AppBar action on the exercises lens (its original home),
-  // not in the overview.
-  List<Widget>? _buildExercisesActions(BuildContext context) {
+  List<Widget>? _briefAction(BuildContext context) {
     final activeProgram = programService.activeProgram;
     if (activeProgram == null) return null;
     final localizations = AppLocalizations.of(context)!;

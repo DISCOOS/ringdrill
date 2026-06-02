@@ -207,40 +207,35 @@ void main() {
     await tester.pumpWidget(_programHarness(controllers, chrome: true));
     await tester.pumpAndSettle();
 
-    // Brief is an AppBar action on the Øvelser lens (its original home).
-    expect(
-      find
-          .descendant(
-            of: find.byType(AppBar),
-            matching: find.byIcon(Icons.menu_book),
-          )
-          .hitTestable(),
-      findsOneWidget,
-    );
+    // Brief is an AppBar action on every lens (it renders the whole plan).
+    Finder appBarBrief() => find
+        .descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.menu_book),
+        )
+        .hitTestable();
+
+    expect(appBarBrief(), findsOneWidget);
     expect(find.byType(FloatingActionButton).hitTestable(), findsOneWidget);
 
+    // Poster filters via an AppBar action (Icons.filter_list), like Markører,
+    // not a body FAB. Brief stays present.
     _select(controllers, ProgramSegment.stations);
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.tune).hitTestable(), findsOneWidget);
-    expect(
-      find
-          .descendant(
-            of: find.byType(AppBar),
-            matching: find.byIcon(Icons.menu_book),
-          )
-          .hitTestable(),
-      findsNothing,
-    );
+    expect(find.byIcon(Icons.filter_list).hitTestable(), findsOneWidget);
+    expect(appBarBrief(), findsOneWidget);
 
     _select(controllers, ProgramSegment.roleplays);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.filter_list).hitTestable(), findsOneWidget);
     expect(find.byIcon(Icons.recent_actors).hitTestable(), findsOneWidget);
+    expect(appBarBrief(), findsOneWidget);
 
     _select(controllers, ProgramSegment.teams);
     await tester.pumpAndSettle();
     expect(find.byType(FloatingActionButton).hitTestable(), findsNothing);
     expect(find.byIcon(Icons.recent_actors).hitTestable(), findsNothing);
+    expect(appBarBrief(), findsOneWidget);
   });
 
   testWidgets('wide detail empty pane follows the active program segment', (

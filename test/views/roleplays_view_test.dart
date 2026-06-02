@@ -123,15 +123,8 @@ Widget _buildView() {
               [],
         ),
         body: RolePlaysView(controller: controller),
-        // Wire the controller FAB so tests can assert on "Ny rolle".
-        floatingActionButton: Builder(
-          builder: (fabContext) =>
-              controller.buildFAB(
-                fabContext,
-                BoxConstraints.loose(const Size(400, 56)),
-              ) ??
-              const SizedBox.shrink(),
-        ),
+        // "Ny rolle" now renders inside RolePlaysView's body (above the filter
+        // banner), not as a Scaffold FAB, so there is nothing to wire here.
       ),
     ),
   );

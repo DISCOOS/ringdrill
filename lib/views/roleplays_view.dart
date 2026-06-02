@@ -185,9 +185,29 @@ class _RolePlaysViewState extends State<RolePlaysView> {
             );
     }
 
+    // The "Ny rolle" FAB lives inside the body Stack (not the Scaffold) so
+    // the filter banner rendered below pushes it up instead of sitting on
+    // top of it. Mirrors the retired station filter-FAB layout.
     return Column(
       children: [
-        Expanded(child: body),
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(child: body),
+              if (ProgramService().activeProgramUuid != null)
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: FloatingActionButton.extended(
+                    heroTag: null,
+                    onPressed: () => _controller.openCreateRolePlay(context),
+                    icon: const Icon(Icons.add),
+                    label: Text(localizations.newRole),
+                  ),
+                ),
+            ],
+          ),
+        ),
         if (filterExercise != null)
           _buildFilterBanner(context, localizations, filterExercise),
       ],
@@ -593,21 +613,10 @@ class RolePlaysController extends ScreenController {
   String title(BuildContext context) =>
       AppLocalizations.of(context)!.rolePlaysTab;
 
-  // FAB: "Ny rolle" — opens an exercise-picker sheet then [RolePlayFormScreen].
-  // The body filter FAB that used to sit here has moved to the AppBar (below).
-  @override
-  Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
-    final hasActiveProgram = ProgramService().activeProgramUuid != null;
-    if (!hasActiveProgram) return null;
-    return FloatingActionButton.extended(
-      heroTag: null,
-      onPressed: () => _openCreateRolePlay(context),
-      icon: const Icon(Icons.add),
-      label: Text(AppLocalizations.of(context)!.newRole),
-    );
-  }
-
-  Future<void> _openCreateRolePlay(BuildContext context) async {
+  // "Ny rolle" is rendered as a FAB inside RolePlaysView's body (above the
+  // filter banner) rather than a Scaffold FAB, so the banner pushes it up
+  // instead of covering it. The create flow stays here.
+  Future<void> openCreateRolePlay(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
     final service = ProgramService();
     final exercises = service.loadExercises();

@@ -207,45 +207,15 @@ class _StationListViewState extends State<StationListView> {
             );
     }
 
-    // The filter FAB lives inside the body Stack rather than on the
-    // Scaffold's floatingActionButton slot. That way the filter banner
-    // (rendered below the Stack) pushes the FAB up naturally instead of
-    // sitting on top of it. Mirrors the Map tab pattern where the
-    // visibility FAB is embedded in MapView's `topRightCommands` slot,
-    // not on the Scaffold.
+    // Filtering is an AppBar action (see [StationListController.buildActions]),
+    // matching the Markører segment, so the FAB slot is free and the filter
+    // banner at the bottom is never covered by a floating button.
     return Column(
       children: [
-        Expanded(
-          child: Stack(
-            children: [
-              Positioned.fill(child: body),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: _buildFilterFab(context, localizations),
-              ),
-            ],
-          ),
-        ),
+        Expanded(child: body),
         if (filterExercise != null)
           _buildFilterBanner(context, localizations, filterExercise),
       ],
-    );
-  }
-
-  Widget _buildFilterFab(BuildContext context, AppLocalizations localizations) {
-    return ValueListenableBuilder<String?>(
-      valueListenable: _controller.filterExerciseUuid,
-      builder: (context, active, _) {
-        final fab = FloatingActionButton(
-          heroTag: null, // no hero animation; prevents tag collision if two instances are live
-          tooltip: localizations.selectExercises,
-          onPressed: () => _controller.openFilterSheet(context),
-          child: const Icon(Icons.tune),
-        );
-        if (active == null) return fab;
-        return Badge.count(count: 1, child: fab);
-      },
     );
   }
 
@@ -463,9 +433,30 @@ class StationListController extends ScreenController {
   String title(BuildContext context) =>
       AppLocalizations.of(context)!.stationsTab;
 
-  // No Scaffold-level FAB: the view embeds its own filter FAB inside
-  // the body so the filter banner can push it up. See the layout in
-  // [StationListView.build].
+  // Filter by exercise as an AppBar action, mirroring RolePlaysController so
+  // both the Poster and Markører segments filter the same way and the FAB
+  // slot stays free.
+  @override
+  List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
+    final localizations = AppLocalizations.of(context)!;
+    final hasActiveProgram = ProgramService().activeProgramUuid != null;
+    return [
+      ValueListenableBuilder<String?>(
+        valueListenable: filterExerciseUuid,
+        builder: (context, active, _) {
+          final button = IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: localizations.selectExercises,
+            onPressed: hasActiveProgram
+                ? () => openFilterSheet(context)
+                : null,
+          );
+          if (active == null) return button;
+          return Badge.count(count: 1, child: button);
+        },
+      ),
+    ];
+  }
 
   Future<void> openFilterSheet(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;

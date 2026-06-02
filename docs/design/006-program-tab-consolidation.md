@@ -121,7 +121,7 @@ Content, all read-only:
 
 There is no plan-counts summary line. An earlier revision showed a "team count · segment count" line, but it added little and was removed.
 
-The brief is reached from the existing **`Icons.menu_book` AppBar action on the Øvelser lens** (its original home), not from the overview. An earlier revision moved it into the overview, but it looked out of place there, so it was returned to the AppBar.
+The brief is reached from the **`Icons.menu_book` AppBar action**, present on every segment (it renders the whole plan), not from the overview. An earlier revision moved it into the overview, but it looked out of place there, so it was returned to the AppBar.
 
 The overview is read-only. Plan rename stays on the AppBar title tap, and field editing happens in the relevant form. `briefIntroMd` exists on the model and loads at runtime (`program/intro.md`, [ADR-0022](../adrs/0022-markdown-content-as-files.md)); editing it is the DESIGN-004 stage 4 markdown editor on `ProgramFormScreen`, not part of this surface. When the plan has no description or brief intro, the overview is empty and collapses to nothing, and the switcher below is always present.
 
@@ -154,16 +154,16 @@ Leaning toward option 1, since the four icons already exist (`Icons.update`, `Ic
 
 ### Contextual FAB and actions
 
-This is where the crowding is actually solved. With one tab, the FAB and AppBar actions follow the active segment instead of being contested across tabs:
+This is where the crowding is actually solved. With one tab, the FAB follows the active segment, and the AppBar carries the segment's own actions plus a constant brief action:
 
-| Segment   | FAB                    | Notable AppBar action            |
-|-----------|------------------------|----------------------------------|
-| Øvelser   | "Ny øvelse"            | Brief (or fold into overview)    |
-| Poster    | Exercise filter        | —                                |
-| Markører  | "Ny rolle" / filter    | —                                |
-| Team      | "Nytt lag"             | —                                |
+| Segment   | FAB           | Segment AppBar action(s)        |
+|-----------|---------------|----------------------------------|
+| Øvelser   | "Ny øvelse"   | —                                |
+| Poster    | —             | Exercise filter                  |
+| Markører  | "Ny rolle"    | Exercise filter, cast roster     |
+| Team      | —             | —                                |
 
-The Poster filter keeps the existing badge + banner + picker pattern from DESIGN-002. The brief action (`Icons.menu_book`) stays on the Øvelser lens's AppBar, its original home.
+The **brief** (`Icons.menu_book`) is a constant action on **every** segment, pinned rightmost next to the status badge, because it renders the whole plan and is segment-independent. The exercise **filter** is an AppBar action on **both** Poster and Markører (the same badge + banner + picker pattern from DESIGN-002), keeping the FAB slot free for "create" actions. Earlier the Poster filter was a body FAB and only Markører's was an action; they were unified to an action so the design matches and the FAB no longer covers the filter banner.
 
 ### Sliver structure
 
@@ -244,7 +244,7 @@ Sequenced so each stage is shippable and reviewable on its own.
 
 **Stage 2 — Collapse the navigation.** Remove the Stations, RolePlays and Teams root destinations, reducing the navigation to **Program + Map** (`routes` becomes `[routeProgram, routeMap]`). The Roster tab is **not** introduced here — it arrives in stage 4 once it has a body, so stage 2 leaves a clean two-tab navigation rather than an empty Roster tab. Adopt the program-scoped routing scheme from [ADR-0032](../adrs/0032-program-scoped-routing.md): every program-scoped path carries `/program/:uuid/`, rendering it activates that program, and the old un-prefixed paths (`/stations/...`, `/teams/...`, `/roleplays/...`) become back-compat redirects that forward to the canonical path. Resolving an old un-prefixed entity path is active-program-relative, matching today's semantics (those links never carried a program uuid), not a cross-program scan. Update `_buildDestinations`, `_pages`, `_initTab`, `_onDestinationSelected` and the empty-pane builder.
 
-**Stage 3 — Overview.** Add the read-only overview above the switcher (`description` and the `briefIntroMd` preview, with a "Les mer" / "Vis mindre" toggle, no counts summary line). Collapse it on scroll while keeping the switcher visible. The brief stays an AppBar action on the Øvelser lens. Implemented as a manual collapse (overview hides on scroll-down, reappears on scroll-up) with the segment body kept as an `IndexedStack`, rather than a pinned `SliverPersistentHeader` — the sliver forced a fixed switcher height and an opaque background that did not match the master pane, and its active-only body dropped per-segment state.
+**Stage 3 — Overview.** Add the read-only overview above the switcher (`description` and the `briefIntroMd` preview, with a "Les mer" / "Vis mindre" toggle, no counts summary line). Collapse it on scroll while keeping the switcher visible. The brief is a constant AppBar action on every segment. Implemented as a manual collapse (overview hides on scroll-down, reappears on scroll-up) with the segment body kept as an `IndexedStack`, rather than a pinned `SliverPersistentHeader` — the sliver forced a fixed switcher height and an opaque background that did not match the master pane, and its active-only body dropped per-segment state.
 
 **Stage 4 — Roster tab (view shell).** Add `/roster` and a flat list of `Actor` entries as the people registry. Read and edit via the existing actor flow. This already fixes the hidden-actor problem before the person-with-role model exists.
 
@@ -254,4 +254,5 @@ Sequenced so each stage is shippable and reviewable on its own.
 
 * 2026-05-31 — Drafted from design dialogue and **Accepted** the same day. Captures the three-tab navigation, the four-segment Program switcher, the read-only overview, per-segment FAB and actions, and the Roster people layer (`nb` "Bemanning"). DESIGN-002 and DESIGN-003 superseded on acceptance. Open items carried into implementation: narrow-master switcher control, tab order, Map's place.
 * 2026-06-02 — Stage 3 review revisions. `briefIntroMd` already exists in code, so the overview previews it rather than shipping description-only. The overview collapse is a manual hide-on-scroll with the switcher as an always-visible row and the body kept as an `IndexedStack`, replacing a pinned `SliverPersistentHeader` that forced an enlarged switcher, a mismatched opaque background and an active-only body that lost per-segment state. The brief returns to its AppBar action on the Øvelser lens after the overview "Åpne brief" affordance read poorly.
+* 2026-06-02 — Action/FAB rationalization. The brief becomes a constant AppBar action on every segment (it renders the whole plan, so scoping it to one lens was illogical). The Poster filter moves from a body FAB to an AppBar action, matching Markører, so both filter the same way and the FAB slot is reserved for "create"; this also fixes the filter FAB covering the filter banner. The Markører "Ny rolle" create FAB renders inside the view body above the filter banner (not as a Scaffold FAB), so the banner pushes it up instead of being covered.
 * 2026-06-02 — Overview content trimmed. Dropped the "team count · segment count" summary line (it rendered as bare nouns and added little) and added a "Les mer" / "Vis mindre" toggle that expands and collapses the description/brief-intro prose, shown only when the text is long enough to truncate. New `showMore` / `showLess` localization keys.
