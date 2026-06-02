@@ -102,7 +102,7 @@ String? legacyProgramRedirect(String location) {
   return null;
 }
 
-Future<String?> _activateCanonicalProgramPath(String location) async {
+String? _activateCanonicalProgramPath(String location) {
   final segments = Uri.parse(location).pathSegments;
   if (segments.length < 2 || segments.first != 'program') return null;
 
@@ -111,8 +111,24 @@ Future<String?> _activateCanonicalProgramPath(String location) async {
   if (service.loadProgram(candidateUuid) == null) {
     return _activeProgramPath();
   }
+  // Activation is a side effect, not a routing decision. Awaiting setActive
+  // inside the redirect mutated ProgramService and rebuilt the shell during
+  // SchedulerPhase.midFrameMicrotasks, which tripped
+  // RenderParagraph._scheduleSystemFontsUpdate ("called during
+  // SchedulerPhase.midFrameMicrotasks"). Defer it to a post-frame callback so
+  // setActive's listeners fire when the scheduler is idle: the page renders
+  // against the current active program for one frame, then the activation
+  // triggers a clean rebuild. The redirect itself stays synchronous and pure.
   if (service.activeProgramUuid != candidateUuid) {
-    await service.setActive(candidateUuid);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final s = ProgramService();
+      // Re-check inside the callback: the active program may have changed
+      // (or the program been removed) between scheduling and the frame.
+      if (s.activeProgramUuid != candidateUuid &&
+          s.loadProgram(candidateUuid) != null) {
+        await s.setActive(candidateUuid);
+      }
+    });
   }
   return null;
 }
@@ -132,7 +148,7 @@ GoRouter buildRouter(bool isFirstLaunch) {
   return GoRouter(
     navigatorKey: key,
     debugLogDiagnostics: kDebugMode,
-    redirect: (context, state) async {
+    redirect: (context, state) {
       final location = state.uri.path;
       debugPrint('[$GoRouter] redirect >> $location');
       if (location.startsWith('/i/')) {
