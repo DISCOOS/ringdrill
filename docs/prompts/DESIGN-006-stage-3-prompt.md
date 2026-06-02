@@ -14,8 +14,8 @@ Stage 3 adds the overview region at the top of the Program tab. It is additive a
 
 - A **collapsing read-only overview** at the top of the Program tab that scrolls away as the user moves down a long segment list.
 - The segment switcher stays **pinned** below the overview, always reachable even after the overview has scrolled off.
-- Overview content (all read-only): a plan summary line (team count `numberOfTeams` plus a count for the active segment, e.g. station count for Poster), the active plan's `description` when present, and an **"Åpne brief"** affordance.
-- "Åpne brief" opens the brief at the canonical program-scoped path from stage 2 (the `programBriefPath(uuid)` helper), and the existing brief AppBar action on the Øvelser segment is **removed** so the overview becomes the single brief entry point for the Program tab.
+- Overview content (all read-only): a plan summary line (team count `numberOfTeams` plus a count for the active segment, e.g. station count for Poster), the active plan's `description` when present, and a `briefIntroMd` preview.
+- The brief stays an `Icons.menu_book` AppBar action on the Øvelser lens (its original home). (An earlier revision of this stage moved it into the overview as an "Åpne brief" affordance; it read poorly there and was reverted.)
 
 **Out of scope (do not touch):**
 
@@ -72,15 +72,15 @@ Restructure the Program tab body so the read-only overview sits above a pinned s
 
 Gates green. Commit.
 
-### Step 2 — `feat(program)`: wire "Åpne brief" and retire the per-segment brief action
+### Step 2 — `feat(program)`: keep the brief as the Øvelser AppBar action
 
-Add the "Åpne brief" affordance to the overview, navigating to the canonical brief path (`programBriefPath(activeProgramUuid)`). Remove the brief `IconButton` from `_buildExercisesActions` so the Øvelser segment no longer carries it in the AppBar; the overview is now the single brief entry point for the Program tab.
+The brief stays the `Icons.menu_book` AppBar action on the Øvelser lens (`_buildExercisesActions`), navigating to the canonical brief path (`programBriefPath(activeProgramUuid)`). The overview carries no brief affordance.
 
 Gates green. Commit.
 
 ### Step 3 — `test(program)`: cover the overview
 
-Widget tests under `test/`: the overview renders the summary line and description; it renders the `briefIntroMd` preview when non-empty and omits it when empty; the summary's segment count follows the active segment; scrolling the segment list collapses the overview while the switcher stays pinned and usable; "Åpne brief" navigates to the canonical brief path; the Øvelser AppBar no longer shows the brief action. Do not add coverage for unrelated surrounding code.
+Widget tests under `test/`: the overview renders the summary line and description; it renders the `briefIntroMd` preview when non-empty and omits it when empty; the summary's segment count follows the active segment; scrolling the segment list collapses the overview while the switcher stays visible and usable; the Øvelser AppBar shows the brief action and switching segments retains each segment's State. Do not add coverage for unrelated surrounding code.
 
 Gates green. Commit.
 

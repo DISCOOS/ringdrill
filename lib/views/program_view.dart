@@ -59,6 +59,9 @@ class _ProgramViewState extends State<ProgramView> {
   List<Exercise> _exercises = [];
   ExerciseEvent? _liveEvent;
   String? _expandedExerciseUuid;
+  // The collapsing overview hides while the active segment list scrolls down
+  // and reappears on scroll up. The switcher stays pinned as a normal row.
+  bool _overviewVisible = true;
 
   @override
   void initState() {
@@ -202,30 +205,51 @@ class _ProgramViewState extends State<ProgramView> {
     final exerciseBody = kIsWeb
         ? exercises
         : SharedFileWidget(child: exercises);
-    return NestedScrollView(
-      headerSliverBuilder: (context, _) => [
-        SliverToBoxAdapter(
-          child: _ProgramOverview(controller: widget.controller),
-        ),
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _SegmentSwitcherDelegate(
-            controller: widget.controller,
+    // Manual collapse instead of a pinned SliverPersistentHeader. The switcher
+    // is an always-visible row, so it inherits the master pane background and
+    // keeps its natural M3 size rather than being forced to fill a fixed sliver
+    // extent. The overview hides when the active list scrolls down and returns
+    // on scroll up. The body stays an IndexedStack so each segment keeps its
+    // own expansion/scroll state across switches.
+    return NotificationListener<ScrollUpdateNotification>(
+      onNotification: (notification) {
+        final delta = notification.scrollDelta ?? 0;
+        if (delta > 0 && _overviewVisible) {
+          setState(() => _overviewVisible = false);
+        } else if (delta < 0 && !_overviewVisible) {
+          setState(() => _overviewVisible = true);
+        }
+        return false;
+      },
+      child: Column(
+        children: [
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            alignment: Alignment.topCenter,
+            child: _overviewVisible
+                ? _ProgramOverview(controller: widget.controller)
+                : const SizedBox(width: double.infinity),
           ),
-        ),
-      ],
-      body: ValueListenableBuilder<ProgramSegment>(
-        valueListenable: widget.controller.activeSegment,
-        builder: (context, activeSegment, _) {
-          return switch (activeSegment) {
-            ProgramSegment.exercises => exerciseBody,
-            ProgramSegment.stations =>
-              StationListView(controller: widget.stationListController),
-            ProgramSegment.roleplays =>
-              RolePlaysView(controller: widget.rolePlaysController),
-            ProgramSegment.teams => const TeamsView(),
-          };
-        },
+          _ProgramSegmentSwitcher(controller: widget.controller),
+          Expanded(
+            child: ValueListenableBuilder<ProgramSegment>(
+              valueListenable: widget.controller.activeSegment,
+              builder: (context, activeSegment, _) {
+                return IndexedStack(
+                  index: activeSegment.index,
+                  children: [
+                    exerciseBody,
+                    StationListView(
+                      controller: widget.stationListController,
+                    ),
+                    RolePlaysView(controller: widget.rolePlaysController),
+                    const TeamsView(),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -350,10 +374,7 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
   }
 }
 
-// Height of _ProgramSegmentSwitcher: Padding(top: 8) + SegmentedButton (M3 ~40).
-const double _kSwitcherHeight = 48.0;
-
-/// Collapsing read-only overview rendered above the pinned segment switcher.
+/// Collapsing read-only overview rendered above the segment switcher.
 /// Scrolls off as the user moves down the active segment list.
 class _ProgramOverview extends StatelessWidget {
   const _ProgramOverview({required this.controller});
@@ -416,21 +437,7 @@ class _ProgramOverview extends StatelessWidget {
               ],
               // TODO(DESIGN-004): render program.commsMd preview here when
               // program-level brief fields land.
-              const SizedBox(height: 4),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.menu_book),
-                  label: Text(l10n.briefAction),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () => GoRouter.of(context).push(
-                    programBriefPath(program.uuid),
-                  ),
-                ),
-              ),
+              // The brief entry point lives in the AppBar action, not here.
             ],
           ),
         );
@@ -451,39 +458,6 @@ class _ProgramOverview extends StatelessWidget {
         .join(' ');
     return stripped.isEmpty ? null : stripped;
   }
-}
-
-/// Pinned [SliverPersistentHeaderDelegate] wrapping [_ProgramSegmentSwitcher].
-/// Uses a fixed height so only the overview sliver above it scrolls off.
-class _SegmentSwitcherDelegate extends SliverPersistentHeaderDelegate {
-  const _SegmentSwitcherDelegate({required this.controller});
-
-  final ProgramPageControllerBase controller;
-
-  @override
-  double get minExtent => _kSwitcherHeight;
-
-  @override
-  double get maxExtent => _kSwitcherHeight;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return SizedBox(
-      height: maxExtent,
-      child: ColoredBox(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: _ProgramSegmentSwitcher(controller: controller),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_SegmentSwitcherDelegate old) =>
-      controller != old.controller;
 }
 
 class ExerciseCard extends StatefulWidget {
@@ -903,9 +877,21 @@ abstract class ProgramPageControllerBase extends ScreenController {
     };
   }
 
-  // The brief entry point moved to the _ProgramOverview affordance (DESIGN-006
-  // stage 3). No per-segment AppBar actions remain for the exercises lens.
-  List<Widget>? _buildExercisesActions(BuildContext context) => null;
+  // Brief lives as an AppBar action on the exercises lens (its original home),
+  // not in the overview.
+  List<Widget>? _buildExercisesActions(BuildContext context) {
+    final activeProgram = programService.activeProgram;
+    if (activeProgram == null) return null;
+    final localizations = AppLocalizations.of(context)!;
+    return [
+      IconButton(
+        icon: const Icon(Icons.menu_book),
+        tooltip: localizations.briefAction,
+        onPressed: () =>
+            GoRouter.of(context).push(programBriefPath(activeProgram.uuid)),
+      ),
+    ];
+  }
 
   /// Shows the exercise picker as a bottom sheet on small form factors and as
   /// a centered modal dialog on wide ones (same responsive behaviour as

@@ -92,7 +92,6 @@ The Program tab holds the four structural sets of the plan, viewable one at a ti
 │  ┌─ overview (collapses on scroll) ─────────┐  │
 │  │  4 lag · 5 poster                        │  │
 │  │  <briefIntro preview, when present>      │  │  ← read-only projection
-│  │  [Åpne brief]                            │  │
 │  └──────────────────────────────────────────┘  │
 │  ┌─ pinned ─────────────────────────────────┐  │
 │  │  [ Øvelser | Poster | Markører | Team ]  │  │  ← segmented switcher
@@ -118,7 +117,8 @@ Content, all read-only:
 
 * Plan summary line: team count (`numberOfTeams`) and a count for the active segment (e.g. station count).
 * A compact, truncated preview of the program-level brief intro (`program.briefIntroMd`) when present. Rendered in plain Material style, **not** the `BriefTheme` docs-site look from [ADR-0023](../adrs/0023-brief-theme-tokens.md). That palette stays confined to the brief sheet so it does not clash with the working surfaces around it.
-* An "Åpne brief" affordance that opens the brief sheet (`/brief/program/:programUuid`).
+
+The brief is reached from the existing **`Icons.menu_book` AppBar action on the Øvelser lens** (its original home), not from the overview. An earlier revision moved it into the overview as an "Åpne brief" affordance, but it looked out of place there, so it was returned to the AppBar.
 
 Because the overview is read-only, editing routes out the way it does today. Tapping the summary opens the relevant form (the exercise edit form, or `ProgramFormScreen` for the brief fields once they exist).
 
@@ -162,7 +162,7 @@ This is where the crowding is actually solved. With one tab, the FAB and AppBar 
 | Markører  | "Ny rolle" / filter    | —                                |
 | Team      | "Nytt lag"             | —                                |
 
-The Poster filter keeps the existing badge + banner + picker pattern from DESIGN-002. The existing brief action (`Icons.menu_book`) on the Exercises AppBar can move into the overview's "Åpne brief" affordance, reclaiming an AppBar slot.
+The Poster filter keeps the existing badge + banner + picker pattern from DESIGN-002. The brief action (`Icons.menu_book`) stays on the Øvelser lens's AppBar, its original home.
 
 ### Sliver structure
 
@@ -214,7 +214,7 @@ Roster holds real people, so the whole tab is the stripped-on-publish PII layer.
 
 * **Supersedes [DESIGN-002](./stations-tab.md) (Stations tab).** The flat station list, the exercise filter (badge + banner + picker), the mutex expansion and the `StationExpansionTile` / `StationMiniMap` shared widgets all survive, relocated into the Poster segment. The standalone `/stations` root tab and its label are retired.
 * **Supersedes [DESIGN-003](./roleplays-tab.md) (RolePlays tab).** The role list moves into the Markører segment, the cast side moves to Roster.
-* **Extends [DESIGN-004](./brief-template.md).** Adds the master-pane overview as a new read-only surface for `program.briefIntroMd` / `commsMd`, and "Åpne brief" as an entry point. No change to DESIGN-004's fields, renderer or storage.
+* **Extends [DESIGN-004](./brief-template.md).** Adds the master-pane overview as a new read-only surface previewing `program.briefIntroMd`. No change to DESIGN-004's fields, renderer or storage, and the brief is still reached from its AppBar action.
 * **Works within [DESIGN-005](./wide-screen-layout.md) / [ADR-0030](../adrs/0030-wide-screen-master-detail-layout.md).** Master pane only.
 * **Precedes [ADR-0028](../adrs/0028-feature-first-views-layout.md).** The `lib/views/` feature-first refactor is deferred until DESIGN-006 is complete, because this design moves the feature boundaries the refactor would group by (Stations and RolePlays become segments, Roster is new). DESIGN-006 is built on the current flat structure, and ADR-0028 then runs once against the settled shape, with its grouping plan reviewed against this outcome first.
 
@@ -243,7 +243,7 @@ Sequenced so each stage is shippable and reviewable on its own.
 
 **Stage 2 — Collapse the navigation.** Remove the Stations, RolePlays and Teams root destinations, reducing the navigation to **Program + Map** (`routes` becomes `[routeProgram, routeMap]`). The Roster tab is **not** introduced here — it arrives in stage 4 once it has a body, so stage 2 leaves a clean two-tab navigation rather than an empty Roster tab. Adopt the program-scoped routing scheme from [ADR-0032](../adrs/0032-program-scoped-routing.md): every program-scoped path carries `/program/:uuid/`, rendering it activates that program, and the old un-prefixed paths (`/stations/...`, `/teams/...`, `/roleplays/...`) become back-compat redirects that forward to the canonical path. Resolving an old un-prefixed entity path is active-program-relative, matching today's semantics (those links never carried a program uuid), not a cross-program scan. Update `_buildDestinations`, `_pages`, `_initTab`, `_onDestinationSelected` and the empty-pane builder.
 
-**Stage 3 — Overview sliver.** Add the read-only overview above the switcher. Team count and `description` first. Wire "Åpne brief" to the brief sheet and move the brief AppBar action into it.
+**Stage 3 — Overview.** Add the read-only overview above the switcher (summary line, `description`, and the `briefIntroMd` preview). Collapse it on scroll while keeping the switcher visible. The brief stays an AppBar action on the Øvelser lens. Implemented as a manual collapse (overview hides on scroll-down, reappears on scroll-up) with the segment body kept as an `IndexedStack`, rather than a pinned `SliverPersistentHeader` — the sliver forced a fixed switcher height and an opaque background that did not match the master pane, and its active-only body dropped per-segment state.
 
 **Stage 4 — Roster tab (view shell).** Add `/roster` and a flat list of `Actor` entries as the people registry. Read and edit via the existing actor flow. This already fixes the hidden-actor problem before the person-with-role model exists.
 
@@ -252,3 +252,4 @@ Sequenced so each stage is shippable and reviewable on its own.
 ## Changelog
 
 * 2026-05-31 — Drafted from design dialogue and **Accepted** the same day. Captures the three-tab navigation, the four-segment Program switcher, the read-only overview, per-segment FAB and actions, and the Roster people layer (`nb` "Bemanning"). DESIGN-002 and DESIGN-003 superseded on acceptance. Open items carried into implementation: narrow-master switcher control, tab order, Map's place.
+* 2026-06-02 — Stage 3 review revisions. `briefIntroMd` already exists in code, so the overview previews it rather than shipping description-only. The overview collapse is a manual hide-on-scroll with the switcher as an always-visible row and the body kept as an `IndexedStack`, replacing a pinned `SliverPersistentHeader` that forced an enlarged switcher, a mismatched opaque background and an active-only body that lost per-segment state. The brief returns to its AppBar action on the Øvelser lens after the overview "Åpne brief" affordance read poorly.

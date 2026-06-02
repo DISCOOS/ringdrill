@@ -172,12 +172,11 @@ void main() {
     expect(find.text('Segment Team').hitTestable(), findsOneWidget);
   });
 
-  // Segment body state (e.g. expanded station tile) is NOT retained across
-  // segment switches. The NestedScrollView + active-only body approach was
-  // adopted as the fallback from DESIGN-006 stage-3 because IndexedStack
-  // + per-child PrimaryScrollController scoping unmounts child subtrees on
-  // every switch, making state retention impossible without GlobalKeys.
-  testWidgets('segment body expansion is reset when switching away', (
+  // The IndexedStack body (manual-collapse rework, replacing the
+  // NestedScrollView + active-only fallback) keeps every segment mounted, so a
+  // segment's State — e.g. an expanded station tile — is retained across
+  // switches.
+  testWidgets('segment body expansion is retained when switching away', (
     tester,
   ) async {
     final controllers = _HarnessControllers();
@@ -192,12 +191,12 @@ void main() {
     // Expanded station tile shows the role name.
     expect(find.text('Segment Role').hitTestable(), findsOneWidget);
 
-    // Switching away and back resets the expansion.
+    // Switching away and back keeps the expansion.
     _select(controllers, ProgramSegment.roleplays);
     await tester.pump();
     _select(controllers, ProgramSegment.stations);
-    await tester.pump();
-    expect(find.text('Segment Role').hitTestable(), findsNothing);
+    await tester.pumpAndSettle();
+    expect(find.text('Segment Role').hitTestable(), findsOneWidget);
   });
 
   testWidgets('changes contextual FAB and AppBar actions by segment', (
@@ -208,8 +207,7 @@ void main() {
     await tester.pumpWidget(_programHarness(controllers, chrome: true));
     await tester.pumpAndSettle();
 
-    // Brief entry point moved to _ProgramOverview (DESIGN-006 stage 3); the
-    // Øvelser AppBar no longer carries the brief icon — only the overview does.
+    // Brief is an AppBar action on the Øvelser lens (its original home).
     expect(
       find
           .descendant(
@@ -217,7 +215,7 @@ void main() {
             matching: find.byIcon(Icons.menu_book),
           )
           .hitTestable(),
-      findsNothing,
+      findsOneWidget,
     );
     expect(find.byType(FloatingActionButton).hitTestable(), findsOneWidget);
 
