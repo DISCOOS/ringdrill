@@ -2648,6 +2648,18 @@ abstract class AppLocalizations {
   /// **'Select a role'**
   String get detailEmptyRolePlay;
 
+  /// Settings section heading for the staff-role selector (DESIGN-006 step 4).
+  ///
+  /// In en, this message translates to:
+  /// **'My role'**
+  String get appUserRoleSectionTitle;
+
+  /// Subtitle under the staff-role section heading in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your staff role. Sets the default level of detail shown in briefs.'**
+  String get appUserRoleSectionDescription;
+
   /// FAB label on the Markører segment that creates a new RolePlay.
   ///
   /// In en, this message translates to:

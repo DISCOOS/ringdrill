@@ -1546,6 +1546,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get detailEmptyRolePlay => 'Velg en markør';
 
   @override
+  String get appUserRoleSectionTitle => 'Min rolle';
+
+  @override
+  String get appUserRoleSectionDescription =>
+      'Velg din funksjon i staben. Styrer hvilken brevvariant som vises som standard.';
+
+  @override
   String get newRole => 'Ny rolle';
 
   @override

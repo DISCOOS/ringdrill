@@ -716,6 +716,15 @@
     "description": "Empty detail pane text shown on the teams tab."
   },
 
+  "appUserRoleSectionTitle": "Min rolle",
+  "@appUserRoleSectionTitle": {
+    "description": "Innstillinger-seksjonstittel for stabsfunksjonsvelgeren (DESIGN-006 steg 4)."
+  },
+  "appUserRoleSectionDescription": "Velg din funksjon i staben. Styrer hvilken brevvariant som vises som standard.",
+  "@appUserRoleSectionDescription": {
+    "description": "Undertittel under stabsfunksjons-seksjonen i innstillinger."
+  },
+
   "newRole": "Ny rolle",
   "@newRole": {
     "description": "FAB-etikett i Markører-segmentet for å opprette en ny markørordre."

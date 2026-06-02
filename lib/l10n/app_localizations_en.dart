@@ -1549,6 +1549,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailEmptyRolePlay => 'Select a role';
 
   @override
+  String get appUserRoleSectionTitle => 'My role';
+
+  @override
+  String get appUserRoleSectionDescription =>
+      'Choose your staff role. Sets the default level of detail shown in briefs.';
+
+  @override
   String get newRole => 'New role';
 
   @override

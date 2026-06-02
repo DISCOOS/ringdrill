@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/settings_page.dart'
-    show AnalyticsConsentSettings;
+    show AnalyticsConsentSettings, AppUserRoleSettings;
 import 'package:ringdrill/web/pwa_update_web.dart'
     show forcePwaUpdate;
 
@@ -19,6 +19,8 @@ class SettingsPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
+            AppUserRoleSettings(),
+            const Divider(),
             AnalyticsConsentSettings(),
             const Divider(),
             // Notifications Settings Section

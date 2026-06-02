@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -11,6 +12,7 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
 // Pattern: unqualified = web, if(dart.library.io) = native stub.
 import 'package:ringdrill/web/brief_print_web.dart'
@@ -90,7 +92,30 @@ class _BriefScreenState extends State<BriefScreen> {
   @override
   void initState() {
     super.initState();
-    _audience = widget.initialAudience ?? BriefAudience.participant;
+    // Default to director (Øvelsesleder) — participants do not use the app.
+    // If the device user has stored their staff role, that overrides this
+    // default once the async load completes. A caller-supplied initialAudience
+    // takes precedence over both (e.g. when an external entry-point links to a
+    // specific audience).
+    _audience = widget.initialAudience ?? BriefAudience.director;
+    if (widget.initialAudience == null) {
+      _loadStoredRole();
+    }
+  }
+
+  /// Reads the stored [AppUserRole] preference and updates [_audience] if set.
+  /// The initial default (director) stays in effect until this resolves, so
+  /// there is at most one extra render when the stored role differs.
+  Future<void> _loadStoredRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    final roleStr = prefs.getString(AppConfig.keyAppUserRole);
+    if (roleStr == null || !mounted) return;
+    final role = AppUserRole.values.where((r) => r.name == roleStr).firstOrNull;
+    if (role == null) return;
+    setState(() {
+      _audience = role.briefAudience;
+      _renderFuture = _buildRenderFuture(AppLocalizations.of(context)!);
+    });
   }
 
   @override

@@ -1512,6 +1512,15 @@
     "description": "Empty detail pane text shown on the role-plays tab."
   },
 
+  "appUserRoleSectionTitle": "My role",
+  "@appUserRoleSectionTitle": {
+    "description": "Settings section heading for the staff-role selector (DESIGN-006 step 4)."
+  },
+  "appUserRoleSectionDescription": "Choose your staff role. Sets the default level of detail shown in briefs.",
+  "@appUserRoleSectionDescription": {
+    "description": "Subtitle under the staff-role section heading in Settings."
+  },
+
   "newRole": "New role",
   "@newRole": {
     "description": "FAB label on the Markører segment that creates a new RolePlay."

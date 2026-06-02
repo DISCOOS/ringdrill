@@ -114,11 +114,19 @@ Map<String, Object> _buildPrefs() {
   };
 }
 
-Widget _buildScreen({String? exerciseUuid, String? programUuid}) {
+Widget _buildScreen({
+  String? exerciseUuid,
+  String? programUuid,
+  BriefAudience? initialAudience,
+}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: BriefScreen(exerciseUuid: exerciseUuid, programUuid: programUuid),
+    home: BriefScreen(
+      exerciseUuid: exerciseUuid,
+      programUuid: programUuid,
+      initialAudience: initialAudience,
+    ),
   );
 }
 
@@ -182,35 +190,41 @@ void main() {
     );
   });
 
-  group('BriefScreen — participant audience (default)', () {
+  // Default audience is director (Øvelsesleder) — DESIGN-006 step 3/4.
+  // Participants do not use the app, so the brief opens at director level.
+  group('BriefScreen — director audience (default)', () {
     testWidgets('renders exercise brief markdown', (tester) async {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
       await _awaitRender(tester);
 
-      // Role name must appear in the markdown for participant audience
+      // Role name appears for all audiences.
       expect(_markdownData(tester), contains('Anne Glemsk'));
     });
 
-    testWidgets('hides actor PII for participant', (tester) async {
+    testWidgets('shows actor PII by default (director audience)', (tester) async {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
+      await _awaitRender(tester);
+
+      final md = _markdownData(tester);
+      // Director audience includes actor real name and phone.
+      expect(md, contains('Kari Hansen'));
+      expect(md, contains('99887766'));
+    });
+  });
+
+  group('BriefScreen — participant audience (explicit)', () {
+    testWidgets('hides actor PII for participant', (tester) async {
+      await tester.pumpWidget(
+        _buildScreen(
+          exerciseUuid: _exerciseUuid,
+          initialAudience: BriefAudience.participant,
+        ),
+      );
       await _awaitRender(tester);
 
       final md = _markdownData(tester);
       expect(md, isNot(contains('Kari Hansen')));
       expect(md, isNot(contains('99887766')));
-    });
-  });
-
-  group('BriefScreen — director audience', () {
-    testWidgets('shows actor PII when director selected', (tester) async {
-      await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
-      await _awaitRender(tester);
-
-      await _tapAudience(tester, 'Director');
-
-      final md = _markdownData(tester);
-      expect(md, contains('Kari Hansen'));
-      expect(md, contains('99887766'));
     });
   });
 

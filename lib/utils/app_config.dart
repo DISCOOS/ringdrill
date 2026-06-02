@@ -13,6 +13,7 @@ class AppConfig {
       'app:isNotificationVibrateEnabled';
   static const String keyUrgentNotificationThreshold =
       'app:isUrgentNotificationThreshold';
+  static const String keyAppUserRole = 'app:appUserRole:v1';
   static const String ringDrillBaseUrl = 'https://ringdrill.netlify.app';
   static const String briefViewerBaseUrl = 'https://ringdrill.app';
 
