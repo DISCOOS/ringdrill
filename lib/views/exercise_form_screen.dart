@@ -5,6 +5,17 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/widgets/optional_field_sections.dart';
+
+/// Optional addable markdown sections on [Exercise] (DESIGN-004).
+enum _ExerciseSection {
+  method,
+  learningGoals,
+  trainingFocus,
+  orderFormat,
+  executionTips,
+  comms,
+}
 
 class ExerciseFormScreen extends StatefulWidget {
   const ExerciseFormScreen({super.key, this.exercise, this.numberOfTeams});
@@ -54,6 +65,14 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   bool _stationsTracksTeams = true;
   bool _legacyOversizedCounters = false;
 
+  final Map<_ExerciseSection, TextEditingController> _sectionControllers = {
+    for (final s in _ExerciseSection.values) s: TextEditingController(),
+  };
+  final Map<_ExerciseSection, FocusNode> _sectionFocusNodes = {
+    for (final s in _ExerciseSection.values) s: FocusNode(),
+  };
+  final Set<_ExerciseSection> _activeSections = {};
+
   @override
   void initState() {
     final e = widget.exercise;
@@ -72,10 +91,52 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
           (widget.numberOfTeams ?? e.numberOfTeams) > _maxCounterValue ||
           e.stations.length > _maxCounterValue ||
           e.numberOfRounds > _maxCounterValue;
+      _seedSection(_ExerciseSection.method, e.methodMd);
+      _seedSection(_ExerciseSection.learningGoals, e.learningGoalsMd);
+      _seedSection(_ExerciseSection.trainingFocus, e.trainingFocusMd);
+      _seedSection(_ExerciseSection.orderFormat, e.orderFormatMd);
+      _seedSection(_ExerciseSection.executionTips, e.executionTipsMd);
+      _seedSection(_ExerciseSection.comms, e.commsMd);
     } else {
       _numberOfStationsController.text = _numberOfTeamsController.text;
     }
     super.initState();
+  }
+
+  void _seedSection(_ExerciseSection section, String? value) {
+    if (value == null) return;
+    _activeSections.add(section);
+    _sectionControllers[section]!.text = value;
+  }
+
+  void _addSection(_ExerciseSection section) {
+    setState(() => _activeSections.add(section));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sectionFocusNodes[section]?.requestFocus();
+    });
+  }
+
+  void _removeSection(_ExerciseSection section) {
+    setState(() {
+      _activeSections.remove(section);
+      _sectionControllers[section]?.clear();
+    });
+  }
+
+  String _labelFor(_ExerciseSection section, AppLocalizations l) =>
+      switch (section) {
+        _ExerciseSection.method => l.briefSectionExerciseMethod,
+        _ExerciseSection.learningGoals => l.briefSectionExerciseLearningGoals,
+        _ExerciseSection.trainingFocus => l.briefSectionExerciseTrainingFocus,
+        _ExerciseSection.orderFormat => l.briefSectionExerciseOrderFormat,
+        _ExerciseSection.executionTips => l.briefSectionExerciseExecutionTips,
+        _ExerciseSection.comms => l.briefSectionExerciseComms,
+      };
+
+  String? _readSection(_ExerciseSection section) {
+    if (!_activeSections.contains(section)) return null;
+    final value = _sectionControllers[section]!.text.trim();
+    return value.isEmpty ? null : value;
   }
 
   @override
@@ -296,6 +357,23 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                   ],
                 ),
                 ?_buildStationsRoundNote(localizations),
+
+                const Divider(height: 32),
+
+                OptionalFieldSections<_ExerciseSection>(
+                  sections: [
+                    for (final section in _ExerciseSection.values)
+                      OptionalFieldSection<_ExerciseSection>(
+                        id: section,
+                        label: _labelFor(section, localizations),
+                        controller: _sectionControllers[section]!,
+                        focusNode: _sectionFocusNodes[section],
+                      ),
+                  ],
+                  activeIds: _activeSections,
+                  onAdd: _addSection,
+                  onRemove: _removeSection,
+                ),
               ],
             ),
           ),
@@ -390,8 +468,20 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         localizations: localizations,
       );
 
+      // generateSchedule rebuilds the Exercise from its scalar inputs, so the
+      // sidecar markdown brief fields (which live outside JSON per ADR-0022)
+      // would be dropped unless we put them back via copyWith.
+      final withBrief = newExercise.copyWith(
+        methodMd: _readSection(_ExerciseSection.method),
+        learningGoalsMd: _readSection(_ExerciseSection.learningGoals),
+        trainingFocusMd: _readSection(_ExerciseSection.trainingFocus),
+        orderFormatMd: _readSection(_ExerciseSection.orderFormat),
+        executionTipsMd: _readSection(_ExerciseSection.executionTips),
+        commsMd: _readSection(_ExerciseSection.comms),
+      );
+
       // Return the exercise to the previous screen
-      Navigator.of(context).pop(newExercise);
+      Navigator.of(context).pop(withBrief);
     }
   }
 
@@ -449,6 +539,12 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     _evaluationTimeController.dispose();
     _rotationTimeController.dispose();
     _executionTimeController.dispose();
+    for (final c in _sectionControllers.values) {
+      c.dispose();
+    }
+    for (final f in _sectionFocusNodes.values) {
+      f.dispose();
+    }
     super.dispose();
   }
 }
