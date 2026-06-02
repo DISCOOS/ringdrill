@@ -919,6 +919,13 @@ class AppLocalizationsNb extends AppLocalizations {
       'Denne planen er koblet til nett-biblioteket';
 
   @override
+  String get planStatusUnpublished => 'Upublisert';
+
+  @override
+  String get planStatusUnpublishedTooltip =>
+      'Trykk for å publisere endringene dine til katalogen';
+
+  @override
   String get addExercisesMyPlansSubtitle => 'Velg en plan å hente øvelser fra';
 
   @override

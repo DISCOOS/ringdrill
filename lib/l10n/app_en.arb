@@ -966,6 +966,8 @@
   "planStatusLocal": "Local",
   "planStatusLocalTooltip": "This plan lives only on your device",
   "planStatusOnlineTooltip": "This plan is linked to the online library",
+  "planStatusUnpublished": "Unpublished",
+  "planStatusUnpublishedTooltip": "Tap to publish your changes to the catalog",
   "addExercisesMyPlansSubtitle": "Pick a plan to pull exercises from",
   "addExercisesFromFileSubtitle": "Import exercises from a .drill file",
   "addExercisesEmptyMyPlans": "No other plans to pull from yet",

@@ -924,6 +924,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'This plan is linked to the online library';
 
   @override
+  String get planStatusUnpublished => 'Unpublished';
+
+  @override
+  String get planStatusUnpublishedTooltip =>
+      'Tap to publish your changes to the catalog';
+
+  @override
   String get addExercisesMyPlansSubtitle =>
       'Pick a plan to pull exercises from';
 

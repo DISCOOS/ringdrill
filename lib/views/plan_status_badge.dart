@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
@@ -26,9 +27,15 @@ class PlanStatusBadge extends StatefulWidget {
 class _PlanStatusBadgeState extends State<PlanStatusBadge> {
   StreamSubscription<ProgramEvent>? _programEventsSub;
 
+  /// Whether the active catalog plan has local edits that have not been
+  /// published yet. Recomputed only on [ProgramEvent]s (not on every build)
+  /// so the program content hash is not re-run on each rebuild.
+  bool _hasUnpublishedChanges = false;
+
   @override
   void initState() {
     super.initState();
+    _refreshUnpublishedState();
     _scheduleProbeIfNeeded();
     // Re-evaluate when the active plan changes so switching to a fresh
     // catalog plan kicks off an initial probe. Also rebuild — the badge's
@@ -37,6 +44,7 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
     // must propagate through build, not just trigger a probe.
     _programEventsSub = ProgramService().events.listen((_) {
       if (!mounted) return;
+      _refreshUnpublishedState();
       setState(() {});
       _scheduleProbeIfNeeded();
     });
@@ -70,6 +78,27 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
     await active_actions.probeCatalogService(context);
   }
 
+  /// Recompute whether the active catalog plan diverges from its published
+  /// snapshot. Edits are saved to SharedPreferences immediately, but they are
+  /// not pushed to the catalog until the user publishes, so a divergent
+  /// content hash means "unpublished", never "unsaved".
+  void _refreshUnpublishedState() {
+    final program = ProgramService().activeProgram;
+    _hasUnpublishedChanges =
+        program != null &&
+        active_actions.isCatalogProgram(program) &&
+        program.contentHash != null &&
+        program.computeContentHash() != program.contentHash;
+  }
+
+  Future<void> _onPublishTap() async {
+    // Reuse the shared publish flow. For an already-published catalog plan
+    // this is a one-tap silent update, with 412-conflict handling and a
+    // result snackbar. A successful publish emits a ProgramEvent that
+    // flips this badge back to the plain online state.
+    await active_actions.publishActivePlan(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final program = ProgramService().activeProgram;
@@ -87,6 +116,16 @@ class _PlanStatusBadgeState extends State<PlanStatusBadge> {
         label: localizations.planStatusLocal,
         color: foreground,
         tooltip: localizations.planStatusLocalTooltip,
+      );
+    }
+
+    if (_hasUnpublishedChanges) {
+      return _BadgeChip(
+        icon: Icons.cloud_upload_outlined,
+        label: localizations.planStatusUnpublished,
+        color: foreground,
+        tooltip: localizations.planStatusUnpublishedTooltip,
+        onTap: _onPublishTap,
       );
     }
 

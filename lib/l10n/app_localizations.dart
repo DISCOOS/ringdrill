@@ -1526,6 +1526,18 @@ abstract class AppLocalizations {
   /// **'This plan is linked to the online library'**
   String get planStatusOnlineTooltip;
 
+  /// No description provided for @planStatusUnpublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpublished'**
+  String get planStatusUnpublished;
+
+  /// No description provided for @planStatusUnpublishedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to publish your changes to the catalog'**
+  String get planStatusUnpublishedTooltip;
+
   /// No description provided for @addExercisesMyPlansSubtitle.
   ///
   /// In en, this message translates to:

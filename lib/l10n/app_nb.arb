@@ -253,6 +253,8 @@
   "planStatusLocal": "Lokal",
   "planStatusLocalTooltip": "Denne planen ligger bare på enheten din",
   "planStatusOnlineTooltip": "Denne planen er koblet til nett-biblioteket",
+  "planStatusUnpublished": "Upublisert",
+  "planStatusUnpublishedTooltip": "Trykk for å publisere endringene dine til katalogen",
   "addExercisesMyPlansSubtitle": "Velg en plan å hente øvelser fra",
   "addExercisesFromFileSubtitle": "Importer øvelser fra en .drill-fil",
   "addExercisesEmptyMyPlans": "Du har ingen andre planer å hente fra ennå",
