@@ -208,13 +208,31 @@ void main() {
     await tester.pumpWidget(_programHarness(controllers, chrome: true));
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.menu_book).hitTestable(), findsOneWidget);
+    // Brief entry point moved to _ProgramOverview (DESIGN-006 stage 3); the
+    // Øvelser AppBar no longer carries the brief icon — only the overview does.
+    expect(
+      find
+          .descendant(
+            of: find.byType(AppBar),
+            matching: find.byIcon(Icons.menu_book),
+          )
+          .hitTestable(),
+      findsNothing,
+    );
     expect(find.byType(FloatingActionButton).hitTestable(), findsOneWidget);
 
     _select(controllers, ProgramSegment.stations);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.tune).hitTestable(), findsOneWidget);
-    expect(find.byIcon(Icons.menu_book).hitTestable(), findsNothing);
+    expect(
+      find
+          .descendant(
+            of: find.byType(AppBar),
+            matching: find.byIcon(Icons.menu_book),
+          )
+          .hitTestable(),
+      findsNothing,
+    );
 
     _select(controllers, ProgramSegment.roleplays);
     await tester.pumpAndSettle();

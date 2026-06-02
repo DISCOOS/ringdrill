@@ -416,6 +416,21 @@ class _ProgramOverview extends StatelessWidget {
               ],
               // TODO(DESIGN-004): render program.commsMd preview here when
               // program-level brief fields land.
+              const SizedBox(height: 4),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.menu_book),
+                  label: Text(l10n.briefAction),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () => GoRouter.of(context).push(
+                    programBriefPath(program.uuid),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -885,19 +900,9 @@ abstract class ProgramPageControllerBase extends ScreenController {
     };
   }
 
-  List<Widget>? _buildExercisesActions(BuildContext context) {
-    final activeProgram = programService.activeProgram;
-    if (activeProgram == null) return null;
-    final localizations = AppLocalizations.of(context)!;
-    return [
-      IconButton(
-        icon: const Icon(Icons.menu_book),
-        tooltip: localizations.briefAction,
-        onPressed: () =>
-            GoRouter.of(context).push(programBriefPath(activeProgram.uuid)),
-      ),
-    ];
-  }
+  // The brief entry point moved to the _ProgramOverview affordance (DESIGN-006
+  // stage 3). No per-segment AppBar actions remain for the exercises lens.
+  List<Widget>? _buildExercisesActions(BuildContext context) => null;
 
   /// Shows the exercise picker as a bottom sheet on small form factors and as
   /// a centered modal dialog on wide ones (same responsive behaviour as
