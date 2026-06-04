@@ -2,7 +2,7 @@
 
 You are working in the RingDrill repository. Implement ADR-0035 ("Give exercises an explicit order field and user-driven reordering") end-to-end. The ADR at `docs/adrs/0035-exercise-ordering.md` is the authoritative spec and is `accepted`. Read it in full before writing any code. It builds directly on ADR-0034 (auto-numbering), which is already implemented.
 
-The change gives `Exercise` an explicit `index` field, sorts exercises on it instead of by name, migrates existing plans deterministically from their current name order, and ships three ways to change the order: drag-to-reorder, move up/down in the row overflow, and one-shot sort actions.
+The change gives `Exercise` an explicit `index` field, sorts exercises on it instead of by name, migrates existing plans deterministically from their current name order, and adds a dedicated reorder mode (drag handles only while active, accessibility via the framework's move-up/down semantics) plus one-shot sort actions. The default list rows stay clean.
 
 ## Ground rules
 
@@ -11,7 +11,7 @@ Read `AGENTS.md` and follow every numbered rule. The non-negotiable ones for thi
 * **Run codegen, not regex.** Adding the `index` field to the `@freezed` `Exercise` class requires `make build`. Never hand-edit `*.freezed.dart` or `*.g.dart`.
 * **CLI stays Flutter-free.** `lib/models/exercise.dart` is in the CLI's transitive import graph via `lib/data/drill_client.dart`. Do not add a Flutter import to it. Verify with `dart compile exe bin/ringdrill.dart -o /tmp/ringdrill-cli`.
 * **Localize every user-visible string.** The move and sort action labels go in `lib/l10n/app_en.arb` and `lib/l10n/app_nb.arb` together. If you do not know the Norwegian wording, copy the English and flag it in the final commit body.
-* **Do not collide with edit affordances.** Per ADR-0031, swipe and long-press on a row mean "edit". The reorder drag handle must be a distinct hit target (a trailing handle driven by `ReorderableDragStartListener`), never the row body.
+* **Reorder happens in a dedicated mode, not via persistent per-row controls.** The default list rows stay clean (badge, title, subtitle, chevron). No per-row overflow menu — that contradicts ADR-0031, which keeps row editing on swipe / long-press and reserves overflow for the AppBar. Drag handles appear only while reorder mode is active.
 * **No raw English in widgets**, no new lint suppressions, match `dart format`.
 * **Verify before claiming green.** `flutter analyze` and `flutter test` must pass, and each commit must leave the tree compiling.
 
@@ -28,7 +28,7 @@ Conventional Commits with a scope. Allowed types: `feat`, `fix`, `refactor`, `ch
 
 ## Scope
 
-Six steps. Do them in order. Each step must compile on its own.
+Five steps. Do them in order. Each step must compile on its own.
 
 ### Step 1. The `index` field on Exercise
 
@@ -89,48 +89,37 @@ Files expected in this commit:
 
 Run `flutter analyze` and `flutter test test/services/`. Run `git status`. Commit: `feat(services): assign exercise index on create/copy/import and add reorder`.
 
-### Step 4. Drag to reorder
+### Step 4. Reorder mode and sort actions
 
-Edit `lib/views/program_view.dart`. In the Øvelser segment, convert the exercises `ListView.builder` to a `ReorderableListView.builder`. Requirements:
+Edit `lib/views/program_view.dart`. Add a reorder mode to the Øvelser segment rather than persistent per-row controls.
 
-* Each row needs a stable `Key` (use the exercise uuid).
-* The drag affordance is an explicit trailing handle wrapped in `ReorderableDragStartListener`, not the row body. The row keeps its existing tap (open), swipe and long-press (edit) behaviour untouched, per ADR-0031.
-* `onReorder` computes the new uuid order and calls the Step 3 `reorderExercises` / `moveExercise`, then refreshes the list (`setState(_initExercises)` or the existing refresh path).
-* The exercise-number badge added in ADR-0034 must update to reflect the new order after a reorder.
+* Add a "Sorter" toggle action to the segment AppBar that enters reorder mode, and a "Ferdig" action (or the same toggle) to exit. Hold the mode in view state.
+* **Default mode (not reordering):** rows are unchanged — number badge, title, subtitle, expand chevron. No drag handle, no per-row overflow menu. Tap-to-open, swipe-to-edit and long-press-to-edit stay exactly as they are.
+* **Reorder mode:** the exercises list becomes a `ReorderableListView.builder`. Each row needs a stable `Key` (the exercise uuid). Swap the trailing chevron for a drag handle wrapped in `ReorderableDragStartListener`, and suspend the row body's tap/swipe/long-press while the mode is active so gestures do not fight the drag. `onReorder` computes the new uuid order, calls the Step 3 `reorderExercises` / `moveExercise`, and refreshes the list. The exercise-number badge must renumber to reflect the new order.
+* **Accessibility:** rely on `ReorderableListView`'s built-in "move up" / "move down" semantic actions on the handle. Do not add explicit move-up/down buttons or a per-row overflow menu.
+* **One-shot sort:** add "Sorter etter starttid" and "Sorter alfabetisk" to the segment AppBar overflow. Each rewrites all indices once (by `startTime`, then by `name`) via the reorder method, after which the order is manual again. These are available without entering reorder mode.
 
-If the wide-screen master/detail layout (ADR-0030) renders its own exercises list, apply the same treatment there or, if dragging in the narrow master column is impractical, rely on the Step 5 move actions there and document the choice in a code comment.
+If the wide-screen master/detail layout (ADR-0030) renders its own exercises list, apply the same reorder-mode treatment there, or document in a code comment why it differs.
 
-Files expected in this commit:
-
-* `lib/views/program_view.dart`
-* any caller touched to thread the reorder callback
-
-Run `flutter analyze`. Run `git status`. Commit: `feat(views): drag to reorder exercises in the Øvelser segment`.
-
-### Step 5. Move up/down and one-shot sort actions
-
-Edit `lib/views/program_view.dart` again:
-
-* Add "Flytt opp" / "Flytt ned" to each exercise row's overflow menu, disabled at the ends. Each calls the Step 3 reorder method. This is the keyboard- and screen-reader-reachable path and the precise option in the wide master column.
-* Add "Sorter etter starttid" and "Sorter alfabetisk" to the Øvelser segment AppBar overflow. Each rewrites all indices once (by `startTime`, then by `name`) via the reorder method, after which the order is manual again.
-
-Add the l10n keys for all four actions to `lib/l10n/app_en.arb` and `lib/l10n/app_nb.arb` together.
+Add l10n keys for "Sorter", "Ferdig", "Sorter etter starttid" and "Sorter alfabetisk" to `lib/l10n/app_en.arb` and `lib/l10n/app_nb.arb` together.
 
 Files expected in this commit:
 
 * `lib/views/program_view.dart`
 * `lib/l10n/app_en.arb`
 * `lib/l10n/app_nb.arb`
+* any caller touched to thread the reorder callback
 
-Run `flutter analyze` and `flutter test`. Run `git status`. Commit: `feat(views): add move up/down and one-shot sort actions for exercises`.
+Run `flutter analyze` and `flutter test`. Run `git status`. Commit: `feat(views): add a reorder mode and sort actions for exercises`.
 
-### Step 6. Widget tests and verification pass
+### Step 5. Widget tests and verification pass
 
 Add `test/views/program_view_exercise_order_test.dart` (or extend an existing program-view test):
 
-* Reordering via the move-down action persists the new order and updates the rendered exercise numbers.
-* A one-shot "sort by start time" reorders rows chronologically and renumbers them.
-* The drag callback (`onReorder`) maps a from/to index pair to the correct persisted order.
+* Entering reorder mode shows drag handles and hides the chevron; exiting restores the default rows.
+* The drag callback (`onReorder`) maps a from/to index pair to the correct persisted order and updates the rendered exercise numbers.
+* A one-shot "sort by start time" reorders rows chronologically and renumbers them, without entering reorder mode.
+* In default mode, swipe/long-press still triggers edit and never a reorder.
 
 Files expected in this commit:
 
@@ -148,13 +137,13 @@ Run `flutter analyze` and the full `flutter test`. Run `git status`. Commit: `te
 6. **Diff sanity.** `git log --stat origin/main..HEAD` — walk every changed path and confirm each is in the intended commit.
 7. Manual QA matrix (record the result in the final commit body):
    * Open a plan saved before this change. Confirm the exercise order and numbers are unchanged from before, i.e. the migration preserved the old name order.
-   * Drag an exercise to a new position. Confirm the number badges renumber and the order survives a navigate-away-and-back.
-   * Use "Flytt opp"/"Flytt ned" and confirm they match the drag result and are disabled at the ends.
-   * Run "Sorter etter starttid" and "Sorter alfabetisk" and confirm each renumbers correctly, then that individual rows can still be nudged afterwards.
-   * Confirm swipe-to-edit and long-press-to-edit still work on a row and never trigger a reorder.
+   * Enter reorder mode, drag an exercise to a new position, exit. Confirm the number badges renumber and the order survives a navigate-away-and-back.
+   * In reorder mode, confirm a screen reader (or the semantics inspector) exposes "move up" / "move down" on the drag handle.
+   * Run "Sorter etter starttid" and "Sorter alfabetisk" and confirm each renumbers correctly, then that individual rows can still be nudged afterwards in reorder mode.
+   * In default mode, confirm there is no drag handle or per-row overflow, and that swipe-to-edit and long-press-to-edit still work and never trigger a reorder.
 
 ## Deliverables
 
-A series of six Conventional Commits as outlined, all on one branch, clean tree at the end. The final commit body includes the manual QA matrix and a note on any open question the implementation answered (in particular, how reordering behaves in the wide-screen master column).
+A series of five Conventional Commits as outlined, all on one branch, clean tree at the end. The final commit body includes the manual QA matrix and a note on any open question the implementation answered (in particular, how reorder mode behaves in the wide-screen master column).
 
 ADR-0035 is the authoritative spec. If you find yourself contradicting it, stop and ask. Do not write a new ADR unless something forces a structural deviation.

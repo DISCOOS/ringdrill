@@ -60,25 +60,26 @@ Old archives have no `index`, so every exercise deserializes to `0`. A `0`-colli
 
 ### Ways to change the order
 
-A single drag gesture is not enough on its own. The decision is to ship three complementary mechanisms, primary first:
+Reordering lives in a dedicated **reorder mode**, not in persistent per-row controls. Cluttering every row with a drag handle and an overflow menu was rejected: it is visually noisy, and a per-row overflow menu contradicts [ADR-0031](./0031-row-edit-affordances.md), which keeps row editing on swipe / long-press and reserves overflow for the AppBar.
 
-1. **Drag to reorder (primary).** The Øvelser segment list becomes a `ReorderableListView`. The drag handle is an explicit trailing affordance, not the row body, so it does not collide with swipe-to-edit or long-press-to-edit ([ADR-0031](./0031-row-edit-affordances.md)). This is the natural touch interaction and the default on compact.
-2. **Move up / Move down (accessibility and wide-screen).** Each row's overflow menu gains "Flytt opp" / "Flytt ned", disabled at the ends. This is the keyboard- and screen-reader-reachable path, and it is the precise option in the wide master column where dragging across a tall list is awkward. It is also the only reorder path that works without a pointer.
-3. **One-shot sort actions (bootstrap and cleanup).** The segment AppBar overflow gains "Sorter etter starttid" and "Sorter alfabetisk". Each rewrites all indices once, then the order is manual again. Chronological order is the most common starting intent, and this lets a user get 90% of the way there before nudging individual rows.
+* **Default view stays clean.** Each row shows only the number badge, title, subtitle and the expand chevron. No drag handle, no per-row overflow. Tap to open, swipe or long-press to edit, exactly as before.
+* **Reorder mode (primary).** A "Sorter" action in the Øvelser segment AppBar toggles reorder mode. In that mode the list is a `ReorderableListView`: the chevron is swapped for a trailing drag handle (`ReorderableDragStartListener`), the row body's tap/swipe/long-press are suspended, and a "Ferdig" action exits. This is the familiar iOS/Material edit-mode pattern and keeps the handle on screen only while it is wanted.
+* **Accessibility comes for free.** `ReorderableListView` exposes "move up" / "move down" semantic actions on the drag handle, so keyboard and screen-reader users can reorder without a pointer and without a separate move menu. No explicit move-up/down buttons are needed.
+* **One-shot sort actions (bootstrap).** The segment AppBar overflow gains "Sorter etter starttid" and "Sorter alfabetisk". Each rewrites all indices once, after which the order is manual again. Chronological order is the most common starting intent, and this gets a user most of the way there before they nudge individual rows in reorder mode.
 
-Reordering writes the new indices through `saveExercise` so the change persists immediately, the same write path the move actions use.
+Reordering writes the new indices through `saveExercise` so the change persists immediately, the same write path the sort actions use.
 
-Considered and deferred: editing the number inline to jump an exercise to a position (powerful but easy to fat-finger, and it competes with the badge being read-only), and "flytt til topp/bunn" shortcuts (cheap to add later if the move actions prove tedious on long lists).
+Considered and deferred: long-press-to-drag without a handle (no clutter, but it collides with long-press-to-edit and would force changing the ADR-0031 convention for this one list), a separate full-screen "Sorter øvelser" surface (keeps the main list untouched but adds a navigation step), editing the number inline to jump to a position, and "flytt til topp/bunn" shortcuts.
 
 ### Consequences
 
 * Good: Exercise order is explicit, user-owned data, and the ADR-0034 number finally means something.
 * Good: One ordering pattern across `Exercise`, `Station` and `RolePlay`.
 * Good: Existing plans migrate to their current visible order with no surprise reshuffle.
-* Good: Three reorder paths cover touch, pointer-free, and wide-screen, and a chronological bootstrap.
-* Bad: A new field on `Exercise` plus codegen, and three UI surfaces (drag, overflow moves, sort actions) to build and localize.
+* Good: Reorder mode keeps the default list clean, drag and screen-reader move actions both work, and a chronological sort bootstraps the order.
+* Bad: A new field on `Exercise` plus codegen, and a reorder-mode toggle plus sort actions to build and localize.
 * Bad: The `0`-collision migration heuristic is implicit. It is robust for real data but has to be covered by tests, including the edge case of a hand-edited file with partial indices.
-* Bad: `ReorderableListView` plus the existing swipe/long-press affordances on the same row needs care so the gestures do not fight; the drag handle must be a distinct hit target.
+* Bad: Reorder mode is extra view state to manage (enter/exit, suspend row gestures while active), though it avoids the gesture conflict a persistent in-row handle would create with swipe/long-press editing.
 
 ## Pros and cons of the options
 
@@ -86,9 +87,9 @@ Considered and deferred: editing the number inline to jump an exercise to a posi
 
 * Good: First-class, user-controlled order; consistent with `Station`/`RolePlay`.
 * Good: Deterministic migration preserves current order.
-* Good: Reorder paths cover every input modality.
-* Bad: New field, codegen, and three UI surfaces.
-* Bad: Migration heuristic and gesture coexistence need test coverage.
+* Good: Reorder mode covers touch and pointer-free input while keeping the default list clean.
+* Bad: New field, codegen, and a reorder mode plus sort actions.
+* Bad: Migration heuristic and reorder-mode state need test coverage.
 
 ### Option B — Sort by `startTime`
 
