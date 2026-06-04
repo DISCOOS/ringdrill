@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/team.dart';
 
@@ -17,6 +18,8 @@ sealed class Program with _$Program {
     required String uuid,
     required String name,
     required String description,
+    @Default(ExerciseNumberFormat.hash) ExerciseNumberFormat exerciseNumberFormat,
+    @Default(StationNumberFormat.dotted) StationNumberFormat stationNumberFormat,
     required ProgramMetadata metadata,
     @Default(ProgramSource.local()) ProgramSource source,
     String? contentHash,

@@ -10,6 +10,18 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
   uuid: json['uuid'] as String,
   name: json['name'] as String,
   description: json['description'] as String,
+  exerciseNumberFormat:
+      $enumDecodeNullable(
+        _$ExerciseNumberFormatEnumMap,
+        json['exerciseNumberFormat'],
+      ) ??
+      ExerciseNumberFormat.hash,
+  stationNumberFormat:
+      $enumDecodeNullable(
+        _$StationNumberFormatEnumMap,
+        json['stationNumberFormat'],
+      ) ??
+      StationNumberFormat.dotted,
   metadata: ProgramMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
   source: json['source'] == null
       ? const ProgramSource.local()
@@ -40,6 +52,10 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'uuid': instance.uuid,
   'name': instance.name,
   'description': instance.description,
+  'exerciseNumberFormat':
+      _$ExerciseNumberFormatEnumMap[instance.exerciseNumberFormat]!,
+  'stationNumberFormat':
+      _$StationNumberFormatEnumMap[instance.stationNumberFormat]!,
   'metadata': instance.metadata,
   'source': instance.source,
   'contentHash': instance.contentHash,
@@ -48,6 +64,13 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'exercises': instance.exercises,
   'rolePlays': instance.rolePlays,
   'actors': instance.actors,
+};
+
+const _$ExerciseNumberFormatEnumMap = {ExerciseNumberFormat.hash: 'hash'};
+
+const _$StationNumberFormatEnumMap = {
+  StationNumberFormat.dotted: 'dotted',
+  StationNumberFormat.alpha: 'alpha',
 };
 
 _Local _$LocalFromJson(Map<String, dynamic> json) =>
