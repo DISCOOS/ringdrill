@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -27,6 +28,7 @@ import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart';
+import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
@@ -169,6 +171,8 @@ class _ProgramViewState extends State<ProgramView> {
             },
             child: ExerciseCard(
               exercise: exercise,
+              program: _programService.activeProgram,
+              exerciseNumber: index + 1,
               localizations: localizations,
               markers: markers,
               liveEvent: _liveEvent,
@@ -579,6 +583,8 @@ class ExerciseCard extends StatefulWidget {
   const ExerciseCard({
     super.key,
     required this.exercise,
+    this.program,
+    this.exerciseNumber,
     required this.localizations,
     this.trailing,
     required this.markers,
@@ -593,6 +599,16 @@ class ExerciseCard extends StatefulWidget {
 
   final Widget? trailing;
   final Exercise exercise;
+
+  /// Owning program, used to resolve [exerciseNumberFormat] for the badge.
+  /// When null, no badge is shown in [leading] and the live indicator
+  /// falls back to the standard [LiveAccent.indicator] behaviour.
+  final Program? program;
+
+  /// 1-based position of [exercise] in [program.exercises]. When null,
+  /// no badge is shown (picker mode, no numbering needed).
+  final int? exerciseNumber;
+
   final AppLocalizations localizations;
   final List<StationLocation> markers;
 
@@ -671,10 +687,22 @@ class _ExerciseCardState extends State<ExerciseCard> {
       '${exercise.numberOfTeams} ${localizations.team(exercise.numberOfTeams).toLowerCase()}',
     ];
 
+    final exerciseNum = widget.exerciseNumber;
+    final program = widget.program;
+    final leading = (exerciseNum != null && program != null)
+        ? ExerciseNumberBadge(
+            label: Numbering.exercise(
+              program.exerciseNumberFormat,
+              exerciseNum,
+            ),
+            highlight: isLive,
+          )
+        : accent.indicator;
+
     return ExpandableTile(
       accent: accent,
       selected: widget.selected,
-      leading: accent.indicator,
+      leading: leading,
       title: Text(
         exercise.name,
         style: TextStyle(fontWeight: FontWeight.bold, color: accent.foreground),
