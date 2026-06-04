@@ -40,6 +40,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0030 | [Adopt a Material 3 master/detail layout on medium and expanded viewports, promote forms to modal dialogs and anchor the drill mini-player to the master column](./0030-wide-screen-master-detail-layout.md) | Accepted |
 | ADR-0031 | [Row edit affordances use swipe and long-press; pencil reserved for AppBar](./0031-row-edit-affordances.md) | Proposed |
 | ADR-0032 | [Prefix every program-scoped path with `/program/:uuid/` and drive activation from the URL](./0032-program-scoped-routing.md) | Accepted |
+| ADR-0033 | [Adopt a selective platform-adaptive UI layer on iOS, keeping Material as the base](./0033-platform-adaptive-ui-on-ios.md) | Proposed |
 
 ## When to write an ADR
 
