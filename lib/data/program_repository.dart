@@ -185,8 +185,37 @@ class ProgramRepository {
       final parsed = _tryParseEntry(key, value, Exercise.fromJson);
       if (parsed != null) items.add(parsed);
     }
-    items.sort((a, b) => a.name.compareTo(b.name));
-    return items;
+    return _normaliseExerciseOrder(items);
+  }
+
+  /// Sort [items] by their [Exercise.index] when the indices form a valid
+  /// dense permutation (0..n-1). When they do not — the common case for plans
+  /// created before ADR-0035 where every exercise defaults to 0 — fall back to
+  /// the old alphabetical sort and reassign 0..n-1 in that order. This
+  /// deterministic migration reproduces the pre-ADR-0035 visible order exactly.
+  ///
+  /// A single-exercise list is always valid: one item at index 0 is already a
+  /// valid permutation.
+  @visibleForTesting
+  static List<Exercise> normaliseExerciseOrderForTest(List<Exercise> items) =>
+      _normaliseExerciseOrder(items);
+
+  static List<Exercise> _normaliseExerciseOrder(List<Exercise> items) {
+    if (items.isEmpty) return items;
+    final indices = items.map((e) => e.index).toSet();
+    final n = items.length;
+    // Valid permutation: exactly the set {0, 1, …, n-1}.
+    final isValid =
+        indices.length == n && indices.every((i) => i >= 0 && i < n);
+    if (isValid) {
+      return [...items]..sort((a, b) => a.index.compareTo(b.index));
+    }
+    // Migration path: sort by name (legacy behaviour) and renumber 0..n-1.
+    final sorted = [...items]..sort((a, b) => a.name.compareTo(b.name));
+    return [
+      for (var i = 0; i < sorted.length; i++)
+        sorted[i].copyWith(index: i),
+    ];
   }
 
   Exercise? getExercise(String uuid, [String? programUuid]) {
