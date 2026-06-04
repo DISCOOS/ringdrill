@@ -95,6 +95,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   int? _expandedStationIndex;
   int? _expandedTeamIndex;
 
+  // Optimistic display of the committed station reorder order. Set
+  // synchronously in onCommitReorder so the new order is shown immediately
+  // without waiting for the async save round-trip. Cleared when the program
+  // refresh event arrives (new data loaded from the service).
+  List<Station>? _stagedStations;
+
   void _toggleStation(int stationIndex) {
     setState(() {
       _expandedStationIndex = _expandedStationIndex == stationIndex
@@ -113,12 +119,21 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   void initState() {
     _isStarted = _exerciseService.isStartedOn(widget.uuid);
 
-    // Listen to ProgramService state changes
+    // Listen to ProgramService state changes. React to direct exercise events
+    // (exerciseAdded, etc.) and to programRefreshed events (emitted by
+    // reorderStations and reorderExercises which carry no exercise reference).
     listen(_programService.events, (event) {
-      if (event.exercise?.uuid == widget.uuid) {
+      final directMatch = event.exercise?.uuid == widget.uuid;
+      final isRefresh = event.type == ProgramEventType.programRefreshed;
+      if (directMatch || isRefresh) {
         if (mounted) {
           setState(() {
-            _exercise = event.exercise;
+            // Prefer the event's exercise object when available (avoids an
+            // extra service lookup for the common case). Fall back to a fresh
+            // load when the event carries no exercise (e.g. programRefreshed).
+            _exercise =
+                event.exercise ?? _programService.getExercise(widget.uuid);
+            _stagedStations = null;
           });
         }
       }
@@ -1223,7 +1238,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Widget _buildStationList(ExerciseEvent event) {
     final localizations = context.l10n;
     final exercise = _exercise!;
-    final stations = exercise.stations;
+    // Use staged stations (synchronous post-commit display) when available so
+    // the new order is shown immediately after Done without snap-back.
+    // _stagedStations is cleared when the programRefreshed event arrives.
+    final stations = _stagedStations ?? exercise.stations;
 
     // Resolve the exercise's 1-based number the same way the Stations segment
     // does — by position in the unfiltered exercise list — so the badge label
@@ -1381,6 +1399,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         orderLabel: context.l10n.exerciseSortBy,
         enabled: !_isStarted,
         onCommitReorder: (newOrder) {
+          // Show the new order immediately (synchronous), then persist async.
+          setState(() => _stagedStations = newOrder);
           final orderedOldIndices = newOrder.map((s) => s.index).toList();
           _programService.reorderStations(exercise.uuid, orderedOldIndices);
         },

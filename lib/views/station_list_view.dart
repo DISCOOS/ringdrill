@@ -43,6 +43,12 @@ class _StationListViewState extends State<StationListView> {
   int? _expandedRowIndex;
   ExerciseEvent? _liveEvent;
 
+  // Optimistic display of the committed reorder order. Set synchronously in
+  // onCommitReorder so the new order is shown immediately without waiting for
+  // the async save round-trip (same pattern as _exercises in ProgramView).
+  // Cleared when the service fires a refresh event (new data loaded).
+  List<(int, Exercise, Station)>? _stagedRows;
+
   StationListController get _controller => widget.controller;
 
   @override
@@ -52,7 +58,7 @@ class _StationListViewState extends State<StationListView> {
     // highlighted with the live-accent treatment on the badge and tile.
     _liveEvent = _filterLive(ExerciseService().last);
     _subscription = _programService.events.listen((_) {
-      if (mounted) setState(() {});
+      if (mounted) setState(() => _stagedRows = null);
     });
     // Track the running exercise so rows belonging to it get the same
     // blue "live" treatment used in the team and exercises views.
@@ -78,6 +84,7 @@ class _StationListViewState extends State<StationListView> {
     if (!mounted) return;
     setState(() {
       _expandedRowIndex = null;
+      _stagedRows = null;
     });
   }
 
@@ -145,7 +152,10 @@ class _StationListViewState extends State<StationListView> {
     final allExercises = _programService.loadExercises();
     final hasAnyStation = allExercises.any((e) => e.stations.isNotEmpty);
 
-    final rows = _collectRows();
+    // Use staged rows (synchronous post-commit display) when available so the
+    // new order is shown immediately after Done without waiting for the async
+    // save to round-trip back through the service event.
+    final rows = _stagedRows ?? _collectRows();
     final stationsWithRoles = _collectStationsWithRoles();
     final filterExercise = _filterExercise();
 
@@ -215,6 +225,10 @@ class _StationListViewState extends State<StationListView> {
         onCommitReorder: (newOrder) {
           if (!isSingleExercise) return;
           final exerciseUuid = filterExercise.uuid;
+          // Show the new order immediately (synchronous), then persist async.
+          // This prevents snap-back while the save round-trips through the
+          // service event — same pattern as exercises in ProgramView.
+          setState(() => _stagedRows = newOrder);
           // Build the old-index permutation: newOrder[newPos].$3.index is the
           // station that was at oldIndex before the drag.
           final orderedOldIndices = newOrder.map((r) => r.$3.index).toList();
