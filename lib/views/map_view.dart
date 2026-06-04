@@ -340,6 +340,14 @@ class _MapViewState<K> extends State<MapView<K>> {
                 initialZoom: widget.initialZoom,
                 initialCenter: widget.initialCenter,
                 initialCameraFit: widget.initialFit,
+                // TileLayer.minZoom/maxZoom only gate which tiles are
+                // fetched; they do not constrain the camera. Without these
+                // the user could pinch/scroll past the tile layer's range
+                // and end up over empty zoom levels showing FlutterMap's
+                // blank default background. Mirror the same bounds used to
+                // clamp the zoom FABs so every interaction agrees.
+                minZoom: widget.minZoom,
+                maxZoom: widget.maxZoom,
                 interactionOptions: InteractionOptions(
                   flags: widget.interactionFlags,
                 ),
