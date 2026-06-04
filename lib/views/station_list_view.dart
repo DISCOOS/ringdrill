@@ -13,6 +13,7 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
@@ -518,7 +519,10 @@ class StationListController extends ScreenController {
 
   Future<void> openFilterSheet(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
+    final program = ProgramService().activeProgram;
     final exercises = ProgramService().loadExercises();
+    final exerciseFormat =
+        program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
     final current = filterExerciseUuid.value;
     final selected = await showRingdrillActionSheet<_FilterChoice>(
       context: context,
@@ -555,7 +559,19 @@ class StationListController extends ScreenController {
                       final choice = _FilterChoice.one(ex.uuid);
                       return ListTile(
                         leading: Radio<_FilterChoice>(value: choice),
-                        title: Text(ex.name),
+                        title: Row(
+                          children: [
+                            ExerciseNumberBadge(
+                              label: Numbering.exercise(
+                                exerciseFormat,
+                                index + 1,
+                              ),
+                              size: 32,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(ex.name)),
+                          ],
+                        ),
                         onTap: () => Navigator.pop(sheetContext, choice),
                       );
                     },
