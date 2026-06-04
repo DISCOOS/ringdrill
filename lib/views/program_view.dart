@@ -14,16 +14,16 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
-import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
-import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/station_list_view.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
@@ -288,27 +288,24 @@ class _ProgramViewState extends State<ProgramView> {
     // ----------------------------------------------------------------
     final exercisesListWidget = _exercises.isEmpty
         ? Center(child: Text(localizations.noExercisesYet))
-        : Padding(
-            // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
-            // detail body's `EdgeInsets.all(16)` so the first row of master
-            // and detail align in the wide layout.
-            padding: const EdgeInsets.only(top: 11.0),
-            child: ValueListenableBuilder<bool>(
-              valueListenable: widget.controller.exerciseReorderMode,
-              builder: (context, reorderMode, _) {
-                Widget list(ContextSheetTarget? target) => reorderMode
-                    ? buildReorderList(target)
-                    : buildDefaultList(target);
-                return targetNotifier == null
-                    ? list(null)
-                    : ValueListenableBuilder<ContextSheetTarget?>(
-                        valueListenable: targetNotifier,
-                        builder: (context, target, _) => list(target),
-                      );
-              },
-            ),
+        : ValueListenableBuilder<bool>(
+            valueListenable: widget.controller.exerciseReorderMode,
+            builder: (context, reorderMode, _) {
+              Widget list(ContextSheetTarget? target) => reorderMode
+                  ? buildReorderList(target)
+                  : buildDefaultList(target);
+              return targetNotifier == null
+                  ? list(null)
+                  : ValueListenableBuilder<ContextSheetTarget?>(
+                      valueListenable: targetNotifier,
+                      builder: (context, target, _) => list(target),
+                    );
+            },
           );
     final exerciseSegment = Column(
+      // stretch forces _ExercisesListHeader to fill the full column width so
+      // WrapAlignment.end can right-align controls against the true right edge.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ExercisesListHeader(
           exerciseReorderMode: widget.controller.exerciseReorderMode,
@@ -347,9 +344,8 @@ class _ProgramViewState extends State<ProgramView> {
             child: _overviewVisible
                 ? _ProgramOverview(
                     expanded: _overviewExpanded,
-                    onToggleExpanded: () => setState(
-                      () => _overviewExpanded = !_overviewExpanded,
-                    ),
+                    onToggleExpanded: () =>
+                        setState(() => _overviewExpanded = !_overviewExpanded),
                     onEdit: () => _openProgramForm(context, localizations),
                   )
                 : const SizedBox(width: double.infinity),
@@ -363,9 +359,7 @@ class _ProgramViewState extends State<ProgramView> {
                   index: activeSegment.index,
                   children: [
                     exerciseBody,
-                    StationListView(
-                      controller: widget.stationListController,
-                    ),
+                    StationListView(controller: widget.stationListController),
                     RolePlaysView(controller: widget.rolePlaysController),
                     const TeamsView(),
                   ],
@@ -432,9 +426,7 @@ class _ProgramViewState extends State<ProgramView> {
       case _SortAction.alphabetically:
         sorted.sort((a, b) => a.name.compareTo(b.name));
     }
-    await _programService.reorderExercises(
-      sorted.map((e) => e.uuid).toList(),
-    );
+    await _programService.reorderExercises(sorted.map((e) => e.uuid).toList());
     if (mounted) setState(_initExercises);
   }
 
@@ -720,22 +712,25 @@ class _ExercisesListHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: exerciseReorderMode,
-      builder: (context, reorderMode, _) {
-        final l10n = AppLocalizations.of(context)!;
-        if (reorderMode) {
-          return _buildDoneBar(context, l10n);
-        }
-        if (exerciseCount < 2) return const SizedBox.shrink();
-        return _buildSortBar(context, l10n);
-      },
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: exerciseReorderMode,
+        builder: (context, reorderMode, _) {
+          final l10n = AppLocalizations.of(context)!;
+          if (reorderMode) {
+            return _buildDoneBar(context, l10n);
+          }
+          if (exerciseCount < 2) return const SizedBox.shrink();
+          return _buildSortBar(context, l10n);
+        },
+      ),
     );
   }
 
   Widget _buildDoneBar(BuildContext context, AppLocalizations l10n) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -748,16 +743,12 @@ class _ExercisesListHeader extends StatelessWidget {
             onPressed: () => exerciseReorderMode.value = false,
             child: Text(l10n.exerciseReorderDone),
           ),
-          const SizedBox(width: 4),
         ],
       ),
     );
   }
 
   Widget _buildSortBar(BuildContext context, AppLocalizations l10n) {
-    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    );
     // Compact style shared by both one-shot sort TextButtons.
     final sortButtonStyle = TextButton.styleFrom(
       minimumSize: const Size(0, 32),
@@ -769,17 +760,15 @@ class _ExercisesListHeader extends StatelessWidget {
     // than asserting overflow. In typical real-world fonts (Roboto ~7 px/char)
     // all four items fit on one line even at 360 px; the test Ahem font (1 em
     // per char) causes wrapping in test environments, but layout stays correct.
+    // alignment: end keeps all controls trailing-aligned.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Wrap(
+        alignment: WrapAlignment.end,
         spacing: 4,
         runSpacing: 2,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(l10n.exerciseSortBy, style: labelStyle),
-          ),
           TextButton(
             style: sortButtonStyle,
             onPressed: onSortByStartTime,
@@ -790,13 +779,11 @@ class _ExercisesListHeader extends StatelessWidget {
             onPressed: onSortAlphabetically,
             child: Text(l10n.exerciseSortAlphabeticallyShort),
           ),
-          // Visually distinct (OutlinedButton) from the one-shot sorts
-          // (TextButton) to signal that it enters a sticky mode.
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 32),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
             onPressed: () => exerciseReorderMode.value = true,
             child: Text(l10n.exerciseReorderMode),

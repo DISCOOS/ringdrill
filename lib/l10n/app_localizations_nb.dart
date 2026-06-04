@@ -1667,7 +1667,7 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get exerciseReorderMode => 'Omorganiser';
+  String get exerciseReorderMode => 'Ordne';
 
   @override
   String get exerciseReorderDone => 'Ferdig';
