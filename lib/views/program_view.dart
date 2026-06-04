@@ -31,6 +31,7 @@ import 'package:ringdrill/views/widgets/exercise_mini_map.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
@@ -63,11 +64,6 @@ class _ProgramViewState extends State<ProgramView> {
   final _programService = ProgramService();
   final List<StreamSubscription> _subscriptions = [];
   List<Exercise> _exercises = [];
-  // Working copy used only while reorder mode is active. Drags mutate this
-  // draft in place (synchronously, so ReorderableListView animates to the new
-  // slot without snapping back) and the new order is persisted once, when the
-  // user leaves reorder mode via "Done" (ADR-0035). Null when not reordering.
-  List<Exercise>? _reorderDraft;
   ExerciseEvent? _liveEvent;
   String? _expandedExerciseUuid;
   // The collapsing overview hides while the active segment list scrolls down
@@ -116,36 +112,6 @@ class _ProgramViewState extends State<ProgramView> {
     // scroll-up event to bring it back). Each new lens starts with the
     // overview shown; scrolling that lens down hides it again.
     widget.controller.activeSegment.addListener(_onSegmentChanged);
-    // Seed the draft on entering reorder mode and commit it on leaving, so the
-    // reorder is persisted once (on "Done") rather than on every drop.
-    widget.controller.exerciseReorderMode.addListener(_onReorderModeChanged);
-  }
-
-  /// Seeds [_reorderDraft] when reorder mode turns on and commits it when it
-  /// turns off. Committing persists the draft order through
-  /// [ProgramService.reorderExercises] and then reloads from storage.
-  void _onReorderModeChanged() {
-    if (!mounted) return;
-    final reordering = widget.controller.exerciseReorderMode.value;
-    if (reordering) {
-      setState(() => _reorderDraft = [..._exercises]);
-      return;
-    }
-    final draft = _reorderDraft;
-    _reorderDraft = null;
-    if (draft == null) {
-      setState(() {});
-      return;
-    }
-    // Show the committed order immediately. Display is driven off the draft we
-    // already have, not off an async save-and-reload — waiting on that round
-    // trip is what made the list fall back to the old order on "Done". The
-    // exercise number badges read off list position, so the stale `index`
-    // fields on the draft items do not matter; storage gets the correct
-    // indices below and the next refresh event reconciles the objects.
-    setState(() => _exercises = draft);
-    final orderedUuids = draft.map((e) => e.uuid).toList();
-    _programService.reorderExercises(orderedUuids);
   }
 
   void _onSegmentChanged() {
@@ -160,9 +126,6 @@ class _ProgramViewState extends State<ProgramView> {
   @override
   void dispose() {
     widget.controller.activeSegment.removeListener(_onSegmentChanged);
-    widget.controller.exerciseReorderMode.removeListener(
-      _onReorderModeChanged,
-    );
     super.dispose();
     for (var e in _subscriptions) {
       e.cancel();
@@ -174,189 +137,148 @@ class _ProgramViewState extends State<ProgramView> {
     final localizations = AppLocalizations.of(context)!;
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
     // ----------------------------------------------------------------
-    // Default mode: plain ListView, all row gestures active.
-    // Drag handles and the reorder callback are absent; the chevron is
-    // the only trailing affordance (ADR-0035 §"Default view stays clean").
-    // ----------------------------------------------------------------
-    Widget buildDefaultList(ContextSheetTarget? selectedTarget) {
-      return ListView.builder(
-        itemCount: _exercises.length,
-        itemBuilder: (context, index) {
-          final exercise = _exercises[index];
-          final markers = exercise.getLocations(false);
-          final isSelected =
-              selectedTarget is ExerciseSheetTarget &&
-              selectedTarget.exerciseUuid == exercise.uuid;
-
-          return Dismissible(
-            key: ValueKey(exercise.uuid),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    localizations.editExercise,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.edit,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                ],
-              ),
-            ),
-            confirmDismiss: (direction) async {
-              await _openExerciseForm(context, localizations, exercise);
-              // Always return false — the item should not be removed.
-              return false;
-            },
-            child: ExerciseCard(
-              exercise: exercise,
-              program: _programService.activeProgram,
-              exerciseNumber: index + 1,
-              localizations: localizations,
-              markers: markers,
-              liveEvent: _liveEvent,
-              selected: isSelected,
-              // trailing: null → ExpandableTile shows its own expand chevron.
-              expanded: _expandedExerciseUuid == exercise.uuid,
-              onToggle: () {
-                setState(() {
-                  _expandedExerciseUuid = _expandedExerciseUuid == exercise.uuid
-                      ? null
-                      : exercise.uuid;
-                });
-              },
-              onLongPress: () =>
-                  _openExerciseForm(context, localizations, exercise),
-              // V1: live card opens the DrillPlayer sheet (DESIGN-001).
-              // All other cards keep the ContextSheet flow.
-              onOpen: () {
-                final isLive =
-                    _liveEvent?.exercise.uuid == exercise.uuid &&
-                    ExerciseService().isStarted;
-                if (isLive) {
-                  showDrillPlayerSheet<void>(
-                    context: context,
-                    builder: (_) => CoordinatorScreen(uuid: exercise.uuid),
-                  );
-                } else {
-                  ContextSheet.of(context).show(
-                    context,
-                    ExerciseSheetTarget(exerciseUuid: exercise.uuid),
-                  );
-                }
-              },
-            ),
-          );
-        },
-      );
-    }
-
-    // ----------------------------------------------------------------
-    // Reorder mode: ReorderableListView with trailing drag handles.
-    // Row body tap/swipe/long-press are suspended so gestures never
-    // fight the drag (ADR-0035 §"Reorder mode", ADR-0031).
-    // Accessibility "move up / move down" comes for free from
-    // ReorderableListView's built-in semantic actions on the handle.
-    // ----------------------------------------------------------------
-    Widget buildReorderList(ContextSheetTarget? selectedTarget) {
-      // Source of truth while reordering is the draft, not _exercises. Drags
-      // mutate it synchronously so the row stays where it is dropped; nothing
-      // is persisted until the user leaves reorder mode (_onReorderModeChanged).
-      final items = _reorderDraft ?? _exercises;
-      return ReorderableListView.builder(
-        buildDefaultDragHandles: false,
-        itemCount: items.length,
-        onReorderItem: (oldIndex, newIndex) {
-          // onReorderItem already adjusts newIndex for the removed item.
-          setState(() {
-            final draft = _reorderDraft ??= [..._exercises];
-            final moved = draft.removeAt(oldIndex);
-            draft.insert(newIndex, moved);
-          });
-        },
-        itemBuilder: (context, index) {
-          final exercise = items[index];
-          final markers = exercise.getLocations(false);
-          final isSelected =
-              selectedTarget is ExerciseSheetTarget &&
-              selectedTarget.exerciseUuid == exercise.uuid;
-
-          // Drag handle is the sole trailing affordance in reorder mode.
-          // ReorderableDragStartListener scopes the drag to this widget so
-          // tapping the row body never triggers a drag.
-          final dragHandle = ReorderableDragStartListener(
-            index: index,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              child: Icon(Icons.drag_handle),
-            ),
-          );
-
-          return ExerciseCard(
-            key: ValueKey(exercise.uuid),
-            exercise: exercise,
-            program: _programService.activeProgram,
-            exerciseNumber: index + 1,
-            localizations: localizations,
-            markers: markers,
-            liveEvent: _liveEvent,
-            selected: isSelected,
-            trailing: dragHandle,
-            // allowExpand: false suppresses the chevron; the drag handle is
-            // the only trailing affordance in reorder mode.
-            allowExpand: false,
-            // Row body gestures suspended; no onOpen, onLongPress, onToggle.
-          );
-        },
-      );
-    }
-
-    // ----------------------------------------------------------------
     // The exercises segment body: a slim list header (sort + reorder
-    // toggle) pinned above the scrollable list. The header is always
-    // rendered as part of this IndexedStack item so it does not appear
-    // on other segments (ADR-0035 §"List header").
+    // toggle) pinned above the scrollable list. ReorderableSection owns
+    // the mode toggle, the in-memory draft, and the deferred-commit
+    // logic (ADR-0035, ADR-0036). The host supplies the reorderMode
+    // notifier so _onSegmentChanged can force-exit reorder mode on
+    // segment switch.
     // ----------------------------------------------------------------
-    final exercisesListWidget = _exercises.isEmpty
-        ? Center(child: Text(localizations.noExercisesYet))
-        : ValueListenableBuilder<bool>(
-            valueListenable: widget.controller.exerciseReorderMode,
-            builder: (context, reorderMode, _) {
-              Widget list(ContextSheetTarget? target) => reorderMode
-                  ? buildReorderList(target)
-                  : buildDefaultList(target);
-              return targetNotifier == null
-                  ? list(null)
-                  : ValueListenableBuilder<ContextSheetTarget?>(
-                      valueListenable: targetNotifier,
-                      builder: (context, target, _) => list(target),
-                    );
-            },
-          );
-    final exerciseSegment = Column(
-      // stretch forces _ExercisesListHeader to fill the full column width so
-      // WrapAlignment.end can right-align controls against the true right edge.
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ExercisesListHeader(
-          exerciseReorderMode: widget.controller.exerciseReorderMode,
-          exerciseCount: _exercises.length,
-          onSortByStartTime: () => _sortExercises(_SortAction.byStartTime),
-          onSortAlphabetically: () =>
-              _sortExercises(_SortAction.alphabetically),
+
+    // Build a row for a given exercise. [reordering] drives gesture
+    // suspension; [dragHandle] is passed as ExerciseCard.trailing in
+    // reorder mode and ignored in default mode.
+    Widget buildExerciseRow(
+      BuildContext context,
+      Exercise exercise,
+      int index,
+      bool reordering,
+      Widget dragHandle,
+    ) {
+      final markers = exercise.getLocations(false);
+      final selectedTarget = targetNotifier?.value;
+      final isSelected =
+          selectedTarget is ExerciseSheetTarget &&
+          selectedTarget.exerciseUuid == exercise.uuid;
+
+      if (reordering) {
+        // Drag-handle variant: trailing is the handle; row body gestures
+        // suspended (no onOpen, onLongPress, onToggle).
+        return ExerciseCard(
+          exercise: exercise,
+          program: _programService.activeProgram,
+          exerciseNumber: index + 1,
+          localizations: localizations,
+          markers: markers,
+          liveEvent: _liveEvent,
+          selected: isSelected,
+          trailing: dragHandle,
+          // allowExpand: false suppresses the chevron; the drag handle is
+          // the only trailing affordance in reorder mode.
+          allowExpand: false,
+        );
+      }
+
+      // Default mode: Dismissible swipe-to-edit wrapping ExerciseCard with
+      // full gestures.
+      return Dismissible(
+        key: ValueKey(exercise.uuid),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                localizations.editExercise,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.edit,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
+            ],
+          ),
         ),
-        Expanded(child: exercisesListWidget),
-      ],
-    );
+        confirmDismiss: (direction) async {
+          await _openExerciseForm(context, localizations, exercise);
+          // Always return false — the item should not be removed.
+          return false;
+        },
+        child: ExerciseCard(
+          exercise: exercise,
+          program: _programService.activeProgram,
+          exerciseNumber: index + 1,
+          localizations: localizations,
+          markers: markers,
+          liveEvent: _liveEvent,
+          selected: isSelected,
+          // trailing: null → ExpandableTile shows its own expand chevron.
+          expanded: _expandedExerciseUuid == exercise.uuid,
+          onToggle: () {
+            setState(() {
+              _expandedExerciseUuid = _expandedExerciseUuid == exercise.uuid
+                  ? null
+                  : exercise.uuid;
+            });
+          },
+          onLongPress: () =>
+              _openExerciseForm(context, localizations, exercise),
+          // V1: live card opens the DrillPlayer sheet (DESIGN-001).
+          // All other cards keep the ContextSheet flow.
+          onOpen: () {
+            final isLive =
+                _liveEvent?.exercise.uuid == exercise.uuid &&
+                ExerciseService().isStarted;
+            if (isLive) {
+              showDrillPlayerSheet<void>(
+                context: context,
+                builder: (_) => CoordinatorScreen(uuid: exercise.uuid),
+              );
+            } else {
+              ContextSheet.of(context).show(
+                context,
+                ExerciseSheetTarget(exerciseUuid: exercise.uuid),
+              );
+            }
+          },
+        ),
+      );
+    }
+
+    final exerciseSegment = _exercises.isEmpty
+        ? Center(child: Text(localizations.noExercisesYet))
+        : ReorderableSection<Exercise>(
+            items: _exercises,
+            keyOf: (e) => ValueKey(e.uuid),
+            orderLabel: localizations.exerciseSortBy,
+            sortActions: [
+              (
+                label: localizations.exerciseSortByStartTimeShort,
+                onPressed: () => _sortExercises(_SortAction.byStartTime),
+              ),
+              (
+                label: localizations.exerciseSortAlphabeticallyShort,
+                onPressed: () => _sortExercises(_SortAction.alphabetically),
+              ),
+            ],
+            // Hand the controller notifier to ReorderableSection so
+            // _onSegmentChanged can force-exit reorder mode by flipping it.
+            reorderMode: widget.controller.exerciseReorderMode,
+            onCommitReorder: (newOrder) {
+              // Show the committed order immediately (no async round-trip).
+              setState(() => _exercises = newOrder);
+              _programService.reorderExercises(
+                newOrder.map((e) => e.uuid).toList(),
+              );
+            },
+            itemBuilder: buildExerciseRow,
+          );
     final exerciseBody = kIsWeb
         ? exerciseSegment
         : SharedFileWidget(child: exerciseSegment);
@@ -723,137 +645,6 @@ class _ProgramOverview extends StatelessWidget {
   }
 }
 
-/// Slim toolbar between the segment switcher and the exercises list.
-///
-/// **Default mode** (≥ 2 exercises): a "Sort by" prefix label, two one-shot
-/// sort buttons ("Start time" / "Alphabetical"), and a trailing outlined
-/// "Reorder" toggle. All controls are directly visible — nothing hidden in a
-/// popup menu (ADR-0035 §"List header").
-///
-/// **Reorder mode**: the sort buttons are replaced by a single "Done" button
-/// so the user can exit reorder mode. The [FilledButton.tonal] style keeps the
-/// exit affordance visually distinct from the flat row affordances.
-///
-/// **< 2 exercises** (default mode): the header collapses to nothing — sorting
-/// a single-item list is meaningless and the toggle would produce an empty
-/// reorder view.
-class _ExercisesListHeader extends StatelessWidget {
-  const _ExercisesListHeader({
-    required this.exerciseReorderMode,
-    required this.exerciseCount,
-    required this.onSortByStartTime,
-    required this.onSortAlphabetically,
-  });
-
-  final ValueNotifier<bool> exerciseReorderMode;
-  final int exerciseCount;
-  final VoidCallback onSortByStartTime;
-  final VoidCallback onSortAlphabetically;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: exerciseReorderMode,
-      builder: (context, reorderMode, _) {
-        final l10n = AppLocalizations.of(context)!;
-        if (reorderMode) {
-          return _buildDoneBar(context, l10n);
-        }
-        if (exerciseCount < 2) return const SizedBox.shrink();
-        return _buildSortBar(context, l10n);
-      },
-    );
-  }
-
-  Widget _buildDoneBar(BuildContext context, AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-            onPressed: () => exerciseReorderMode.value = false,
-            child: Text(l10n.exerciseReorderDone),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSortBar(BuildContext context, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-    // Compact style shared by both one-shot sort TextButtons.
-    final sortButtonStyle = TextButton.styleFrom(
-      minimumSize: const Size(0, 32),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-    );
-    // Layout (ADR-0035 §"List header", Forslag C): a muted "Sorter etter"
-    // anchor on the left so the strip reads as a labelled group instead of
-    // floating, and the controls trailing-aligned on the right. The two
-    // one-shot sorts are flat TextButtons; only the reorder toggle is framed
-    // (OutlinedButton.icon) because it is the only sticky mode. Sorts are NOT a
-    // second SegmentedButton — duplicating the view selector's segmented shape
-    // directly beneath it reads as clutter.
-    //
-    // The right group is a Wrap inside Expanded so it stays directly visible
-    // (no overflow menu) and flows to a second run on narrow panes rather than
-    // asserting overflow. The Ahem test font (1 em/char) triggers wrapping in
-    // tests; layout stays correct.
-    // Left inset (8) matches _ProgramSegmentSwitcher's fromLTRB(8, …) so the
-    // "Sorter etter" anchor lines up with the segmented control's left edge.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            l10n.exerciseSortBy,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 4,
-              runSpacing: 2,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                TextButton(
-                  style: sortButtonStyle,
-                  onPressed: onSortByStartTime,
-                  child: Text(l10n.exerciseSortByStartTimeShort),
-                ),
-                TextButton(
-                  style: sortButtonStyle,
-                  onPressed: onSortAlphabetically,
-                  child: Text(l10n.exerciseSortAlphabeticallyShort),
-                ),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  icon: const Icon(Icons.swap_vert, size: 18),
-                  onPressed: () => exerciseReorderMode.value = true,
-                  label: Text(l10n.exerciseReorderMode),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class ExerciseCard extends StatefulWidget {
   const ExerciseCard({
@@ -1297,8 +1088,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
     // Sort and reorder controls for the Øvelser segment live in the in-list
-    // header (_ExercisesListHeader) rather than the AppBar (ADR-0035 §"List
-    // header"). The AppBar only carries segment-independent actions (brief).
+    // ReorderableSection header rather than the AppBar (ADR-0035 §"List
+    // header", ADR-0036). The AppBar only carries segment-independent actions.
     final segmentActions = switch (activeSegment.value) {
       ProgramSegment.exercises => null,
       ProgramSegment.stations => stationListController.buildActions(

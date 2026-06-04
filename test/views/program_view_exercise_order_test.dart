@@ -270,9 +270,15 @@ void main() {
       listView.onReorderItem!(0, 2);
       await tester.pumpAndSettle();
 
-      // Expected order: Alpha(0), Beta(1), Gamma(2).
+      // Draft is shown immediately — storage NOT yet updated (deferred commit,
+      // ADR-0035 §"Deferred commit").
       expect(renderedOrder(tester), ['Alpha', 'Beta', 'Gamma']);
 
+      // Press "Done" to commit the reorder to storage.
+      await tester.tap(find.text(l10n.exerciseReorderDone));
+      await tester.pumpAndSettle();
+
+      // After Done: storage reflects the new order.
       final exercises = ProgramService().loadExercises();
       final byName = {for (final e in exercises) e.name: e.index};
       expect(byName['Alpha'], 0);
