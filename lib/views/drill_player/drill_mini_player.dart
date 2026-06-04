@@ -406,15 +406,21 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   ExerciseNumberBadge(number: exerciseNumber, size: 36),
                   const SizedBox(width: 8),
                   Expanded(
-                    child:
-                        widget.bodyBuilder?.call(context, event, 0, 0) ??
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: MiniRoundRow(
-                            exercise: exercise,
-                            event: event,
+                    child: Padding(
+                      // Reserve width for the play-button overlay (16px
+                      // gradient + 36px button + 8px trailing gap = 60px)
+                      // so MiniRoundRow content does not slide behind it.
+                      padding: const EdgeInsets.only(right: 60),
+                      child:
+                          widget.bodyBuilder?.call(context, event, 0, 0) ??
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: MiniRoundRow(
+                              exercise: exercise,
+                              event: event,
+                            ),
                           ),
-                        ),
+                    ),
                   ),
                 ],
               ),
