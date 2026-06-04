@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/page_widget.dart';
-import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
-import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
-import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
@@ -180,12 +180,6 @@ class _StationListViewState extends State<StationListView> {
         ),
       );
     } else {
-      // Reorder is only meaningful when scoped to one exercise — stations in
-      // different exercises have independent indices and reordering across
-      // exercise boundaries is undefined. When the filter is active the rows
-      // are all from the same exercise, so reorder is offered. When spanning
-      // multiple exercises (no filter) the reorder toggle is omitted and the
-      // plain list is shown (ADR-0036 §"Where stations can be reordered").
       final isSingleExercise = filterExercise != null;
 
       Widget buildStationRow(
@@ -196,7 +190,10 @@ class _StationListViewState extends State<StationListView> {
         Widget dragHandle,
       ) {
         final (exerciseNumber, exercise, station) = row;
-        final hasRoles = stationsWithRoles.contains((exercise.uuid, station.index));
+        final hasRoles = stationsWithRoles.contains((
+          exercise.uuid,
+          station.index,
+        ));
         final selectedTarget = targetNotifier?.value;
         final isSelected =
             selectedTarget is StationSheetTarget &&
@@ -216,26 +213,37 @@ class _StationListViewState extends State<StationListView> {
         );
       }
 
-      body = ReorderableSection<(int, Exercise, Station)>(
-        items: rows,
-        keyOf: (row) => ValueKey('station-row-${row.$2.uuid}-${row.$3.index}'),
-        orderLabel: localizations.exerciseSortBy,
-        // No one-shot sort actions: stations have no start-time property.
-        enabled: isSingleExercise,
-        onCommitReorder: (newOrder) {
-          if (!isSingleExercise) return;
-          final exerciseUuid = filterExercise.uuid;
-          // Show the new order immediately (synchronous), then persist async.
-          // This prevents snap-back while the save round-trips through the
-          // service event — same pattern as exercises in ProgramView.
-          setState(() => _stagedRows = newOrder);
-          // Build the old-index permutation: newOrder[newPos].$3.index is the
-          // station that was at oldIndex before the drag.
-          final orderedOldIndices = newOrder.map((r) => r.$3.index).toList();
-          _programService.reorderStations(exerciseUuid, orderedOldIndices);
-        },
-        itemBuilder: buildStationRow,
-      );
+      // Reorder is only meaningful when scoped to one exercise (ADR-0036
+      // §"Where stations can be reordered"). When spanning exercises the whole
+      // order header is irrelevant, so skip ReorderableSection entirely and
+      // use a plain list — no header, no toggle.
+      if (isSingleExercise) {
+        body = ReorderableSection<(int, Exercise, Station)>(
+          items: rows,
+          keyOf: (row) =>
+              ValueKey('station-row-${row.$2.uuid}-${row.$3.index}'),
+          orderLabel: localizations.exerciseSortBy,
+          onCommitReorder: (newOrder) {
+            final exerciseUuid = filterExercise.uuid;
+            setState(() => _stagedRows = newOrder);
+            final orderedOldIndices = newOrder.map((r) => r.$3.index).toList();
+            _programService.reorderStations(exerciseUuid, orderedOldIndices);
+          },
+          itemBuilder: buildStationRow,
+        );
+      } else {
+        body = ListView.builder(
+          padding: const EdgeInsets.only(top: 11),
+          itemCount: rows.length,
+          itemBuilder: (context, index) => buildStationRow(
+            context,
+            rows[index],
+            index,
+            false,
+            const SizedBox.shrink(),
+          ),
+        );
+      }
     }
 
     // Filtering is an AppBar action (see [StationListController.buildActions]),
@@ -464,7 +472,6 @@ class _StationListViewState extends State<StationListView> {
       current.copyWith(stations: stations),
     );
   }
-
 }
 
 /// Owns the current "filter to one exercise" selection for the
@@ -500,9 +507,7 @@ class StationListController extends ScreenController {
           final button = IconButton(
             icon: const Icon(Icons.filter_list),
             tooltip: localizations.selectExercises,
-            onPressed: hasActiveProgram
-                ? () => openFilterSheet(context)
-                : null,
+            onPressed: hasActiveProgram ? () => openFilterSheet(context) : null,
           );
           if (active == null) return button;
           return Badge.count(count: 1, child: button);
