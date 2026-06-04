@@ -1685,9 +1685,9 @@
   "@exerciseSortAlphabetically": {
     "description": "Full-length label for sorting exercises alphabetically by name (used in tooltips / confirmations)."
   },
-  "exerciseSortBy": "Sort by",
+  "exerciseSortBy": "Order",
   "@exerciseSortBy": {
-    "description": "Static label prefix in the exercises list header, followed by the two one-shot sort buttons."
+    "description": "Static label anchor on the left of the exercises list header, before the sort and reorder controls."
   },
   "exerciseSortByStartTimeShort": "Start time",
   "@exerciseSortByStartTimeShort": {

@@ -62,10 +62,12 @@ Old archives have no `index`, so every exercise deserializes to `0`. A `0`-colli
 
 All ordering controls live in a **contextual list header** — a slim toolbar between the segment's `SegmentedButton` row and the exercises list, shown only for the Øvelser segment. They are deliberately not in the global AppBar (where they competed with the publish and overflow actions) and not in an overflow menu (where the one-shot sorts read as hidden, and exposing both there felt heavy). Per-row controls are also rejected: cluttering every row with a drag handle and an overflow menu is noisy, and a per-row overflow contradicts [ADR-0031](./0031-row-edit-affordances.md), which keeps row editing on swipe / long-press.
 
-The header holds three controls, all visible, none nested in a menu:
+The header is a `Row` with `MainAxisAlignment.spaceBetween`. The left side is a muted "Rekkefølge" anchor label (`Text` in `labelMedium` / `onSurfaceVariant`) so the strip reads as a labelled group instead of floating. "Rekkefølge" (Order) rather than "Sorter etter" because the strip covers both the one-shot sorts and manual reordering. The right side holds three controls, all visible, none nested in a menu:
 
-* **Two one-shot sort actions**, "Starttid" and "Alfabetisk", grouped under a "Sorter etter" label. Each rewrites all indices once, after which the order is manual again. Chronological order is the most common starting intent, so this gets a user most of the way there before they nudge individual rows.
-* **A manual-reorder toggle** ("Omorganiser") at the trailing end, visually distinct from the one-shot sorts because it enters a sticky mode rather than firing once. Activating it becomes "Ferdig" to exit.
+* **Two one-shot sort actions**, "Starttid" and "Alfabetisk", as flat `TextButton`s (text only, primary colour). Each rewrites all indices once, after which the order is manual again. Chronological order is the most common starting intent, so this gets a user most of the way there before they nudge individual rows.
+* **A manual-reorder toggle** ("Ordne"), the only bordered control: an `OutlinedButton.icon` (`Icons.swap_vert`) that enters reorder mode and swaps to a `FilledButton.tonal` reading "Ferdig" while active. It is deliberately the only framed affordance because it is the only sticky mode; the flat sort actions fire once.
+
+The sort actions are flat text, not a second segmented control, on purpose: the view selector above is already a `SegmentedButton`, and a second segmented group directly beneath it duplicates the same visual language and reads as clutter. Keeping the view selector as the only segmented control, with a flat labelled sort strip beneath, gives the two rows distinct roles. Use `TextButton.styleFrom(visualDensity: VisualDensity.compact, tapTargetSize: MaterialTapTargetSize.shrinkWrap)` to keep the text buttons tight without dropping below the 48 px touch target.
 
 **Default view stays clean.** Each row shows only the number badge, title, subtitle and the expand chevron. Tap to open, swipe or long-press to edit, exactly as before.
 

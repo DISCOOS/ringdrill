@@ -712,25 +712,22 @@ class _ExercisesListHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4.0),
-      child: ValueListenableBuilder<bool>(
-        valueListenable: exerciseReorderMode,
-        builder: (context, reorderMode, _) {
-          final l10n = AppLocalizations.of(context)!;
-          if (reorderMode) {
-            return _buildDoneBar(context, l10n);
-          }
-          if (exerciseCount < 2) return const SizedBox.shrink();
-          return _buildSortBar(context, l10n);
-        },
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: exerciseReorderMode,
+      builder: (context, reorderMode, _) {
+        final l10n = AppLocalizations.of(context)!;
+        if (reorderMode) {
+          return _buildDoneBar(context, l10n);
+        }
+        if (exerciseCount < 2) return const SizedBox.shrink();
+        return _buildSortBar(context, l10n);
+      },
     );
   }
 
   Widget _buildDoneBar(BuildContext context, AppLocalizations l10n) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -749,44 +746,68 @@ class _ExercisesListHeader extends StatelessWidget {
   }
 
   Widget _buildSortBar(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
     // Compact style shared by both one-shot sort TextButtons.
     final sortButtonStyle = TextButton.styleFrom(
       minimumSize: const Size(0, 32),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       padding: const EdgeInsets.symmetric(horizontal: 8),
     );
-    // Wrap keeps every control directly visible (no overflow menu — ADR-0035)
-    // and gracefully handles narrow panes by flowing to a second run rather
-    // than asserting overflow. In typical real-world fonts (Roboto ~7 px/char)
-    // all four items fit on one line even at 360 px; the test Ahem font (1 em
-    // per char) causes wrapping in test environments, but layout stays correct.
-    // alignment: end keeps all controls trailing-aligned.
+    // Layout (ADR-0035 §"List header", Forslag C): a muted "Sorter etter"
+    // anchor on the left so the strip reads as a labelled group instead of
+    // floating, and the controls trailing-aligned on the right. The two
+    // one-shot sorts are flat TextButtons; only the reorder toggle is framed
+    // (OutlinedButton.icon) because it is the only sticky mode. Sorts are NOT a
+    // second SegmentedButton — duplicating the view selector's segmented shape
+    // directly beneath it reads as clutter.
+    //
+    // The right group is a Wrap inside Expanded so it stays directly visible
+    // (no overflow menu) and flows to a second run on narrow panes rather than
+    // asserting overflow. The Ahem test font (1 em/char) triggers wrapping in
+    // tests; layout stays correct.
+    // Left inset (8) matches _ProgramSegmentSwitcher's fromLTRB(8, …) so the
+    // "Sorter etter" anchor lines up with the segmented control's left edge.
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Wrap(
-        alignment: WrapAlignment.end,
-        spacing: 4,
-        runSpacing: 2,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          TextButton(
-            style: sortButtonStyle,
-            onPressed: onSortByStartTime,
-            child: Text(l10n.exerciseSortByStartTimeShort),
-          ),
-          TextButton(
-            style: sortButtonStyle,
-            onPressed: onSortAlphabetically,
-            child: Text(l10n.exerciseSortAlphabeticallyShort),
-          ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+          Text(
+            l10n.exerciseSortBy,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            onPressed: () => exerciseReorderMode.value = true,
-            child: Text(l10n.exerciseReorderMode),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 4,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TextButton(
+                  style: sortButtonStyle,
+                  onPressed: onSortByStartTime,
+                  child: Text(l10n.exerciseSortByStartTimeShort),
+                ),
+                TextButton(
+                  style: sortButtonStyle,
+                  onPressed: onSortAlphabetically,
+                  child: Text(l10n.exerciseSortAlphabeticallyShort),
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  icon: const Icon(Icons.swap_vert, size: 18),
+                  onPressed: () => exerciseReorderMode.value = true,
+                  label: Text(l10n.exerciseReorderMode),
+                ),
+              ],
+            ),
           ),
         ],
       ),

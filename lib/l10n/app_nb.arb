@@ -879,9 +879,9 @@
   "@exerciseSortAlphabetically": {
     "description": "Fullstendig etikett for sortering av øvelser alfabetisk etter navn (brukes i verktøytips / bekreftelser)."
   },
-  "exerciseSortBy": "Sorter etter",
+  "exerciseSortBy": "Rekkefølge",
   "@exerciseSortBy": {
-    "description": "Statisk etikettprefix i øvelseslistens overskrift, etterfulgt av to direktesorteringsknapper."
+    "description": "Statisk etikett-anker til venstre i øvelseslistens overskrift, foran sorterings- og omorganiseringskontrollene."
   },
   "exerciseSortByStartTimeShort": "Starttid",
   "@exerciseSortByStartTimeShort": {

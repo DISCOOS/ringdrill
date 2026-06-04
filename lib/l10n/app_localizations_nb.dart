@@ -1679,7 +1679,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exerciseSortAlphabetically => 'Sorter alfabetisk';
 
   @override
-  String get exerciseSortBy => 'Sorter etter';
+  String get exerciseSortBy => 'Rekkefølge';
 
   @override
   String get exerciseSortByStartTimeShort => 'Starttid';

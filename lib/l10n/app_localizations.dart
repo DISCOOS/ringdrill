@@ -2888,10 +2888,10 @@ abstract class AppLocalizations {
   /// **'Sort alphabetically'**
   String get exerciseSortAlphabetically;
 
-  /// Static label prefix in the exercises list header, followed by the two one-shot sort buttons.
+  /// Static label anchor on the left of the exercises list header, before the sort and reorder controls.
   ///
   /// In en, this message translates to:
-  /// **'Sort by'**
+  /// **'Order'**
   String get exerciseSortBy;
 
   /// Compact button label in the exercises list header for the one-shot sort-by-start-time action.
