@@ -652,7 +652,7 @@ void main() {
   });
 
   group('BriefRenderer — station number formats', () {
-    Exercise _twoStationExercise() => Exercise(
+    Exercise twoStationExercise() => Exercise(
       uuid: 'ex-fmt',
       name: 'Format test',
       startTime: _start,
@@ -671,7 +671,7 @@ void main() {
 
     test('dotted format produces "1.1" and "1.2" headings', () async {
       final program = _emptyProgram().copyWith(
-        exercises: [_twoStationExercise()],
+        exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.dotted,
       );
       final result = await BriefRenderer().render(
@@ -687,7 +687,7 @@ void main() {
 
     test('dotted format TOC links use dotted labels', () async {
       final program = _emptyProgram().copyWith(
-        exercises: [_twoStationExercise()],
+        exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.dotted,
       );
       final result = await BriefRenderer().render(
@@ -701,7 +701,7 @@ void main() {
 
     test('alpha format produces "1a" and "1b" headings', () async {
       final program = _emptyProgram().copyWith(
-        exercises: [_twoStationExercise()],
+        exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.alpha,
       );
       final result = await BriefRenderer().render(
@@ -717,7 +717,7 @@ void main() {
 
     test('alpha format TOC links use alpha labels', () async {
       final program = _emptyProgram().copyWith(
-        exercises: [_twoStationExercise()],
+        exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.alpha,
       );
       final result = await BriefRenderer().render(
@@ -732,7 +732,7 @@ void main() {
     test('dotted anchor is derived from stationCode (dot dropped by slug)',
         () async {
       final program = _emptyProgram().copyWith(
-        exercises: [_twoStationExercise()],
+        exercises: [twoStationExercise()],
         stationNumberFormat: StationNumberFormat.dotted,
       );
       final result = await BriefRenderer().render(

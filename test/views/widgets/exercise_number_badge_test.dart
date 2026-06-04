@@ -7,14 +7,14 @@ Widget _harness(Widget badge) => MaterialApp(
     );
 
 void main() {
-  testWidgets('renders #1 for number: 1', (tester) async {
-    await tester.pumpWidget(_harness(const ExerciseNumberBadge(number: 1)));
+  testWidgets('renders #1 for label: "#1"', (tester) async {
+    await tester.pumpWidget(_harness(const ExerciseNumberBadge(label: '#1')));
     await tester.pumpAndSettle();
     expect(find.text('#1'), findsOneWidget);
   });
 
-  testWidgets('renders #12 for number: 12 without overflow', (tester) async {
-    await tester.pumpWidget(_harness(const ExerciseNumberBadge(number: 12)));
+  testWidgets('renders #12 for label: "#12" without overflow', (tester) async {
+    await tester.pumpWidget(_harness(const ExerciseNumberBadge(label: '#12')));
     await tester.pumpAndSettle();
     expect(find.text('#12'), findsOneWidget);
     // FittedBox should scale the text down without a RenderFlex overflow.
@@ -22,7 +22,9 @@ void main() {
   });
 
   testWidgets('renders at custom size', (tester) async {
-    await tester.pumpWidget(_harness(const ExerciseNumberBadge(number: 1, size: 36)));
+    await tester.pumpWidget(
+      _harness(const ExerciseNumberBadge(label: '#1', size: 36)),
+    );
     await tester.pumpAndSettle();
     final size = tester.getSize(find.byType(ExerciseNumberBadge));
     expect(size.width, 36.0);
@@ -31,7 +33,7 @@ void main() {
 
   testWidgets('highlight: true paints with primary background', (tester) async {
     await tester.pumpWidget(
-      _harness(const ExerciseNumberBadge(number: 3, highlight: true)),
+      _harness(const ExerciseNumberBadge(label: '#3', highlight: true)),
     );
     await tester.pumpAndSettle();
 

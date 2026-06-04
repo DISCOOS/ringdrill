@@ -5,7 +5,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
-import 'package:ringdrill/views/widgets/role_code_badge.dart';
+import 'package:ringdrill/views/widgets/role_number_badge.dart';
 
 RolePlay _baseRole() => const RolePlay(
       uuid: 'role-1',
@@ -168,11 +168,11 @@ void main() {
     expect(find.text('Post 2'), findsWidgets);
   });
 
-  testWidgets('AppBar contains a RoleCodeBadge', (tester) async {
+  testWidgets('AppBar contains a RoleNumberBadge', (tester) async {
     await tester.pumpWidget(_buildForm());
     await tester.pump();
     // ProgramService not initialized → exerciseIndex = -1 → code = '?.1'
-    expect(find.byType(RoleCodeBadge), findsOneWidget);
+    expect(find.byType(RoleNumberBadge), findsOneWidget);
   });
 
   testWidgets('AppBar subtitle is not shown', (tester) async {

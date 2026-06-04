@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
-import 'package:ringdrill/views/widgets/role_code_badge.dart';
+import 'package:ringdrill/views/widgets/role_number_badge.dart';
 
 Widget _buildTile({
   required bool expanded,
@@ -14,7 +14,7 @@ Widget _buildTile({
   return MaterialApp(
     home: Scaffold(
       body: ExpandableTile(
-        leading: const RoleCodeBadge(code: '1.1'),
+        leading: const RoleNumberBadge(label: '1.1'),
         title: const Text('Anna Hansen'),
         subtitle: const Text('Øvelse 1'),
         trailing: trailing,

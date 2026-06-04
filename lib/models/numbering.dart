@@ -33,7 +33,7 @@ class Numbering {
   };
 
   /// Bijective base-26: 0 -> a, 25 -> z, 26 -> aa, 27 -> ab, ...
-  /// Replaces brief_renderer._stationLetter and fixes its overflow past 'z'.
+  /// Fixes the overflow past 'z' that the old per-brief letter helper had.
   static String alpha(int index) {
     var i = index;
     final buf = StringBuffer();
