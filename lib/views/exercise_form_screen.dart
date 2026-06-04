@@ -468,10 +468,15 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         localizations: localizations,
       );
 
-      // generateSchedule rebuilds the Exercise from its scalar inputs, so the
-      // sidecar markdown brief fields (which live outside JSON per ADR-0022)
-      // would be dropped unless we put them back via copyWith.
+      // generateSchedule rebuilds the Exercise from its scalar inputs, so any
+      // field not derived from those inputs is dropped unless we put it back
+      // via copyWith. The sidecar markdown brief fields (outside JSON per
+      // ADR-0022) and the ordering index (ADR-0035) are both rebuild-agnostic:
+      // preserve the existing index on edit so the exercise keeps its place in
+      // the list; a new exercise keeps the default and gets its index assigned
+      // on save.
       final withBrief = newExercise.copyWith(
+        index: existingExercise?.index ?? newExercise.index,
         methodMd: _readSection(_ExerciseSection.method),
         learningGoalsMd: _readSection(_ExerciseSection.learningGoals),
         trainingFocusMd: _readSection(_ExerciseSection.trainingFocus),

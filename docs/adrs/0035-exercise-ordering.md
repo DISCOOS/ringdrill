@@ -52,7 +52,7 @@ Chosen option: **Option A**, because it makes order first-class data the user co
 
 ### Migration of existing plans
 
-Old archives have no `index`, so every exercise deserializes to `0`. A `0`-collision is the signal that a plan predates this field. `loadExercises` normalises before returning: when the indices are not a valid permutation (duplicates, or all-default with more than one exercise), it re-derives them from the **current name order** and assigns `0..n-1`. This reproduces today's visual order exactly, so an upgraded plan looks unchanged until the user reorders it. The normalised indices persist on the next `saveExercise`. New exercises append at `max(index) + 1`; imported or copied exercises are renumbered into the target plan's sequence.
+Old archives have no `index`, so every exercise deserializes to `0`. A `0`-collision is the signal that a plan predates this field. `loadExercises` normalises before returning: when the indices are not a valid permutation (duplicates, or all-default with more than one exercise), it re-derives them from the **current name order** and assigns `0..n-1`. This reproduces today's visual order exactly, so an upgraded plan looks unchanged until the user reorders it. The normalised indices persist on the next `saveExercise`. New exercises append at `max(index) + 1`; imported or copied exercises are renumbered into the target plan's sequence. Editing an exercise must preserve its `index`: the form rebuilds the exercise from scalar inputs via `generateSchedule`, which does not carry `index` (nor the sidecar brief fields), so the form restores it through `copyWith` — otherwise an edit resets the index and the exercise jumps out of place.
 
 ### Schema
 
