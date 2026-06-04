@@ -1680,4 +1680,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exerciseSortAlphabetically => 'Sort alphabetically';
+
+  @override
+  String get exerciseSortBy => 'Sort by';
+
+  @override
+  String get exerciseSortByStartTimeShort => 'Start time';
+
+  @override
+  String get exerciseSortAlphabeticallyShort => 'Alphabetical';
 }

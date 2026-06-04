@@ -2864,29 +2864,47 @@ abstract class AppLocalizations {
   /// **'Example: {example}'**
   String stationNumberFormatPreview(String example);
 
-  /// AppBar action that enters exercise reorder mode (drag-to-reorder becomes active).
+  /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///
   /// In en, this message translates to:
   /// **'Reorder'**
   String get exerciseReorderMode;
 
-  /// AppBar action that exits exercise reorder mode and returns to the default list view.
+  /// List-header toggle that exits exercise reorder mode and returns to the default list view.
   ///
   /// In en, this message translates to:
   /// **'Done'**
   String get exerciseReorderDone;
 
-  /// AppBar overflow action that sorts all exercises chronologically by their start time.
+  /// Full-length label for sorting exercises chronologically by start time (used in tooltips / confirmations).
   ///
   /// In en, this message translates to:
   /// **'Sort by start time'**
   String get exerciseSortByStartTime;
 
-  /// AppBar overflow action that sorts all exercises alphabetically by name.
+  /// Full-length label for sorting exercises alphabetically by name (used in tooltips / confirmations).
   ///
   /// In en, this message translates to:
   /// **'Sort alphabetically'**
   String get exerciseSortAlphabetically;
+
+  /// Static label prefix in the exercises list header, followed by the two one-shot sort buttons.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get exerciseSortBy;
+
+  /// Compact button label in the exercises list header for the one-shot sort-by-start-time action.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get exerciseSortByStartTimeShort;
+
+  /// Compact button label in the exercises list header for the one-shot sort-alphabetically action.
+  ///
+  /// In en, this message translates to:
+  /// **'Alphabetical'**
+  String get exerciseSortAlphabeticallyShort;
 }
 
 class _AppLocalizationsDelegate

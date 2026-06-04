@@ -1667,7 +1667,7 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get exerciseReorderMode => 'Sorter';
+  String get exerciseReorderMode => 'Omorganiser';
 
   @override
   String get exerciseReorderDone => 'Ferdig';
@@ -1677,4 +1677,13 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get exerciseSortAlphabetically => 'Sorter alfabetisk';
+
+  @override
+  String get exerciseSortBy => 'Sorter etter';
+
+  @override
+  String get exerciseSortByStartTimeShort => 'Starttid';
+
+  @override
+  String get exerciseSortAlphabeticallyShort => 'Alfabetisk';
 }

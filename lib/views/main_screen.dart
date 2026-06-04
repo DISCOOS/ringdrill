@@ -701,9 +701,6 @@ class _MainScreenState extends State<MainScreen>
     super.initState();
     _initTab();
     _programPageController.activeSegment.addListener(_onProgramSegmentChanged);
-    _programPageController.exerciseReorderMode.addListener(
-      _onProgramSegmentChanged,
-    );
     if (widget.isFirstLaunch) _showConsentDialog();
     listen(NotificationService().events, (event) {
       if (event.action == NotificationAction.showSettings) {
@@ -779,9 +776,6 @@ class _MainScreenState extends State<MainScreen>
   void dispose() {
     _contextSheetController.dispose();
     _programPageController.activeSegment.removeListener(
-      _onProgramSegmentChanged,
-    );
-    _programPageController.exerciseReorderMode.removeListener(
       _onProgramSegmentChanged,
     );
     _programPageController.dispose();

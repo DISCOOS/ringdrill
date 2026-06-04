@@ -1671,18 +1671,30 @@
 
   "exerciseReorderMode": "Reorder",
   "@exerciseReorderMode": {
-    "description": "AppBar action that enters exercise reorder mode (drag-to-reorder becomes active)."
+    "description": "List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active)."
   },
   "exerciseReorderDone": "Done",
   "@exerciseReorderDone": {
-    "description": "AppBar action that exits exercise reorder mode and returns to the default list view."
+    "description": "List-header toggle that exits exercise reorder mode and returns to the default list view."
   },
   "exerciseSortByStartTime": "Sort by start time",
   "@exerciseSortByStartTime": {
-    "description": "AppBar overflow action that sorts all exercises chronologically by their start time."
+    "description": "Full-length label for sorting exercises chronologically by start time (used in tooltips / confirmations)."
   },
   "exerciseSortAlphabetically": "Sort alphabetically",
   "@exerciseSortAlphabetically": {
-    "description": "AppBar overflow action that sorts all exercises alphabetically by name."
+    "description": "Full-length label for sorting exercises alphabetically by name (used in tooltips / confirmations)."
+  },
+  "exerciseSortBy": "Sort by",
+  "@exerciseSortBy": {
+    "description": "Static label prefix in the exercises list header, followed by the two one-shot sort buttons."
+  },
+  "exerciseSortByStartTimeShort": "Start time",
+  "@exerciseSortByStartTimeShort": {
+    "description": "Compact button label in the exercises list header for the one-shot sort-by-start-time action."
+  },
+  "exerciseSortAlphabeticallyShort": "Alphabetical",
+  "@exerciseSortAlphabeticallyShort": {
+    "description": "Compact button label in the exercises list header for the one-shot sort-alphabetically action."
   }
 }

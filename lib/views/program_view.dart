@@ -280,7 +280,13 @@ class _ProgramViewState extends State<ProgramView> {
       );
     }
 
-    final exercises = _exercises.isEmpty
+    // ----------------------------------------------------------------
+    // The exercises segment body: a slim list header (sort + reorder
+    // toggle) pinned above the scrollable list. The header is always
+    // rendered as part of this IndexedStack item so it does not appear
+    // on other segments (ADR-0035 §"List header").
+    // ----------------------------------------------------------------
+    final exercisesListWidget = _exercises.isEmpty
         ? Center(child: Text(localizations.noExercisesYet))
         : Padding(
             // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
@@ -302,9 +308,21 @@ class _ProgramViewState extends State<ProgramView> {
               },
             ),
           );
+    final exerciseSegment = Column(
+      children: [
+        _ExercisesListHeader(
+          exerciseReorderMode: widget.controller.exerciseReorderMode,
+          exerciseCount: _exercises.length,
+          onSortByStartTime: () => _sortExercises(_SortAction.byStartTime),
+          onSortAlphabetically: () =>
+              _sortExercises(_SortAction.alphabetically),
+        ),
+        Expanded(child: exercisesListWidget),
+      ],
+    );
     final exerciseBody = kIsWeb
-        ? exercises
-        : SharedFileWidget(child: exercises);
+        ? exerciseSegment
+        : SharedFileWidget(child: exerciseSegment);
     // Manual collapse instead of a pinned SliverPersistentHeader. The switcher
     // is an always-visible row, so it inherits the master pane background and
     // keeps its natural M3 size rather than being forced to fill a fixed sliver
@@ -401,6 +419,23 @@ class _ProgramViewState extends State<ProgramView> {
       await _programService.saveExercise(localizations, updated);
       setState(_initExercises);
     }
+  }
+
+  /// One-shot sort: rewrites all exercise indices in the chosen order via
+  /// [ProgramService.reorderExercises] and refreshes the list. Available
+  /// without entering reorder mode (ADR-0035 §"One-shot sort").
+  Future<void> _sortExercises(_SortAction action) async {
+    final sorted = [..._exercises];
+    switch (action) {
+      case _SortAction.byStartTime:
+        sorted.sort((a, b) => a.startTime.compareTo(b.startTime));
+      case _SortAction.alphabetically:
+        sorted.sort((a, b) => a.name.compareTo(b.name));
+    }
+    await _programService.reorderExercises(
+      sorted.map((e) => e.uuid).toList(),
+    );
+    if (mounted) setState(_initExercises);
   }
 
   /// Returns `event` only when it represents a currently-live exercise.
@@ -653,6 +688,122 @@ class _ProgramOverview extends StatelessWidget {
         .where((l) => l.isNotEmpty)
         .join(' ');
     return stripped.isEmpty ? null : stripped;
+  }
+}
+
+/// Slim toolbar between the segment switcher and the exercises list.
+///
+/// **Default mode** (≥ 2 exercises): a "Sort by" prefix label, two one-shot
+/// sort buttons ("Start time" / "Alphabetical"), and a trailing outlined
+/// "Reorder" toggle. All controls are directly visible — nothing hidden in a
+/// popup menu (ADR-0035 §"List header").
+///
+/// **Reorder mode**: the sort buttons are replaced by a single "Done" button
+/// so the user can exit reorder mode. The [FilledButton.tonal] style keeps the
+/// exit affordance visually distinct from the flat row affordances.
+///
+/// **< 2 exercises** (default mode): the header collapses to nothing — sorting
+/// a single-item list is meaningless and the toggle would produce an empty
+/// reorder view.
+class _ExercisesListHeader extends StatelessWidget {
+  const _ExercisesListHeader({
+    required this.exerciseReorderMode,
+    required this.exerciseCount,
+    required this.onSortByStartTime,
+    required this.onSortAlphabetically,
+  });
+
+  final ValueNotifier<bool> exerciseReorderMode;
+  final int exerciseCount;
+  final VoidCallback onSortByStartTime;
+  final VoidCallback onSortAlphabetically;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: exerciseReorderMode,
+      builder: (context, reorderMode, _) {
+        final l10n = AppLocalizations.of(context)!;
+        if (reorderMode) {
+          return _buildDoneBar(context, l10n);
+        }
+        if (exerciseCount < 2) return const SizedBox.shrink();
+        return _buildSortBar(context, l10n);
+      },
+    );
+  }
+
+  Widget _buildDoneBar(BuildContext context, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            onPressed: () => exerciseReorderMode.value = false,
+            child: Text(l10n.exerciseReorderDone),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSortBar(BuildContext context, AppLocalizations l10n) {
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    // Compact style shared by both one-shot sort TextButtons.
+    final sortButtonStyle = TextButton.styleFrom(
+      minimumSize: const Size(0, 32),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+    // Wrap keeps every control directly visible (no overflow menu — ADR-0035)
+    // and gracefully handles narrow panes by flowing to a second run rather
+    // than asserting overflow. In typical real-world fonts (Roboto ~7 px/char)
+    // all four items fit on one line even at 360 px; the test Ahem font (1 em
+    // per char) causes wrapping in test environments, but layout stays correct.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 2,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(l10n.exerciseSortBy, style: labelStyle),
+          ),
+          TextButton(
+            style: sortButtonStyle,
+            onPressed: onSortByStartTime,
+            child: Text(l10n.exerciseSortByStartTimeShort),
+          ),
+          TextButton(
+            style: sortButtonStyle,
+            onPressed: onSortAlphabetically,
+            child: Text(l10n.exerciseSortAlphabeticallyShort),
+          ),
+          // Visually distinct (OutlinedButton) from the one-shot sorts
+          // (TextButton) to signal that it enters a sticky mode.
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            onPressed: () => exerciseReorderMode.value = true,
+            child: Text(l10n.exerciseReorderMode),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1097,8 +1248,11 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
+    // Sort and reorder controls for the Øvelser segment live in the in-list
+    // header (_ExercisesListHeader) rather than the AppBar (ADR-0035 §"List
+    // header"). The AppBar only carries segment-independent actions (brief).
     final segmentActions = switch (activeSegment.value) {
-      ProgramSegment.exercises => _buildExercisesSortActions(context),
+      ProgramSegment.exercises => null,
       ProgramSegment.stations => stationListController.buildActions(
         context,
         constraints,
@@ -1116,64 +1270,6 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // on every lens, pinned rightmost (next to the status badge). Segment
     // actions (filter, cast roster) sit to its left.
     return [...?segmentActions, ...?_briefAction(context)];
-  }
-
-  /// Øvelser segment AppBar actions.
-  ///
-  /// **Reorder mode** (`exerciseReorderMode.value == true`): returns a single
-  /// "Done" / "Ferdig" [TextButton] that exits the mode.
-  ///
-  /// **Default mode**: returns a one-shot sort overflow ([PopupMenuButton])
-  /// and a "Reorder" / "Sorter" [TextButton] that enters reorder mode. Both
-  /// are omitted when there are fewer than two exercises.
-  List<Widget>? _buildExercisesSortActions(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    // In reorder mode show only the exit button.
-    if (exerciseReorderMode.value) {
-      return [
-        TextButton(
-          onPressed: () => exerciseReorderMode.value = false,
-          child: Text(l10n.exerciseReorderDone),
-        ),
-      ];
-    }
-
-    // In default mode show sort overflow + reorder-mode entry.
-    final exercises = programService.loadExercises();
-    if (exercises.length < 2) return null;
-
-    return [
-      PopupMenuButton<_SortAction>(
-        tooltip: l10n.moreActions,
-        itemBuilder: (_) => [
-          PopupMenuItem(
-            value: _SortAction.byStartTime,
-            child: Text(l10n.exerciseSortByStartTime),
-          ),
-          PopupMenuItem(
-            value: _SortAction.alphabetically,
-            child: Text(l10n.exerciseSortAlphabetically),
-          ),
-        ],
-        onSelected: (action) async {
-          final sorted = [...exercises];
-          switch (action) {
-            case _SortAction.byStartTime:
-              sorted.sort((a, b) => a.startTime.compareTo(b.startTime));
-            case _SortAction.alphabetically:
-              sorted.sort((a, b) => a.name.compareTo(b.name));
-          }
-          await programService.reorderExercises(
-            sorted.map((e) => e.uuid).toList(),
-          );
-        },
-      ),
-      TextButton(
-        onPressed: () => exerciseReorderMode.value = true,
-        child: Text(l10n.exerciseReorderMode),
-      ),
-    ];
   }
 
   List<Widget>? _briefAction(BuildContext context) {

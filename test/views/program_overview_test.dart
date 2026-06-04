@@ -115,12 +115,9 @@ Widget _harness(_HarnessControllers controllers, {bool chrome = false}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ListenableBuilder(
-      listenable: Listenable.merge([
-        controllers.program.activeSegment,
-        controllers.program.exerciseReorderMode,
-      ]),
-      builder: (context, child) {
+    home: ValueListenableBuilder<ProgramSegment>(
+      valueListenable: controllers.program.activeSegment,
+      builder: (context, _, child) {
         return Scaffold(
           appBar: chrome
               ? AppBar(

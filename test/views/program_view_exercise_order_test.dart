@@ -111,19 +111,17 @@ class _HarnessControllers {
   }
 }
 
-/// Harness rebuilds the AppBar whenever the active segment OR the exercise
-/// reorder-mode toggle changes, so "Sorter"/"Ferdig" actions appear/disappear
-/// correctly without a separate state machine in the test.
+/// Harness rebuilds the AppBar whenever the active segment changes.
+/// Sort and reorder controls live in the in-list header (not the AppBar),
+/// so the harness no longer needs to listen to exerciseReorderMode — the
+/// header's own ValueListenableBuilder handles that internally.
 Widget _harness(_HarnessControllers controllers) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ListenableBuilder(
-      listenable: Listenable.merge([
-        controllers.program.activeSegment,
-        controllers.program.exerciseReorderMode,
-      ]),
-      builder: (context, child) => Scaffold(
+    home: ValueListenableBuilder<ProgramSegment>(
+      valueListenable: controllers.program.activeSegment,
+      builder: (context, _, child) => Scaffold(
         appBar: AppBar(
           actions: [
             ...?controllers.program.buildActions(
@@ -229,13 +227,10 @@ void main() {
       // Initial order is Gamma(10h), Alpha(8h), Beta(9h).
       expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
 
-      // The AppBar has one PopupMenuButton (sort overflow) in default mode.
-      // No per-row overflow buttons exist, so Icons.more_vert is unambiguous.
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-
+      // The list header exposes sort actions as direct buttons (not hidden
+      // behind an overflow menu — ADR-0035 §"List header, all visible").
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l10n.exerciseSortByStartTime));
+      await tester.tap(find.text(l10n.exerciseSortByStartTimeShort));
       await tester.pumpAndSettle();
 
       // Start times: Alpha 08h < Beta 09h < Gamma 10h.

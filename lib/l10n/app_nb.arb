@@ -863,20 +863,32 @@
     }
   },
 
-  "exerciseReorderMode": "Sorter",
+  "exerciseReorderMode": "Omorganiser",
   "@exerciseReorderMode": {
-    "description": "AppBar-handling som aktiverer omsorteringsmodus (dra-for-å-sortere blir tilgjengelig)."
+    "description": "Listehodet-veksler som aktiverer omsorteringsmodus (dragepunkter vises, dra-for-å-sortere blir tilgjengelig)."
   },
   "exerciseReorderDone": "Ferdig",
   "@exerciseReorderDone": {
-    "description": "AppBar-handling som avslutter omsorteringsmodus og returnerer til standard listevisning."
+    "description": "Listehodet-veksler som avslutter omsorteringsmodus og returnerer til standard listevisning."
   },
   "exerciseSortByStartTime": "Sorter etter starttid",
   "@exerciseSortByStartTime": {
-    "description": "AppBar-overflow-handling som sorterer alle øvelser kronologisk etter starttid."
+    "description": "Fullstendig etikett for sortering av øvelser kronologisk etter starttid (brukes i verktøytips / bekreftelser)."
   },
   "exerciseSortAlphabetically": "Sorter alfabetisk",
   "@exerciseSortAlphabetically": {
-    "description": "AppBar-overflow-handling som sorterer alle øvelser alfabetisk etter navn."
+    "description": "Fullstendig etikett for sortering av øvelser alfabetisk etter navn (brukes i verktøytips / bekreftelser)."
+  },
+  "exerciseSortBy": "Sorter etter",
+  "@exerciseSortBy": {
+    "description": "Statisk etikettprefix i øvelseslistens overskrift, etterfulgt av to direktesorteringsknapper."
+  },
+  "exerciseSortByStartTimeShort": "Starttid",
+  "@exerciseSortByStartTimeShort": {
+    "description": "Kompakt knappetikett i øvelseslistens overskrift for direktesortering etter starttid."
+  },
+  "exerciseSortAlphabeticallyShort": "Alfabetisk",
+  "@exerciseSortAlphabeticallyShort": {
+    "description": "Kompakt knappetikett i øvelseslistens overskrift for direktesortering alfabetisk."
   }
 }
