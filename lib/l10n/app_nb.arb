@@ -861,5 +861,22 @@
     "placeholders": {
       "example": { "type": "String" }
     }
+  },
+
+  "exerciseMoveUp": "Flytt opp",
+  "@exerciseMoveUp": {
+    "description": "Overflowmenyelement som flytter en øvelse én posisjon opp i listen."
+  },
+  "exerciseMoveDown": "Flytt ned",
+  "@exerciseMoveDown": {
+    "description": "Overflowmenyelement som flytter en øvelse én posisjon ned i listen."
+  },
+  "exerciseSortByStartTime": "Sorter etter starttid",
+  "@exerciseSortByStartTime": {
+    "description": "AppBar-overflow-handling som sorterer alle øvelser kronologisk etter starttid."
+  },
+  "exerciseSortAlphabetically": "Sorter alfabetisk",
+  "@exerciseSortAlphabetically": {
+    "description": "AppBar-overflow-handling som sorterer alle øvelser alfabetisk etter navn."
   }
 }

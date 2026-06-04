@@ -1665,4 +1665,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String stationNumberFormatPreview(String example) {
     return 'Eksempel: $example';
   }
+
+  @override
+  String get exerciseMoveUp => 'Flytt opp';
+
+  @override
+  String get exerciseMoveDown => 'Flytt ned';
+
+  @override
+  String get exerciseSortByStartTime => 'Sorter etter starttid';
+
+  @override
+  String get exerciseSortAlphabetically => 'Sorter alfabetisk';
 }

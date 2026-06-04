@@ -1667,5 +1667,22 @@
     "placeholders": {
       "example": { "type": "String" }
     }
+  },
+
+  "exerciseMoveUp": "Move up",
+  "@exerciseMoveUp": {
+    "description": "Overflow menu item that moves an exercise one position up in the list."
+  },
+  "exerciseMoveDown": "Move down",
+  "@exerciseMoveDown": {
+    "description": "Overflow menu item that moves an exercise one position down in the list."
+  },
+  "exerciseSortByStartTime": "Sort by start time",
+  "@exerciseSortByStartTime": {
+    "description": "AppBar overflow action that sorts all exercises chronologically by their start time."
+  },
+  "exerciseSortAlphabetically": "Sort alphabetically",
+  "@exerciseSortAlphabetically": {
+    "description": "AppBar overflow action that sorts all exercises alphabetically by name."
   }
 }

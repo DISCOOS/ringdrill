@@ -41,6 +41,10 @@ export 'package:ringdrill/web/program_page_controller.dart'
 
 enum ProgramSegment { exercises, stations, script, teams }
 
+enum _ExerciseAction { moveUp, moveDown }
+
+enum _SortAction { byStartTime, alphabetically }
+
 class ProgramView extends StatefulWidget {
   const ProgramView({
     super.key,
@@ -157,12 +161,36 @@ class _ProgramViewState extends State<ProgramView> {
           // The drag handle is a distinct trailing hit target (ADR-0031: row
           // body swipe and long-press are reserved for edit). It is a
           // separate affordance that does not collide with those gestures.
-          final dragHandle = ReorderableDragStartListener(
-            index: index,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              child: Icon(Icons.drag_handle),
-            ),
+          // The overflow menu for move-up/move-down is stacked next to it.
+          final isFirst = index == 0;
+          final isLast = index == _exercises.length - 1;
+          final dragHandle = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PopupMenuButton<_ExerciseAction>(
+                tooltip: localizations.moreActions,
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: _ExerciseAction.moveUp,
+                    enabled: !isFirst,
+                    child: Text(localizations.exerciseMoveUp),
+                  ),
+                  PopupMenuItem(
+                    value: _ExerciseAction.moveDown,
+                    enabled: !isLast,
+                    child: Text(localizations.exerciseMoveDown),
+                  ),
+                ],
+                onSelected: (action) => _onExerciseAction(action, index),
+              ),
+              ReorderableDragStartListener(
+                index: index,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  child: Icon(Icons.drag_handle),
+                ),
+              ),
+            ],
           );
 
           return Dismissible(
@@ -311,6 +339,20 @@ class _ProgramViewState extends State<ProgramView> {
 
   void _initExercises() {
     _exercises = _programService.loadExercises();
+  }
+
+  /// Handles overflow-menu move actions on exercise rows. Swaps the exercise
+  /// at [index] one slot up or down, then persists via [reorderExercises].
+  Future<void> _onExerciseAction(_ExerciseAction action, int index) async {
+    final newIndex = action == _ExerciseAction.moveUp ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= _exercises.length) return;
+    final reordered = [..._exercises];
+    final moved = reordered.removeAt(index);
+    reordered.insert(newIndex, moved);
+    await _programService.reorderExercises(
+      reordered.map((e) => e.uuid).toList(),
+    );
+    if (mounted) setState(_initExercises);
   }
 
   Future<void> _openProgramForm(
@@ -1030,7 +1072,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
     final segmentActions = switch (activeSegment.value) {
-      ProgramSegment.exercises => null,
+      ProgramSegment.exercises => _buildExercisesSortActions(context),
       ProgramSegment.stations => stationListController.buildActions(
         context,
         constraints,
@@ -1048,6 +1090,45 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // on every lens, pinned rightmost (next to the status badge). Segment
     // actions (filter, cast roster) sit to its left.
     return [...?segmentActions, ...?_briefAction(context)];
+  }
+
+  /// One-shot sort actions shown in the Øvelser segment AppBar overflow.
+  /// After sorting, the order is manual again — users can nudge individual
+  /// rows with the drag handle or the move-up/down overflow actions.
+  List<Widget>? _buildExercisesSortActions(BuildContext context) {
+    final exercises = programService.loadExercises();
+    if (exercises.length < 2) return null;
+    final l10n = AppLocalizations.of(context)!;
+
+    return [
+      PopupMenuButton<_SortAction>(
+        tooltip: l10n.moreActions,
+        itemBuilder: (_) => [
+          PopupMenuItem(
+            value: _SortAction.byStartTime,
+            child: Text(l10n.exerciseSortByStartTime),
+          ),
+          PopupMenuItem(
+            value: _SortAction.alphabetically,
+            child: Text(l10n.exerciseSortAlphabetically),
+          ),
+        ],
+        onSelected: (action) async {
+          final sorted = [...exercises];
+          switch (action) {
+            case _SortAction.byStartTime:
+              sorted.sort(
+                (a, b) => a.startTime.compareTo(b.startTime),
+              );
+            case _SortAction.alphabetically:
+              sorted.sort((a, b) => a.name.compareTo(b.name));
+          }
+          await programService.reorderExercises(
+            sorted.map((e) => e.uuid).toList(),
+          );
+        },
+      ),
+    ];
   }
 
   List<Widget>? _briefAction(BuildContext context) {

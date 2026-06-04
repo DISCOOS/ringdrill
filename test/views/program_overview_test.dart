@@ -207,11 +207,12 @@ void main() {
         findsOneWidget,
       );
 
-      // Drag the active segment ListView upward. The NotificationListener
-      // catches the positive scroll delta and collapses the overview via
-      // AnimatedSize (manual collapse, not a NestedScrollView sliver).
+      // Drag the active segment list upward. The exercises segment now uses a
+      // ReorderableListView (ADR-0035), which has an internal CustomScrollView.
+      // The NotificationListener catches the positive scroll delta and
+      // collapses the overview via AnimatedSize (manual collapse, not a sliver).
       await tester.drag(
-        find.byType(ListView).first,
+        find.byType(ReorderableListView).first,
         const Offset(0, -300),
       );
       await tester.pumpAndSettle();

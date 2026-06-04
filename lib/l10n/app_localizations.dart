@@ -2863,6 +2863,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Example: {example}'**
   String stationNumberFormatPreview(String example);
+
+  /// Overflow menu item that moves an exercise one position up in the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get exerciseMoveUp;
+
+  /// Overflow menu item that moves an exercise one position down in the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get exerciseMoveDown;
+
+  /// AppBar overflow action that sorts all exercises chronologically by their start time.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by start time'**
+  String get exerciseSortByStartTime;
+
+  /// AppBar overflow action that sorts all exercises alphabetically by name.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort alphabetically'**
+  String get exerciseSortAlphabetically;
 }
 
 class _AppLocalizationsDelegate
