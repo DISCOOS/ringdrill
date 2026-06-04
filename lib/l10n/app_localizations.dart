@@ -2864,17 +2864,17 @@ abstract class AppLocalizations {
   /// **'Example: {example}'**
   String stationNumberFormatPreview(String example);
 
-  /// Overflow menu item that moves an exercise one position up in the list.
+  /// AppBar action that enters exercise reorder mode (drag-to-reorder becomes active).
   ///
   /// In en, this message translates to:
-  /// **'Move up'**
-  String get exerciseMoveUp;
+  /// **'Reorder'**
+  String get exerciseReorderMode;
 
-  /// Overflow menu item that moves an exercise one position down in the list.
+  /// AppBar action that exits exercise reorder mode and returns to the default list view.
   ///
   /// In en, this message translates to:
-  /// **'Move down'**
-  String get exerciseMoveDown;
+  /// **'Done'**
+  String get exerciseReorderDone;
 
   /// AppBar overflow action that sorts all exercises chronologically by their start time.
   ///

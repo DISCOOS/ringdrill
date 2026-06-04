@@ -1670,10 +1670,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get exerciseMoveUp => 'Move up';
+  String get exerciseReorderMode => 'Reorder';
 
   @override
-  String get exerciseMoveDown => 'Move down';
+  String get exerciseReorderDone => 'Done';
 
   @override
   String get exerciseSortByStartTime => 'Sort by start time';

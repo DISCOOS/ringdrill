@@ -1669,13 +1669,13 @@
     }
   },
 
-  "exerciseMoveUp": "Move up",
-  "@exerciseMoveUp": {
-    "description": "Overflow menu item that moves an exercise one position up in the list."
+  "exerciseReorderMode": "Reorder",
+  "@exerciseReorderMode": {
+    "description": "AppBar action that enters exercise reorder mode (drag-to-reorder becomes active)."
   },
-  "exerciseMoveDown": "Move down",
-  "@exerciseMoveDown": {
-    "description": "Overflow menu item that moves an exercise one position down in the list."
+  "exerciseReorderDone": "Done",
+  "@exerciseReorderDone": {
+    "description": "AppBar action that exits exercise reorder mode and returns to the default list view."
   },
   "exerciseSortByStartTime": "Sort by start time",
   "@exerciseSortByStartTime": {

@@ -863,13 +863,13 @@
     }
   },
 
-  "exerciseMoveUp": "Flytt opp",
-  "@exerciseMoveUp": {
-    "description": "Overflowmenyelement som flytter en øvelse én posisjon opp i listen."
+  "exerciseReorderMode": "Sorter",
+  "@exerciseReorderMode": {
+    "description": "AppBar-handling som aktiverer omsorteringsmodus (dra-for-å-sortere blir tilgjengelig)."
   },
-  "exerciseMoveDown": "Flytt ned",
-  "@exerciseMoveDown": {
-    "description": "Overflowmenyelement som flytter en øvelse én posisjon ned i listen."
+  "exerciseReorderDone": "Ferdig",
+  "@exerciseReorderDone": {
+    "description": "AppBar-handling som avslutter omsorteringsmodus og returnerer til standard listevisning."
   },
   "exerciseSortByStartTime": "Sorter etter starttid",
   "@exerciseSortByStartTime": {

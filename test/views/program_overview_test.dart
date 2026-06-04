@@ -115,9 +115,12 @@ Widget _harness(_HarnessControllers controllers, {bool chrome = false}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controllers.program.activeSegment,
-      builder: (context, _, child) {
+    home: ListenableBuilder(
+      listenable: Listenable.merge([
+        controllers.program.activeSegment,
+        controllers.program.exerciseReorderMode,
+      ]),
+      builder: (context, child) {
         return Scaffold(
           appBar: chrome
               ? AppBar(
@@ -129,7 +132,7 @@ Widget _harness(_HarnessControllers controllers, {bool chrome = false}) {
                   ],
                 )
               : null,
-          body: child,
+          body: child!,
           floatingActionButton: chrome
               ? controllers.program.buildFAB(context, const BoxConstraints())
               : null,
@@ -207,12 +210,12 @@ void main() {
         findsOneWidget,
       );
 
-      // Drag the active segment list upward. The exercises segment now uses a
-      // ReorderableListView (ADR-0035), which has an internal CustomScrollView.
-      // The NotificationListener catches the positive scroll delta and
-      // collapses the overview via AnimatedSize (manual collapse, not a sliver).
+      // Drag the active segment list upward to trigger the scroll-collapse of
+      // the overview. In default mode the exercises segment uses a ListView;
+      // the NotificationListener catches the positive scroll delta and collapses
+      // the overview via AnimatedSize (manual collapse, not a sliver).
       await tester.drag(
-        find.byType(ReorderableListView).first,
+        find.byType(ListView).first,
         const Offset(0, -300),
       );
       await tester.pumpAndSettle();

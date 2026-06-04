@@ -111,13 +111,19 @@ class _HarnessControllers {
   }
 }
 
+/// Harness rebuilds the AppBar whenever the active segment OR the exercise
+/// reorder-mode toggle changes, so "Sorter"/"Ferdig" actions appear/disappear
+/// correctly without a separate state machine in the test.
 Widget _harness(_HarnessControllers controllers) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controllers.program.activeSegment,
-      builder: (context, _, child) => Scaffold(
+    home: ListenableBuilder(
+      listenable: Listenable.merge([
+        controllers.program.activeSegment,
+        controllers.program.exerciseReorderMode,
+      ]),
+      builder: (context, child) => Scaffold(
         appBar: AppBar(
           actions: [
             ...?controllers.program.buildActions(
@@ -126,7 +132,7 @@ Widget _harness(_HarnessControllers controllers) {
             ),
           ],
         ),
-        body: child,
+        body: child!,
       ),
       child: ProgramView(
         controller: controllers.program,
@@ -181,37 +187,34 @@ void main() {
   );
 
   testWidgets(
-    'move-down action on first row persists new order and renumbers badges',
+    'entering reorder mode shows drag handles; exiting restores the default view',
     (tester) async {
       final controllers = _HarnessControllers();
       addTearDown(controllers.dispose);
       await tester.pumpWidget(_harness(controllers));
       await tester.pumpAndSettle();
 
-      // Initial order: Gamma, Alpha, Beta.
-      expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
+      // Default mode: no drag handles visible.
+      expect(find.byIcon(Icons.drag_handle), findsNothing);
 
-      // Tap the overflow menu on the first row (Gamma = index 0 in the list).
-      // PopupMenuButton is generic so find.byType(PopupMenuButton) uses exact
-      // runtimeType matching and misses PopupMenuButton<_ExerciseAction>.
-      // Find the more_vert icon instead — the first one is the per-row overflow
-      // on Gamma's card (AppBar sort menu is last).
-      await tester.tap(find.byIcon(Icons.more_vert).first);
-      await tester.pumpAndSettle();
-
+      // Tap the "Reorder" / "Sorter" TextButton in the AppBar.
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l10n.exerciseMoveDown));
+      await tester.tap(find.text(l10n.exerciseReorderMode));
       await tester.pumpAndSettle();
 
-      // After move-down: Alpha should be first, then Gamma, then Beta.
-      expect(renderedOrder(tester), ['Alpha', 'Gamma', 'Beta']);
+      // Reorder mode: one drag handle per exercise (3 total).
+      expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
+      // The "Done" button is now shown instead of "Reorder".
+      expect(find.text(l10n.exerciseReorderDone), findsOneWidget);
+      expect(find.text(l10n.exerciseReorderMode), findsNothing);
 
-      // Persisted indices reflect new order.
-      final exercises = ProgramService().loadExercises();
-      final byName = {for (final e in exercises) e.name: e.index};
-      expect(byName['Alpha'], 0);
-      expect(byName['Gamma'], 1);
-      expect(byName['Beta'], 2);
+      // Tap "Done" / "Ferdig" to exit.
+      await tester.tap(find.text(l10n.exerciseReorderDone));
+      await tester.pumpAndSettle();
+
+      // Default mode restored: drag handles gone, "Reorder" button is back.
+      expect(find.byIcon(Icons.drag_handle), findsNothing);
+      expect(find.text(l10n.exerciseReorderMode), findsOneWidget);
     },
   );
 
@@ -226,9 +229,9 @@ void main() {
       // Initial order is Gamma(10h), Alpha(8h), Beta(9h).
       expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
 
-      // The AppBar sort button shows Icons.more_vert; the last icon in the tree
-      // is the AppBar's (after the 3 per-row overflows).
-      await tester.tap(find.byIcon(Icons.more_vert).last);
+      // The AppBar has one PopupMenuButton (sort overflow) in default mode.
+      // No per-row overflow buttons exist, so Icons.more_vert is unambiguous.
+      await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -257,7 +260,12 @@ void main() {
       // Initial order: Gamma(0), Alpha(1), Beta(2).
       expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
 
-      // Locate the ReorderableListView (exercises segment body).
+      // Enter reorder mode so the ReorderableListView is rendered.
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.tap(find.text(l10n.exerciseReorderMode));
+      await tester.pumpAndSettle();
+
+      // Locate the ReorderableListView (exercises segment body in reorder mode).
       final listView = tester.widget<ReorderableListView>(
         find.byType(ReorderableListView).first,
       );

@@ -41,8 +41,6 @@ export 'package:ringdrill/web/program_page_controller.dart'
 
 enum ProgramSegment { exercises, stations, script, teams }
 
-enum _ExerciseAction { moveUp, moveDown }
-
 enum _SortAction { byStartTime, alphabetically }
 
 class ProgramView extends StatefulWidget {
@@ -116,6 +114,9 @@ class _ProgramViewState extends State<ProgramView> {
   }
 
   void _onSegmentChanged() {
+    // Exit reorder mode whenever the user switches to another segment so the
+    // exercises list always starts in the clean default view on re-entry.
+    widget.controller.exerciseReorderMode.value = false;
     if (mounted && !_overviewVisible) {
       setState(() => _overviewVisible = true);
     }
@@ -134,64 +135,20 @@ class _ProgramViewState extends State<ProgramView> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
-    Widget buildList(ContextSheetTarget? selectedTarget) {
-      return ReorderableListView.builder(
-        // Prevent the list from scrolling the outer NotificationListener
-        // while the drag handle is being used; forward scrolls as usual.
-        buildDefaultDragHandles: false,
+    // ----------------------------------------------------------------
+    // Default mode: plain ListView, all row gestures active.
+    // Drag handles and the reorder callback are absent; the chevron is
+    // the only trailing affordance (ADR-0035 §"Default view stays clean").
+    // ----------------------------------------------------------------
+    Widget buildDefaultList(ContextSheetTarget? selectedTarget) {
+      return ListView.builder(
         itemCount: _exercises.length,
-        onReorderItem: (oldIndex, newIndex) {
-          // onReorderItem already adjusts newIndex for the removed item, so
-          // no correction is needed here.
-          final reordered = [..._exercises];
-          final moved = reordered.removeAt(oldIndex);
-          reordered.insert(newIndex, moved);
-          final orderedUuids = reordered.map((e) => e.uuid).toList();
-          _programService.reorderExercises(orderedUuids).then((_) {
-            if (mounted) setState(_initExercises);
-          });
-        },
         itemBuilder: (context, index) {
           final exercise = _exercises[index];
           final markers = exercise.getLocations(false);
           final isSelected =
               selectedTarget is ExerciseSheetTarget &&
               selectedTarget.exerciseUuid == exercise.uuid;
-
-          // The drag handle is a distinct trailing hit target (ADR-0031: row
-          // body swipe and long-press are reserved for edit). It is a
-          // separate affordance that does not collide with those gestures.
-          // The overflow menu for move-up/move-down is stacked next to it.
-          final isFirst = index == 0;
-          final isLast = index == _exercises.length - 1;
-          final dragHandle = Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PopupMenuButton<_ExerciseAction>(
-                tooltip: localizations.moreActions,
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: _ExerciseAction.moveUp,
-                    enabled: !isFirst,
-                    child: Text(localizations.exerciseMoveUp),
-                  ),
-                  PopupMenuItem(
-                    value: _ExerciseAction.moveDown,
-                    enabled: !isLast,
-                    child: Text(localizations.exerciseMoveDown),
-                  ),
-                ],
-                onSelected: (action) => _onExerciseAction(action, index),
-              ),
-              ReorderableDragStartListener(
-                index: index,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                  child: Icon(Icons.drag_handle),
-                ),
-              ),
-            ],
-          );
 
           return Dismissible(
             key: ValueKey(exercise.uuid),
@@ -230,7 +187,7 @@ class _ProgramViewState extends State<ProgramView> {
               markers: markers,
               liveEvent: _liveEvent,
               selected: isSelected,
-              trailing: dragHandle,
+              // trailing: null → ExpandableTile shows its own expand chevron.
               expanded: _expandedExerciseUuid == exercise.uuid,
               onToggle: () {
                 setState(() {
@@ -265,6 +222,64 @@ class _ProgramViewState extends State<ProgramView> {
       );
     }
 
+    // ----------------------------------------------------------------
+    // Reorder mode: ReorderableListView with trailing drag handles.
+    // Row body tap/swipe/long-press are suspended so gestures never
+    // fight the drag (ADR-0035 §"Reorder mode", ADR-0031).
+    // Accessibility "move up / move down" comes for free from
+    // ReorderableListView's built-in semantic actions on the handle.
+    // ----------------------------------------------------------------
+    Widget buildReorderList(ContextSheetTarget? selectedTarget) {
+      return ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        itemCount: _exercises.length,
+        onReorderItem: (oldIndex, newIndex) {
+          // onReorderItem already adjusts newIndex for the removed item.
+          final reordered = [..._exercises];
+          final moved = reordered.removeAt(oldIndex);
+          reordered.insert(newIndex, moved);
+          final orderedUuids = reordered.map((e) => e.uuid).toList();
+          _programService.reorderExercises(orderedUuids).then((_) {
+            if (mounted) setState(_initExercises);
+          });
+        },
+        itemBuilder: (context, index) {
+          final exercise = _exercises[index];
+          final markers = exercise.getLocations(false);
+          final isSelected =
+              selectedTarget is ExerciseSheetTarget &&
+              selectedTarget.exerciseUuid == exercise.uuid;
+
+          // Drag handle is the sole trailing affordance in reorder mode.
+          // ReorderableDragStartListener scopes the drag to this widget so
+          // tapping the row body never triggers a drag.
+          final dragHandle = ReorderableDragStartListener(
+            index: index,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Icon(Icons.drag_handle),
+            ),
+          );
+
+          return ExerciseCard(
+            key: ValueKey(exercise.uuid),
+            exercise: exercise,
+            program: _programService.activeProgram,
+            exerciseNumber: index + 1,
+            localizations: localizations,
+            markers: markers,
+            liveEvent: _liveEvent,
+            selected: isSelected,
+            trailing: dragHandle,
+            // allowExpand: false suppresses the chevron; the drag handle is
+            // the only trailing affordance in reorder mode.
+            allowExpand: false,
+            // Row body gestures suspended; no onOpen, onLongPress, onToggle.
+          );
+        },
+      );
+    }
+
     final exercises = _exercises.isEmpty
         ? Center(child: Text(localizations.noExercisesYet))
         : Padding(
@@ -272,12 +287,20 @@ class _ProgramViewState extends State<ProgramView> {
             // detail body's `EdgeInsets.all(16)` so the first row of master
             // and detail align in the wide layout.
             padding: const EdgeInsets.only(top: 11.0),
-            child: targetNotifier == null
-                ? buildList(null)
-                : ValueListenableBuilder<ContextSheetTarget?>(
-                    valueListenable: targetNotifier,
-                    builder: (context, target, _) => buildList(target),
-                  ),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: widget.controller.exerciseReorderMode,
+              builder: (context, reorderMode, _) {
+                Widget list(ContextSheetTarget? target) => reorderMode
+                    ? buildReorderList(target)
+                    : buildDefaultList(target);
+                return targetNotifier == null
+                    ? list(null)
+                    : ValueListenableBuilder<ContextSheetTarget?>(
+                        valueListenable: targetNotifier,
+                        builder: (context, target, _) => list(target),
+                      );
+              },
+            ),
           );
     final exerciseBody = kIsWeb
         ? exercises
@@ -339,20 +362,6 @@ class _ProgramViewState extends State<ProgramView> {
 
   void _initExercises() {
     _exercises = _programService.loadExercises();
-  }
-
-  /// Handles overflow-menu move actions on exercise rows. Swaps the exercise
-  /// at [index] one slot up or down, then persists via [reorderExercises].
-  Future<void> _onExerciseAction(_ExerciseAction action, int index) async {
-    final newIndex = action == _ExerciseAction.moveUp ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= _exercises.length) return;
-    final reordered = [..._exercises];
-    final moved = reordered.removeAt(index);
-    reordered.insert(newIndex, moved);
-    await _programService.reorderExercises(
-      reordered.map((e) => e.uuid).toList(),
-    );
-    if (mounted) setState(_initExercises);
   }
 
   Future<void> _openProgramForm(
@@ -663,6 +672,7 @@ class ExerciseCard extends StatefulWidget {
     this.onLongPress,
     this.onToggle,
     this.allowStationActions = true,
+    this.allowExpand = true,
   });
 
   final Widget? trailing;
@@ -717,6 +727,11 @@ class ExerciseCard extends StatefulWidget {
   /// expanded body shows the map preview only.
   final bool allowStationActions;
 
+  /// Whether the inline expand/collapse affordance (chevron + body) is
+  /// active. Set to `false` in exercise reorder mode to suppress the
+  /// chevron so the only trailing affordance is the drag handle.
+  final bool allowExpand;
+
   @override
   State<ExerciseCard> createState() => _ExerciseCardState();
 }
@@ -742,6 +757,9 @@ class _ExerciseCardState extends State<ExerciseCard> {
     // map-only preview rather than rendering an interactive station list.
     final showStations =
         widget.allowStationActions && exercise.stations.isNotEmpty;
+    // In reorder mode allowExpand is false, which suppresses the chevron and
+    // the body so the only trailing affordance is the drag handle.
+    final allowExpand = widget.allowExpand;
     final st = exercise.startTime.toMaterial();
     final et = exercise.endTime.toMaterial();
     final liveEvent = widget.liveEvent;
@@ -779,11 +797,11 @@ class _ExerciseCardState extends State<ExerciseCard> {
       trailing: widget.trailing,
       onOpen: widget.onOpen,
       onLongPress: widget.onLongPress,
-      onToggle: showStations || hasMap
+      onToggle: allowExpand && (showStations || hasMap)
           ? widget.onToggle ?? _toggleExpanded
           : null,
       expanded: widget.expanded ?? _expanded,
-      body: showStations || hasMap
+      body: allowExpand && (showStations || hasMap)
           ? _buildExpandedBody(exercise, markers, showStations)
           : null,
     );
@@ -1007,8 +1025,16 @@ abstract class ProgramPageControllerBase extends ScreenController {
   final ValueNotifier<ProgramSegment> activeSegment =
       ValueNotifier<ProgramSegment>(ProgramSegment.exercises);
 
+  /// Whether the Øvelser segment is currently in reorder mode.
+  ///
+  /// When `true` the list switches to [ReorderableListView] with trailing
+  /// drag handles; when `false` it uses a plain [ListView] with the standard
+  /// chevron affordance (ADR-0035).
+  final ValueNotifier<bool> exerciseReorderMode = ValueNotifier<bool>(false);
+
   void dispose() {
     activeSegment.dispose();
+    exerciseReorderMode.dispose();
   }
 
   @override
@@ -1092,13 +1118,30 @@ abstract class ProgramPageControllerBase extends ScreenController {
     return [...?segmentActions, ...?_briefAction(context)];
   }
 
-  /// One-shot sort actions shown in the Øvelser segment AppBar overflow.
-  /// After sorting, the order is manual again — users can nudge individual
-  /// rows with the drag handle or the move-up/down overflow actions.
+  /// Øvelser segment AppBar actions.
+  ///
+  /// **Reorder mode** (`exerciseReorderMode.value == true`): returns a single
+  /// "Done" / "Ferdig" [TextButton] that exits the mode.
+  ///
+  /// **Default mode**: returns a one-shot sort overflow ([PopupMenuButton])
+  /// and a "Reorder" / "Sorter" [TextButton] that enters reorder mode. Both
+  /// are omitted when there are fewer than two exercises.
   List<Widget>? _buildExercisesSortActions(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    // In reorder mode show only the exit button.
+    if (exerciseReorderMode.value) {
+      return [
+        TextButton(
+          onPressed: () => exerciseReorderMode.value = false,
+          child: Text(l10n.exerciseReorderDone),
+        ),
+      ];
+    }
+
+    // In default mode show sort overflow + reorder-mode entry.
     final exercises = programService.loadExercises();
     if (exercises.length < 2) return null;
-    final l10n = AppLocalizations.of(context)!;
 
     return [
       PopupMenuButton<_SortAction>(
@@ -1117,9 +1160,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
           final sorted = [...exercises];
           switch (action) {
             case _SortAction.byStartTime:
-              sorted.sort(
-                (a, b) => a.startTime.compareTo(b.startTime),
-              );
+              sorted.sort((a, b) => a.startTime.compareTo(b.startTime));
             case _SortAction.alphabetically:
               sorted.sort((a, b) => a.name.compareTo(b.name));
           }
@@ -1127,6 +1168,10 @@ abstract class ProgramPageControllerBase extends ScreenController {
             sorted.map((e) => e.uuid).toList(),
           );
         },
+      ),
+      TextButton(
+        onPressed: () => exerciseReorderMode.value = true,
+        child: Text(l10n.exerciseReorderMode),
       ),
     ];
   }

@@ -1667,10 +1667,10 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get exerciseMoveUp => 'Flytt opp';
+  String get exerciseReorderMode => 'Sorter';
 
   @override
-  String get exerciseMoveDown => 'Flytt ned';
+  String get exerciseReorderDone => 'Ferdig';
 
   @override
   String get exerciseSortByStartTime => 'Sorter etter starttid';
