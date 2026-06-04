@@ -26,10 +26,13 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/vertical_divider_widget.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
+import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
@@ -1219,116 +1222,169 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
 
   Widget _buildStationList(ExerciseEvent event) {
     final localizations = context.l10n;
-    // The list is rendered as a plain Column instead of a ListView so it
-    // can take part in the parent SingleChildScrollView. Station counts
-    // are small (typically <20) so eager-building every card is cheaper
-    // than the indirection a nested-scroll ListView would add.
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
+    final exercise = _exercise!;
+    final stations = exercise.stations;
+
+    // Resolve the exercise's 1-based number the same way the Stations segment
+    // does — by position in the unfiltered exercise list — so the badge label
+    // matches what the Stations segment shows (ADR-0036 §"Coordinator station
+    // badge").
+    final exerciseNumber =
+        (_programService.loadExercises().indexWhere(
+              (e) => e.uuid == exercise.uuid,
+            ) +
+            1);
+
+    Widget buildStationRow(
+      BuildContext context,
+      Station station,
+      int position,
+      bool reordering,
+      Widget dragHandle,
+    ) {
+      // The station's list position equals its index (rotation math invariant).
+      final stationIndex = position;
+      // A station is "live" when the current round assigns a team to it.
+      final isLive =
+          event.isRunning &&
+          exercise.teamIndex(stationIndex, event.currentRound) >= 0;
+      final accent = LiveAccent.of(context, isLive: isLive);
+
+      final badge = StationNumberBadge(
+        label: Numbering.station(
+          _programService.activeProgram?.stationNumberFormat ??
+              StationNumberFormat.dotted,
+          exerciseNumber: exerciseNumber,
+          // Use position (list index) so the badge renumbers live during a
+          // drag, matching the exercises-list behaviour (ADR-0035, ADR-0036).
+          stationIndex: position,
+        ),
+        highlight: isLive,
+      );
+
+      // The rotation schedule shown as a trailing row of team assignments.
+      final scheduleRow = Row(
         mainAxisSize: MainAxisSize.min,
-        children: List<Widget>.generate(_exercise!.stations.length, (
-          stationIndex,
-        ) {
-          final station = _exercise!.stations[stationIndex];
-          // A station is "live" when the current round assigns a team to
-          // it. The shared accent highlights the card so the active station
-          // is recognisable even when collapsed.
-          final isLive =
-              event.isRunning &&
-              _exercise!.teamIndex(stationIndex, event.currentRound) >= 0;
-          final accent = LiveAccent.of(context, isLive: isLive);
-          return Dismissible(
-            key: ValueKey<String>('coordinator-station-dismiss-$stationIndex'),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              color: context.colors.secondaryContainer,
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    localizations.editStation,
-                    style: TextStyle(
-                      color: context.colors.onSecondaryContainer,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.edit, color: context.colors.onSecondaryContainer),
-                ],
-              ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: VerticalDividerWidget(),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Text(
+              localizations.team(1),
+              style: TextStyle(fontSize: 18, color: accent.foreground),
             ),
-            confirmDismiss: (_) async {
-              await _editStation(stationIndex);
-              return false;
-            },
-            child: ExpandableTile(
-              onLongPress: () => _editStation(stationIndex),
-              // Do NOT use a PageStorageKey here: any SelectableText below
-              // (e.g. UtmWidget inside the station detail) reads from the
-              // same bucket-path for its scroll offset, casting an
-              // expansion bool to double? and crashing at
-              // didChangeDependencies.
-              key: ValueKey<String>('coordinator-station-$stationIndex'),
-              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
-              accent: accent,
-              leading: accent.indicator,
-              title: Text(
-                station.name,
-                style: TextStyle(fontSize: 18, color: accent.foreground),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+          ),
+          ...List<Widget>.generate(exercise.schedule.length, (roundIndex) {
+            final isCurrent =
+                event.isRunning && roundIndex == event.currentRound;
+            final teamIndex =
+                exercise.teamIndex(stationIndex, roundIndex) + 1;
+            final none = teamIndex == 0;
+            return Container(
+              padding: const EdgeInsets.all(4),
+              color: isCurrent
+                  ? none
+                        ? Colors.grey
+                        : Colors.blueAccent
+                  : Colors.transparent,
+              child: Text(
+                '${none ? '×' : teamIndex}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight:
+                      isCurrent ? FontWeight.bold : FontWeight.normal,
+                  color: isCurrent ? Colors.white : accent.foreground,
+                ),
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: VerticalDividerWidget(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      localizations.team(1),
-                      style: TextStyle(fontSize: 18, color: accent.foreground),
-                    ),
-                  ),
-                  ...List<Widget>.generate(_exercise!.schedule.length, (
-                    roundIndex,
-                  ) {
-                    final isCurrent =
-                        event.isRunning && roundIndex == event.currentRound;
-                    final teamIndex =
-                        _exercise!.teamIndex(stationIndex, roundIndex) + 1;
-                    final none = teamIndex == 0;
-                    return Container(
-                      padding: const EdgeInsets.all(4),
-                      color: isCurrent
-                          ? none
-                                ? Colors.grey
-                                : Colors.blueAccent
-                          : Colors.transparent,
-                      child: Text(
-                        '${none ? '×' : teamIndex}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: isCurrent
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isCurrent ? Colors.white : accent.foreground,
-                        ),
-                      ),
-                    );
-                  }),
-                ],
+            );
+          }),
+        ],
+      );
+
+      // In reorder mode: show drag handle, suspend gestures (ADR-0031).
+      if (reordering) {
+        return ExpandableTile(
+          key: ValueKey<String>('coordinator-station-${station.index}'),
+          margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+          accent: accent,
+          leading: badge,
+          title: Text(
+            station.name,
+            style: TextStyle(fontSize: 18, color: accent.foreground),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: dragHandle,
+          // No onOpen, onLongPress, onToggle — gestures suspended in reorder mode.
+        );
+      }
+
+      return Dismissible(
+        key: ValueKey<String>('coordinator-station-dismiss-${station.index}'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          color: context.colors.secondaryContainer,
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                localizations.editStation,
+                style: TextStyle(color: context.colors.onSecondaryContainer),
               ),
-              expanded: _expandedStationIndex == stationIndex,
-              onToggle: () => _toggleStation(stationIndex),
-              body: _buildStationDetail(stationIndex),
-            ),
-          );
-        }),
+              const SizedBox(width: 8),
+              Icon(Icons.edit, color: context.colors.onSecondaryContainer),
+            ],
+          ),
+        ),
+        confirmDismiss: (_) async {
+          await _editStation(stationIndex);
+          return false;
+        },
+        child: ExpandableTile(
+          onLongPress: () => _editStation(stationIndex),
+          // Do NOT use a PageStorageKey here: any SelectableText below
+          // (e.g. UtmWidget inside the station detail) reads from the
+          // same bucket-path for its scroll offset, casting an
+          // expansion bool to double? and crashing at didChangeDependencies.
+          key: ValueKey<String>('coordinator-station-${station.index}'),
+          margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+          accent: accent,
+          leading: badge,
+          title: Text(
+            station.name,
+            style: TextStyle(fontSize: 18, color: accent.foreground),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: scheduleRow,
+          expanded: _expandedStationIndex == stationIndex,
+          onToggle: () => _toggleStation(stationIndex),
+          body: _buildStationDetail(stationIndex),
+        ),
+      );
+    }
+
+    // Use shrinkWrap so the section works inside the coordinator's
+    // SingleChildScrollView. Reorder is gated by !_isStarted (same guard as
+    // _editStation) so the toggle is absent while a session is live.
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: ReorderableSection<Station>(
+        shrinkWrap: true,
+        items: stations,
+        keyOf: (s) => ValueKey('coordinator-station-${s.index}'),
+        orderLabel: context.l10n.exerciseSortBy,
+        enabled: !_isStarted,
+        onCommitReorder: (newOrder) {
+          final orderedOldIndices = newOrder.map((s) => s.index).toList();
+          _programService.reorderStations(exercise.uuid, orderedOldIndices);
+        },
+        itemBuilder: buildStationRow,
       ),
     );
   }

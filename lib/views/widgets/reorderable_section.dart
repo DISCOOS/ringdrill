@@ -49,6 +49,7 @@ class ReorderableSection<T> extends StatefulWidget {
     this.sortActions = const [],
     this.enabled = true,
     this.reorderMode,
+    this.shrinkWrap = false,
   });
 
   /// The ordered list of items to display.
@@ -94,6 +95,13 @@ class ReorderableSection<T> extends StatefulWidget {
   /// internal notifier. The host can flip it externally to force-exit (e.g. on
   /// segment switch).
   final ValueNotifier<bool>? reorderMode;
+
+  /// When true, the widget sizes itself to its content (suitable for use
+  /// inside a [SingleChildScrollView]). Lists use `shrinkWrap: true` and
+  /// `NeverScrollableScrollPhysics`. When false (default), the widget fills
+  /// its parent using [Expanded] (requires a bounded height constraint from
+  /// an ancestor [Column] or [Flexible]).
+  final bool shrinkWrap;
 
   @override
   State<ReorderableSection<T>> createState() => _ReorderableSectionState<T>();
@@ -180,6 +188,15 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
         final list = reordering
             ? _buildReorderList(context, items)
             : _buildDefaultList(context, items);
+
+        if (widget.shrinkWrap) {
+          // Intrinsic-height mode for use inside SingleChildScrollView.
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [header, list],
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -284,6 +301,8 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
     // across both modes.
     const placeholder = SizedBox.shrink();
     return ListView.builder(
+      shrinkWrap: widget.shrinkWrap,
+      physics: widget.shrinkWrap ? const NeverScrollableScrollPhysics() : null,
       itemCount: items.length,
       itemBuilder: (context, index) {
         return widget.itemBuilder(context, items[index], index, false, placeholder);
@@ -294,6 +313,8 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
   Widget _buildReorderList(BuildContext context, List<T> items) {
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
+      shrinkWrap: widget.shrinkWrap,
+      physics: widget.shrinkWrap ? const NeverScrollableScrollPhysics() : null,
       itemCount: items.length,
       onReorderItem: (oldIndex, newIndex) {
         // onReorderItem already adjusts newIndex for the removed item.

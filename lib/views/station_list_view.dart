@@ -258,7 +258,9 @@ class _StationListViewState extends State<StationListView> {
         _programService.activeProgram?.stationNumberFormat ??
             StationNumberFormat.dotted,
         exerciseNumber: exerciseNumber,
-        stationIndex: station.index,
+        // Use rowIndex (list position) so the badge renumbers live during a
+        // drag, matching the exercises-list behaviour (ADR-0035, ADR-0036).
+        stationIndex: rowIndex,
       ),
       highlight: isLive,
       hasRoles: hasRoles,
