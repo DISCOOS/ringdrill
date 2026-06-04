@@ -8,7 +8,7 @@
 ## Innholdsfortegnelse
 
 {{#exercises}}- [{{name}}](#{{exerciseAnchor}})
-{{#stations}}  - [{{exerciseNumber}}{{stationLetter}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}](#{{stationAnchor}})
+{{#stations}}  - [{{stationCode}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}](#{{stationAnchor}})
 {{/stations}}{{/exercises}}
 
 {{/if_in_doc_toc}}
@@ -71,9 +71,9 @@
 {{/effectiveCommsMd}}
 
 {{#stations}}
-### {{exerciseNumber}}{{stationLetter}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}
+### {{stationCode}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}
 
-**Post {{exerciseNumber}}{{stationLetter}} plassering:** {{{positionValue}}}
+**Post {{stationCode}} plassering:** {{{positionValue}}}
 
 #### Varighet
 {{stationDurationLabel}}

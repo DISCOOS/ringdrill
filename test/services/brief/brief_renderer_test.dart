@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -142,13 +143,13 @@ void main() {
       );
       final normalized = _normalizeLines(result);
 
-      // Station heading
-      expect(normalized, contains('### 1a – Demens'));
+      // Station heading — default stationNumberFormat is dotted ("1.1")
+      expect(normalized, contains('### 1.1 – Demens'));
 
       // UTM placement — use actual computed value rather than DESIGN-004 example.
       // UTM renders as inline code (backticks) so it stands out from prose.
       final expectedUtm = BriefRenderer.formatUtm(const LatLng(58.99, 10.43));
-      expect(normalized, contains('**Post 1a plassering:** `$expectedUtm`'));
+      expect(normalized, contains('**Post 1.1 plassering:** `$expectedUtm`'));
 
       // Station Varighet heading (new template: #### Varighet, not **Tid:** inline)
       expect(normalized, contains('#### Varighet'));
@@ -539,17 +540,6 @@ void main() {
   });
 
   group('BriefRenderer helpers', () {
-    test('stationLetter maps index 0..25 to a..z', () {
-      for (var i = 0; i <= 25; i++) {
-        final station = Station(index: i, name: 'S$i');
-        expect(
-          BriefRenderer.stationLetter(station),
-          String.fromCharCode('a'.codeUnitAt(0) + i),
-          reason: 'index $i',
-        );
-      }
-    });
-
     test('exerciseTimeLabel returns clock-time span', () {
       final ex = Exercise(
         uuid: 'e',
@@ -658,6 +648,104 @@ void main() {
       expect(utm, startsWith('32V '));
       expect(utm, contains('E '));
       expect(utm, contains('N'));
+    });
+  });
+
+  group('BriefRenderer — station number formats', () {
+    Exercise _twoStationExercise() => Exercise(
+      uuid: 'ex-fmt',
+      name: 'Format test',
+      startTime: _start,
+      endTime: _end,
+      numberOfTeams: 2,
+      numberOfRounds: 2,
+      executionTime: 30,
+      evaluationTime: 5,
+      rotationTime: 5,
+      stations: const [
+        Station(index: 0, name: 'Alpha'),
+        Station(index: 1, name: 'Beta'),
+      ],
+      schedule: const [],
+    );
+
+    test('dotted format produces "1.1" and "1.2" headings', () async {
+      final program = _emptyProgram().copyWith(
+        exercises: [_twoStationExercise()],
+        stationNumberFormat: StationNumberFormat.dotted,
+      );
+      final result = await BriefRenderer().render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      expect(result, contains('### 1.1 – Alpha'));
+      expect(result, contains('### 1.2 – Beta'));
+      expect(result, contains('**Post 1.1 plassering:**'));
+      expect(result, contains('**Post 1.2 plassering:**'));
+    });
+
+    test('dotted format TOC links use dotted labels', () async {
+      final program = _emptyProgram().copyWith(
+        exercises: [_twoStationExercise()],
+        stationNumberFormat: StationNumberFormat.dotted,
+      );
+      final result = await BriefRenderer().render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      expect(result, contains('[1.1 – Alpha]'));
+      expect(result, contains('[1.2 – Beta]'));
+    });
+
+    test('alpha format produces "1a" and "1b" headings', () async {
+      final program = _emptyProgram().copyWith(
+        exercises: [_twoStationExercise()],
+        stationNumberFormat: StationNumberFormat.alpha,
+      );
+      final result = await BriefRenderer().render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      expect(result, contains('### 1a – Alpha'));
+      expect(result, contains('### 1b – Beta'));
+      expect(result, contains('**Post 1a plassering:**'));
+      expect(result, contains('**Post 1b plassering:**'));
+    });
+
+    test('alpha format TOC links use alpha labels', () async {
+      final program = _emptyProgram().copyWith(
+        exercises: [_twoStationExercise()],
+        stationNumberFormat: StationNumberFormat.alpha,
+      );
+      final result = await BriefRenderer().render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      expect(result, contains('[1a – Alpha]'));
+      expect(result, contains('[1b – Beta]'));
+    });
+
+    test('dotted anchor is derived from stationCode (dot dropped by slug)',
+        () async {
+      final program = _emptyProgram().copyWith(
+        exercises: [_twoStationExercise()],
+        stationNumberFormat: StationNumberFormat.dotted,
+      );
+      final result = await BriefRenderer().render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+        wideTocSidebar: false,
+      );
+      // The dot in "1.1" is stripped by _toAnchor, so the expected anchor is
+      // "11-alpha". Both the TOC link and the heading use the same anchor,
+      // so internal links remain consistent.
+      expect(result, contains('[1.1 – Alpha](#11-alpha)'));
+      expect(result, contains('### 1.1 – Alpha'));
     });
   });
 }

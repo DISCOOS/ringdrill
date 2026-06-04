@@ -16,6 +16,7 @@ import 'package:mustache_template/mustache_template.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -106,6 +107,7 @@ class BriefRenderer {
 
     final stationContexts = exercise.stations.map((station) {
       return _buildStationContext(
+        program: program,
         exercise: exercise,
         exerciseNumber: exNum,
         station: station,
@@ -140,6 +142,7 @@ class BriefRenderer {
   }
 
   Map<String, dynamic> _buildStationContext({
+    required Program program,
     required Exercise exercise,
     required int exerciseNumber,
     required Station station,
@@ -149,7 +152,11 @@ class BriefRenderer {
     required String? effectiveCommsMd,
     required AppLocalizations l10n,
   }) {
-    final letter = _stationLetter(station);
+    final stationCode = Numbering.station(
+      program.stationNumberFormat,
+      exerciseNumber: exerciseNumber,
+      stationIndex: station.index,
+    );
     final utmStr = _formatUtm(station.position);
     // Pre-formatted markdown for the "Post Nx plassering:" value. Renders as
     // an inline-code chip when the station has a UTM position, or as a
@@ -203,15 +210,14 @@ class BriefRenderer {
     }).toList();
 
     final stationAnchor = _toAnchor(
-      '$exerciseNumber$letter – $cleanName'
+      '$stationCode – $cleanName'
       '${station.variantSuffix != null ? ' – ${station.variantSuffix}' : ''}',
     );
 
     return {
       'name': cleanName,
       'variantSuffix': station.variantSuffix,
-      'exerciseNumber': exerciseNumber,
-      'stationLetter': letter,
+      'stationCode': stationCode,
       'stationAnchor': stationAnchor,
       'position': {'utm': utmStr},
       'positionValue': positionValue,
@@ -240,11 +246,6 @@ class BriefRenderer {
   @visibleForTesting
   static int exerciseNumber(Program program, Exercise exercise) =>
       _exerciseNumber(program, exercise);
-
-  /// Returns the lowercase letter for [station] based on its index.
-  /// index 0 → 'a', index 1 → 'b', ..., index 25 → 'z'.
-  @visibleForTesting
-  static String stationLetter(Station station) => _stationLetter(station);
 
   /// Clock-time span for the exercise: "08:30–10:30".
   /// "Tid" in copy is reserved for clock-time, never duration.
@@ -299,10 +300,6 @@ final _kStationNamePrefix = RegExp(r'^[0-9]+[a-z]\)\s*');
 int _exerciseNumber(Program program, Exercise exercise) {
   final idx = program.exercises.indexWhere((e) => e.uuid == exercise.uuid);
   return idx < 0 ? 1 : idx + 1;
-}
-
-String _stationLetter(Station station) {
-  return String.fromCharCode('a'.codeUnitAt(0) + station.index);
 }
 
 /// Clock-time span for the exercise: "08:30–10:30".
