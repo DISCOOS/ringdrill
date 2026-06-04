@@ -102,20 +102,34 @@ extension StationLocationX on Iterable<StationLocation> {
   /// station icon. Optional [clusterGroup] and [onTap] factory are forwarded.
   /// Locations whose point is not finite are dropped: a NaN point would
   /// throw on the next projection pass and take the whole map with it.
+  ///
+  /// Locations whose id is in [activeIds] are rendered in [activeColor]
+  /// (falling back to [color] when null) and flagged
+  /// [MapMarkerSpec.highlighted] so their cluster reads as live too. The
+  /// default keeps every station the original green.
   List<MapMarkerSpec<(String, int)>> toMarkerSpecs({
     Object? clusterGroup,
     void Function((String, int) id)? onTap,
+    Set<(String, int)> activeIds = const <(String, int)>{},
+    Color color = Colors.green,
+    Color? activeColor,
   }) =>
       where((m) => _isFiniteLatLng(m.$3))
-          .map(
-            (m) => MapMarkerSpec<(String, int)>(
+          .map((m) {
+            final isActive = activeIds.contains(m.$1);
+            return MapMarkerSpec<(String, int)>(
               id: m.$1,
               label: m.$2,
               point: m.$3,
-              child: const Icon(Icons.place, color: Colors.green, size: 32),
+              child: Icon(
+                Icons.place,
+                color: isActive ? (activeColor ?? color) : color,
+                size: 32,
+              ),
               clusterGroup: clusterGroup,
+              highlighted: isActive,
               onTap: onTap == null ? null : () => onTap(m.$1),
-            ),
-          )
+            );
+          })
           .toList();
 }

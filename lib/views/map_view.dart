@@ -26,6 +26,7 @@ class MapMarkerSpec<K> {
     required this.point,
     required this.child,
     this.clusterGroup,
+    this.highlighted = false,
     this.onTap,
   });
 
@@ -40,6 +41,14 @@ class MapMarkerSpec<K> {
   /// together; null means flat rendering.
   final Object? clusterGroup;
 
+  /// Generic "this marker is in its emphasized state" flag. [MapView] does
+  /// not change the marker's own [child] for it — the caller already supplies
+  /// whatever icon it wants — but a cluster that contains at least one
+  /// highlighted marker is painted with [MapClusterStyle.activeColor] instead
+  /// of [MapClusterStyle.color]. Stays domain-agnostic: callers decide what
+  /// "highlighted" means (e.g. a station a team is currently at).
+  final bool highlighted;
+
   final VoidCallback? onTap;
 }
 
@@ -50,11 +59,22 @@ class MapClusterStyle {
   const MapClusterStyle({
     this.color,
     this.onColor,
+    this.activeColor,
+    this.activeOnColor,
     this.size = const Size(40, 40),
   });
 
   final Color? color;
   final Color? onColor;
+
+  /// Badge fill used when the cluster contains at least one
+  /// [MapMarkerSpec.highlighted] marker. Falls back to [color] when null.
+  final Color? activeColor;
+
+  /// Number colour paired with [activeColor]. Falls back to [onColor] when
+  /// null.
+  final Color? activeOnColor;
+
   final Size size;
 }
 
@@ -809,18 +829,39 @@ class _MapViewState<K> extends State<MapView<K>> {
     final color = style?.color;
     final onColor = style?.onColor;
     final size = style?.size ?? const Size(40, 40);
+
+    // Build the markers once and remember which of the resulting Marker
+    // instances came from a highlighted spec. The cluster builder is handed
+    // back the exact same Marker instances, so an identity lookup tells us
+    // whether the cluster contains any highlighted marker.
+    final markers = <Marker>[];
+    final highlightedMarkers = <Marker>{};
+    for (final spec in specs) {
+      final marker = _buildMarker(spec);
+      markers.add(marker);
+      if (spec.highlighted) highlightedMarkers.add(marker);
+    }
+
     return MarkerClusterLayerWidget(
       options: MarkerClusterLayerOptions(
         maxClusterRadius: 45,
         size: size,
         padding: const EdgeInsets.all(50),
         maxZoom: 17,
-        markers: specs.map(_buildMarker).toList(),
+        markers: markers,
         markerChildBehavior: true,
         builder: (context, clusterMarkers) {
           final scheme = Theme.of(context).colorScheme;
-          final bgColor = color ?? scheme.primary;
-          final fgColor = onColor ?? scheme.onPrimary;
+          // A cluster is "active" when at least one of the markers it groups
+          // is highlighted, so a zoomed-out group reads as live whenever any
+          // single station inside it is live.
+          final isActive = clusterMarkers.any(highlightedMarkers.contains);
+          final bgColor = isActive
+              ? (style?.activeColor ?? color ?? scheme.primary)
+              : (color ?? scheme.primary);
+          final fgColor = isActive
+              ? (style?.activeOnColor ?? style?.onColor ?? scheme.onPrimary)
+              : (onColor ?? scheme.onPrimary);
           return Container(
             width: size.width,
             height: size.height,

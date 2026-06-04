@@ -438,7 +438,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         switch (_view) {
           _CoordinatorView.stations => _buildStationList(event),
           _CoordinatorView.teams => _buildTeamList(event),
-          _CoordinatorView.map => _buildSingleColumnMap(viewportHeight),
+          _CoordinatorView.map => _buildSingleColumnMap(event, viewportHeight),
         },
       ],
     );
@@ -516,6 +516,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }) {
     final localizations = AppLocalizations.of(context)!;
     final positionMap = _buildExercisePositionMap(
+      event,
       height:
           (viewportHeight -
                   _kCoordinatorBodyPadding * 2 -
@@ -575,7 +576,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// segment is selected. Reuses the same all-stations map as the wide
   /// body and falls back to a short placeholder when no station has a
   /// position yet.
-  Widget _buildSingleColumnMap(double viewportHeight) {
+  Widget _buildSingleColumnMap(ExerciseEvent event, double viewportHeight) {
     final localizations = AppLocalizations.of(context)!;
     // The map renders below the top section (round table + selector) inside
     // the scrolling body, so it must leave room for that content — otherwise
@@ -583,6 +584,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // a chunk for the chrome above so the map stays inside the viewport
     // rather than dominating it.
     final map = _buildExercisePositionMap(
+      event,
       height: (viewportHeight - 320).clamp(240.0, double.infinity),
     );
     if (map != null) {
@@ -605,25 +607,45 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// position so callers can omit the block (wide body) or show a
   /// placeholder (mobile map subview). [height] is the fixed height the map
   /// box occupies inside the scrolling body.
-  Widget? _buildExercisePositionMap({required double height}) {
-    final markers = _exercise!.stations
-        .where((station) => station.position != null)
-        .map(
-          (station) => MapMarkerSpec<int>(
-            id: station.index,
-            label: station.name,
-            point: station.position!,
-            child: const Icon(Icons.place, color: Colors.green, size: 32),
-            onTap: () => ContextSheet.of(context).show(
-              context,
-              StationSheetTarget(
-                exerciseUuid: widget.uuid,
-                stationIndex: station.index,
-              ),
+  Widget? _buildExercisePositionMap(
+    ExerciseEvent event, {
+    required double height,
+  }) {
+    final markers = <MapMarkerSpec<int>>[];
+    for (
+      var stationIndex = 0;
+      stationIndex < _exercise!.stations.length;
+      stationIndex++
+    ) {
+      final station = _exercise!.stations[stationIndex];
+      if (station.position == null) continue;
+      // Same "live" test as the station list: the current round assigns a
+      // team to this station. Live pins switch to the orange live accent so
+      // the map matches the highlighted rows in the player.
+      final isLive =
+          event.isRunning &&
+          _exercise!.teamIndex(stationIndex, event.currentRound) >= 0;
+      markers.add(
+        MapMarkerSpec<int>(
+          id: station.index,
+          label: station.name,
+          point: station.position!,
+          highlighted: isLive,
+          child: Icon(
+            Icons.place,
+            color: isLive ? RingDrillColors.brandAccent : Colors.green,
+            size: 32,
+          ),
+          onTap: () => ContextSheet.of(context).show(
+            context,
+            StationSheetTarget(
+              exerciseUuid: widget.uuid,
+              stationIndex: station.index,
             ),
           ),
-        )
-        .toList();
+        ),
+      );
+    }
     if (markers.isEmpty) return null;
 
     final points = markers.map((marker) => marker.point).toList();

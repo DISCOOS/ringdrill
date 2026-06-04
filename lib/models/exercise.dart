@@ -77,6 +77,27 @@ extension ExerciseX on Exercise {
     return null;
   }
 
+  /// Marker ids — matching the ids produced by [getLocations] — of the
+  /// stations that have a team assigned in [roundIndex]. Used to highlight
+  /// the "live" stations (the ones teams are currently at) on the map while
+  /// the exercise is running.
+  ///
+  /// The id's integer is the running index over stations that have a
+  /// position, exactly as [getLocations] assigns it, so the returned ids
+  /// line up one-to-one with the markers built from [getLocations].
+  Set<(String, int)> activeLocationIds(int roundIndex) {
+    final ids = <(String, int)>{};
+    var positioned = 0;
+    for (var stationIndex = 0; stationIndex < stations.length; stationIndex++) {
+      if (stations[stationIndex].position == null) continue;
+      final id = (uuid, positioned++);
+      if (teamIndex(stationIndex, roundIndex) >= 0) {
+        ids.add(id);
+      }
+    }
+    return ids;
+  }
+
   int teamIndex(int stationIndex, int roundIndex) {
     /*
         Station: 0 1 2 3

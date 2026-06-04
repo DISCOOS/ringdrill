@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
@@ -17,7 +18,7 @@ import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
-import '../models/exercise.dart' show Exercise, StationLocation;
+import '../models/exercise.dart' show Exercise, ExerciseX, StationLocation;
 import '../services/program_service.dart' show ProgramService;
 import 'map_view.dart';
 
@@ -53,6 +54,7 @@ class _StationsViewState extends State<StationsView>
     with SubscriptionBag<StationsView> {
   final _mapController = MapController();
   final _programService = ProgramService();
+  final _exerciseService = ExerciseService();
   final _mapKey = GlobalKey<_StationsViewState>();
   final _detailTarget = ValueNotifier<ContextSheetTarget?>(null);
   // Context captured from inside MasterDetailScope so that tap handlers
@@ -83,6 +85,11 @@ class _StationsViewState extends State<StationsView>
           _notified = false;
         });
       }
+    });
+    // Rebuild on every exercise tick so the live-station highlight follows
+    // the running exercise from round to round (and clears when it stops).
+    listen(_exerciseService.events, (_) {
+      if (mounted) setState(() {});
     });
     // Re-fit the camera whenever the Stations tab is (re)selected. Without
     // this hook, IndexedStack just toggles visibility and the map keeps
@@ -175,8 +182,20 @@ class _StationsViewState extends State<StationsView>
     final hiddenCount = _hiddenExercises.length;
     final scheme = Theme.of(context).colorScheme;
 
+    // Ids of the stations a team is currently at, for the running exercise.
+    // Empty whenever no exercise is running, so the map stays all-green.
+    final liveEvent = _exerciseService.last;
+    final activeIds = (liveEvent != null && liveEvent.isRunning)
+        ? liveEvent.exercise.activeLocationIds(liveEvent.currentRound)
+        : const <(String, int)>{};
+
     final stationSpecs = _showStations
-        ? markers.toMarkerSpecs(clusterGroup: 'markers', onTap: _onStationTap)
+        ? markers.toMarkerSpecs(
+            clusterGroup: 'markers',
+            onTap: _onStationTap,
+            activeIds: activeIds,
+            activeColor: RingDrillColors.brandAccent,
+          )
         : <MapMarkerSpec<(String, int)>>[];
 
     final roleplays = _programService
@@ -231,6 +250,11 @@ class _StationsViewState extends State<StationsView>
               'markers': MapClusterStyle(
                 color: scheme.primaryContainer,
                 onColor: scheme.onPrimaryContainer,
+                // A group goes live (orange) when any station inside it is
+                // the one a team is currently at, matching the live accent
+                // used for active stations in the player.
+                activeColor: RingDrillColors.brandAccent,
+                activeOnColor: const Color(0xFF1A0F00),
               ),
             },
             searchTargets: _buildSearchTargets(context),
