@@ -42,6 +42,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0032 | [Prefix every program-scoped path with `/program/:uuid/` and drive activation from the URL](./0032-program-scoped-routing.md) | Accepted |
 | ADR-0033 | [Adopt a selective platform-adaptive UI layer on iOS, keeping Material as the base](./0033-platform-adaptive-ui-on-ios.md) | Proposed |
 | ADR-0034 | [Centralise numbering in one module and make number formats configurable per plan](./0034-configurable-numbering-formats.md) | Accepted |
+| ADR-0035 | [Give exercises an explicit order field and user-driven reordering](./0035-exercise-ordering.md) | Accepted |
 
 ## When to write an ADR
 
