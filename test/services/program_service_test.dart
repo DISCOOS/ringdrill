@@ -147,7 +147,7 @@ void main() {
   //          old-index-0 (Alpha) → position 1, old-index-1 (Beta) → position 2.
   // ---------------------------------------------------------------------------
 
-  Exercise _exThreeStations(String uuid) => Exercise(
+  Exercise exThreeStations(String uuid) => Exercise(
     uuid: uuid,
     index: 0,
     name: 'Øvelse',
@@ -169,7 +169,7 @@ void main() {
   group('ProgramService — reorderStations', () {
     test('writes a dense 0..n-1 index permutation in the new order', () async {
       final service = ProgramService();
-      await service.saveExercise(l10n, _exThreeStations('ex-s'));
+      await service.saveExercise(l10n, exThreeStations('ex-s'));
 
       // Reorder: Gamma first, then Alpha, then Beta.
       await service.reorderStations('ex-s', [2, 0, 1]);
@@ -184,7 +184,7 @@ void main() {
 
     test('a RolePlay whose stationIndex pointed at a moved station follows it', () async {
       final service = ProgramService();
-      await service.saveExercise(l10n, _exThreeStations('ex-s'));
+      await service.saveExercise(l10n, exThreeStations('ex-s'));
 
       // Marker at old station index 0 (Alpha).
       final rp = RolePlay(
@@ -206,7 +206,7 @@ void main() {
 
     test('a RolePlay with stationIndex == null is left untouched', () async {
       final service = ProgramService();
-      await service.saveExercise(l10n, _exThreeStations('ex-s'));
+      await service.saveExercise(l10n, exThreeStations('ex-s'));
 
       final rp = RolePlay(
         uuid: 'rp-null',

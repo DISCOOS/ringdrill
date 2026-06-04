@@ -15,6 +15,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
@@ -169,43 +170,58 @@ class _StationListViewState extends State<StationListView> {
         ),
       );
     } else {
-      Widget buildList(ContextSheetTarget? selectedTarget) {
-        return ListView.builder(
-          // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
-          // detail body's `EdgeInsets.all(16)` so the first row of master
-          // and detail align in the wide layout.
-          padding: const EdgeInsets.only(top: 11, bottom: 96),
-          itemCount: rows.length,
-          itemBuilder: (context, index) {
-            final (exerciseNumber, exercise, station) = rows[index];
-            final hasRoles = stationsWithRoles.contains((
-              exercise.uuid,
-              station.index,
-            ));
-            final isSelected =
-                selectedTarget is StationSheetTarget &&
-                selectedTarget.exerciseUuid == exercise.uuid &&
-                selectedTarget.stationIndex == station.index;
-            return _buildRow(
-              context,
-              localizations,
-              exerciseNumber: exerciseNumber,
-              exercise: exercise,
-              station: station,
-              rowIndex: index,
-              hasRoles: hasRoles,
-              selected: isSelected,
-            );
-          },
+      // Reorder is only meaningful when scoped to one exercise — stations in
+      // different exercises have independent indices and reordering across
+      // exercise boundaries is undefined. When the filter is active the rows
+      // are all from the same exercise, so reorder is offered. When spanning
+      // multiple exercises (no filter) the reorder toggle is omitted and the
+      // plain list is shown (ADR-0036 §"Where stations can be reordered").
+      final isSingleExercise = filterExercise != null;
+
+      Widget buildStationRow(
+        BuildContext context,
+        (int, Exercise, Station) row,
+        int position,
+        bool reordering,
+        Widget dragHandle,
+      ) {
+        final (exerciseNumber, exercise, station) = row;
+        final hasRoles = stationsWithRoles.contains((exercise.uuid, station.index));
+        final selectedTarget = targetNotifier?.value;
+        final isSelected =
+            selectedTarget is StationSheetTarget &&
+            selectedTarget.exerciseUuid == exercise.uuid &&
+            selectedTarget.stationIndex == station.index;
+        return _buildRow(
+          context,
+          localizations,
+          exerciseNumber: exerciseNumber,
+          exercise: exercise,
+          station: station,
+          rowIndex: position,
+          hasRoles: hasRoles,
+          selected: isSelected,
+          reordering: reordering,
+          dragHandle: dragHandle,
         );
       }
 
-      body = targetNotifier == null
-          ? buildList(null)
-          : ValueListenableBuilder<ContextSheetTarget?>(
-              valueListenable: targetNotifier,
-              builder: (context, target, _) => buildList(target),
-            );
+      body = ReorderableSection<(int, Exercise, Station)>(
+        items: rows,
+        keyOf: (row) => ValueKey('station-row-${row.$2.uuid}-${row.$3.index}'),
+        orderLabel: localizations.exerciseSortBy,
+        // No one-shot sort actions: stations have no start-time property.
+        enabled: isSingleExercise,
+        onCommitReorder: (newOrder) {
+          if (!isSingleExercise) return;
+          final exerciseUuid = filterExercise.uuid;
+          // Build the old-index permutation: newOrder[newPos].$3.index is the
+          // station that was at oldIndex before the drag.
+          final orderedOldIndices = newOrder.map((r) => r.$3.index).toList();
+          _programService.reorderStations(exerciseUuid, orderedOldIndices);
+        },
+        itemBuilder: buildStationRow,
+      );
     }
 
     // Filtering is an AppBar action (see [StationListController.buildActions]),
@@ -229,11 +245,41 @@ class _StationListViewState extends State<StationListView> {
     required int rowIndex,
     required bool hasRoles,
     bool selected = false,
+    bool reordering = false,
+    Widget? dragHandle,
   }) {
-    final expanded = _expandedRowIndex == rowIndex;
+    final expanded = !reordering && _expandedRowIndex == rowIndex;
     final colorScheme = Theme.of(context).colorScheme;
     final isLive = _liveEvent?.exercise.uuid == exercise.uuid;
     final accent = LiveAccent.of(context, isLive: isLive);
+
+    final badge = StationNumberBadge(
+      label: Numbering.station(
+        _programService.activeProgram?.stationNumberFormat ??
+            StationNumberFormat.dotted,
+        exerciseNumber: exerciseNumber,
+        stationIndex: station.index,
+      ),
+      highlight: isLive,
+      hasRoles: hasRoles,
+    );
+
+    // Reorder mode: show drag handle, suspend gestures (no swipe/long-press).
+    if (reordering) {
+      return ExpandableTile(
+        leading: badge,
+        title: Text(station.name, style: accent.textStyle),
+        subtitle: Text(
+          '${localizations.exercise(1)}: ${exercise.name}',
+          style: accent.textStyle,
+        ),
+        accent: accent,
+        selected: selected,
+        trailing: dragHandle,
+        // No onOpen, onLongPress, onToggle — gestures suspended in reorder mode.
+      );
+    }
+
     return Dismissible(
       key: ValueKey('station-row-${exercise.uuid}-${station.index}'),
       direction: DismissDirection.endToStart,
@@ -259,16 +305,7 @@ class _StationListViewState extends State<StationListView> {
       },
       child: ExpandableTile(
         onLongPress: () => _openStationForm(exercise, station),
-        leading: StationNumberBadge(
-          label: Numbering.station(
-            _programService.activeProgram?.stationNumberFormat ??
-                StationNumberFormat.dotted,
-            exerciseNumber: exerciseNumber,
-            stationIndex: station.index,
-          ),
-          highlight: isLive,
-          hasRoles: hasRoles,
-        ),
+        leading: badge,
         title: Text(station.name, style: accent.textStyle),
         subtitle: Text(
           '${localizations.exercise(1)}: ${exercise.name}',
