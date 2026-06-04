@@ -131,14 +131,39 @@ class _ProgramViewState extends State<ProgramView> {
     final localizations = AppLocalizations.of(context)!;
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
     Widget buildList(ContextSheetTarget? selectedTarget) {
-      return ListView.builder(
+      return ReorderableListView.builder(
+        // Prevent the list from scrolling the outer NotificationListener
+        // while the drag handle is being used; forward scrolls as usual.
+        buildDefaultDragHandles: false,
         itemCount: _exercises.length,
+        onReorderItem: (oldIndex, newIndex) {
+          // onReorderItem already adjusts newIndex for the removed item, so
+          // no correction is needed here.
+          final reordered = [..._exercises];
+          final moved = reordered.removeAt(oldIndex);
+          reordered.insert(newIndex, moved);
+          final orderedUuids = reordered.map((e) => e.uuid).toList();
+          _programService.reorderExercises(orderedUuids).then((_) {
+            if (mounted) setState(_initExercises);
+          });
+        },
         itemBuilder: (context, index) {
           final exercise = _exercises[index];
           final markers = exercise.getLocations(false);
           final isSelected =
               selectedTarget is ExerciseSheetTarget &&
               selectedTarget.exerciseUuid == exercise.uuid;
+
+          // The drag handle is a distinct trailing hit target (ADR-0031: row
+          // body swipe and long-press are reserved for edit). It is a
+          // separate affordance that does not collide with those gestures.
+          final dragHandle = ReorderableDragStartListener(
+            index: index,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Icon(Icons.drag_handle),
+            ),
+          );
 
           return Dismissible(
             key: ValueKey(exercise.uuid),
@@ -177,6 +202,7 @@ class _ProgramViewState extends State<ProgramView> {
               markers: markers,
               liveEvent: _liveEvent,
               selected: isSelected,
+              trailing: dragHandle,
               expanded: _expandedExerciseUuid == exercise.uuid,
               onToggle: () {
                 setState(() {
