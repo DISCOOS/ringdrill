@@ -406,12 +406,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             message: localizations.exerciseCopyTooltip,
             child: IconButton(
               icon: const Icon(Icons.copy_all_outlined, size: 20),
-              // Tight 36 px hit-box keeps the floating button compact
-              // enough to coexist with the dense top section below it
-              // without obscuring content. Still above the MD3 minimum
-              // touch-target for secondary actions, and the long-press
-              // on the rotation table remains as a forgiving fallback.
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.all(16),
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               visualDensity: VisualDensity.compact,
               onPressed: () => _copyExerciseToClipboard(localizations),
