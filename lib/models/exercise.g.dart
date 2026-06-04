@@ -8,6 +8,7 @@ part of 'exercise.dart';
 
 _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
   uuid: json['uuid'] as String,
+  index: (json['index'] as num?)?.toInt() ?? 0,
   name: json['name'] as String,
   startTime: SimpleTimeOfDay.fromJson(
     json['startTime'] as Map<String, dynamic>,
@@ -36,6 +37,7 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
 
 Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'uuid': instance.uuid,
+  'index': instance.index,
   'name': instance.name,
   'startTime': instance.startTime,
   'numberOfTeams': instance.numberOfTeams,

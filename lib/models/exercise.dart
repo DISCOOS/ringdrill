@@ -12,6 +12,7 @@ typedef StationLocation = ((String, int), String, LatLng);
 sealed class Exercise with _$Exercise {
   const factory Exercise({
     required String uuid,
+    @Default(0) int index,
     required String name,
     required SimpleTimeOfDay startTime,
     required int numberOfTeams,
