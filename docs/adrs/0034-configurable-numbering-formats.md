@@ -10,10 +10,10 @@ informed: []
 
 ## Context and problem statement
 
-RingDrill labels three kinds of entity with a number: the exercise (`#1`), the station inside an exercise (`1.2`), and the markør / role inside an exercise (`1.2`). Today that labelling is hardcoded and duplicated across at least five call sites, with no shared abstraction:
+RingDrill labels three kinds of entity with a number: the exercise (`#1`), the station inside an exercise (`1.2`), and the marker / role inside an exercise (`1.2`). Today that labelling is hardcoded and duplicated across at least five call sites, with no shared abstraction:
 
 * [`station_list_view.dart`](../../lib/views/station_list_view.dart) — `_stationCode()` returns `'$exerciseNumber.${station.index + 1}'`. This is the only place that produces the documented "X.Y" format.
-* [`roleplays_view.dart`](../../lib/views/roleplays_view.dart) — inlines the same `'$exerciseNumber.${rolePlay.index + 1}'` for markører.
+* [`roleplays_view.dart`](../../lib/views/roleplays_view.dart) — inlines the same `'$exerciseNumber.${rolePlay.index + 1}'` for markers.
 * [`station_mini_map.dart`](../../lib/views/widgets/station_mini_map.dart) — its own variant of the same expression, with a fallback to `'${station.index + 1}'` when the exercise is not found.
 * [`brief_renderer.dart`](../../lib/services/brief/brief_renderer.dart) — `_exerciseNumber()` computes the 1-based exercise position, and `_stationLetter()` already produces an "X{a-z}" style letter (`'a' + index`) for anchor ids. This logic exists only in the brief layer and is not reused by the UI.
 * [`exercise_number_badge.dart`](../../lib/views/widgets/exercise_number_badge.dart) — `ExerciseNumberBadge` takes an `int` and hardcodes `'#$number'` internally, so the `#` prefix is baked into the widget rather than chosen by a format.
@@ -93,7 +93,7 @@ Adding a format is then: add one enum value (with `@JsonValue`), one `switch` ar
 @Default(StationNumberFormat.dotted) StationNumberFormat stationNumberFormat,
 ```
 
-Both are plan-wide knobs, set once in `ProgramFormScreen` (the Plan form) and applied to every exercise, station and markør in that plan. This keeps a whole program reading with one convention instead of mixing styles row to row. Markører / roles follow the plan's `stationNumberFormat` rather than carrying their own, so a station and its markør read as the same family. `exerciseNumberFormat` only has `hash` today, so its picker can stay hidden until a second value exists, but the field lives on `Program` now so adding one is purely additive.
+Both are plan-wide knobs, set once in `ProgramFormScreen` (the Plan form) and applied to every exercise, station and marker in that plan. This keeps a whole program reading with one convention instead of mixing styles row to row. Markers / roles follow the plan's `stationNumberFormat` rather than carrying their own, so a station and its marker read as the same family. `exerciseNumberFormat` only has `hash` today, so its picker can stay hidden until a second value exists, but the field lives on `Program` now so adding one is purely additive.
 
 The fields live on `Program` rather than `ProgramMetadata`; metadata holds bookkeeping (timestamps, schema marker), while these are user-facing content choices that belong next to `name` and `description`.
 
@@ -144,7 +144,7 @@ The station anchor is derived from the formatted label rather than the letter. W
 * Good: Badges become testable, format-agnostic presentation widgets.
 * Bad: A rename touches the two badge files, their class names, and four call sites.
 * Bad: Two new fields on `Program`, and a corresponding control in `ProgramFormScreen` plus l10n keys for the format picker.
-* Bad: Call sites need the owning `Program` in scope to read the format. Most already have it (the station and markør lists, the brief renderer); any that only hold an `Exercise` must resolve the program first.
+* Bad: Call sites need the owning `Program` in scope to read the format. Most already have it (the station and marker lists, the brief renderer); any that only hold an `Exercise` must resolve the program first.
 * Bad: Relying on additive-field tolerance instead of a schema bump is a judgement call the maintainer has to ratify.
 
 ## Pros and cons of the options

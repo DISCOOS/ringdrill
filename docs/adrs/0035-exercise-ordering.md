@@ -60,12 +60,12 @@ Old archives have no `index`, so every exercise deserializes to `0`. A `0`-colli
 
 ### Ways to change the order
 
-All ordering controls live in a **contextual list header** — a slim toolbar between the segment's `SegmentedButton` row and the exercises list, shown only for the Øvelser segment. They are deliberately not in the global AppBar (where they competed with the publish and overflow actions) and not in an overflow menu (where the one-shot sorts read as hidden, and exposing both there felt heavy). Per-row controls are also rejected: cluttering every row with a drag handle and an overflow menu is noisy, and a per-row overflow contradicts [ADR-0031](./0031-row-edit-affordances.md), which keeps row editing on swipe / long-press.
+All ordering controls live in a **contextual list header** — a slim toolbar between the segment's `SegmentedButton` row and the exercises list, shown only for the Exercises segment. They are deliberately not in the global AppBar (where they competed with the publish and overflow actions) and not in an overflow menu (where the one-shot sorts read as hidden, and exposing both there felt heavy). Per-row controls are also rejected: cluttering every row with a drag handle and an overflow menu is noisy, and a per-row overflow contradicts [ADR-0031](./0031-row-edit-affordances.md), which keeps row editing on swipe / long-press.
 
-The header is a `Row` with `MainAxisAlignment.spaceBetween`. The left side is a muted "Rekkefølge" anchor label (`Text` in `labelMedium` / `onSurfaceVariant`) so the strip reads as a labelled group instead of floating. "Rekkefølge" (Order) rather than "Sorter etter" because the strip covers both the one-shot sorts and manual reordering. The right side holds three controls, all visible, none nested in a menu:
+The header is a `Row` with `MainAxisAlignment.spaceBetween`. The left side is a muted "Order" anchor label (`Text` in `labelMedium` / `onSurfaceVariant`) so the strip reads as a labelled group instead of floating. The label reads "Order" rather than "Sort by" because the strip covers both the one-shot sorts and manual reordering. The right side holds three controls, all visible, none nested in a menu:
 
-* **Two one-shot sort actions**, "Starttid" and "Alfabetisk", as flat `TextButton`s (text only, primary colour). Each rewrites all indices once, after which the order is manual again. Chronological order is the most common starting intent, so this gets a user most of the way there before they nudge individual rows.
-* **A manual-reorder toggle** ("Ordne"), the only bordered control: an `OutlinedButton.icon` (`Icons.swap_vert`) that enters reorder mode and swaps to a `FilledButton.tonal` reading "Ferdig" while active. It is deliberately the only framed affordance because it is the only sticky mode; the flat sort actions fire once.
+* **Two one-shot sort actions**, "Start time" and "Alphabetical", as flat `TextButton`s (text only, primary colour). Each rewrites all indices once, after which the order is manual again. Chronological order is the most common starting intent, so this gets a user most of the way there before they nudge individual rows.
+* **A manual-reorder toggle** ("Reorder"), the only bordered control: an `OutlinedButton.icon` (`Icons.swap_vert`) that enters reorder mode and swaps to a `FilledButton.tonal` reading "Done" while active. It is deliberately the only framed affordance because it is the only sticky mode; the flat sort actions fire once.
 
 The sort actions are flat text, not a second segmented control, on purpose: the view selector above is already a `SegmentedButton`, and a second segmented group directly beneath it duplicates the same visual language and reads as clutter. Keeping the view selector as the only segmented control, with a flat labelled sort strip beneath, gives the two rows distinct roles. Use `TextButton.styleFrom(visualDensity: VisualDensity.compact, tapTargetSize: MaterialTapTargetSize.shrinkWrap)` to keep the text buttons tight without dropping below the 48 px touch target.
 
@@ -73,13 +73,15 @@ The sort actions are flat text, not a second segmented control, on purpose: the 
 
 **Reorder mode.** While the toggle is active the list is a `ReorderableListView`: the chevron is swapped for a trailing drag handle (`ReorderableDragStartListener`), and the row body's tap/swipe/long-press are suspended so gestures do not fight the drag. This is the familiar iOS/Material edit-mode pattern and keeps the handle on screen only while it is wanted.
 
+Drags mutate an in-memory working copy of the list, not the stored order. Each drop updates that copy synchronously so the row settles into its new slot without snapping back — persisting on every drop instead makes the async save-and-reload race the reorder animation, so the row briefly returns to its old position before jumping to the new one. The working order is committed once, when the user leaves reorder mode via "Done" (or switches segment), through a single `reorderExercises` call.
+
 **Accessibility comes for free.** `ReorderableListView` exposes "move up" / "move down" semantic actions on the drag handle, so keyboard and screen-reader users can reorder without a pointer and without a separate move menu.
 
-Reordering and the sort actions both write the new indices through `saveExercise`, so the change persists immediately.
+The one-shot sort actions persist immediately (they are a single deliberate action), whereas a manual reorder commits only on leaving reorder mode, as described above. Both ultimately write the new indices through `reorderExercises` / `saveExercise`.
 
-The list-header slot is scoped to the Øvelser segment for now but is a natural home for per-segment controls generally (the Poster filter, for example), should that consolidation be wanted later.
+The list-header slot is scoped to the Exercises segment for now but is a natural home for per-segment controls generally (the Stations filter, for example), should that consolidation be wanted later.
 
-Considered and deferred: ordering controls in the global AppBar or an overflow menu (rejected above), long-press-to-drag without a handle (collides with long-press-to-edit and would force changing the ADR-0031 convention for this one list), a separate full-screen "Sorter øvelser" surface (adds a navigation step), editing the number inline to jump to a position, and "flytt til topp/bunn" shortcuts.
+Considered and deferred: ordering controls in the global AppBar or an overflow menu (rejected above), long-press-to-drag without a handle (collides with long-press-to-edit and would force changing the ADR-0031 convention for this one list), a separate full-screen reorder-exercises surface (adds a navigation step), editing the number inline to jump to a position, and move-to-top/bottom shortcuts.
 
 ### Consequences
 
@@ -125,6 +127,6 @@ Considered and deferred: ordering controls in the global AppBar or an overflow m
   * `lib/models/exercise.dart` — new `index` field.
   * `lib/data/program_repository.dart` — sort on `index`, the migration/normalisation step.
   * `lib/services/program_service.dart` — index assignment on add/copy/import, persistence of reorder writes.
-  * `lib/views/program_view.dart` — the Øvelser-segment list header (sort actions + reorder toggle) and the `ReorderableListView` reorder mode.
+  * `lib/views/program_view.dart` — the Exercises-segment list header (sort actions + reorder toggle) and the `ReorderableListView` reorder mode.
   * `lib/l10n/app_en.arb`, `lib/l10n/app_nb.arb` — strings for the move and sort actions.
 </content>
