@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart';
+import 'package:http/retry.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -124,9 +126,28 @@ class MapConfig {
     return EdgeInsets.fromLTRB(64, withSearch ? 112 : 48, 64, bottom);
   }
 
+  /// Single long-living HTTP client shared by every [NetworkTileProvider]
+  /// the app builds.
+  ///
+  /// Without this, flutter_map gives each [TileLayer] its own provider with
+  /// an internally-created client, and [NetworkTileProvider.dispose] closes
+  /// that client when the layer leaves the tree. Toggling between the two
+  /// Kartverket base layers therefore tore down the client mid-flight and
+  /// spun up a fresh one every time, so connections to cache.kartverket.no
+  /// were never reused and abandoned ones piled up until the host pool
+  /// stalled. This is worst on web, where the browser caps concurrent
+  /// connections per host and the stuck requests blocked all new tiles.
+  ///
+  /// A shared client survives layer toggles: [NetworkTileProvider.dispose]
+  /// only closes a client it created itself, never one passed in. [http]
+  /// >= 1.5.0 also lets the provider abort requests for pruned tiles
+  /// natively, so no extra dependency is needed.
+  static final Client _tileClient = RetryClient(Client());
+
   // Important! TileLayers are widgets! We need to get new layers
   // each time since we can not share them across multiple
-  // FlutterMap instances (map may not show correctly)
+  // FlutterMap instances (map may not show correctly). The HTTP client
+  // they use is shared via [_tileClient]; only the widgets are rebuilt.
   static List<TileLayer> get layers => [topoLayer, topoGrayLayer];
 
   // Important! We need to get new layers each time. See above!
@@ -134,6 +155,9 @@ class MapConfig {
     key: const ValueKey('topo-gray'),
     urlTemplate:
         'https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png',
+    // Reuse the shared client so toggling base layers does not churn
+    // connections to cache.kartverket.no. See [_tileClient].
+    tileProvider: NetworkTileProvider(httpClient: _tileClient),
     subdomains: const [],
     userAgentPackageName: 'discoos.org/ringdrill',
     minZoom: 0,
@@ -147,6 +171,8 @@ class MapConfig {
     key: const ValueKey('topo'),
     urlTemplate:
         'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',
+    // See topoGrayLayer / [_tileClient]: reuse the shared HTTP client.
+    tileProvider: NetworkTileProvider(httpClient: _tileClient),
     subdomains: const [],
     userAgentPackageName: 'discoos.org/ringdrill',
     minZoom: 0,
