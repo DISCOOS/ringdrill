@@ -2839,6 +2839,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes'**
   String get briefSectionStationDirectorNotes;
+
+  /// Label for the station number format picker in ProgramFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Station numbering'**
+  String get stationNumberFormatLabel;
+
+  /// Option label for StationNumberFormat.dotted in the station number format picker.
+  ///
+  /// In en, this message translates to:
+  /// **'1.1, 1.2'**
+  String get stationNumberFormatDotted;
+
+  /// Option label for StationNumberFormat.alpha in the station number format picker.
+  ///
+  /// In en, this message translates to:
+  /// **'1a, 1b'**
+  String get stationNumberFormatAlpha;
+
+  /// Helper text under the station number format picker showing a live preview of the selected format.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: {example}'**
+  String stationNumberFormatPreview(String example);
 }
 
 class _AppLocalizationsDelegate

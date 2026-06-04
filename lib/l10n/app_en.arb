@@ -1647,5 +1647,25 @@
   "briefSectionStationDirectorNotes": "Notes",
   "@briefSectionStationDirectorNotes": {
     "description": "Optional section label for Station.directorNotesMd. Booklet label: \"Notater\". Hidden from participant audiences."
+  },
+
+  "stationNumberFormatLabel": "Station numbering",
+  "@stationNumberFormatLabel": {
+    "description": "Label for the station number format picker in ProgramFormScreen."
+  },
+  "stationNumberFormatDotted": "1.1, 1.2",
+  "@stationNumberFormatDotted": {
+    "description": "Option label for StationNumberFormat.dotted in the station number format picker."
+  },
+  "stationNumberFormatAlpha": "1a, 1b",
+  "@stationNumberFormatAlpha": {
+    "description": "Option label for StationNumberFormat.alpha in the station number format picker."
+  },
+  "stationNumberFormatPreview": "Example: {example}",
+  "@stationNumberFormatPreview": {
+    "description": "Helper text under the station number format picker showing a live preview of the selected format.",
+    "placeholders": {
+      "example": { "type": "String" }
+    }
   }
 }

@@ -1651,4 +1651,18 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get briefSectionStationDirectorNotes => 'Notater';
+
+  @override
+  String get stationNumberFormatLabel => 'Postnummerering';
+
+  @override
+  String get stationNumberFormatDotted => '1.1, 1.2';
+
+  @override
+  String get stationNumberFormatAlpha => '1a, 1b';
+
+  @override
+  String stationNumberFormatPreview(String example) {
+    return 'Eksempel: $example';
+  }
 }

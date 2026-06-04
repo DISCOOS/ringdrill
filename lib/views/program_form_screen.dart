@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 
@@ -36,6 +37,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   final _beforeRoundFocus = FocusNode();
 
   late Set<_Section> _activeSections;
+  late StationNumberFormat _stationNumberFormat;
 
   @override
   void initState() {
@@ -46,6 +48,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     _briefIntroController.text = p.briefIntroMd ?? '';
     _commsController.text = p.commsMd ?? '';
     _beforeRoundController.text = p.beforeRoundMd ?? '';
+    _stationNumberFormat = p.stationNumberFormat;
     _activeSections = {
       if (p.briefIntroMd != null) _Section.briefIntro,
       if (p.commsMd != null) _Section.comms,
@@ -161,6 +164,11 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                     alignLabelWithHint: true,
                   ),
                 ),
+                const SizedBox(height: 24),
+                _StationNumberFormatPicker(
+                  value: _stationNumberFormat,
+                  onChanged: (f) => setState(() => _stationNumberFormat = f),
+                ),
                 const Divider(height: 32),
                 OptionalFieldSections<_Section>(
                   sections: sectionSpecs,
@@ -182,11 +190,74 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     final updated = widget.program.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
+      stationNumberFormat: _stationNumberFormat,
       briefIntroMd: _readSection(_Section.briefIntro),
       commsMd: _readSection(_Section.comms),
       beforeRoundMd: _readSection(_Section.beforeRound),
       metadata: widget.program.metadata.copyWith(updated: DateTime.now()),
     );
     Navigator.of(context).pop(updated);
+  }
+}
+
+/// Segmented picker for [StationNumberFormat]. Shows a live example next
+/// to the label so the format choice is immediately legible.
+class _StationNumberFormatPicker extends StatelessWidget {
+  const _StationNumberFormatPicker({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final StationNumberFormat value;
+  final ValueChanged<StationNumberFormat> onChanged;
+
+  // exerciseNumberFormat only has one value today; a picker for it will
+  // be added when a second ExerciseNumberFormat value is introduced.
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final example = switch (value) {
+      StationNumberFormat.dotted => '1.1, 1.2',
+      StationNumberFormat.alpha => '1a, 1b',
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.stationNumberFormatLabel,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<StationNumberFormat>(
+            expandedInsets: EdgeInsets.zero,
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(
+                value: StationNumberFormat.dotted,
+                label: Text(l10n.stationNumberFormatDotted),
+              ),
+              ButtonSegment(
+                value: StationNumberFormat.alpha,
+                label: Text(l10n.stationNumberFormatAlpha),
+              ),
+            ],
+            selected: {value},
+            onSelectionChanged: (selected) => onChanged(selected.single),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.stationNumberFormatPreview(example),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
   }
 }

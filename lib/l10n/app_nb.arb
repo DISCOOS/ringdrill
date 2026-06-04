@@ -841,5 +841,25 @@
   "briefSectionStationDirectorNotes": "Notater",
   "@briefSectionStationDirectorNotes": {
     "description": "Etikett for valgfri seksjon for Station.directorNotesMd. Skjules fra deltakere."
+  },
+
+  "stationNumberFormatLabel": "Postnummerering",
+  "@stationNumberFormatLabel": {
+    "description": "Etikett for valg av postnummerformat i ProgramFormScreen."
+  },
+  "stationNumberFormatDotted": "1.1, 1.2",
+  "@stationNumberFormatDotted": {
+    "description": "Alternativetikett for StationNumberFormat.dotted i postnummerformat-velgeren."
+  },
+  "stationNumberFormatAlpha": "1a, 1b",
+  "@stationNumberFormatAlpha": {
+    "description": "Alternativetikett for StationNumberFormat.alpha i postnummerformat-velgeren."
+  },
+  "stationNumberFormatPreview": "Eksempel: {example}",
+  "@stationNumberFormatPreview": {
+    "description": "Hjelpetekst under postnummerformat-velgeren som viser en forhåndsvisning av valgt format.",
+    "placeholders": {
+      "example": { "type": "String" }
+    }
   }
 }
