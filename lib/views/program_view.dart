@@ -63,6 +63,11 @@ class _ProgramViewState extends State<ProgramView> {
   final _programService = ProgramService();
   final List<StreamSubscription> _subscriptions = [];
   List<Exercise> _exercises = [];
+  // Working copy used only while reorder mode is active. Drags mutate this
+  // draft in place (synchronously, so ReorderableListView animates to the new
+  // slot without snapping back) and the new order is persisted once, when the
+  // user leaves reorder mode via "Done" (ADR-0035). Null when not reordering.
+  List<Exercise>? _reorderDraft;
   ExerciseEvent? _liveEvent;
   String? _expandedExerciseUuid;
   // The collapsing overview hides while the active segment list scrolls down
@@ -111,6 +116,36 @@ class _ProgramViewState extends State<ProgramView> {
     // scroll-up event to bring it back). Each new lens starts with the
     // overview shown; scrolling that lens down hides it again.
     widget.controller.activeSegment.addListener(_onSegmentChanged);
+    // Seed the draft on entering reorder mode and commit it on leaving, so the
+    // reorder is persisted once (on "Done") rather than on every drop.
+    widget.controller.exerciseReorderMode.addListener(_onReorderModeChanged);
+  }
+
+  /// Seeds [_reorderDraft] when reorder mode turns on and commits it when it
+  /// turns off. Committing persists the draft order through
+  /// [ProgramService.reorderExercises] and then reloads from storage.
+  void _onReorderModeChanged() {
+    if (!mounted) return;
+    final reordering = widget.controller.exerciseReorderMode.value;
+    if (reordering) {
+      setState(() => _reorderDraft = [..._exercises]);
+      return;
+    }
+    final draft = _reorderDraft;
+    _reorderDraft = null;
+    if (draft == null) {
+      setState(() {});
+      return;
+    }
+    // Show the committed order immediately. Display is driven off the draft we
+    // already have, not off an async save-and-reload — waiting on that round
+    // trip is what made the list fall back to the old order on "Done". The
+    // exercise number badges read off list position, so the stale `index`
+    // fields on the draft items do not matter; storage gets the correct
+    // indices below and the next refresh event reconciles the objects.
+    setState(() => _exercises = draft);
+    final orderedUuids = draft.map((e) => e.uuid).toList();
+    _programService.reorderExercises(orderedUuids);
   }
 
   void _onSegmentChanged() {
@@ -125,6 +160,9 @@ class _ProgramViewState extends State<ProgramView> {
   @override
   void dispose() {
     widget.controller.activeSegment.removeListener(_onSegmentChanged);
+    widget.controller.exerciseReorderMode.removeListener(
+      _onReorderModeChanged,
+    );
     super.dispose();
     for (var e in _subscriptions) {
       e.cancel();
@@ -230,21 +268,23 @@ class _ProgramViewState extends State<ProgramView> {
     // ReorderableListView's built-in semantic actions on the handle.
     // ----------------------------------------------------------------
     Widget buildReorderList(ContextSheetTarget? selectedTarget) {
+      // Source of truth while reordering is the draft, not _exercises. Drags
+      // mutate it synchronously so the row stays where it is dropped; nothing
+      // is persisted until the user leaves reorder mode (_onReorderModeChanged).
+      final items = _reorderDraft ?? _exercises;
       return ReorderableListView.builder(
         buildDefaultDragHandles: false,
-        itemCount: _exercises.length,
+        itemCount: items.length,
         onReorderItem: (oldIndex, newIndex) {
           // onReorderItem already adjusts newIndex for the removed item.
-          final reordered = [..._exercises];
-          final moved = reordered.removeAt(oldIndex);
-          reordered.insert(newIndex, moved);
-          final orderedUuids = reordered.map((e) => e.uuid).toList();
-          _programService.reorderExercises(orderedUuids).then((_) {
-            if (mounted) setState(_initExercises);
+          setState(() {
+            final draft = _reorderDraft ??= [..._exercises];
+            final moved = draft.removeAt(oldIndex);
+            draft.insert(newIndex, moved);
           });
         },
         itemBuilder: (context, index) {
-          final exercise = _exercises[index];
+          final exercise = items[index];
           final markers = exercise.getLocations(false);
           final isSelected =
               selectedTarget is ExerciseSheetTarget &&
