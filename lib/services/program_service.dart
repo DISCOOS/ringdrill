@@ -334,6 +334,69 @@ class ProgramService {
     }
   }
 
+  /// Reorders the stations of [exerciseUuid] according to [orderedOldIndices],
+  /// where `orderedOldIndices[newPosition] = oldIndex`. In one persisted
+  /// change:
+  ///
+  /// 1. Reassigns `Station.index` to reflect new positions and stores the
+  ///    reordered list on the exercise. Station objects carry their brief
+  ///    markdown fields via `copyWith`, so the brief content follows the
+  ///    station — no separate file-rename is needed for in-session reordering.
+  /// 2. Remaps `RolePlay.stationIndex` for every marker attached to a
+  ///    reordered station using the old→new permutation, so each marker keeps
+  ///    pointing at the same physical station ("markers follow their station",
+  ///    ADR-0036). Markers with `stationIndex == null` are left untouched.
+  /// 3. Emits a single refresh event once all writes are done.
+  ///
+  /// The rotation schedule matrix is per-round, not per-station, so it does
+  /// not need regeneration — the rotation math in [ExerciseX.teamIndex] /
+  /// [ExerciseX.stationIndex] reads live from the ordered stations list.
+  Future<void> reorderStations(
+    String exerciseUuid,
+    List<int> orderedOldIndices,
+  ) async {
+    final ex = _repo.getExercise(exerciseUuid);
+    if (ex == null) return;
+
+    // Build old→new index map and the reordered stations list. For each new
+    // position, pull the station that had the old index and assign the new one.
+    // Station.index must equal list position (rotation math invariant).
+    final oldToNew = <int, int>{};
+    for (var newPos = 0; newPos < orderedOldIndices.length; newPos++) {
+      oldToNew[orderedOldIndices[newPos]] = newPos;
+    }
+    final stationsByOldIndex = {for (final s in ex.stations) s.index: s};
+    final reorderedStations = List<Station>.generate(
+      orderedOldIndices.length,
+      (newPos) {
+        final oldIndex = orderedOldIndices[newPos];
+        final station = stationsByOldIndex[oldIndex]!;
+        // Only rebuild the object when the index actually changes.
+        return oldIndex != newPos ? station.copyWith(index: newPos) : station;
+      },
+    );
+
+    // Persist the exercise with the reordered stations. Use _repo directly
+    // to avoid the index-assignment / ensureTeams / "added" event side effects
+    // of the service-level saveExercise — same pattern as reorderExercises.
+    await _repo.saveExercise(ex.copyWith(stations: reorderedStations));
+
+    // Remap RolePlay.stationIndex so each marker follows its station.
+    for (final rolePlay in loadRolePlays()) {
+      final si = rolePlay.stationIndex;
+      if (rolePlay.exerciseUuid != exerciseUuid || si == null) continue;
+      final newIndex = oldToNew[si];
+      if (newIndex != null && newIndex != si) {
+        await _repo.saveRolePlay(rolePlay.copyWith(stationIndex: newIndex));
+      }
+    }
+
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent(ProgramEventType.programRefreshed, program));
+    }
+  }
+
   Future<void> saveTeam(
     AppLocalizations localizations,
     Team team,
