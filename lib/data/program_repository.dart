@@ -104,7 +104,7 @@ class ProgramRepository {
       final parsed = _tryParseEntry(key, value, Program.fromJson);
       if (parsed != null) programs.add(parsed);
     }
-    programs.sort((a, b) => a.name.compareTo(b.name));
+    programs.sort((p, q) => p.name.compareTo(q.name));
     return programs;
   }
 
@@ -211,7 +211,7 @@ class ProgramRepository {
       return [...items]..sort((a, b) => a.index.compareTo(b.index));
     }
     // Migration path: sort by name (legacy behaviour) and renumber 0..n-1.
-    final sorted = [...items]..sort((a, b) => a.name.compareTo(b.name));
+    final sorted = [...items]..sort((x, y) => x.name.compareTo(y.name));
     return [
       for (var i = 0; i < sorted.length; i++)
         sorted[i].copyWith(index: i),
