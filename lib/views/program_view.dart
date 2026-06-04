@@ -32,6 +32,7 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
+import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
@@ -847,13 +848,36 @@ class _ExerciseCardState extends State<ExerciseCard> {
             liveEvent?.isRunning == true &&
             exercise.teamIndex(stationIndex, liveEvent!.currentRound) >= 0;
         final accent = LiveAccent.of(context, isLive: isLive);
+        // Show the same numbered badge as the Poster segment so a station
+        // reads as "1a", "2c" etc. here too. `stationIndex` is already the
+        // 0-based position within this exercise, so the sub-index restarts
+        // per exercise. Falls back to the live-accent indicator only when
+        // the card has no owning program / exercise number to format with.
+        final exerciseNum = widget.exerciseNumber;
+        final program = widget.program;
+        final hasRoles = ProgramService().loadRolePlays().any(
+          (rp) =>
+              rp.exerciseUuid == exercise.uuid &&
+              rp.stationIndex == station.index,
+        );
+        final leading = (exerciseNum != null && program != null)
+            ? StationNumberBadge(
+                label: Numbering.station(
+                  program.stationNumberFormat,
+                  exerciseNumber: exerciseNum,
+                  stationIndex: stationIndex,
+                ),
+                highlight: isLive,
+                hasRoles: hasRoles,
+              )
+            : accent.indicator;
         final tile = ExpandableTile(
           margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
           color: Theme.of(context).brightness == Brightness.dark
               ? RingDrillColors.brandDeep
               : Theme.of(context).colorScheme.surfaceContainerHigh,
           accent: accent,
-          leading: accent.indicator,
+          leading: leading,
           title: Text(
             station.name,
             style: TextStyle(fontSize: 18, color: accent.foreground),
