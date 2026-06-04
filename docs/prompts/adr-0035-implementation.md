@@ -2,7 +2,7 @@
 
 You are working in the RingDrill repository. Implement ADR-0035 ("Give exercises an explicit order field and user-driven reordering") end-to-end. The ADR at `docs/adrs/0035-exercise-ordering.md` is the authoritative spec and is `accepted`. Read it in full before writing any code. It builds directly on ADR-0034 (auto-numbering), which is already implemented.
 
-The change gives `Exercise` an explicit `index` field, sorts exercises on it instead of by name, migrates existing plans deterministically from their current name order, and adds a dedicated reorder mode (drag handles only while active, accessibility via the framework's move-up/down semantics) plus one-shot sort actions. The default list rows stay clean.
+The change gives `Exercise` an explicit `index` field, sorts exercises on it instead of by name, migrates existing plans deterministically from their current name order, and adds a contextual list header (between the segmented buttons and the list) holding two one-shot sort actions and a reorder-mode toggle. Drag handles appear only while reorder mode is active, accessibility comes from the framework's move-up/down semantics, and the default list rows stay clean.
 
 ## Ground rules
 
@@ -89,19 +89,19 @@ Files expected in this commit:
 
 Run `flutter analyze` and `flutter test test/services/`. Run `git status`. Commit: `feat(services): assign exercise index on create/copy/import and add reorder`.
 
-### Step 4. Reorder mode and sort actions
+### Step 4. List header, reorder mode and sort actions
 
-Edit `lib/views/program_view.dart`. Add a reorder mode to the Øvelser segment rather than persistent per-row controls.
+Edit `lib/views/program_view.dart`. Put all ordering controls in a contextual list header, and gate manual reordering behind a mode toggle. No persistent per-row controls.
 
-* Add a "Sorter" toggle action to the segment AppBar that enters reorder mode, and a "Ferdig" action (or the same toggle) to exit. Hold the mode in view state.
+* **List header.** Add a slim toolbar between the segment's `SegmentedButton` row and the exercises list, shown only for the Øvelser segment. It holds, all visible (not in an overflow menu): the two one-shot sort actions "Starttid" and "Alfabetisk" grouped under a "Sorter etter" label, and a trailing manual-reorder toggle "Omorganiser" that reads "Ferdig" while active. Keep the toggle visually distinct from the one-shot sorts since it enters a sticky mode rather than firing once.
 * **Default mode (not reordering):** rows are unchanged — number badge, title, subtitle, expand chevron. No drag handle, no per-row overflow menu. Tap-to-open, swipe-to-edit and long-press-to-edit stay exactly as they are.
-* **Reorder mode:** the exercises list becomes a `ReorderableListView.builder`. Each row needs a stable `Key` (the exercise uuid). Swap the trailing chevron for a drag handle wrapped in `ReorderableDragStartListener`, and suspend the row body's tap/swipe/long-press while the mode is active so gestures do not fight the drag. `onReorder` computes the new uuid order, calls the Step 3 `reorderExercises` / `moveExercise`, and refreshes the list. The exercise-number badge must renumber to reflect the new order.
+* **Reorder mode:** while the toggle is active the exercises list becomes a `ReorderableListView.builder`. Each row needs a stable `Key` (the exercise uuid). Swap the trailing chevron for a drag handle wrapped in `ReorderableDragStartListener`, and suspend the row body's tap/swipe/long-press while the mode is active so gestures do not fight the drag. `onReorder` computes the new uuid order, calls the Step 3 `reorderExercises` / `moveExercise`, and refreshes the list. The exercise-number badge must renumber to reflect the new order.
 * **Accessibility:** rely on `ReorderableListView`'s built-in "move up" / "move down" semantic actions on the handle. Do not add explicit move-up/down buttons or a per-row overflow menu.
-* **One-shot sort:** add "Sorter etter starttid" and "Sorter alfabetisk" to the segment AppBar overflow. Each rewrites all indices once (by `startTime`, then by `name`) via the reorder method, after which the order is manual again. These are available without entering reorder mode.
+* **One-shot sort:** the header's "Starttid" / "Alfabetisk" actions each rewrite all indices once (by `startTime`, then by `name`) via the reorder method, after which the order is manual again. They are available without entering reorder mode.
 
-If the wide-screen master/detail layout (ADR-0030) renders its own exercises list, apply the same reorder-mode treatment there, or document in a code comment why it differs.
+Hold the reorder-mode flag in view state. If the wide-screen master/detail layout (ADR-0030) renders its own exercises list, apply the same list-header + reorder-mode treatment there, or document in a code comment why it differs.
 
-Add l10n keys for "Sorter", "Ferdig", "Sorter etter starttid" and "Sorter alfabetisk" to `lib/l10n/app_en.arb` and `lib/l10n/app_nb.arb` together.
+Add l10n keys for "Sorter etter", "Starttid", "Alfabetisk", "Omorganiser" and "Ferdig" to `lib/l10n/app_en.arb` and `lib/l10n/app_nb.arb` together.
 
 Files expected in this commit:
 
@@ -110,15 +110,16 @@ Files expected in this commit:
 * `lib/l10n/app_nb.arb`
 * any caller touched to thread the reorder callback
 
-Run `flutter analyze` and `flutter test`. Run `git status`. Commit: `feat(views): add a reorder mode and sort actions for exercises`.
+Run `flutter analyze` and `flutter test`. Run `git status`. Commit: `feat(views): add an Øvelser list header with sort actions and reorder mode`.
 
 ### Step 5. Widget tests and verification pass
 
 Add `test/views/program_view_exercise_order_test.dart` (or extend an existing program-view test):
 
-* Entering reorder mode shows drag handles and hides the chevron; exiting restores the default rows.
+* The list header renders for the Øvelser segment with the sort actions and reorder toggle.
+* Tapping the reorder toggle shows drag handles and hides the chevron; tapping "Ferdig" restores the default rows.
 * The drag callback (`onReorder`) maps a from/to index pair to the correct persisted order and updates the rendered exercise numbers.
-* A one-shot "sort by start time" reorders rows chronologically and renumbers them, without entering reorder mode.
+* The header's "Starttid" sort reorders rows chronologically and renumbers them, without entering reorder mode.
 * In default mode, swipe/long-press still triggers edit and never a reorder.
 
 Files expected in this commit:
@@ -137,9 +138,10 @@ Run `flutter analyze` and the full `flutter test`. Run `git status`. Commit: `te
 6. **Diff sanity.** `git log --stat origin/main..HEAD` — walk every changed path and confirm each is in the intended commit.
 7. Manual QA matrix (record the result in the final commit body):
    * Open a plan saved before this change. Confirm the exercise order and numbers are unchanged from before, i.e. the migration preserved the old name order.
-   * Enter reorder mode, drag an exercise to a new position, exit. Confirm the number badges renumber and the order survives a navigate-away-and-back.
+   * Confirm the list header appears between the segmented buttons and the list on the Øvelser segment, with the sort actions and reorder toggle visible (not behind an overflow).
+   * Tap "Omorganiser", drag an exercise to a new position, tap "Ferdig". Confirm the number badges renumber and the order survives a navigate-away-and-back.
    * In reorder mode, confirm a screen reader (or the semantics inspector) exposes "move up" / "move down" on the drag handle.
-   * Run "Sorter etter starttid" and "Sorter alfabetisk" and confirm each renumbers correctly, then that individual rows can still be nudged afterwards in reorder mode.
+   * Use the header's "Starttid" and "Alfabetisk" actions and confirm each renumbers correctly, then that individual rows can still be nudged afterwards in reorder mode.
    * In default mode, confirm there is no drag handle or per-row overflow, and that swipe-to-edit and long-press-to-edit still work and never trigger a reorder.
 
 ## Deliverables
