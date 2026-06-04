@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
-import 'package:ringdrill/views/widgets/station_code_badge.dart';
+import 'package:ringdrill/views/widgets/station_number_badge.dart';
 
 /// Static preview of a single station's position. Tapping the preview
 /// opens a modal bottom sheet with the interactive variant centred on
@@ -138,11 +139,16 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
     // number is the 1-based position in the unfiltered exercises list;
     // fall back to just the station index if the lookup fails.
     final service = ProgramService();
+    final program = service.activeProgram;
     final exercises = service.loadExercises();
     final exerciseIndex = exercises.indexWhere((e) => e.uuid == exercise.uuid);
-    final code = exerciseIndex < 0
+    final label = exerciseIndex < 0
         ? '${station.index + 1}'
-        : '${exerciseIndex + 1}.${station.index + 1}';
+        : Numbering.station(
+            program?.stationNumberFormat ?? StationNumberFormat.dotted,
+            exerciseNumber: exerciseIndex + 1,
+            stationIndex: station.index,
+          );
     // Mirror the Stations-tab badge: tertiary swatch when at least one
     // RolePlay ("markør") points at this station, so the map sheet reads
     // the same as the list row it was opened from.
@@ -162,7 +168,7 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
       leading: Padding(
         padding: const EdgeInsets.only(left: 16),
         child: Center(
-          child: StationCodeBadge(code: code, hasRoles: hasRoles),
+          child: StationNumberBadge(label: label, hasRoles: hasRoles),
         ),
       ),
       title: SheetTitle(primary: station.name, secondary: exercise.name),

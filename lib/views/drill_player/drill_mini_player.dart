@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
@@ -170,6 +171,10 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   .indexWhere((e) => e.uuid == event.exercise.uuid)
                   .clamp(0, 1 << 30) +
               1;
+    final exerciseLabel = Numbering.exercise(
+      program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
+      exerciseNumber,
+    );
 
     // The rounded shape is owned by the parent (MainScreen._buildBottomChrome).
     // This Material just fills the clipped area with the LiveAccent background.
@@ -199,7 +204,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   Row(
                     children: [
                       const SizedBox(width: 8),
-                      ExerciseNumberBadge(number: exerciseNumber, size: 36),
+                      ExerciseNumberBadge(label: exerciseLabel, size: 36),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Padding(
@@ -390,6 +395,10 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                   .indexWhere((e) => e.uuid == exercise.uuid)
                   .clamp(0, 1 << 30) +
               1;
+    final exerciseLabel = Numbering.exercise(
+      program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash,
+      exerciseNumber,
+    );
 
     return Material(
       color: scheme.surfaceContainerHigh,
@@ -403,7 +412,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
               Row(
                 children: [
                   const SizedBox(width: 8),
-                  ExerciseNumberBadge(number: exerciseNumber, size: 36),
+                  ExerciseNumberBadge(label: exerciseLabel, size: 36),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Padding(

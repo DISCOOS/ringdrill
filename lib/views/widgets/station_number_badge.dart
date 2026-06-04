@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Compact square showing a short station code (e.g. "A2", "1.3").
+/// Compact square showing a formatted station label (e.g. "1.3" or "1c").
 ///
 /// Used in the Stations list, station mini map, and anywhere the app
 /// needs a small "this is station X of exercise Y" chip.
@@ -12,22 +12,22 @@ import 'package:flutter/material.dart';
 ///   used elsewhere.
 /// * [hasRoles] (tertiary swatch) flags that at least one [RolePlay]
 ///   ("markør") is attached to this station. Mirrors how
-///   [RoleCodeBadge.highlight] paints a cast role in the Roleplays tab,
+///   [RoleNumberBadge.highlight] paints a cast role in the Roleplays tab,
 ///   so the same "yellow pill" signal works at the station level for
 ///   directors and instructors.
 ///
 /// When [highlight] wins on the background (live state), [hasRoles]
 /// surfaces as a small tertiary dot in the top-right corner so the
 /// markør signal is never lost behind the live colour.
-class StationCodeBadge extends StatelessWidget {
-  const StationCodeBadge({
+class StationNumberBadge extends StatelessWidget {
+  const StationNumberBadge({
     super.key,
-    required this.code,
+    required this.label,
     this.highlight = false,
     this.hasRoles = false,
   });
 
-  final String code;
+  final String label;
   final bool highlight;
   final bool hasRoles;
 
@@ -68,7 +68,7 @@ class StationCodeBadge extends StatelessWidget {
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
-          code,
+          label,
           maxLines: 1,
           style: TextStyle(
             fontSize: 14,

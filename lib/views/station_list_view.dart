@@ -11,11 +11,12 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
-import 'package:ringdrill/views/widgets/station_code_badge.dart';
+import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
@@ -258,8 +259,13 @@ class _StationListViewState extends State<StationListView> {
       },
       child: ExpandableTile(
         onLongPress: () => _openStationForm(exercise, station),
-        leading: StationCodeBadge(
-          code: _stationCode(exerciseNumber, station),
+        leading: StationNumberBadge(
+          label: Numbering.station(
+            _programService.activeProgram?.stationNumberFormat ??
+                StationNumberFormat.dotted,
+            exerciseNumber: exerciseNumber,
+            stationIndex: station.index,
+          ),
           highlight: isLive,
           hasRoles: hasRoles,
         ),
@@ -406,12 +412,6 @@ class _StationListViewState extends State<StationListView> {
     );
   }
 
-  String _stationCode(int exerciseNumber, Station station) {
-    // Compact "exercise.station" label, both 1-based. Plans rarely have
-    // more than a handful of exercises with 10-25 stations each, so the
-    // string fits inside the 40 px badge even at the worst case.
-    return '$exerciseNumber.${station.index + 1}';
-  }
 }
 
 /// Owns the current "filter to one exercise" selection for the

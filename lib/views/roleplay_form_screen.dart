@@ -3,10 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
-import 'package:ringdrill/views/widgets/role_code_badge.dart';
+import 'package:ringdrill/views/widgets/role_number_badge.dart';
 
 /// Optional long-form sections that can be added to a [RolePlay].
 enum _Section { signalement, background, behavior }
@@ -120,14 +121,21 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final localizations = AppLocalizations.of(context)!;
     final stations = widget.exercise?.stations ?? [];
 
-    // Compute the role-code badge text.
+    // Compute the role badge label.
     final exercises = _programService.loadExercises();
     final exerciseIndex = exercises.indexWhere(
       (e) => e.uuid == widget.rolePlay.exerciseUuid,
     );
+    final stationNumberFormat =
+        _programService.activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
     final code = exerciseIndex < 0
         ? '?.${widget.rolePlay.index + 1}'
-        : '${exerciseIndex + 1}.${widget.rolePlay.index + 1}';
+        : Numbering.station(
+            stationNumberFormat,
+            exerciseNumber: exerciseIndex + 1,
+            stationIndex: widget.rolePlay.index,
+          );
 
     final titleText = widget.rolePlay.name.trim().isEmpty
         ? localizations.newRolePlayTitle
@@ -152,7 +160,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         ),
         title: Row(
           children: [
-            RoleCodeBadge(code: code),
+            RoleNumberBadge(label: code),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

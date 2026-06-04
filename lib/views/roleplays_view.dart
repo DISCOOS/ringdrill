@@ -5,6 +5,7 @@ import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -16,7 +17,7 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
-import 'package:ringdrill/views/widgets/role_code_badge.dart';
+import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -254,8 +255,13 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       child: ExpandableTile(
         onLongPress: () => _openRolePlayForm(exercise, rolePlay),
         selected: selected,
-        leading: RoleCodeBadge(
-          code: '$exerciseNumber.${rolePlay.index + 1}',
+        leading: RoleNumberBadge(
+          label: Numbering.station(
+            _service.activeProgram?.stationNumberFormat ??
+                StationNumberFormat.dotted,
+            exerciseNumber: exerciseNumber,
+            stationIndex: rolePlay.index,
+          ),
           highlight: actor != null,
         ),
         title: Text(
