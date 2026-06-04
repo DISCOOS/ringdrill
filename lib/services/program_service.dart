@@ -293,10 +293,44 @@ class ProgramService {
   ) async {
     await _ensureActiveProgram(localizations.defaultPlanName);
     await ensureTeams(localizations, exercise.numberOfTeams);
-    await _repo.saveExercise(exercise);
+    // Assign a new index when this exercise is not yet in the program so it
+    // appends at the end. Leave an edit of an existing exercise's index alone.
+    final persisted = _repo.getExercise(exercise.uuid);
+    final toSave = persisted == null
+        ? exercise.copyWith(index: _nextExerciseIndex())
+        : exercise;
+    await _repo.saveExercise(toSave);
     final program = activeProgram;
     if (program != null) {
-      _controller.add(ProgramEvent.added(program, exercise));
+      _controller.add(ProgramEvent.added(program, toSave));
+    }
+  }
+
+  /// Returns the next exercise index to use when appending a new exercise:
+  /// max(existing indices) + 1, or 0 when the plan is empty.
+  int _nextExerciseIndex() {
+    final existing = _repo.loadExercises();
+    if (existing.isEmpty) return 0;
+    return existing.map((e) => e.index).reduce(max) + 1;
+  }
+
+  /// Rewrites [Exercise.index] values so the exercises in the active program
+  /// are ordered according to [orderedUuids] (a full permutation of all
+  /// exercise uuids in the program). Each exercise whose position changed is
+  /// persisted through the existing save path.
+  ///
+  /// Called by drag-to-reorder, move-up/down, and the one-shot sort actions —
+  /// all three mechanisms converge here so there is a single write path.
+  Future<void> reorderExercises(List<String> orderedUuids) async {
+    for (var i = 0; i < orderedUuids.length; i++) {
+      final ex = _repo.getExercise(orderedUuids[i]);
+      if (ex != null && ex.index != i) {
+        await _repo.saveExercise(ex.copyWith(index: i));
+      }
+    }
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent(ProgramEventType.programRefreshed, program));
     }
   }
 
@@ -359,8 +393,9 @@ class ProgramService {
     if (selected == null) return null;
 
     var maxNumberOfTeams = 0;
+    var nextIndex = _nextExerciseIndex();
     for (final exercise in selected) {
-      await _repo.saveExercise(exercise);
+      await _repo.saveExercise(exercise.copyWith(index: nextIndex++));
       maxNumberOfTeams = max(maxNumberOfTeams, exercise.numberOfTeams);
     }
     for (final team in incoming.teams) {
@@ -387,8 +422,9 @@ class ProgramService {
     if (selected.isEmpty) return null;
 
     var maxNumberOfTeams = 0;
+    var nextIndex = _nextExerciseIndex();
     for (final exercise in selected) {
-      await _repo.saveExercise(exercise);
+      await _repo.saveExercise(exercise.copyWith(index: nextIndex++));
       maxNumberOfTeams = max(maxNumberOfTeams, exercise.numberOfTeams);
     }
     for (final team in source.teams) {
