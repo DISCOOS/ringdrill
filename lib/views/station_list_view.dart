@@ -200,13 +200,26 @@ class _StationListViewState extends State<StationListView> {
             selectedTarget is StationSheetTarget &&
             selectedTarget.exerciseUuid == exercise.uuid &&
             selectedTarget.stationIndex == station.index;
+        // The badge sub-index must restart at the first station of each
+        // exercise (1a, 1b … 2a, 2b …), not run continuously across the
+        // flat list. Rows are grouped contiguously by exercise, so the
+        // exercise's first-row offset turns the global `position` into a
+        // per-exercise local index. In single-exercise (filtered/reorder)
+        // mode the block starts at 0, so this still equals the live drag
+        // position and the badge renumbers correctly during a drag.
+        final exerciseStart = rows.indexWhere(
+          (r) => r.$2.uuid == exercise.uuid,
+        );
+        final localIndex = exerciseStart < 0
+            ? position
+            : position - exerciseStart;
         return _buildRow(
           context,
           localizations,
           exerciseNumber: exerciseNumber,
           exercise: exercise,
           station: station,
-          rowIndex: position,
+          rowIndex: localIndex,
           hasRoles: hasRoles,
           selected: isSelected,
           reordering: reordering,
@@ -281,8 +294,10 @@ class _StationListViewState extends State<StationListView> {
         _programService.activeProgram?.stationNumberFormat ??
             StationNumberFormat.dotted,
         exerciseNumber: exerciseNumber,
-        // Use rowIndex (list position) so the badge renumbers live during a
-        // drag, matching the exercises-list behaviour (ADR-0035, ADR-0036).
+        // rowIndex is the station's position within its own exercise (see
+        // buildStationRow), so the badge sub-index restarts per exercise and
+        // still renumbers live during a single-exercise drag (ADR-0035,
+        // ADR-0036).
         stationIndex: rowIndex,
       ),
       highlight: isLive,
