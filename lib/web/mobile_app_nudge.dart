@@ -96,8 +96,10 @@ class MobileAppNudgeBanner extends StatefulWidget {
         showOnAndroid: true,
         // TODO: Enable when iOS app is released. Remember to
         //  1. Add Smart App Banner to web/index.html:
-        //     <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID, app-argument=https://ringdrill.app/open" />
-        //  2. Set up Universal Links (https://ringdrill.app/apple-app-site-association) so your HTTPS links open the app.
+        //     <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID, app-argument=https://ringdrill.app/i/<slug>" />
+        //  2. Universal Links are already wired (web/.well-known/apple-app-site-association,
+        //     appID G2C47B233E.app.ringdrill, path /i/*, per ADR-0021); just verify it is
+        //     served as JSON at https://ringdrill.app/.well-known/apple-app-site-association.
         //  3. Change the button logic for iOS to open the App Store (or a universal link that opens the app if installed).
         showOniOS: false,
         // TODO: When desktop apps are released, point to download page
