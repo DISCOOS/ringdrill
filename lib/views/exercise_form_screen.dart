@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -186,77 +187,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
                   SizedBox(height: 16.0),
 
-                  // Start Time Picker
-                  GestureDetector(
-                    onTap: _pickStartTime,
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        isDense: true,
-                        isCollapsed: true,
-                        contentPadding: EdgeInsets.only(top: 8),
-                        label: Text(localizations.startTime),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              _startTime.formal(),
-                              // ADR-0037: themed bodyLarge instead of 16.
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.access_time),
-                            onPressed: _pickStartTime,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 16.0),
-
-                  // Execution Time
-                  TextFormField(
-                    controller: _executionTimeController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: localizations.executionTime,
-                    ),
-                    validator: (value) => _isValidNumber(value)
-                        ? null
-                        : localizations.pleaseEnterAValidTime,
-                  ),
-
-                  SizedBox(height: 16.0),
-
-                  // Evaluation Time
-                  TextFormField(
-                    controller: _evaluationTimeController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: localizations.evaluationTime,
-                    ),
-                    validator: (value) => _isValidNumber(value)
-                        ? null
-                        : localizations.pleaseEnterAValidTime,
-                  ),
-
-                  SizedBox(height: 16.0),
-
-                  // Rotation Time
-                  TextFormField(
-                    controller: _rotationTimeController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: localizations.rotationTime,
-                    ),
-                    validator: (value) => _isValidNumber(value)
-                        ? null
-                        : localizations.pleaseEnterAValidTime,
-                  ),
+                  // Time fields. The three duration fields (execution,
+                  // evaluation, rotation) always share one row — they are
+                  // short minute values, mirroring the teams/stations/rounds
+                  // row below. On wide layouts the start-time picker joins
+                  // them on the same row; on narrow it sits on its own row
+                  // above so the duration labels keep enough width to read.
+                  _buildTimeSection(context, localizations),
 
                   SizedBox(height: 16.0),
 
@@ -388,6 +325,117 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Lays out the start-time picker and the three duration fields. Above
+  /// [_kTimeRowThreshold] of available width all four share a single row;
+  /// below it the start-time picker moves to its own row above the three
+  /// duration fields so the floating labels keep enough width to render.
+  static const double _kTimeRowThreshold = 560.0;
+
+  Widget _buildTimeSection(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final startField = _buildStartTimeField(context, localizations);
+        final durations = Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildDurationField(
+                controller: _executionTimeController,
+                label: localizations.executionTime,
+                localizations: localizations,
+              ),
+            ),
+            const SizedBox(width: 16.0),
+            Expanded(
+              child: _buildDurationField(
+                controller: _evaluationTimeController,
+                label: localizations.evaluationTime,
+                localizations: localizations,
+              ),
+            ),
+            const SizedBox(width: 16.0),
+            Expanded(
+              child: _buildDurationField(
+                controller: _rotationTimeController,
+                label: localizations.rotationTime,
+                localizations: localizations,
+              ),
+            ),
+          ],
+        );
+
+        if (constraints.maxWidth >= _kTimeRowThreshold) {
+          // Four equal columns: start picker (flex 1) + the three-field
+          // duration row (flex 3, each child 1/3 of that → all four equal).
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: startField),
+              const SizedBox(width: 16.0),
+              Expanded(flex: 3, child: durations),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            startField,
+            const SizedBox(height: 16.0),
+            durations,
+          ],
+        );
+      },
+    );
+  }
+
+  /// Start-time picker styled as a tappable field so it aligns with the
+  /// sibling duration [TextFormField]s on the shared row.
+  Widget _buildStartTimeField(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    return InkWell(
+      onTap: _pickStartTime,
+      borderRadius: BorderRadius.circular(4.0),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: localizations.startTime,
+          suffixIcon: const Icon(Icons.access_time),
+        ),
+        child: Text(
+          // ADR-0037: themed bodyLarge instead of a hardcoded size.
+          _startTime.formal(),
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDurationField({
+    required TextEditingController controller,
+    required String label,
+    required AppLocalizations localizations,
+  }) {
+    return TextFormField(
+      controller: controller,
+      // Whole minutes only: digits keyboard plus an input formatter that
+      // drops anything non-numeric, so the field can never hold a value the
+      // validator would reject. The validator still guards paste/edge cases.
+      keyboardType: const TextInputType.numberWithOptions(
+        decimal: false,
+        signed: false,
+      ),
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      decoration: InputDecoration(labelText: label),
+      validator: (value) =>
+          _isValidNumber(value) ? null : localizations.pleaseEnterAValidTime,
     );
   }
 
