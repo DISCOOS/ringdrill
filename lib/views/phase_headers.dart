@@ -22,12 +22,18 @@ class PhaseHeaders extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final color = Theme.of(context).colorScheme.surfaceContainer;
+    // Cell height is 28 (not 24): at the 1.3 text-scale cap the ~26px label
+    // line-height fits with ~2px to spare, so DRILL/EVAL/ROLL no longer clip
+    // their descenders (ADR-0037 part-2 verification finding). A fully
+    // scale-driven version (IntrinsicHeight + stretch) is the path to a 1.5
+    // cap, deferred to that raise.
+    const headerHeight = 28.0;
     return Row(
       mainAxisAlignment: mainAxisAlignment,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          height: 24,
+          height: headerHeight,
           width: titleWidth,
           color: color,
           child: Align(
@@ -39,24 +45,24 @@ class PhaseHeaders extends StatelessWidget {
           ),
         ),
         Container(
-          height: 24,
+          height: headerHeight,
           width: cellSize,
           color: color,
           child: Center(child: Text(localizations.drill.toUpperCase())),
         ),
         Container(
-          height: 24,
+          height: headerHeight,
           width: cellSize,
           color: color,
           child: Center(child: Text(localizations.eval.toUpperCase())),
         ),
         Container(
-          height: 24,
+          height: headerHeight,
           width: cellSize,
           color: color,
           child: Center(child: Text(localizations.roll.toUpperCase())),
         ),
-        if (expand) Expanded(child: Container(height: 24, color: color)),
+        if (expand) Expanded(child: Container(height: headerHeight, color: color)),
       ],
     );
   }

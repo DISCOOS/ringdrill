@@ -181,19 +181,25 @@ Headroom at 1.3 on a 390×844 viewport: the round-row chrome (`MiniRoundRow`,
 `PhaseTile`, `PhasesWidget`) keeps ~6–8 px of slack. `DrillMiniPlayer` and
 `SheetTitle` are ample.
 
-**Known limitation.** `PhaseHeaders` is the binding constraint. Its `height: 24`
-containers around the three-letter labels (DRILL/EVAL/ROLL) are sized for 1.0,
-and at 1.3 the `bodyMedium` line-height (~26 px) slightly exceeds them, so the
-bottom ~2 px of descenders is **silently clipped**. A `Container` clips without
-throwing, so the test passes — the a11y suite catches `RenderFlex` overflow but
-not silent `Container` clipping. This is a minor visual clip at the shipped cap,
-tracked as a follow-up: raise the three header heights 24→28 (or remove the
-fixed heights and let the text drive them), then re-measure.
+**`PhaseHeaders` clip (found, then fixed).** `PhaseHeaders` was the binding
+constraint: its `height: 24` containers around the three-letter labels
+(DRILL/EVAL/ROLL) were sized for 1.0, and at 1.3 the `bodyMedium` line-height
+(~26 px) exceeded them, silently clipping the bottom ~2 px of descenders. A
+`Container` clips without throwing, so the test still passed — the a11y suite
+catches `RenderFlex` overflow but not silent `Container` clipping. **Fixed
+2026-06-05** by raising the four cell heights 24→28, which fits the ~26 px label
+line-height at 1.3 with ~2 px to spare. A first attempt to remove the fixed
+heights and use `crossAxisAlignment.stretch` failed: `PhaseHeaders` sits in a
+vertical scroll view, so `stretch` forced infinite height. The scale-driven
+version (`IntrinsicHeight` + `stretch`) is deferred to the 1.5 cap raise. The
+test blind spot for silent clipping remains: a golden test would be the proper
+guard.
 
-**Cap kept at 1.3.** The tightened baseline bought enough headroom that the
-round-row surfaces could survive ~1.45–1.5, but raising the cap is blocked on
-the `PhaseHeaders` fix above. Order to raise to 1.5 later: fix `PhaseHeaders`,
-re-run the suite, confirm `MiniRoundRow` still has margin, then amend this ADR.
+**Cap kept at 1.3.** The tightened baseline plus the `PhaseHeaders` fix mean the
+round-row surfaces should now be the binding constraint, with ~6–8 px of slack
+at 1.3 (room toward ~1.45–1.5). Raising the cap to 1.5 is a separate decision:
+re-run the suite at 1.5, confirm `MiniRoundRow` still has margin, then amend
+this ADR. No cap change is made here.
 
 ## Links
 
