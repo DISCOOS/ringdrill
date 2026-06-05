@@ -1,5 +1,5 @@
 ---
-status: proposed            # proposed | accepted | deprecated | superseded by ADR-NNNN
+status: accepted            # proposed | accepted | deprecated | superseded by ADR-NNNN
 date: 2026-06-04            # date of the decision
 deciders: ["kengu"]        # who signed off
 consulted: []               # who was asked for input
