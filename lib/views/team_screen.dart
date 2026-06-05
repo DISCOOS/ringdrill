@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
+import 'package:ringdrill/theme.dart'
+    show kDrillAccentFontSize, RingDrillColors;
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/sheet_title.dart';
 
 class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key, required this.teamIndex});
@@ -26,13 +32,41 @@ class _TeamScreenState extends State<TeamScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final team = _programService.getTeam(widget.teamIndex);
+    final teamLabel =
+        team?.name ?? '${localizations.team(1)} ${widget.teamIndex + 1}';
     final exercises = _programService
         .loadExercises()
         .where((e) => e.numberOfTeams > widget.teamIndex)
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text(team?.name ?? '')),
+      // Sheet-body AppBar (matches TeamExerciseScreen/StationExerciseScreen):
+      // close affordance + SheetTitle + edit, so TeamScreen renders cleanly as
+      // a ContextSheet body, not just a standalone route.
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            if (MasterDetailScope.maybeOf(context) != null) {
+              ContextSheet.of(context).close();
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          tooltip: localizations.briefClose,
+        ),
+        toolbarHeight: 72,
+        title: SheetTitle(primary: teamLabel),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            padding: const EdgeInsets.all(8),
+            onPressed: _editTeam,
+            tooltip: localizations.editTeam,
+          ),
+        ],
+        actionsPadding: const EdgeInsets.only(right: 16),
+      ),
       body: SafeArea(
         child: exercises.isEmpty
             ? Center(
@@ -88,6 +122,19 @@ class _TeamScreenState extends State<TeamScreen> {
               ),
       ),
     );
+  }
+
+  Future<void> _editTeam() async {
+    final localizations = AppLocalizations.of(context)!;
+    final team = _programService.getTeam(widget.teamIndex);
+    if (team == null) return;
+    final updated = await openFormSurface<Team>(
+      context,
+      builder: (_) => TeamFormScreen(team: team),
+    );
+    if (!mounted || updated == null) return;
+    await _programService.saveTeam(localizations, updated);
+    if (mounted) setState(() {});
   }
 }
 
@@ -172,6 +219,12 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
             final stationIndex = exercise.stationIndex(teamIndex, roundIndex);
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
+              // Match the exercise card's expanded station tiles: the darker
+              // brandDeep surface in dark mode (surfaceContainerHigh in light)
+              // rather than the default card colour.
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? RingDrillColors.brandDeep
+                  : Theme.of(context).colorScheme.surfaceContainerHigh,
               child: InkWell(
                 onTap: () => onStationTap(stationIndex),
                 child: Padding(

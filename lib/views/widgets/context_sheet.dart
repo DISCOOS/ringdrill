@@ -11,6 +11,7 @@ import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/team_exercise_screen.dart';
+import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
 sealed class ContextSheetTarget {
@@ -37,6 +38,17 @@ class TeamSheetTarget extends ContextSheetTarget {
   const TeamSheetTarget({required this.exerciseUuid, required this.teamIndex});
 
   final String exerciseUuid;
+  final int teamIndex;
+}
+
+/// Opens the team across the whole plan ([TeamScreen]), not scoped to a single
+/// exercise. Used by the Lag segment and the team deep-link routes: the team's
+/// rotation is a per-exercise (player) concept, so a planning-context open
+/// shows the multi-exercise overview instead of guessing an exercise.
+/// [TeamSheetTarget] stays for the exercise-scoped player view.
+class TeamOverviewSheetTarget extends ContextSheetTarget {
+  const TeamOverviewSheetTarget({required this.teamIndex});
+
   final int teamIndex;
 }
 
@@ -290,6 +302,9 @@ class _DefaultContextSheetBody extends StatelessWidget {
       TeamSheetTarget(:final exerciseUuid, :final teamIndex) => _teamBody(
         exerciseUuid,
         teamIndex,
+      ),
+      TeamOverviewSheetTarget(:final teamIndex) => TeamScreen(
+        teamIndex: teamIndex,
       ),
       RoleSheetTarget(:final rolePlayUuid) => RolePlayScreen(
         rolePlayUuid: rolePlayUuid,

@@ -139,6 +139,7 @@ class _Harness extends StatelessWidget {
       ExerciseSheetTarget() => 'exercise',
       StationSheetTarget() => 'station',
       TeamSheetTarget() => 'team',
+      TeamOverviewSheetTarget() => 'team-overview',
       RoleSheetTarget() => 'role',
       BriefSheetTarget() => 'brief',
     };

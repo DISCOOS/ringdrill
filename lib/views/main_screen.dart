@@ -356,23 +356,14 @@ GoRouter buildRouter(bool isFirstLaunch) {
                       final teamIndex = int.parse(
                         state.pathParameters['teamIndex']!,
                       );
-                      final candidates = ProgramService()
-                          .loadExercises()
-                          .where((e) => e.numberOfTeams > teamIndex)
-                          .toList();
-                      if (candidates.isEmpty) {
+                      if (ProgramService().getTeam(teamIndex) == null) {
                         return const SizedBox.shrink();
                       }
-                      final exerciseService = ExerciseService();
-                      final exercise = candidates.firstWhere(
-                        (e) => exerciseService.isStartedOn(e.uuid),
-                        orElse: () => candidates.first,
-                      );
+                      // Open the cross-exercise team overview, not a single
+                      // exercise's player view. TeamScreen highlights the live
+                      // exercise itself, so no running/first guess is needed.
                       return _ContextSheetDeepLinkLauncher(
-                        target: TeamSheetTarget(
-                          exerciseUuid: exercise.uuid,
-                          teamIndex: teamIndex,
-                        ),
+                        target: TeamOverviewSheetTarget(teamIndex: teamIndex),
                         fallbackRoute: programPath(
                           state.pathParameters['programUuid']!,
                         ),
@@ -455,26 +446,14 @@ GoRouter buildRouter(bool isFirstLaunch) {
                   final teamIndex = int.parse(
                     state.pathParameters['teamIndex']!,
                   );
-                  final candidates = ProgramService()
-                      .loadExercises()
-                      .where((e) => e.numberOfTeams > teamIndex)
-                      .toList();
-                  if (candidates.isEmpty) {
+                  if (ProgramService().getTeam(teamIndex) == null) {
                     return const SizedBox.shrink();
                   }
-                  // Prefer the running exercise (match on uuid), not the
-                  // first one by index, so the team detail reflects live
-                  // state. Falls back to the first when none is started.
-                  final exerciseService = ExerciseService();
-                  final exercise = candidates.firstWhere(
-                    (e) => exerciseService.isStartedOn(e.uuid),
-                    orElse: () => candidates.first,
-                  );
+                  // Open the cross-exercise team overview (TeamScreen), which
+                  // shows every exercise the team is in and highlights the live
+                  // one. No running/first-exercise guess.
                   return _ContextSheetDeepLinkLauncher(
-                    target: TeamSheetTarget(
-                      exerciseUuid: exercise.uuid,
-                      teamIndex: teamIndex,
-                    ),
+                    target: TeamOverviewSheetTarget(teamIndex: teamIndex),
                     fallbackRoute: routeTeams,
                   );
                 },

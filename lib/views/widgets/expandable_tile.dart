@@ -58,7 +58,8 @@ class ExpandableTile extends StatelessWidget {
   final Widget? leading;
 
   /// Optional subtitle below [title]. Wrapped in a `DefaultTextStyle`
-  /// that paints it in `onSurfaceVariant` at 13 px.
+  /// that paints it in `onSurfaceVariant` using `textTheme.bodySmall`
+  /// (ADR-0037).
   final Widget? subtitle;
 
   /// Optional widget that sits between the title block and the chevron.

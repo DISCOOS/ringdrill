@@ -11,6 +11,8 @@ import 'package:http/retry.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/map_settings.dart';
+import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/projection.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -194,6 +196,7 @@ class MapView<K> extends StatefulWidget {
     this.withZoom = false,
     this.withLocate = false,
     this.locateZoom = 16,
+    this.resultZoom = 17,
     this.initialZoom = 15,
     this.minZoom = 2,
     this.maxZoom = 19,
@@ -229,6 +232,13 @@ class MapView<K> extends StatefulWidget {
   /// being so tight that it overshoots short-distance moves on a
   /// stationary device.
   final double locateZoom;
+
+  /// Minimum zoom the camera snaps to when a single-point search result is
+  /// selected. Picked above the marker-cluster threshold so the chosen
+  /// station declusters and shows on its own instead of staying hidden
+  /// inside a group badge. The camera never zooms *out* to reach it: if the
+  /// user is already closer the current zoom is kept.
+  final double resultZoom;
   final double initialZoom;
   final double minZoom;
   final double maxZoom;
@@ -301,6 +311,13 @@ class _MapViewState<K> extends State<MapView<K>> {
     super.initState();
     _mapController = widget.controller ?? MapController();
     _initCurrentIndex();
+    // Rebuild when the "show zoom buttons" preference changes so an open map
+    // reflects the setting immediately.
+    MapSettings.instance.showZoomControls.addListener(_onMapSettingsChanged);
+  }
+
+  void _onMapSettingsChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -329,9 +346,39 @@ class _MapViewState<K> extends State<MapView<K>> {
   @override
   Widget build(BuildContext context) {
     final withToggle = widget.withToggle && widget.layers.length > 1;
-    final hasTopRightColumn = withToggle || widget.topRightCommands.isNotEmpty;
+    final hasTopRightColumn = widget.topRightCommands.isNotEmpty || withToggle;
+    final commandSize = MapCommandSize.of(context);
+    // Zoom buttons follow the user's setting (Map → show zoom buttons),
+    // which itself defaults off on touch where pinch-to-zoom suffices.
+    final showZoom =
+        widget.withZoom && MapSettings.instance.showZoomControls.value;
+    // Distance from the right edge to the *visible* command circle, plus a
+    // 10 px gap so the search field never butts up against it. The command
+    // column itself is inset 10 px from the right and its small-FAB visual
+    // sits `tapInset` in from its hit box.
+    final topRightInset =
+        10 + commandSize.tapInset + commandSize.diameter + 10;
+    // The visible command circle starts `tapInset` below the column's 16 px
+    // top padding, so the search field drops by the same amount to keep the
+    // tops aligned.
+    final searchTopInset = 16 + commandSize.tapInset;
     return LayoutBuilder(
       builder: (context, constraints) {
+        // The search field follows the same "size that fits the layout" rule
+        // as the commands: it fills the available width on compact (the
+        // screen is narrow anyway) but is capped on wider layouts so it does
+        // not stretch the full width of a large map.
+        // Subtract the 10 px left inset (below) and, on the right, either the
+        // command-column footprint or a matching 10 px margin so the field
+        // never slides under the FABs.
+        final rightReserve = hasTopRightColumn ? topRightInset : 10.0;
+        final searchAvailable = constraints.maxWidth - 10 - rightReserve;
+        // Compact fills the (narrow) screen; medium/expanded cap the field
+        // so it does not stretch across a wide map.
+        const double maxSearchWidth = 400;
+        final searchWidth = commandSize == MapCommandSize.compact
+            ? searchAvailable
+            : math.min(searchAvailable, maxSearchWidth);
         return Stack(
           children: [
             FlutterMap(
@@ -395,9 +442,15 @@ class _MapViewState<K> extends State<MapView<K>> {
               // Search Results (Dropdown-like List)
               Align(
                 alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: constraints.maxWidth - (hasTopRightColumn ? 66 : 0),
-                  child: _buildSearchTool(context, constraints),
+                // Inset to match the top-right command column (left 10) and
+                // drop by the command's tap-target offset so the visible tops
+                // line up instead of hugging the screen edge.
+                child: Padding(
+                  padding: EdgeInsets.only(left: 10, top: searchTopInset),
+                  child: SizedBox(
+                    width: searchWidth,
+                    child: _buildSearchTool(context, constraints, commandSize),
+                  ),
                 ),
               ),
             if (hasTopRightColumn)
@@ -412,12 +465,12 @@ class _MapViewState<K> extends State<MapView<K>> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       if (withToggle)
-                        FloatingActionButton(
+                        MapCommand(
                           heroTag: 'layers',
+                          tooltip: AppLocalizations.of(context)!.layers,
                           onPressed: _toggleLayer,
-                          child: const Icon(
-                            Icons.layers,
-                          ), // Layer icon for better context
+                          icon: Icons.layers,
+                          size: commandSize,
                         ),
                       for (
                         var i = 0;
@@ -431,7 +484,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                   ),
                 ),
               ),
-            if (widget.withCenter || widget.withZoom || widget.withLocate)
+            if (widget.withCenter || showZoom || widget.withLocate)
               Align(
                 alignment: Alignment.bottomRight,
                 child: Padding(
@@ -441,44 +494,52 @@ class _MapViewState<K> extends State<MapView<K>> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       if (widget.withLocate) ...[
-                        FloatingActionButton(
+                        MapCommand(
                           heroTag: 'locate',
                           tooltip: AppLocalizations.of(context)!.locateMe,
+                          size: commandSize,
                           onPressed: _locating ? null : _locateMe,
                           child: _locating
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
+                              ? SizedBox(
+                                  width: commandSize.spinnerSize,
+                                  height: commandSize.spinnerSize,
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2.4,
                                   ),
                                 )
-                              : const Icon(Icons.my_location),
+                              : Icon(
+                                  Icons.my_location,
+                                  size: commandSize.iconSize,
+                                ),
                         ),
-                        if (widget.withZoom || widget.withCenter)
+                        if (showZoom || widget.withCenter)
                           const SizedBox(height: 12),
                       ],
-                      if (widget.withZoom) ...[
-                        FloatingActionButton(
+                      if (showZoom) ...[
+                        MapCommand(
                           heroTag: 'zoomIn',
                           tooltip: AppLocalizations.of(context)!.zoomIn,
+                          size: commandSize,
                           onPressed: _zoomIn,
-                          child: const Icon(Icons.add),
+                          icon: Icons.add,
                         ),
                         const SizedBox(height: 8),
-                        FloatingActionButton(
+                        MapCommand(
                           heroTag: 'zoomOut',
                           tooltip: AppLocalizations.of(context)!.zoomOut,
+                          size: commandSize,
                           onPressed: _zoomOut,
-                          child: const Icon(Icons.remove),
+                          icon: Icons.remove,
                         ),
                         if (widget.withCenter) const SizedBox(height: 12),
                       ],
                       if (widget.withCenter)
-                        FloatingActionButton(
+                        MapCommand(
                           heroTag: 'center',
+                          tooltip: AppLocalizations.of(context)!.recenter,
+                          size: commandSize,
                           onPressed: _toggleCenter,
-                          child: const Icon(Icons.center_focus_strong_rounded),
+                          icon: Icons.center_focus_strong_rounded,
                         ),
                     ],
                   ),
@@ -630,10 +691,21 @@ class _MapViewState<K> extends State<MapView<K>> {
     _mapController.move(point, _mapController.camera.zoom);
   }
 
-  Widget _buildSearchTool(BuildContext context, BoxConstraints constraints) {
-    // Leave room for the search field itself (88) and a small gap below the
+  Widget _buildSearchTool(
+    BuildContext context,
+    BoxConstraints constraints,
+    MapCommandSize size,
+  ) {
+    // Match the field height to the command diameter (40 compact / 56
+    // regular) so the search bar and the FABs share one baseline.
+    final double searchFieldHeight = size.diameter;
+    // Match the tonal command background so the search field reads as part
+    // of the same overlay family rather than a differently-coloured card.
+    final scheme = Theme.of(context).colorScheme;
+    final overlayBackground = MapCommandEmphasis.tonal.background(scheme);
+    final overlayForeground = MapCommandEmphasis.tonal.foreground(scheme);
+    // Leave room for the search field itself and a small gap below the
     // dropdown so the results never push past the bottom of the map.
-    const double searchFieldHeight = 88;
     const double bottomGutter = 24;
     final double maxResultsHeight =
         (constraints.maxHeight - searchFieldHeight - bottomGutter).clamp(
@@ -646,56 +718,73 @@ class _MapViewState<K> extends State<MapView<K>> {
         SizedBox(
           height: searchFieldHeight,
           child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0).copyWith(left: 8, top: 12),
-              child: Center(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(
-                      context,
-                    )!.searchForPlaceOrLocation,
-                    hintMaxLines: 1,
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 10,
-                    ),
-                    suffixIcon: _isSearching
-                        ? Transform.scale(
-                            scale: 0.6,
-                            child: SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        : IconButton(
-                            icon: Icon(
-                              _searchController.text.isEmpty
-                                  ? Icons.search
-                                  : Icons.clear,
-                            ),
-                            onPressed: _isSearching
-                                ? null
-                                : () {
-                                    if (_searchController.text.isNotEmpty) {
-                                      setState(() {
-                                        _searchResults.clear();
-                                        _searchController.clear();
-                                      });
-                                    }
-                                  },
-                          ),
-                  ),
-                  onChanged: (input) {
-                    if (_isSearching) return;
-                    _isSearching = true;
-                    _searchLocationWithThrottle(input);
-                  },
-                  onSubmitted: _searchLocation,
+            margin: EdgeInsets.zero,
+            color: overlayBackground,
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(color: overlayForeground),
+              // Centre the text within the fixed-height field instead of
+              // letting the baseline float to the top.
+              textAlignVertical: TextAlignVertical.center,
+              decoration: InputDecoration(
+                isCollapsed: true,
+                hintText: AppLocalizations.of(
+                  context,
+                )!.searchForPlaceOrLocation,
+                hintMaxLines: 1,
+                hintStyle: TextStyle(
+                  color: overlayForeground.withValues(alpha: 0.7),
                 ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                // Keep the suffix from imposing the default 48 dp height,
+                // which would make the field taller than the commands.
+                suffixIconConstraints: BoxConstraints(
+                  minWidth: searchFieldHeight,
+                  minHeight: searchFieldHeight,
+                ),
+                suffixIcon: _isSearching
+                    ? Center(
+                        widthFactor: 1,
+                        child: SizedBox(
+                          height: size.spinnerSize,
+                          width: size.spinnerSize,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                          ),
+                        ),
+                      )
+                    : IconButton(
+                        color: overlayForeground,
+                        iconSize: size.iconSize,
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: searchFieldHeight,
+                          minHeight: searchFieldHeight,
+                        ),
+                        icon: Icon(
+                          _searchController.text.isEmpty
+                              ? Icons.search
+                              : Icons.clear,
+                        ),
+                        onPressed: _isSearching
+                            ? null
+                            : () {
+                                if (_searchController.text.isNotEmpty) {
+                                  setState(() {
+                                    _searchResults.clear();
+                                    _searchController.clear();
+                                  });
+                                }
+                              },
+                      ),
               ),
+              onChanged: (input) {
+                if (_isSearching) return;
+                _isSearching = true;
+                _searchLocationWithThrottle(input);
+              },
+              onSubmitted: _searchLocation,
             ),
           ),
         ),
@@ -703,6 +792,11 @@ class _MapViewState<K> extends State<MapView<K>> {
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxResultsHeight),
             child: Card(
+              // Only a top margin so the results sheet keeps the exact width
+              // of the search field (which has zero margin) while still
+              // leaving a small gap below it.
+              margin: const EdgeInsets.only(top: 6),
+              color: overlayBackground,
               clipBehavior: Clip.antiAlias,
               child: Scrollbar(
                 controller: _resultsScrollController,
@@ -1114,7 +1208,13 @@ class _MapViewState<K> extends State<MapView<K>> {
           CameraFit.coordinates(padding: padding, coordinates: result.points);
       _mapController.fitCamera(fit);
     } else if (result.location != null) {
-      _mapController.move(result.location!, _mapController.camera.zoom);
+      // Snap to at least [resultZoom] so the marker leaves its cluster, but
+      // keep a closer zoom if the user already had one.
+      final targetZoom = math.max(
+        _mapController.camera.zoom,
+        widget.resultZoom,
+      );
+      _mapController.move(result.location!, targetZoom);
     } else {
       // No location available – let the user know rather than silently
       // doing nothing.
@@ -1134,6 +1234,7 @@ class _MapViewState<K> extends State<MapView<K>> {
 
   @override
   void dispose() {
+    MapSettings.instance.showZoomControls.removeListener(_onMapSettingsChanged);
     _throttleTimer?.cancel();
     _resultsScrollController.dispose();
     _searchController.dispose();
