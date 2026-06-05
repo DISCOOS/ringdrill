@@ -170,6 +170,31 @@ sketch; recorded here so code and ADR stay in sync.
 * **Still hardcoded by design:** brief view + `BriefTheme` (ADR-0023), and the
   `FittedBox`-wrapped number badges (nominal size before scale-down).
 
+## Verification (2026-06-05) — part 2 closed at cap 1.3
+
+A11y regression tests (`test/a11y/text_scale_1_3_test.dart`) cover the klynge
+B/C surfaces (`PhaseTile`, `PhasesWidget`, `PhaseHeaders`, `MiniRoundRow`,
+`DrillMiniPlayer`) plus a 72px `SheetTitle` header at 1.0 and 1.3. All 12 pass:
+no `RenderFlex` overflow at the maximum reachable scale.
+
+Headroom at 1.3 on a 390×844 viewport: the round-row chrome (`MiniRoundRow`,
+`PhaseTile`, `PhasesWidget`) keeps ~6–8 px of slack. `DrillMiniPlayer` and
+`SheetTitle` are ample.
+
+**Known limitation.** `PhaseHeaders` is the binding constraint. Its `height: 24`
+containers around the three-letter labels (DRILL/EVAL/ROLL) are sized for 1.0,
+and at 1.3 the `bodyMedium` line-height (~26 px) slightly exceeds them, so the
+bottom ~2 px of descenders is **silently clipped**. A `Container` clips without
+throwing, so the test passes — the a11y suite catches `RenderFlex` overflow but
+not silent `Container` clipping. This is a minor visual clip at the shipped cap,
+tracked as a follow-up: raise the three header heights 24→28 (or remove the
+fixed heights and let the text drive them), then re-measure.
+
+**Cap kept at 1.3.** The tightened baseline bought enough headroom that the
+round-row surfaces could survive ~1.45–1.5, but raising the cap is blocked on
+the `PhaseHeaders` fix above. Order to raise to 1.5 later: fix `PhaseHeaders`,
+re-run the suite, confirm `MiniRoundRow` still has margin, then amend this ADR.
+
 ## Links
 
 * Related ADRs: [ADR-0023](./0023-brief-theme-tokens.md) (BriefTheme owns brief
