@@ -832,7 +832,8 @@ class _MainScreenState extends State<MainScreen>
             key: _scaffoldKey,
             extendBody: true,
             extendBodyBehindAppBar: true,
-            drawerEnableOpenDragGesture: true,
+            drawerEnableOpenDragGesture:
+                Theme.of(context).platform != TargetPlatform.iOS,
             appBar: (useRail || isMapTab)
                 ? null
                 : _buildAppBar(context, constraints, page, hasRail: false),
