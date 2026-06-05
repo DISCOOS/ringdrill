@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -153,9 +153,9 @@ Future<void> _awaitRender(WidgetTester tester) async {
   await tester.pump(); // FutureBuilder rebuilds after Future completes
 }
 
-/// Returns the markdown data currently displayed by the single MarkdownWidget.
+/// Returns the markdown data currently displayed by the single BriefMarkdown.
 String _markdownData(WidgetTester tester) {
-  return tester.widget<MarkdownWidget>(find.byType(MarkdownWidget)).data;
+  return tester.widget<BriefMarkdown>(find.byType(BriefMarkdown)).data;
 }
 
 /// Open the audience PopupMenuButton and tap the menu item with [label].
@@ -329,7 +329,7 @@ void main() {
     });
 
     testWidgets(
-      'typing a query wraps matches in <mark>/<curr-mark> tags in MarkdownWidget.data',
+      'typing a query wraps matches in <mark>/<curr-mark> tags in BriefMarkdown.data',
       (tester) async {
         await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
         await _awaitRender(tester);
@@ -372,21 +372,21 @@ void main() {
       // H4 headings must not appear in the TocWidget
       expect(
         find.descendant(
-          of: find.byType(TocWidget),
+          of: find.byType(ListView),
           matching: find.text('Varighet'),
         ),
         findsNothing,
       );
       expect(
         find.descendant(
-          of: find.byType(TocWidget),
+          of: find.byType(ListView),
           matching: find.text('Utstyrsbehov'),
         ),
         findsNothing,
       );
       expect(
         find.descendant(
-          of: find.byType(TocWidget),
+          of: find.byType(ListView),
           matching: find.text('Situasjon'),
         ),
         findsNothing,

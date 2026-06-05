@@ -135,7 +135,14 @@ class _CodeChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(text, style: textStyle),
+              Flexible(
+                child: Text(
+                  text,
+                  style: textStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const SizedBox(width: 6),
               Tooltip(
                 message: l10n.briefCodeCopyTooltip,
