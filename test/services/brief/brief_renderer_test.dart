@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
@@ -482,56 +483,59 @@ void main() {
     // assertions below distinguish "hidden by isSingleExercise" from "hidden
     // because the field was null".
     Program programWithIntro() => _designProgram().copyWith(
-          briefIntroMd: 'INTRO_BODY',
-          commsMd: 'PROGRAM_COMMS_TOKEN',
-        );
+      briefIntroMd: 'INTRO_BODY',
+      commsMd: 'PROGRAM_COMMS_TOKEN',
+    );
 
     test(
-        'program intro (H1, description, TOC, briefIntroMd, commsMd, divider) is omitted',
-        () async {
-      final program = programWithIntro();
-      final exercise = program.exercises.first;
+      'program intro (H1, description, TOC, briefIntroMd, commsMd, divider) is omitted',
+      () async {
+        final program = programWithIntro();
+        final exercise = program.exercises.first;
 
-      final result = await renderer.render(
-        program: program,
-        exercise: exercise,
-        audience: BriefAudience.participant,
-        l10n: _l10n,
-        wideTocSidebar: false,
-      );
+        final result = await renderer.render(
+          program: program,
+          exercise: exercise,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+          wideTocSidebar: false,
+        );
 
-      // The program-level H1 (`# {{program.name}}`) is dropped. We assert
-      // against the leading `# ` form so we do not accidentally match `## `
-      // headings that share the program name in a sub-section.
-      expect(
-        result,
-        isNot(contains('# ${program.name}\n')),
-        reason: 'Program H1 should be hidden in single-exercise mode',
-      );
-      expect(
-        result,
-        isNot(contains('## Innholdsfortegnelse')),
-        reason: 'In-doc TOC should be hidden in single-exercise mode',
-      );
-      expect(
-        result,
-        isNot(contains('## Generelt om spill og øvingsledelse')),
-        reason: 'briefIntroMd block should be hidden in single-exercise mode',
-      );
-      expect(
-        result,
-        isNot(contains('## Talegrupper')),
-        reason: 'Program-level Talegrupper should be hidden in single-exercise '
-            'mode (exercise-level Samband still renders inside the exercise)',
-      );
+        // The program-level H1 (`# {{program.name}}`) is dropped. We assert
+        // against the leading `# ` form so we do not accidentally match `## `
+        // headings that share the program name in a sub-section.
+        expect(
+          result,
+          isNot(contains('# ${program.name}\n')),
+          reason: 'Program H1 should be hidden in single-exercise mode',
+        );
+        expect(
+          result,
+          isNot(contains('## Innholdsfortegnelse')),
+          reason: 'In-doc TOC should be hidden in single-exercise mode',
+        );
+        expect(
+          result,
+          isNot(contains('## Generelt om spill og øvingsledelse')),
+          reason: 'briefIntroMd block should be hidden in single-exercise mode',
+        );
+        expect(
+          result,
+          isNot(contains('## Talegrupper')),
+          reason:
+              'Program-level Talegrupper should be hidden in single-exercise '
+              'mode (exercise-level Samband still renders inside the exercise)',
+        );
 
-      // The exercise heading itself must still be present.
-      expect(
-        result,
-        contains('## ${exercise.name}'),
-        reason: 'Exercise heading should still render in single-exercise mode',
-      );
-    });
+        // The exercise heading itself must still be present.
+        expect(
+          result,
+          contains('## ${exercise.name}'),
+          reason:
+              'Exercise heading should still render in single-exercise mode',
+        );
+      },
+    );
 
     test('program intro IS present when no exercise is passed', () async {
       final program = programWithIntro();
@@ -740,24 +744,26 @@ void main() {
       expect(result, contains('[1b – Beta]'));
     });
 
-    test('dotted anchor is derived from stationCode (dot dropped by slug)',
-        () async {
-      final program = _emptyProgram().copyWith(
-        exercises: [twoStationExercise()],
-        stationNumberFormat: StationNumberFormat.dotted,
-      );
-      final result = await BriefRenderer().render(
-        program: program,
-        audience: BriefAudience.participant,
-        l10n: _l10n,
-        wideTocSidebar: false,
-      );
-      // The dot in "1.1" is stripped by _toAnchor, so the expected anchor is
-      // "11-alpha". Both the TOC link and the heading use the same anchor,
-      // so internal links remain consistent.
-      expect(result, contains('[1.1 – Alpha](#11-alpha)'));
-      expect(result, contains('### 1.1 – Alpha'));
-    });
+    test(
+      'dotted anchor is derived from stationCode (dot dropped by slug)',
+      () async {
+        final program = _emptyProgram().copyWith(
+          exercises: [twoStationExercise()],
+          stationNumberFormat: StationNumberFormat.dotted,
+        );
+        final result = await BriefRenderer().render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+          wideTocSidebar: false,
+        );
+        // The dot in "1.1" is stripped by _toAnchor, so the expected anchor is
+        // "11-alpha". Both the TOC link and the heading use the same anchor,
+        // so internal links remain consistent.
+        expect(result, contains('[1.1 – Alpha](#11-alpha)'));
+        expect(result, contains('### 1.1 – Alpha'));
+      },
+    );
   });
 
   group('BriefRenderer — missing template asset', () {
@@ -772,7 +778,11 @@ void main() {
         ),
         throwsA(
           isA<BriefTemplateException>()
-              .having((e) => e.templateId, 'templateId', 'ringdrill-standard-v1')
+              .having(
+                (e) => e.templateId,
+                'templateId',
+                'ringdrill-standard-v1',
+              )
               .having(
                 (e) => e.assetPath,
                 'assetPath',
