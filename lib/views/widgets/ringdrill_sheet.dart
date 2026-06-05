@@ -55,7 +55,14 @@ Future<T?> showRingdrillActionSheet<T>({
           mainAxisSize: MainAxisSize.min,
           children: [
             const _DragHandle(),
-            SafeArea(top: false, child: builder(context)),
+            // Flexible (not Expanded) so a short sheet still wraps its
+            // content, but a tall one is bounded to the available height
+            // instead of overflowing. Builders that size themselves to a
+            // fraction of the full screen (e.g. the open-plan picker at
+            // 0.88×height) would otherwise overflow once the drag handle
+            // and the bottom safe-area inset are added on top. Their own
+            // scroll areas absorb the clamp.
+            Flexible(child: SafeArea(top: false, child: builder(context))),
           ],
         ),
       );
