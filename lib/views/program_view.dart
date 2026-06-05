@@ -75,6 +75,16 @@ class _ProgramViewState extends State<ProgramView> {
   // force-revealed. A small slack absorbs sub-pixel rest positions and the
   // iOS bounce so "back at the top" reliably brings the overview back.
   static const double _kOverviewRevealSlack = 8.0;
+
+  // Measured rendered height of the overview while it is shown. Collapsing the
+  // overview hands this height back to the list viewport, so we only collapse
+  // when the active list can scroll *more* than this much. Otherwise hiding it
+  // makes the whole list fit, the scroll position snaps back to the top, and
+  // the reveal-at-top rule immediately re-extends it — the short-list "falls
+  // back down on release" flicker. The threshold is therefore the overview's
+  // own height (plus the reveal slack), not an arbitrary drag distance.
+  double _overviewExtent = 0;
+  final GlobalKey _overviewKey = GlobalKey();
   // Whether the overview prose is expanded ("show more"). Held here so it
   // survives the overview being hidden/shown by the scroll collapse.
   bool _overviewExpanded = false;
@@ -293,6 +303,16 @@ class _ProgramViewState extends State<ProgramView> {
     // extent. The overview hides when the active list scrolls down and returns
     // on scroll up. The body stays an IndexedStack so each segment keeps its
     // own expansion/scroll state across switches.
+    // Keep _overviewExtent in sync with the overview's rendered height while it
+    // is shown. Measured after layout so it reflects the current description /
+    // "show more" state; the cached value is reused while the overview is
+    // hidden (when there is nothing to measure).
+    if (_overviewVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _measureOverview();
+      });
+    }
+
     return NotificationListener<ScrollUpdateNotification>(
       onNotification: (notification) {
         final metrics = notification.metrics;
@@ -301,19 +321,28 @@ class _ProgramViewState extends State<ProgramView> {
         // toggle the overview.
         if (metrics.axis != Axis.vertical) return false;
         final delta = notification.scrollDelta ?? 0;
-        // Safety net: whenever the list is back at — or bounced past — the top,
-        // force the overview visible. On iOS BouncingScrollPhysics a short list
-        // can be dragged down (hiding the overview) without ever producing a
-        // matching negative scrollDelta on the way back, so the directional
-        // branches below would otherwise leave the overview stuck hidden until
-        // the next segment switch. Anchoring the reveal to the top position
-        // guarantees it always comes back.
+        // Reveal is anchored to the top position, not to scroll direction.
+        // Whenever the list is back at — or bounced past — the top, force the
+        // overview visible; otherwise hide it once the user scrolls down.
+        //
+        // A directional "reveal on any scroll-up" was tried first but proved
+        // too eager: on iOS the settle/bounce after a downward drag produces a
+        // small negative scrollDelta, which re-extended the overview mid-list
+        // instead of letting it stay collapsed. Keying the reveal off the top
+        // position keeps it collapsed while scrolled and brings it back only
+        // when the user actually returns to the top.
         if (metrics.pixels <= metrics.minScrollExtent + _kOverviewRevealSlack) {
           if (!_overviewVisible) setState(() => _overviewVisible = true);
-        } else if (delta > 0 && _overviewVisible) {
+        } else if (delta > 0 &&
+            _overviewVisible &&
+            // Only collapse when the list can stay scrolled after it reclaims
+            // the overview's height. `maxScrollExtent` here is measured with
+            // the overview shown; subtracting its extent leaves the room the
+            // list keeps once it is hidden, which must clear the reveal slack
+            // or the list snaps back to the top and the overview re-extends.
+            metrics.maxScrollExtent - _overviewExtent >
+                metrics.minScrollExtent + _kOverviewRevealSlack) {
           setState(() => _overviewVisible = false);
-        } else if (delta < 0 && !_overviewVisible) {
-          setState(() => _overviewVisible = true);
         }
         return false;
       },
@@ -323,11 +352,15 @@ class _ProgramViewState extends State<ProgramView> {
             duration: const Duration(milliseconds: 200),
             alignment: Alignment.topCenter,
             child: _overviewVisible
-                ? _ProgramOverview(
-                    expanded: _overviewExpanded,
-                    onToggleExpanded: () =>
-                        setState(() => _overviewExpanded = !_overviewExpanded),
-                    onEdit: () => _openProgramForm(context, localizations),
+                ? KeyedSubtree(
+                    key: _overviewKey,
+                    child: _ProgramOverview(
+                      expanded: _overviewExpanded,
+                      onToggleExpanded: () => setState(
+                        () => _overviewExpanded = !_overviewExpanded,
+                      ),
+                      onEdit: () => _openProgramForm(context, localizations),
+                    ),
                   )
                 : const SizedBox(width: double.infinity),
           ),
@@ -355,6 +388,18 @@ class _ProgramViewState extends State<ProgramView> {
 
   void _initExercises() {
     _exercises = _programService.loadExercises();
+  }
+
+  /// Caches the overview's current rendered height into [_overviewExtent].
+  /// Read by the scroll handler to decide whether collapsing the overview
+  /// would leave the list scrollable (and thus stay collapsed) or make it fit
+  /// and snap back to the top.
+  void _measureOverview() {
+    final renderObject = _overviewKey.currentContext?.findRenderObject();
+    if (renderObject is RenderBox && renderObject.hasSize) {
+      final height = renderObject.size.height;
+      if (height > 0) _overviewExtent = height;
+    }
   }
 
   Future<void> _openProgramForm(

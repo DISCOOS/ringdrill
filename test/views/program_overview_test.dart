@@ -294,4 +294,35 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'overview stays collapsed on an upward scroll that does not reach the top',
+    (tester) async {
+      // Regression: the reveal must be anchored to the top position, not to
+      // scroll direction. A partial scroll back up (still well below the top,
+      // like the iOS settle/bounce after a downward drag) must NOT re-extend
+      // the overview.
+      tester.view.physicalSize = const Size(400, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controllers = _HarnessControllers();
+      addTearDown(controllers.dispose);
+      await tester.pumpWidget(_harness(controllers));
+      await tester.pumpAndSettle();
+
+      // Scroll well down so there is plenty of room above the top: the overview
+      // collapses.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+      await tester.pumpAndSettle();
+      expect(find.text('Program description text').hitTestable(), findsNothing);
+
+      // Scroll partway back up — not enough to reach the top. The overview must
+      // remain collapsed.
+      await tester.drag(find.byType(ListView).first, const Offset(0, 150));
+      await tester.pumpAndSettle();
+      expect(find.text('Program description text').hitTestable(), findsNothing);
+    },
+  );
 }
