@@ -245,4 +245,53 @@ void main() {
     },
   );
 
+  testWidgets(
+    'scrolling the segment list back to the top reveals the overview again '
+    'without a segment switch',
+    (tester) async {
+      // Regression for the iOS case where the overview, once hidden by
+      // scrolling down, stayed hidden until the user switched segments because
+      // the reveal hung on a negative scrollDelta that the bounce never
+      // produced. The reveal is now anchored to the top scroll position, so
+      // returning to the top must bring it back on the same segment.
+      tester.view.physicalSize = const Size(400, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controllers = _HarnessControllers();
+      addTearDown(controllers.dispose);
+      await tester.pumpWidget(_harness(controllers));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Program description text').hitTestable(),
+        findsOneWidget,
+      );
+
+      // Scroll down: the overview collapses.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(find.text('Program description text').hitTestable(), findsNothing);
+
+      // Scroll back to the top WITHOUT switching segments. A generous downward
+      // drag returns the list to its top, where the reveal safety net fires.
+      await tester.drag(find.byType(ListView).first, const Offset(0, 600));
+      await tester.pumpAndSettle();
+
+      // Still on the exercises segment, and the overview is back.
+      expect(
+        tester
+            .widget<SegmentedButton<ProgramSegment>>(
+              find.byType(SegmentedButton<ProgramSegment>),
+            )
+            .selected,
+        {ProgramSegment.exercises},
+      );
+      expect(
+        find.text('Program description text').hitTestable(),
+        findsOneWidget,
+      );
+    },
+  );
 }

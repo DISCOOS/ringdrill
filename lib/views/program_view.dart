@@ -70,6 +70,11 @@ class _ProgramViewState extends State<ProgramView> {
   // The collapsing overview hides while the active segment list scrolls down
   // and reappears on scroll up. The switcher stays pinned as a normal row.
   bool _overviewVisible = true;
+
+  // Distance from the top (in logical pixels) within which the overview is
+  // force-revealed. A small slack absorbs sub-pixel rest positions and the
+  // iOS bounce so "back at the top" reliably brings the overview back.
+  static const double _kOverviewRevealSlack = 8.0;
   // Whether the overview prose is expanded ("show more"). Held here so it
   // survives the overview being hidden/shown by the scroll collapse.
   bool _overviewExpanded = false;
@@ -290,8 +295,22 @@ class _ProgramViewState extends State<ProgramView> {
     // own expansion/scroll state across switches.
     return NotificationListener<ScrollUpdateNotification>(
       onNotification: (notification) {
+        final metrics = notification.metrics;
+        // Only the active segment's vertical list drives the collapse.
+        // Horizontal scrollables (e.g. the inline station mini-maps) must not
+        // toggle the overview.
+        if (metrics.axis != Axis.vertical) return false;
         final delta = notification.scrollDelta ?? 0;
-        if (delta > 0 && _overviewVisible) {
+        // Safety net: whenever the list is back at — or bounced past — the top,
+        // force the overview visible. On iOS BouncingScrollPhysics a short list
+        // can be dragged down (hiding the overview) without ever producing a
+        // matching negative scrollDelta on the way back, so the directional
+        // branches below would otherwise leave the overview stuck hidden until
+        // the next segment switch. Anchoring the reveal to the top position
+        // guarantees it always comes back.
+        if (metrics.pixels <= metrics.minScrollExtent + _kOverviewRevealSlack) {
+          if (!_overviewVisible) setState(() => _overviewVisible = true);
+        } else if (delta > 0 && _overviewVisible) {
           setState(() => _overviewVisible = false);
         } else if (delta < 0 && !_overviewVisible) {
           setState(() => _overviewVisible = true);
