@@ -854,6 +854,13 @@ class _MainScreenState extends State<MainScreen>
             key: _scaffoldKey,
             extendBody: true,
             extendBodyBehindAppBar: true,
+            // On the rail (master/detail) layout, forms open as a Dialog
+            // (see openFormSurface) which handles its own keyboard inset.
+            // Letting the background scaffold also resize for that keyboard
+            // squeezes the fixed-height chrome (NavigationRail, program
+            // overview + segment switcher) and produces RenderFlex overflows.
+            // The dialog owns the inset here, so the background must not move.
+            resizeToAvoidBottomInset: !useRail,
             drawerEnableOpenDragGesture:
                 Theme.of(context).platform != TargetPlatform.iOS,
             appBar: (useRail || isMapTab)
