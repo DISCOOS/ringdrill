@@ -109,6 +109,14 @@ The macOS App Group, URL scheme and document-handler entries are gated. The bund
 5. Test Universal Links from Android or a browser, tapped on an iOS device with the build installed. The link should open via the `/i/:slug` route from ADR-0015. Repeat on macOS if the Associated Domains entitlement was enabled.
 6. Tag the first iOS and macOS releases in Sentry as `app.ringdrill@<version>+<build>` and confirm dSYM upload still works.
 
+## Implementation note (2026-06-06)
+
+During implementation the App Group identifier `group.app.ringdrill` turned out to be unavailable: it is already registered to a different Apple team in the global App Group namespace, so it could not be created under the DISCOOS team. The implemented App Group is therefore **`group.app.ringdrill.shared`**, registered under DISCOOS and wired into `ios/Runner/Runner.entitlements`, `ios/RingDrillShareExtension/RingDrillShareExtension.entitlements`, `ios/Runner/AppDelegate.swift` and `ios/RingDrillShareExtension/ShareViewController.swift`. The App Group identifier is internal and need not match the bundle ID, so this has no user-facing or cross-platform effect. Everywhere this ADR says `group.app.ringdrill`, read `group.app.ringdrill.shared`.
+
+For the same reason the share-extension bundle ID `app.ringdrill.RingDrillShareExtension` was unavailable in the global namespace, so the share extension ships as **`app.ringdrill.share`** (set in `ios/Runner.xcodeproj/project.pbxproj` across Debug/Release/Profile). It keeps the required `app.ringdrill.` prefix and is not user-facing. Everywhere this ADR says `app.ringdrill.RingDrillShareExtension`, read `app.ringdrill.share`.
+
+Separately, `ios/Runner.xcodeproj/project.pbxproj` carries `objectVersion = 77` (not 70) so that CocoaPods 1.16.2 / xcodeproj 1.27.0 can parse the project; 77 keeps the Xcode-16 `PBXFileSystemSynchronizedRootGroup` entries valid. See the build-tooling memory note.
+
 ## Links
 
 * Related ADRs: [ADR-0015](./0015-shareable-install-links.md) (install links and the `ringdrill.app` host)

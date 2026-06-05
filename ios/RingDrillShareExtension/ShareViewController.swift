@@ -37,7 +37,7 @@ class ShareViewController: SLComposeServiceViewController {
 
   private func saveToSharedContainer(fileURL: URL) {
     let fileManager = FileManager.default
-    guard let sharedContainer = fileManager.containerURL(forSecurityApplicationGroupIdentifier: "group.app.ringdrill") else {
+    guard let sharedContainer = fileManager.containerURL(forSecurityApplicationGroupIdentifier: "group.app.ringdrill.shared") else {
       print("Failed to get shared container URL")
       return
     }
