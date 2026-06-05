@@ -1,6 +1,6 @@
 # Implementation prompt — ADR-0033 (selective platform-adaptive UI on iOS)
 
-Implement [ADR-0033](docs/adrs/0033-platform-adaptive-ui-on-ios.md). Keep the
+Implement [ADR-0033](../adrs/0033-platform-adaptive-ui-on-ios.md). Keep the
 Material-first shell, adapt only the points the ADR names. Use
 `Theme.of(context).platform == TargetPlatform.iOS` for any branching, never
 `dart:io` `Platform`, so it stays test-overridable and web-safe.
