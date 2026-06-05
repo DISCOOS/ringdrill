@@ -71,7 +71,8 @@ class ReorderableSection<T> extends StatefulWidget {
     int position,
     bool reordering,
     Widget dragHandle,
-  ) itemBuilder;
+  )
+  itemBuilder;
 
   /// Called exactly once, when the user leaves reorder mode ("Done"), with the
   /// new ordering. Not called on every individual drop.
@@ -279,7 +280,7 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.only(left: 8, right: 12),
                     ),
                     icon: const Icon(Icons.swap_vert, size: 18),
                     onPressed: _enterReorderMode,
@@ -305,7 +306,13 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
       physics: widget.shrinkWrap ? const NeverScrollableScrollPhysics() : null,
       itemCount: items.length,
       itemBuilder: (context, index) {
-        return widget.itemBuilder(context, items[index], index, false, placeholder);
+        return widget.itemBuilder(
+          context,
+          items[index],
+          index,
+          false,
+          placeholder,
+        );
       },
     );
   }
