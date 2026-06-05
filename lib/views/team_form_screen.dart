@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/views/position_form_field.dart';
+import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 
 class TeamFormScreen extends StatefulWidget {
   const TeamFormScreen({super.key, required this.team});
@@ -50,49 +51,52 @@ class _TeamFormScreenState extends State<TeamFormScreen> {
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  autofocus: true,
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: localizations.teamName,
+      body: DismissKeyboard(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    autofocus: true,
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: localizations.teamName,
+                    ),
+                    validator: (value) =>
+                        value != null && value.trim().isNotEmpty
+                        ? null
+                        : localizations.pleaseEnterAName,
                   ),
-                  validator: (value) => value != null && value.trim().isNotEmpty
-                      ? null
-                      : localizations.pleaseEnterAName,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const Key('number-of-members-field'),
-                  controller: _numberOfMembersController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: localizations.numberOfMembers,
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    key: const Key('number-of-members-field'),
+                    controller: _numberOfMembersController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: localizations.numberOfMembers,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return null;
+                      final numberOfMembers = int.tryParse(value);
+                      if (numberOfMembers == null || numberOfMembers < 0) {
+                        return localizations.pleaseEnterAValidNumber;
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return null;
-                    final numberOfMembers = int.tryParse(value);
-                    if (numberOfMembers == null || numberOfMembers < 0) {
-                      return localizations.pleaseEnterAValidNumber;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                PositionFormField(
-                  initialValue: _team.position,
-                  onSaved: (position) {
-                    _team = _team.copyWith(position: position);
-                  },
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  PositionFormField(
+                    initialValue: _team.position,
+                    onSaved: (position) {
+                      _team = _team.copyWith(position: position);
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),

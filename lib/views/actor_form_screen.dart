@@ -3,6 +3,7 @@ import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
+import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 
 /// Form for creating or editing an [Actor] record.
@@ -96,51 +97,54 @@ class _ActorFormScreenState extends State<ActorFormScreen> {
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Real name (required)
-                TextFormField(
-                  autofocus: true,
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: localizations.actorRealName,
+      body: DismissKeyboard(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Real name (required)
+                  TextFormField(
+                    autofocus: true,
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: localizations.actorRealName,
+                    ),
+                    validator: (value) =>
+                        value != null && value.trim().isNotEmpty
+                        ? null
+                        : localizations.pleaseEnterAName,
                   ),
-                  validator: (value) => value != null && value.trim().isNotEmpty
-                      ? null
-                      : localizations.pleaseEnterAName,
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                // Phone (optional)
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: localizations.actorPhone,
-                    hintText: localizations.optional,
+                  // Phone (optional)
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: localizations.actorPhone,
+                      hintText: localizations.optional,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                // Notes (optional, multiline)
-                TextFormField(
-                  controller: _notesController,
-                  keyboardType: TextInputType.multiline,
-                  minLines: 2,
-                  maxLines: 6,
-                  decoration: InputDecoration(
-                    labelText: localizations.actorNotes,
-                    hintText: localizations.optional,
-                    alignLabelWithHint: true,
+                  // Notes (optional, multiline)
+                  TextFormField(
+                    controller: _notesController,
+                    keyboardType: TextInputType.multiline,
+                    minLines: 2,
+                    maxLines: 6,
+                    decoration: InputDecoration(
+                      labelText: localizations.actorNotes,
+                      hintText: localizations.optional,
+                      alignLabelWithHint: true,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

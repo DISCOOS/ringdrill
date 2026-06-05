@@ -8,6 +8,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
+import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 
 /// Optional long-form sections that can be added to a [RolePlay].
 enum _Section { signalement, background, behavior }
@@ -176,97 +177,99 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Name + age on one line
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        autofocus: true,
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: localizations.roleName,
+      body: DismissKeyboard(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name + age on one line
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          autofocus: true,
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: localizations.roleName,
+                          ),
+                          validator: (value) =>
+                              value != null && value.trim().isNotEmpty
+                              ? null
+                              : localizations.pleaseEnterAName,
                         ),
-                        validator: (value) =>
-                            value != null && value.trim().isNotEmpty
-                            ? null
-                            : localizations.pleaseEnterAName,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 80,
-                      child: TextFormField(
-                        key: const Key('age-field'),
-                        controller: _ageController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: InputDecoration(
-                          labelText: localizations.roleAge,
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 80,
+                        child: TextFormField(
+                          key: const Key('age-field'),
+                          controller: _ageController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: InputDecoration(
+                            labelText: localizations.roleAge,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return null;
+                            final age = int.tryParse(value);
+                            if (age == null || age < 0 || age > 120) {
+                              return localizations.ageRange;
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return null;
-                          final age = int.tryParse(value);
-                          if (age == null || age < 0 || age > 120) {
-                            return localizations.ageRange;
-                          }
-                          return null;
-                        },
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Station dropdown
-                DropdownButtonFormField<int?>(
-                  initialValue: _stationIndex,
-                  decoration: InputDecoration(
-                    labelText: localizations.stationLabel,
+                    ],
                   ),
-                  items: [
-                    DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text(localizations.noStationAssigned),
+                  const SizedBox(height: 12),
+
+                  // Station dropdown
+                  DropdownButtonFormField<int?>(
+                    initialValue: _stationIndex,
+                    decoration: InputDecoration(
+                      labelText: localizations.stationLabel,
                     ),
-                    for (var i = 0; i < stations.length; i++)
+                    items: [
                       DropdownMenuItem<int?>(
-                        value: i,
-                        child: Text(stations[i].name),
+                        value: null,
+                        child: Text(localizations.noStationAssigned),
                       ),
-                  ],
-                  onChanged: (v) => setState(() => _stationIndex = v),
-                ),
-                const SizedBox(height: 16),
+                      for (var i = 0; i < stations.length; i++)
+                        DropdownMenuItem<int?>(
+                          value: i,
+                          child: Text(stations[i].name),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _stationIndex = v),
+                  ),
+                  const SizedBox(height: 16),
 
-                // Position
-                PositionFormField(
-                  initialValue: _rolePlay.position,
-                  onSaved: (pos) {
-                    _rolePlay = _rolePlay.copyWith(position: pos);
-                  },
-                ),
-                const Divider(height: 24),
+                  // Position
+                  PositionFormField(
+                    initialValue: _rolePlay.position,
+                    onSaved: (pos) {
+                      _rolePlay = _rolePlay.copyWith(position: pos);
+                    },
+                  ),
+                  const Divider(height: 24),
 
-                // Optional sections — only shown when added
-                OptionalFieldSections<_Section>(
-                  sections: sectionSpecs,
-                  activeIds: _activeSections,
-                  onAdd: _addSection,
-                  onRemove: _removeSection,
-                ),
-                const SizedBox(height: 4),
-              ],
+                  // Optional sections — only shown when added
+                  OptionalFieldSections<_Section>(
+                    sections: sectionSpecs,
+                    activeIds: _activeSections,
+                    onAdd: _addSection,
+                    onRemove: _removeSection,
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
             ),
           ),
         ),

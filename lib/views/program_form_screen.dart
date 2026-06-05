@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 
 /// Optional addable sections on [Program] beyond name + description.
@@ -133,51 +134,53 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  autofocus: true,
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: localizations.programName,
+      body: DismissKeyboard(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    autofocus: true,
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: localizations.programName,
+                    ),
+                    validator: (value) =>
+                        value != null && value.trim().isNotEmpty
+                        ? null
+                        : localizations.pleaseEnterAName,
                   ),
-                  validator: (value) =>
-                      value != null && value.trim().isNotEmpty
-                      ? null
-                      : localizations.pleaseEnterAName,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _descriptionController,
-                  keyboardType: TextInputType.multiline,
-                  minLines: 1,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    labelText: localizations.programDescription,
-                    hintText: localizations.programDescriptionHint,
-                    alignLabelWithHint: true,
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    keyboardType: TextInputType.multiline,
+                    minLines: 1,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: localizations.programDescription,
+                      hintText: localizations.programDescriptionHint,
+                      alignLabelWithHint: true,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                _StationNumberFormatPicker(
-                  value: _stationNumberFormat,
-                  onChanged: (f) => setState(() => _stationNumberFormat = f),
-                ),
-                const Divider(height: 32),
-                OptionalFieldSections<_Section>(
-                  sections: sectionSpecs,
-                  activeIds: _activeSections,
-                  onAdd: _addSection,
-                  onRemove: _removeSection,
-                ),
-                const SizedBox(height: 4),
-              ],
+                  const SizedBox(height: 24),
+                  _StationNumberFormatPicker(
+                    value: _stationNumberFormat,
+                    onChanged: (f) => setState(() => _stationNumberFormat = f),
+                  ),
+                  const Divider(height: 32),
+                  OptionalFieldSections<_Section>(
+                    sections: sectionSpecs,
+                    activeIds: _activeSections,
+                    onAdd: _addSection,
+                    onRemove: _removeSection,
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
             ),
           ),
         ),
