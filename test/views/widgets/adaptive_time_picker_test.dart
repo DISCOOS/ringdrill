@@ -39,4 +39,33 @@ void main() {
 
     expect(picked, const TimeOfDay(hour: 9, minute: 30));
   });
+
+  testWidgets('non-iOS platform uses the Material time picker dialog', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () {
+              pickAdaptiveTime(
+                context,
+                initialTime: const TimeOfDay(hour: 9, minute: 30),
+              );
+            },
+            child: const Text('Pick'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Pick'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TimePickerDialog), findsOneWidget);
+    expect(find.byType(CupertinoDatePicker), findsNothing);
+  });
 }
