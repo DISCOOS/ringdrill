@@ -719,6 +719,10 @@
   "@switchToTopo": {
     "description": "Label"
   },
+  "layers": "Switch map layer",
+  "@layers": {
+    "description": "Tooltip for the map layer-toggle button"
+  },
   "zoomIn": "Zoom in",
   "@zoomIn": {
     "description": "Tooltip for zoom in button on the map"
@@ -730,6 +734,26 @@
   "locateMe": "Show my position",
   "@locateMe": {
     "description": "Tooltip for the 'locate me' button on the map"
+  },
+  "recenter": "Recenter map",
+  "@recenter": {
+    "description": "Tooltip for the map recenter button"
+  },
+  "mapSettingsSectionTitle": "Map",
+  "@mapSettingsSectionTitle": {
+    "description": "Title of the Map section in settings"
+  },
+  "mapSettingsSectionDescription": "Choose how maps behave in the app.",
+  "@mapSettingsSectionDescription": {
+    "description": "Intro text under the Map settings section title"
+  },
+  "showMapZoomControls": "Show zoom buttons",
+  "@showMapZoomControls": {
+    "description": "Toggle label for showing zoom in/out buttons on maps"
+  },
+  "showMapZoomControlsDescription": "Show zoom in and out buttons on maps. Off by default on touch devices, where pinch to zoom also works.",
+  "@showMapZoomControlsDescription": {
+    "description": "Helper text for the show-zoom-buttons toggle"
   },
   "locating": "Locating…",
   "@locating": {

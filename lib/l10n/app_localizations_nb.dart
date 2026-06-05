@@ -645,6 +645,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get switchToTopo => 'Bytt til Topo';
 
   @override
+  String get layers => 'Bytt kartlag';
+
+  @override
   String get zoomIn => 'Zoom inn';
 
   @override
@@ -652,6 +655,23 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get locateMe => 'Vis min posisjon';
+
+  @override
+  String get recenter => 'Sentrer kartet';
+
+  @override
+  String get mapSettingsSectionTitle => 'Kart';
+
+  @override
+  String get mapSettingsSectionDescription =>
+      'Velg hvordan kart oppfører seg i appen.';
+
+  @override
+  String get showMapZoomControls => 'Vis zoom-knapper';
+
+  @override
+  String get showMapZoomControlsDescription =>
+      'Vis zoom inn/ut-knapper på kart. Av som standard på berøringsenheter, der knipebevegelse også fungerer.';
 
   @override
   String get locating => 'Henter posisjon…';

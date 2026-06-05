@@ -647,6 +647,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get switchToTopo => 'Switch to Topo';
 
   @override
+  String get layers => 'Switch map layer';
+
+  @override
   String get zoomIn => 'Zoom in';
 
   @override
@@ -654,6 +657,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locateMe => 'Show my position';
+
+  @override
+  String get recenter => 'Recenter map';
+
+  @override
+  String get mapSettingsSectionTitle => 'Map';
+
+  @override
+  String get mapSettingsSectionDescription =>
+      'Choose how maps behave in the app.';
+
+  @override
+  String get showMapZoomControls => 'Show zoom buttons';
+
+  @override
+  String get showMapZoomControlsDescription =>
+      'Show zoom in and out buttons on maps. Off by default on touch devices, where pinch to zoom also works.';
 
   @override
   String get locating => 'Locating…';

@@ -14,6 +14,7 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
@@ -373,14 +374,13 @@ class _StationsViewState extends State<StationsView>
         (!_showStations ? 1 : 0) +
         (!_showRoleplays ? 1 : 0) +
         (!_showLabels ? 1 : 0);
-    final fab = FloatingActionButton(
+    return MapCommand(
       heroTag: 'filter',
       tooltip: l.filter,
       onPressed: () => _openFilterSheet(context, l, allExercises),
-      child: const Icon(Icons.filter_alt),
+      icon: Icons.filter_alt,
+      badgeCount: activeDimensions,
     );
-    if (activeDimensions == 0) return fab;
-    return Badge.count(count: activeDimensions, child: fab);
   }
 
   /// Unified filter sheet replacing `_openVisibilitySheet` and

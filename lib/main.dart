@@ -6,6 +6,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart' show GoRouter;
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
+import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
@@ -55,6 +56,7 @@ Future<void> main() async {
     //  MainScreen is shown
     // Initialize services
     await ProgramService().init();
+    await MapSettings.instance.load();
 
     if (isFirstLaunch) {
       // Set default "analyticsConsent" to false (opt-out by default)

@@ -1118,6 +1118,12 @@ abstract class AppLocalizations {
   /// **'Switch to Topo'**
   String get switchToTopo;
 
+  /// Tooltip for the map layer-toggle button
+  ///
+  /// In en, this message translates to:
+  /// **'Switch map layer'**
+  String get layers;
+
   /// Tooltip for zoom in button on the map
   ///
   /// In en, this message translates to:
@@ -1135,6 +1141,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show my position'**
   String get locateMe;
+
+  /// Tooltip for the map recenter button
+  ///
+  /// In en, this message translates to:
+  /// **'Recenter map'**
+  String get recenter;
+
+  /// Title of the Map section in settings
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get mapSettingsSectionTitle;
+
+  /// Intro text under the Map settings section title
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how maps behave in the app.'**
+  String get mapSettingsSectionDescription;
+
+  /// Toggle label for showing zoom in/out buttons on maps
+  ///
+  /// In en, this message translates to:
+  /// **'Show zoom buttons'**
+  String get showMapZoomControls;
+
+  /// Helper text for the show-zoom-buttons toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Show zoom in and out buttons on maps. Off by default on touch devices, where pinch to zoom also works.'**
+  String get showMapZoomControlsDescription;
 
   /// Snackbar shown while the device is acquiring a GPS fix after the user taps 'locate me'
   ///

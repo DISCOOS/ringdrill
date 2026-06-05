@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/app_user_role.dart';
+import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
@@ -35,6 +36,8 @@ class SettingsPage extends StatelessWidget {
             AnalyticsConsentSettings(),
             const Divider(),
             NotificationSettingsWidget(),
+            const Divider(),
+            const MapSettingsWidget(),
           ],
         ),
       ),
@@ -450,6 +453,51 @@ class _NotificationSettingsWidgetState
               : null, // Disable if notifications are off
           title: Text(localizations.vibrateWhenUrgent),
           subtitle: Text(localizations.vibrateWhenUrgentDescription),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Map
+// ---------------------------------------------------------------------------
+
+/// Map-related preferences. Currently a single toggle for the zoom in/out
+/// buttons. Only shown on pointer (non-touch) platforms, where the buttons
+/// actually appear — touch devices rely on pinch-to-zoom regardless.
+class MapSettingsWidget extends StatelessWidget {
+  const MapSettingsWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localizations.mapSettingsSectionTitle,
+          // ADR-0037: themed titleMedium instead of a hardcoded size.
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16.0),
+        Text(localizations.mapSettingsSectionDescription),
+        const SizedBox(height: 12.0),
+        ValueListenableBuilder<bool>(
+          valueListenable: MapSettings.instance.showZoomControls,
+          builder: (context, showZoom, _) {
+            return SwitchListTile.adaptive(
+              value: showZoom,
+              onChanged: (value) {
+                unawaited(HapticFeedback.selectionClick());
+                MapSettings.instance.setShowZoomControls(value);
+              },
+              title: Text(localizations.showMapZoomControls),
+              subtitle: Text(localizations.showMapZoomControlsDescription),
+            );
+          },
         ),
       ],
     );
