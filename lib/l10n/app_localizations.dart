@@ -2522,6 +2522,12 @@ abstract class AppLocalizations {
   /// **'Could not render brief: {error}'**
   String briefRenderError(String error);
 
+  /// Shown when the brief template asset fails to load, usually because the running build's asset manifest predates a newly added template. A full restart (or clean rebuild and hard refresh on web) resolves it.
+  ///
+  /// In en, this message translates to:
+  /// **'The brief template could not be loaded. Restart the app and try again.'**
+  String get briefTemplateMissing;
+
   /// Empty-state when the brief route is opened with no program loaded.
   ///
   /// In en, this message translates to:

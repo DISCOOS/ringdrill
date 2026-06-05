@@ -458,11 +458,11 @@ class _BriefScreenState extends State<BriefScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              localizations.briefRenderError(snapshot.error.toString()),
-            ),
-          );
+          final error = snapshot.error;
+          final message = error is BriefTemplateException
+              ? localizations.briefTemplateMissing
+              : localizations.briefRenderError(error.toString());
+          return Center(child: Text(message));
         }
 
         // Cache the resolved markdown in state so search-cycle controls can

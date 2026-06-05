@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
@@ -114,6 +115,16 @@ Program _designProgram() => _emptyProgram().copyWith(
 );
 
 final _l10n = AppLocalizationsNb();
+
+/// An [AssetBundle] whose [load] always fails the way the real bundle does
+/// when an asset is absent from the running build's manifest. Used to exercise
+/// the renderer's [BriefTemplateException] wrapping.
+class _ThrowingAssetBundle extends AssetBundle {
+  @override
+  Future<ByteData> load(String key) async {
+    throw FlutterError('Unable to load asset: "$key".');
+  }
+}
 
 /// Trims trailing whitespace from each line so whitespace-only differences
 /// at line endings don't cause false failures.
@@ -746,6 +757,30 @@ void main() {
       // so internal links remain consistent.
       expect(result, contains('[1.1 – Alpha](#11-alpha)'));
       expect(result, contains('### 1.1 – Alpha'));
+    });
+  });
+
+  group('BriefRenderer — missing template asset', () {
+    test('wraps a bundle load failure in BriefTemplateException', () async {
+      final renderer = BriefRenderer(bundle: _ThrowingAssetBundle());
+
+      await expectLater(
+        renderer.render(
+          program: _emptyProgram(),
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        ),
+        throwsA(
+          isA<BriefTemplateException>()
+              .having((e) => e.templateId, 'templateId', 'ringdrill-standard-v1')
+              .having(
+                (e) => e.assetPath,
+                'assetPath',
+                'assets/templates/ringdrill-standard-v1.nb.md.mustache',
+              )
+              .having((e) => e.cause, 'cause', isNotNull),
+        ),
+      );
     });
   });
 }

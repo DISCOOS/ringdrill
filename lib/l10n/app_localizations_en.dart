@@ -1489,6 +1489,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get briefTemplateMissing =>
+      'The brief template could not be loaded. Restart the app and try again.';
+
+  @override
   String get briefMissingProgram => 'No active program';
 
   @override

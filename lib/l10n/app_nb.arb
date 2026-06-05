@@ -652,6 +652,7 @@
       "error": { "type": "String" }
     }
   },
+  "briefTemplateMissing": "Brief-malen kunne ikke lastes. Start appen på nytt og prøv igjen.",
   "briefMissingProgram": "Ingen aktiv plan",
   "briefMissingExercise": "Øvelse ikke funnet",
   "briefToc": "Innhold",

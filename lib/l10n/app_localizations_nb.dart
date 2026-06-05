@@ -1486,6 +1486,10 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get briefTemplateMissing =>
+      'Brief-malen kunne ikke lastes. Start appen på nytt og prøv igjen.';
+
+  @override
   String get briefMissingProgram => 'Ingen aktiv plan';
 
   @override

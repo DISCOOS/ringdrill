@@ -25,6 +25,36 @@ import 'package:ringdrill/services/brief/template_registry.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/projection.dart';
 
+/// Thrown when a brief template asset cannot be loaded from the bundle.
+///
+/// Surfaced to the user as a clean, actionable message instead of the raw
+/// Flutter "Unable to load asset" exception. The usual cause is that the
+/// running build's `AssetManifest` predates a newly added template asset: a
+/// hot reload or hot restart does not regenerate the manifest, and an
+/// offline-first PWA may serve a stale service-worker cache. A full restart
+/// (or a clean rebuild and hard refresh on web) resolves it.
+class BriefTemplateException implements Exception {
+  const BriefTemplateException({
+    required this.templateId,
+    required this.assetPath,
+    this.cause,
+  });
+
+  /// Id of the template that failed to resolve, e.g. `ringdrill-standard-v1`.
+  final String templateId;
+
+  /// Asset path the renderer tried to load via the bundle.
+  final String assetPath;
+
+  /// The underlying error thrown by the asset bundle, if any.
+  final Object? cause;
+
+  @override
+  String toString() =>
+      'BriefTemplateException(templateId: $templateId, '
+      'assetPath: $assetPath, cause: $cause)';
+}
+
 class BriefRenderer {
   BriefRenderer({TemplateRegistry? registry, AssetBundle? bundle})
     : _registry = registry ?? TemplateRegistry.instance,
@@ -51,7 +81,16 @@ class BriefRenderer {
     bool wideTocSidebar = false,
   }) async {
     final template = _registry.resolve(exercise?.templateId);
-    final source = await _bundle.loadString(template.assetPath);
+    final String source;
+    try {
+      source = await _bundle.loadString(template.assetPath);
+    } catch (e) {
+      throw BriefTemplateException(
+        templateId: template.id,
+        assetPath: template.assetPath,
+        cause: e,
+      );
+    }
     final mustache = Template(source, htmlEscapeValues: false);
 
     final exercises = exercise != null ? [exercise] : program.exercises;
