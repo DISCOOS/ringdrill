@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
@@ -1521,6 +1524,7 @@ class _MainScreenState extends State<MainScreen>
                           onPlay: idleExercise == null
                               ? null
                               : () {
+                                  unawaited(HapticFeedback.mediumImpact());
                                   ExerciseService().start(idleExercise);
                                   // Clear the detail target so the master/detail
                                   // pane empties once the exercise goes live —

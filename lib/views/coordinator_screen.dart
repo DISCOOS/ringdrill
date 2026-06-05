@@ -359,6 +359,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                     // We are already inside the player; tapping the bar
                     // should not try to re-open it.
                     onOpen: () {},
+                    onPlay: () {
+                      unawaited(HapticFeedback.mediumImpact());
+                      _exerciseService.start(_exercise!);
+                    },
                     bodyBuilder: _buildMiniPlayerBody,
                   ),
                 )
@@ -1249,9 +1253,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // badge").
     final exerciseNumber =
         (_programService.loadExercises().indexWhere(
-              (e) => e.uuid == exercise.uuid,
-            ) +
-            1);
+          (e) => e.uuid == exercise.uuid,
+        ) +
+        1);
 
     Widget buildStationRow(
       BuildContext context,
@@ -1298,8 +1302,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           ...List<Widget>.generate(exercise.schedule.length, (roundIndex) {
             final isCurrent =
                 event.isRunning && roundIndex == event.currentRound;
-            final teamIndex =
-                exercise.teamIndex(stationIndex, roundIndex) + 1;
+            final teamIndex = exercise.teamIndex(stationIndex, roundIndex) + 1;
             final none = teamIndex == 0;
             return Container(
               padding: const EdgeInsets.all(4),
@@ -1312,8 +1315,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 '${none ? '×' : teamIndex}',
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight:
-                      isCurrent ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   color: isCurrent ? Colors.white : accent.foreground,
                 ),
               ),

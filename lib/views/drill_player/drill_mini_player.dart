@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -323,8 +324,10 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
             height: 4,
             child: Builder(
               builder: (context) {
-                final fillFlex =
-                    (smoothedProgress * 10000).round().clamp(0, 10000);
+                final fillFlex = (smoothedProgress * 10000).round().clamp(
+                  0,
+                  10000,
+                );
                 final trackFlex = 10000 - fillFlex;
                 return Row(
                   children: [
@@ -358,7 +361,10 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
   Widget _buildStopSquare(ExercisePhase phase) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => ExerciseService().stop(),
+      onTap: () {
+        unawaited(HapticFeedback.mediumImpact());
+        ExerciseService().stop();
+      },
       child: SizedBox(
         width: 36,
         height: 36,
@@ -449,7 +455,9 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [
-                              scheme.surfaceContainerHigh.withValues(alpha: 0.0),
+                              scheme.surfaceContainerHigh.withValues(
+                                alpha: 0.0,
+                              ),
                               scheme.surfaceContainerHigh,
                             ],
                           ),
@@ -467,6 +475,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                               if (widget.onPlay != null) {
                                 widget.onPlay!();
                               } else {
+                                unawaited(HapticFeedback.mediumImpact());
                                 ExerciseService().start(exercise);
                               }
                             },

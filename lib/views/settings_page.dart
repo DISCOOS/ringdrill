@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/notification_service.dart';
@@ -239,6 +242,7 @@ class _AnalyticsConsentSettingsState extends State<AnalyticsConsentSettings> {
         SwitchListTile.adaptive(
           value: analyticsConsent,
           onChanged: (value) {
+            unawaited(HapticFeedback.selectionClick());
             setState(() {
               analyticsConsent = value;
             });
@@ -367,6 +371,7 @@ class _NotificationSettingsWidgetState
         SwitchListTile.adaptive(
           value: isNotificationsEnabled,
           onChanged: (value) {
+            unawaited(HapticFeedback.selectionClick());
             _saveNotificationPreference(enabled: value); // Save user preference
           },
           title: Text(localizations.enableNotifications),
@@ -404,6 +409,7 @@ class _NotificationSettingsWidgetState
           value: isFullScreenIntentEnabled,
           onChanged: isNotificationsEnabled
               ? (value) {
+                  unawaited(HapticFeedback.selectionClick());
                   _saveNotificationPreference(fullScreen: value);
                 }
               : null, // Disable if notifications are off
@@ -416,6 +422,7 @@ class _NotificationSettingsWidgetState
           value: playSound,
           onChanged: isNotificationsEnabled
               ? (value) {
+                  unawaited(HapticFeedback.selectionClick());
                   _saveNotificationPreference(sound: value);
                 }
               : null, // Disable if notifications are off
@@ -428,6 +435,7 @@ class _NotificationSettingsWidgetState
           value: vibrateEnabled,
           onChanged: isNotificationsEnabled
               ? (value) {
+                  unawaited(HapticFeedback.selectionClick());
                   _saveNotificationPreference(vibrate: value);
                 }
               : null, // Disable if notifications are off
