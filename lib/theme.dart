@@ -9,6 +9,13 @@ import 'package:google_fonts/google_fonts.dart';
 /// `kToolbarHeight = 56` to preserve vertical space on phones.
 const double kRingdrillHeaderHeight = 72.0;
 
+/// Live-drill accent text size for the coordinator/player: the schedule grid,
+/// the station/team rows and the round header. ADR-0037 "drillAccent" — these
+/// sites paired a hardcoded `fontSize: 18` with `accent.foreground`; the size
+/// is centralised here so the dense player can be tuned in one place. Tightened
+/// from 18 to sit closer to the rest of the app's tile titles.
+const double kDrillAccentFontSize = 15.0;
+
 // ---------------------------------------------------------------------------
 // RingDrill brand palette
 // ---------------------------------------------------------------------------
@@ -181,6 +188,25 @@ List<Widget>? rdAppBarActions(BuildContext context, List<Widget>? actions) {
       .toList(growable: false);
 }
 
+/// Tightens the baseline type scale on top of [base] (ADR-0037 part 1).
+///
+/// The iOS simulator showed text reading heavy at the default size
+/// (`textScaler` 1.0). Rather than scatter `fontSize:` overrides, density is
+/// controlled here: a small set of named steps is pulled in from the Material 3
+/// defaults so widgets that use `textTheme.*` get the tighter sizing for free.
+/// Only `titleLarge` (22→20) and `bodyLarge` (16→15) actually move; the others
+/// are pinned at their M3 value to document intent and guard against drift.
+TextTheme _tightenedTextTheme(TextTheme base) {
+  return base.copyWith(
+    titleLarge: base.titleLarge?.copyWith(fontSize: 20),
+    titleMedium: base.titleMedium?.copyWith(fontSize: 16),
+    titleSmall: base.titleSmall?.copyWith(fontSize: 14),
+    bodyLarge: base.bodyLarge?.copyWith(fontSize: 15),
+    bodyMedium: base.bodyMedium?.copyWith(fontSize: 14),
+    bodySmall: base.bodySmall?.copyWith(fontSize: 12),
+  );
+}
+
 final ThemeData ringDrillTheme = ThemeData(
   brightness: Brightness.light,
   scaffoldBackgroundColor: RingDrillColors.lightScaffold,
@@ -199,7 +225,7 @@ final ThemeData ringDrillTheme = ThemeData(
     error: RingDrillColors.errorLight,
     brightness: Brightness.light,
   ),
-  textTheme: GoogleFonts.robotoFlexTextTheme(),
+  textTheme: _tightenedTextTheme(GoogleFonts.robotoFlexTextTheme()),
   // ThemeData.disabledColor is used by older non-M3 widgets and as a
   // baseline; M3 IconButton has its own resolution (see [rdAppBarActions]).
   disabledColor: RingDrillColors.disabledOnLight,
@@ -261,7 +287,9 @@ final ThemeData ringDrillDarkTheme = ThemeData(
     error: RingDrillColors.errorDark,
     brightness: Brightness.dark,
   ),
-  textTheme: GoogleFonts.robotoFlexTextTheme(ThemeData.dark().textTheme),
+  textTheme: _tightenedTextTheme(
+    GoogleFonts.robotoFlexTextTheme(ThemeData.dark().textTheme),
+  ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: RingDrillColors.brandPath,

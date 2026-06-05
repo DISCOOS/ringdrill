@@ -720,7 +720,12 @@ class _MapViewState<K> extends State<MapView<K>> {
                     final hasPosition = result.points.isNotEmpty;
                     final chipText = chipLabel == null
                         ? null
-                        : Text(chipLabel, style: const TextStyle(fontSize: 12));
+                        // ADR-0037: themed bodySmall so the search-result chip
+                        // scales with Dynamic Type instead of a hardcoded 12.
+                        : Text(
+                            chipLabel,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          );
                     return ListTile(
                       onTap: () => _onResultTap(result),
                       title: Text(
@@ -1155,7 +1160,10 @@ class FeatureLabel extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: Padding(
           padding: const EdgeInsets.all(1.0),
-          child: Text(text, style: const TextStyle(fontSize: 12)),
+          // ADR-0037: themed bodySmall so the map overlay label scales with
+          // Dynamic Type. Growth is bounded by the app-root 1.3 clamp, so it
+          // cannot crowd the map at the largest accessibility sizes.
+          child: Text(text, style: Theme.of(context).textTheme.bodySmall),
         ),
       ),
     );

@@ -203,7 +203,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
                               _startTime.formal(),
-                              style: TextStyle(fontSize: 16.0),
+                              // ADR-0037: themed bodyLarge instead of 16.
+                              style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           ),
                           IconButton(

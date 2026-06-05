@@ -221,8 +221,8 @@ class _RosterViewState extends State<RosterView> {
                 if (roles.isNotEmpty)
                   Text(
                     localizations.castedAs(roles.join(', ')),
-                    style: TextStyle(
-                      fontSize: 12,
+                    // ADR-0037: themed bodySmall instead of a hardcoded 12.
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),

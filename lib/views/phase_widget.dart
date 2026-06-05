@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 import 'package:ringdrill/utils/time_utils.dart';
 
 class PhasesWidget extends StatelessWidget {
@@ -14,7 +15,7 @@ class PhasesWidget extends StatelessWidget {
     this.decoration,
     this.mainAxisAlignment = MainAxisAlignment.center,
     this.cellSize = 56.0,
-    this.fontSize = 18.0,
+    this.fontSize = kDrillAccentFontSize,
   });
 
   final int roundIndex;
@@ -30,9 +31,10 @@ class PhasesWidget extends StatelessWidget {
   /// DrillPlayer mini-bar.
   final double cellSize;
 
-  /// Font size for the phase time label. Default 18 matches the round-table
-  /// in PhaseTile; the DrillPlayer mini-bar overrides this so the time text
-  /// stops dominating the compact row.
+  /// Font size for the phase time label. Defaults to [kDrillAccentFontSize]
+  /// (ADR-0037) so the round-table times match the PhaseTile labels; the
+  /// DrillPlayer mini-bar overrides this so the time text stops dominating the
+  /// compact row.
   final double fontSize;
 
   @override

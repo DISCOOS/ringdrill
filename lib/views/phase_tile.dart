@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 import 'package:ringdrill/views/phase_widget.dart' show PhasesWidget;
 import 'package:ringdrill/views/vertical_divider_widget.dart';
 
@@ -44,7 +45,7 @@ class PhaseTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCurrent = event.isRunning && roundIndex == event.currentRound;
     final textStyle = TextStyle(
-      fontSize: 18,
+      fontSize: kDrillAccentFontSize,
       fontWeight:
           isCurrent // Emphasize current round
           ? FontWeight.bold

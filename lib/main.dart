@@ -244,6 +244,13 @@ class _RingDrillAppState extends State<RingDrillApp> {
       debugShowCheckedModeBanner: false,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
+      // ADR-0037 part 2: clamp the upper text-scale bound app-wide so Dynamic
+      // Type is honoured up to 1.3 (which the chrome can absorb) but cannot
+      // grow past it. Smaller user sizes are left untouched.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.3,
+        child: child ?? const SizedBox.shrink(),
+      ),
       routerConfig: router,
     );
   }

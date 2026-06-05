@@ -96,7 +96,10 @@ class _AppUserRoleSettingsState extends State<AppUserRoleSettings> {
       children: [
         Text(
           l10n.appUserRoleSectionTitle,
-          style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+          // ADR-0037: themed titleMedium instead of a hardcoded 20.
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8.0),
         Text(l10n.appUserRoleSectionDescription),
@@ -213,7 +216,10 @@ class _AnalyticsConsentSettingsState extends State<AnalyticsConsentSettings> {
         // Analytics Consent Section
         Text(
           localizations.appAnalyticsConsent,
-          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+          // ADR-0037: themed titleMedium instead of a hardcoded 20.
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16.0),
         Text(
@@ -361,7 +367,10 @@ class _NotificationSettingsWidgetState
         // Notifications Settings Section
         Text(
           localizations.notification(2),
-          style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+          // ADR-0037: themed titleMedium instead of a hardcoded 20.
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16.0),
         Text(localizations.toggleNotificationDescription),

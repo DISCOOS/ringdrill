@@ -717,7 +717,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 child: Text(
                   roundLabel,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: kDrillAccentFontSize,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -728,7 +728,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               Text(
                 timeLabel,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: kDrillAccentFontSize,
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onPrimaryContainer,
                 ),
@@ -1296,7 +1296,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             padding: const EdgeInsets.only(right: 4),
             child: Text(
               localizations.team(1),
-              style: TextStyle(fontSize: 18, color: accent.foreground),
+              style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
             ),
           ),
           ...List<Widget>.generate(exercise.schedule.length, (roundIndex) {
@@ -1314,7 +1314,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               child: Text(
                 '${none ? '×' : teamIndex}',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: kDrillAccentFontSize,
                   fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   color: isCurrent ? Colors.white : accent.foreground,
                 ),
@@ -1333,7 +1333,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           leading: badge,
           title: Text(
             station.name,
-            style: TextStyle(fontSize: 18, color: accent.foreground),
+            style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1377,7 +1377,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           leading: badge,
           title: Text(
             station.name,
-            style: TextStyle(fontSize: 18, color: accent.foreground),
+            style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1537,7 +1537,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             leading: accent.indicator,
             title: Text(
               teamName,
-              style: TextStyle(fontSize: 18, color: accent.foreground),
+              style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1563,7 +1563,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   padding: const EdgeInsets.only(right: 4),
                   child: Text(
                     localizations.station(1),
-                    style: TextStyle(fontSize: 18, color: accent.foreground),
+                    style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
                   ),
                 ),
                 ...List<Widget>.generate(_exercise!.schedule.length, (

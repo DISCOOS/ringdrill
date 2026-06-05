@@ -93,7 +93,11 @@ class _TeamsViewState extends State<TeamsView> {
                 selected: isSelected,
                 title: Text(
                   t.name,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  // ADR-0037: match the other segment tiles (ExpandableTile
+                  // title = bodyLarge w600) instead of a larger hardcoded 18.
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(parts.join(' · ')),
                 onLongPress: () => _openTeamForm(t),

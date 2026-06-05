@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 
 class TeamStationWidget extends StatelessWidget {
   const TeamStationWidget({
@@ -23,7 +24,9 @@ class TeamStationWidget extends StatelessWidget {
       child: Text(
         '${exercise.stationIndex(teamIndex, roundIndex) + 1}',
         style: TextStyle(
-          fontSize: 18,
+          // ADR-0037 drillAccent: match the sibling station-row numbers and
+          // the "Post" label instead of a larger hardcoded 18.
+          fontSize: kDrillAccentFontSize,
           fontWeight: isCurrent
               ? FontWeight.bold
               : FontWeight.normal, // Emphasize current round

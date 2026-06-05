@@ -943,7 +943,11 @@ class _ExerciseCardState extends State<ExerciseCard> {
           leading: leading,
           title: Text(
             station.name,
-            style: TextStyle(fontSize: 18, color: accent.foreground),
+            // ADR-0037 drillAccent: centralised size instead of hardcoded 18.
+            style: TextStyle(
+              fontSize: kDrillAccentFontSize,
+              color: accent.foreground,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

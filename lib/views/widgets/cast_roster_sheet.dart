@@ -162,12 +162,13 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
                               if (roles.isNotEmpty)
                                 Text(
                                   localizations.castedAs(roles.join(', ')),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
+                                  // ADR-0037: themed bodySmall instead of 12.
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
                                 ),
                             ],
                           ),

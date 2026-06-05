@@ -121,13 +121,18 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
       children: [
         Text(
           event.getState(localizations),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          // ADR-0037: themed titleLarge (20) instead of a hardcoded 24.
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         Text(
           event.isPending
               ? DateTimeX.fromMinutes(event.remainingTime).formal(localizations)
               : localizations.minute(event.remainingTime),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );

@@ -1042,9 +1042,9 @@ class _MainScreenState extends State<MainScreen>
             children: [
               Text(
                 localizations.appName,
-                style: TextStyle(
+                // ADR-0037: themed titleMedium instead of a hardcoded 18.
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.white,
-                  fontSize: 18.0, // Smaller font size than DrawerHeader
                   fontWeight: FontWeight.bold,
                 ),
               ),

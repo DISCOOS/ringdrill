@@ -144,6 +144,32 @@ Proposed starting scale in `lib/theme.dart` (confirm on device): `titleLarge`
 `bodySmall` 12, plus one `drillAccent` style replacing the `fontSize: 18` +
 `accent.foreground` pattern in the player.
 
+## Implementation notes (2026-06-05)
+
+Both parts are implemented. A few choices deviate from the appendix's first
+sketch; recorded here so code and ADR stay in sync.
+
+* **`drillAccent` is a size constant, not a `TextStyle`.** The player sites
+  paired `fontSize: 18` with different colours (`accent.foreground`,
+  `onPrimaryContainer`, white) and weights, so a single shared `TextStyle`
+  did not fit. Density is centralised as `kDrillAccentFontSize` (15) in
+  `lib/theme.dart`; each site keeps its own colour/weight. The round header
+  (`onPrimaryContainer`) was folded in too, so 8 player sites moved, plus
+  `PhasesWidget`'s default, `phase_tile`, `team_station_widget` and the
+  Program-tab station tile.
+* **Tile titles mapped for parity, not by the table.** `teams_view` and
+  `team_screen` tile titles were mapped to match the other segment tiles
+  (`bodyLarge` w600 / `drillAccent`) rather than `titleMedium`/`titleSmall`,
+  so the four Program segments and the player read at one size.
+* **`mini_round_row` left as-is.** The compact drill mini-player keeps its
+  explicit 14px sizing; it is fixed-height chrome (see part 2) and coupling it
+  to the global scale was judged riskier than the consistency gain.
+* **Map text was migrated, not excluded.** The search-result chip and the map
+  overlay label now use `bodySmall`. The overlay can therefore grow with
+  Dynamic Type, but the part-2 clamp bounds it at 1.3.
+* **Still hardcoded by design:** brief view + `BriefTheme` (ADR-0023), and the
+  `FittedBox`-wrapped number badges (nominal size before scale-down).
+
 ## Links
 
 * Related ADRs: [ADR-0023](./0023-brief-theme-tokens.md) (BriefTheme owns brief

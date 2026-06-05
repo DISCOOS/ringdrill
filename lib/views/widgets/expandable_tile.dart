@@ -49,8 +49,8 @@ class ExpandableTile extends StatelessWidget {
   static const Duration animationDuration = Duration(milliseconds: 200);
 
   /// Required header title. Wrapped in a `DefaultTextStyle` that gives
-  /// it a `fontSize: 16, fontWeight: w600` baseline. Callers can pass
-  /// a `Text` with their own style to override.
+  /// it a `textTheme.bodyLarge` + `fontWeight: w600` baseline (ADR-0037).
+  /// Callers can pass a `Text` with their own style to override.
   final Widget title;
 
   /// Optional leading widget. Typically a code badge or status icon.
@@ -116,6 +116,7 @@ class ExpandableTile extends StatelessWidget {
     final rowTap = onOpen ?? (canToggle ? onToggle : null);
 
     final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final useSelected = selected && !accent.isActive;
     // Selected row uses an explicit lifted background + 2px primary
     // border. The M3-derived `surfaceContainerHighest`/`outlineVariant`
@@ -165,21 +166,22 @@ class ExpandableTile extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               DefaultTextStyle.merge(
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                // ADR-0037: themed bodyLarge (15) instead of a
+                                // hardcoded 16 so the tightened scale applies.
+                                style: (textTheme.bodyLarge ?? const TextStyle())
+                                    .copyWith(fontWeight: FontWeight.w600),
                                 child: title,
                               ),
                               if (subtitle != null) ...[
                                 const SizedBox(height: 2),
                                 DefaultTextStyle.merge(
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
+                                  // ADR-0037: themed bodySmall (12) instead of
+                                  // a hardcoded 13.
+                                  style:
+                                      (textTheme.bodySmall ?? const TextStyle())
+                                          .copyWith(
+                                            color: scheme.onSurfaceVariant,
+                                          ),
                                   child: subtitle!,
                                 ),
                               ],

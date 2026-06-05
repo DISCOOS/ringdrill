@@ -3,6 +3,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -143,8 +144,9 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
       leading: accent.indicator,
       title: Text(
         exercise.name,
+        // ADR-0037 drillAccent: match the player's accent tiles instead of 18.
         style: TextStyle(
-          fontSize: 18,
+          fontSize: kDrillAccentFontSize,
           fontWeight: FontWeight.bold,
           color: accent.foreground,
         ),

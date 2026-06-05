@@ -25,7 +25,10 @@ class SettingsPage extends StatelessWidget {
             // Notifications Settings Section
             Text(
               localizations.notification(2),
-              style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+              // ADR-0037: themed titleMedium instead of a hardcoded 20.
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16.0),
             Text(localizations.noReliableNotificationsReason),
