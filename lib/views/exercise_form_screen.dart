@@ -5,6 +5,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 
 /// Optional addable markdown sections on [Exercise] (DESIGN-004).
@@ -383,10 +384,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   }
 
   Future<void> _pickStartTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _startTime,
-    );
+    final picked = await pickAdaptiveTime(context, initialTime: _startTime);
     if (picked != null) {
       setState(() {
         _startTime = picked;
