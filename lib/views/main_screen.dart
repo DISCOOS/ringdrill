@@ -704,6 +704,11 @@ class _MainScreenState extends State<MainScreen>
     super.initState();
     _initTab();
     _programPageController.activeSegment.addListener(_onProgramSegmentChanged);
+    // Rebuild when reorder mode toggles so the FAB (which is suppressed in
+    // reorder mode) appears/disappears without waiting for another rebuild.
+    _programPageController.exerciseReorderMode.addListener(
+      _onProgramSegmentChanged,
+    );
     if (widget.isFirstLaunch) _showConsentDialog();
     listen(NotificationService().events, (event) {
       if (event.action == NotificationAction.showSettings) {
@@ -779,6 +784,9 @@ class _MainScreenState extends State<MainScreen>
   void dispose() {
     _contextSheetController.dispose();
     _programPageController.activeSegment.removeListener(
+      _onProgramSegmentChanged,
+    );
+    _programPageController.exerciseReorderMode.removeListener(
       _onProgramSegmentChanged,
     );
     _programPageController.dispose();

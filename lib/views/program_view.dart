@@ -1120,6 +1120,14 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
+    // Hide the "New exercise" FAB while the Øvelser segment is in reorder
+    // mode: it floats over the trailing drag handles and blocks dragging the
+    // bottom rows. Reorder mode has its own "Done" affordance in the list
+    // header (ADR-0035/0036), so no FAB is needed there.
+    if (activeSegment.value == ProgramSegment.exercises &&
+        exerciseReorderMode.value) {
+      return null;
+    }
     return switch (activeSegment.value) {
       ProgramSegment.exercises => _buildExercisesFAB(context),
       ProgramSegment.stations => stationListController.buildFAB(
