@@ -21,7 +21,12 @@ class PhaseHeaders extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final color = Theme.of(context).colorScheme.surfaceContainer;
+    final scheme = Theme.of(context).colorScheme;
+    // One tonal step darker in light mode so the header band reads distinctly
+    // against the light scaffold; dark mode keeps the default container tone.
+    final color = scheme.brightness == Brightness.light
+        ? scheme.surfaceContainerHigh
+        : scheme.surfaceContainer;
     // Cell height is 28 (not 24): at the 1.3 text-scale cap the ~26px label
     // line-height fits with ~2px to spare, so DRILL/EVAL/ROLL no longer clip
     // their descenders (ADR-0037 part-2 verification finding). A fully
