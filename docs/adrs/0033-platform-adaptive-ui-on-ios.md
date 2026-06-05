@@ -41,7 +41,7 @@ Chosen option: **Option C**, because it removes the concrete iOS friction while 
 
 In force when accepted:
 
-1. **Adaptive primitives.** `Switch` / `SwitchListTile` become their `.adaptive` forms, and `AlertDialog` / `showDialog` become `AlertDialog.adaptive` / `showAdaptiveDialog`. These render Cupertino on iOS and Material elsewhere with no branching at the call site.
+1. **Adaptive primitives.** `Switch` / `SwitchListTile` become their `.adaptive` forms, rendering Cupertino on iOS and Material elsewhere with no branching at the call site. `showDialog` becomes `showAdaptiveDialog` for adaptive routing, but the dialog widget itself stays a plain Material `AlertDialog` (see the 2026-06-05 amendment below — `AlertDialog.adaptive` was tried and reverted).
 2. **Time picker.** A helper presents a `CupertinoDatePicker` (time mode) in the standard sheet chrome on iOS and keeps `showTimePicker` elsewhere. This is the one bespoke adaptive surface.
 3. **Drawer gesture.** `drawerEnableOpenDragGesture` is `false` on iOS so the left-edge swipe stays free for the back gesture. The hamburger button still opens the drawer.
 4. **Haptics.** `HapticFeedback` on toggle and on drill start/stop, a no-op where the platform has none.
@@ -50,7 +50,7 @@ Navigation (bottom `NavigationBar`, `NavigationRail`, drawer, master/detail from
 
 ### Consequences
 
-* Good: iOS users get native time entry, toggles, alerts, the expected back-swipe and tactile feedback.
+* Good: iOS users get native time entry, toggles, the expected back-swipe and tactile feedback. Alerts stay Material (see amendment).
 * Good: Android, desktop and web are untouched. `.adaptive` is a no-op there and the time-picker helper falls through to `showTimePicker`.
 * Good: The adaptive surface is small and centralised, so it is easy to test.
 * Bad: This is the first deliberate per-platform UI branching. It is the sanctioned exception, not an open door.
@@ -70,6 +70,20 @@ Navigation (bottom `NavigationBar`, `NavigationRail`, drawer, master/detail from
 ### Option C — Selective platform-adaptive layer
 * Good: Fixes the high-impact friction with low effort and near-zero Android risk, keeping one layout architecture.
 * Bad: Establishes a branching precedent that must be kept narrow.
+
+## Amendments
+
+**2026-06-05 — Alerts stay Material, `AlertDialog.adaptive` reverted.** The
+original decision adapted alerts via `AlertDialog.adaptive`. In practice that
+resolves to `CupertinoAlertDialog` on iOS, which broke two ways: dialogs with a
+`TextField` (publish-plan, rename-plan, new-plan) crashed with "No Material
+widget found" because the Cupertino frame gives the field no Material ancestor,
+and dialogs without input rendered a half-Cupertino look with mismatched
+Material action buttons. All call sites were switched back to a plain Material
+`AlertDialog`. The `showAdaptiveDialog` routing wrapper and `Switch.adaptive`
+are kept. Net effect: alerts are no longer part of the adaptive layer, which is
+consistent with the app being fully Material-themed. The rest of the decision
+(switches, time picker, drawer gesture, haptics) stands.
 
 ## Links
 
