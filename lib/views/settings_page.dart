@@ -236,7 +236,7 @@ class _AnalyticsConsentSettingsState extends State<AnalyticsConsentSettings> {
         const Divider(),
 
         // Analytics Consent Toggle
-        SwitchListTile(
+        SwitchListTile.adaptive(
           value: analyticsConsent,
           onChanged: (value) {
             setState(() {
@@ -364,7 +364,7 @@ class _NotificationSettingsWidgetState
         const SizedBox(height: 12.0),
 
         // Global Notifications Toggle
-        SwitchListTile(
+        SwitchListTile.adaptive(
           value: isNotificationsEnabled,
           onChanged: (value) {
             _saveNotificationPreference(enabled: value); // Save user preference
@@ -400,7 +400,7 @@ class _NotificationSettingsWidgetState
         ),
 
         // Full-Screen Intent Toggle
-        SwitchListTile(
+        SwitchListTile.adaptive(
           value: isFullScreenIntentEnabled,
           onChanged: isNotificationsEnabled
               ? (value) {
@@ -412,7 +412,7 @@ class _NotificationSettingsWidgetState
         ),
 
         // Play Sound Toggle
-        SwitchListTile(
+        SwitchListTile.adaptive(
           value: playSound,
           onChanged: isNotificationsEnabled
               ? (value) {
@@ -424,7 +424,7 @@ class _NotificationSettingsWidgetState
         ),
 
         // Vibrate Toggle
-        SwitchListTile(
+        SwitchListTile.adaptive(
           value: vibrateEnabled,
           onChanged: isNotificationsEnabled
               ? (value) {

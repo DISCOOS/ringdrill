@@ -242,10 +242,9 @@ class _ProgramViewState extends State<ProgramView> {
                 builder: (_) => CoordinatorScreen(uuid: exercise.uuid),
               );
             } else {
-              ContextSheet.of(context).show(
+              ContextSheet.of(
                 context,
-                ExerciseSheetTarget(exerciseUuid: exercise.uuid),
-              );
+              ).show(context, ExerciseSheetTarget(exerciseUuid: exercise.uuid));
             }
           },
         ),
@@ -645,7 +644,6 @@ class _ProgramOverview extends StatelessWidget {
     return stripped.isEmpty ? null : stripped;
   }
 }
-
 
 class ExerciseCard extends StatefulWidget {
   const ExerciseCard({
@@ -1262,7 +1260,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
                                     expandedExerciseUuid == uuid ? null : uuid;
                               });
                             },
-                            trailing: Switch(
+                            trailing: Switch.adaptive(
                               value: selected.contains(uuid),
                               onChanged: (bool? value) {
                                 setState(() {

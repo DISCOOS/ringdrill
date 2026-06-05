@@ -418,7 +418,7 @@ class _StationsViewState extends State<StationsView>
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: Text(l.filterShowOnMap, style: sectionLabelStyle),
                   ),
-                  SwitchListTile(
+                  SwitchListTile.adaptive(
                     value: _showStations,
                     title: Text(l.showStations),
                     onChanged: (value) {
@@ -426,7 +426,7 @@ class _StationsViewState extends State<StationsView>
                       setState(() => _showStations = value);
                     },
                   ),
-                  SwitchListTile(
+                  SwitchListTile.adaptive(
                     value: _showRoleplays,
                     title: Text(l.showRoleplays),
                     onChanged: (value) {
@@ -434,7 +434,7 @@ class _StationsViewState extends State<StationsView>
                       setState(() => _showRoleplays = value);
                     },
                   ),
-                  SwitchListTile(
+                  SwitchListTile.adaptive(
                     value: _showLabels,
                     title: Text(l.showLabels),
                     onChanged: (value) {
@@ -489,7 +489,7 @@ class _StationsViewState extends State<StationsView>
                       itemBuilder: (context, index) {
                         final ex = exercises[index];
                         final isVisible = !_hiddenExercises.contains(ex.uuid);
-                        return SwitchListTile(
+                        return SwitchListTile.adaptive(
                           value: isVisible,
                           title: Text(ex.name),
                           onChanged: (value) {
