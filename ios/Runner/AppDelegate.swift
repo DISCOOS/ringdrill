@@ -35,7 +35,7 @@ import flutter_local_notifications
       if url.scheme == "ringdrill", url.host == "import" {
         let fileManager = FileManager.default
         if let sharedURL = fileManager
-            .containerURL(forSecurityApplicationGroupIdentifier: "group.org.discoos.ringdrill")?
+            .containerURL(forSecurityApplicationGroupIdentifier: "group.app.ringdrill")?
             .appendingPathComponent("shared.drill") {
           if FileManager.default.fileExists(atPath: sharedURL.path) {
             methodChannel?.invokeMethod("onSharedFilePath", arguments: sharedURL.path)

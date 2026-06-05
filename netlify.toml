@@ -95,6 +95,13 @@
         Content-Type = "application/json; charset=utf-8"
         Cache-Control = "public, max-age=3600"
 
+# Apple Universal Links: the AASA file has no extension and MUST be JSON (ADR-0021)
+[[headers]]
+    for = "/.well-known/apple-app-site-association"
+    [headers.values]
+        Content-Type = "application/json"
+        Cache-Control = "public, max-age=3600"
+
 # Single Page App routing: deep links -> index.html
 [[redirects]]
     from = "/*"

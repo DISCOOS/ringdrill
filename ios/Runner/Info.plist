@@ -58,7 +58,7 @@
 				<string>Owner</string>
 				<key>LSItemContentTypes</key>
 				<array>
-					<string>org.discoos.ringdrill</string>
+					<string>app.ringdrill.drill</string>
 				</array>
 			</dict>
 		</array>
@@ -66,7 +66,7 @@
 		<array>
 			<dict>
 				<key>UTTypeIdentifier</key>
-				<string>org.discoos.ringdrill</string>
+				<string>app.ringdrill.drill</string>
 				<key>UTTypeDescription</key>
 				<string>Drill Plan</string>
 				<key>UTTypeConformsTo</key>
@@ -91,7 +91,7 @@
 		<array>
 			<dict>
 				<key>CFBundleURLName</key>
-				<string>org.discoos.ringdrill</string>
+				<string>app.ringdrill</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>ringdrill</string>
