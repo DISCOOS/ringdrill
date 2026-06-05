@@ -31,6 +31,13 @@ void main() {
   const fixture = '# H1\n\nbody [link](https://example.com) and `code`.';
   final lightTheme = BriefTheme.light();
 
+  // BriefMarkdown now owns its scroll position, TOC and heading keys through
+  // a BriefMarkdownController. Create a fresh one per test and dispose it so
+  // the leak tracker stays quiet.
+  late BriefMarkdownController controller;
+  setUp(() => controller = BriefMarkdownController());
+  tearDown(() => controller.dispose());
+
   Widget buildWidget({String? data}) {
     return MaterialApp(
       // _CodeChip pulls AppLocalizations for the snackbar message and the
@@ -44,7 +51,11 @@ void main() {
         body: SizedBox(
           width: 600,
           height: 800,
-          child: BriefMarkdown(data: data ?? fixture, theme: lightTheme),
+          child: BriefMarkdown(
+            data: data ?? fixture,
+            theme: lightTheme,
+            controller: controller,
+          ),
         ),
       ),
     );

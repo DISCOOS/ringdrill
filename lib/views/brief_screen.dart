@@ -62,7 +62,7 @@ class BriefScreen extends StatefulWidget {
 
 class _BriefScreenState extends State<BriefScreen> {
   BriefAudience _audience = BriefAudience.participant;
-  final TocController _tocController = TocController();
+  final BriefMarkdownController _briefController = BriefMarkdownController();
   bool _searchOpen = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -80,10 +80,8 @@ class _BriefScreenState extends State<BriefScreen> {
   // GlobalKey attached to the currently-highlighted match in the rendered
   // markdown (the <curr-mark> WidgetSpan child). On next/previous we use
   // it to call Scrollable.ensureVisible, scrolling the match into view.
-  // markdown_widget's ListView.builder is lazy, so the key's context will
-  // be null when the match sits far outside the cache extent — in that
-  // case the scroll silently no-ops and the counter still updates so the
-  // reader can scroll manually.
+  // BriefMarkdown renders an eager Column, so the key's context is present
+  // whenever a match exists; the scroll only no-ops before the first frame.
   final GlobalKey _currentMatchKey = GlobalKey();
 
   // Re-assigned when audience or layout changes so FutureBuilder re-runs.
@@ -164,7 +162,7 @@ class _BriefScreenState extends State<BriefScreen> {
 
   @override
   void dispose() {
-    _tocController.dispose();
+    _briefController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -586,8 +584,8 @@ class _BriefScreenState extends State<BriefScreen> {
     return '$base/brief/${widget.exerciseUuid}?audience=$audience';
   }
 
-  /// Opens a modal bottom sheet containing the same `TocWidget` shown in
-  /// the sidebar on wide screens. Tapping an entry jumps the document to
+  /// Opens a modal bottom sheet containing the same outline shown in the
+  /// sidebar on wide screens. Tapping an entry jumps the document to
   /// that heading and closes the sheet. Used by the floating TOC button
   /// that appears in narrow mode where there is no persistent sidebar.
   Future<void> _openTocSheet(AppLocalizations l10n, BriefTheme theme) async {
@@ -615,43 +613,39 @@ class _BriefScreenState extends State<BriefScreen> {
               ),
               Divider(height: 1, color: theme.borders.subtle),
               Expanded(
-                child: TocWidget(
-                  controller: _tocController,
-                  itemBuilder: (data) {
-                    final tag = data.toc.node.headingConfig.tag;
-                    final level = headingTag2Level[tag] ?? 1;
-                    // Outline starts at exercise (H2). H1 is the program
-                    // title — the document name, not a navigation target —
-                    // and H4+ are per-section metadata headings that the
-                    // sidebar deliberately collapses.
-                    if (level < 2 || level > 3) {
-                      return const SizedBox.shrink();
-                    }
-                    final label = data.toc.node.build().toPlainText();
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.only(
-                        left: 16.0 + 16.0 * (level - 1),
-                        right: 16,
-                      ),
-                      title: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: level <= 2
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: theme.text.body,
+                // Outline starts at exercise (H2). H1 is the program title —
+                // the document name, not a navigation target — and H4+ are
+                // per-section metadata headings the outline deliberately
+                // collapses.
+                child: ListView(
+                  children: [
+                    for (final toc in _briefController.tocList)
+                      if (_tocLevel(toc) >= 2 && _tocLevel(toc) <= 3)
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.only(
+                            left: 16.0 + 16.0 * (_tocLevel(toc) - 1),
+                            right: 16,
+                          ),
+                          title: Text(
+                            toc.node.build().toPlainText(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: _tocLevel(toc) <= 2
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: theme.text.body,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                          onTap: () {
+                            // ignore: discarded_futures
+                            _briefController.jumpToWidgetIndex(toc.widgetIndex);
+                            Navigator.of(sheetContext).pop();
+                          },
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                      ),
-                      onTap: () {
-                        _tocController.jumpToIndex(data.toc.widgetIndex);
-                        Navigator.of(sheetContext).pop();
-                      },
-                    );
-                  },
+                  ],
                 ),
               ),
             ],
@@ -662,7 +656,7 @@ class _BriefScreenState extends State<BriefScreen> {
   }
 
   /// Handles tap on a markdown link whose URL begins with `#`. Resolves
-  /// the anchor against the TocController's heading list (using the same
+  /// the anchor against the controller's heading list (using the same
   /// slug algorithm the renderer used to emit the link target) and
   /// scrolls the matching heading into view.
   ///
@@ -671,13 +665,14 @@ class _BriefScreenState extends State<BriefScreen> {
   /// Web triggers a full page reload that fails because the router does
   /// not recognise the fragment.
   void _onAnchorTap(String anchor) {
-    final tocList = _tocController.tocList;
+    final tocList = _briefController.tocList;
     if (tocList.isEmpty) return;
     final target = anchor.toLowerCase();
     for (final toc in tocList) {
       final headingText = toc.node.build().toPlainText();
       if (BriefRenderer.toAnchor(headingText) == target) {
-        _tocController.jumpToIndex(toc.widgetIndex);
+        // ignore: discarded_futures
+        _briefController.jumpToWidgetIndex(toc.widgetIndex);
         return;
       }
     }
@@ -685,9 +680,8 @@ class _BriefScreenState extends State<BriefScreen> {
 
   /// Schedules a post-frame scroll so the active `<curr-mark>` widget is
   /// brought into view. The markdown re-renders after setState, then the
-  /// callback fires once the widget tree has settled. If the match's
-  /// widget isn't in the render tree (markdown_widget's ListView.builder
-  /// hasn't built that index yet), `currentContext` is null and we no-op.
+  /// callback fires once the widget tree has settled. If the match's widget
+  /// isn't in the render tree yet, `currentContext` is null and we no-op.
   void _scheduleScrollToCurrentMatch() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = _currentMatchKey.currentContext;
@@ -720,74 +714,79 @@ class _BriefScreenState extends State<BriefScreen> {
             ),
             Divider(height: 1, color: theme.borders.subtle),
             Expanded(
-              child: TocWidget(
-                controller: _tocController,
-                itemBuilder: (data) {
-                  final isActive = data.index == data.currentIndex;
-                  final tag = data.toc.node.headingConfig.tag;
-                  final level = headingTag2Level[tag] ?? 1;
-                  // Outline starts at exercise (H2). H1 is the program
-                  // title — the document name, not a navigation target —
-                  // and H4+ are per-section metadata headings that the
-                  // sidebar deliberately collapses.
-                  if (level < 2 || level > 3) {
-                    return const SizedBox.shrink();
-                  }
-                  // The TocNode's own build() returns a TextSpan styled with
-                  // the heading's full h2/h3 typography (24/18 px). That is
-                  // far too big for a sidebar entry. Pull just the plain
-                  // text out and re-render it with a controlled compact
-                  // style — H2 entries are slightly bolder, H3 entries
-                  // sit in body color at the same size for visual nesting.
-                  final label = data.toc.node.build().toPlainText();
-                  final tocStyle = TextStyle(
-                    fontSize: 13,
-                    height: 1.4,
-                    fontWeight: level <= 2 ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive ? theme.text.heading : theme.text.body,
-                  );
-                  return GestureDetector(
-                    onTap: () {
-                      // refreshIndexCallback only updates the highlighted
-                      // entry in the sidebar; jumpToIndex is what actually
-                      // scrolls the markdown to that heading.
-                      _tocController.jumpToIndex(data.toc.widgetIndex);
-                      data.refreshIndexCallback(data.index);
-                    },
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 2,
-                          height: 20,
-                          color: isActive
-                              ? theme.accent.activeStripe
-                              : Colors.transparent,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              left: 8.0 + 12.0 * (level - 1),
-                              top: 4,
-                              bottom: 4,
-                              right: 8,
-                            ),
-                            child: Text(
-                              label,
-                              style: tocStyle,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              // Rebuilds on scroll so the active-heading highlight tracks the
+              // reading position. Outline starts at exercise (H2); H1 is the
+              // program title (not a navigation target) and H4+ are
+              // per-section metadata headings the sidebar collapses.
+              child: ListenableBuilder(
+                listenable: _briefController,
+                builder: (context, _) {
+                  final active = _briefController.activeWidgetIndex;
+                  return ListView(
+                    children: [
+                      for (final toc in _briefController.tocList)
+                        if (_tocLevel(toc) >= 2 && _tocLevel(toc) <= 3)
+                          _buildSidebarTocItem(toc, active, theme),
+                    ],
                   );
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Heading level (1–6) for a [Toc] entry, derived from its markdown tag.
+  int _tocLevel(Toc toc) => headingTag2Level[toc.node.headingConfig.tag] ?? 1;
+
+  /// A single wide-sidebar outline entry. The active heading (the one
+  /// scrolled to the top of the reading column) gets the accent stripe and
+  /// heading color; the rest sit in body color. The [Toc.node]'s own
+  /// `build()` returns a TextSpan in the heading's full h2/h3 typography
+  /// (24/18 px), which is far too big for a sidebar — we pull the plain text
+  /// and re-render it compact, with H2 entries slightly bolder than H3 for
+  /// visual nesting.
+  Widget _buildSidebarTocItem(Toc toc, int activeWidgetIndex, BriefTheme theme) {
+    final level = _tocLevel(toc);
+    final isActive = toc.widgetIndex == activeWidgetIndex;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        // ignore: discarded_futures
+        _briefController.jumpToWidgetIndex(toc.widgetIndex);
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 2,
+            height: 20,
+            color: isActive ? theme.accent.activeStripe : Colors.transparent,
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 8.0 + 12.0 * (level - 1),
+                top: 4,
+                bottom: 4,
+                right: 8,
+              ),
+              child: Text(
+                toc.node.build().toPlainText(),
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  fontWeight: level <= 2 ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive ? theme.text.heading : theme.text.body,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -800,22 +799,14 @@ class _BriefScreenState extends State<BriefScreen> {
   ) {
     return Stack(
       children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: theme.spacing.readingColumnMax,
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
-              child: BriefMarkdown(
-                data: markdown,
-                theme: theme,
-                tocController: _tocController,
-                currentMatchKey: _currentMatchKey,
-                onAnchorTap: _onAnchorTap,
-              ),
-            ),
-          ),
+        // The reading-column width clamp and gutter now live inside
+        // BriefMarkdown, which owns the scroll view + SelectionArea.
+        BriefMarkdown(
+          data: markdown,
+          theme: theme,
+          controller: _briefController,
+          currentMatchKey: _currentMatchKey,
+          onAnchorTap: _onAnchorTap,
         ),
         // Floating copy-markdown button at the top-right of the reading
         // column. Visible on every viewport.

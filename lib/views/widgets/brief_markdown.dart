@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:markdown/markdown.dart' as m;
 import 'package:markdown_widget/markdown_widget.dart';
@@ -236,21 +237,140 @@ class _CurrentHighlightNode extends ElementNode {
 }
 
 // ---------------------------------------------------------------------------
+// BriefMarkdownController
+// ---------------------------------------------------------------------------
+
+/// Owns the scroll position, table-of-contents list, and per-heading anchor
+/// keys for a [BriefMarkdown].
+///
+/// This replaces markdown_widget's `TocController`, which is wired only to
+/// that package's internal `ListView`. [BriefMarkdown] no longer uses
+/// `MarkdownWidget`: it renders an eager `Column` inside a single
+/// [SingleChildScrollView] so a [SelectionArea] can sit *inside* the
+/// scrollable (the layout Flutter requires to keep text selectable without
+/// tripping the `!_selectionStartsInScrollable` assertion — see
+/// https://github.com/flutter/flutter/issues/115787). Heading navigation is
+/// therefore driven by `Scrollable.ensureVisible` against per-heading
+/// [GlobalKey]s instead of `ListView` indices.
+class BriefMarkdownController extends ChangeNotifier {
+  BriefMarkdownController() {
+    scrollController.addListener(_handleScroll);
+  }
+
+  /// Drives the single scroll view that wraps the whole brief body.
+  final ScrollController scrollController = ScrollController();
+
+  // widgetIndex (Toc.widgetIndex / position in the generated widget list) ->
+  // the GlobalKey attached to that block. Stable across rebuilds so selection
+  // state and scroll targets survive re-renders.
+  final Map<int, GlobalKey> _headingKeys = {};
+
+  List<Toc> _tocList = const [];
+
+  /// The headings discovered in the most recent render, in document order.
+  List<Toc> get tocList => _tocList;
+
+  /// `widgetIndex` of the heading currently scrolled to the top of the
+  /// viewport (the last one whose top has passed the viewport top). `-1`
+  /// before the first scroll or when no heading is mounted.
+  int _activeWidgetIndex = -1;
+  int get activeWidgetIndex => _activeWidgetIndex;
+
+  /// Returns the stable key for the block at [widgetIndex], creating it on
+  /// first request. [BriefMarkdown] attaches these to heading blocks.
+  GlobalKey keyFor(int widgetIndex) =>
+      _headingKeys.putIfAbsent(widgetIndex, () => GlobalKey());
+
+  /// Replaces the cached TOC. No-op (and no notification) when the heading
+  /// set is unchanged, so the post-frame call from every [BriefMarkdown]
+  /// build doesn't churn listeners.
+  void updateToc(List<Toc> toc) {
+    if (_sameWidgetIndices(toc)) return;
+    _tocList = List.unmodifiable(toc);
+    final valid = toc.map((t) => t.widgetIndex).toSet();
+    _headingKeys.removeWhere((index, _) => !valid.contains(index));
+    notifyListeners();
+  }
+
+  bool _sameWidgetIndices(List<Toc> toc) {
+    if (toc.length != _tocList.length) return false;
+    for (var i = 0; i < toc.length; i++) {
+      if (toc[i].widgetIndex != _tocList[i].widgetIndex) return false;
+    }
+    return true;
+  }
+
+  /// Scrolls the heading at [widgetIndex] so it sits at [alignment] of the
+  /// viewport (0.0 = top). No-op when that heading isn't mounted.
+  Future<void> jumpToWidgetIndex(
+    int widgetIndex, {
+    double alignment = 0.0,
+  }) async {
+    final ctx = _headingKeys[widgetIndex]?.currentContext;
+    if (ctx == null) return;
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 200),
+      alignment: alignment,
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _handleScroll() {
+    if (_tocList.isEmpty || !scrollController.hasClients) return;
+    final offset = scrollController.offset;
+    var active = -1;
+    for (final toc in _tocList) {
+      final ro = _headingKeys[toc.widgetIndex]?.currentContext
+          ?.findRenderObject();
+      if (ro == null) continue;
+      final viewport = RenderAbstractViewport.maybeOf(ro);
+      if (viewport == null) continue;
+      // Scroll offset at which this heading reaches the viewport top.
+      final reveal = viewport.getOffsetToReveal(ro, 0.0).offset;
+      if (reveal <= offset + 4.0) {
+        active = toc.widgetIndex;
+      } else {
+        break;
+      }
+    }
+    if (active != _activeWidgetIndex) {
+      _activeWidgetIndex = active;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // BriefMarkdown
 // ---------------------------------------------------------------------------
 
-/// A thin wrapper around [MarkdownWidget] that applies a [BriefTheme] to
-/// every markdown node type via a fully populated [MarkdownConfig].
+/// Renders brief markdown as a selectable, scrollable reading surface styled
+/// entirely through [BriefTheme].
 ///
-/// All style decisions for the Brief reading surface flow through
-/// [BriefTheme]; no call site should reach into [MarkdownConfig] directly.
+/// Unlike markdown_widget's `MarkdownWidget` (which wraps its internal
+/// `ListView` in a `SelectionArea`), this builds the markdown into an eager
+/// `Column` via [MarkdownGenerator.buildWidgets] and places a single
+/// [SelectionArea] *inside* one [SingleChildScrollView]. That nesting keeps
+/// partial text selection working without the framework's
+/// `!_selectionStartsInScrollable` assertion firing on long-press scroll
+/// (https://github.com/flutter/flutter/issues/115787).
+///
+/// Scroll position, the table of contents and heading anchors are owned by a
+/// [BriefMarkdownController]; all style decisions flow through [BriefTheme].
 ///
 /// Usage:
 /// ```dart
 /// BriefMarkdown(
 ///   data: markdownString,
 ///   theme: BriefTheme.of(context),
-///   tocController: _tocController,
+///   controller: _briefController,
 /// )
 /// ```
 class BriefMarkdown extends StatelessWidget {
@@ -258,14 +378,14 @@ class BriefMarkdown extends StatelessWidget {
     super.key,
     required this.data,
     required this.theme,
-    this.tocController,
+    required this.controller,
     this.currentMatchKey,
     this.onAnchorTap,
   });
 
   final String data;
   final BriefTheme theme;
-  final TocController? tocController;
+  final BriefMarkdownController controller;
 
   /// Optional [GlobalKey] attached to the active search-match widget so
   /// callers can call `Scrollable.ensureVisible` against it. Only used when
@@ -285,62 +405,114 @@ class BriefMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarkdownWidget(
-      data: data,
-      tocController: tocController,
-      config: _buildConfig(),
-      markdownGenerator: MarkdownGenerator(
-        // Register HTML-like `<mark>` and `<curr-mark>` inline syntaxes so
-        // BriefScreen's search-highlight wrapping renders as styled spans
-        // instead of plain literal text.
-        inlineSyntaxList: [
-          _HighlightInlineSyntax(
-            tag: 'curr-mark',
-            pattern: r'<curr-mark>(.*?)</curr-mark>',
-          ),
-          _HighlightInlineSyntax(
-            tag: 'mark',
-            pattern: r'<mark>(.*?)</mark>',
-          ),
-        ],
-        generators: [
-          // Override default `<code>` rendering with the padded-chip
-          // generator defined above. Registering for the same tag replaces
-          // the package's built-in CodeNode generator cleanly.
-          SpanNodeGeneratorWithTag(
-            tag: MarkdownTag.code.name,
-            generator: (e, config, _) =>
-                _CodeChipNode(e.textContent, config.code),
-          ),
-          // Search highlight generators. `<mark>` paints the non-current
-          // matches as a flat-background TextSpan. `<curr-mark>` paints the
-          // active match as a WidgetSpan attached to [currentMatchKey] so
-          // BriefScreen can scroll to it.
-          SpanNodeGeneratorWithTag(
-            tag: 'mark',
-            generator: (e, config, visitor) =>
-                _HighlightNode(e.textContent, theme.searchHighlight.match),
-          ),
-          SpanNodeGeneratorWithTag(
-            tag: 'curr-mark',
-            generator: (e, config, visitor) {
-              final key = currentMatchKey;
-              if (key == null) {
-                // No scroll target requested — fall through to a flat
-                // backgroundColor like the non-current matches.
-                return _HighlightNode(
-                  e.textContent,
-                  theme.searchHighlight.current,
-                );
-              }
-              return _CurrentHighlightNode(
+    final generator = MarkdownGenerator(
+      // Register HTML-like `<mark>` and `<curr-mark>` inline syntaxes so
+      // BriefScreen's search-highlight wrapping renders as styled spans
+      // instead of plain literal text.
+      inlineSyntaxList: [
+        _HighlightInlineSyntax(
+          tag: 'curr-mark',
+          pattern: r'<curr-mark>(.*?)</curr-mark>',
+        ),
+        _HighlightInlineSyntax(
+          tag: 'mark',
+          pattern: r'<mark>(.*?)</mark>',
+        ),
+      ],
+      generators: [
+        // Override default `<code>` rendering with the padded-chip
+        // generator defined above. Registering for the same tag replaces
+        // the package's built-in CodeNode generator cleanly.
+        SpanNodeGeneratorWithTag(
+          tag: MarkdownTag.code.name,
+          generator: (e, config, _) =>
+              _CodeChipNode(e.textContent, config.code),
+        ),
+        // Search highlight generators. `<mark>` paints the non-current
+        // matches as a flat-background TextSpan. `<curr-mark>` paints the
+        // active match as a WidgetSpan attached to [currentMatchKey] so
+        // BriefScreen can scroll to it.
+        SpanNodeGeneratorWithTag(
+          tag: 'mark',
+          generator: (e, config, visitor) =>
+              _HighlightNode(e.textContent, theme.searchHighlight.match),
+        ),
+        SpanNodeGeneratorWithTag(
+          tag: 'curr-mark',
+          generator: (e, config, visitor) {
+            final key = currentMatchKey;
+            if (key == null) {
+              // No scroll target requested — fall through to a flat
+              // backgroundColor like the non-current matches.
+              return _HighlightNode(
                 e.textContent,
                 theme.searchHighlight.current,
-                key,
               );
-            },
+            }
+            return _CurrentHighlightNode(
+              e.textContent,
+              theme.searchHighlight.current,
+              key,
+            );
+          },
+        ),
+      ],
+    );
+
+    // Build the markdown into a flat widget list and capture the TOC in the
+    // same synchronous pass. `onTocList` fires during `buildWidgets`.
+    final toc = <Toc>[];
+    // Copy into a growable list: the generated list may be unmodifiable, and
+    // we replace heading entries with keyed wrappers below.
+    final widgets = List<Widget>.of(
+      generator.buildWidgets(
+        data,
+        config: _buildConfig(),
+        onTocList: (list) {
+          toc
+            ..clear()
+            ..addAll(list);
+        },
+      ),
+    );
+
+    // Attach the controller's stable keys to heading blocks so TOC taps,
+    // anchor links and active-heading tracking can target them.
+    for (final entry in toc) {
+      final i = entry.widgetIndex;
+      if (i < 0 || i >= widgets.length) continue;
+      widgets[i] = KeyedSubtree(key: controller.keyFor(i), child: widgets[i]);
+    }
+
+    // Surface the captured TOC to the controller after the frame so we never
+    // notify listeners during build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.updateToc(toc);
+    });
+
+    return Scrollbar(
+      controller: controller.scrollController,
+      child: SingleChildScrollView(
+        controller: controller.scrollController,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: theme.spacing.readingColumnMax,
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+              // SelectionArea sits *inside* the scroll view, wrapping the
+              // non-scrolling Column. See class doc / issue #115787.
+              child: SelectionArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widgets,
+                ),
+              ),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
