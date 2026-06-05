@@ -1,6 +1,6 @@
 # Prompt — Dynamic Type step 5 + measurement (ADR-0037)
 
-Implements the clamp from [ADR-0037](docs/adrs/0037-clamp-text-scaling.md) and
+Implements the clamp from [ADR-0037](docs/adrs/0037-text-sizing-and-legibility.md) and
 then measures, so we can decide on per-widget fixes afterwards. Do not fix any
 fixed-height widget in this prompt. The point of the measurement part is to
 learn what still breaks at 1.3, not to fix it.
