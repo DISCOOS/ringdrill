@@ -13,6 +13,7 @@ import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -199,12 +200,22 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                 Positioned(
                   right: 16,
                   bottom: 16,
-                  child: FloatingActionButton.extended(
-                    heroTag: null,
-                    onPressed: () => _controller.openCreateRolePlay(context),
-                    icon: const Icon(Icons.add),
-                    label: Text(localizations.newPlay),
-                  ),
+                  child:
+                      WindowSizeClass.of(context) == WindowSizeClass.compact
+                      ? FloatingActionButton(
+                          heroTag: null,
+                          tooltip: localizations.newPlay,
+                          onPressed: () =>
+                              _controller.openCreateRolePlay(context),
+                          child: const Icon(Icons.add),
+                        )
+                      : FloatingActionButton.extended(
+                          heroTag: null,
+                          onPressed: () =>
+                              _controller.openCreateRolePlay(context),
+                          icon: const Icon(Icons.add),
+                          label: Text(localizations.newPlay),
+                        ),
                 ),
             ],
           ),

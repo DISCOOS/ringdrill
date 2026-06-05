@@ -22,6 +22,7 @@ import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
@@ -1155,11 +1156,23 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // produced the "multiple heroes that share the same tag" assertion seen
     // when bouncing between /program and /stations. Disabling the Hero wrapper
     // entirely is the safe fix.
+    final label = AppLocalizations.of(context)!.newExercise;
+    // On a phone the extended FAB is wide enough to cover the bottom list
+    // rows. Use the compact circular FAB there and keep the labelled extended
+    // variant only where there is room (medium/expanded).
+    if (WindowSizeClass.of(context) == WindowSizeClass.compact) {
+      return FloatingActionButton(
+        heroTag: null,
+        onPressed: () => _navigateToCreateExercise(context),
+        tooltip: label,
+        child: const Icon(Icons.add),
+      );
+    }
     return FloatingActionButton.extended(
       heroTag: null,
       onPressed: () => _navigateToCreateExercise(context),
       icon: const Icon(Icons.add),
-      label: Text(AppLocalizations.of(context)!.newExercise),
+      label: Text(label),
     );
   }
 

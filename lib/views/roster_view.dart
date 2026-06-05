@@ -8,6 +8,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 
 // ---------------------------------------------------------------------------
 // Controller
@@ -31,9 +32,19 @@ class RosterController extends ScreenController {
 
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {
+    final label = AppLocalizations.of(context)!.newActor;
+    // Compact circular FAB on phones so the labelled bar does not cover the
+    // bottom list rows; keep the extended variant on medium/expanded.
+    if (WindowSizeClass.of(context) == WindowSizeClass.compact) {
+      return FloatingActionButton(
+        tooltip: label,
+        onPressed: () => _openCreate(context),
+        child: const Icon(Icons.add),
+      );
+    }
     return FloatingActionButton.extended(
       icon: const Icon(Icons.add),
-      label: Text(AppLocalizations.of(context)!.newActor),
+      label: Text(label),
       onPressed: () => _openCreate(context),
     );
   }
