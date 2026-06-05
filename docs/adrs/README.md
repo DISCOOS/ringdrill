@@ -44,6 +44,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0034 | [Centralise numbering in one module and make number formats configurable per plan](./0034-configurable-numbering-formats.md) | Accepted |
 | ADR-0035 | [Give exercises an explicit order field and user-driven reordering](./0035-exercise-ordering.md) | Accepted |
 | ADR-0036 | [Extract a shared reorder section and let stations be reordered in the Stations segment and coordinator](./0036-shared-reorder-and-station-ordering.md) | Proposed |
+| ADR-0037 | [Clamp the app-wide text scale factor to a maximum of 1.3](./0037-clamp-text-scaling.md) | Accepted |
 
 ## When to write an ADR
 
