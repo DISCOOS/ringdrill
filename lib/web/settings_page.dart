@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/settings_page.dart'
     show AnalyticsConsentSettings, AppUserRoleSettings;
-import 'package:ringdrill/web/pwa_update_web.dart'
-    show forcePwaUpdate;
+import 'package:ringdrill/web/pwa_update_web.dart' show forcePwaUpdate;
 
 import 'mobile_app_nudge.dart';
 
@@ -65,9 +64,9 @@ class _ForceUpdateTile extends StatelessWidget {
     BuildContext context,
     AppLocalizations localizations,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AlertDialog.adaptive(
         title: Text(localizations.forceUpdateConfirmTitle),
         content: Text(localizations.forceUpdateConfirmBody),
         actions: [

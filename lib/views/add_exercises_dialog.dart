@@ -271,9 +271,9 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
       return selectedUuids;
     }
 
-    final apply = await showDialog<bool>(
+    final apply = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AlertDialog.adaptive(
         title: Text(localizations.confirmChangesTitle),
         content: SizedBox(
           width: 520,

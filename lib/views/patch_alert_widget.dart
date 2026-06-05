@@ -40,10 +40,10 @@ class _PatchAlertWidgetState extends State<PatchAlertWidget> {
         status = next;
         switch (status) {
           case UpdateStatus.restartRequired:
-            showDialog(
+            showAdaptiveDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => AlertDialog(
+              builder: (context) => AlertDialog.adaptive(
                 title: Text(localizations.updateRequired),
                 content: Text(localizations.restartAppToApplyNewPatch),
                 actions: [

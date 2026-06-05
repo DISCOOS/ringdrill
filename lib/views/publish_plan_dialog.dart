@@ -38,17 +38,16 @@ Future<PublishPlanInput?> showPublishPlanDialog(
   required Program program,
   required PublishDialogMode mode,
 }) {
-  final initialSlug = program.source.whenOrNull(
+  final initialSlug =
+      program.source.whenOrNull(
         catalog: (slug, latestEtag, installedAt) => slug,
       ) ??
       sanitizeSlug(program.name);
 
-  return showDialog<PublishPlanInput>(
+  return showAdaptiveDialog<PublishPlanInput>(
     context: context,
-    builder: (context) => _PublishPlanDialog(
-      mode: mode,
-      initialSlug: initialSlug,
-    ),
+    builder: (context) =>
+        _PublishPlanDialog(mode: mode, initialSlug: initialSlug),
   );
 }
 
@@ -102,7 +101,7 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
       PublishDialogMode.publishAs => localizations.libraryPublishAsBody,
     };
     final canSubmit = _sanitizedSlug.isNotEmpty;
-    return AlertDialog(
+    return AlertDialog.adaptive(
       title: Text(title),
       content: SizedBox(
         width: 480,

@@ -1577,11 +1577,11 @@ class _MainScreenState extends State<MainScreen>
         final localizations = AppLocalizations.of(context)!;
         // Show a dialog asking the user to provide consent
         final consent =
-            await showDialog(
+            await showAdaptiveDialog(
                   context: context,
                   // Prevent closing without taking action
                   barrierDismissible: false,
-                  builder: (context) => AlertDialog(
+                  builder: (context) => AlertDialog.adaptive(
                     title: Text(localizations.appAnalyticsConsent),
                     content: Text(
                       [

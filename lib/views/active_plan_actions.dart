@@ -30,9 +30,9 @@ Future<void> openPlan(BuildContext context) => showOpenPlanDialog(context);
 Future<void> renamePlan(BuildContext context, Program program) async {
   final localizations = AppLocalizations.of(context)!;
   final controller = TextEditingController(text: program.name);
-  final name = await showDialog<String>(
+  final name = await showAdaptiveDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => AlertDialog.adaptive(
       title: Text(localizations.libraryRename),
       content: TextField(
         controller: controller,
@@ -487,9 +487,9 @@ Future<String?> _promptPlanName(
   AppLocalizations localizations,
 ) async {
   final controller = TextEditingController();
-  final name = await showDialog<String>(
+  final name = await showAdaptiveDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => AlertDialog.adaptive(
       title: Text(localizations.newPlanNamePrompt),
       content: TextField(
         controller: controller,

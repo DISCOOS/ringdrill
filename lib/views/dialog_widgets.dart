@@ -8,9 +8,9 @@ Future<bool> confirmDestructive(
   required String message,
   required String confirmLabel,
 }) async {
-  return await showDialog<bool>(
+  return await showAdaptiveDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => AlertDialog.adaptive(
           title: Text(title),
           content: Text(message),
           actions: [

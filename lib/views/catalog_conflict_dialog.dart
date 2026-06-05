@@ -11,10 +11,10 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
   bool remoteUnchanged = false,
 }) async {
   final localizations = AppLocalizations.of(context)!;
-  final choice = await showDialog<CatalogConflictChoice>(
+  final choice = await showAdaptiveDialog<CatalogConflictChoice>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => AlertDialog(
+    builder: (context) => AlertDialog.adaptive(
       title: Text(localizations.catalogConflictTitle),
       content: SizedBox(
         width: 520,

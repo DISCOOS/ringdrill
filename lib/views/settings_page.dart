@@ -105,9 +105,7 @@ class _AppUserRoleSettingsState extends State<AppUserRoleSettings> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Radio<AppUserRole>(
-                  value: AppUserRole.director,
-                ),
+                leading: const Radio<AppUserRole>(value: AppUserRole.director),
                 title: Text(l10n.briefAudienceDirector),
                 onTap: () => _save(AppUserRole.director),
               ),
@@ -164,9 +162,9 @@ class _AnalyticsConsentSettingsState extends State<AnalyticsConsentSettings> {
     if (mounted) {
       final localization = AppLocalizations.of(context)!;
       // Show a confirmation message to the user
-      showDialog(
+      showAdaptiveDialog(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => AlertDialog.adaptive(
           title: Text(
             consent
                 ? localization.analyticsEnabled
