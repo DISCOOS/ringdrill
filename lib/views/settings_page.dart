@@ -167,7 +167,7 @@ class _AnalyticsConsentSettingsState extends State<AnalyticsConsentSettings> {
       // Show a confirmation message to the user
       showAdaptiveDialog(
         context: context,
-        builder: (context) => AlertDialog.adaptive(
+        builder: (context) => AlertDialog(
           title: Text(
             consent
                 ? localization.analyticsEnabled

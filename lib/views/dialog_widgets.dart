@@ -10,7 +10,7 @@ Future<bool> confirmDestructive(
 }) async {
   return await showAdaptiveDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog.adaptive(
+        builder: (context) => AlertDialog(
           title: Text(title),
           content: Text(message),
           actions: [

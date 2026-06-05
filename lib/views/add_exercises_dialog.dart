@@ -273,7 +273,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 
     final apply = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog.adaptive(
+      builder: (context) => AlertDialog(
         title: Text(localizations.confirmChangesTitle),
         content: SizedBox(
           width: 520,

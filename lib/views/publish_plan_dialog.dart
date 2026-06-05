@@ -101,7 +101,7 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
       PublishDialogMode.publishAs => localizations.libraryPublishAsBody,
     };
     final canSubmit = _sanitizedSlug.isNotEmpty;
-    return AlertDialog.adaptive(
+    return AlertDialog(
       title: Text(title),
       content: SizedBox(
         width: 480,

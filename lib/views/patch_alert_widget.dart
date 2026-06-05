@@ -43,7 +43,7 @@ class _PatchAlertWidgetState extends State<PatchAlertWidget> {
             showAdaptiveDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => AlertDialog.adaptive(
+              builder: (context) => AlertDialog(
                 title: Text(localizations.updateRequired),
                 content: Text(localizations.restartAppToApplyNewPatch),
                 actions: [

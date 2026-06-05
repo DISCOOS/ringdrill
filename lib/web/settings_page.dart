@@ -66,7 +66,7 @@ class _ForceUpdateTile extends StatelessWidget {
   ) async {
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog.adaptive(
+      builder: (dialogContext) => AlertDialog(
         title: Text(localizations.forceUpdateConfirmTitle),
         content: Text(localizations.forceUpdateConfirmBody),
         actions: [

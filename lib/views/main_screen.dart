@@ -1595,7 +1595,7 @@ class _MainScreenState extends State<MainScreen>
                   context: context,
                   // Prevent closing without taking action
                   barrierDismissible: false,
-                  builder: (context) => AlertDialog.adaptive(
+                  builder: (context) => AlertDialog(
                     title: Text(localizations.appAnalyticsConsent),
                     content: Text(
                       [

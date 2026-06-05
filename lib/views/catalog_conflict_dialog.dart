@@ -14,7 +14,7 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
   final choice = await showAdaptiveDialog<CatalogConflictChoice>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => AlertDialog.adaptive(
+    builder: (context) => AlertDialog(
       title: Text(localizations.catalogConflictTitle),
       content: SizedBox(
         width: 520,
