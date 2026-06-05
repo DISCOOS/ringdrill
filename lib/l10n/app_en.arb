@@ -496,14 +496,6 @@
   "@noExercisesYet": {
     "description": "Message"
   },
-  "teamRotations": "Team rotations",
-  "@teamRotations": {
-    "description": "Label for list of team rotations"
-  },
-  "stationRotations": "Rotation on stations",
-  "@stationRotations": {
-    "description": "Label for list of rotations on each station"
-  },
   "save": "SAVE",
   "@save": {
     "description": "Button"

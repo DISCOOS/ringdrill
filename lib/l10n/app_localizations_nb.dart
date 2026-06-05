@@ -478,12 +478,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get noExercisesYet => 'Ingen øvelser ennå!';
 
   @override
-  String get teamRotations => 'Lagrullering';
-
-  @override
-  String get stationRotations => 'Postrullering';
-
-  @override
   String get save => 'LAGRE';
 
   @override

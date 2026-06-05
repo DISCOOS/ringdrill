@@ -480,7 +480,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         ButtonSegment<_CoordinatorView>(
           value: _CoordinatorView.stations,
           label: Text(
-            '${localizations.stationRotations}'
+            '${localizations.stationsTab}'
             ' (${_exercise!.stations.length})',
           ),
           icon: const Icon(Icons.location_on),
@@ -488,7 +488,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         ButtonSegment<_CoordinatorView>(
           value: _CoordinatorView.teams,
           label: Text(
-            '${localizations.teamRotations}'
+            '${localizations.team(_exercise!.numberOfTeams)}'
             ' (${_exercise!.numberOfTeams})',
           ),
           icon: const Icon(Icons.group),
@@ -507,8 +507,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       },
     );
     // Two segments comfortably fit and stay centered. The three-segment
-    // (single-column) variant can exceed a narrow phone's width once the
-    // rotation labels carry their counts, so wrap it in a horizontal
+    // (single-column) variant can still exceed a narrow phone's width once
+    // the labels carry their counts, so wrap it in a horizontal
     // scroll view whose content is forced to at least the viewport width:
     // it centers when it fits and scrolls instead of overflowing when it
     // does not.

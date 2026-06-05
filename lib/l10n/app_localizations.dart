@@ -830,18 +830,6 @@ abstract class AppLocalizations {
   /// **'No exercises yet!'**
   String get noExercisesYet;
 
-  /// Label for list of team rotations
-  ///
-  /// In en, this message translates to:
-  /// **'Team rotations'**
-  String get teamRotations;
-
-  /// Label for list of rotations on each station
-  ///
-  /// In en, this message translates to:
-  /// **'Rotation on stations'**
-  String get stationRotations;
-
   /// Button
   ///
   /// In en, this message translates to:

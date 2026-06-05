@@ -212,6 +212,7 @@ Roster holds real people, so the whole tab is the stripped-on-publish PII layer.
 * **Roster** (`nb` "Bemanning") is the new tab and the people layer. "Roster" is not the literal translation of "bemanning" (that is "staffing" or "manning"), but it reads better as a label and is continuous with the "cast roster" already used in [DESIGN-003](./roleplays-tab.md) for the list of `Actor` records, which this tab promotes to a destination. The earlier "ikke Bemanning" note in [[feedback_roleplay_actor_terminology]] rejected "Bemanning" only as a name for the markør role list, which still holds.
 * **Spill** (`en` "Script") is the third Program-tab segment — the publishable scenario layer. **Markører** stays the name of the role list *inside* the Spill segment. The segment is no longer called Markører to leave room for `SilentWitness` as a future second scenario element. This doc uses "Spill segment" for the segment itself and "the Markører role list" or "Markørrolle" for the content entity.
 * Code and English prose keep `RolePlay` / `Actor` / `Station` / `Team`. No `Person` or `RolePlayer` in the model layer.
+* **Team** is the segment's design and code name. Its `nb` label renders as "Lag" (from the `team` localization key), not "Team", so the Norwegian UI reads "Lag" here and wherever a team is named. This is intentional, not a bug. The coordinator view selector reuses the same `stationsTab` / `team(count)` labels so the Norwegian UI is consistent ("Poster" / "Lag") across the Program tab and the coordinator.
 
 ## Relationship to other designs
 

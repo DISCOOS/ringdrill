@@ -481,12 +481,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noExercisesYet => 'No exercises yet!';
 
   @override
-  String get teamRotations => 'Team rotations';
-
-  @override
-  String get stationRotations => 'Rotation on stations';
-
-  @override
   String get save => 'SAVE';
 
   @override
