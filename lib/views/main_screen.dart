@@ -829,6 +829,38 @@ class _MainScreenState extends State<MainScreen>
         // it here for the compact layout so the bottom-nav Map tab also goes
         // chrome-free at the top. Every other tab keeps its AppBar.
         final isMapTab = _currentTab == 1;
+        final scaffoldBody = Stack(
+          fit: StackFit.expand,
+          children: [
+            useRail
+                ? _buildNavRail(
+                    context,
+                    constraints,
+                    localizations,
+                    page,
+                    windowSizeClass,
+                  )
+                : SafeArea(
+                    child:
+                        // Keep all tabs in memory allowing
+                        // state to persist between tab switches
+                        IndexedStack(
+                          key: _indexedTabsKey,
+                          index: _currentTab,
+                          children: _pages,
+                        ),
+                  ),
+            shellSentinel,
+          ],
+        );
+        final body = isMapTab
+            ? AnnotatedRegion<SystemUiOverlayStyle>(
+                value: Theme.of(context).brightness == Brightness.dark
+                    ? SystemUiOverlayStyle.light
+                    : SystemUiOverlayStyle.dark,
+                child: scaffoldBody,
+              )
+            : scaffoldBody;
         return ContextSheet(
           controller: _contextSheetController,
           child: Scaffold(
@@ -848,30 +880,7 @@ class _MainScreenState extends State<MainScreen>
             // 0x0 and the visible Positioned.fill child has nothing to
             // fill. Result: tabs render fine but at zero size, so the UI
             // looks completely empty even though no exception is thrown.
-            body: Stack(
-              fit: StackFit.expand,
-              children: [
-                useRail
-                    ? _buildNavRail(
-                        context,
-                        constraints,
-                        localizations,
-                        page,
-                        windowSizeClass,
-                      )
-                    : SafeArea(
-                        child:
-                            // Keep all tabs in memory allowing
-                            // state to persist between tab switches
-                            IndexedStack(
-                              key: _indexedTabsKey,
-                              index: _currentTab,
-                              children: _pages,
-                            ),
-                      ),
-                shellSentinel,
-              ],
-            ),
+            body: body,
             floatingActionButton: useRail
                 ? null
                 : page.controller.buildFAB(context, constraints),
