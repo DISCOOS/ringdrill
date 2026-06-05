@@ -49,6 +49,11 @@
 		<false/>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>RingDrill uses your location only when you tap the "locate me" button on the map to centre the view on your current position.</string>
+		<!-- RingDrill imports a .drill into its library (a copy); it does not
+		     edit the original file at its source, so opening in place is NO.
+		     Apple requires this key whenever CFBundleDocumentTypes is declared. -->
+		<key>LSSupportsOpeningDocumentsInPlace</key>
+		<false/>
 		<key>CFBundleDocumentTypes</key>
 		<array>
 			<dict>
