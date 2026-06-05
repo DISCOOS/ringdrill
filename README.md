@@ -53,15 +53,18 @@ To get started with developing for RingDrill using Flutter, follow these steps:
    ```
 
 6. **Create Release Builds**:  
-   For generating an Android release build using Shorebird, execute:
+   For generating a release build using Shorebird, execute (iOS requires a
+   macOS host with Xcode and signing configured per ADR-0021):
    ```bash
    make release-android
+   make release-ios
    ```
 
-7. **Patch Android Builds** (*Optional*):  
-   If deploying incremental patch updates for Android, run:
+7. **Patch Builds** (*Optional*):  
+   If deploying incremental code-push patch updates, run:
    ```bash
    make patch-android
+   make patch-ios
    ```
 
 8. **Cut a Release Tag**:

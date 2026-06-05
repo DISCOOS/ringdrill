@@ -95,7 +95,7 @@ When adding tests, prefer pure-Dart unit tests against `models/`, `data/` and `u
 ## Build and release
 
 * Android release builds go through Shorebird (`make release-android`). The commented `flutter build appbundle` block in the Makefile is the manual fallback.
-* iOS releases use the standard `flutter build ipa` flow plus Xcode signing in `ios/`. There is no Makefile target for this yet.
+* iOS release builds go through Shorebird (`make release-ios`, with `make patch-ios` for code-push patches), mirroring the Android targets. They run only on a macOS host with Xcode and rely on the signing configured in `ios/Runner.xcodeproj` (DISCOOS team, `app.ringdrill`, automatic — see [ADR-0021](./adrs/0021-ios-bundle-identifier-app-ringdrill.md)). Shorebird drives `flutter build ipa` under the hood.
 * Web is built by Netlify on every push to the configured branch using `netlify.toml`. The `flutter_service_worker.js` and `index.html` are served `no-cache`; everything else under `assets/`, `canvaskit/` and `main.dart.js` is immutable.
 * `.drill` files served by Netlify are forced to `Content-Disposition: attachment` with the custom MIME type. Do not change this without also updating the share/import handlers in `lib/data/drill_file.dart` and `lib/views/shared_file_widget.dart`.
 * The Shorebird `app_id` in `shorebird.yaml` is public and safe to commit. `sentry.properties` is gitignored and must not be committed.

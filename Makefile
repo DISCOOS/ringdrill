@@ -2,6 +2,7 @@
 	build watch release \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
+	release-ios patch-ios \
 	release-tag \
 	require-clean-tree \
 	netlify-dev catalog-seed catalog-feed catalog-reset
@@ -138,6 +139,33 @@ release-android: require-clean-tree
 
 patch-android: require-clean-tree
 	shorebird patch android -- \
+		--obfuscate \
+		--split-debug-info=build/debug-info \
+		$(DART_DEFINE_GIT)
+	dart run sentry_dart_plugin
+
+# iOS release/patch via Shorebird, mirroring the Android targets above:
+# same require-clean-tree gate, same --obfuscate / --split-debug-info /
+# git dart-defines, same sentry_dart_plugin run afterwards (uploads the
+# iOS dSYMs in addition to Android symbols).
+#
+# Unlike Android these only run on a macOS host with Xcode, and code
+# signing must already be configured in ios/Runner.xcodeproj (DISCOOS
+# team, app.ringdrill, automatic signing — see ADR-0021). Shorebird drives
+# `flutter build ipa` under the hood and signs with that configuration.
+#
+# `shorebird release ios` produces build/ios/ipa/*.ipa for App Store
+# Connect; `shorebird patch ios` ships a code-push patch to the matching
+# released version.
+release-ios: require-clean-tree
+	shorebird release ios -- \
+		--obfuscate \
+		--split-debug-info=build/debug-info \
+		$(DART_DEFINE_GIT)
+	dart run sentry_dart_plugin
+
+patch-ios: require-clean-tree
+	shorebird patch ios -- \
 		--obfuscate \
 		--split-debug-info=build/debug-info \
 		$(DART_DEFINE_GIT)
