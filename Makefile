@@ -5,7 +5,7 @@
 	release-ios patch-ios \
 	release-tag \
 	require-clean-tree \
-	netlify-dev catalog-seed catalog-feed catalog-reset
+	netlify-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
 .SILENT: \
 	build watch release
@@ -189,6 +189,25 @@ catalog-seed:
 	RINGDRILL_BASE_URL=$(LOCAL_BASE_URL) \
 	RINGDRILL_ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) \
 	dart run bin/ringdrill.dart upload $(SEED_DRILL) --published
+
+# Seed the local catalog with the two store-screenshot demo plans (slugs
+# `demo-no` and `demo-en`), so they can be opened straight from the in-app
+# catalog instead of importing a file by hand. Requires `make netlify-dev`
+# running in another shell, and the app started with
+# `--dart-define=RINGDRILL_LOCAL_BASE_URL=$(LOCAL_BASE_URL)` so it talks to
+# the local backend. Regenerate the files first with
+# `python3 tools/screenshots/make_demo_drills.py` if they are missing.
+DEMO_DRILLS := tools/screenshots/demo-no.drill tools/screenshots/demo-en.drill
+catalog-seed-demos:
+	@for f in $(DEMO_DRILLS); do \
+		test -f $$f || { echo "Missing $$f. Run: python3 tools/screenshots/make_demo_drills.py"; exit 1; }; \
+	done
+	@for f in $(DEMO_DRILLS); do \
+		echo "Uploading $$f ..."; \
+		RINGDRILL_BASE_URL=$(LOCAL_BASE_URL) \
+		RINGDRILL_ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) \
+		dart run bin/ringdrill.dart upload $$f --published || exit 1; \
+	done
 
 catalog-feed:
 	RINGDRILL_BASE_URL=$(LOCAL_BASE_URL) \

@@ -183,13 +183,13 @@ def main():
             exercise(nid(), "Søk langs linjer (ringøvelse)", 11, 30, 4, 6, 15, 10, 5, NO_E2),
             exercise(nid(), "Søk i areal (fullskala)", 15, 0, 1, 1, 90, 0, 0, NO_E3),
             exercise(nid(), "Henteoppdrag (fullskala)", 17, 0, 2, 2, 60, 15, 5, NO_E4),
-            exercise(nid(), "Avsluttende øvelse (fullskala)", 20, 30, 1, 4, 45, 10, 5, NO_E5),
+            exercise(nid(), "Avsluttende øvelse (fullskala)", 20, 0, 1, 3, 45, 10, 5, NO_E5),
         ],
     )
     build(
         "demo-en.drill",
         nid(),
-        "Search and Rescue – Training Weekend",
+        "SAR – Training Weekend",
         "A weekend of land search-and-rescue training for four teams. The plan builds from initial response and search methods in ring drills to full-scale tasks and a final, integrated exercise. Based on the Norwegian HRS guide for searching for missing persons on land.",
         [(nid(), "Team 1"), (nid(), "Team 2"), (nid(), "Team 3"), (nid(), "Team 4")],
         [
@@ -199,7 +199,7 @@ def main():
             exercise(nid(), "Linear search (ring drill)", 11, 30, 4, 6, 15, 10, 5, EN_E2),
             exercise(nid(), "Area search (full-scale)", 15, 0, 1, 1, 90, 0, 0, EN_E3),
             exercise(nid(), "Casualty pickup (full-scale)", 17, 0, 2, 2, 60, 15, 5, EN_E4),
-            exercise(nid(), "Final exercise (full-scale)", 20, 30, 1, 4, 45, 10, 5, EN_E5),
+            exercise(nid(), "Final exercise (full-scale)", 20, 0, 1, 3, 45, 10, 5, EN_E5),
         ],
     )
 
