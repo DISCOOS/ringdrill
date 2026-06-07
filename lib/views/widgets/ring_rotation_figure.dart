@@ -86,13 +86,6 @@ class _RingRotationFigurePainter extends CustomPainter {
     [171.7, 76.5],
   ];
 
-  // Team chip rects (SVG coords): Arc1/Lag1, Arc2/Lag3, Arc3/Lag2.
-  static const List<Rect> _chipRects = [
-    Rect.fromLTWH(174.0, 56.0, 40.0, 18.0),
-    Rect.fromLTWH(100.0, 185.0, 40.0, 18.0),
-    Rect.fromLTWH(26.0, 56.0, 40.0, 18.0),
-  ];
-
   @override
   bool shouldRepaint(covariant _RingRotationFigurePainter old) =>
       old.colorScheme != colorScheme ||
@@ -205,20 +198,37 @@ class _RingRotationFigurePainter extends CustomPainter {
       ..color = colorScheme.secondary
       ..style = PaintingStyle.fill;
 
-    for (int i = 0; i < _chipRects.length; i++) {
-      final rect = _chipRects[i];
+    // Chips sit centred on the midpoint of each rotation arc, on the ring
+    // itself (radius _r), so they cover the arrow they belong to and read as
+    // "this team is on its way along this arrow". Drawn last, so they paint
+    // over the arc stroke. Width follows the label so longer localized team
+    // names do not overflow the pill.
+    for (int i = 0; i < _arcs.length; i++) {
+      final midRad = (_arcs[i][0] + _arcs[i][1] / 2) * math.pi / 180;
+      final center = Offset(
+        _cx + _r * math.cos(midRad),
+        _cy + _r * math.sin(midRad),
+      );
+      final tp = TextPainter(
+        text: TextSpan(
+          text: chipLabels[i],
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSecondary,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final chipW = math.max(40.0, tp.width + 14);
+      final rect = Rect.fromCenter(center: center, width: chipW, height: 18);
       canvas.drawRRect(
         RRect.fromRectAndRadius(rect, const Radius.circular(9)),
         fillPaint,
       );
-      _paintCenteredText(
+      tp.paint(
         canvas,
-        chipLabels[i],
-        center: rect.center,
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        color: colorScheme.onSecondary,
-        maxWidth: rect.width,
+        Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
       );
     }
   }
