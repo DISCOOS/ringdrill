@@ -134,6 +134,8 @@ flutter:
     - shorebird.yaml
     - assets/templates/ringdrill-standard-v1.nb.md.mustache
     - assets/templates/ringdrill-standard-v1.en.md.mustache
+    - assets/example/onboarding-example.nb.drill
+    - assets/example/onboarding-example.en.drill
 
 sentry:
   upload_sources: true
