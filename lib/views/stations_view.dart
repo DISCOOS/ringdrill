@@ -266,8 +266,12 @@ class _StationsViewState extends State<StationsView>
             showLabels: _showLabels,
             clusterStyles: {
               'markers': MapClusterStyle(
-                color: scheme.primaryContainer,
-                onColor: scheme.onPrimaryContainer,
+                // Reuse the FABs' tonal overlay palette so the count badge
+                // reads as the same "tool over the map" family in both light
+                // and dark mode — neutral fill, high-contrast number, no loud
+                // edge. (primaryContainer was too pale; solid primary too loud.)
+                color: MapCommandEmphasis.tonal.background(scheme),
+                onColor: MapCommandEmphasis.tonal.foreground(scheme),
                 // A group goes live (orange) when any station inside it is
                 // the one a team is currently at, matching the live accent
                 // used for active stations in the player.

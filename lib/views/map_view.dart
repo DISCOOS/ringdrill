@@ -998,7 +998,11 @@ class _MapViewState<K> extends State<MapView<K>> {
     final style = widget.clusterStyles[group];
     final color = style?.color;
     final onColor = style?.onColor;
-    final size = style?.size ?? const Size(40, 40);
+    // Grow the cluster badge with the same window-size scale as the markers it
+    // stands in for, so it does not look tiny on the larger medium/expanded
+    // maps.
+    final baseSize = style?.size ?? const Size(40, 40);
+    final size = Size(baseSize.width * scale, baseSize.height * scale);
 
     // Build the markers once and remember which of the resulting Marker
     // instances came from a highlighted spec. The cluster builder is handed
@@ -1032,19 +1036,24 @@ class _MapViewState<K> extends State<MapView<K>> {
           final fgColor = isActive
               ? (style?.activeOnColor ?? style?.onColor ?? scheme.onPrimary)
               : (onColor ?? scheme.onPrimary);
-          return Container(
-            width: size.width,
-            height: size.height,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: bgColor,
-            ),
-            child: Center(
-              child: Text(
-                '${clusterMarkers.length}',
-                style: TextStyle(
-                  color: fgColor,
-                  fontWeight: FontWeight.bold,
+          // Match the map-overlay language used by the FABs: a Material circle
+          // at the same low (tonal) elevation. The soft shadow lifts the badge
+          // off the busy topo map without the heavy ring a border drew.
+          return Material(
+            color: bgColor,
+            elevation: 1,
+            shape: const CircleBorder(),
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: Center(
+                child: Text(
+                  '${clusterMarkers.length}',
+                  style: TextStyle(
+                    color: fgColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14 * scale,
+                  ),
                 ),
               ),
             ),
