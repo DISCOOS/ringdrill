@@ -2977,6 +2977,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Alphabetical'**
   String get exerciseSortAlphabeticallyShort;
+
+  /// Skip button on the concept primer — dismisses the primer and goes straight to the Program tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get primerSkip;
+
+  /// Heading on the concept primer card.
+  ///
+  /// In en, this message translates to:
+  /// **'Teams rotate'**
+  String get primerHeading;
+
+  /// Body copy on the concept primer card, explaining the ring rotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Each team is on its way to the next station. When the round ends, everyone advances together. That is all of RingDrill.'**
+  String get primerBody;
+
+  /// Primary CTA on the concept primer — opens a bundled example plan (stubbed until stage 3).
+  ///
+  /// In en, this message translates to:
+  /// **'Open an example'**
+  String get primerOpenExample;
+
+  /// Secondary CTA on the concept primer — dismisses the primer and lands on an empty Program tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Start an empty plan'**
+  String get primerStartEmpty;
+
+  /// Indexed team label shown on the team chips in the ring rotation figure.
+  ///
+  /// In en, this message translates to:
+  /// **'Team {n}'**
+  String primerTeamLabel(int n);
 }
 
 class _AppLocalizationsDelegate

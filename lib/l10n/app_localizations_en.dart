@@ -1731,4 +1731,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exerciseSortAlphabeticallyShort => 'Alphabetical';
+
+  @override
+  String get primerSkip => 'Skip';
+
+  @override
+  String get primerHeading => 'Teams rotate';
+
+  @override
+  String get primerBody =>
+      'Each team is on its way to the next station. When the round ends, everyone advances together. That is all of RingDrill.';
+
+  @override
+  String get primerOpenExample => 'Open an example';
+
+  @override
+  String get primerStartEmpty => 'Start an empty plan';
+
+  @override
+  String primerTeamLabel(int n) {
+    return 'Team $n';
+  }
 }

@@ -1727,4 +1727,25 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get exerciseSortAlphabeticallyShort => 'Alfabetisk';
+
+  @override
+  String get primerSkip => 'Hopp over';
+
+  @override
+  String get primerHeading => 'Lagene roterer';
+
+  @override
+  String get primerBody =>
+      'Hvert lag er på vei til neste post. Når runden er over, rykker alle videre samtidig. Det er hele RingDrill.';
+
+  @override
+  String get primerOpenExample => 'Åpne et eksempel';
+
+  @override
+  String get primerStartEmpty => 'Start en tom plan';
+
+  @override
+  String primerTeamLabel(int n) {
+    return 'Lag $n';
+  }
 }

@@ -902,5 +902,34 @@
   "exerciseSortAlphabeticallyShort": "Alfabetisk",
   "@exerciseSortAlphabeticallyShort": {
     "description": "Kompakt knappetikett i øvelseslistens overskrift for direktesortering alfabetisk."
+  },
+  "primerSkip": "Hopp over",
+  "@primerSkip": {
+    "description": "Hopp over-knapp på konseptprimeren — avviser primeren og går rett til Program-fanen."
+  },
+  "primerHeading": "Lagene roterer",
+  "@primerHeading": {
+    "description": "Overskrift på konseptprimer-kortet."
+  },
+  "primerBody": "Hvert lag er på vei til neste post. Når runden er over, rykker alle videre samtidig. Det er hele RingDrill.",
+  "@primerBody": {
+    "description": "Brødtekst på konseptprimer-kortet som forklarer ringen."
+  },
+  "primerOpenExample": "Åpne et eksempel",
+  "@primerOpenExample": {
+    "description": "Primær CTA på konseptprimeren — åpner et innebygd eksempelprogram (stubbet til steg 3)."
+  },
+  "primerStartEmpty": "Start en tom plan",
+  "@primerStartEmpty": {
+    "description": "Sekundær CTA på konseptprimeren — avviser primeren og lander på en tom Program-fane."
+  },
+  "primerTeamLabel": "Lag {n}",
+  "@primerTeamLabel": {
+    "description": "Indeksert lagmerkelapp vist på lag-chipene i ring-rotasjonsfiguren.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   }
 }

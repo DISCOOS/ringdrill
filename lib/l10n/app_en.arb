@@ -1743,5 +1743,34 @@
   "exerciseSortAlphabeticallyShort": "Alphabetical",
   "@exerciseSortAlphabeticallyShort": {
     "description": "Compact button label in the exercises list header for the one-shot sort-alphabetically action."
+  },
+  "primerSkip": "Skip",
+  "@primerSkip": {
+    "description": "Skip button on the concept primer — dismisses the primer and goes straight to the Program tab."
+  },
+  "primerHeading": "Teams rotate",
+  "@primerHeading": {
+    "description": "Heading on the concept primer card."
+  },
+  "primerBody": "Each team is on its way to the next station. When the round ends, everyone advances together. That is all of RingDrill.",
+  "@primerBody": {
+    "description": "Body copy on the concept primer card, explaining the ring rotation."
+  },
+  "primerOpenExample": "Open an example",
+  "@primerOpenExample": {
+    "description": "Primary CTA on the concept primer — opens a bundled example plan (stubbed until stage 3)."
+  },
+  "primerStartEmpty": "Start an empty plan",
+  "@primerStartEmpty": {
+    "description": "Secondary CTA on the concept primer — dismisses the primer and lands on an empty Program tab."
+  },
+  "primerTeamLabel": "Team {n}",
+  "@primerTeamLabel": {
+    "description": "Indexed team label shown on the team chips in the ring rotation figure.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   }
 }
