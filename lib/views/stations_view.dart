@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -64,7 +62,6 @@ class _StationsViewState extends State<StationsView>
   // (which run on the state's context, above the scope) can find the scope
   // via MasterDetailScope.maybeOf. Null when not in wide/responsive layout.
   BuildContext? _scopeContext;
-  bool _notified = false;
   _PendingPick? _pickFor;
 
   /// UUIDs of exercises the user has toggled off in the visibility sheet.
@@ -83,11 +80,7 @@ class _StationsViewState extends State<StationsView>
     // instances, so its own setState does not propagate here. See
     // active_plan_actions.dart and ProgramService.setActive/installFromFile.
     listen(_programService.events, (_) {
-      if (mounted) {
-        setState(() {
-          _notified = false;
-        });
-      }
+      if (mounted) setState(() {});
     });
     // Rebuild on every exercise tick so the live-station highlight follows
     // the running exercise from round to round (and clears when it stops).
@@ -152,28 +145,10 @@ class _StationsViewState extends State<StationsView>
   @override
   Widget build(BuildContext context) {
     final markers = _visibleLocations();
-    // Only nag about "no stations created" when the active program genuinely
-    // has no stations anywhere. `markers.isEmpty` is not a safe proxy because
-    // getLocations() filters by `position != null`, so exercises whose
-    // stations exist but lack coordinates would otherwise trip this snackbar
-    // incorrectly (e.g. when the user reactivates an exercise from the
-    // program tab, which fires programActivated and rebuilds this view in
-    // the background even though it is not visible).
-    final hasAnyStation = _programService.loadExercises().any(
-      (e) => e.stations.isNotEmpty,
-    );
-    if (!hasAnyStation && !_notified) {
-      _notified = true;
-      scheduleMicrotask(() {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            showCloseIcon: true,
-            dismissDirection: DismissDirection.endToStart,
-            content: Text(AppLocalizations.of(context)!.notStationsCreated),
-          ),
-        );
-      });
-    }
+    // No "no stations created" nag: an empty Map tab is expected on a fresh
+    // plan, and the Program tab's teaching empty states plus onboarding now
+    // carry the "you have nothing yet" message. A snackbar here just nagged on
+    // first launch (DESIGN-007).
 
     // Centre on the actual stations when present; only fall back to the
     // configured initial centre (Oslo) when nothing is plotted yet.
