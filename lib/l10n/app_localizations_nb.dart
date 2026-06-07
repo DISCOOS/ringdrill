@@ -350,7 +350,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get emptyTeamsBody =>
-      'Lag kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her.';
+      'Lag i denne listen kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her.';
 
   @override
   String get numberOfMembers => 'Antall medlemmer';

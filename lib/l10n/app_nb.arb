@@ -77,7 +77,7 @@
   "teamNoExercises": "Laget er ikke med i noen øvelser ennå.",
   "teamsOverview": "Lagsoversikt",
   "emptyTeamsTitle": "Ingen lag ennå",
-  "emptyTeamsBody": "Lag kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her.",
+  "emptyTeamsBody": "Lag i denne listen kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her.",
   "createExercise": "Opprett øvelse",
   "newExercise": "Ny øvelse",
   "editExercise": "Endre øvelse",
