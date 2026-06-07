@@ -524,7 +524,7 @@
     "description": "Placeholder shown when stationIndex is null."
   },
   "emptyRolesTitle": "Ingen roller ennå",
-  "emptyRolesBody": "Roller er markørene som spiller ut scenarioet på postene. Trykk + for å legge til den første.",
+  "emptyRolesBody": "Roller er markørene som spiller ut scenarioet på øvelsespostene. Opprett en øvelse først, og legg deretter til rollene den trenger.",
   "noRolesInExercise": "Ingen markører for denne øvelsen.",
   "@noRolesInExercise": {
     "description": "Empty-state when exercise filter excludes every role."

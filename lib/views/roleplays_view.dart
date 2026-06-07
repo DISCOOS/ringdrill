@@ -194,7 +194,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           child: Stack(
             children: [
               Positioned.fill(child: body),
-              if (ProgramService().activeProgramUuid != null)
+              if (ProgramService().activeProgramUuid != null && canCreateRole)
                 Positioned(
                   right: 16,
                   bottom: 16,
@@ -202,16 +202,14 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                       ? FloatingActionButton(
                           heroTag: null,
                           tooltip: localizations.newPlay,
-                          onPressed: canCreateRole
-                              ? () => _controller.openCreateRolePlay(context)
-                              : null,
+                          onPressed: () =>
+                              _controller.openCreateRolePlay(context),
                           child: const Icon(Icons.add),
                         )
                       : FloatingActionButton.extended(
                           heroTag: null,
-                          onPressed: canCreateRole
-                              ? () => _controller.openCreateRolePlay(context)
-                              : null,
+                          onPressed: () =>
+                              _controller.openCreateRolePlay(context),
                           icon: const Icon(Icons.add),
                           label: Text(localizations.newPlay),
                         ),

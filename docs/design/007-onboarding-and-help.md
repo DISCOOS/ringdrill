@@ -82,16 +82,16 @@ Opening it sets up an active program and drops the user into a populated Program
 
 Every Program segment shows a teaching empty state when it has no content, instead of a bare "nothing here". All four share one component, matching [the mockup](./mockups/onboarding-empty-state.html): a circular tinted icon badge, a title, then one or two muted body lines, with the segment's create affordance when it has one. Today three segments have a bare one-line text and Team has none at all (its list renders blank), so this gives all four a consistent surface.
 
-The copy differs per segment by design. Øvelser names the precondition for a run, Poster and Lag explain they are derived from exercises and point back to Øvelser, and Spill explains what a role is and uses its own "+". The smallest runnable plan is one exercise with `numberOfStations` and `numberOfTeams` set, so the Øvelser copy points at exactly that.
+The copy differs per segment by design. Øvelser names the precondition for a run, while Poster, Spill and Lag explain they are derived from exercises and point back to Øvelser. The smallest runnable plan is one exercise with `numberOfStations` and `numberOfTeams` set, so the Øvelser copy points at exactly that.
 
 | Segment (key stem) | Icon | `nb` title | `nb` body | `en` title | `en` body |
 |---|---|---|---|---|---|
 | Øvelser (`emptyExercises`) | `Icons.update` | Ingen øvelser ennå | En øvelse trenger antall poster og antall lag for å kunne kjøres. Legg til den første for å se ringen i arbeid. | No exercises yet | An exercise needs a number of stations and a number of teams before it can run. Add your first to see the ring in motion. |
 | Poster (`emptyStations`) | `Icons.place` | Ingen poster ennå | Poster legges til inne i øvelsene dine. Opprett en øvelse først, så dukker postene opp her. | No stations yet | Stations are added inside your exercises. Create an exercise first and they will show up here. |
-| Spill (`emptyRoles`) | `Icons.theater_comedy` | Ingen roller ennå | Roller er markørene som spiller ut scenarioet på postene. Trykk + for å legge til den første. | No roles yet | Roles are played out at the stations to drive the scenario. Tap + to add the first one. |
+| Spill (`emptyRoles`) | `Icons.theater_comedy` | Ingen roller ennå | Roller er markørene som spiller ut scenarioet på øvelsespostene. Opprett en øvelse først, og legg deretter til rollene den trenger. | No roles yet | Roles are played out at exercise stations to drive the scenario. Create an exercise first, then add the roles it needs. |
 | Lag (`emptyTeams`) | `Icons.group` | Ingen lag ennå | Lag kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her. | No teams yet | Teams come from the team count in your exercises. Create an exercise first and they will show up here. |
 
-The segment's create FAB ("Ny øvelse" on Øvelser, "+" / "Nytt spill" on Spill) is unchanged from [DESIGN-006](./006-program-tab-consolidation.md). Poster and Lag have no own creator, so they point back to Øvelser. A first-run-only **"Start her"** pill sits next to the first FAB (stage 4 below).
+The segment's create FAB ("Ny øvelse" on Øvelser, "+" / "Nytt spill" on Spill) is unchanged from [DESIGN-006](./006-program-tab-consolidation.md), except Spill hides its creator until the plan has at least one exercise. Poster and Lag have no own creator, so they point back to Øvelser. A first-run-only **"Start her"** pill sits next to the first FAB (stage 4 below).
 
 #### "Start her" cue rules
 

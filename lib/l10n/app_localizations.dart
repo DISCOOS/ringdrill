@@ -2363,7 +2363,7 @@ abstract class AppLocalizations {
   /// Teaching empty-state body shown in the Program Script segment when the active plan has no roles.
   ///
   /// In en, this message translates to:
-  /// **'Roles are played out at the stations to drive the scenario. Tap + to add the first one.'**
+  /// **'Roles are played out at exercise stations to drive the scenario. Create an exercise first, then add the roles it needs.'**
   String get emptyRolesBody;
 
   /// Empty-state shown in the RolePlays tab when the active exercise filter excludes every role.

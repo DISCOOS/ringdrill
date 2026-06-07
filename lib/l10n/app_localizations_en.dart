@@ -1403,7 +1403,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyRolesBody =>
-      'Roles are played out at the stations to drive the scenario. Tap + to add the first one.';
+      'Roles are played out at exercise stations to drive the scenario. Create an exercise first, then add the roles it needs.';
 
   @override
   String get noRolesInExercise => 'No roles in this exercise.';

@@ -1399,7 +1399,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get emptyRolesBody =>
-      'Roller er markørene som spiller ut scenarioet på postene. Trykk + for å legge til den første.';
+      'Roller er markørene som spiller ut scenarioet på øvelsespostene. Opprett en øvelse først, og legg deretter til rollene den trenger.';
 
   @override
   String get noRolesInExercise => 'Ingen markører for denne øvelsen.';
