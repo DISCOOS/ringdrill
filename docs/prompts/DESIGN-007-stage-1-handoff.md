@@ -1,3 +1,7 @@
 ## Investigation
 
 2026-06-07: Øvelser renders `noExercisesYet` in `lib/views/program_view.dart`, Poster renders `noStationsYet` in `lib/views/station_list_view.dart`, and Spill renders `noRolesInProgram` in `lib/views/roleplays_view.dart`. Lag has no empty branch in `lib/views/teams_view.dart`; it maps `teams` directly into a `ListView`. Existing create affordances match DESIGN-006: Øvelser owns the "Ny øvelse" FAB, Spill owns the "+" / "Nytt spill" FAB inside `RolePlaysView`, while Poster and Lag return no creator through their controllers. The reusable `EmptyState` in `lib/views/dialog_widgets.dart` is dialog-scoped, and `lib/views/shell/detail_empty_pane.dart` is the wide-screen detail-pane empty surface, so Stage 1 needs a new Program teaching empty-state widget. Program segment icons are `Icons.update`, `Icons.place`, `Icons.theater_comedy`, and `Icons.group`.
+
+## Closing
+
+2026-06-07: Stage 1 landed with `TeachingEmptyState` in `lib/views/widgets/teaching_empty_state.dart`, wired into Øvelser, Poster, Spill and Lag. Øvelser and Spill keep their existing FAB create paths; Poster and Lag still have no create FAB. Lag now has the missing empty branch. Final localization keys are `emptyExercisesTitle`, `emptyExercisesBody`, `emptyStationsTitle`, `emptyStationsBody`, `emptyRolesTitle`, `emptyRolesBody`, `emptyTeamsTitle`, and `emptyTeamsBody`. Superseded `noStationsYet` and `noRolesInProgram` were removed; `noExercisesYet` remains because non-empty-state snackbar flows still use it.
