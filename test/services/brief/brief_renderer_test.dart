@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -11,6 +12,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
+import 'package:ringdrill/services/brief/template_registry.dart';
 
 // ---------------------------------------------------------------------------
 // Fixtures — from DESIGN-004 lines 314-382
@@ -116,6 +118,7 @@ Program _designProgram() => _emptyProgram().copyWith(
 );
 
 final _l10n = AppLocalizationsNb();
+final _l10nEn = AppLocalizationsEn();
 
 /// An [AssetBundle] whose [load] always fails the way the real bundle does
 /// when an asset is absent from the running build's manifest. Used to exercise
@@ -791,6 +794,79 @@ void main() {
               .having((e) => e.cause, 'cause', isNotNull),
         ),
       );
+    });
+
+    test('locale picks the en asset path in the wrapped exception', () async {
+      final renderer = BriefRenderer(bundle: _ThrowingAssetBundle());
+
+      await expectLater(
+        renderer.render(
+          program: _emptyProgram(),
+          audience: BriefAudience.participant,
+          l10n: _l10nEn,
+        ),
+        throwsA(
+          isA<BriefTemplateException>().having(
+            (e) => e.assetPath,
+            'assetPath',
+            'assets/templates/ringdrill-standard-v1.en.md.mustache',
+          ),
+        ),
+      );
+    });
+  });
+
+  group('BriefRenderer — locale-aware template selection', () {
+    test('en locale renders English chrome, no Norwegian headings', () async {
+      final program = _designProgram();
+      final result = await BriefRenderer().render(
+        program: program,
+        audience: BriefAudience.director,
+        l10n: _l10nEn,
+      );
+      expect(result, contains('## Table of contents'));
+      expect(result, contains('#### Time'));
+      expect(result, contains('#### Duration'));
+      expect(result, contains('#### Method'));
+      expect(result, contains('#### Situation'));
+      expect(result, contains('#### Mission'));
+      expect(result, contains('**Station '));
+      // No leftover Norwegian template chrome or hardcoded "timer".
+      expect(result, isNot(contains('## Innholdsfortegnelse')));
+      expect(result, isNot(contains('#### Metode')));
+      expect(result, isNot(contains('plassering')));
+      expect(result, isNot(contains('timer')));
+    });
+
+    test('nb locale still renders Norwegian chrome', () async {
+      final result = await BriefRenderer().render(
+        program: _designProgram(),
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      expect(result, contains('## Innholdsfortegnelse'));
+      expect(result, contains('#### Metode'));
+    });
+  });
+
+  group('TemplateRegistry — locale resolution', () {
+    final registry = TemplateRegistry.instance;
+
+    test('resolves the nb variant by default and for null/unknown locale', () {
+      expect(registry.resolve(null).locale, 'nb');
+      expect(registry.resolve('ringdrill-standard-v1').locale, 'nb');
+      expect(registry.resolve('ringdrill-standard-v1', 'de').locale, 'nb');
+    });
+
+    test('resolves the en variant for en and region-qualified en', () {
+      expect(registry.resolve('ringdrill-standard-v1', 'en').locale, 'en');
+      expect(registry.resolve('ringdrill-standard-v1', 'en_US').locale, 'en');
+      expect(registry.resolve('ringdrill-standard-v1', 'en-GB').locale, 'en');
+    });
+
+    test('unknown templateId falls back to default family, honouring locale', () {
+      expect(registry.resolve('does-not-exist', 'en').locale, 'en');
+      expect(registry.resolve('does-not-exist', 'nb').locale, 'nb');
     });
   });
 }

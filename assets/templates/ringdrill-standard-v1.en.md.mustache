@@ -1,0 +1,136 @@
+{{^isSingleExercise}}
+# {{program.name}}
+
+{{#program.description}}_{{program.description}}_
+
+{{/program.description}}
+{{#if_in_doc_toc}}
+## Table of contents
+
+{{#exercises}}- [{{name}}](#{{exerciseAnchor}})
+{{#stations}}  - [{{stationCode}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}](#{{stationAnchor}})
+{{/stations}}{{/exercises}}
+
+{{/if_in_doc_toc}}
+{{#program.briefIntroMd}}
+## General notes on play and exercise control
+
+{{{program.briefIntroMd}}}
+
+{{/program.briefIntroMd}}
+{{#program.commsMd}}
+## Talk groups
+
+{{{program.commsMd}}}
+
+{{/program.commsMd}}
+---
+
+{{/isSingleExercise}}
+{{#exercises}}
+## {{name}}
+
+#### Time
+{{exerciseTimeLabel}}
+
+#### Duration
+{{exerciseDurationLabel}}
+
+{{#methodMd}}
+#### Method
+{{{methodMd}}}
+
+{{/methodMd}}
+{{#learningGoalsMd}}
+#### Learning goals
+{{{learningGoalsMd}}}
+
+{{/learningGoalsMd}}
+{{#trainingFocusMd}}
+#### Training focus
+{{{trainingFocusMd}}}
+
+{{/trainingFocusMd}}
+#### Organisation
+{{{organisationBlock}}}
+
+{{#orderFormatMd}}
+#### Order format
+{{{orderFormatMd}}}
+
+{{/orderFormatMd}}
+{{#executionTipsMd}}
+#### Execution tips
+{{{executionTipsMd}}}
+
+{{/executionTipsMd}}
+{{#effectiveCommsMd}}
+#### Comms
+{{{effectiveCommsMd}}}
+
+{{/effectiveCommsMd}}
+
+{{#stations}}
+### {{stationCode}} – {{name}}{{#variantSuffix}} – {{variantSuffix}}{{/variantSuffix}}
+
+**Station {{stationCode}} location:** {{{positionValue}}}
+
+#### Duration
+{{stationDurationLabel}}
+
+{{#equipmentMd}}
+#### Equipment
+{{{equipmentMd}}}
+
+{{/equipmentMd}}
+{{#roleplays}}
+#### Role-play ({{name}})
+{{{behavior}}}
+{{#propsMd}}
+**Props:** {{{propsMd}}}
+{{/propsMd}}
+{{#if_director}}{{#actor}}
+**Actor:** {{realName}}{{#phone}} ({{phone}}){{/phone}}
+
+{{/actor}}{{/if_director}}
+{{/roleplays}}
+{{#situationMd}}
+#### Situation
+{{{situationMd}}}
+
+{{/situationMd}}
+{{#missionMd}}
+#### Mission
+{{{missionMd}}}
+
+{{/missionMd}}
+{{#effectiveCommsMd}}
+#### Comms
+{{{effectiveCommsMd}}}
+
+{{/effectiveCommsMd}}
+{{#logisticsMd}}
+#### Administration and supplies
+{{{logisticsMd}}}
+
+{{/logisticsMd}}
+{{#criticalQuestionsMd}}
+#### Critical questions
+{{{criticalQuestionsMd}}}
+
+{{/criticalQuestionsMd}}
+{{#leaderAnswersMd}}
+#### Suggested answers to team leader questions
+{{{leaderAnswersMd}}}
+
+{{/leaderAnswersMd}}
+{{#if_instructor_or_director}}{{#directorNotesMd}}
+> **Notes for instructor/exercise control**
+>
+> {{{directorNotesMd}}}
+
+{{/directorNotesMd}}{{/if_instructor_or_director}}
+---
+
+{{/stations}}
+{{/exercises}}

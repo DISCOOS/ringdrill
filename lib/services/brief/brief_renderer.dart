@@ -80,7 +80,7 @@ class BriefRenderer {
     required AppLocalizations l10n,
     bool wideTocSidebar = false,
   }) async {
-    final template = _registry.resolve(exercise?.templateId);
+    final template = _registry.resolve(exercise?.templateId, l10n.localeName);
     final String source;
     try {
       source = await _bundle.loadString(template.assetPath);
@@ -356,7 +356,7 @@ String _exerciseDurationLabel(Exercise exercise, AppLocalizations l10n) {
       exercise.executionTime + exercise.evaluationTime + exercise.rotationTime;
   final total = exercise.numberOfRounds * round;
   final totalStr = (total >= 60 && total % 60 == 0)
-      ? '${total ~/ 60} timer'
+      ? l10n.hour(total ~/ 60)
       : '$total min';
   if (exercise.numberOfRounds <= 1) return totalStr;
   return '$totalStr ($round min ${l10n.briefPerStation})';

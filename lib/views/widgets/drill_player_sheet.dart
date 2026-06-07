@@ -105,8 +105,26 @@ class _DrillPlayerSheetBodyState extends State<_DrillPlayerSheetBody> {
 
   @override
   Widget build(BuildContext context) {
-    // Render the body directly. No chevron, no SafeArea wrapper —
+    // The fullscreen sheet is presented with `useSafeArea: false`, so
+    // showModalBottomSheet wraps the body in `MediaQuery.removePadding(
+    // removeTop: true)`. That call zeroes BOTH `padding.top` AND
+    // `viewPadding.top` (it subtracts the removed padding from viewPadding),
+    // so the wrapped CoordinatorScreen AppBar reads a 0 status-bar inset,
+    // paints from y=0 and its title collides with the system clock (the bug).
+    //
+    // Read the true inset straight off the FlutterView — it is unaffected by
+    // any `removePadding` ancestor, and correctly reports 0 on Android once
+    // immersive mode hides the status bar. Re-inject it as `padding.top` so
+    // the AppBar insets below the status bar like a normal route while still
+    // painting its background up under it. No chevron, no SafeArea wrapper —
     // CoordinatorScreen's AppBar provides the sole close affordance.
-    return widget.builder(context);
+    final mediaQuery = MediaQuery.of(context);
+    final physicalTop = MediaQueryData.fromView(View.of(context)).padding.top;
+    return MediaQuery(
+      data: mediaQuery.copyWith(
+        padding: mediaQuery.padding.copyWith(top: physicalTop),
+      ),
+      child: widget.builder(context),
+    );
   }
 }
