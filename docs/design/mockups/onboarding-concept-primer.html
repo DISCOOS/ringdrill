@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Onboarding: konseptprimer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-page: #f5f5f4;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-background-tertiary: #e9e7e0;
+    --color-text-primary: #2c2c2a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-secondary: rgba(0, 0, 0, 0.3);
+    --color-border-tertiary: rgba(0, 0, 0, 0.12);
+    --accent: #1D9E75;
+    --accent-fill: #E1F5EE;
+    --accent-text: #0F6E56;
+    --team: #185FA5;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-page: #1a1a1a;
+      --color-background-primary: #242322;
+      --color-background-secondary: #2e2d2b;
+      --color-background-tertiary: #3a3a37;
+      --color-text-primary: #f1efe8;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-border-secondary: rgba(255, 255, 255, 0.3);
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-page);
+    color: var(--color-text-primary);
+    padding: 24px 16px;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  .caption {
+    max-width: 340px;
+    margin: 0 auto 16px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+  .frame {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 12px;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .screen {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+  }
+  .btn-primary {
+    width: 100%; height: 44px; border: 0;
+    border-radius: var(--border-radius-md);
+    background: var(--accent); color: #fff;
+    font-size: 15px; font-weight: 500; font-family: var(--font-sans);
+    display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  }
+  .btn-secondary {
+    width: 100%; height: 44px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: transparent; color: var(--color-text-primary);
+    font-size: 15px; font-weight: 500; font-family: var(--font-sans); cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<p class="caption">Konseptprimer ved første åpning. Ett kort som lærer ringen: lag er på vei mellom poster, og rykker videre når runden er over.</p>
+
+<div class="frame">
+  <div class="screen">
+
+    <!-- Progress + skip -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 6px;">
+      <div style="display: flex; gap: 6px;">
+        <span style="width: 18px; height: 4px; border-radius: 999px; background: var(--accent);"></span>
+        <span style="width: 8px; height: 4px; border-radius: 999px; background: var(--color-background-tertiary);"></span>
+        <span style="width: 8px; height: 4px; border-radius: 999px; background: var(--color-background-tertiary);"></span>
+      </div>
+      <span style="font-size: 13px; color: var(--color-text-tertiary);">Hopp over</span>
+    </div>
+
+    <!-- Ring illustration -->
+    <div style="padding: 10px 14px 0; text-align: center;">
+      <svg viewBox="0 0 240 212" width="100%" style="max-width: 270px; display: block; margin: 0 auto;" role="img">
+        <title>En ring av tre poster 2a, 2b og 2c, med lag plassert oppå pilene, på vei mellom postene</title>
+        <circle cx="120" cy="108" r="70" fill="none" stroke="var(--color-border-tertiary)" stroke-width="1.5" stroke-dasharray="4 6"/>
+        <defs>
+          <marker id="ar" markerWidth="7" markerHeight="7" refX="4" refY="3.5" orient="auto">
+            <path d="M0 0 L7 3.5 L0 7 z" fill="#1D9E75"/>
+          </marker>
+        </defs>
+        <path d="M146 43 A70 70 0 0 1 189 118" fill="none" stroke="#1D9E75" stroke-width="2" marker-end="url(#ar)"/>
+        <path d="M163 163 A70 70 0 0 1 77 163" fill="none" stroke="#1D9E75" stroke-width="2" marker-end="url(#ar)"/>
+        <path d="M51 118 A70 70 0 0 1 94 43" fill="none" stroke="#1D9E75" stroke-width="2" marker-end="url(#ar)"/>
+        <g font-family="var(--font-sans)">
+          <circle cx="120" cy="38" r="20" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+          <text x="120" y="44" text-anchor="middle" font-size="15" font-weight="500" fill="#0F6E56">2a</text>
+          <circle cx="59" cy="143" r="20" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+          <text x="59" y="149" text-anchor="middle" font-size="15" font-weight="500" fill="#0F6E56">2b</text>
+          <circle cx="181" cy="143" r="20" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+          <text x="181" y="149" text-anchor="middle" font-size="15" font-weight="500" fill="#0F6E56">2c</text>
+        </g>
+        <g font-family="var(--font-sans)" font-size="11" font-weight="500">
+          <rect x="174" y="56" width="40" height="18" rx="9" fill="#185FA5"/>
+          <text x="194" y="69" text-anchor="middle" fill="#fff">Lag 1</text>
+          <rect x="100" y="185" width="40" height="18" rx="9" fill="#185FA5"/>
+          <text x="120" y="198" text-anchor="middle" fill="#fff">Lag 3</text>
+          <rect x="26" y="56" width="40" height="18" rx="9" fill="#185FA5"/>
+          <text x="46" y="69" text-anchor="middle" fill="#fff">Lag 2</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Copy -->
+    <div style="padding: 10px 24px 0; text-align: center;">
+      <h3 style="font-size: 19px; font-weight: 500; margin: 0 0 8px;">Lagene roterer</h3>
+      <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary); margin: 0;">Hvert lag er på vei til neste post. Når runden er over, rykker alle videre samtidig. Det er hele RingDrill.</p>
+    </div>
+
+    <div style="flex: 1;"></div>
+
+    <!-- CTAs -->
+    <div style="padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <button class="btn-primary"><i class="ti ti-player-play" style="font-size: 18px;" aria-hidden="true"></i> Åpne et eksempel</button>
+      <button class="btn-secondary">Start en tom plan</button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

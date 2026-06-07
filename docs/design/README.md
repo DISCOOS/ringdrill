@@ -14,6 +14,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | DESIGN-004 | [Exercise brief template](./brief-template.md)          | Accepted | 2026-05-25 |
 | DESIGN-005 | [Wide-screen layout](./wide-screen-layout.md)           | Accepted | 2026-05-29 |
 | DESIGN-006 | [Program tab consolidation](./006-program-tab-consolidation.md) | Accepted | 2026-05-31 |
+| DESIGN-007 | [Onboarding and in-app help](./007-onboarding-and-help.md) | Accepted | 2026-06-07 |
 
 ## Folder layout
 
@@ -27,6 +28,8 @@ docs/design/
     ├── coordinator-oversikt.html
     ├── coordinator-poster.html
     ├── mini-player.html
+    ├── onboarding-concept-primer.html
+    ├── onboarding-empty-state.html
     ├── observer-lag.html
     ├── observer-post.html
     └── wide-screen.html

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Onboarding: lærende tomtilstand</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-page: #f5f5f4;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f1efe8;
+    --color-background-tertiary: #e9e7e0;
+    --color-text-primary: #2c2c2a;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-secondary: rgba(0, 0, 0, 0.3);
+    --color-border-tertiary: rgba(0, 0, 0, 0.12);
+    --accent: #1D9E75;
+    --accent-fill: #E1F5EE;
+    --accent-text: #0F6E56;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-page: #1a1a1a;
+      --color-background-primary: #242322;
+      --color-background-secondary: #2e2d2b;
+      --color-background-tertiary: #3a3a37;
+      --color-text-primary: #f1efe8;
+      --color-text-secondary: #b4b2a9;
+      --color-text-tertiary: #888780;
+      --color-border-secondary: rgba(255, 255, 255, 0.3);
+      --color-border-tertiary: rgba(255, 255, 255, 0.12);
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-page);
+    color: var(--color-text-primary);
+    padding: 24px 16px;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  .caption {
+    max-width: 340px;
+    margin: 0 auto 16px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+  .frame {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 12px;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .screen {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 560px;
+    position: relative;
+  }
+  .seg { flex: 1; text-align: center; padding: 7px 0; color: var(--color-text-secondary); }
+  .seg-active { background: var(--accent); color: #fff; font-weight: 500; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--color-text-secondary); }
+  .nav-active { color: var(--accent); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<p class="caption">Lærende tomtilstand i Program-fanen. Den forklarer hva en kjørbar øvelse trenger og peker på FAB-en. «Start her»-pekeren vises kun første gang.</p>
+
+<div class="frame">
+  <div class="screen">
+
+    <!-- App bar -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <span style="font-size: 15px; font-weight: 500;">Min første plan</span>
+      <div style="display: flex; gap: 14px; color: var(--color-text-secondary);">
+        <i class="ti ti-book-2" style="font-size: 18px;" aria-hidden="true"></i>
+        <i class="ti ti-dots-vertical" style="font-size: 18px;" aria-hidden="true"></i>
+      </div>
+    </div>
+
+    <!-- Segmented switcher -->
+    <div style="padding: 12px 14px 0;">
+      <div style="display: flex; border: 0.5px solid var(--color-border-secondary); border-radius: 999px; overflow: hidden; font-size: 13px;">
+        <div class="seg seg-active">Øvelser</div>
+        <div class="seg">Poster</div>
+        <div class="seg">Spill</div>
+        <div class="seg">Lag</div>
+      </div>
+    </div>
+
+    <!-- Empty body -->
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px 32px;">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--color-background-secondary); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+        <i class="ti ti-flag-plus" style="font-size: 30px; color: var(--color-text-tertiary);" aria-hidden="true"></i>
+      </div>
+      <h3 style="font-size: 17px; font-weight: 500; margin: 0 0 8px;">Ingen øvelser ennå</h3>
+      <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary); margin: 0 0 4px;">En øvelse trenger <b style="font-weight: 500; color: var(--color-text-primary);">antall poster</b> og <b style="font-weight: 500; color: var(--color-text-primary);">antall lag</b> for å kunne kjøres.</p>
+      <p style="font-size: 14px; line-height: 1.6; color: var(--color-text-secondary); margin: 0;">Legg til den første for å se ringen i arbeid.</p>
+    </div>
+
+    <!-- FAB with first-run "Start her" cue -->
+    <div style="position: absolute; right: 18px; bottom: 118px; display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 12px; color: var(--accent-text); background: var(--accent-fill); padding: 4px 10px; border-radius: 999px; font-weight: 500;">Start her</span>
+      <div style="height: 52px; padding: 0 18px; border-radius: var(--border-radius-lg); background: var(--accent); color: #fff; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500;">
+        <i class="ti ti-plus" style="font-size: 20px;" aria-hidden="true"></i> Ny øvelse
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div style="display: flex; justify-content: space-around; padding: 10px 0 12px; border-top: 0.5px solid var(--color-border-tertiary);">
+      <div class="nav-item nav-active">
+        <i class="ti ti-list-details" style="font-size: 20px;" aria-hidden="true"></i>
+        <span style="font-size: 10px;">Program</span>
+      </div>
+      <div class="nav-item">
+        <i class="ti ti-map" style="font-size: 20px;" aria-hidden="true"></i>
+        <span style="font-size: 10px;">Kart</span>
+      </div>
+      <div class="nav-item">
+        <i class="ti ti-badge" style="font-size: 20px;" aria-hidden="true"></i>
+        <span style="font-size: 10px;">Bemanning</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
