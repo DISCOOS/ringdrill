@@ -20,13 +20,20 @@ import 'package:ringdrill/models/team.dart';
 SimpleTimeOfDay _tod(int totalMin) =>
     SimpleTimeOfDay(hour: (totalMin ~/ 60) % 24, minute: totalMin % 60);
 
-// Station content and coordinates are lifted from the screenshot demo
-// generator (tools/screenshots/make_demo_drills.py): real search methods and
-// terminology from the HRS guide "Søk etter savnet på land", clustered around
-// Tjøme/Eidene so the Map tab is populated. Helper takes (lng, lat) like the
-// demo's GeoJSON; LatLng wants (lat, lng).
-Station _st(int index, String name, double lng, double lat, String description) =>
-    Station(index: index, name: name, position: LatLng(lat, lng), description: description);
+// Station content, coordinates and descriptions are lifted verbatim from the
+// real exercise plan in test/fixtures/test-7x.drill — onboarding exercise 2
+// from that plan's exercise #2 (Eidene), onboarding exercise 1 from its
+// exercise #5 (Lindhøy). Only the "Nx) " label prefix is stripped from the
+// station names, since the app now renders that badge itself from the alpha
+// numbering format. Helper takes (lng, lat) like the GeoJSON in the fixture;
+// LatLng wants (lat, lng). Pass null coords for a station with no position.
+Station _st(int index, String name, double? lng, double? lat, String description) =>
+    Station(
+      index: index,
+      name: name,
+      position: (lng != null && lat != null) ? LatLng(lat, lng) : null,
+      description: description,
+    );
 
 List<List<SimpleTimeOfDay>> _schedule(
   int startMin,
@@ -58,13 +65,13 @@ Program _buildPlan({
   required List<String> teamNames,
   required String ex1RpName,
   required String ex1RpBackground,
-  required String ex1RpBehavior,
+  String? ex1RpBehavior,
   required String rp1Name,
   required String rp1Background,
-  required String rp1Behavior,
+  String? rp1Behavior,
   required String rp2Name,
   required String rp2Background,
-  required String rp2Behavior,
+  String? rp2Behavior,
 }) {
   final created = DateTime.utc(2026, 1, 1);
   final ex1Uuid = '$uuid-ex1';
@@ -119,7 +126,7 @@ Program _buildPlan({
       index: 0,
       exerciseUuid: ex1Uuid,
       name: ex1RpName,
-      stationIndex: 1,
+      stationIndex: 0,
       background: ex1RpBackground,
       behavior: ex1RpBehavior,
     ),
@@ -174,33 +181,28 @@ void main() {
         'Velkommen til RingDrill! Denne planen viser det grunnleggende: '
         'lag roterer gjennom poster én runde om gangen, og rykker videre '
         'samtidig når runden er over.\n\n'
-        'Innholdet bygger på Hovedredningssentralens veileder «Søk etter '
-        'savnet på land». **Øvelse 1 – Førsteinnsats søk** øver søksmetodene '
-        'etter sykkelhjulmodellen. **Øvelse 2 – Søk langs linjer** er '
-        'ringøvelsen der tre lag roterer mellom tre poster i to runder.\n',
-    ex1Name: 'Førsteinnsats søk (ringøvelse)',
+        'Innholdet er hentet fra en reell øvingsplan for søk etter savnet på '
+        'land. **Øvelse 1** er et områdesøk ved Lindhøy. **Øvelse 2** er '
+        'førsteinnsats ved Eidene, der tre lag roterer mellom postene.\n',
+    ex1Name: 'Områdesøk – Lindhøy (ringøvelse)',
     ex1Stations: [
-      _st(0, 'Sporutgang fra IPP', 10.4019, 59.0999, 'Hundeekvipasje tar sporutgang fra IPP. Grovsøk langs ferskeste spor.'),
-      _st(1, 'Nærområdesøk', 10.4043, 59.0981, 'Raskt nærområdesøk rundt IPP innenfor R25. Grovsøk, prioriter hurtighet.'),
-      _st(2, 'Søk langs ledelinje', 10.4043, 59.0988, '1–3 personer langs sti mot R50. Høy POD. Meld funn og POI på samband.'),
-      _st(3, 'Sperrepost ved knutepunkt', 10.4038, 59.0998, 'Områdebegrensning: hindre at savnede passerer veikrysset.'),
+      _st(0, 'Barn 10-12 år', 10.404133, 59.109755, 'Lindhøy. Tiril Thorsen (15) – avsøk areal, savnede unnviker søk. Sist sett 32V 0580410E 6553119N. KO på parkering ved Lindhøy Skole. Markører: Lisa Davidsen, Ingrid Ellingsen.'),
+      _st(1, 'Ruspåvirket', null, null, 'Lindhøy. Tone Antonsen (51) – finsøk uten funn, skrive søksrapport. Ingen markør. Avslutt søk 5 min før øving slutt.'),
+      _st(2, 'Forlatt kjøretøy', null, null, 'Lindhøy. Tre biler: EK35989 (Nissan Leaf, sølvgrå), SV41219 (VW G..), m.fl. Søk og rapportér posisjon. Ingen markør.'),
     ],
-    ex2Name: 'Søk langs linjer (ringøvelse)',
+    ex2Name: 'Førsteinnsats søk – Eidene (ringøvelse)',
     ex2Stations: [
-      _st(0, 'Ledelinjesøk langs sti', 10.4012, 59.0995, '1–2 personer langs sti mot R50. Svært høy POD. Meld funn på samband.'),
-      _st(1, 'Ledelinjesøk langs vei', 10.4031, 59.0972, 'Følg skogsbilvei ut fra IPP. Jevn fart, dekk begge sider.'),
-      _st(2, 'Punktsøk POI', 10.4156, 59.0724, 'Sjekk POI langs ledelinjene – refleksene i sykkelhjulmodellen.'),
+      _st(0, 'Fisker', 10.402513, 59.09789, 'Eidene. Kari Fiskeløs – finsøk rundt IPP innenfor R25. Post 32V 0580345E 6551796N.'),
+      _st(1, 'Bilcamping', 10.404234, 59.09814, 'Eidene. Hermod Hess (tysk) – finsøk fra bobil ut til R25. Post 32V 0580443E 6551826N.'),
+      _st(2, 'Løper', 10.40428, 59.098841, 'Eidene. Ine Vigerdal (42) – søk treningsløype. Post 32V 0580444E 6551904N (start på løpeløype).'),
     ],
     teamNames: ['Lag 1', 'Lag 2', 'Lag 3'],
-    ex1RpName: 'Savnet person',
-    ex1RpBackground: 'Borte fra hytta siden i går kveld. Funnet under nærområdesøk innenfor R25.',
-    ex1RpBehavior: 'Bevisst, forvirret, lett nedkjølt. Svarer på tiltale, men orienterer seg ikke.',
-    rp1Name: 'Vitne',
-    rp1Background: 'Turgåer som så den savnede langs stien tidligere på dagen.',
-    rp1Behavior: 'Samarbeidsvillig. Peker ut retning og beskriver bekledning.',
-    rp2Name: 'Savnet person',
-    rp2Background: 'Sett sist langs stien mot R50. Ligger i tilknytning til en POI.',
-    rp2Behavior: 'Sittende, utmattet. Vinker når søkslaget nærmer seg.',
+    ex1RpName: 'Barn 10-12 år',
+    ex1RpBackground: 'Tiril Thorsen (15). Avsøk areal; savnede unnviker søk aktivt. KO ved Lindhøy Skole.',
+    rp1Name: 'Fisker',
+    rp1Background: 'Kari Fiskeløs. Finsøk rundt IPP innenfor R25.',
+    rp2Name: 'Løper',
+    rp2Background: 'Ine Vigerdal (42). Søk langs treningsløype fra start.',
   );
 
   final en = _buildPlan(
@@ -212,34 +214,29 @@ void main() {
         'Welcome to RingDrill! This plan shows the core concept: '
         'teams rotate through stations one round at a time, and all advance '
         'together when the round ends.\n\n'
-        'The content is based on the Norwegian HRS guide for searching for '
-        'missing persons on land. **Exercise 1 – Initial search response** '
-        'drills the search methods of the spokes-and-hub model. '
-        '**Exercise 2 – Linear search** is the ring drill where three teams '
-        'rotate between three stations across two rounds.\n',
-    ex1Name: 'Initial search response (ring drill)',
+        'The content is taken from a real land-search training plan. '
+        '**Exercise 1** is an area search at Lindhøy. **Exercise 2** is the '
+        'initial response at Eidene, where three teams rotate between the '
+        'stations.\n',
+    ex1Name: 'Area search – Lindhøy (ring drill)',
     ex1Stations: [
-      _st(0, 'Track start from IPP', 10.4019, 59.0999, 'Dog team takes the track start from the IPP. Hasty search along the freshest track.'),
-      _st(1, 'Hasty area search', 10.4043, 59.0981, 'Quick hasty search around the IPP within the 25% ring. Prioritize speed.'),
-      _st(2, 'Linear feature search', 10.4043, 59.0988, '1–3 searchers along the trail toward the 50% ring. High detection probability; report finds and POIs by radio.'),
-      _st(3, 'Containment point', 10.4038, 59.0998, 'Area containment: stop the missing person from passing the road junction.'),
+      _st(0, 'Child 10-12 yrs', 10.404133, 59.109755, 'Lindhøy. Tiril Thorsen (15) – area search; the subject evades searchers. Last seen 32V 0580410E 6553119N. CP at the Lindhøy School car park. Markers: Lisa Davidsen, Ingrid Ellingsen.'),
+      _st(1, 'Intoxicated', null, null, 'Lindhøy. Tone Antonsen (51) – fine search with no find; write a search report. No marker. End the search 5 min before the exercise ends.'),
+      _st(2, 'Abandoned vehicle', null, null, 'Lindhøy. Three cars: EK35989 (Nissan Leaf, silver-grey), SV41219 (VW G..), and more. Search and report position. No marker.'),
     ],
-    ex2Name: 'Linear search (ring drill)',
+    ex2Name: 'Initial search response – Eidene (ring drill)',
     ex2Stations: [
-      _st(0, 'Leading-line search (trail)', 10.4012, 59.0995, '1–2 searchers along the trail toward the 50% ring. Very high detection probability.'),
-      _st(1, 'Leading-line search (road)', 10.4031, 59.0972, 'Follow the forest road out from the IPP, covering both sides.'),
-      _st(2, 'Point search (POI)', 10.4156, 59.0724, "Check the POIs along the leading lines – the spokes-and-hub model's points of interest."),
+      _st(0, 'Angler', 10.402513, 59.09789, 'Eidene. Kari Fiskeløs – fine search around the IPP within the 25% ring. Point 32V 0580345E 6551796N.'),
+      _st(1, 'Car camping', 10.404234, 59.09814, 'Eidene. Hermod Hess (German) – fine search from the camper out to the 25% ring. Point 32V 0580443E 6551826N.'),
+      _st(2, 'Runner', 10.40428, 59.098841, 'Eidene. Ine Vigerdal (42) – search the running trail. Point 32V 0580444E 6551904N (start of the trail).'),
     ],
     teamNames: ['Team 1', 'Team 2', 'Team 3'],
-    ex1RpName: 'Missing person',
-    ex1RpBackground: 'Missing from the cabin since yesterday evening. Found during the hasty area search within the 25% ring.',
-    ex1RpBehavior: 'Conscious but confused, mildly hypothermic. Responds to voice but cannot self-orient.',
-    rp1Name: 'Witness',
-    rp1Background: 'A hiker who saw the missing person along the trail earlier in the day.',
-    rp1Behavior: 'Cooperative. Points out the direction and describes the clothing.',
-    rp2Name: 'Missing person',
-    rp2Background: 'Last seen along the trail toward the 50% ring. Lying near a POI.',
-    rp2Behavior: 'Seated, exhausted. Waves when the search team approaches.',
+    ex1RpName: 'Child 10-12 yrs',
+    ex1RpBackground: 'Tiril Thorsen (15). Area search; the subject actively evades searchers. CP at the Lindhøy School.',
+    rp1Name: 'Angler',
+    rp1Background: 'Kari Fiskeløs. Fine search around the IPP within the 25% ring.',
+    rp2Name: 'Runner',
+    rp2Background: 'Ine Vigerdal (42). Search the running trail from the start.',
   );
 
   final outDir = Directory('assets/example');
