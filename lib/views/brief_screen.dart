@@ -408,20 +408,37 @@ class _BriefScreenState extends State<BriefScreen> {
       }
     }
 
+    // Each audience carries a recognisable icon so the unselected options read
+    // as more than blank rows; the selected one swaps its icon for a check.
+    IconData iconFor(BriefAudience a) {
+      switch (a) {
+        case BriefAudience.participant:
+          return Icons.person_outline;
+        case BriefAudience.instructor:
+          return Icons.school_outlined;
+        case BriefAudience.director:
+          return Icons.flag_outlined;
+      }
+    }
+
     return PopupMenuButton<BriefAudience>(
       initialValue: _audience,
       onSelected: _setAudience,
       tooltip: localizations.briefAudienceParticipant,
       position: PopupMenuPosition.under,
-      itemBuilder: (context) => BriefAudience.values
-          .map(
-            (a) => CheckedPopupMenuItem<BriefAudience>(
-              value: a,
-              checked: a == _audience,
-              child: Text(labelFor(a)),
-            ),
-          )
-          .toList(),
+      itemBuilder: (context) => BriefAudience.values.map((a) {
+        final selected = a == _audience;
+        return PopupMenuItem<BriefAudience>(
+          value: a,
+          child: Row(
+            children: [
+              Icon(selected ? Icons.check : iconFor(a), size: 20),
+              const SizedBox(width: 12),
+              Text(labelFor(a)),
+            ],
+          ),
+        );
+      }).toList(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
