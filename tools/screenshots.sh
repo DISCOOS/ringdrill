@@ -45,27 +45,21 @@ die() { echo "error: $*" >&2; exit 1; }
 
 require_xcrun() { command -v xcrun >/dev/null || die "xcrun not found (install Xcode command line tools)"; }
 
-# UDID of the (first) booted simulator, or empty.
-booted_udid() {
+# Print "<udid>\t<name>" of the single booted simulator. Dies if none, or if
+# more than one is booted — `simctl io booted` is ambiguous with several booted
+# and may capture the wrong device (e.g. a booted iPad mini renders 1488x2266).
+booted_one() {
   xcrun simctl list devices booted -j | python3 -c '
 import sys, json
-d = json.load(sys.stdin)
-for runtime in d["devices"].values():
-    for dev in runtime:
-        if dev.get("state") == "Booted":
-            print(dev["udid"]); sys.exit(0)
-'
-}
-
-# Name of the (first) booted simulator, or empty.
-booted_name() {
-  xcrun simctl list devices booted -j | python3 -c '
-import sys, json
-d = json.load(sys.stdin)
-for runtime in d["devices"].values():
-    for dev in runtime:
-        if dev.get("state") == "Booted":
-            print(dev["name"]); sys.exit(0)
+b = [x for r in json.load(sys.stdin)["devices"].values() for x in r if x.get("state") == "Booted"]
+if len(b) != 1:
+    if not b:
+        sys.stderr.write("no booted simulator (open -a Simulator and boot one device)\n")
+    else:
+        sys.stderr.write("multiple booted simulators: " + ", ".join(x["name"] for x in b) +
+                         "\nShut down all but the one you want:  xcrun simctl shutdown all\n")
+    sys.exit(1)
+print(b[0]["udid"] + "\t" + b[0]["name"])
 '
 }
 
@@ -81,8 +75,8 @@ cmd_lang() {
     en) locale="en_US" ;;
     *) die "usage: lang <nb|en>" ;;
   esac
-  local udid; udid="$(booted_udid)"
-  [ -n "$udid" ] || die "no booted simulator (open -a Simulator and pick a device first)"
+  local one; one="$(booted_one)" || exit 1
+  local udid="${one%%$'\t'*}"
   xcrun simctl spawn "$udid" defaults write -g AppleLanguages -array "$lang"
   xcrun simctl spawn "$udid" defaults write -g AppleLocale -string "$locale"
   echo "set language=$lang locale=$locale; rebooting simulator $udid ..."
@@ -95,8 +89,8 @@ cmd_lang() {
 }
 
 cmd_prep() {
-  local udid; udid="$(booted_udid)"
-  [ -n "$udid" ] || die "no booted simulator"
+  local one; one="$(booted_one)" || exit 1
+  local udid="${one%%$'\t'*}"
   xcrun simctl status_bar "$udid" override \
     --time "09:41" \
     --batteryState charged --batteryLevel 100 \
@@ -110,8 +104,8 @@ cmd_prep() {
 cmd_appearance() {
   local mode="${1:-}"
   case "$mode" in light|dark) ;; *) die "usage: appearance <light|dark>" ;; esac
-  local udid; udid="$(booted_udid)"
-  [ -n "$udid" ] || die "no booted simulator"
+  local one; one="$(booted_one)" || exit 1
+  local udid="${one%%$'\t'*}"
   xcrun simctl ui "$udid" appearance "$mode"
   echo "appearance set to $mode on $udid"
   local lang; lang="$(cat "$STATE_LANG" 2>/dev/null || echo '<lang>')"
@@ -124,14 +118,14 @@ cmd_appearance() {
 cmd_shot() {
   local lang="${1:-}" name="${2:-}"
   [ -n "$lang" ] && [ -n "$name" ] || die "usage: shot <lang> <name>"
-  local nm; nm="$(booted_name)"
-  [ -n "$nm" ] || die "no booted simulator"
+  local one; one="$(booted_one)" || exit 1
+  local udid="${one%%$'\t'*}" nm="${one#*$'\t'}"
   local class="iphone"
   case "$nm" in *iPad*) class="ipad" ;; esac
   local dir="$OUT_ROOT/$class/$lang"
   mkdir -p "$dir"
   local out="$dir/$name.png"
-  xcrun simctl io booted screenshot "$out"
+  xcrun simctl io "$udid" screenshot "$out"
 
   # App Store rejects screenshots with an alpha channel. simctl rarely adds
   # one, but flatten it if present (ImageMagick) or warn loudly.
