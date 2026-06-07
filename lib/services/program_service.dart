@@ -229,6 +229,26 @@ class ProgramService {
 
   RolePlay? getRolePlay(String uuid) => _repo.getRolePlay(uuid);
 
+  /// 1-based number of [role] among the roles placed at [stationIndex] in
+  /// the same exercise, ordered by their [RolePlay.index]. Drives the
+  /// `Numbering.role` badge so markers read as `1.1-1`, `1.1-2`, … per
+  /// station. A role that is not yet persisted at this station (a fresh
+  /// draft, or one whose station is being changed in the form) appends at
+  /// the end, so it gets the next free number.
+  int roleNumberAtStation(RolePlay role, int stationIndex) {
+    final peers =
+        loadRolePlays()
+            .where(
+              (r) =>
+                  r.exerciseUuid == role.exerciseUuid &&
+                  r.stationIndex == stationIndex,
+            )
+            .toList()
+          ..sort((a, b) => a.index.compareTo(b.index));
+    final pos = peers.indexWhere((r) => r.uuid == role.uuid);
+    return (pos < 0 ? peers.length : pos) + 1;
+  }
+
   /// Persists [rolePlay] under the currently active program, creating a
   /// default plan first if none exists yet. Mirrors [saveExercise]: every
   /// mutation that writes nested data must ensure a parent program exists,

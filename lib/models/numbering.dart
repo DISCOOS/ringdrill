@@ -32,6 +32,19 @@ class Numbering {
     StationNumberFormat.alpha => '$exerciseNumber${alpha(stationIndex)}',
   };
 
+  /// Label for a role/markør, scoped to the station it is placed at:
+  /// the station code followed by a dash and the role's 1-based number
+  /// among the roles at that station — e.g. `1.1-1` (dotted) or `1a-1`
+  /// (alpha). [roleNumber] is 1-based.
+  static String role(
+    StationNumberFormat f, {
+    required int exerciseNumber,
+    required int stationIndex, // 0-based
+    required int roleNumber, // 1-based, within the station
+  }) =>
+      '${station(f, exerciseNumber: exerciseNumber, stationIndex: stationIndex)}'
+      '-$roleNumber';
+
   /// Bijective base-26: 0 -> a, 25 -> z, 26 -> aa, 27 -> ab, ...
   /// Fixes the overflow past 'z' that the old per-brief letter helper had.
   static String alpha(int index) {

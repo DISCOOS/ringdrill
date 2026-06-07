@@ -158,14 +158,24 @@ void main() {
 
   testWidgets('station dropdown shows exercise stations', (tester) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
     await tester.tap(find.byType(DropdownButtonFormField<int?>));
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n.noStationAssigned), findsWidgets);
     expect(find.text('Post 1'), findsWidgets);
     expect(find.text('Post 2'), findsWidgets);
+  });
+
+  testWidgets('station is required when the exercise has stations',
+      (tester) async {
+    await tester.pumpWidget(_buildForm(exercise: _exercise()));
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    // No station selected on the draft → saving must surface the error.
+    await tester.tap(find.text(l10n.save));
+    await tester.pump();
+
+    expect(find.text(l10n.pleaseSelectStation), findsOneWidget);
   });
 
   testWidgets('AppBar contains a RoleNumberBadge', (tester) async {

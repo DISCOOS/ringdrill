@@ -523,6 +523,10 @@
   "@noStationAssigned": {
     "description": "Placeholder shown when stationIndex is null."
   },
+  "pleaseSelectStation": "Velg en post",
+  "@pleaseSelectStation": {
+    "description": "Validation message shown when no station is selected for a role/markørordre."
+  },
   "emptyRolesTitle": "Ingen roller ennå",
   "emptyRolesBody": "Roller er markørene som spiller ut scenarioet på øvelsespostene. Opprett en øvelse først, og legg deretter til rollene den trenger.",
   "noRolesInExercise": "Ingen markører for denne øvelsen.",

@@ -131,13 +131,28 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final stationNumberFormat =
         _programService.activeProgram?.stationNumberFormat ??
         StationNumberFormat.dotted;
-    final code = exerciseIndex < 0
-        ? '?.${widget.rolePlay.index + 1}'
-        : Numbering.station(
-            stationNumberFormat,
-            exerciseNumber: exerciseIndex + 1,
-            stationIndex: widget.rolePlay.index,
-          );
+    // Badge reflects the *selected* post and the markør's number at that
+    // post, so it updates live as the post dropdown changes. Until a post
+    // is picked the post/markør parts show as `?`.
+    final exerciseNumber = exerciseIndex < 0 ? null : exerciseIndex + 1;
+    final String code;
+    if (exerciseNumber == null) {
+      code = stationNumberFormat == StationNumberFormat.alpha ? '?' : '?.?';
+    } else if (_stationIndex == null) {
+      code = stationNumberFormat == StationNumberFormat.alpha
+          ? '$exerciseNumber?'
+          : '$exerciseNumber.?';
+    } else {
+      code = Numbering.role(
+        stationNumberFormat,
+        exerciseNumber: exerciseNumber,
+        stationIndex: _stationIndex!,
+        roleNumber: _programService.roleNumberAtStation(
+          widget.rolePlay,
+          _stationIndex!,
+        ),
+      );
+    }
 
     final titleText = widget.rolePlay.name.trim().isEmpty
         ? localizations.newRolePlayTitle
@@ -237,12 +252,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: localizations.stationLabel,
+                      hintText: localizations.noStationAssigned,
                     ),
                     items: [
-                      DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text(localizations.noStationAssigned),
-                      ),
                       for (var i = 0; i < stations.length; i++)
                         DropdownMenuItem<int?>(
                           value: i,
@@ -263,6 +275,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                           ),
                         ),
                     ],
+                    // A station is required whenever the exercise has any.
+                    // When it has none there is nothing to pick, so skip.
+                    validator: (v) => stations.isNotEmpty && v == null
+                        ? localizations.pleaseSelectStation
+                        : null,
                     onChanged: (v) => setState(() => _stationIndex = v),
                   ),
                   const SizedBox(height: 16),

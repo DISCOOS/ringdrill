@@ -1395,6 +1395,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get noStationAssigned => 'Ingen post';
 
   @override
+  String get pleaseSelectStation => 'Velg en post';
+
+  @override
   String get emptyRolesTitle => 'Ingen roller ennå';
 
   @override

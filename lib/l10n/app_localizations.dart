@@ -2354,6 +2354,12 @@ abstract class AppLocalizations {
   /// **'No station'**
   String get noStationAssigned;
 
+  /// Validation message shown when no station is selected for a role/markørordre.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a station'**
+  String get pleaseSelectStation;
+
   /// Teaching empty-state title shown in the Program Script segment when the active plan has no roles.
   ///
   /// In en, this message translates to:

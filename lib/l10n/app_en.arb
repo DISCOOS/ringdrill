@@ -1290,6 +1290,10 @@
   "@noStationAssigned": {
     "description": "Placeholder shown in the Role section when stationIndex is null."
   },
+  "pleaseSelectStation": "Please select a station",
+  "@pleaseSelectStation": {
+    "description": "Validation message shown when no station is selected for a role/markørordre."
+  },
   "emptyRolesTitle": "No roles yet",
   "@emptyRolesTitle": {
     "description": "Teaching empty-state title shown in the Program Script segment when the active plan has no roles."

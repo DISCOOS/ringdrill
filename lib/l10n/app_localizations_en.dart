@@ -1399,6 +1399,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStationAssigned => 'No station';
 
   @override
+  String get pleaseSelectStation => 'Please select a station';
+
+  @override
   String get emptyRolesTitle => 'No roles yet';
 
   @override
