@@ -1,8 +1,10 @@
 # Store screenshots
 
-Repeatable workflow for capturing App Store (and later Play Store)
-screenshots from the simulator/emulator. Captures are native resolution, so
-they already match the required store sizes and need no resizing.
+Repeatable workflow for capturing App Store and Play Store screenshots from the
+simulator/emulator. Captures are native resolution, so they already match (iOS)
+or fall within (Android) the required store sizes and need no resizing. The iOS
+flow uses `tools/screenshots-ios.sh`; the Android flow uses
+`tools/screenshots-android.sh` (see the [Android](#android) section).
 
 ## Matrix
 
@@ -52,15 +54,15 @@ Example for iPhone in English:
 
 ```bash
 open -a Simulator                      # pick "iPhone 17 Pro Max"
-tools/screenshots.sh lang en           # sets locale + reboots the sim
+tools/screenshots.sh ios lang en           # sets locale + reboots the sim
 flutter run                            # then import demo-en.drill, navigate
-tools/screenshots.sh prep              # clean status bar (09:41, full battery/signal)
-tools/screenshots.sh shot en 01-schedule
-tools/screenshots.sh shot en 02-map
-tools/screenshots.sh appearance dark   # 03-live is captured in dark mode
-tools/screenshots.sh shot en 03-live
-tools/screenshots.sh appearance light
-tools/screenshots.sh shot en 04-brief
+tools/screenshots.sh ios prep              # clean status bar (09:41, full battery/signal)
+tools/screenshots.sh ios shot en 01-schedule
+tools/screenshots.sh ios shot en 02-map
+tools/screenshots.sh ios appearance dark   # 03-live is captured in dark mode
+tools/screenshots.sh ios shot en 03-live
+tools/screenshots.sh ios appearance light
+tools/screenshots.sh ios shot en 04-brief
 ```
 
 `03-live` (the live coordinator) is captured in **dark mode** across all
@@ -97,6 +99,60 @@ automatically if ImageMagick is installed and warns otherwise.
 
 ## Android
 
-The emulator-based Android flow will write to `store/screenshots/android/`
-(where the existing Android screenshots already live) and reuse the same two
-demo plans.
+`tools/screenshots-android.sh` mirrors the iOS script for the emulator, using
+`adb` instead of `xcrun simctl`. It reuses the same two demo plans and the same
+four shots, and writes to `store/screenshots/android/<class>/<lang>/` (where
+`<class>` is `phone` or `tablet`, auto-detected from the device's smallest-width
+dp).
+
+Google Play has no fixed pixel sizes, but each side must be 320–3840 px and the
+longer side may be no more than twice the shorter (a 2:1 cap; 16:9 / 9:16 is the
+recommendation). The script captures native resolution and warns only if a shot
+falls outside those bounds, so there is nothing to resize.
+
+| Form factor | Device (Android)      | Capture       | Ratio  |
+|-------------|-----------------------|---------------|--------|
+| Phone       | Pixel XL              | 1440 x 2560   | 16:9   |
+| Tablet      | Pixel Tablet          | 1600 x 2560   | 1.6:1  |
+
+Pick a 16:9 phone AVD (e.g. Pixel XL — QHD, no display cutout). Tall 20:9 phones such as the Pixel 8 Pro
+render ~2.22:1, which exceeds Play's 2:1 cap and gets rejected; `shot` warns when
+that happens.
+
+Use **AOSP** system images (not "Google Play"), so `adb root` works — the `lang`
+command sets `persist.sys.locale` and restarts the framework, which root allows.
+On a Google Play image, set the language manually in Settings > System >
+Languages and skip straight to `prep`.
+
+Example for a phone in English:
+
+```bash
+emulator -avd Pixel_XL &                 # boot a 16:9 phone AVD
+tools/screenshots.sh android lang en     # sets locale + restarts framework
+flutter run                              # then import demo-en.drill, navigate
+tools/screenshots.sh android prep        # clean status bar (09:41, full battery/signal)
+tools/screenshots.sh android shot en 01-schedule
+tools/screenshots.sh android shot en 02-map
+tools/screenshots.sh android appearance dark   # 03-live is captured in dark mode
+tools/screenshots.sh android shot en 03-live
+tools/screenshots.sh android appearance light
+tools/screenshots.sh android shot en 04-brief
+tools/screenshots.sh android unprep      # restore the real status bar when done
+```
+
+Then repeat with `lang nb` + `demo-no.drill`, and again on a tablet AVD for both
+languages. Files land under `store/screenshots/android/`:
+
+```
+store/screenshots/android/phone/en/01-schedule.png
+store/screenshots/android/phone/nb/...
+store/screenshots/android/tablet/en/...
+store/screenshots/android/tablet/nb/...
+```
+
+The flat-named PNGs already in `store/screenshots/android/` are the older manual
+captures; the script writes into the structured `phone/` and `tablet/` subtrees
+and leaves the old files alone.
+
+`prep` uses SystemUI demo mode for a clean status bar, so run `unprep` when you
+are done to restore the real one.
