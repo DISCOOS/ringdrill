@@ -21,6 +21,7 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -133,14 +134,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
     final Widget body;
     if (!_hasAnyRole) {
-      body = Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            localizations.noRolesInProgram,
-            textAlign: TextAlign.center,
-          ),
-        ),
+      body = TeachingEmptyState(
+        icon: Icons.theater_comedy,
+        title: localizations.emptyRolesTitle,
+        body: localizations.emptyRolesBody,
       );
     } else if (rows.isEmpty) {
       body = Center(
@@ -200,8 +197,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                 Positioned(
                   right: 16,
                   bottom: 16,
-                  child:
-                      WindowSizeClass.of(context) == WindowSizeClass.compact
+                  child: WindowSizeClass.of(context) == WindowSizeClass.compact
                       ? FloatingActionButton(
                           heroTag: null,
                           tooltip: localizations.newPlay,
@@ -640,20 +636,17 @@ class RolePlaysController extends ScreenController {
 
     // No exercises yet — nothing to attach a role to.
     if (exercises.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.noExercisesYet)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizations.noExercisesYet)));
       return;
     }
 
     // Pick the exercise to create the role in.
     final exercise = await showRingdrillActionSheet<Exercise>(
       context: context,
-      builder: (sheetContext) => _buildExercisePickerSheet(
-        sheetContext,
-        localizations,
-        exercises,
-      ),
+      builder: (sheetContext) =>
+          _buildExercisePickerSheet(sheetContext, localizations, exercises),
     );
     if (exercise == null || !context.mounted) return;
 

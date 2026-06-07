@@ -324,8 +324,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get noStationsInExercise => 'Ingen poster i denne øvelsen.';
 
   @override
-  String get noStationsYet =>
-      'Ingen poster ennå. Legg til en post fra Øvelser-fanen.';
+  String get emptyStationsTitle => 'Ingen poster ennå';
+
+  @override
+  String get emptyStationsBody =>
+      'Poster legges til inne i øvelsene dine. Opprett en øvelse først, så dukker postene opp her.';
 
   @override
   String get stationName => 'Postnavn';
@@ -341,6 +344,13 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get teamName => 'Navn på lag';
+
+  @override
+  String get emptyTeamsTitle => 'Ingen lag ennå';
+
+  @override
+  String get emptyTeamsBody =>
+      'Lag kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her.';
 
   @override
   String get numberOfMembers => 'Antall medlemmer';
@@ -476,6 +486,13 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get noExercisesYet => 'Ingen øvelser ennå!';
+
+  @override
+  String get emptyExercisesTitle => 'Ingen øvelser ennå';
+
+  @override
+  String get emptyExercisesBody =>
+      'En øvelse trenger antall poster og antall lag for å kunne kjøres. Legg til den første for å se ringen i arbeid.';
 
   @override
   String get save => 'LAGRE';
@@ -1378,8 +1395,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get noStationAssigned => 'Ingen post';
 
   @override
-  String get noRolesInProgram =>
-      'Ingen markørordre ennå. Trykk + for å legge til den første.';
+  String get emptyRolesTitle => 'Ingen roller ennå';
+
+  @override
+  String get emptyRolesBody =>
+      'Roller er markørene som spiller ut scenarioet på postene. Trykk + for å legge til den første.';
 
   @override
   String get noRolesInExercise => 'Ingen markører for denne øvelsen.';

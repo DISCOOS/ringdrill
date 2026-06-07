@@ -36,6 +36,7 @@ import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
+import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 import 'exercise_form_screen.dart';
 
@@ -268,7 +269,11 @@ class _ProgramViewState extends State<ProgramView> {
     }
 
     final exerciseSegment = _exercises.isEmpty
-        ? Center(child: Text(localizations.noExercisesYet))
+        ? TeachingEmptyState(
+            icon: Icons.update,
+            title: localizations.emptyExercisesTitle,
+            body: localizations.emptyExercisesBody,
+          )
         : ReorderableSection<Exercise>(
             items: _exercises,
             keyOf: (e) => ValueKey(e.uuid),

@@ -21,6 +21,7 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
+import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 class StationListView extends StatefulWidget {
   const StationListView({super.key, required this.controller});
@@ -164,11 +165,10 @@ class _StationListViewState extends State<StationListView> {
 
     final Widget body;
     if (!hasAnyStation) {
-      body = Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(localizations.noStationsYet, textAlign: TextAlign.center),
-        ),
+      body = TeachingEmptyState(
+        icon: Icons.place,
+        title: localizations.emptyStationsTitle,
+        body: localizations.emptyStationsBody,
       );
     } else if (rows.isEmpty) {
       body = Center(

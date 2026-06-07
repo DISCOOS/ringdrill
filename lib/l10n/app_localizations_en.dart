@@ -324,8 +324,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStationsInExercise => 'No stations in this exercise.';
 
   @override
-  String get noStationsYet =>
-      'No stations yet. Add a station from the Exercises tab.';
+  String get emptyStationsTitle => 'No stations yet';
+
+  @override
+  String get emptyStationsBody =>
+      'Stations are added inside your exercises. Create an exercise first and they will show up here.';
 
   @override
   String get stationName => 'Station Name';
@@ -341,6 +344,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamName => 'Team name';
+
+  @override
+  String get emptyTeamsTitle => 'No teams yet';
+
+  @override
+  String get emptyTeamsBody =>
+      'Teams come from the team count in your exercises. Create an exercise first and they will show up here.';
 
   @override
   String get numberOfMembers => 'Number of members';
@@ -479,6 +489,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noExercisesYet => 'No exercises yet!';
+
+  @override
+  String get emptyExercisesTitle => 'No exercises yet';
+
+  @override
+  String get emptyExercisesBody =>
+      'An exercise needs a number of stations and a number of teams before it can run. Add your first to see the ring in motion.';
 
   @override
   String get save => 'SAVE';
@@ -1382,7 +1399,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStationAssigned => 'No station';
 
   @override
-  String get noRolesInProgram => 'No roles yet. Tap + to add the first one.';
+  String get emptyRolesTitle => 'No roles yet';
+
+  @override
+  String get emptyRolesBody =>
+      'Roles are played out at the stations to drive the scenario. Tap + to add the first one.';
 
   @override
   String get noRolesInExercise => 'No roles in this exercise.';

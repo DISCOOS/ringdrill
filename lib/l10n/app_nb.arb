@@ -71,14 +71,13 @@
   "showingStationsIn": "Viser poster i: {name}",
   "noStationsInExercise": "Ingen poster i denne øvelsen.",
   "emptyStationsTitle": "Ingen poster ennå",
-  "emptyStationsBody": "Poster legges til inne i øvelsene dine. Lag en øvelse først, så dukker postene opp her.",
-  "noStationsYet": "Ingen poster ennå. Legg til en post fra Øvelser-fanen.",
+  "emptyStationsBody": "Poster legges til inne i øvelsene dine. Opprett en øvelse først, så dukker postene opp her.",
   "team": "{count, plural, =0{Lag} other{Lag}}",
   "member": "{count, plural, =0{medlem} =1{medlem} other{medlemmer}}",
   "teamNoExercises": "Laget er ikke med i noen øvelser ennå.",
   "teamsOverview": "Lagsoversikt",
   "emptyTeamsTitle": "Ingen lag ennå",
-  "emptyTeamsBody": "Lag kommer fra antall lag i øvelsene dine. Lag en øvelse først, så dukker lagene opp her.",
+  "emptyTeamsBody": "Lag i denne listen kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her.",
   "createExercise": "Opprett øvelse",
   "newExercise": "Ny øvelse",
   "editExercise": "Endre øvelse",
@@ -523,10 +522,6 @@
   "noStationAssigned": "Ingen post",
   "@noStationAssigned": {
     "description": "Placeholder shown when stationIndex is null."
-  },
-  "noRolesInProgram": "Ingen markørordre ennå. Trykk + for å legge til den første.",
-  "@noRolesInProgram": {
-    "description": "Tom-tilstand i Markører-segmentet når planen ikke har noen markørordrer."
   },
   "emptyRolesTitle": "Ingen roller ennå",
   "emptyRolesBody": "Roller er markørene som spiller ut scenarioet på postene. Trykk + for å legge til den første.",

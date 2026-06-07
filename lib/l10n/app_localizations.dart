@@ -590,11 +590,17 @@ abstract class AppLocalizations {
   /// **'No stations in this exercise.'**
   String get noStationsInExercise;
 
-  /// Empty-state shown in the Stations list when the active plan has no stations at all.
+  /// Teaching empty-state title shown in the Program Stations segment when the active plan has no stations.
   ///
   /// In en, this message translates to:
-  /// **'No stations yet. Add a station from the Exercises tab.'**
-  String get noStationsYet;
+  /// **'No stations yet'**
+  String get emptyStationsTitle;
+
+  /// Teaching empty-state body shown in the Program Stations segment when the active plan has no stations.
+  ///
+  /// In en, this message translates to:
+  /// **'Stations are added inside your exercises. Create an exercise first and they will show up here.'**
+  String get emptyStationsBody;
 
   /// Label
   ///
@@ -625,6 +631,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Team name'**
   String get teamName;
+
+  /// Teaching empty-state title shown in the Program Teams segment when the active plan has no teams.
+  ///
+  /// In en, this message translates to:
+  /// **'No teams yet'**
+  String get emptyTeamsTitle;
+
+  /// Teaching empty-state body shown in the Program Teams segment when the active plan has no teams.
+  ///
+  /// In en, this message translates to:
+  /// **'Teams come from the team count in your exercises. Create an exercise first and they will show up here.'**
+  String get emptyTeamsBody;
 
   /// Label
   ///
@@ -829,6 +847,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No exercises yet!'**
   String get noExercisesYet;
+
+  /// Teaching empty-state title shown in the Program Exercises segment when the active plan has no exercises.
+  ///
+  /// In en, this message translates to:
+  /// **'No exercises yet'**
+  String get emptyExercisesTitle;
+
+  /// Teaching empty-state body shown in the Program Exercises segment when the active plan has no exercises.
+  ///
+  /// In en, this message translates to:
+  /// **'An exercise needs a number of stations and a number of teams before it can run. Add your first to see the ring in motion.'**
+  String get emptyExercisesBody;
 
   /// Button
   ///
@@ -2324,11 +2354,17 @@ abstract class AppLocalizations {
   /// **'No station'**
   String get noStationAssigned;
 
-  /// Empty-state shown in the Markører segment when the program has no RolePlay records.
+  /// Teaching empty-state title shown in the Program Script segment when the active plan has no roles.
   ///
   /// In en, this message translates to:
-  /// **'No roles yet. Tap + to add the first one.'**
-  String get noRolesInProgram;
+  /// **'No roles yet'**
+  String get emptyRolesTitle;
+
+  /// Teaching empty-state body shown in the Program Script segment when the active plan has no roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles are played out at the stations to drive the scenario. Tap + to add the first one.'**
+  String get emptyRolesBody;
 
   /// Empty-state shown in the RolePlays tab when the active exercise filter excludes every role.
   ///

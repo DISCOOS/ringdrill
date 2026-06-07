@@ -14,6 +14,7 @@ import 'package:ringdrill/views/team_form_screen.dart';
 import 'package:ringdrill/views/team_station_widget.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 class TeamsView extends StatefulWidget {
   const TeamsView({super.key});
@@ -54,6 +55,14 @@ class _TeamsViewState extends State<TeamsView> {
     final teams = _programService.loadTeams();
     final exercises = _programService.loadExercises();
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
+
+    if (teams.isEmpty) {
+      return TeachingEmptyState(
+        icon: Icons.group,
+        title: localizations.emptyTeamsTitle,
+        body: localizations.emptyTeamsBody,
+      );
+    }
 
     Widget buildList(ContextSheetTarget? selectedTarget) {
       return ListView(
@@ -120,7 +129,12 @@ class _TeamsViewState extends State<TeamsView> {
                     }),
               body: teamExercises.isEmpty
                   ? null
-                  : _buildTeamRotation(context, t, teamExercises, localizations),
+                  : _buildTeamRotation(
+                      context,
+                      t,
+                      teamExercises,
+                      localizations,
+                    ),
               // Tap opens the cross-exercise team overview (TeamScreen). The
               // rotation is a per-exercise/player concept, so planning context
               // does not guess an exercise; TeamScreen highlights the live one
@@ -193,42 +207,42 @@ class _TeamsViewState extends State<TeamsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                  Text(
-                    e.name,
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    Text(
+                      e.name,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Text(
-                          localizations.station(1),
-                          style: TextStyle(
-                            fontSize: kDrillAccentFontSize,
-                            color: muted,
+                    const SizedBox(height: 2),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text(
+                            localizations.station(1),
+                            style: TextStyle(
+                              fontSize: kDrillAccentFontSize,
+                              color: muted,
+                            ),
                           ),
                         ),
-                      ),
-                      for (int r = 0; r < e.schedule.length; r++)
-                        TeamStationWidget(
-                          isCurrent: false,
-                          exercise: e,
-                          teamIndex: team.index,
-                          roundIndex: r,
-                        ),
-                    ],
-                  ),
-                ],
+                        for (int r = 0; r < e.schedule.length; r++)
+                          TeamStationWidget(
+                            isCurrent: false,
+                            exercise: e,
+                            teamIndex: team.index,
+                            roundIndex: r,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

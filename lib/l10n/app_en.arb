@@ -343,11 +343,6 @@
   "@emptyStationsBody": {
     "description": "Teaching empty-state body shown in the Program Stations segment when the active plan has no stations."
   },
-  "noStationsYet": "No stations yet. Add a station from the Exercises tab.",
-  "@noStationsYet": {
-    "description": "Empty-state shown in the Stations list when the active plan has no stations at all."
-  },
-
   "stationName": "Station Name",
   "@stationName": {
     "description": "Label"
@@ -372,7 +367,7 @@
   "@emptyTeamsTitle": {
     "description": "Teaching empty-state title shown in the Program Teams segment when the active plan has no teams."
   },
-  "emptyTeamsBody": "Teams come from the team count in your exercises. Create an exercise first and they will show up here.",
+  "emptyTeamsBody": "Teams in this list come from the team count in your exercises. Create an exercise first and they will show up here.",
   "@emptyTeamsBody": {
     "description": "Teaching empty-state body shown in the Program Teams segment when the active plan has no teams."
   },
@@ -1294,10 +1289,6 @@
   "noStationAssigned": "No station",
   "@noStationAssigned": {
     "description": "Placeholder shown in the Role section when stationIndex is null."
-  },
-  "noRolesInProgram": "No roles yet. Tap + to add the first one.",
-  "@noRolesInProgram": {
-    "description": "Empty-state shown in the Markører segment when the program has no RolePlay records."
   },
   "emptyRolesTitle": "No roles yet",
   "@emptyRolesTitle": {
