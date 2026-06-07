@@ -149,7 +149,21 @@ cmd_shot() {
       fi
     fi
   fi
-  echo "saved $out  ($nm, $(sips -g pixelWidth -g pixelHeight "$out" 2>/dev/null | awk '/pixel/{printf "%s ", $2}'))"
+  local w h expected
+  w="$(sips -g pixelWidth "$out" 2>/dev/null | awk '/pixelWidth/{print $2}')"
+  h="$(sips -g pixelHeight "$out" 2>/dev/null | awk '/pixelHeight/{print $2}')"
+  case "$class" in
+    iphone) expected="1320x2868" ;;
+    ipad)   expected="2064x2752" ;;
+    *)      expected="" ;;
+  esac
+  echo "saved $out  ($nm, ${w}x${h})"
+  if [ -n "$expected" ] && [ "${w}x${h}" != "$expected" ]; then
+    echo "WARNING: ${w}x${h} does not match the required $expected for $class." >&2
+    echo "         App Store will reject this size. In the Simulator, turn OFF" >&2
+    echo "         Debug > 'Optimize Rendering for Window Scale' (or set the window" >&2
+    echo "         to 100% scale), then re-run this shot." >&2
+  fi
 
   echo "$lang" > "$STATE_LANG"
   local other; [ "$lang" = nb ] && other="en" || other="nb"
