@@ -10,6 +10,7 @@ import 'package:ringdrill/data/program_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -276,13 +277,22 @@ class ProgramService {
   }
 
   List<StationLocation> getLocations() {
-    final markers = <((String, int), String, LatLng)>[];
-    for (final e in loadExercises()) {
-      // Map markers show the station name only. Exercise context is
-      // available via the search-result chip and the station detail
-      // screen, so prefixing the label with the exercise name just
-      // crowds the marker.
-      markers.addAll(e.getLocations(false));
+    // Map markers are labelled with the station *number* (e.g. "1.2" / "1a"),
+    // not the name: the number takes far less room above the pin and matches
+    // the StationNumberBadge used everywhere else. Exercise/station context is
+    // still available via the search-result chip and the station detail
+    // screen.
+    final format =
+        activeProgram?.stationNumberFormat ?? StationNumberFormat.dotted;
+    final markers = <StationLocation>[];
+    final exercises = loadExercises();
+    for (var ei = 0; ei < exercises.length; ei++) {
+      markers.addAll(
+        exercises[ei].getNumberedLocations(
+          exerciseNumber: ei + 1,
+          format: format,
+        ),
+      );
     }
     return markers;
   }

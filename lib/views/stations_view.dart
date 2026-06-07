@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -16,6 +17,7 @@ import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
@@ -103,6 +105,17 @@ class _StationsViewState extends State<StationsView>
     _detailTarget.value = null;
   }
 
+  /// Camera fit that frames [points] centred on their centroid, with overlay
+  /// aware padding. This is the *same* framing the in-map "centre" control
+  /// applies (MapView._toggleCenter fits the identical set of points), so an
+  /// auto-fit after a filter change lands the markers exactly where pressing
+  /// "centre" would. Returns null when there are fewer than two points to
+  /// frame — callers fall back to a plain recentre.
+  CameraFit? _markersFit(List<LatLng> points, EdgeInsets padding) {
+    if (points.length < 2) return null;
+    return points.centroidFit(padding) ?? points.fit(padding);
+  }
+
   void _recenter() {
     if (!mounted) return;
     final markers = _visibleLocations();
@@ -110,18 +123,16 @@ class _StationsViewState extends State<StationsView>
       _mapController.move(MapConfig.initialCenter, _mapController.camera.zoom);
       return;
     }
-    // Prefer centroid-centred bounds so the camera lands on the geometric
-    // mean of all stations, not on the bounding-box midpoint (which
-    // drifts toward outliers). Padding matches the MapView overlays
-    // (search field at top, FAB column at bottom) so the centroid sits
-    // in the visible centre rather than under the FABs.
+    // Padding matches the MapView overlays (search field at top, FAB column at
+    // bottom) so the centroid sits in the visible centre rather than under the
+    // FABs.
     final padding = MapConfig.fitPadding(
       withSearch: true,
       withZoom: true,
       withCenter: true,
+      withLocate: true,
     );
-    final points = markers.map((m) => m.$3);
-    final fit = points.centroidFit(padding) ?? markers.fit(padding);
+    final fit = _markersFit(markers.map((m) => m.$3).toList(), padding);
     if (fit != null) {
       _mapController.fitCamera(fit);
     } else {
@@ -241,7 +252,13 @@ class _StationsViewState extends State<StationsView>
             withZoom: true,
             withLocate: true,
             initialCenter: center,
-            initialFit: markers.fit(fitPadding),
+            // Fit the same set the in-map "centre" control fits (all visible
+            // station + roleplay markers, centroid-centred) so changing the
+            // filter re-frames exactly like pressing "centre".
+            initialFit: _markersFit(
+              allSpecs.map((s) => s.point).toList(),
+              fitPadding,
+            ),
             controller: _mapController,
             interactionFlags: MapConfig.interactive,
             layers: MapConfig.layers,
@@ -489,8 +506,20 @@ class _StationsViewState extends State<StationsView>
                       itemBuilder: (context, index) {
                         final ex = exercises[index];
                         final isVisible = !_hiddenExercises.contains(ex.uuid);
+                        final exerciseFormat =
+                            _programService
+                                .activeProgram
+                                ?.exerciseNumberFormat ??
+                            ExerciseNumberFormat.hash;
                         return SwitchListTile.adaptive(
                           value: isVisible,
+                          secondary: ExerciseNumberBadge(
+                            label: Numbering.exercise(
+                              exerciseFormat,
+                              index + 1,
+                            ),
+                            size: 32,
+                          ),
                           title: Text(ex.name),
                           onChanged: (value) {
                             setSheetState(() {

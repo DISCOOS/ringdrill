@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 
 part 'exercise.freezed.dart';
@@ -49,6 +50,45 @@ extension ExerciseX on Exercise {
       markers.add((
         (uuid, i++),
         [if (withExersiceName) name, s.name].join(' | '),
+        s.position!,
+      ));
+    }
+    return markers;
+  }
+
+  /// Like [getLocations] but labels each positioned station with its station
+  /// *number* (e.g. "1.2" / "1a") instead of its name, so map markers read the
+  /// same token as [StationNumberBadge].
+  ///
+  /// [exerciseNumber] is the 1-based position of this exercise in the program
+  /// (the caller knows the program order; the exercise itself does not). The
+  /// sub-index is the station's ordinal in the index-sorted full station list
+  /// — including stations without a position — so the numbers match the badges
+  /// shown in the Stations list even when some stations are unplaced.
+  ///
+  /// The marker id stays the natural-order running index over positioned
+  /// stations, exactly as [getLocations] and [activeLocationIds] assign it, so
+  /// live-station highlighting keeps matching.
+  List<StationLocation> getNumberedLocations({
+    required int exerciseNumber,
+    required StationNumberFormat format,
+  }) {
+    final sorted = [...stations]..sort((a, b) => a.index.compareTo(b.index));
+    final subByStationIndex = <int, int>{};
+    for (var s = 0; s < sorted.length; s++) {
+      subByStationIndex[sorted[s].index] = s;
+    }
+    var positioned = 0;
+    final markers = <StationLocation>[];
+    for (final s in stations) {
+      if (s.position == null) continue;
+      markers.add((
+        (uuid, positioned++),
+        Numbering.station(
+          format,
+          exerciseNumber: exerciseNumber,
+          stationIndex: subByStationIndex[s.index] ?? 0,
+        ),
         s.position!,
       ));
     }

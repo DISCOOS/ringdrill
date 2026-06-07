@@ -12,6 +12,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/map_settings.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/projection.dart';
@@ -96,16 +97,35 @@ class MapConfig {
   static const LatLng initialCenter = LatLng(59.91, 10.75);
 
   /// Below this zoom level, marker labels are hidden. Labels fade in between
-  /// [labelMinZoom] - 1 and [labelMinZoom] via [AnimatedOpacity].
+  /// [labelMinZoom] - 1 and [labelMinZoom] via [AnimatedOpacity]. This is the
+  /// compact-layout baseline; [labelMinZoomFor] relaxes it on wider windows.
   static const double labelMinZoom = 14.0;
+
+  /// Zoom at which labels become fully visible, by window-size class. Wider
+  /// layouts (tablets, desktop, split view) have far more room, so labels can
+  /// appear at a more zoomed-out overview without crowding the map; compact
+  /// phones keep the tighter [labelMinZoom] baseline. Mirrors the marker-scale
+  /// bump in [MapView] so labels and icons grow into the extra space together.
+  static double labelMinZoomFor(WindowSizeClass sizeClass) => switch (sizeClass) {
+    WindowSizeClass.compact => labelMinZoom,
+    WindowSizeClass.medium => 12.5,
+    WindowSizeClass.expanded => 11.5,
+  };
 
   /// Padding used when calling [MapController.fitCamera] so the fit
   /// honours the on-map overlays. Because [MapController.fitCamera]
   /// places the bounds *center* into the centre of the padded area,
   /// asymmetric padding directly shifts where the centroid lands on
   /// screen: a larger bottom padding pulls the camera so the centroid
-  /// appears higher in the visible area, compensating for the FAB
-  /// column at the bottom-right of the map.
+  /// appears higher in the visible area.
+  ///
+  /// Top and bottom insets are kept close to one another so a fit lands
+  /// the markers near the visible centre rather than skewed upward. The
+  /// top inset clears the search field; the bottom inset only needs a
+  /// modest reserve because the FAB column sits in the bottom-*right*
+  /// corner, not full width, so a centred cluster never lands under it.
+  /// Reserving the full FAB-stack height (the old 200/268 px) pushed the
+  /// whole map up and left noticeably less space above than below.
   ///
   /// Horizontal padding stays the same regardless of overlays; it is
   /// kept generous (64 px) on purpose so the outermost markers do not
@@ -118,14 +138,12 @@ class MapConfig {
     bool withCenter = false,
     bool withLocate = false,
   }) {
-    // The bottom-right FAB column can host up to four buttons (locate,
-    // zoom in, zoom out, centre). 200 px clears the zoom+centre stack;
-    // adding the locate FAB on top pushes the column another ~68 px so
-    // we bump the bottom inset to keep the centroid above the controls.
-    final double bottom = (withZoom || withCenter || withLocate)
-        ? (withLocate ? 268 : 200)
-        : 48;
-    return EdgeInsets.fromLTRB(64, withSearch ? 112 : 48, 64, bottom);
+    // A modest reserve keeps the bottom edge of the cluster clear of the
+    // FAB column without dwarfing the top inset; balanced top/bottom keeps
+    // the markers centred instead of riding under the search field.
+    final double bottom = (withZoom || withCenter || withLocate) ? 120 : 48;
+    final double top = withSearch ? 112 : 48;
+    return EdgeInsets.fromLTRB(64, top, 64, bottom);
   }
 
   /// Single long-living HTTP client shared by every [NetworkTileProvider]
@@ -293,7 +311,6 @@ class _MapViewState<K> extends State<MapView<K>> {
   Timer? _throttleTimer;
   bool _isSearching = false;
   int _currentLayerIndex = 0;
-  int _currentCenterIndex = 0;
 
   /// Last known device position resolved by the locate-me FAB. Null until
   /// the user has successfully located themselves at least once during
@@ -310,7 +327,6 @@ class _MapViewState<K> extends State<MapView<K>> {
   void initState() {
     super.initState();
     _mapController = widget.controller ?? MapController();
-    _initCurrentIndex();
     // Rebuild when the "show zoom buttons" preference changes so an open map
     // reflects the setting immediately.
     MapSettings.instance.showZoomControls.addListener(_onMapSettingsChanged);
@@ -327,16 +343,13 @@ class _MapViewState<K> extends State<MapView<K>> {
         _mapController = widget.controller!;
       }
       if (widget.initialCenter != oldWidget.initialCenter) {
-        _initCurrentIndex();
         _mapController.move(widget.initialCenter, _mapController.camera.zoom);
       }
       if (widget.initialZoom != oldWidget.initialZoom) {
-        _initCurrentIndex();
         _mapController.move(_mapController.camera.center, widget.initialZoom);
       }
       if (widget.initialFit != null &&
           widget.initialFit != oldWidget.initialFit) {
-        _initCurrentIndex();
         _mapController.fitCamera(widget.initialFit!);
       }
     }
@@ -670,25 +683,35 @@ class _MapViewState<K> extends State<MapView<K>> {
     }
   }
 
+  /// Recentre the camera so every currently-visible marker fits in view.
+  ///
+  /// Replaces the old round-robin behaviour (which stepped through markers
+  /// one at a time): fitting all visible markers at once is what users
+  /// expect from a "centre" control and matches the initial fit.
   void _toggleCenter() {
-    if (widget.markers.isEmpty) {
+    final points = widget.markers.map((e) => e.point).toList(growable: false);
+    if (points.isEmpty) {
       _mapController.move(widget.initialCenter, _mapController.camera.zoom);
       return;
     }
-
-    // Do not toggle to same initial center if exists in markers
-    final unique = !widget.markers.any((e) => e.point == widget.initialCenter);
-
-    _currentCenterIndex =
-        (_currentCenterIndex + 1) % (widget.markers.length + (unique ? 1 : 0));
-
-    final point = _currentCenterIndex == 0
-        ? widget.initialCenter
-        : widget.markers[_currentCenterIndex - (unique ? 1 : 0)].point;
-
-    debugPrint((_currentCenterIndex, point).toString());
-
-    _mapController.move(point, _mapController.camera.zoom);
+    if (points.length == 1) {
+      // A single marker has no extent to fit; just recentre on it and keep
+      // the user's current zoom.
+      _mapController.move(points.first, _mapController.camera.zoom);
+      return;
+    }
+    // Overlay-aware padding so the cluster lands in the visible centre rather
+    // than under the search field (top) or the FAB column (bottom-right).
+    final padding = MapConfig.fitPadding(
+      withSearch: widget.withSearch,
+      withZoom: widget.withZoom && MapSettings.instance.showZoomControls.value,
+      withCenter: widget.withCenter,
+      withLocate: widget.withLocate,
+    );
+    final fit =
+        points.centroidFit(padding) ??
+        CameraFit.coordinates(padding: padding, coordinates: points);
+    _mapController.fitCamera(fit);
   }
 
   Widget _buildSearchTool(
@@ -882,17 +905,6 @@ class _MapViewState<K> extends State<MapView<K>> {
     });
   }
 
-  void _initCurrentIndex() {
-    int i = 0;
-    _currentCenterIndex = 0;
-    for (final it in widget.markers) {
-      if (it.point == widget.initialCenter) {
-        _currentCenterIndex = i;
-        return;
-      }
-      i++;
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // Marker layer builders
@@ -902,13 +914,26 @@ class _MapViewState<K> extends State<MapView<K>> {
   /// for [FlutterMap]. When [withClustering] is false, all specs go into a
   /// single flat layer. Otherwise, null-group specs get a flat layer and each
   /// non-null group gets its own [MarkerClusterLayerWidget].
+  /// Visual scale applied to marker icons and labels per window-size class.
+  /// On compact phones the base size is right; on the larger maps shown at
+  /// medium/expanded widths the 32 dp icon and small label read as too tiny,
+  /// so they are bumped to keep pace with the bigger canvas (and the larger
+  /// FAB controls, which already scale via [MapCommandSize]).
+  double get _markerScale => switch (WindowSizeClass.of(context)) {
+    WindowSizeClass.compact => 1.0,
+    WindowSizeClass.medium => 1.2,
+    WindowSizeClass.expanded => 1.35,
+  };
+
   List<Widget> _buildMarkerLayers() {
     if (widget.markers.isEmpty) return const [];
+
+    final scale = _markerScale;
 
     if (!widget.withClustering) {
       return [
         MarkerLayer(
-          markers: widget.markers.map(_buildMarker).toList(),
+          markers: widget.markers.map((s) => _buildMarker(s, scale)).toList(),
         ),
       ];
     }
@@ -925,39 +950,51 @@ class _MapViewState<K> extends State<MapView<K>> {
 
     return [
       if (nullGroup.isNotEmpty)
-        MarkerLayer(markers: nullGroup.map(_buildMarker).toList()),
+        MarkerLayer(
+          markers: nullGroup.map((s) => _buildMarker(s, scale)).toList(),
+        ),
       for (final entry in groups.entries)
-        _buildClusterLayer(entry.key, entry.value),
+        _buildClusterLayer(entry.key, entry.value, scale),
     ];
   }
 
-  Marker _buildMarker(MapMarkerSpec<K> spec) {
+  Marker _buildMarker(MapMarkerSpec<K> spec, double scale) {
     final painter = TextPainter(
       text: TextSpan(text: spec.label),
       maxLines: 1,
       textDirection: TextDirection.ltr,
     )..layout();
     return Marker(
-      height: 64,
-      width: math.max(80.0, painter.width),
+      height: 64 * scale,
+      width: math.max(80.0, painter.width) * scale,
       point: spec.point,
       alignment: Alignment.topCenter,
       child: GestureDetector(
         behavior: HitTestBehavior.deferToChild,
         onTap: spec.onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _ZoomGatedLabel(label: spec.label, showLabels: widget.showLabels),
-            spec.child,
-          ],
+        // Scale around the top centre so the marker still hangs from its
+        // geographic point while the icon and label grow on wider layouts.
+        child: Transform.scale(
+          scale: scale,
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _ZoomGatedLabel(label: spec.label, showLabels: widget.showLabels),
+              spec.child,
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildClusterLayer(Object group, List<MapMarkerSpec<K>> specs) {
+  Widget _buildClusterLayer(
+    Object group,
+    List<MapMarkerSpec<K>> specs,
+    double scale,
+  ) {
     final style = widget.clusterStyles[group];
     final color = style?.color;
     final onColor = style?.onColor;
@@ -970,7 +1007,7 @@ class _MapViewState<K> extends State<MapView<K>> {
     final markers = <Marker>[];
     final highlightedMarkers = <Marker>{};
     for (final spec in specs) {
-      final marker = _buildMarker(spec);
+      final marker = _buildMarker(spec, scale);
       markers.add(marker);
       if (spec.highlighted) highlightedMarkers.add(marker);
     }
@@ -1242,11 +1279,11 @@ class _MapViewState<K> extends State<MapView<K>> {
   }
 }
 
-// Slightly translucent so the label does
-// not dominate when multiple markers sit
-// close together. Affects background and
-// text together; the pin underneath stays
-// fully opaque.
+// Kept just shy of fully opaque so the label still reads as a soft
+// overlay without washing out against the map. Labels can be toggled
+// off entirely (the "show labels" filter), so when they are shown we
+// can afford near-full opacity for legibility. Affects background and
+// text together; the pin underneath stays fully opaque.
 class FeatureLabel extends StatelessWidget {
   const FeatureLabel({super.key, required this.text});
 
@@ -1255,7 +1292,7 @@ class FeatureLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: 0.55,
+      opacity: 0.9,
       child: Material(
         elevation: 2,
         borderRadius: BorderRadius.circular(4),
@@ -1263,7 +1300,9 @@ class FeatureLabel extends StatelessWidget {
           padding: const EdgeInsets.all(1.0),
           // ADR-0037: themed bodySmall so the map overlay label scales with
           // Dynamic Type. Growth is bounded by the app-root 1.3 clamp, so it
-          // cannot crowd the map at the largest accessibility sizes.
+          // cannot crowd the map at the largest accessibility sizes. The
+          // marker itself is scaled up on wider layouts via Transform.scale
+          // in _buildMarker, which grows this label in step.
           child: Text(text, style: Theme.of(context).textTheme.bodySmall),
         ),
       ),
@@ -1409,8 +1448,10 @@ class _CurrentLocationDot extends StatelessWidget {
 /// Zoom-gated label slot rendered above each marker icon.
 ///
 /// Returns [SizedBox.shrink] when [showLabels] is false or when the camera
-/// zoom is below [MapConfig.labelMinZoom] - 1. Between that threshold and
-/// [MapConfig.labelMinZoom] the label fades in via [AnimatedOpacity].
+/// zoom is below the layout-class threshold ([MapConfig.labelMinZoomFor]) - 1.
+/// Between that threshold and the threshold itself the label fades in via
+/// [AnimatedOpacity], so wider windows reveal labels at a more zoomed-out
+/// overview than compact phones.
 ///
 /// Reads the current zoom via [MapCamera.of] so it rebuilds automatically
 /// when the camera moves. Must be used inside a [FlutterMap] subtree.
@@ -1424,7 +1465,7 @@ class _ZoomGatedLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!showLabels) return const SizedBox.shrink();
     final zoom = MapCamera.of(context).zoom;
-    const minZoom = MapConfig.labelMinZoom;
+    final minZoom = MapConfig.labelMinZoomFor(WindowSizeClass.of(context));
     if (zoom < minZoom - 1) return const SizedBox.shrink();
     final opacity = zoom >= minZoom
         ? 1.0
