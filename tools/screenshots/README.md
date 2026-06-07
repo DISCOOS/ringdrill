@@ -53,9 +53,15 @@ flutter run                            # then import demo-en.drill, navigate
 tools/screenshots.sh prep              # clean status bar (09:41, full battery/signal)
 tools/screenshots.sh shot en 01-schedule
 tools/screenshots.sh shot en 02-map
+tools/screenshots.sh appearance dark   # 03-live is captured in dark mode
 tools/screenshots.sh shot en 03-live
+tools/screenshots.sh appearance light
 tools/screenshots.sh shot en 04-brief
 ```
+
+`03-live` (the live coordinator) is captured in **dark mode** across all
+passes; the other three stay in light mode. This signals dark-mode support
+and gives the set some variety without making it look inconsistent.
 
 Then repeat with `lang nb` + `demo-no.drill`, and again on the iPad Pro 13-inch
 simulator for both languages. Files land under `store/screenshots/ios/`

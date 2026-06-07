@@ -17,6 +17,9 @@
 #   tools/screenshots.sh shot <lang> <name> Capture the booted sim to
 #                                           store/screenshots/ios/<class>/<lang>/<name>.png
 #                                           (<class> = iphone|ipad, auto-detected).
+#   tools/screenshots.sh appearance <light|dark>
+#                                           Switch the booted sim between light
+#                                           and dark mode (e.g. dark for 03-live).
 #
 # Typical flow per device + language (see tools/screenshots/README.md):
 #   open -a Simulator                       # pick "iPhone 16 Pro Max"
@@ -25,12 +28,18 @@
 #   tools/screenshots.sh prep
 #   tools/screenshots.sh shot en 01-schedule
 #   tools/screenshots.sh shot en 02-map
+#   tools/screenshots.sh appearance dark        # 03-live looks best in dark
 #   tools/screenshots.sh shot en 03-live
+#   tools/screenshots.sh appearance light
 #   tools/screenshots.sh shot en 04-brief
 #
 set -euo pipefail
 
 OUT_ROOT="${OUT_ROOT:-store/screenshots/ios}"
+
+# Remembers the language set by `lang` so `prep`/`appearance` can print
+# precise "Next:" hints without being told the language again.
+STATE_LANG="${TMPDIR:-/tmp}/ringdrill-screenshots.lang"
 
 die() { echo "error: $*" >&2; exit 1; }
 
@@ -79,7 +88,10 @@ cmd_lang() {
   echo "set language=$lang locale=$locale; rebooting simulator $udid ..."
   xcrun simctl shutdown "$udid"
   xcrun simctl boot "$udid"
-  echo "done. Now run 'flutter run' and import the matching demo plan."
+  echo "$lang" > "$STATE_LANG"
+  local file; [ "$lang" = nb ] && file="no" || file="en"
+  echo "done."
+  echo "Next:  flutter run, import tools/screenshots/demo-$file.drill into the app, then:  tools/screenshots.sh prep"
 }
 
 cmd_prep() {
@@ -91,6 +103,22 @@ cmd_prep() {
     --wifiBars 3 --cellularBars 4 \
     --operatorName ""
   echo "status bar set on $udid"
+  local lang; lang="$(cat "$STATE_LANG" 2>/dev/null || echo '<lang>')"
+  echo "Next:  tools/screenshots.sh shot $lang 01-schedule   (light mode)"
+}
+
+cmd_appearance() {
+  local mode="${1:-}"
+  case "$mode" in light|dark) ;; *) die "usage: appearance <light|dark>" ;; esac
+  local udid; udid="$(booted_udid)"
+  [ -n "$udid" ] || die "no booted simulator"
+  xcrun simctl ui "$udid" appearance "$mode"
+  echo "appearance set to $mode on $udid"
+  local lang; lang="$(cat "$STATE_LANG" 2>/dev/null || echo '<lang>')"
+  case "$mode" in
+    dark)  echo "Next:  tools/screenshots.sh shot $lang 03-live" ;;
+    light) echo "Next:  tools/screenshots.sh shot $lang 04-brief" ;;
+  esac
 }
 
 cmd_shot() {
@@ -122,14 +150,25 @@ cmd_shot() {
     fi
   fi
   echo "saved $out  ($nm, $(sips -g pixelWidth -g pixelHeight "$out" 2>/dev/null | awk '/pixel/{printf "%s ", $2}'))"
+
+  echo "$lang" > "$STATE_LANG"
+  local other; [ "$lang" = nb ] && other="en" || other="nb"
+  case "$name" in
+    01-schedule) echo "Next:  tools/screenshots.sh shot $lang 02-map" ;;
+    02-map)      echo "Next:  tools/screenshots.sh appearance dark   (then: shot $lang 03-live)" ;;
+    03-live)     echo "Next:  tools/screenshots.sh appearance light  (then: shot $lang 04-brief)" ;;
+    04-brief)    echo "Pass complete ($class/$lang). Next pass: 'tools/screenshots.sh lang $other' for the other language, or boot the iPad Pro 13-inch simulator for the iPad set, then start again from 'lang'." ;;
+    *)           echo "Next:  continue with the remaining shots, or 'tools/screenshots.sh lang <nb|en>' for the next pass." ;;
+  esac
 }
 
 require_xcrun
 sub="${1:-}"; shift || true
 case "$sub" in
-  devices) cmd_devices "$@" ;;
-  lang)    cmd_lang "$@" ;;
-  prep)    cmd_prep "$@" ;;
-  shot)    cmd_shot "$@" ;;
-  *) die "usage: $0 {devices|lang <nb|en>|prep|shot <lang> <name>}" ;;
+  devices)    cmd_devices "$@" ;;
+  lang)       cmd_lang "$@" ;;
+  prep)       cmd_prep "$@" ;;
+  appearance) cmd_appearance "$@" ;;
+  shot)       cmd_shot "$@" ;;
+  *) die "usage: $0 {devices|lang <nb|en>|prep|appearance <light|dark>|shot <lang> <name>}" ;;
 esac
