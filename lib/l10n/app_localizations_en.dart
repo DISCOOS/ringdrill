@@ -350,7 +350,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyTeamsBody =>
-      'Teams in this list come from the team count in your exercises. Create an exercise first and they will show up here.';
+      'Teams come from the team count in your exercises. Create an exercise first and they will show up here.';
 
   @override
   String get numberOfMembers => 'Number of members';

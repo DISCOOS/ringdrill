@@ -641,7 +641,7 @@ abstract class AppLocalizations {
   /// Teaching empty-state body shown in the Program Teams segment when the active plan has no teams.
   ///
   /// In en, this message translates to:
-  /// **'Teams in this list come from the team count in your exercises. Create an exercise first and they will show up here.'**
+  /// **'Teams come from the team count in your exercises. Create an exercise first and they will show up here.'**
   String get emptyTeamsBody;
 
   /// Label
