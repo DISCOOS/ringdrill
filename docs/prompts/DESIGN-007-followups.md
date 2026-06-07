@@ -1,0 +1,1 @@
+1. `flutter test` baseline is not green before DESIGN-007 Program empty-state wiring: `test/views/active_plan_actions_test.dart` finds two "Rename" widgets, `test/views/brief_copy_link_test.dart` cannot find the program-brief copy button, and `test/views/brief_screen_test.dart` cascades with missing `BriefMarkdown`/TOC expectations.

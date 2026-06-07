@@ -70,11 +70,15 @@
   "allExercises": "Alle øvelser",
   "showingStationsIn": "Viser poster i: {name}",
   "noStationsInExercise": "Ingen poster i denne øvelsen.",
+  "emptyStationsTitle": "Ingen poster ennå",
+  "emptyStationsBody": "Poster legges til inne i øvelsene dine. Lag en øvelse først, så dukker postene opp her.",
   "noStationsYet": "Ingen poster ennå. Legg til en post fra Øvelser-fanen.",
   "team": "{count, plural, =0{Lag} other{Lag}}",
   "member": "{count, plural, =0{medlem} =1{medlem} other{medlemmer}}",
   "teamNoExercises": "Laget er ikke med i noen øvelser ennå.",
   "teamsOverview": "Lagsoversikt",
+  "emptyTeamsTitle": "Ingen lag ennå",
+  "emptyTeamsBody": "Lag kommer fra antall lag i øvelsene dine. Lag en øvelse først, så dukker lagene opp her.",
   "createExercise": "Opprett øvelse",
   "newExercise": "Ny øvelse",
   "editExercise": "Endre øvelse",
@@ -129,6 +133,8 @@
   "commit": "Commit",
   "viewOnGithub": "Åpne i GitHub",
   "noExercisesYet": "Ingen øvelser ennå!",
+  "emptyExercisesTitle": "Ingen øvelser ennå",
+  "emptyExercisesBody": "En øvelse trenger antall poster og antall lag for å kunne kjøres. Legg til den første for å se ringen i arbeid.",
   "stopExercise": "Stop øvelse",
   "exerciseAutoStoppedTitle": "Øvelse avsluttet",
   "exerciseAutoStoppedBody": "Sluttiden for {exercise} er passert.",
@@ -522,6 +528,8 @@
   "@noRolesInProgram": {
     "description": "Tom-tilstand i Markører-segmentet når planen ikke har noen markørordrer."
   },
+  "emptyRolesTitle": "Ingen roller ennå",
+  "emptyRolesBody": "Roller er markørene som spiller ut scenarioet på postene. Trykk + for å legge til den første.",
   "noRolesInExercise": "Ingen markører for denne øvelsen.",
   "@noRolesInExercise": {
     "description": "Empty-state when exercise filter excludes every role."
