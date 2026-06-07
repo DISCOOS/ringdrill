@@ -42,8 +42,16 @@ class _StationListViewState extends State<StationListView> {
   StreamSubscription? _subscription;
   StreamSubscription<ExerciseEvent>? _exerciseSubscription;
 
-  int? _expandedRowIndex;
+  // Identifies the open row by its owning exercise + station, not by the
+  // per-exercise rowIndex. rowIndex restarts at 0 for every exercise's first
+  // station, so keying on it made "station 1" of every exercise share one
+  // expansion flag and open together. The (uuid, station.index) pair is
+  // globally unique across the flat list.
+  String? _expandedRowKey;
   ExerciseEvent? _liveEvent;
+
+  static String _rowKey(Exercise exercise, Station station) =>
+      '${exercise.uuid}-${station.index}';
 
   // Optimistic display of the committed reorder order. Set synchronously in
   // onCommitReorder so the new order is shown immediately without waiting for
@@ -85,7 +93,7 @@ class _StationListViewState extends State<StationListView> {
   void _onFilterChanged() {
     if (!mounted) return;
     setState(() {
-      _expandedRowIndex = null;
+      _expandedRowKey = null;
       _stagedRows = null;
     });
   }
@@ -284,7 +292,8 @@ class _StationListViewState extends State<StationListView> {
     bool reordering = false,
     Widget? dragHandle,
   }) {
-    final expanded = !reordering && _expandedRowIndex == rowIndex;
+    final rowKey = _rowKey(exercise, station);
+    final expanded = !reordering && _expandedRowKey == rowKey;
     final colorScheme = Theme.of(context).colorScheme;
     final isLive = _liveEvent?.exercise.uuid == exercise.uuid;
     final accent = LiveAccent.of(context, isLive: isLive);
@@ -357,7 +366,7 @@ class _StationListViewState extends State<StationListView> {
         onOpen: () => _openStation(exercise, station),
         onToggle: () {
           setState(() {
-            _expandedRowIndex = expanded ? null : rowIndex;
+            _expandedRowKey = expanded ? null : rowKey;
           });
         },
         body: _buildExpandedBody(context, localizations, exercise, station),
