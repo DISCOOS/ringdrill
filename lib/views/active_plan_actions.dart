@@ -486,17 +486,49 @@ Future<String?> _promptPlanName(
   BuildContext context,
   AppLocalizations localizations,
 ) async {
-  final controller = TextEditingController();
   final name = await showAdaptiveDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => _PlanNameDialog(localizations: localizations),
+  );
+  if (name == null || name.isEmpty) return null;
+  return name;
+}
+
+/// New-plan name prompt. The [TextEditingController] is owned by this widget's
+/// [State] so it is disposed only when the dialog route is removed from the
+/// tree — i.e. *after* the pop transition finishes. Disposing it inline right
+/// after `showAdaptiveDialog` returned tore it down while the still-animating
+/// TextField was rebuilding, throwing "A TextEditingController was used after
+/// being disposed."
+class _PlanNameDialog extends StatefulWidget {
+  const _PlanNameDialog({required this.localizations});
+
+  final AppLocalizations localizations;
+
+  @override
+  State<_PlanNameDialog> createState() => _PlanNameDialogState();
+}
+
+class _PlanNameDialogState extends State<_PlanNameDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = widget.localizations;
+    return AlertDialog(
       title: Text(localizations.newPlanNamePrompt),
       content: TextField(
-        controller: controller,
+        controller: _controller,
         autofocus: true,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(hintText: localizations.program(1)),
-        onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
+        onSubmitted: (_) => Navigator.pop(context, _controller.text.trim()),
       ),
       actions: [
         TextButton(
@@ -504,15 +536,12 @@ Future<String?> _promptPlanName(
           child: Text(localizations.cancel),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, controller.text.trim()),
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
           child: Text(localizations.create),
         ),
       ],
-    ),
-  );
-  controller.dispose();
-  if (name == null || name.isEmpty) return null;
-  return name;
+    );
+  }
 }
 
 BoxConstraints _constraintsFor(BuildContext context) {
