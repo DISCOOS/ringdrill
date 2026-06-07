@@ -14,6 +14,10 @@ class PositionFormField<K> extends FormField<LatLng> {
     required super.initialValue,
     super.validator,
     List<MapMarkerSpec<K>> markers = const [],
+    // Called when the user picks a new location on the map. Lets the caller
+    // distinguish a manual edit from a programmatic default (e.g. inheriting
+    // the station position).
+    ValueChanged<LatLng>? onChanged,
 
     AutovalidateMode super.autovalidateMode = AutovalidateMode.disabled,
   }) : super(
@@ -45,7 +49,10 @@ class PositionFormField<K> extends FormField<LatLng> {
                            markers: markers,
                          ),
                        );
-                       if (selected != null) state.didChange(selected);
+                       if (selected != null) {
+                         state.didChange(selected);
+                         onChanged?.call(selected);
+                       }
                      },
                    ),
                  ],

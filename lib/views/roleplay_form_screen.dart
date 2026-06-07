@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -55,6 +56,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   int? _stationIndex;
   // Tracks the current position; updated by PositionFormField.onSaved
   late RolePlay _rolePlay;
+  // Current marker position, kept in sync with the PositionFormField.
+  LatLng? _position;
+  // True while [_position] still mirrors the selected station's position (a
+  // default we may keep updating). Cleared once the user picks a spot on the
+  // map, so we never overwrite a manual fine-tune.
+  bool _positionFromStation = false;
 
   @override
   void initState() {
@@ -66,11 +73,28 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     _backgroundController.text = _rolePlay.background ?? '';
     _behaviorController.text = _rolePlay.behavior ?? '';
     _stationIndex = _rolePlay.stationIndex;
+    _position = _rolePlay.position;
+    // When a markør is added to a post without its own position yet, default
+    // to the post's location so the user fine-tunes from there.
+    if (_position == null && _stationIndex != null) {
+      final stationPos = _stationPosition(_stationIndex!);
+      if (stationPos != null) {
+        _position = stationPos;
+        _positionFromStation = true;
+      }
+    }
     _activeSections = {
       if (_rolePlay.signalement != null) _Section.signalement,
       if (_rolePlay.background != null) _Section.background,
       if (_rolePlay.behavior != null) _Section.behavior,
     };
+  }
+
+  /// Position of the station at [index] within the current exercise, or null.
+  LatLng? _stationPosition(int index) {
+    final stations = widget.exercise?.stations ?? const [];
+    if (index < 0 || index >= stations.length) return null;
+    return stations[index].position;
   }
 
   @override
@@ -280,13 +304,35 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                     validator: (v) => stations.isNotEmpty && v == null
                         ? localizations.pleaseSelectStation
                         : null,
-                    onChanged: (v) => setState(() => _stationIndex = v),
+                    onChanged: (v) => setState(() {
+                      _stationIndex = v;
+                      // Inherit the post's position as a default while the
+                      // current position is empty or still a post default.
+                      // A manual map pick clears _positionFromStation, so we
+                      // never clobber a fine-tuned location.
+                      final canInherit =
+                          _position == null || _positionFromStation;
+                      if (v != null && canInherit) {
+                        final stationPos = _stationPosition(v);
+                        if (stationPos != null) {
+                          _position = stationPos;
+                          _positionFromStation = true;
+                        }
+                      }
+                    }),
                   ),
                   const SizedBox(height: 16),
 
-                  // Position
+                  // Position. Keyed on the value so a programmatic default
+                  // (station inheritance) re-creates the field with the new
+                  // initialValue instead of keeping stale FormField state.
                   PositionFormField(
-                    initialValue: _rolePlay.position,
+                    key: ValueKey(_position),
+                    initialValue: _position,
+                    onChanged: (pos) {
+                      _position = pos;
+                      _positionFromStation = false;
+                    },
                     onSaved: (pos) {
                       _rolePlay = _rolePlay.copyWith(position: pos);
                     },

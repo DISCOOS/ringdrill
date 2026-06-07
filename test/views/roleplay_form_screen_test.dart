@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 
@@ -177,6 +179,57 @@ void main() {
 
     expect(find.text(l10n.pleaseSelectStation), findsOneWidget);
   });
+
+  testWidgets(
+    'new markør on a post defaults position to the post location',
+    (tester) async {
+      final exercise = _exercise().copyWith(
+        stations: const [
+          Station(
+            index: 0,
+            name: 'Post 1',
+            position: LatLng(59.911, 10.757),
+          ),
+          Station(index: 1, name: 'Post 2'),
+        ],
+      );
+      // Draft markør already assigned to post 1 but without its own position.
+      final draft = const RolePlay(
+        uuid: 'role-new',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'Esel',
+        stationIndex: 0,
+      );
+
+      await tester.pumpWidget(_buildForm(rolePlay: draft, exercise: exercise));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Position should be pre-filled from the post, not "Pick a Location".
+      expect(find.text(l10n.pickALocation), findsNothing);
+      expect(find.byType(PositionWidget), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'markør without a post keeps Pick a Location',
+    (tester) async {
+      final exercise = _exercise().copyWith(
+        stations: const [
+          Station(
+            index: 0,
+            name: 'Post 1',
+            position: LatLng(59.911, 10.757),
+          ),
+        ],
+      );
+      // No stationIndex assigned yet.
+      await tester.pumpWidget(_buildForm(exercise: exercise));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      expect(find.text(l10n.pickALocation), findsOneWidget);
+    },
+  );
 
   testWidgets('AppBar contains a RoleNumberBadge', (tester) async {
     await tester.pumpWidget(_buildForm());
