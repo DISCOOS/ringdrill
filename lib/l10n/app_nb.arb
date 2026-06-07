@@ -778,11 +778,11 @@
   "@programName": {
     "description": "Feltetikett for Program.name i ProgramFormScreen."
   },
-  "programDescription": "Undertittel",
+  "programDescription": "Beskrivelse",
   "@programDescription": {
     "description": "Feltetikett for Program.description i ProgramFormScreen. Vises under tittelen i briefen."
   },
-  "programDescriptionHint": "Kort undertittel som vises under plannavnet i briefen",
+  "programDescriptionHint": "Kort beskrivelse som vises under plannavnet i briefen",
   "@programDescriptionHint": {
     "description": "Plassholdertekst for Program.description-feltet."
   },

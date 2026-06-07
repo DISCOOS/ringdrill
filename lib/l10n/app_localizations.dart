@@ -2801,13 +2801,13 @@ abstract class AppLocalizations {
   /// Field label for Program.description in ProgramFormScreen. Renders below the title in the brief.
   ///
   /// In en, this message translates to:
-  /// **'Subtitle'**
+  /// **'Description'**
   String get programDescription;
 
   /// Hint text for the Program.description field.
   ///
   /// In en, this message translates to:
-  /// **'Short subtitle shown under the plan name in the brief'**
+  /// **'Short description shown under the plan name in the brief'**
   String get programDescriptionHint;
 
   /// Optional section label for Program.briefIntroMd in ProgramFormScreen. Booklet label: "Generelt om spill og øvingsledelse".

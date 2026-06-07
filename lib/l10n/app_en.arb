@@ -1619,11 +1619,11 @@
   "@programName": {
     "description": "Field label for Program.name in ProgramFormScreen."
   },
-  "programDescription": "Subtitle",
+  "programDescription": "Description",
   "@programDescription": {
     "description": "Field label for Program.description in ProgramFormScreen. Renders below the title in the brief."
   },
-  "programDescriptionHint": "Short subtitle shown under the plan name in the brief",
+  "programDescriptionHint": "Short description shown under the plan name in the brief",
   "@programDescriptionHint": {
     "description": "Hint text for the Program.description field."
   },

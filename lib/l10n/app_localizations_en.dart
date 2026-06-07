@@ -1640,11 +1640,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get programName => 'Plan name';
 
   @override
-  String get programDescription => 'Subtitle';
+  String get programDescription => 'Description';
 
   @override
   String get programDescriptionHint =>
-      'Short subtitle shown under the plan name in the brief';
+      'Short description shown under the plan name in the brief';
 
   @override
   String get briefSectionProgramIntro => 'Intro';

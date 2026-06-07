@@ -1636,11 +1636,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get programName => 'Plannavn';
 
   @override
-  String get programDescription => 'Undertittel';
+  String get programDescription => 'Beskrivelse';
 
   @override
   String get programDescriptionHint =>
-      'Kort undertittel som vises under plannavnet i briefen';
+      'Kort beskrivelse som vises under plannavnet i briefen';
 
   @override
   String get briefSectionProgramIntro => 'Generelt om spill og øvingsledelse';
