@@ -76,4 +76,54 @@ void main() {
       );
     });
   });
+
+  group('Numbering.role — station code + markør number', () {
+    test('dotted: exercise 1, station 1, markør 1 → 1.1-1', () {
+      expect(
+        Numbering.role(
+          StationNumberFormat.dotted,
+          exerciseNumber: 1,
+          stationIndex: 0,
+          roleNumber: 1,
+        ),
+        '1.1-1',
+      );
+    });
+
+    test('dotted: exercise 1, station 1, markør 2 → 1.1-2', () {
+      expect(
+        Numbering.role(
+          StationNumberFormat.dotted,
+          exerciseNumber: 1,
+          stationIndex: 0,
+          roleNumber: 2,
+        ),
+        '1.1-2',
+      );
+    });
+
+    test('alpha: exercise 1, station a, markør 1 → 1a-1', () {
+      expect(
+        Numbering.role(
+          StationNumberFormat.alpha,
+          exerciseNumber: 1,
+          stationIndex: 0,
+          roleNumber: 1,
+        ),
+        '1a-1',
+      );
+    });
+
+    test('alpha: exercise 2, station c, markør 3 → 2c-3', () {
+      expect(
+        Numbering.role(
+          StationNumberFormat.alpha,
+          exerciseNumber: 2,
+          stationIndex: 2,
+          roleNumber: 3,
+        ),
+        '2c-3',
+      );
+    });
+  });
 }

@@ -527,8 +527,8 @@
   "@pleaseSelectStation": {
     "description": "Validation message shown when no station is selected for a role/markørordre."
   },
-  "emptyRolesTitle": "Ingen roller ennå",
-  "emptyRolesBody": "Roller er markørene som spiller ut scenarioet på øvelsespostene. Opprett en øvelse først, og legg deretter til rollene den trenger.",
+  "emptyRolesTitle": "Ingen spill ennå",
+  "emptyRolesBody": "Spill beskriver det markørene skal gjøre på posten. Opprett en øvelse først, og legg deretter til spillene den trenger.",
   "noRolesInExercise": "Ingen markører for denne øvelsen.",
   "@noRolesInExercise": {
     "description": "Empty-state when exercise filter excludes every role."

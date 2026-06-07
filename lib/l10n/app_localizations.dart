@@ -2360,16 +2360,16 @@ abstract class AppLocalizations {
   /// **'Please select a station'**
   String get pleaseSelectStation;
 
-  /// Teaching empty-state title shown in the Program Script segment when the active plan has no roles.
+  /// Teaching empty-state title shown in the Program Script segment when the active plan has no plays.
   ///
   /// In en, this message translates to:
-  /// **'No roles yet'**
+  /// **'No plays yet'**
   String get emptyRolesTitle;
 
-  /// Teaching empty-state body shown in the Program Script segment when the active plan has no roles.
+  /// Teaching empty-state body shown in the Program Script segment when the active plan has no plays.
   ///
   /// In en, this message translates to:
-  /// **'Roles are played out at exercise stations to drive the scenario. Create an exercise first, then add the roles it needs.'**
+  /// **'A play describes what the roles do at the station. Create an exercise first, then add the plays it needs.'**
   String get emptyRolesBody;
 
   /// Empty-state shown in the RolePlays tab when the active exercise filter excludes every role.

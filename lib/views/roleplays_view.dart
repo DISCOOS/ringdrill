@@ -110,24 +110,15 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   bool get _hasAnyRole => _service.loadRolePlays().isNotEmpty;
 
-  bool get _hasActiveProgram => _service.activeProgramUuid != null;
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    // No-active-program guard: show hint, disable filter FAB.
-    if (!_hasActiveProgram) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            localizations.noActiveProgramHint,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
+    // No active program: loadRolePlays / loadExercises both return empty, so we
+    // fall through to the teaching empty state below (icon + title + body) for
+    // a consistent surface across all four Program segments per DESIGN-007
+    // stage 1. The create FAB stays hidden (canCreateRole is false) and the
+    // filter FAB is disabled in the controller's buildActions.
 
     final rows = _collectRows();
     final filterExercise = _filterExercise();
@@ -223,6 +214,27 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     );
   }
 
+  /// Composite badge label for a markør: the station code plus the role's
+  /// 1-based number at that station (e.g. `1.1-1`, `1a-2`). When no post is
+  /// assigned yet (legacy data) the post/markør parts show as `?`.
+  String _roleBadgeLabel(RolePlay rolePlay, int exerciseNumber) {
+    final format =
+        _service.activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
+    final stationIndex = rolePlay.stationIndex;
+    if (stationIndex == null) {
+      return format == StationNumberFormat.alpha
+          ? '$exerciseNumber?'
+          : '$exerciseNumber.?';
+    }
+    return Numbering.role(
+      format,
+      exerciseNumber: exerciseNumber,
+      stationIndex: stationIndex,
+      roleNumber: _service.roleNumberAtStation(rolePlay, stationIndex),
+    );
+  }
+
   Widget _buildRow(
     BuildContext context,
     AppLocalizations localizations, {
@@ -265,12 +277,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         onLongPress: () => _openRolePlayForm(exercise, rolePlay),
         selected: selected,
         leading: RoleNumberBadge(
-          label: Numbering.station(
-            _service.activeProgram?.stationNumberFormat ??
-                StationNumberFormat.dotted,
-            exerciseNumber: exerciseNumber,
-            stationIndex: rolePlay.index,
-          ),
+          label: _roleBadgeLabel(rolePlay, exerciseNumber),
           highlight: actor != null,
         ),
         title: Text(

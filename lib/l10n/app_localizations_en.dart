@@ -1402,11 +1402,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseSelectStation => 'Please select a station';
 
   @override
-  String get emptyRolesTitle => 'No roles yet';
+  String get emptyRolesTitle => 'No plays yet';
 
   @override
   String get emptyRolesBody =>
-      'Roles are played out at exercise stations to drive the scenario. Create an exercise first, then add the roles it needs.';
+      'A play describes what the roles do at the station. Create an exercise first, then add the plays it needs.';
 
   @override
   String get noRolesInExercise => 'No roles in this exercise.';

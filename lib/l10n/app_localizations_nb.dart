@@ -1398,11 +1398,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pleaseSelectStation => 'Velg en post';
 
   @override
-  String get emptyRolesTitle => 'Ingen roller ennå';
+  String get emptyRolesTitle => 'Ingen spill ennå';
 
   @override
   String get emptyRolesBody =>
-      'Roller er markørene som spiller ut scenarioet på øvelsespostene. Opprett en øvelse først, og legg deretter til rollene den trenger.';
+      'Spill beskriver det markørene skal gjøre på posten. Opprett en øvelse først, og legg deretter til spillene den trenger.';
 
   @override
   String get noRolesInExercise => 'Ingen markører for denne øvelsen.';

@@ -1294,13 +1294,13 @@
   "@pleaseSelectStation": {
     "description": "Validation message shown when no station is selected for a role/markørordre."
   },
-  "emptyRolesTitle": "No roles yet",
+  "emptyRolesTitle": "No plays yet",
   "@emptyRolesTitle": {
-    "description": "Teaching empty-state title shown in the Program Script segment when the active plan has no roles."
+    "description": "Teaching empty-state title shown in the Program Script segment when the active plan has no plays."
   },
-  "emptyRolesBody": "Roles are played out at exercise stations to drive the scenario. Create an exercise first, then add the roles it needs.",
+  "emptyRolesBody": "A play describes what the roles do at the station. Create an exercise first, then add the plays it needs.",
   "@emptyRolesBody": {
-    "description": "Teaching empty-state body shown in the Program Script segment when the active plan has no roles."
+    "description": "Teaching empty-state body shown in the Program Script segment when the active plan has no plays."
   },
   "noRolesInExercise": "No roles in this exercise.",
   "@noRolesInExercise": {
