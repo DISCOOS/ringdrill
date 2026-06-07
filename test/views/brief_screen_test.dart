@@ -146,22 +146,38 @@ Widget _buildScreen({
 /// setUpAll so the package does not leave a pending timer that would make
 /// tests fail.
 Future<void> _awaitRender(WidgetTester tester) async {
-  await tester.runAsync(() async {
-    await Future<void>.delayed(Duration.zero);
-  });
-  await tester.pump(); // drains _renderFuture microtask chain
-  await tester.pump(); // FutureBuilder rebuilds after Future completes
+  for (var i = 0; i < 12; i++) {
+    await tester.runAsync(() async {
+      await Future<void>.delayed(Duration.zero);
+    });
+    await tester.pump();
+    if (find.byType(BriefMarkdown).evaluate().isNotEmpty) {
+      await tester.pump();
+      return;
+    }
+  }
+  await tester.pump();
 }
 
 /// Returns the markdown data currently displayed by the single BriefMarkdown.
 String _markdownData(WidgetTester tester) {
-  return tester.widget<BriefMarkdown>(find.byType(BriefMarkdown)).data;
+  final markdown = find.byType(BriefMarkdown);
+  if (markdown.evaluate().isEmpty) {
+    final texts = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data)
+        .whereType<String>()
+        .toList();
+    throw StateError('No BriefMarkdown in tree. Text widgets: $texts');
+  }
+  return tester.widget<BriefMarkdown>(markdown).data;
 }
 
 /// Open the audience PopupMenuButton and tap the menu item with [label].
 Future<void> _tapAudience(WidgetTester tester, String label) async {
   await tester.tap(find.byType(PopupMenuButton<BriefAudience>));
-  await tester.pumpAndSettle();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 200));
   await tester.tap(find.text(label).last);
   await _awaitRender(tester);
 }
@@ -188,6 +204,9 @@ void main() {
     await rootBundle.loadString(
       'assets/templates/ringdrill-standard-v1.nb.md.mustache',
     );
+    await rootBundle.loadString(
+      'assets/templates/ringdrill-standard-v1.en.md.mustache',
+    );
   });
 
   // Default audience is director (Øvelsesleder) — DESIGN-006 step 3/4.
@@ -201,7 +220,9 @@ void main() {
       expect(_markdownData(tester), contains('Anne Glemsk'));
     });
 
-    testWidgets('shows actor PII by default (director audience)', (tester) async {
+    testWidgets('shows actor PII by default (director audience)', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildScreen(exerciseUuid: _exerciseUuid));
       await _awaitRender(tester);
 
@@ -462,7 +483,7 @@ void main() {
 
       expect(
         _markdownData(tester),
-        contains('Innholdsfortegnelse'),
+        contains('Table of contents'),
         reason:
             'Narrow layout passes wideTocSidebar: false, rendering in-doc TOC',
       );

@@ -123,14 +123,26 @@ void main() {
 
       await tester.tap(find.text('Rename'));
       await tester.pumpAndSettle();
-      expect(find.text(l10n.libraryRename), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(l10n.libraryRename),
+        ),
+        findsOneWidget,
+      );
       // Seeded with the current plan name.
       expect(find.text('Vinterøvelse'), findsOneWidget);
 
       await tester.tap(find.text(l10n.cancel));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.libraryRename), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(l10n.libraryRename),
+        ),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
     },
   );

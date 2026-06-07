@@ -27,6 +27,9 @@ void main() {
     await rootBundle.loadString(
       'assets/templates/ringdrill-standard-v1.nb.md.mustache',
     );
+    await rootBundle.loadString(
+      'assets/templates/ringdrill-standard-v1.en.md.mustache',
+    );
   });
 
   setUp(() {
@@ -104,10 +107,18 @@ Widget _app(Widget child) {
 }
 
 Future<void> _settleBrief(WidgetTester tester) async {
-  await tester.runAsync(() async {
-    await Future<void>.delayed(Duration.zero);
-  });
-  await tester.pump();
+  final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  final copyButton = find.byTooltip(l10n.briefCopyMarkdown);
+  for (var i = 0; i < 12; i++) {
+    await tester.runAsync(() async {
+      await Future<void>.delayed(Duration.zero);
+    });
+    await tester.pump();
+    if (copyButton.evaluate().isNotEmpty) {
+      await tester.pump();
+      return;
+    }
+  }
   await tester.pump();
 }
 
