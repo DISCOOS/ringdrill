@@ -22,6 +22,11 @@
 		<string>????</string>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<!-- RingDrill only uses standard encryption provided by iOS (HTTPS/TLS),
+		     which is exempt from export compliance. Declaring this here skips the
+		     "Missing Compliance" prompt in App Store Connect for every build. -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>UILaunchStoryboardName</key>
