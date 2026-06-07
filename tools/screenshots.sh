@@ -162,13 +162,69 @@ cmd_shot() {
   esac
 }
 
-require_xcrun
+usage() {
+  cat <<'EOF'
+tools/screenshots.sh — capture App Store screenshots from the iOS Simulator.
+
+Captures native-resolution PNGs that already match Apple's required sizes:
+  iPhone 6.9" (iPhone 17 Pro Max): 1320 x 2868
+  iPad 13"    (iPad Pro 13-inch):  2064 x 2752
+Apple scales these down for smaller devices, so the two largest sets suffice.
+
+COMMANDS
+  devices                 List available simulators.
+  lang <nb|en>            Set the booted sim's language and reboot it
+                          (run before `flutter run`). The choice is remembered
+                          so later steps suggest the right next command.
+  prep                    Clean status bar: 09:41, full battery, full signal,
+                          no carrier name.
+  appearance <light|dark> Switch the booted sim between light and dark mode
+                          (03-live is captured in dark).
+  shot <lang> <name>      Capture the booted sim to
+                          store/screenshots/ios/<class>/<lang>/<name>.png
+                          (<class> = iphone|ipad, auto-detected). Prints the
+                          pixel size and flattens any alpha channel.
+  help, -h, --help        Show this help.
+
+THE FOUR SHOTS (plan -> place -> run -> brief)
+  01-schedule   rotation schedule of a ring exercise   (light)
+  02-map        map with stations placed               (light)
+  03-live       live coordinator, countdown running    (dark)
+  04-brief      a generated briefing                   (light)
+
+DEMO PLANS (content language; the UI follows the device locale)
+  tools/screenshots/demo-en.drill   capture on a device set to `en`
+  tools/screenshots/demo-no.drill   capture on a device set to `nb`
+  Regenerate with: python3 tools/screenshots/make_demo_drills.py
+
+TYPICAL PASS (iPhone, English; repeat for nb and for the iPad)
+  open -a Simulator                     # pick "iPhone 17 Pro Max"
+  tools/screenshots.sh lang en
+  flutter run                           # import demo-en.drill, navigate
+  tools/screenshots.sh prep
+  tools/screenshots.sh shot en 01-schedule
+  tools/screenshots.sh shot en 02-map
+  tools/screenshots.sh appearance dark
+  tools/screenshots.sh shot en 03-live
+  tools/screenshots.sh appearance light
+  tools/screenshots.sh shot en 04-brief
+
+Each command prints the next one to run. The full matrix is
+iPhone + iPad x en + nb x the four shots = 16 captures.
+EOF
+}
+
 sub="${1:-}"; shift || true
+case "$sub" in
+  ""|help|-h|--help) usage; exit 0 ;;
+esac
+
+require_xcrun
 case "$sub" in
   devices)    cmd_devices "$@" ;;
   lang)       cmd_lang "$@" ;;
   prep)       cmd_prep "$@" ;;
   appearance) cmd_appearance "$@" ;;
   shot)       cmd_shot "$@" ;;
-  *) die "usage: $0 {devices|lang <nb|en>|prep|appearance <light|dark>|shot <lang> <name>}" ;;
+  *) echo "error: unknown command '$sub'" >&2; echo >&2; usage >&2; exit 1 ;;
 esac
