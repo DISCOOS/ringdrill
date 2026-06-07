@@ -10,6 +10,8 @@ related_code:
   - lib/views/main_screen.dart
   - lib/views/program_view.dart
   - lib/services/brief/brief_renderer.dart
+  - lib/services/notification_service.dart
+  - lib/views/map_view.dart
   - lib/data/drill_file.dart
   - lib/models/numbering.dart
 related_designs:
@@ -20,6 +22,7 @@ related_adrs:
   - 0022-markdown-content-as-files.md
   - 0034-configurable-numbering-formats.md
   - 0008-persistent-program-library-and-catalog.md
+  - 0029-live-activity-and-foreground-service.md
 ---
 
 # Onboarding sequence and in-app help
@@ -28,7 +31,7 @@ related_adrs:
 
 ## TL;DR
 
-A new user needs one idea first: teams rotate through posts, one round at a time, and everyone advances together when the round ends. Onboarding teaches that idea and gets the user to first value fast. It has three layers. A single **concept primer** card on first launch teaches the ring with an illustration. A bundled **example plan** lets the user press play on a real rotation in seconds. **Teaching empty states** in the Program segments guide the build-your-own path, each saying what is missing and pointing at its create action. A first-run-only **"Start her"** cue marks the first FAB. A separate **Help / FAQ** surface ships bundled localized markdown, rendered through the existing `brief_renderer`, so it works offline. We do not build a coachmark wizard.
+A new user needs one idea first: teams rotate through posts, one round at a time, and everyone advances together when the round ends. Onboarding teaches that idea and gets the user to first value fast. It has three layers. A single **concept primer** card on first launch teaches the ring with an illustration. A second primer card **primes the notification permission** in context — explaining that RingDrill alerts on every round change — before the OS dialog fires, and moves the notification request out of the eager boot path where it surprises the user today. A bundled **example plan** lets the user press play on a real rotation in seconds. **Teaching empty states** in the Program segments guide the build-your-own path, each saying what is missing and pointing at its create action. A first-run-only **"Start her"** cue marks the first FAB. A separate **Help / FAQ** surface ships bundled localized markdown, rendered through the existing `brief_renderer`, so it works offline. We do not build a coachmark wizard, and onboarding never blocks first value on a granted permission.
 
 ## Rationale
 
@@ -43,14 +46,18 @@ A new user needs one idea first: teams rotate through posts, one round at a time
 ## Goals
 
 1. Teach the ring rotation on first launch, in one card, visually.
-2. Get a new user to a running exercise in seconds via a bundled example plan.
-3. Guide the build-your-own path through teaching empty states, not a wizard.
-4. Provide an offline Help / FAQ surface for the questions the domain actually raises.
+2. Prime the notification permission in context, with the "why", before the OS dialog fires — and stop firing it cold at boot.
+3. Get a new user to a running exercise in seconds via a bundled example plan.
+4. Guide the build-your-own path through teaching empty states, not a wizard.
+5. Provide an offline Help / FAQ surface for the questions the domain actually raises.
 
 ## Non-goals
 
 * **No coachmark tour.** No overlay that points at controls one by one. The single first-run "Start her" cue is the only pointer, and it never returns.
 * **No account or login in first-open.** Onboarding state is device-local. Tying it to the account model would force login into first launch.
+* **No permission wall.** The notification priming card is skippable like the rest of the primer, and "Åpne et eksempel" / "Start en tom plan" never depend on a granted permission. Priming raises the grant rate; it does not gate first value.
+* **No location priming.** Location is already requested lazily and in context, on the map "locate me" tap (`Geolocator.requestPermission()` in `map_view.dart`). That is the right pattern, so onboarding leaves it alone. Only notifications move into the primer, because only notifications fire today before the user has any context.
+* **No new permissions.** This adds no manifest/plist permission that is not already declared. Exact-alarm, full-screen-intent hardening, DnD-bypass and battery-optimisation exemptions are out of scope (see Deferred decisions), and camera / Bluetooth / calendar / contacts are not in play.
 * **No new content model for help.** Help reuses the [ADR-0022](../adrs/0022-markdown-content-as-files.md) markdown-as-content approach and the `brief_renderer` pipeline. No CMS, no remote fetch, no new theme.
 * **No screenshots in bundled help.** Bundled help is text only. Images grow app size, so any screenshots link out to the docs site.
 * **No two-way sync of help content.** The bundled markdown is read-only and ships with the build.
@@ -66,11 +73,21 @@ One full-screen card, shown once on first launch, before the Program tab. See [t
 * A heading and one line of copy: *"Lagene roterer. Hvert lag er på vei til neste post. Når runden er over, rykker alle videre samtidig. Det er hele RingDrill."*
 * Two buttons. Primary **"Åpne et eksempel"**. Secondary **"Start en tom plan"**.
 
-Use **one card**. The three dots leave room for two more if review wants them, and those should be "you can share the plan" and "this is how you run it", not more rotation talk.
+The concept primer is **one card**. The three progress dots leave room for the sequence: the second dot is the notification priming card below, and a third is still free for "you can share the plan" or "this is how you run it" if review wants it — not more rotation talk.
 
 #### Ring figure (`RingRotationFigure`)
 
 The illustration is a `CustomPainter` widget, not an image or an SVG asset. No new dependency (`flutter_svg` is not in the project) and no asset to bundle. Light/dark is automatic because the painter takes its colours from `Theme.of(context).colorScheme`, not baked-in fills, which is where a multi-colour SVG asset gets awkward (a `ColorFilter` tints one colour, it cannot swap several). It stays sharp at any size as true vector. The mockup SVG maps almost one-to-one onto `Canvas`: the dashed ring is a `drawCircle` with a dashed path, the rotation arrows are `drawArc` plus a small arrowhead `Path`, the posts are `drawCircle`, the team chips are rounded rects, and labels draw with `TextPainter`. It is one reusable widget taking colours and size, used by both the primer and the "Slik fungerer RingDrill" entry in Help. Not animated in v1.
+
+### Layer 1b — Notification priming (first launch)
+
+A second primer card, shown right after the concept card, that explains *why* RingDrill wants to notify before the OS dialog ever appears. RingDrill is a timer: it alerts on every round change, and can run a full-screen alarm over the lock screen when the round ends ([ADR-0029](../adrs/0029-live-activity-and-foreground-service.md)). A user who is told that, with the ring still fresh on screen, grants far more readily than one hit by a bare "RingDrill would like to send you notifications" at cold launch.
+
+The card reuses the primer chrome: the same progress dots and **"Hopp over"**, a short heading and one line of copy, and a single primary button that triggers the real OS permission request. Copy, roughly: *"RingDrill varsler deg når runden skifter, så du slipper å følge med på klokka. Vil du slå på varsler?"* Primary **"Slå på varsler"** fires the request; the dots' **"Hopp over"** (and a secondary **"Ikke nå"**) advances without asking. Whatever the user picks, onboarding continues — this is priming, not a wall (see Non-goals).
+
+**This replaces an eager boot-time request, it does not add one.** Today `_startNotificationService()` runs in `RingDrillApp.initState` (`lib/main.dart`) and, through `NotificationService.init`, calls `requestNotificationsPermission()` on Android and `requestPermissions(...)` on iOS/macOS the moment the app starts — before the user has seen anything. The priming card moves that first request behind a deliberate tap. Boot still initializes the notification *service* (channels, plugin, listeners) so scheduling works; it just stops being the thing that pops the system dialog. On platforms and OS versions where notifications need no runtime grant (older Android), priming is a no-op explainer and the card can be skipped outright.
+
+The notification toggle in Settings stays the source of truth for whether RingDrill *uses* notifications; the priming card only governs *when* the OS is first asked. Re-prompting after a denial is the OS's job, not ours — if the user skips or denies, the Settings toggle and the system settings deep-link are the recovery path, and onboarding does not nag.
 
 ### Layer 2 — Example plan
 
@@ -115,6 +132,8 @@ FAQ topics target the real confusions, not generic "how to make a plan":
 
 A single device-local flag records that onboarding has been seen. `shared_preferences` is enough, and it is already a dependency. `buildRouter(bool isFirstLaunch)` already threads a first-launch signal into the router, so the wiring exists. The flag gates the primer (show once) and the "Start her" cue (show once), and stays one-way: re-entry to the primer is through Help, not by clearing it. It is not part of the program or account model. The "Start her" dismissal can share this flag or use a sibling key, decided at implementation.
 
+The notification priming card needs no flag of its own — it is part of the primer, gated by the same seen flag, so it shows once on first launch with the rest. What it *does* change is the boot order: `_startNotificationService()` in `RingDrillApp.initState` still initializes the service so scheduling and channels are ready, but the first OS permission request moves out of `NotificationService.init` and behind the priming card's button. Concretely, `init` gains a way to set up without prompting (the request becomes an explicit call the priming card makes), so first launch no longer pops the notification dialog before the user has seen the primer. Subsequent launches are unchanged: the service initializes as before and the OS already holds the grant decision.
+
 ## Terminology
 
 * **Concept primer** is the first-launch card, not a "tutorial" or "walkthrough", to keep it distinct from the coachmark tour we are not building.
@@ -129,6 +148,10 @@ A single device-local flag records that onboarding has been seen. `shared_prefer
 3. **Help content structure.** One file per topic vs. one document with anchors. Depends on how `brief_renderer` handles in-doc navigation on narrow screens.
 4. **Example plan delivery.** Bundled asset imported on demand vs. a built-in catalog entry ([ADR-0008](../adrs/0008-persistent-program-library-and-catalog.md)). Bundled asset is simpler and offline by default.
 5. **Animating the ring.** The illustration is static here. Moving the team chips along the arrows would reinforce "rotation" but is not needed for v1.
+6. **Priming location too.** Left lazy on the map tap, which is the right pattern. A primer card for location is possible but unjustified while it works in context, so it is not planned.
+7. **Exact-alarm reminders.** `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` are commented out and `zonedSchedule` is unused. If pre-exercise reminders ship, Android 13+ needs `USE_EXACT_ALARM` (allowed) or the special-access `SCHEDULE_EXACT_ALARM`, and that ask could join the priming sequence. Out of scope until the feature exists.
+8. **Full-screen-intent hardening.** `USE_FULL_SCREEN_INTENT` is declared and gated behind a Settings toggle (off by default). Android 14+ restricts it for non-alarm apps and Play review may push back. Whether to keep it, and whether to surface it in onboarding, is a separate decision.
+9. **DnD bypass and battery-optimisation exemption.** `ACCESS_NOTIFICATION_POLICY` is declared but needs a system-settings grant, not a runtime dialog, and a battery-optimisation exemption is an even heavier ask. Both improve alarm reliability for a timer app but are deferred; if pursued, they belong in Settings with a clear explanation, not in first-open onboarding.
 
 ## Resolved (2026-06-07)
 
@@ -150,6 +173,8 @@ Sequenced so each stage ships on its own.
 
 **Stage 5 — Help / FAQ.** Bundle the localized help markdown, add the Settings entry, render through `brief_renderer` in plain Material style, write the FAQ entries above, and add the "Slik fungerer RingDrill" entry that reuses the primer widget. No new ADRs required (see Resolved).
 
+**Stage 6 — Notification priming.** Depends on stage 2's primer scaffold. Split `NotificationService.init` so it can initialize channels/listeners *without* requesting the OS permission, exposing the request as an explicit call. Stop `_startNotificationService()` (`lib/main.dart`) from prompting at boot — it still initializes the service. Add the priming card as the primer's second step (reusing the chrome), wiring its primary button to the explicit request and "Hopp over" / "Ikke nå" to advance without asking. New `nb` / `en` keys for the card. Guard for platforms with no runtime grant (skip the card). Verify on a fresh install that no notification dialog appears before the primer, and that granting from the card still arms round-change alerts.
+
 Mockups: [concept primer](./mockups/onboarding-concept-primer.html), [teaching empty state](./mockups/onboarding-empty-state.html).
 
 ## Changelog
@@ -159,3 +184,4 @@ Mockups: [concept primer](./mockups/onboarding-concept-primer.html), [teaching e
 * 2026-06-07 — Copy fix after first build. The Poster and Lag bodies said "Lag en øvelse først", where "Lag" reads as the noun (team) three times in the Lag string. Changed the verb to "Opprett en øvelse først" in both (`emptyStationsBody`, `emptyTeamsBody`), matching the existing `createExercise` ("Opprett øvelse"). English already used "Create".
 * 2026-06-07 — Added the final per-segment empty-state copy (`nb` + `en`) for all four Program segments and noted that they share one component matching the mockup. Team had no empty state at all and gains one (new `emptyTeams` keys). Old single-line keys (`noExercisesYet`, `noStationsYet`, `noRolesInProgram`) are superseded.
 * 2026-06-07 — Ring figure spec settled and doc **Accepted**. The illustration is a `CustomPainter` widget (`RingRotationFigure`) taking colours from `ColorScheme`, not an image or SVG asset, so light/dark is automatic and nothing is bundled. Not animated in v1.
+* 2026-06-07 — Added notification permission priming (Layer 1b, stage 6). A second primer card explains the round-change alerts before the OS dialog, and the first notification request moves out of the eager boot path (`_startNotificationService` / `NotificationService.init`) behind a deliberate tap. Skippable, never gates first value, adds no new permission. Location stays lazy on the map tap (not primed). Exact-alarm, full-screen-intent hardening, DnD bypass and battery-optimisation exemptions catalogued as deferred decisions. No new ADRs; ADR-0029 added to related links for the alarm context.
