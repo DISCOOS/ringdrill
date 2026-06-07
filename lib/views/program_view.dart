@@ -36,6 +36,7 @@ import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
+import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 import 'exercise_form_screen.dart';
@@ -1169,20 +1170,35 @@ abstract class ProgramPageControllerBase extends ScreenController {
     // On a phone the extended FAB is wide enough to cover the bottom list
     // rows. Use the compact circular FAB there and keep the labelled extended
     // variant only where there is room (medium/expanded).
+    final Widget fab;
     if (WindowSizeClass.of(context) == WindowSizeClass.compact) {
-      return FloatingActionButton(
+      fab = FloatingActionButton(
         heroTag: null,
         onPressed: () => _navigateToCreateExercise(context),
         tooltip: label,
         child: const Icon(Icons.add),
       );
+    } else {
+      fab = FloatingActionButton.extended(
+        heroTag: null,
+        onPressed: () => _navigateToCreateExercise(context),
+        icon: const Icon(Icons.add),
+        label: Text(label),
+      );
     }
-    return FloatingActionButton.extended(
-      heroTag: null,
-      onPressed: () => _navigateToCreateExercise(context),
-      icon: const Icon(Icons.add),
-      label: Text(label),
-    );
+
+    if (programService.loadExercises().isEmpty) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          StartHerePill(onActivate: () => _navigateToCreateExercise(context)),
+          const SizedBox(width: 12),
+          fab,
+        ],
+      );
+    }
+    return fab;
   }
 
   // Navigate to the CreateExerciseScreen to add a new exercise
