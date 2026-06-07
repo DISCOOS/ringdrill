@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/widgets/concept_primer_content.dart';
@@ -20,6 +24,25 @@ class ConceptPrimerScreen extends StatelessWidget {
     context.go(routeProgram);
   }
 
+  Future<void> _openExample(BuildContext context) async {
+    try {
+      final langCode = Intl.getCurrentLocale().split('_').first;
+      final locale = langCode == 'nb' ? 'nb' : 'en';
+      final assetName = 'onboarding-example.$locale.drill';
+      final assetPath = 'assets/example/$assetName';
+
+      final data = await rootBundle.load(assetPath);
+      final file = DrillFile.fromBytes(assetName, data.buffer.asUint8List());
+      await ProgramService().installFromFile(file, activate: true);
+    } catch (e, st) {
+      // Degraded silently — a first-run user should never see a crash.
+      // ignore: avoid_print
+      debugPrint('onboarding: example install failed, falling back. $e\n$st');
+    }
+    if (!context.mounted) return;
+    await _dismiss(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,10 +50,7 @@ class ConceptPrimerScreen extends StatelessWidget {
         child: ConceptPrimerContent(
           onSkip: () => _dismiss(context),
           onStartEmpty: () => _dismiss(context),
-          onOpenExample: () {
-            // TODO(DESIGN-007 stage 3): import bundled example plan, then navigate to the active program.
-            _dismiss(context);
-          },
+          onOpenExample: () => _openExample(context),
         ),
       ),
     );
