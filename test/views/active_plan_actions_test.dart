@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/active_plan_actions.dart';
+
+Program _program() {
+  final now = DateTime.utc(2026, 1, 1);
+  return Program(
+    uuid: 'pgm-1',
+    name: 'Vinterøvelse',
+    description: '',
+    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+  );
+}
 
 void main() {
   // Regression test for the "A TextEditingController was used after being
@@ -80,6 +94,43 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.newPlanNamePrompt), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'rename-plan dialog cancels without using a disposed controller',
+    (tester) async {
+      final program = _program();
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => renamePlan(ctx, program),
+                  child: const Text('Rename'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text('Rename'));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.libraryRename), findsOneWidget);
+      // Seeded with the current plan name.
+      expect(find.text('Vinterøvelse'), findsOneWidget);
+
+      await tester.tap(find.text(l10n.cancel));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.libraryRename), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

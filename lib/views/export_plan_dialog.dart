@@ -48,124 +48,178 @@ Future<ExportPlanInput?> showExportPlanDialog(
   required String actionLabel,
 }) async {
   final initialFileName = _initialFileName(program, localizations);
-  final controller = TextEditingController(text: initialFileName);
-  // Track current text to enable/disable the primary buttons.
-  final canSubmit = ValueNotifier<bool>(initialFileName.trim().isNotEmpty);
-  void onTextChanged() {
-    canSubmit.value = controller.text.trim().isNotEmpty;
+  // The file-name controller is owned by [_ExportSheetContent]'s State, not
+  // by this function. Disposing a locally-created controller in a `finally`
+  // here tore it down while the sheet's TextField was still rebuilding during
+  // the exit transition, throwing "used after being disposed". The sheet now
+  // pops with both the chosen action and the trimmed file name so the
+  // controller never has to outlive the sheet.
+  final result = await showResponsiveSheetOrDialog<_ExportSheetResult>(
+    context,
+    builder: (sheetContext) => _ExportSheetContent(
+      localizations: localizations,
+      title: title,
+      actionLabel: actionLabel,
+      initialFileName: initialFileName,
+    ),
+  );
+
+  if (result == null || result.action == _ExportSheetAction.cancel) return null;
+
+  final fileName = result.fileName;
+  if (fileName.isEmpty) return null;
+
+  if (result.action == _ExportSheetAction.exportAll) {
+    return ExportPlanInput(
+      fileName: fileName,
+      selectedUuids: exercises.map((e) => e.uuid).toList(),
+    );
   }
 
-  controller.addListener(onTextChanged);
+  // chooseExercises — show the picker with everything pre-selected.
+  if (!context.mounted) return null;
+  final selectedUuids = await ProgramPageControllerBase.selectExercises(
+    context,
+    title,
+    exercises,
+    localizations,
+    confirmLabel: actionLabel,
+    preselectAll: true,
+    showSelectAllControls: true,
+  );
+  if (selectedUuids.isEmpty) return null;
+  return ExportPlanInput(fileName: fileName, selectedUuids: selectedUuids);
+}
 
-  try {
-    final action = await showResponsiveSheetOrDialog<_ExportSheetAction>(
+/// The action plus the trimmed file name entered, returned by the export
+/// sheet. Bundling the text with the action lets the sheet own (and dispose)
+/// its [TextEditingController] in its own [State] instead of leaking it to the
+/// caller.
+class _ExportSheetResult {
+  const _ExportSheetResult(this.action, this.fileName);
+
+  final _ExportSheetAction action;
+  final String fileName;
+}
+
+/// Stateful body of the export sheet. Owns the file-name controller and the
+/// "can submit" notifier so both are disposed only when the sheet route leaves
+/// the tree — after the exit transition, never mid-animation.
+class _ExportSheetContent extends StatefulWidget {
+  const _ExportSheetContent({
+    required this.localizations,
+    required this.title,
+    required this.actionLabel,
+    required this.initialFileName,
+  });
+
+  final AppLocalizations localizations;
+  final String title;
+  final String actionLabel;
+  final String initialFileName;
+
+  @override
+  State<_ExportSheetContent> createState() => _ExportSheetContentState();
+}
+
+class _ExportSheetContentState extends State<_ExportSheetContent> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialFileName,
+  );
+  late final ValueNotifier<bool> _canSubmit = ValueNotifier<bool>(
+    widget.initialFileName.trim().isNotEmpty,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    _canSubmit.value = _controller.text.trim().isNotEmpty;
+  }
+
+  void _pop(_ExportSheetAction action) {
+    Navigator.pop(
       context,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20.0,
-            right: 20.0,
-            top: 8.0,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20.0,
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 8.0),
-                TextField(
-                  controller: controller,
-                  autofocus: false,
-                  decoration: InputDecoration(
-                    labelText: localizations.enterFileName,
-                    hintText: localizations.fileNameHint,
-                    suffixText: '.drill',
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 20.0),
-                Text(
-                  localizations.exportAllExercisesHint,
-                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      sheetContext,
-                    ).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24.0),
-                ValueListenableBuilder<bool>(
-                  valueListenable: canSubmit,
-                  builder: (context, enabled, _) {
-                    return _ActionRow(
-                      title: title,
-                      buttons: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(
-                            sheetContext,
-                            _ExportSheetAction.cancel,
-                          ),
-                          child: Text(localizations.cancel),
-                        ),
-                        TextButton(
-                          onPressed: enabled
-                              ? () => Navigator.pop(
-                                  sheetContext,
-                                  _ExportSheetAction.chooseExercises,
-                                )
-                              : null,
-                          child: Text(localizations.selectExercisesAction),
-                        ),
-                        FilledButton(
-                          onPressed: enabled
-                              ? () => Navigator.pop(
-                                  sheetContext,
-                                  _ExportSheetAction.exportAll,
-                                )
-                              : null,
-                          child: Text(actionLabel),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 8.0),
-              ],
+      _ExportSheetResult(action, _controller.text.trim()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onTextChanged);
+    _controller.dispose();
+    _canSubmit.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = widget.localizations;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20.0,
+        right: 20.0,
+        top: 8.0,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 8.0),
+            TextField(
+              controller: _controller,
+              autofocus: false,
+              decoration: InputDecoration(
+                labelText: localizations.enterFileName,
+                hintText: localizations.fileNameHint,
+                suffixText: '.drill',
+                border: const OutlineInputBorder(),
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 20.0),
+            Text(
+              localizations.exportAllExercisesHint,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24.0),
+            ValueListenableBuilder<bool>(
+              valueListenable: _canSubmit,
+              builder: (context, enabled, _) {
+                return _ActionRow(
+                  title: widget.title,
+                  buttons: [
+                    TextButton(
+                      onPressed: () => _pop(_ExportSheetAction.cancel),
+                      child: Text(localizations.cancel),
+                    ),
+                    TextButton(
+                      onPressed: enabled
+                          ? () => _pop(_ExportSheetAction.chooseExercises)
+                          : null,
+                      child: Text(localizations.selectExercisesAction),
+                    ),
+                    FilledButton(
+                      onPressed: enabled
+                          ? () => _pop(_ExportSheetAction.exportAll)
+                          : null,
+                      child: Text(widget.actionLabel),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 8.0),
+          ],
+        ),
+      ),
     );
-
-    if (action == null || action == _ExportSheetAction.cancel) return null;
-
-    final fileName = controller.text.trim();
-    if (fileName.isEmpty) return null;
-
-    if (action == _ExportSheetAction.exportAll) {
-      return ExportPlanInput(
-        fileName: fileName,
-        selectedUuids: exercises.map((e) => e.uuid).toList(),
-      );
-    }
-
-    // chooseExercises — show the picker with everything pre-selected.
-    if (!context.mounted) return null;
-    final selectedUuids = await ProgramPageControllerBase.selectExercises(
-      context,
-      title,
-      exercises,
-      localizations,
-      confirmLabel: actionLabel,
-      preselectAll: true,
-      showSelectAllControls: true,
-    );
-    if (selectedUuids.isEmpty) return null;
-    return ExportPlanInput(fileName: fileName, selectedUuids: selectedUuids);
-  } finally {
-    controller.removeListener(onTextChanged);
-    controller.dispose();
-    canSubmit.dispose();
   }
 }
 

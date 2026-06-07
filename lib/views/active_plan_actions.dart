@@ -29,30 +29,15 @@ Future<void> openPlan(BuildContext context) => showOpenPlanDialog(context);
 /// both surfaces use exactly the same prompt.
 Future<void> renamePlan(BuildContext context, Program program) async {
   final localizations = AppLocalizations.of(context)!;
-  final controller = TextEditingController(text: program.name);
   final name = await showAdaptiveDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(localizations.libraryRename),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        textInputAction: TextInputAction.done,
-        onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(localizations.cancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, controller.text.trim()),
-          child: Text(localizations.save),
-        ),
-      ],
+    builder: (context) => _PlanNameDialog(
+      title: localizations.libraryRename,
+      initialText: program.name,
+      actionLabel: localizations.save,
+      cancelLabel: localizations.cancel,
     ),
   );
-  controller.dispose();
   if (name == null || name.isEmpty) return;
   final programService = ProgramService();
   final loaded = programService.loadProgram(program.uuid) ?? program;
@@ -488,29 +473,46 @@ Future<String?> _promptPlanName(
 ) async {
   final name = await showAdaptiveDialog<String>(
     context: context,
-    builder: (context) => _PlanNameDialog(localizations: localizations),
+    builder: (context) => _PlanNameDialog(
+      title: localizations.newPlanNamePrompt,
+      hintText: localizations.program(1),
+      actionLabel: localizations.create,
+      cancelLabel: localizations.cancel,
+    ),
   );
   if (name == null || name.isEmpty) return null;
   return name;
 }
 
-/// New-plan name prompt. The [TextEditingController] is owned by this widget's
-/// [State] so it is disposed only when the dialog route is removed from the
-/// tree — i.e. *after* the pop transition finishes. Disposing it inline right
-/// after `showAdaptiveDialog` returned tore it down while the still-animating
-/// TextField was rebuilding, throwing "A TextEditingController was used after
-/// being disposed."
+/// Single-field name prompt for both creating and renaming a plan. The
+/// [TextEditingController] is owned by this widget's [State] so it is disposed
+/// only when the dialog route is removed from the tree — i.e. *after* the pop
+/// transition finishes. Disposing it inline right after `showAdaptiveDialog`
+/// returned tore it down while the still-animating TextField was rebuilding,
+/// throwing "A TextEditingController was used after being disposed."
 class _PlanNameDialog extends StatefulWidget {
-  const _PlanNameDialog({required this.localizations});
+  const _PlanNameDialog({
+    required this.title,
+    required this.actionLabel,
+    required this.cancelLabel,
+    this.initialText,
+    this.hintText,
+  });
 
-  final AppLocalizations localizations;
+  final String title;
+  final String actionLabel;
+  final String cancelLabel;
+  final String? initialText;
+  final String? hintText;
 
   @override
   State<_PlanNameDialog> createState() => _PlanNameDialogState();
 }
 
 class _PlanNameDialogState extends State<_PlanNameDialog> {
-  final TextEditingController _controller = TextEditingController();
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialText,
+  );
 
   @override
   void dispose() {
@@ -520,24 +522,25 @@ class _PlanNameDialogState extends State<_PlanNameDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = widget.localizations;
     return AlertDialog(
-      title: Text(localizations.newPlanNamePrompt),
+      title: Text(widget.title),
       content: TextField(
         controller: _controller,
         autofocus: true,
         textInputAction: TextInputAction.done,
-        decoration: InputDecoration(hintText: localizations.program(1)),
+        decoration: widget.hintText == null
+            ? null
+            : InputDecoration(hintText: widget.hintText),
         onSubmitted: (_) => Navigator.pop(context, _controller.text.trim()),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(localizations.cancel),
+          child: Text(widget.cancelLabel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, _controller.text.trim()),
-          child: Text(localizations.create),
+          child: Text(widget.actionLabel),
         ),
       ],
     );
