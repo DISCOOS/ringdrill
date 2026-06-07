@@ -60,7 +60,7 @@ Final per-segment copy. Norwegian uses "post"/"poster" for *station*; English us
 | Øvelser (`emptyExercises`) | `Icons.update` | Ingen øvelser ennå | En øvelse trenger antall poster og antall lag for å kunne kjøres. Legg til den første for å se ringen i arbeid. | No exercises yet | An exercise needs a number of stations and a number of teams before it can run. Add your first to see the ring in motion. |
 | Poster (`emptyStations`) | `Icons.place` | Ingen poster ennå | Poster legges til inne i øvelsene dine. Opprett en øvelse først, så dukker postene opp her. | No stations yet | Stations are added inside your exercises. Create an exercise first and they will show up here. |
 | Spill (`emptyRoles`) | `Icons.theater_comedy` | Ingen roller ennå | Roller er markørene som spiller ut scenarioet på postene. Trykk + for å legge til den første. | No roles yet | Roles are played out at the stations to drive the scenario. Tap + to add the first one. |
-| Lag (`emptyTeams`) | `Icons.group` | Ingen lag ennå | Lag i denne listen kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her. | No teams yet | Teams in this list come from the team count in your exercises. Create an exercise first and they will show up here. |
+| Lag (`emptyTeams`) | `Icons.group` | Ingen lag ennå | Lag kommer fra antall lag i øvelsene dine. Opprett en øvelse først, så dukker lagene opp her. | No teams yet | Teams come from the team count in your exercises. Create an exercise first and they will show up here. |
 
 Only Spill mentions "+", because only it (and Øvelser, via its FAB) has a creator. Poster and Lag point back to Øvelser instead.
 
