@@ -35,3 +35,37 @@ The screenshot demo generator (`tools/screenshots/make_demo_drills.py`) omits `r
 **Generator approach.** Using `DrillFile.fromProgram` in a Dart script (`tools/generate_example_drills.dart`) rather than extending the Python generator. Reason: it's the same serialization path the app uses, handles all schema 1.2 fields automatically, and avoids reverse-engineering the JSON structure in Python. The script imports only `dart:io` + `package:ringdrill/` (no Flutter) — runs with `dart run tools/generate_example_drills.dart`.
 
 **Numbering continuity.** Adopted option (a): two exercises. Exercise #1 (index 0 → exerciseNumber 1) is a short intro. Exercise #2 (index 1 → exerciseNumber 2) is the three-station rotation, matching the `2a`/`2b`/`2c` labels hardcoded in `RingRotationFigure` (`exerciseNumber: 2, StationNumberFormat.alpha`). The `Program.stationNumberFormat` is set to `StationNumberFormat.alpha` so the in-app station badges show `2a`/`2b`/`2c` too.
+
+## Closing
+
+2026-06-07: Stage 3 landed in three commits on main.
+
+**New files:**
+- `tools/generate_example_drills.dart` — Dart generator script; run with `dart run tools/generate_example_drills.dart` to regenerate assets
+- `assets/example/onboarding-example.nb.drill` — Norwegian example plan
+- `assets/example/onboarding-example.en.drill` — English example plan
+- `test/data/example_drill_test.dart` — 14 tests validating shape of both bundled assets
+- `test/views/concept_primer_open_example_test.dart` — 5 tests for the open-example flow (install, locale, fallback)
+
+**Modified files:**
+- `lib/views/concept_primer_screen.dart` — `onOpenExample` now loads locale-matched asset, calls `installFromFile(activate: true)`, falls back on error
+- `pubspec.yaml` — declares both `.drill` assets under `assets/example/`
+- `docs/prompts/DESIGN-007-stage-3-handoff.md` — this file (investigation + closing)
+
+**Generator approach (Dart, not Python).** `tools/generate_example_drills.dart` uses `DrillFile.fromProgram` — the same serialization path as the app — to produce deterministic schema 1.2 archives. Fixed UUIDs (`onboarding-nb-v1`, `onboarding-en-v1`) make regeneration idempotent. Regenerate any time content needs to change.
+
+**Asset shape:** each `.drill` contains:
+- 2 exercises (intro ex #1, three-station rotation ex #2 with `numberOfTeams=3, numberOfRounds=2`)
+- 3 teams (`Lag 1/2/3` or `Team 1/2/3`)
+- 2 roleplays on exercise #2 (savnet person / vitne, or missing person / witness) with `.md` companion files
+- `program/intro.md` brief
+
+**Numbering continuity decision:** option (a) adopted — two exercises so the showcased exercise has `exerciseNumber=2`. The program sets `stationNumberFormat: StationNumberFormat.alpha` so in-app station badges read `2a`/`2b`/`2c`, matching the `RingRotationFigure` primer illustration exactly.
+
+**Import call used:** `ProgramService().installFromFile(file, activate: true)` — preserves the incoming UUID/name/brief/rolePlays, sets the plan as active, emits `programInstalled` event (which `MainScreen` already handles). NOT `importProgram`, which merges exercises only.
+
+**Locale selection:** `Intl.getCurrentLocale().split('_').first == 'nb'` picks the `nb` asset; all other locales fall back to `en`.
+
+**Stage 4 seam:** the `ConceptPrimerScreen` has no TODO left. Stage 4 ("Start her" cue) adds a first-run pill on the first FAB in `ProgramView`, gated by `AppConfig.keyOnboardingSeen`. No seam needed in this file.
+
+**Stage 5 seam:** `ConceptPrimerContent` (in `lib/views/widgets/concept_primer_content.dart`) is the reuse surface. Stage 5 mounts it directly inside the Help/FAQ screen chrome.
