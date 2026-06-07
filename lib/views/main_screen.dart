@@ -13,6 +13,7 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/about_page.dart';
+import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
@@ -140,7 +141,7 @@ String? _activateCanonicalProgramPath(String location) {
   return null;
 }
 
-GoRouter buildRouter(bool isFirstLaunch) {
+GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
   final key = GlobalKey<NavigatorState>();
   // Explicit key for the ShellRoute's internal Navigator. GoRouter creates
   // one implicitly when omitted, but we own it here for two reasons:
@@ -191,10 +192,21 @@ GoRouter buildRouter(bool isFirstLaunch) {
       if (legacyRedirect != null && legacyRedirect != location) {
         return legacyRedirect;
       }
+      if (!isOnboardingSeen && location == '/') {
+        return '/welcome';
+      }
       return _activateCanonicalProgramPath(location);
     },
     routes: [
       GoRoute(path: '/i/:slug', redirect: (_, _) => _activeProgramPath()),
+      // Concept primer — shown once on first launch when the onboarding seen
+      // flag is unset. Lives over the root navigator (parentNavigatorKey: key)
+      // so it does not fight the IndexedStack shell.
+      GoRoute(
+        path: '/welcome',
+        parentNavigatorKey: key,
+        builder: (context, state) => const ConceptPrimerScreen(),
+      ),
       // Brief routes — not tabs; pushed over the root navigator as a
       // fullscreen modal bottom sheet. The program variant is listed first so
       // go_router matches the more specific `program/` path before the bare

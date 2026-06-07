@@ -45,6 +45,8 @@ Future<void> main() async {
     // Load user consent for analytics from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = prefs.getBool(AppConfig.keyIsFirstLaunch) ?? true;
+    final isOnboardingSeen =
+        prefs.getBool(AppConfig.keyOnboardingSeen) ?? false;
     final analyticsConsent =
         prefs.getBool(AppConfig.keyAnalyticsConsent) ?? false;
 
@@ -69,12 +71,22 @@ Future<void> main() async {
       await SentryFlutter.init(SentryConfig.apply);
       runApp(
         FeedbackBoundary(
-          child: SentryWidget(child: RingDrillApp(isFirstLaunch: isFirstLaunch)),
+          child: SentryWidget(
+            child: RingDrillApp(
+              isFirstLaunch: isFirstLaunch,
+              isOnboardingSeen: isOnboardingSeen,
+            ),
+          ),
         ),
       );
     } else {
       // Run app without Sentry if no consent
-      runApp(RingDrillApp(isFirstLaunch: isFirstLaunch));
+      runApp(
+        RingDrillApp(
+          isFirstLaunch: isFirstLaunch,
+          isOnboardingSeen: isOnboardingSeen,
+        ),
+      );
     }
   } catch (error, stackTrace) {
     // Best-effort error reporting. Sentry may not have been initialized
@@ -160,9 +172,14 @@ class _BootFailureApp extends StatelessWidget {
 }
 
 class RingDrillApp extends StatefulWidget {
-  const RingDrillApp({super.key, required this.isFirstLaunch});
+  const RingDrillApp({
+    super.key,
+    required this.isFirstLaunch,
+    required this.isOnboardingSeen,
+  });
 
   final bool isFirstLaunch;
+  final bool isOnboardingSeen;
 
   @override
   State<RingDrillApp> createState() => _RingDrillAppState();
@@ -175,7 +192,7 @@ class _RingDrillAppState extends State<RingDrillApp> {
     _startNotificationService();
     _startPwaUpdatesListener();
     // Create exactly one router instance and keep it stable.
-    router = buildRouter(widget.isFirstLaunch);
+    router = buildRouter(widget.isFirstLaunch, widget.isOnboardingSeen);
     super.initState();
   }
 

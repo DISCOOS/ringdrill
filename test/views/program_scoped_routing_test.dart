@@ -94,7 +94,7 @@ Future<GoRouter> _pumpRouter(WidgetTester tester) async {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  final router = buildRouter(false);
+  final router = buildRouter(false, true);
   addTearDown(router.dispose);
   await tester.pumpWidget(_app(router));
   await tester.pumpAndSettle();
