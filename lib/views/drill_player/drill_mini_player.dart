@@ -34,7 +34,17 @@ class DrillMiniPlayer extends StatefulWidget {
     this.height = 48,
     this.bodyBuilder,
     this.showInlineStatus = true,
+    this.applyBottomInset = false,
   });
+
+  /// When `true`, the bar extends its own background colour down through the
+  /// bottom safe-area inset (home indicator on iOS) while keeping its content
+  /// above the inset. Used by the docked variants (wide/extended layout and
+  /// the fullscreen player) that sit flush against the screen edge — without
+  /// it the colour stops at the bar height and the inset reads as a dark
+  /// strip below the bar. Left `false` for the narrow floating bar in
+  /// [_buildBottomChrome], where the NavigationBar below it owns the inset.
+  final bool applyBottomInset;
 
   /// Overrides the content shown in the central, flexible area that
   /// defaults to a horizontally-scrollable [MiniRoundRow]. Receives the
@@ -179,12 +189,21 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
 
     // The rounded shape is owned by the parent (MainScreen._buildBottomChrome).
     // This Material just fills the clipped area with the LiveAccent background.
+    // The bottom inset padding lives INSIDE the Material so the accent colour
+    // reaches the screen edge; the content (bar + progress strip) stays above
+    // it. See [applyBottomInset].
     return Material(
       color: accent.background,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          InkWell(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: widget.applyBottomInset
+              ? MediaQuery.paddingOf(context).bottom
+              : 0,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
             onTap: widget.onOpen,
             child: SizedBox(
               height: widget.height,
@@ -348,7 +367,8 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -408,15 +428,21 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
 
     return Material(
       color: scheme.surfaceContainerHigh,
-      child: InkWell(
-        onTap: widget.onOpen,
-        child: SizedBox(
-          height: widget.height,
-          child: Stack(
-            alignment: Alignment.centerLeft,
-            children: [
-              Row(
-                children: [
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: widget.applyBottomInset
+              ? MediaQuery.paddingOf(context).bottom
+              : 0,
+        ),
+        child: InkWell(
+          onTap: widget.onOpen,
+          child: SizedBox(
+            height: widget.height,
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                Row(
+                  children: [
                   const SizedBox(width: 8),
                   ExerciseNumberBadge(label: exerciseLabel, size: 36),
                   const SizedBox(width: 8),
@@ -509,6 +535,7 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

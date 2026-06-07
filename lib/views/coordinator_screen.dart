@@ -347,12 +347,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           // master column and the mini-player is anchored there, so the
           // detail pane keeps the lightweight status strip instead.
           bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
-              ? SafeArea(
-                  top: false,
-                  child: DrillMiniPlayer(
-                    key: const ValueKey('coordinator-mini-player'),
-                    exercise: _exercise,
-                    height: 64,
+              ? DrillMiniPlayer(
+                  key: const ValueKey('coordinator-mini-player'),
+                  exercise: _exercise,
+                  height: 64,
+                  // Paint the accent background through the bottom safe-area
+                  // inset so the home-indicator strip matches the bar instead
+                  // of reading as a dark band below it.
+                  applyBottomInset: true,
                     // The tile row owns the phase/countdown, so the trailing
                     // cluster collapses to just the stop button here.
                     showInlineStatus: false,
@@ -364,7 +366,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                       _exerciseService.start(_exercise!);
                     },
                     bodyBuilder: _buildMiniPlayerBody,
-                  ),
                 )
               : _buildExerciseStatus(event),
         );

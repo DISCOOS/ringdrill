@@ -1514,33 +1514,32 @@ class _MainScreenState extends State<MainScreen>
                       // mini player is a flush bottom bar docked under the rail
                       // + master. Rounded corners are reserved for the narrow
                       // (portrait/mobile) floating mini bar in
-                      // [_buildBottomChrome]. SafeArea honours any bottom inset
-                      // (no extra padding, so the bar stays flush against the
-                      // edge rather than leaving a mismatched gap below it).
-                      return SafeArea(
-                        top: false,
-                        child: DrillMiniPlayer(
-                          // Taller than the narrow floating bar (48) so the
-                          // docked wide bar has more breathing room.
-                          height: 64,
-                          exercise: idleExercise,
-                          onPlay: idleExercise == null
-                              ? null
-                              : () {
-                                  unawaited(HapticFeedback.mediumImpact());
-                                  ExerciseService().start(idleExercise);
-                                  // Clear the detail target so the master/detail
-                                  // pane empties once the exercise goes live —
-                                  // the running exercise lives in the fullscreen
-                                  // drill player, not the detail pane. Without
-                                  // this the started exercise's coordinator stays
-                                  // pinned in the detail pane after the player is
-                                  // closed, until another item is selected.
-                                  _contextSheetController.close();
-                                  _openDrillPlayer(context);
-                                },
-                          onOpen: () => _openDrillPlayer(context),
-                        ),
+                      // [_buildBottomChrome]. `applyBottomInset` lets the bar
+                      // paint its own background through the bottom safe-area
+                      // inset (content stays above it), instead of an external
+                      // SafeArea that left the inset dark below the bar.
+                      return DrillMiniPlayer(
+                        // Taller than the narrow floating bar (48) so the
+                        // docked wide bar has more breathing room.
+                        height: 64,
+                        applyBottomInset: true,
+                        exercise: idleExercise,
+                        onPlay: idleExercise == null
+                            ? null
+                            : () {
+                                unawaited(HapticFeedback.mediumImpact());
+                                ExerciseService().start(idleExercise);
+                                // Clear the detail target so the master/detail
+                                // pane empties once the exercise goes live —
+                                // the running exercise lives in the fullscreen
+                                // drill player, not the detail pane. Without
+                                // this the started exercise's coordinator stays
+                                // pinned in the detail pane after the player is
+                                // closed, until another item is selected.
+                                _contextSheetController.close();
+                                _openDrillPlayer(context);
+                              },
+                        onOpen: () => _openDrillPlayer(context),
                       );
                     }
                     return const SizedBox.shrink();
