@@ -10,7 +10,7 @@ Four screenshots, two form factors, two languages = 16 captures.
 
 | Form factor | Device (iOS)            | Required size  |
 |-------------|-------------------------|----------------|
-| iPhone 6.9" | iPhone 16 Pro Max       | 1320 x 2868    |
+| iPhone 6.9" | iPhone 17 Pro Max       | 1320 x 2868    |
 | iPad 13"    | iPad Pro 13-inch (M4)   | 2064 x 2752    |
 
 Apple scales these down for smaller devices, so the two largest sets suffice.
@@ -44,10 +44,14 @@ or import it however you normally open a drill file.
 
 ## Capture flow (per form factor x language)
 
+First set the Simulator to **Window > Pixel Accurate** so it renders at native
+resolution. Otherwise `simctl` saves a downscaled image (e.g. 1488x2266) that
+App Store rejects; `shot` warns when the size is wrong.
+
 Example for iPhone in English:
 
 ```bash
-open -a Simulator                      # pick "iPhone 16 Pro Max"
+open -a Simulator                      # pick "iPhone 17 Pro Max"
 tools/screenshots.sh lang en           # sets locale + reboots the sim
 flutter run                            # then import demo-en.drill, navigate
 tools/screenshots.sh prep              # clean status bar (09:41, full battery/signal)

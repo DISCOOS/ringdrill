@@ -4,7 +4,7 @@
 #
 # Captures native-resolution PNGs that already match Apple's required sizes,
 # so nothing needs resizing:
-#   iPhone 6.9" (e.g. iPhone 16 Pro Max): 1320 x 2868
+#   iPhone 6.9" (e.g. iPhone 17 Pro Max): 1320 x 2868
 #   iPad 13"    (iPad Pro 13-inch, M4):   2064 x 2752
 # Apple scales these down for smaller devices, so the two largest sets suffice.
 #
@@ -22,7 +22,7 @@
 #                                           and dark mode (e.g. dark for 03-live).
 #
 # Typical flow per device + language (see tools/screenshots/README.md):
-#   open -a Simulator                       # pick "iPhone 16 Pro Max"
+#   open -a Simulator                       # pick "iPhone 17 Pro Max"
 #   tools/screenshots.sh lang en
 #   flutter run                             # import demo-en.drill, navigate
 #   tools/screenshots.sh prep
@@ -160,9 +160,9 @@ cmd_shot() {
   echo "saved $out  ($nm, ${w}x${h})"
   if [ -n "$expected" ] && [ "${w}x${h}" != "$expected" ]; then
     echo "WARNING: ${w}x${h} does not match the required $expected for $class." >&2
-    echo "         App Store will reject this size. In the Simulator, turn OFF" >&2
-    echo "         Debug > 'Optimize Rendering for Window Scale' (or set the window" >&2
-    echo "         to 100% scale), then re-run this shot." >&2
+    echo "         App Store will reject this size. In the Simulator, choose" >&2
+    echo "         Window > Pixel Accurate (renders 1:1 native pixels), then" >&2
+    echo "         re-run this shot." >&2
   fi
 
   echo "$lang" > "$STATE_LANG"
@@ -197,7 +197,12 @@ COMMANDS
   shot <lang> <name>      Capture the booted sim to
                           store/screenshots/ios/<class>/<lang>/<name>.png
                           (<class> = iphone|ipad, auto-detected). Prints the
-                          pixel size and flattens any alpha channel.
+                          pixel size, flattens any alpha channel, and warns if
+                          the size is wrong.
+
+NOTE: the capture must be native resolution (iPhone 1320x2868, iPad
+2064x2752). Set the Simulator to Window > Pixel Accurate first, otherwise
+simctl saves a downscaled, App-Store-rejected image.
   help, -h, --help        Show this help.
 
 THE FOUR SHOTS (plan -> place -> run -> brief)
