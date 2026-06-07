@@ -1752,4 +1752,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String primerTeamLabel(int n) {
     return 'Team $n';
   }
+
+  @override
+  String get startHereCue => 'Start here';
 }

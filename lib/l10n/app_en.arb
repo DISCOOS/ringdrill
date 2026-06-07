@@ -1772,5 +1772,9 @@
         "type": "int"
       }
     }
+  },
+  "startHereCue": "Start here",
+  "@startHereCue": {
+    "description": "First-run-only inline pill label beside the first Program FAB, nudging the user to create their first exercise."
   }
 }

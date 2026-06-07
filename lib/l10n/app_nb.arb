@@ -931,5 +931,9 @@
         "type": "int"
       }
     }
+  },
+  "startHereCue": "Start her",
+  "@startHereCue": {
+    "description": "Engangs inline-pill-merkelapp ved siden av første Program-FAB, som nudger brukeren til å opprette sin første øvelse."
   }
 }

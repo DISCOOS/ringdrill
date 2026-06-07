@@ -3013,6 +3013,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Team {n}'**
   String primerTeamLabel(int n);
+
+  /// First-run-only inline pill label beside the first Program FAB, nudging the user to create their first exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Start here'**
+  String get startHereCue;
 }
 
 class _AppLocalizationsDelegate

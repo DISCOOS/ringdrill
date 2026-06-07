@@ -1748,4 +1748,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String primerTeamLabel(int n) {
     return 'Lag $n';
   }
+
+  @override
+  String get startHereCue => 'Start her';
 }

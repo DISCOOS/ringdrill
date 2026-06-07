@@ -1,6 +1,7 @@
 class AppConfig {
   static const String keyIsFirstLaunch = 'app:isFirstLaunch:v1';
   static const String keyOnboardingSeen = 'app:onboardingSeen:v1';
+  static const String keyStartHereSeen = 'app:startHereSeen:v1';
   static const String keyActiveProgram = 'app:activeProgram:v1';
   static const String keyLibrarySchema = 'app:librarySchema:v1';
   static const String keyLibrarySchemaJustMigrated =
