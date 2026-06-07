@@ -131,6 +131,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
     final rows = _collectRows();
     final filterExercise = _filterExercise();
+    final canCreateRole = _service.loadExercises().isNotEmpty;
 
     final Widget body;
     if (!_hasAnyRole) {
@@ -201,14 +202,16 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                       ? FloatingActionButton(
                           heroTag: null,
                           tooltip: localizations.newPlay,
-                          onPressed: () =>
-                              _controller.openCreateRolePlay(context),
+                          onPressed: canCreateRole
+                              ? () => _controller.openCreateRolePlay(context)
+                              : null,
                           child: const Icon(Icons.add),
                         )
                       : FloatingActionButton.extended(
                           heroTag: null,
-                          onPressed: () =>
-                              _controller.openCreateRolePlay(context),
+                          onPressed: canCreateRole
+                              ? () => _controller.openCreateRolePlay(context)
+                              : null,
                           icon: const Icon(Icons.add),
                           label: Text(localizations.newPlay),
                         ),

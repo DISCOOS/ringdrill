@@ -199,7 +199,7 @@ void main() {
     expect(find.text('Teaching Station').hitTestable(), findsOneWidget);
   });
 
-  testWidgets('Script segment teaches when empty and keeps create FAB', (
+  testWidgets('Script segment teaches when empty and disables create FAB', (
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -214,7 +214,10 @@ void main() {
     expect(find.text(l10n.emptyRolesTitle), findsOneWidget);
     expect(find.text(l10n.emptyRolesBody), findsOneWidget);
     expect(_teachingIcon(Icons.theater_comedy), findsOneWidget);
-    expect(find.byType(FloatingActionButton).hitTestable(), findsOneWidget);
+    final emptyFab = tester.widget<FloatingActionButton>(
+      find.byType(FloatingActionButton),
+    );
+    expect(emptyFab.onPressed, isNull);
 
     await ProgramService().setActive(_fullProgramUuid);
     await tester.pumpAndSettle();
@@ -222,6 +225,10 @@ void main() {
     expect(find.text(l10n.emptyRolesTitle), findsNothing);
     expect(find.text(l10n.emptyRolesBody), findsNothing);
     expect(find.text('Teaching Role').hitTestable(), findsOneWidget);
+    final populatedFab = tester.widget<FloatingActionButton>(
+      find.byType(FloatingActionButton),
+    );
+    expect(populatedFab.onPressed, isNotNull);
   });
 
   testWidgets('Teams segment teaches when empty without adding a FAB', (
