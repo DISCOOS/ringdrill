@@ -188,12 +188,14 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
         // redirect to programs page!
         return _activeProgramPath();
       }
+      // Primer gate: redirect root path to /welcome on first launch, before
+      // the legacy redirect can absorb '/' → programPath(uuid).
+      if (!isOnboardingSeen && location == '/') {
+        return '/welcome';
+      }
       final legacyRedirect = legacyProgramRedirect(location);
       if (legacyRedirect != null && legacyRedirect != location) {
         return legacyRedirect;
-      }
-      if (!isOnboardingSeen && location == '/') {
-        return '/welcome';
       }
       return _activateCanonicalProgramPath(location);
     },
