@@ -7,6 +7,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -132,6 +133,7 @@ class ProgramRepository {
       _programKey(program.uuid),
       jsonEncode(shell.toJson()),
     );
+    await _writeProgramBrief(program);
   }
 
   Future<void> saveProgram(Program program) async {
@@ -148,15 +150,19 @@ class ProgramRepository {
 
   Future<void> deleteProgram(String uuid) async {
     await _prefs.remove(_programKey(uuid));
+    await _prefs.remove(_programBriefKey(uuid));
     final keys = _prefs
         .getKeys()
         .where(
           (key) =>
               key.startsWith('pe:$uuid:') ||
+              key.startsWith('pem:$uuid:') ||
               key.startsWith('pt:$uuid:') ||
               key.startsWith('ps:$uuid:') ||
               key.startsWith('pr:$uuid:') ||
-              key.startsWith('pa:$uuid:'),
+              key.startsWith('prm:$uuid:') ||
+              key.startsWith('pa:$uuid:') ||
+              key.startsWith('pan:$uuid:'),
         )
         .toList();
     for (final key in keys) {
@@ -183,7 +189,7 @@ class ProgramRepository {
       final value = _prefs.getString(key);
       if (value == null) continue;
       final parsed = _tryParseEntry(key, value, Exercise.fromJson);
-      if (parsed != null) items.add(parsed);
+      if (parsed != null) items.add(_applyExerciseBrief(uuid, parsed));
     }
     return _normaliseExerciseOrder(items);
   }
@@ -223,7 +229,9 @@ class ProgramRepository {
     final key = _exerciseKey(programId, uuid);
     final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return _tryParseEntry(key, jsonString, Exercise.fromJson);
+    final parsed = _tryParseEntry(key, jsonString, Exercise.fromJson);
+    if (parsed == null) return null;
+    return _applyExerciseBrief(programId, parsed);
   }
 
   Future<void> addExercise(Exercise exercise, [bool replace = false]) async {
@@ -244,6 +252,7 @@ class ProgramRepository {
       _exerciseKey(programId, exercise.uuid),
       jsonEncode(exercise.toJson()),
     );
+    await _writeExerciseBrief(programId, exercise);
     await _touchProgram(programId);
   }
 
@@ -252,6 +261,7 @@ class ProgramRepository {
     final deleted = getExercise(uuid, programId);
     if (deleted != null) {
       await _prefs.remove(_exerciseKey(programId, uuid));
+      await _prefs.remove(_exerciseBriefKey(programId, uuid));
       await _touchProgram(programId);
     }
     return deleted;
@@ -376,7 +386,9 @@ class ProgramRepository {
     final key = _programKey(uuid);
     final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return _tryParseEntry(key, jsonString, Program.fromJson);
+    final parsed = _tryParseEntry(key, jsonString, Program.fromJson);
+    if (parsed == null) return null;
+    return _applyProgramBrief(parsed);
   }
 
   Future<void> _replaceNested(
@@ -392,9 +404,11 @@ class ProgramRepository {
         .where(
           (key) =>
               key.startsWith('pe:$programUuid:') ||
+              key.startsWith('pem:$programUuid:') ||
               key.startsWith('pt:$programUuid:') ||
               key.startsWith('ps:$programUuid:') ||
               key.startsWith('pr:$programUuid:') ||
+              key.startsWith('prm:$programUuid:') ||
               key.startsWith('pa:$programUuid:') ||
               key.startsWith('pan:$programUuid:'),
         )
@@ -407,6 +421,7 @@ class ProgramRepository {
         _exerciseKey(programUuid, exercise.uuid),
         jsonEncode(exercise.toJson()),
       );
+      await _writeExerciseBrief(programUuid, exercise);
     }
     for (final team in teams) {
       await _prefs.setString(
@@ -425,6 +440,7 @@ class ProgramRepository {
         _rolePlayKey(programUuid, rolePlay.uuid),
         jsonEncode(rolePlay.toJson()),
       );
+      await _writeRolePlayBrief(programUuid, rolePlay);
     }
     for (final actor in actors) {
       await _prefs.setString(
@@ -470,7 +486,7 @@ class ProgramRepository {
       final value = _prefs.getString(key);
       if (value == null) continue;
       final parsed = _tryParseEntry(key, value, RolePlay.fromJson);
-      if (parsed != null) items.add(parsed);
+      if (parsed != null) items.add(_applyRolePlayBrief(uuid, parsed));
     }
     items.sort((a, b) => a.index.compareTo(b.index));
     return items;
@@ -481,7 +497,9 @@ class ProgramRepository {
     final key = _rolePlayKey(programId, uuid);
     final jsonString = _prefs.getString(key);
     if (jsonString == null) return null;
-    return _tryParseEntry(key, jsonString, RolePlay.fromJson);
+    final parsed = _tryParseEntry(key, jsonString, RolePlay.fromJson);
+    if (parsed == null) return null;
+    return _applyRolePlayBrief(programId, parsed);
   }
 
   Future<void> saveRolePlay(RolePlay rolePlay, [String? programUuid]) async {
@@ -490,6 +508,7 @@ class ProgramRepository {
       _rolePlayKey(programId, rolePlay.uuid),
       jsonEncode(rolePlay.toJson()),
     );
+    await _writeRolePlayBrief(programId, rolePlay);
     await _touchProgram(programId);
   }
 
@@ -501,6 +520,7 @@ class ProgramRepository {
     final deleted = getRolePlay(uuid, programId);
     if (deleted != null) {
       await _prefs.remove(_rolePlayKey(programId, uuid));
+      await _prefs.remove(_rolePlayBriefKey(programId, uuid));
       await _touchProgram(programId);
     }
     return deleted;
@@ -575,4 +595,199 @@ class ProgramRepository {
   // Actor.notes is excluded from JSON manifests (ADR-0022); stored under pan:.
   String _actorNotesKey(String programUuid, String uuid) =>
       'pan:$programUuid:$uuid';
+
+  // Brief markdown sidecars (ADR-0022). The *Md/brief fields on Program,
+  // Exercise, Station and RolePlay are annotated includeToJson:false because
+  // the .drill archive stores them as standalone <field>.md files. The in-app
+  // store is SharedPreferences JSON, so without a parallel sidecar here those
+  // fields are silently dropped on every save (and read back as null). Each
+  // key holds a small JSON blob of just the markdown fields, mirroring the
+  // pan: precedent for Actor.notes.
+  String _programBriefKey(String uuid) => 'pgm:$uuid';
+  String _exerciseBriefKey(String programUuid, String uuid) =>
+      'pem:$programUuid:$uuid';
+  String _rolePlayBriefKey(String programUuid, String uuid) =>
+      'prm:$programUuid:$uuid';
+
+  static Map<String, dynamic>? _tryDecodeMap(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static void _putIfPresent(
+    Map<String, dynamic> map,
+    String key,
+    String? value,
+  ) {
+    if (value != null) map[key] = value;
+  }
+
+  // --- Program brief sidecar ------------------------------------------------
+
+  static Map<String, dynamic> _programBriefBlob(Program program) {
+    final map = <String, dynamic>{};
+    _putIfPresent(map, 'briefIntro', program.briefIntroMd);
+    _putIfPresent(map, 'comms', program.commsMd);
+    _putIfPresent(map, 'beforeRound', program.beforeRoundMd);
+    return map;
+  }
+
+  Future<void> _writeProgramBrief(Program program) async {
+    final blob = _programBriefBlob(program);
+    final key = _programBriefKey(program.uuid);
+    if (blob.isEmpty) {
+      await _prefs.remove(key);
+    } else {
+      await _prefs.setString(key, jsonEncode(blob));
+    }
+  }
+
+  Program _applyProgramBrief(Program program) {
+    final raw = _prefs.getString(_programBriefKey(program.uuid));
+    if (raw == null) return program;
+    final blob = _tryDecodeMap(raw);
+    if (blob == null) return program;
+    return program.copyWith(
+      briefIntroMd: blob['briefIntro'] as String?,
+      commsMd: blob['comms'] as String?,
+      beforeRoundMd: blob['beforeRound'] as String?,
+    );
+  }
+
+  // --- Exercise brief sidecar (incl. nested stations) -----------------------
+
+  static Map<String, dynamic> _stationBriefMap(Station station) {
+    final map = <String, dynamic>{};
+    _putIfPresent(map, 'equipment', station.equipmentMd);
+    _putIfPresent(map, 'situation', station.situationMd);
+    _putIfPresent(map, 'mission', station.missionMd);
+    _putIfPresent(map, 'logistics', station.logisticsMd);
+    _putIfPresent(map, 'criticalQuestions', station.criticalQuestionsMd);
+    _putIfPresent(map, 'leaderAnswers', station.leaderAnswersMd);
+    _putIfPresent(map, 'directorNotes', station.directorNotesMd);
+    return map;
+  }
+
+  static Station _applyStationBrief(Station station, Map<String, dynamic> m) {
+    return station.copyWith(
+      equipmentMd: m['equipment'] as String?,
+      situationMd: m['situation'] as String?,
+      missionMd: m['mission'] as String?,
+      logisticsMd: m['logistics'] as String?,
+      criticalQuestionsMd: m['criticalQuestions'] as String?,
+      leaderAnswersMd: m['leaderAnswers'] as String?,
+      directorNotesMd: m['directorNotes'] as String?,
+    );
+  }
+
+  static Map<String, dynamic> _exerciseBriefBlob(Exercise exercise) {
+    final blob = <String, dynamic>{};
+    final ex = <String, dynamic>{};
+    _putIfPresent(ex, 'method', exercise.methodMd);
+    _putIfPresent(ex, 'learningGoals', exercise.learningGoalsMd);
+    _putIfPresent(ex, 'trainingFocus', exercise.trainingFocusMd);
+    _putIfPresent(ex, 'orderFormat', exercise.orderFormatMd);
+    _putIfPresent(ex, 'executionTips', exercise.executionTipsMd);
+    _putIfPresent(ex, 'comms', exercise.commsMd);
+    if (ex.isNotEmpty) blob['exercise'] = ex;
+
+    final stations = <String, dynamic>{};
+    for (final station in exercise.stations) {
+      final sm = _stationBriefMap(station);
+      if (sm.isNotEmpty) stations['${station.index}'] = sm;
+    }
+    if (stations.isNotEmpty) blob['stations'] = stations;
+    return blob;
+  }
+
+  Future<void> _writeExerciseBrief(
+    String programUuid,
+    Exercise exercise,
+  ) async {
+    final blob = _exerciseBriefBlob(exercise);
+    final key = _exerciseBriefKey(programUuid, exercise.uuid);
+    if (blob.isEmpty) {
+      await _prefs.remove(key);
+    } else {
+      await _prefs.setString(key, jsonEncode(blob));
+    }
+  }
+
+  Exercise _applyExerciseBrief(String programUuid, Exercise exercise) {
+    final raw = _prefs.getString(_exerciseBriefKey(programUuid, exercise.uuid));
+    if (raw == null) return exercise;
+    final blob = _tryDecodeMap(raw);
+    if (blob == null) return exercise;
+
+    var result = exercise;
+    final ex = blob['exercise'];
+    if (ex is Map<String, dynamic>) {
+      result = result.copyWith(
+        methodMd: ex['method'] as String?,
+        learningGoalsMd: ex['learningGoals'] as String?,
+        trainingFocusMd: ex['trainingFocus'] as String?,
+        orderFormatMd: ex['orderFormat'] as String?,
+        executionTipsMd: ex['executionTips'] as String?,
+        commsMd: ex['comms'] as String?,
+      );
+    }
+
+    final stationsBlob = blob['stations'];
+    if (stationsBlob is Map<String, dynamic> && result.stations.isNotEmpty) {
+      result = result.copyWith(
+        stations: [
+          for (final station in result.stations)
+            if (stationsBlob['${station.index}'] is Map<String, dynamic>)
+              _applyStationBrief(
+                station,
+                stationsBlob['${station.index}'] as Map<String, dynamic>,
+              )
+            else
+              station,
+        ],
+      );
+    }
+    return result;
+  }
+
+  // --- RolePlay brief sidecar -----------------------------------------------
+
+  static Map<String, dynamic> _rolePlayBriefBlob(RolePlay rolePlay) {
+    final map = <String, dynamic>{};
+    _putIfPresent(map, 'background', rolePlay.background);
+    _putIfPresent(map, 'behavior', rolePlay.behavior);
+    _putIfPresent(map, 'props', rolePlay.propsMd);
+    return map;
+  }
+
+  Future<void> _writeRolePlayBrief(
+    String programUuid,
+    RolePlay rolePlay,
+  ) async {
+    final blob = _rolePlayBriefBlob(rolePlay);
+    final key = _rolePlayBriefKey(programUuid, rolePlay.uuid);
+    if (blob.isEmpty) {
+      await _prefs.remove(key);
+    } else {
+      await _prefs.setString(key, jsonEncode(blob));
+    }
+  }
+
+  RolePlay _applyRolePlayBrief(String programUuid, RolePlay rolePlay) {
+    final raw = _prefs.getString(
+      _rolePlayBriefKey(programUuid, rolePlay.uuid),
+    );
+    if (raw == null) return rolePlay;
+    final blob = _tryDecodeMap(raw);
+    if (blob == null) return rolePlay;
+    return rolePlay.copyWith(
+      background: blob['background'] as String?,
+      behavior: blob['behavior'] as String?,
+      propsMd: blob['props'] as String?,
+    );
+  }
 }
