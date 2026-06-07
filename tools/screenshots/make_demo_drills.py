@@ -173,7 +173,7 @@ def main():
     build(
         "demo-no.drill",
         nid(),
-        "Søk og redning – Øvingshelg",
+        "SOR – Øvingshelg",
         "Øvingshelg for søk etter savnet på land med fire lag. Progresjonen går fra førsteinnsats og søksmetoder i ringøvelser til fullskala oppdrag og en avsluttende, integrert øvelse. Bygger på Hovedredningssentralens veileder «Søk etter savnet på land».",
         [(nid(), "Lag 1"), (nid(), "Lag 2"), (nid(), "Lag 3"), (nid(), "Lag 4")],
         [
