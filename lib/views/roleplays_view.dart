@@ -676,6 +676,9 @@ class RolePlaysController extends ScreenController {
     AppLocalizations localizations,
     List<Exercise> exercises,
   ) {
+    final exerciseFormat =
+        ProgramService().activeProgram?.exerciseNumberFormat ??
+        ExerciseNumberFormat.hash;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -695,6 +698,10 @@ class RolePlaysController extends ScreenController {
             itemBuilder: (context, index) {
               final ex = exercises[index];
               return ListTile(
+                leading: ExerciseNumberBadge(
+                  label: Numbering.exercise(exerciseFormat, index + 1),
+                  size: 32,
+                ),
                 title: Text(ex.name),
                 onTap: () => Navigator.pop(context, ex),
               );

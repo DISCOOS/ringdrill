@@ -8,6 +8,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
+import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 
 /// Optional long-form sections that can be added to a [RolePlay].
@@ -233,6 +234,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   // Station dropdown
                   DropdownButtonFormField<int?>(
                     initialValue: _stationIndex,
+                    isExpanded: true,
                     decoration: InputDecoration(
                       labelText: localizations.stationLabel,
                     ),
@@ -244,7 +246,21 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       for (var i = 0; i < stations.length; i++)
                         DropdownMenuItem<int?>(
                           value: i,
-                          child: Text(stations[i].name),
+                          child: Row(
+                            children: [
+                              StationNumberBadge(
+                                label: Numbering.station(
+                                  stationNumberFormat,
+                                  exerciseNumber: exerciseIndex < 0
+                                      ? 1
+                                      : exerciseIndex + 1,
+                                  stationIndex: i,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(child: Text(stations[i].name)),
+                            ],
+                          ),
                         ),
                     ],
                     onChanged: (v) => setState(() => _stationIndex = v),
