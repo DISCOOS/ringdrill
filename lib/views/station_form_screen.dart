@@ -110,7 +110,12 @@ class _StationFormScreenState extends State<StationFormScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final markers = widget.markers.where((e) => e.point == _position).toList();
+    // With a position, show only this station's own pin (unchanged). Without
+    // one (new station), pass the sibling stations so the picker frames them
+    // and the user places the new pin near the others.
+    final markers = _position == null
+        ? widget.markers
+        : widget.markers.where((e) => e.point == _position).toList();
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(

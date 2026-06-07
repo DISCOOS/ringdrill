@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -42,10 +44,32 @@ class PositionFormField<K> extends FormField<LatLng> {
                    IconButton(
                      icon: Icon(Icons.map),
                      onPressed: () async {
+                       // With a position, open on it. Without one, frame the
+                       // picker on the surrounding markers (e.g. sibling
+                       // stations) instead of the global default centre, so
+                       // the user places the new point near its context.
+                       final points = markers
+                           .map((m) => m.point)
+                           .toList(growable: false);
+                       final LatLng center;
+                       CameraFit? fit;
+                       if (position != null) {
+                         center = position;
+                       } else if (points.isEmpty) {
+                         center = MapConfig.initialCenter;
+                       } else if (points.length == 1) {
+                         center = points.first;
+                       } else {
+                         center = points.average();
+                         fit =
+                             points.centroidFit() ??
+                             CameraFit.coordinates(coordinates: points);
+                       }
                        final selected = await openFormSurface<LatLng>(
                          state.context,
                          builder: (context) => MapPickerScreen(
-                           initialCenter: position ?? MapConfig.initialCenter,
+                           initialCenter: center,
+                           initialFit: fit,
                            markers: markers,
                          ),
                        );
