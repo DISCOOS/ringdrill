@@ -671,6 +671,11 @@ class _MapViewState<K> extends State<MapView<K>> {
         _currentLocation = point;
       });
       _mapController.move(point, widget.locateZoom);
+    } on TimeoutException {
+      // A stalled GPS fix is an expected outcome (weak signal, slow
+      // first fix), not a bug. The user sees the error and can retry,
+      // so consume it here instead of forwarding noise to Sentry.
+      show(l.locationError);
     } catch (e, stackTrace) {
       show(l.locationError);
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
