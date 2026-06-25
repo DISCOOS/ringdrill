@@ -1232,6 +1232,12 @@ abstract class AppLocalizations {
   /// **'Could not determine your position.'**
   String get locationError;
 
+  /// Snackbar shown when launchUrl fails to open an external URL or mail client
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open link.'**
+  String get couldNotOpenLink;
+
   /// Prefix shown next to station name in search results
   ///
   /// In en, this message translates to:

@@ -708,6 +708,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get locationError => 'Kunne ikke finne posisjonen din.';
 
   @override
+  String get couldNotOpenLink => 'Kunne ikke åpne lenken.';
+
+  @override
   String get searchHintStation => 'Post';
 
   @override

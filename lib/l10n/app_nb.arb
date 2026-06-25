@@ -199,6 +199,7 @@
   "locationPermissionDenied": "Tilgang til posisjon ble avslått.",
   "locationPermissionDeniedForever": "Tilgang til posisjon er permanent avslått. Aktiver den i systeminnstillingene for å vise posisjonen din.",
   "locationError": "Kunne ikke finne posisjonen din.",
+  "couldNotOpenLink": "Kunne ikke åpne lenken.",
   "searchHintStation": "Post",
   "searchHintExercise": "Øvelse",
   "searchHintPlace": "Sted",

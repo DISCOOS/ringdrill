@@ -75,6 +75,38 @@ class _AboutPageState extends State<AboutPage> {
     }
   }
 
+  /// Open [url] in the OS-level browser or mail client. Uses
+  /// [LaunchMode.externalApplication] so http(s) URLs go to the real
+  /// Safari/Chrome app instead of `SFSafariViewController`, which
+  /// matches the "open in new" trailing icon and avoids the iOS
+  /// quirk where `launchUrl` returns `false` even when the in-app
+  /// browser successfully presents the page (we used to forward
+  /// those false-positives to Sentry). On real failure or throw the
+  /// user gets a localized snackbar instead of a silent no-op.
+  Future<void> _openExternal(String url) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l = AppLocalizations.of(context)!;
+    bool ok = false;
+    try {
+      ok = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok && mounted) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          showCloseIcon: true,
+          dismissDirection: DismissDirection.endToStart,
+          content: Text(l.couldNotOpenLink),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -174,11 +206,7 @@ class _AboutPageState extends State<AboutPage> {
                     ? () async {
                         final url = AppBuildInfo.commitUrl;
                         if (url == null) return;
-                        if (!await launchUrl(Uri.parse(url))) {
-                          Sentry.captureException(
-                            Exception('Could not launch $url'),
-                          );
-                        }
+                        await _openExternal(url);
                       }
                     : null,
               ),
@@ -193,13 +221,7 @@ class _AboutPageState extends State<AboutPage> {
                 leading: const Icon(Icons.link_outlined),
                 title: Text(localizations.website),
                 subtitle: const Text(projectUrl), // Your website URL
-                onTap: () async {
-                  if (!await launchUrl(Uri.parse(projectUrl))) {
-                    Sentry.captureException(
-                      Exception('Could not launch $projectUrl'),
-                    );
-                  }
-                },
+                onTap: () => _openExternal(projectUrl),
                 trailing: const Icon(Icons.open_in_new, size: 18),
               ),
               const Divider(),
@@ -210,13 +232,7 @@ class _AboutPageState extends State<AboutPage> {
                   '$projectUrl/privacy/',
                 ), // Your website URL
                 trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () async {
-                  if (!await launchUrl(Uri.parse('$projectUrl/privacy/'))) {
-                    Sentry.captureException(
-                      Exception('Could not launch $projectUrl/privacy/'),
-                    );
-                  }
-                },
+                onTap: () => _openExternal('$projectUrl/privacy/'),
               ),
               const Divider(),
               ListTile(
@@ -224,13 +240,7 @@ class _AboutPageState extends State<AboutPage> {
                 title: Text(localizations.termsOfService),
                 subtitle: const Text('$projectUrl/tos/'), // Your website URL
                 trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () async {
-                  if (!await launchUrl(Uri.parse('$projectUrl/tos/'))) {
-                    Sentry.captureException(
-                      Exception('Could not launch $projectUrl/tos/'),
-                    );
-                  }
-                },
+                onTap: () => _openExternal('$projectUrl/tos/'),
               ),
               const Divider(),
               ListTile(
@@ -238,17 +248,9 @@ class _AboutPageState extends State<AboutPage> {
                 title: Text(localizations.contactSupport),
                 subtitle: const Text('support@discoos.org'),
                 trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () async {
-                  if (!await launchUrl(
-                    Uri.parse(
-                      'mailto:support@discoos.org?subject=RingDrill Feedback',
-                    ),
-                  )) {
-                    Sentry.captureException(
-                      Exception('Could not open email client'),
-                    );
-                  }
-                },
+                onTap: () => _openExternal(
+                  'mailto:support@discoos.org?subject=RingDrill Feedback',
+                ),
               ),
               const Divider(),
             ],

@@ -794,6 +794,10 @@
   "@locationError": {
     "description": "Snackbar shown when fetching the current position fails for an unspecified reason"
   },
+  "couldNotOpenLink": "Could not open link.",
+  "@couldNotOpenLink": {
+    "description": "Snackbar shown when launchUrl fails to open an external URL or mail client"
+  },
   "searchHintStation": "Station",
   "@searchHintStation": {
     "description": "Prefix shown next to station name in search results"

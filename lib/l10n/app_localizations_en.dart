@@ -710,6 +710,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationError => 'Could not determine your position.';
 
   @override
+  String get couldNotOpenLink => 'Could not open link.';
+
+  @override
   String get searchHintStation => 'Station';
 
   @override
