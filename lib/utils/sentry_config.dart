@@ -28,6 +28,16 @@ class SentryConfig {
     // the GitHub commit shown on the About page.
     options.beforeSend = (event, hint) {
       if (!kReleaseMode) return null;
+      // Drop benign GPS-fix timeouts from `MapView._locateMe`. The user
+      // already sees a localized error snackbar and can just tap the
+      // Locate-Me FAB again. The `LocationSettings.timeLimit` we pass
+      // to `Geolocator.getCurrentPosition` raises a stock
+      // `TimeoutException` whenever iOS does not deliver a first fix
+      // in 15 s (weak signal, indoor, simulator without mocked
+      // location). The async exception is caught locally, but Sentry's
+      // tracing/profiling instrumentation observes the same future
+      // error and reports it anyway. Nothing actionable on our side.
+      if (_isLocateMeTimeout(event)) return null;
       if (AppBuildInfo.hasCommit) {
         // sentry-dart 9.x made data classes mutable, so adding tags is
         // an in-place edit rather than a copyWith. Initialise the map
@@ -108,5 +118,27 @@ class SentryConfig {
       'The message port closed before a response was received',
       'Receiving end does not exist',
     ];
+  }
+
+  /// True when the event is a `TimeoutException` raised by the
+  /// "Locate Me" flow in `MapView`. Matches by exception type plus a
+  /// stack frame that mentions `_locateMe` or
+  /// `GeolocatorApple.getCurrentPosition` — keeping the filter narrow
+  /// so legitimate timeouts elsewhere in the app still get reported.
+  static bool _isLocateMeTimeout(SentryEvent event) {
+    final exceptions = event.exceptions;
+    if (exceptions == null || exceptions.isEmpty) return false;
+    for (final exception in exceptions) {
+      if (exception.type != 'TimeoutException') continue;
+      final frames = exception.stackTrace?.frames ?? const [];
+      for (final frame in frames) {
+        final fn = frame.function ?? '';
+        if (fn.contains('_locateMe') ||
+            fn.contains('GeolocatorApple.getCurrentPosition')) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
