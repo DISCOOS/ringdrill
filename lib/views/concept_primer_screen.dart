@@ -6,6 +6,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/widgets/analytics_consent_dialog.dart';
 import 'package:ringdrill/views/widgets/concept_primer_content.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,17 +15,44 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Writes [AppConfig.keyOnboardingSeen] on any CTA dismissal so the primer
 /// does not re-show on subsequent launches. [ConceptPrimerContent] is the
 /// reusable body — stage 5 (Help) mounts it directly in a different chrome.
-class ConceptPrimerScreen extends StatelessWidget {
-  const ConceptPrimerScreen({super.key});
+///
+/// When [isFirstLaunch] is true, the analytics consent dialog is shown
+/// as a modal barrier on top of the primer before the user can interact
+/// with it. The dialog used to live in `MainScreen.initState`, which
+/// meant the user finished the entire welcome flow before being asked
+/// — putting it here gates Sentry on/off before any onboarding action
+/// reaches the network.
+class ConceptPrimerScreen extends StatefulWidget {
+  const ConceptPrimerScreen({super.key, this.isFirstLaunch = false});
 
-  Future<void> _dismiss(BuildContext context) async {
+  final bool isFirstLaunch;
+
+  @override
+  State<ConceptPrimerScreen> createState() => _ConceptPrimerScreenState();
+}
+
+class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isFirstLaunch) {
+      // Microtask so the surrounding Scaffold is built first — the
+      // dialog needs an attached `Overlay` to attach to.
+      Future.microtask(() async {
+        if (!mounted) return;
+        await showAnalyticsConsentDialog(context);
+      });
+    }
+  }
+
+  Future<void> _dismiss() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConfig.keyOnboardingSeen, true);
-    if (!context.mounted) return;
+    if (!mounted) return;
     context.go(routeProgram);
   }
 
-  Future<void> _openExample(BuildContext context) async {
+  Future<void> _openExample() async {
     try {
       final langCode = Intl.getCurrentLocale().split('_').first;
       final locale = langCode == 'nb' ? 'nb' : 'en';
@@ -39,8 +67,8 @@ class ConceptPrimerScreen extends StatelessWidget {
       // ignore: avoid_print
       debugPrint('onboarding: example install failed, falling back. $e\n$st');
     }
-    if (!context.mounted) return;
-    await _dismiss(context);
+    if (!mounted) return;
+    await _dismiss();
   }
 
   @override
@@ -48,9 +76,9 @@ class ConceptPrimerScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: ConceptPrimerContent(
-          onSkip: () => _dismiss(context),
-          onStartEmpty: () => _dismiss(context),
-          onOpenExample: () => _openExample(context),
+          onSkip: _dismiss,
+          onStartEmpty: _dismiss,
+          onOpenExample: _openExample,
         ),
       ),
     );

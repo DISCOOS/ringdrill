@@ -10,7 +10,6 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
@@ -43,7 +42,6 @@ import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
 import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_io/io.dart';
 
@@ -207,7 +205,8 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
       GoRoute(
         path: '/welcome',
         parentNavigatorKey: key,
-        builder: (context, state) => const ConceptPrimerScreen(),
+        builder: (context, state) =>
+            ConceptPrimerScreen(isFirstLaunch: isFirstLaunch),
       ),
       // Brief routes — not tabs; pushed over the root navigator as a
       // fullscreen modal bottom sheet. The program variant is listed first so
@@ -251,7 +250,6 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
           return PlatformWidget(
             child: MainScreen(
               navigatorKey: key,
-              isFirstLaunch: isFirstLaunch,
               router: GoRouter.of(context),
               location: state.matchedLocation,
               routes: [routeProgram, routeMap, routeRoster],
@@ -617,13 +615,11 @@ class MainScreen extends StatefulWidget {
     required this.routes,
     required this.location,
     required this.navigatorKey,
-    required this.isFirstLaunch,
     required this.shellChild,
   });
 
   final GoRouter router;
   final String location;
-  final bool isFirstLaunch;
   final List<String> routes;
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -702,7 +698,6 @@ class _MainScreenState extends State<MainScreen>
     _programPageController.exerciseReorderMode.addListener(
       _onProgramSegmentChanged,
     );
-    if (widget.isFirstLaunch) _showConsentDialog();
     listen(NotificationService().events, (event) {
       if (event.action == NotificationAction.showSettings) {
         if (mounted) {
@@ -1590,52 +1585,6 @@ class _MainScreenState extends State<MainScreen>
       2 => const RosterDetailEmpty(),
       _ => const SizedBox.shrink(),
     };
-  }
-
-  void _showConsentDialog() {
-    Future.microtask(() async {
-      if (mounted) {
-        final localizations = AppLocalizations.of(context)!;
-        // Show a dialog asking the user to provide consent
-        final consent =
-            await showAdaptiveDialog(
-                  context: context,
-                  // Prevent closing without taking action
-                  barrierDismissible: false,
-                  builder: (context) => AlertDialog(
-                    title: Text(localizations.appAnalyticsConsent),
-                    content: Text(
-                      [
-                        localizations.appAnalyticsConsentMessage,
-                        localizations.appAnalyticsConsentOptIn,
-                      ].join('. '),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(context, false);
-                        },
-                        child: Text(localizations.decline),
-                      ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(context, true);
-                        },
-                        child: Text(localizations.allow),
-                      ),
-                    ],
-                  ),
-                )
-                as bool;
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(AppConfig.keyAnalyticsConsent, consent);
-
-        if (consent) {
-          await SentryFlutter.init(SentryConfig.apply);
-        }
-      }
-    });
   }
 
   /// Passive notice that the auto-stop fired. The persistent
