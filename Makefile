@@ -1,5 +1,5 @@
 .PHONY: \
-	build watch release \
+	build watch i18n release \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -8,7 +8,7 @@
 	netlify-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
 .SILENT: \
-	build watch release
+	build watch i18n release
 
 # Local Netlify dev configuration. Override on the command line, e.g.:
 #   make catalog-seed SEED_DRILL=path/to/other.drill
@@ -43,6 +43,15 @@ build:
 watch:
 	echo "Watch for buildable changes..."
 	dart run build_runner watch --delete-conflicting-outputs
+
+# Regenerate Flutter localization sources from lib/l10n/app_*.arb.
+# `make build` only covers freezed/json_serializable; the gen-l10n
+# step is a separate Flutter tool and must be run after any ARB
+# change. The generated `app_localizations*.dart` files must never
+# be hand-edited (see CLAUDE.md).
+i18n:
+	echo "Generate Flutter localizations from ARB..."
+	flutter gen-l10n
 
 # Web release pipeline. Decomposed so CI can run the steps individually
 # (one log group per step) but `make release-web` is the one-shot used

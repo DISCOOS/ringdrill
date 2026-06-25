@@ -12,8 +12,9 @@ RingDrill is a Flutter app (Dart 3, SDK `^3.8.0`) plus a Dart admin CLI (`bin/ri
 
 ```bash
 flutter pub get                                # install deps
-make build                                     # one-shot codegen (freezed/json/l10n)
+make build                                     # one-shot codegen (freezed/json_serializable)
 make watch                                     # incremental codegen watcher
+make i18n                                      # regenerate Flutter localizations from ARB
 flutter analyze                                # static analysis (CI gate)
 flutter test                                   # run all tests
 flutter run -d chrome                          # run PWA locally
@@ -25,7 +26,7 @@ dart pub global activate -s path .             # install CLI from this checkout
 ringdrill -h                                   # CLI usage (needs RINGDRILL_ADMIN_TOKEN)
 ```
 
-Localization is regenerated automatically the next time you `flutter run`, `flutter build` or `flutter test` after editing `lib/l10n/app_en.arb` or `app_nb.arb`.
+Localization is regenerated automatically the next time you `flutter run`, `flutter build` or `flutter test` after editing `lib/l10n/app_en.arb` or `app_nb.arb`. Run `make i18n` (`flutter gen-l10n`) when you need an explicit regen — `make build` only covers freezed/`json_serializable` and does NOT touch `app_localizations*.dart`.
 
 ## Rules for agents
 

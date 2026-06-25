@@ -7,7 +7,7 @@ This file is read by Claude Code on startup. The authoritative project context l
 * This is a Flutter app (Dart 3, SDK `^3.8.0`) plus a small Dart CLI and a Node Netlify backend. Repo layout, conventions and the backend contract live in [`docs/architecture.md`](./docs/architecture.md).
 * Run `make build` after any change to a `@freezed` class, a `json_serializable` model, or an enum with `@JsonValue` annotations. Never hand-edit `*.freezed.dart`, `*.g.dart` or `app_localizations*.dart`.
 * Run `flutter analyze` and `flutter test` before claiming a task is done. The old default-template `test/widget_test.dart` has been removed, so a clean run is the expected baseline; if a test fails, fix or flag it rather than asserting all tests pass.
-* User-visible strings go in `lib/l10n/app_en.arb` and `lib/l10n/app_nb.arb`. No raw English in widgets.
+* User-visible strings go in `lib/l10n/app_en.arb` and `lib/l10n/app_nb.arb`. No raw English in widgets. After editing an ARB run `make i18n` (`flutter gen-l10n`) — `make build` does NOT regenerate `app_localizations*.dart`.
 * Web-only code lives in `lib/web/` behind `if (dart.library.io)` conditional imports. Do not import `package:web` or `dart:html` from anything that is also compiled on Android or iOS.
 * The CLI (`bin/ringdrill.dart`) and everything it transitively imports must stay free of `package:flutter/*` imports.
 * Sentry calls must be inside the analytics consent gate set up in `lib/main.dart`. Default is opt-out.
