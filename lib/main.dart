@@ -241,7 +241,14 @@ class _RingDrillAppState extends State<RingDrillApp> {
         );
 
         if (!init) {
-          if (Sentry.isEnabled) {
+          // `init` returns false both when the user declines the
+          // runtime permission prompt (expected, every iOS user who
+          // taps "Don't Allow" hits this path) and when the
+          // underlying plugin truly fails to initialise. Only the
+          // latter is actionable on our side. `isPluginInitialized`
+          // discriminates between the two so we stop spamming
+          // Sentry with permission-decline noise from real users.
+          if (!service.isPluginInitialized && Sentry.isEnabled) {
             await Sentry.captureMessage(
               'NotificationService failed to initialize',
             );

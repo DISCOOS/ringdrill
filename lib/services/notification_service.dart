@@ -40,6 +40,16 @@ class NotificationService {
   bool get isEnabled => _enabled;
   bool _enabled = false;
 
+  /// True when [FlutterLocalNotificationsPlugin.initialize] has reported
+  /// success at least once. Distinct from [isEnabled], which also
+  /// requires the user to have granted runtime permission. A user
+  /// declining the iOS/Android permission prompt is expected behaviour
+  /// (notifications stay off), not a bug — callers can use this getter
+  /// to tell that from a genuine plugin-side failure that warrants a
+  /// Sentry report.
+  bool get isPluginInitialized => _pluginInitialized;
+  bool _pluginInitialized = false;
+
   String? _currentChannelId;
 
   late bool _playSound;
@@ -173,6 +183,7 @@ class NotificationService {
           _onDidReceiveBackgroundNotificationResponse,
     );
 
+    _pluginInitialized = success == true;
     if (success == true) {
       // Workaround to prevent lazy permission request on Darwin platforms
       if (Platform.isAndroid) {
