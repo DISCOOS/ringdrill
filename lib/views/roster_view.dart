@@ -28,6 +28,11 @@ class RosterController extends ScreenController {
 
   @override
   String title(BuildContext context) =>
+      // Mirror the Program tab header so the Roster tab anchors in the
+      // active plan (DESIGN-006: Roster is a program-scoped layer). Falls
+      // back to the bottom-nav label when no plan is active yet so the
+      // header still reads cleanly on first launch.
+      ProgramService().activeProgram?.name ??
       AppLocalizations.of(context)!.rosterTab;
 
   @override
