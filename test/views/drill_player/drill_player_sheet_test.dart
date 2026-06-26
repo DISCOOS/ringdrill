@@ -5,19 +5,40 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 
-Exercise _makeExercise() => Exercise(
-  uuid: 'test-uuid-player-sheet',
-  name: 'Player Sheet Exercise',
-  startTime: SimpleTimeOfDay(hour: 10, minute: 0),
-  endTime: SimpleTimeOfDay(hour: 11, minute: 0),
-  numberOfTeams: 2,
-  numberOfRounds: 1,
-  executionTime: 5,
-  evaluationTime: 3,
-  rotationTime: 2,
-  stations: [],
-  schedule: [],
-);
+/// Builds an exercise whose time window lies safely in the future
+/// relative to the wall clock the test happens to run under.
+///
+/// Hardcoded `startTime: 10:00, endTime: 11:00` made this test
+/// time-of-day flaky: `ExerciseService.start()` calls
+/// `_progress(force: true)` synchronously, which compares the
+/// configured window against `TimeOfDay.now()`. If the test ran
+/// after 10:10 (start + totalTime = numberOfRounds * 10 min), the
+/// auto-stop branch fired before the sheet had a chance to
+/// subscribe, leaving `_exercise == null`. The later manual
+/// `stop()` call then short-circuited and never emitted a `done`
+/// event, so the sheet stayed open and the test failed.
+///
+/// Anchoring the window two hours ahead of "now" keeps the
+/// exercise in the pending phase for the entire test run regardless
+/// of when it executes.
+Exercise _makeExercise() {
+  final now = TimeOfDay.now();
+  final start = (now.hour + 2) % 24;
+  final end = (start + 1) % 24;
+  return Exercise(
+    uuid: 'test-uuid-player-sheet',
+    name: 'Player Sheet Exercise',
+    startTime: SimpleTimeOfDay(hour: start, minute: 0),
+    endTime: SimpleTimeOfDay(hour: end, minute: 0),
+    numberOfTeams: 2,
+    numberOfRounds: 1,
+    executionTime: 5,
+    evaluationTime: 3,
+    rotationTime: 2,
+    stations: [],
+    schedule: [],
+  );
+}
 
 Widget _harness() => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
