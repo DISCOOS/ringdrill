@@ -1,5 +1,5 @@
 .PHONY: \
-	build watch i18n release \
+	build watch i18n release publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -291,4 +291,52 @@ release-tag: require-clean-tree
 	@echo ""
 	@echo "Created tag $(VERSION). Push with:"
 	@echo "  git push --follow-tags"
+
+# One-shot release: bump version + tag, then build web + Android + iOS.
+# Usage:
+#   make release VERSION=1.0.3+17
+#
+# Order matters:
+#   1. release-tag bumps pubspec.yaml, prepends CHANGELOG.md, commits and
+#      creates the annotated tag. The version label baked into every build
+#      below is read from pubspec.yaml, so the bump MUST happen first.
+#   2. release-web, release-android and release-ios run sequentially. They
+#      share build/ output and share dart_define inputs, so parallelism
+#      would step on itself. iOS also needs a macOS host with Xcode.
+#
+# Does NOT push. The tag is local until you run:
+#   git push --follow-tags
+# Intentional — gives one last look at tag, CHANGELOG and built artifacts
+# before publishing.
+#
+# If a build step fails midway, undo the local tag and commit with:
+#   git tag -d $(VERSION) && git reset --hard HEAD~1
+# then re-run after fixing the cause.
+release: release-tag release-web release-android release-ios
+	@echo ""
+	@echo "Release $(VERSION) built (web + android + ios). Publish with:"
+	@echo "  make publish"
+
+# Push the release commit and tag to origin. Pair with `make release`.
+#
+# What ends up where:
+#   - Web: `git push` triggers .github/workflows/deploy-web.yml, which
+#     rebuilds on GHA, uploads symbols to Sentry, and deploys to Netlify.
+#     ~5-7 minutes from push to live on ringdrill.app.
+#   - Android/iOS: already on Shorebird's CDN — `shorebird release` uploaded
+#     during `make release`. The push only ships the commit/tag on GitHub
+#     for traceability and About-page deep links.
+#
+# Guards:
+#   - require-clean-tree so no untracked changes ride along with the push;
+#   - HEAD must carry a tag, otherwise there is no release to publish and
+#     `--follow-tags` would silently just push commits.
+publish: require-clean-tree
+	@TAG=$$(git tag --points-at HEAD | head -n1); \
+	if [ -z "$$TAG" ]; then \
+		echo "ERROR: HEAD has no tag. Run 'make release VERSION=...' first."; \
+		exit 1; \
+	fi; \
+	echo "Publishing $$TAG ..."; \
+	git push --follow-tags
 
