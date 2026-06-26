@@ -86,6 +86,17 @@ class ContextSheetController {
   ValueListenable<ContextSheetTarget?> get target => _target;
   ValueNotifier<ContextSheetTarget?> get targetNotifier => _target;
 
+  /// True while a sheet (modal or scope-mode) is presenting a target. Lets
+  /// callers — chiefly [openFormSurface] — decide whether to dismiss the
+  /// sheet around a form push so the sheet's keyboard-avoidance rebuilds
+  /// don't tear down the form's TextInputConnection.
+  bool get isOpen => _isOpen;
+
+  /// True iff [isOpen] AND the sheet is presenting as a modal bottom sheet
+  /// (not a master-detail scope). Only the modal case causes the keyboard
+  /// cascade that breaks text fields on routes pushed above it.
+  bool get isModal => _isOpen && _navigator != null;
+
   Future<void> show(BuildContext context, ContextSheetTarget target) async {
     if (target is! BriefSheetTarget) {
       final scope = MasterDetailScope.maybeOf(context);
@@ -237,6 +248,16 @@ class ContextSheet
     final controller = sheet?.controller ?? currentController;
     assert(controller != null, 'No ContextSheet found in context');
     return controller!;
+  }
+
+  /// Non-asserting variant. Walks the inherited widget tree without
+  /// registering a dependency (so callers don't get rebuilt on target
+  /// changes) and returns null when no [ContextSheet] is in scope.
+  static ContextSheetController? maybeOf(BuildContext context) {
+    final element = context
+        .getElementForInheritedWidgetOfExactType<ContextSheet>();
+    final sheet = element?.widget as ContextSheet?;
+    return sheet?.controller;
   }
 
   static void _registerController(ContextSheetController controller) {
