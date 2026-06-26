@@ -21,6 +21,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 typedef OnSelectExercises =
     Future<Iterable<Exercise>?> Function(Iterable<Exercise> items);
 
+/// Thrown by [ProgramService.deleteProgram] when the user asks to
+/// delete their only remaining plan.
+///
+/// Per ADR-0038 §"Edge case: no active plan", the app guarantees an
+/// active plan exists from the moment onboarding completes — so
+/// allowing the user to delete the last plan would put them back in
+/// the unsupported "no plan" state. UI surfaces catch this and
+/// surface a localized snackbar instead of letting the deletion
+/// proceed.
+class LastProgramDeletionException implements Exception {
+  const LastProgramDeletionException();
+  @override
+  String toString() =>
+      'LastProgramDeletionException: refusing to delete the only remaining plan';
+}
+
 enum ProgramEventType {
   exerciseAdded,
   exerciseDeleted,
@@ -207,6 +223,14 @@ class ProgramService {
   Future<void> deleteProgram(String uuid) async {
     if (_repo.activeProgramUuid == uuid && ExerciseService().isStarted) {
       throw StateError('Cannot delete active program while an exercise runs.');
+    }
+    // The library is required to keep at least one plan around so
+    // `activeProgram` is never null (ADR-0038). UI-side guards
+    // should catch this before the user attempts the deletion, but
+    // the service throws as defence-in-depth in case a call site
+    // forgets.
+    if (_repo.listPrograms().length <= 1) {
+      throw const LastProgramDeletionException();
     }
     final program = _repo.loadProgram(uuid);
     await _repo.deleteProgram(uuid);

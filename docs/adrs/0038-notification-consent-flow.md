@@ -78,6 +78,46 @@ Concretely:
 * Bad: We do not need URL-addressable consent. Adds router complexity for no win.
 * Bad: System back from the third route exits the consent step entirely, which is a fragile failure mode for a first-launch flow.
 
+## Edge case: no active plan
+
+A consequence of the onboarding redesign is that
+`ProgramService.activeProgram` is now guaranteed non-null from the
+moment the user exits onboarding. The previous "Start empty" path
+left the user on `/program` with no plan, forcing every downstream
+surface (AppBar title, overview, form actions) to defend against
+null.
+
+Three changes uphold the invariant:
+
+1. **Onboarding always ends with an active plan.**
+   `ConceptPrimerScreen._dismiss` calls
+   `ProgramService.ensureActiveProgram(localizations)` before
+   navigating to `/program`. The Open-example path already
+   activated its plan via `installFromFile(activate: true)`; the
+   call is a no-op there. The Start-empty path now eagerly
+   creates the default plan ("New plan" / "Ny plan") so the user
+   lands inside a real plan, not a null shell.
+2. **The last plan cannot be deleted.**
+   `ProgramService.deleteProgram` throws
+   `LastProgramDeletionException` when called on the only
+   remaining plan. UI surfaces (library swipe-to-dismiss, plan
+   action sheet, drawer delete) catch this earlier and short-
+   circuit with the `cannotDeleteLastPlan` snackbar ("Can't
+   delete your last plan. Rename it or add a new one first.")
+   before the destructive-confirm dialog appears.
+3. **Defense in depth in `MainScreen`.**
+   A post-frame callback in `MainScreen.initState` calls
+   `ensureActiveProgram` unconditionally. It is a no-op when
+   `activeProgramUuid` is already set, so the cost is
+   negligible. It catches the rare path that bypassed step 1
+   (hot restart in dev, a catalog deep link that activated
+   nothing, etc.) and creates the default plan so the route
+   always renders against a real plan.
+
+The default plan name is "New plan" / "Ny plan" (not "Default
+plan" / "Standardplan") — phrasing chosen to invite renaming
+rather than read as permanent system text.
+
 ## Links
 
 * Related ADRs: [ADR-0006](./0006-sentry-behind-consent-gate.md), [ADR-0029](./0029-live-activity-and-foreground-service.md).

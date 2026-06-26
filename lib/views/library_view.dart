@@ -429,6 +429,14 @@ class _LibraryBodyState extends State<_LibraryBody>
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
       return false;
     }
+    // Per ADR-0038 the library always keeps at least one plan
+    // around. Refuse early so the destructive-confirm dialog never
+    // appears for the last plan — the user gets a snackbar
+    // explaining what to do instead.
+    if (_programService.listPrograms().length <= 1) {
+      _showSnackBar(context, localizations.cannotDeleteLastPlan);
+      return false;
+    }
     return confirmDestructive(
       context,
       title: localizations.confirm,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
@@ -106,6 +107,16 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
   Future<void> _dismiss() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConfig.keyOnboardingSeen, true);
+    if (!mounted) return;
+    // Guarantee an active plan exists before the user lands on
+    // `/program`. The Open-example path has already activated the
+    // installed plan via `installFromFile(activate: true)`, so
+    // `ensureActiveProgram` is a no-op there. For the Start-empty
+    // path it creates the default plan up-front, so downstream
+    // surfaces (AppBar header, overview, form actions) never have
+    // to defend against a null `activeProgram`.
+    final l10n = AppLocalizations.of(context)!;
+    await ProgramService().ensureActiveProgram(l10n);
     if (!mounted) return;
     context.go(routeProgram);
   }

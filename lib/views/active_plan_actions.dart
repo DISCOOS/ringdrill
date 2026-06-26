@@ -71,6 +71,13 @@ Future<void> deletePlan(BuildContext context, Program program) async {
     _showSnackBar(context, localizations.libraryCannotSwitchRunning);
     return;
   }
+  // Per ADR-0038 the library always keeps at least one plan around.
+  // Refuse with a snackbar before the destructive-confirm dialog so
+  // the user knows what they need to do instead.
+  if (programService.listPrograms().length <= 1) {
+    _showSnackBar(context, localizations.cannotDeleteLastPlan);
+    return;
+  }
   final confirmed = await confirmDestructive(
     context,
     title: localizations.confirm,
