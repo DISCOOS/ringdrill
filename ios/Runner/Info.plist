@@ -54,6 +54,11 @@
 		<false/>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>RingDrill uses your location only when you tap the "locate me" button on the map to centre the view on your current position.</string>
+		<!-- RingDrill never requests "Always" location access. The key is required
+		     because the geolocator plugin links the Always API on iOS; Apple's
+		     static analyzer flags the binary even when the API is not called. -->
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>RingDrill uses your location only when you tap the "locate me" button on the map to centre the view on your current position. It is never tracked in the background.</string>
 		<!-- RingDrill imports a .drill into its library (a copy); it does not
 		     edit the original file at its source, so opening in place is NO.
 		     Apple requires this key whenever CFBundleDocumentTypes is declared. -->
