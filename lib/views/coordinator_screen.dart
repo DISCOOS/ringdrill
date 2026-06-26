@@ -636,7 +636,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       stationIndex++
     ) {
       final station = _exercise!.stations[stationIndex];
-      if (station.position == null) continue;
+      if (!station.position.isFiniteOrNull) continue;
       // Same "live" test as the station list: the current round assigns a
       // team to this station. Live pins switch to the orange live accent so
       // the map matches the highlighted rows in the player.

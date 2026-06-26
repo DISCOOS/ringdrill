@@ -13,6 +13,25 @@ import 'package:ringdrill/views/map_view.dart';
 bool _isFiniteLatLng(LatLng p) =>
     p.latitude.isFinite && p.longitude.isFinite;
 
+/// Public predicate for callers that build [MapMarkerSpec]s outside the
+/// [StationLocationX.toMarkerSpecs] convenience (RolePlay markers in
+/// `stations_view.dart`, per-station markers in `coordinator_screen.dart`,
+/// mini-maps that take a single [LatLng]). Returns true when [p] is non-null
+/// and both lat/lon are finite. Use as `if (!p.isFiniteOrNull) continue;`
+/// or `.where((m) => m.position.isFiniteOrNull)`.
+///
+/// A single NaN point poisons the entire [MarkerLayer] build pass — see the
+/// crash bundle around commit 5e7cff0 where five Sentry issues turned out to
+/// be the same cascade. [MapView] also has a last-line defence, but filtering
+/// at the producer keeps the offending entity out of `clusterMarkers.length`
+/// counts and search-result lists.
+extension LatLngFiniteX on LatLng? {
+  bool get isFiniteOrNull {
+    final p = this;
+    return p != null && _isFiniteLatLng(p);
+  }
+}
+
 extension LatlngListX on Iterable<LatLng> {
   /// Same as the iterable, but with any non-finite [LatLng] removed. Used
   /// to keep NaN coordinates from poisoning [average]/[fit]/[centroidFit].

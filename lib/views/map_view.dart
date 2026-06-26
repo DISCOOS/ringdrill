@@ -930,22 +930,65 @@ class _MapViewState<K> extends State<MapView<K>> {
     WindowSizeClass.expanded => 1.35,
   };
 
+  /// True once per app session, after the first non-finite marker has been
+  /// reported to Sentry. Subsequent drops are silent so a single bad row
+  /// cannot flood the issue tracker on every rebuild.
+  static bool _nonFiniteMarkerReported = false;
+
+  void _reportNonFiniteMarker(MapMarkerSpec<K> spec) {
+    if (_nonFiniteMarkerReported) return;
+    _nonFiniteMarkerReported = true;
+    unawaited(
+      Sentry.captureMessage(
+        'MapView dropped non-finite marker',
+        level: SentryLevel.warning,
+        withScope: (scope) {
+          scope.setTag('marker.id', '${spec.id}');
+          scope.setTag('marker.label', spec.label);
+          scope.setTag('marker.point', '${spec.point}');
+          scope.setTag(
+            'marker.clusterGroup',
+            '${spec.clusterGroup}',
+          );
+        },
+      ),
+    );
+  }
+
   List<Widget> _buildMarkerLayers() {
     if (widget.markers.isEmpty) return const [];
+
+    // Last-line defence against non-finite points reaching flutter_map. A
+    // single NaN [LatLng] makes [MarkerLayer.build] throw, which takes the
+    // whole map subtree down and cascades into gesture/rebuild handlers
+    // (see the 5x-Sentry-issue bundle around commit 5e7cff0). Producers
+    // already filter with [LatLngFiniteX], but a future call-site that
+    // forgets must not be able to crash the map. The first drop per
+    // session is reported to Sentry so we can track where the bad point
+    // came from.
+    final specs = <MapMarkerSpec<K>>[];
+    for (final s in widget.markers) {
+      if (s.point.latitude.isFinite && s.point.longitude.isFinite) {
+        specs.add(s);
+      } else {
+        _reportNonFiniteMarker(s);
+      }
+    }
+    if (specs.isEmpty) return const [];
 
     final scale = _markerScale;
 
     if (!widget.withClustering) {
       return [
         MarkerLayer(
-          markers: widget.markers.map((s) => _buildMarker(s, scale)).toList(),
+          markers: specs.map((s) => _buildMarker(s, scale)).toList(),
         ),
       ];
     }
 
     final nullGroup = <MapMarkerSpec<K>>[];
     final groups = <Object, List<MapMarkerSpec<K>>>{};
-    for (final spec in widget.markers) {
+    for (final spec in specs) {
       if (spec.clusterGroup == null) {
         nullGroup.add(spec);
       } else {

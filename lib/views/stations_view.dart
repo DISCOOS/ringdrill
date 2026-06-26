@@ -187,7 +187,7 @@ class _StationsViewState extends State<StationsView>
 
     final roleplays = _programService
         .loadRolePlays()
-        .where((rp) => rp.position != null)
+        .where((rp) => rp.position.isFiniteOrNull)
         .toList();
     final roleSpecs = _showRoleplays
         ? roleplays.map(
