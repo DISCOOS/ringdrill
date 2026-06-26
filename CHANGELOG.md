@@ -1,3 +1,17 @@
+## 1.0.3+27 - 2026-06-26
+
+Changes since 1.0.3+26:
+
+- refactor(views): apply tap-row-opens-sheet rule to every expandable (5776b89)
+- fix(forms): dismiss context sheet around form route push (b63ac7f)
+- chore(ios): bump Runner.xcscheme LastUpgradeVersion to 2660 (04662ab)
+- fix(sentry): backstop browser-extension noise in beforeSend (ab5a507)
+- chore(ios): pin Runner DEVELOPMENT_TEAM to G2C47B233E (20632ac)
+- fix(ios): add NSLocationAlwaysAndWhenInUseUsageDescription (8504a87)
+- fix(l10n): handle legacy Norwegian locale `no_NO` without crashing (4c2e2bf)
+- fix(make): use awk for release-notes length check, portable on BSD sed (6031b2a)
+- chore(release): add `make release-notes`, refresh release flow docs (601b134)
+
 ## 1.0.3+26 - 2026-06-26
 
 Changes since 1.0.3+25:
