@@ -239,6 +239,18 @@ class ProgramService {
     }
   }
 
+  /// Wipes every program from the repository, bypassing the
+  /// [LastProgramDeletionException] guard that protects production callers
+  /// (ADR-0038). Test-only — production code paths must keep at least one
+  /// plan around. Drives `tearDown` blocks that reset state between tests.
+  @visibleForTesting
+  Future<void> clearAllForTest() async {
+    if (!_isReady) return;
+    for (final program in List<Program>.from(_repo.listPrograms())) {
+      await _repo.deleteProgram(program.uuid);
+    }
+  }
+
   Future<void> replaceProgram(Program program) async {
     await _repo.saveProgram(program);
     _controller.add(ProgramEvent(ProgramEventType.programRefreshed, program));

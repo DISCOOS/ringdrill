@@ -96,10 +96,7 @@ void main() {
   });
 
   tearDown(() async {
-    final service = ProgramService();
-    for (final p in List<Program>.from(service.listPrograms())) {
-      await service.deleteProgram(p.uuid);
-    }
+    await ProgramService().clearAllForTest();
   });
 
   test(

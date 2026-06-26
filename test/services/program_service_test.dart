@@ -58,10 +58,7 @@ void main() {
   });
 
   tearDown(() async {
-    final service = ProgramService();
-    for (final p in List.from(service.listPrograms())) {
-      await service.deleteProgram(p.uuid);
-    }
+    await ProgramService().clearAllForTest();
   });
 
   group('ProgramService — index assignment on create', () {
