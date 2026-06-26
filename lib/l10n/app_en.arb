@@ -543,7 +543,7 @@
   "@emptyExercisesTitle": {
     "description": "Teaching empty-state title shown in the Program Exercises segment when the active plan has no exercises."
   },
-  "emptyExercisesBody": "An exercise needs a number of stations and a number of teams before it can run. Add your first to see the ring in motion.",
+  "emptyExercisesBody": "Add your first exercise to get started.",
   "@emptyExercisesBody": {
     "description": "Teaching empty-state body shown in the Program Exercises segment when the active plan has no exercises."
   },

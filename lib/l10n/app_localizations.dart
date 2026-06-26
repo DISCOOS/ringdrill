@@ -905,7 +905,7 @@ abstract class AppLocalizations {
   /// Teaching empty-state body shown in the Program Exercises segment when the active plan has no exercises.
   ///
   /// In en, this message translates to:
-  /// **'An exercise needs a number of stations and a number of teams before it can run. Add your first to see the ring in motion.'**
+  /// **'Add your first exercise to get started.'**
   String get emptyExercisesBody;
 
   /// Button

@@ -522,8 +522,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyExercisesTitle => 'No exercises yet';
 
   @override
-  String get emptyExercisesBody =>
-      'An exercise needs a number of stations and a number of teams before it can run. Add your first to see the ring in motion.';
+  String get emptyExercisesBody => 'Add your first exercise to get started.';
 
   @override
   String get save => 'SAVE';

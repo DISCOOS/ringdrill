@@ -520,7 +520,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get emptyExercisesBody =>
-      'En øvelse trenger antall poster og antall lag for å kunne kjøres. Legg til den første for å se ringen i arbeid.';
+      'Legg til den første øvelsen for å komme i gang.';
 
   @override
   String get save => 'LAGRE';

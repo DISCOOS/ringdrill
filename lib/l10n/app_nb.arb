@@ -141,7 +141,7 @@
   "viewOnGithub": "Åpne i GitHub",
   "noExercisesYet": "Ingen øvelser ennå!",
   "emptyExercisesTitle": "Ingen øvelser ennå",
-  "emptyExercisesBody": "En øvelse trenger antall poster og antall lag for å kunne kjøres. Legg til den første for å se ringen i arbeid.",
+  "emptyExercisesBody": "Legg til den første øvelsen for å komme i gang.",
   "stopExercise": "Stop øvelse",
   "exerciseAutoStoppedTitle": "Øvelse avsluttet",
   "exerciseAutoStoppedBody": "Sluttiden for {exercise} er passert.",
