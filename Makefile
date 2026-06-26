@@ -228,11 +228,18 @@ catalog-reset:
 
 # Bump pubspec version, prepend a changelog entry, commit and tag.
 # Usage:
-#   make release-tag VERSION=1.0.3+17
+#   make release-tag VERSION=1.0.3+17    # explicit version
+#   make release-tag                     # auto-bump build number only
 #
 # VERSION must follow Flutter's `X.Y.Z+N` shape (semver + build number),
 # matching the format already used for the existing `1.0.0+2` tag and for
 # the `version:` line in pubspec.yaml.
+#
+# Auto-bump mode: when VERSION is not given, the current `X.Y.Z+N` in
+# pubspec.yaml is read and `N` is incremented by 1. X.Y.Z stays put. Use
+# this for shorebird patches and other release cuts where the user-facing
+# semver does not change. To move semver (new minor, new major, etc.),
+# pass VERSION explicitly.
 #
 # The changelog window is `git log <last-tag>..HEAD`. We use the most
 # recent annotated/lightweight tag rather than scanning pubspec history,
@@ -247,35 +254,90 @@ catalog-reset:
 # Guard rails:
 #   - require-clean-tree first, so the version bump commit is the only
 #     thing on top of the previous release;
-#   - VERSION must be supplied and shaped correctly;
+#   - VERSION (if supplied) must be shaped correctly;
+#   - build number `+N` MUST be strictly greater than the current pubspec
+#     build number, independent of X.Y.Z. App Store and Play Store both
+#     require monotonically increasing build numbers across uploads, so
+#     `1.0.3+25 -> 1.1.0+1` is rejected even though semver moved forward;
 #   - refuses to overwrite an existing tag;
 #   - refuses to "bump" to the version pubspec.yaml is already on (would
 #     produce an empty commit and a misleading tag).
 release-tag: require-clean-tree
-	@test -n "$(VERSION)" || { \
-		echo "ERROR: set VERSION=X.Y.Z+N (e.g. make release-tag VERSION=1.0.3+17)"; \
+	@set -e; \
+	CURRENT=$$(awk '/^version:/ {print $$2; exit}' pubspec.yaml); \
+	CUR_BASE=$$(echo "$$CURRENT" | cut -d'+' -f1); \
+	CUR_BUILD=$$(echo "$$CURRENT" | cut -d'+' -f2); \
+	case "$$CUR_BUILD" in ''|*[!0-9]*) \
+		echo "ERROR: cannot parse build number from pubspec version '$$CURRENT'"; \
+		exit 1;; \
+	esac; \
+	if [ -n "$(VERSION)" ]; then \
+		NEW_VERSION="$(VERSION)"; \
+	else \
+		BUMPED="$$CUR_BASE+$$((CUR_BUILD + 1))"; \
+		if [ ! -t 0 ]; then \
+			echo "No VERSION given (non-interactive). Auto-bumping: $$CURRENT -> $$BUMPED"; \
+			NEW_VERSION="$$BUMPED"; \
+		else \
+			echo ""; \
+			echo "Current version: $$CURRENT"; \
+			echo ""; \
+			echo "  [1] Increment build → $$BUMPED (Enter)"; \
+			echo "  [2] Enter version"; \
+			echo "  [3] Cancel"; \
+			echo ""; \
+			printf "Select [1]: "; \
+			read CHOICE; \
+			case "$$CHOICE" in \
+				""|1) NEW_VERSION="$$BUMPED";; \
+				2) \
+					while true; do \
+						printf "New version (X.Y.Z+N, empty to cancel): "; \
+						read NEW_VERSION; \
+						if [ -z "$$NEW_VERSION" ]; then \
+							echo "Cancelled."; exit 1; \
+						fi; \
+						if ! echo "$$NEW_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$$'; then \
+							echo "Invalid. Expected X.Y.Z+N (e.g. 1.2.3+45)."; \
+							continue; \
+						fi; \
+						IN_BUILD=$$(echo "$$NEW_VERSION" | cut -d'+' -f2); \
+						if [ "$$IN_BUILD" -le "$$CUR_BUILD" ]; then \
+							echo "Invalid. Build number must be > $$CUR_BUILD (got $$IN_BUILD). Store build numbers must increase monotonically."; \
+							continue; \
+						fi; \
+						break; \
+					done;; \
+				3) echo "Cancelled."; exit 1;; \
+				*) echo "Invalid choice."; exit 1;; \
+			esac; \
+		fi; \
+	fi; \
+	echo "$$NEW_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$$' || { \
+		echo "ERROR: VERSION must look like 1.2.3+45, got '$$NEW_VERSION'"; \
 		exit 1; \
-	}
-	@echo "$(VERSION)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$$' || { \
-		echo "ERROR: VERSION must look like 1.2.3+45, got '$(VERSION)'"; \
-		exit 1; \
-	}
-	@if git rev-parse --verify --quiet "refs/tags/$(VERSION)" >/dev/null; then \
-		echo "ERROR: tag $(VERSION) already exists"; \
-		exit 1; \
-	fi
-	@CURRENT=$$(awk '/^version:/ {print $$2; exit}' pubspec.yaml); \
-	if [ "$$CURRENT" = "$(VERSION)" ]; then \
-		echo "ERROR: pubspec.yaml is already at $(VERSION); pick a higher version"; \
+	}; \
+	NEW_BUILD=$$(echo "$$NEW_VERSION" | cut -d'+' -f2); \
+	if [ "$$NEW_BUILD" -le "$$CUR_BUILD" ]; then \
+		echo "ERROR: build number must be strictly greater than $$CUR_BUILD (got $$NEW_BUILD)."; \
+		echo "       Store build numbers must increase monotonically, independent of X.Y.Z."; \
 		exit 1; \
 	fi; \
-	echo "Bumping pubspec.yaml: $$CURRENT -> $(VERSION)"
-	@sed -i.bak -E 's/^version: .+/version: $(VERSION)/' pubspec.yaml && rm pubspec.yaml.bak
-	@PREV_TAG=$$(git describe --tags --abbrev=0 2>/dev/null || true); \
+	if git rev-parse --verify --quiet "refs/tags/$$NEW_VERSION" >/dev/null; then \
+		echo "ERROR: tag $$NEW_VERSION already exists"; \
+		exit 1; \
+	fi; \
+	if [ "$$CURRENT" = "$$NEW_VERSION" ]; then \
+		echo "ERROR: pubspec.yaml is already at $$NEW_VERSION; pick a higher version"; \
+		exit 1; \
+	fi; \
+	echo "Bumping pubspec.yaml: $$CURRENT -> $$NEW_VERSION"; \
+	sed -i.bak -E "s/^version: .+/version: $$NEW_VERSION/" pubspec.yaml && rm pubspec.yaml.bak; \
+	PREV_TAG=$$(git describe --tags --abbrev=0 2>/dev/null || true); \
 	if [ -n "$$PREV_TAG" ]; then RANGE="$$PREV_TAG..HEAD"; else RANGE="HEAD"; fi; \
 	DATE=$$(date +%F); \
 	{ \
-		echo "## $(VERSION) - $$DATE"; \
+		echo "## $$NEW_VERSION - $$DATE"; \
 		echo ""; \
 		if [ -n "$$PREV_TAG" ]; then echo "Changes since $$PREV_TAG:"; \
 		else echo "Initial changelog entry."; fi; \
@@ -284,22 +346,25 @@ release-tag: require-clean-tree
 		echo ""; \
 		echo ""; \
 		if [ -f CHANGELOG.md ]; then cat CHANGELOG.md; fi; \
-	} > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md
-	@git add pubspec.yaml CHANGELOG.md
-	@git commit -m "Released $(VERSION)"
-	@git tag -a "$(VERSION)" -m "Released $(VERSION)"
-	@echo ""
-	@echo "Created tag $(VERSION). Push with:"
-	@echo "  git push --follow-tags"
+	} > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md; \
+	git add pubspec.yaml CHANGELOG.md; \
+	git commit -m "Released $$NEW_VERSION"; \
+	git tag -a "$$NEW_VERSION" -m "Released $$NEW_VERSION"; \
+	echo ""; \
+	echo "Created tag $$NEW_VERSION. Push with:"; \
+	echo "  git push --follow-tags"
 
 # One-shot release: bump version + tag, then build web + Android + iOS.
 # Usage:
-#   make release VERSION=1.0.3+17
+#   make release VERSION=1.0.3+17    # explicit version
+#   make release                     # auto-bump build number only
 #
 # Order matters:
 #   1. release-tag bumps pubspec.yaml, prepends CHANGELOG.md, commits and
 #      creates the annotated tag. The version label baked into every build
 #      below is read from pubspec.yaml, so the bump MUST happen first.
+#      When VERSION is omitted, release-tag increments the build number
+#      (`X.Y.Z+N` -> `X.Y.Z+N+1`) from pubspec.yaml.
 #   2. release-web, release-android and release-ios run sequentially. They
 #      share build/ output and share dart_define inputs, so parallelism
 #      would step on itself. iOS also needs a macOS host with Xcode.
@@ -310,12 +375,14 @@ release-tag: require-clean-tree
 # before publishing.
 #
 # If a build step fails midway, undo the local tag and commit with:
-#   git tag -d $(VERSION) && git reset --hard HEAD~1
-# then re-run after fixing the cause.
+#   git tag -d <version> && git reset --hard HEAD~1
+# then re-run after fixing the cause. The current tag is the one at HEAD
+# (`git tag --points-at HEAD`).
 release: release-tag release-web release-android release-ios
-	@echo ""
-	@echo "Release $(VERSION) built (web + android + ios). Publish with:"
-	@echo "  make publish"
+	@VERSION_OUT=$$(awk '/^version:/ {print $$2; exit}' pubspec.yaml); \
+	echo ""; \
+	echo "Release $$VERSION_OUT built (web + android + ios). Publish with:"; \
+	echo "  make publish"
 
 # Push the release commit and tag to origin. Pair with `make release`.
 #
