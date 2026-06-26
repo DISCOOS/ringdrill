@@ -9,8 +9,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// First-run-only pill that sits inline beside the Øvelser FAB.
 ///
 /// Shows once while [AppConfig.keyStartHereSeen] is unset. Dismisses
-/// permanently when the user taps it (opening the create-exercise flow) or
-/// when the first exercise is created via any path.
+/// permanently on any of:
+/// - user taps the pill (opening the create-exercise flow),
+/// - the first exercise is created via any path,
+/// - the user demonstrates knowledge of the app by editing the plan
+///   form (description / brief sections), saving a team or roleplay,
+///   or importing a plan from a file.
+///
+/// The broader set of dismissal triggers stops the pill from
+/// outstaying its welcome once the user has done substantive work
+/// elsewhere in the plan but happens not to have added an exercise
+/// yet.
 class StartHerePill extends StatefulWidget {
   const StartHerePill({super.key, required this.onActivate});
 
@@ -25,12 +34,27 @@ class _StartHerePillState extends State<StartHerePill> {
   bool _seen = true; // conservative default — overwritten in initState
   StreamSubscription<ProgramEvent>? _sub;
 
+  /// Program-service events that count as "user knows what they are
+  /// doing" and dismiss the start-here cue. Limited to user-driven
+  /// modifications — passive lifecycle events (programOpened,
+  /// programActivated, programCreated by the defense-in-depth
+  /// ensureActiveProgram, etc.) do not count, otherwise the pill
+  /// would dismiss before the user has done anything.
+  static const _dismissingEvents = <ProgramEventType>{
+    ProgramEventType.exerciseAdded,
+    ProgramEventType.teamSaved,
+    ProgramEventType.rolePlaySaved,
+    ProgramEventType.programRefreshed,
+    ProgramEventType.programImported,
+    ProgramEventType.programInstalled,
+  };
+
   @override
   void initState() {
     super.initState();
     _loadFlag();
     _sub = ProgramService().events.listen((event) {
-      if (event.type == ProgramEventType.exerciseAdded) {
+      if (_dismissingEvents.contains(event.type)) {
         _markSeen();
       }
     });
