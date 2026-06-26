@@ -117,15 +117,21 @@ void main() {
     expect(find.byKey(const Key('cast-chip')), findsOneWidget);
   });
 
-  testWidgets('row tap toggles when onOpen is null', (tester) async {
-    var toggleCount = 0;
-    await tester.pumpWidget(
-      _buildTile(expanded: false, onOpen: null, onToggle: () => toggleCount++),
+  test('asserts onOpen when body and onToggle are set', () {
+    // House rule: every expandable row (body + onToggle set) must
+    // also supply onOpen. The previous "onOpen null → row tap toggles"
+    // fallback is forbidden for tiles that can expand. The assertion
+    // fires synchronously in the constructor, so the assertion itself
+    // is checked outside the widget pump (no MaterialApp needed).
+    expect(
+      () => ExpandableTile(
+        title: const Text('Anna Hansen'),
+        body: const Text('body content'),
+        expanded: false,
+        onToggle: () {},
+      ),
+      throwsAssertionError,
     );
-    // With onOpen null, tapping the row falls through to onToggle.
-    await tester.tap(find.text('Anna Hansen'));
-    await tester.pump();
-    expect(toggleCount, 1);
   });
 
   testWidgets('chevron is hidden when body is null', (tester) async {

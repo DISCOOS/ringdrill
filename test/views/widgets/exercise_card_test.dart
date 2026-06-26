@@ -43,7 +43,10 @@ Widget _harness({
         localizations: AppLocalizations.of(context)!,
         markers: const [],
         expanded: expanded,
-        onOpen: onOpen,
+        // House rule: every expandable row supplies onOpen. Tests that
+        // don't care about it get a no-op so the assertion in
+        // ExpandableTile stays satisfied.
+        onOpen: onOpen ?? () {},
         onLongPress: onLongPress,
         onToggle: onToggle,
       ),
@@ -70,6 +73,10 @@ Widget _mutexHarness() => MaterialApp(
                 localizations: AppLocalizations.of(context)!,
                 markers: const [],
                 expanded: expandedUuid == uuid,
+                // House rule: every expandable row supplies onOpen.
+                // The mutex test only cares about onToggle, so onOpen is
+                // a no-op here and the test taps the chevron to expand.
+                onOpen: () {},
                 onToggle: () {
                   setState(() {
                     expandedUuid = expandedUuid == uuid ? null : uuid;
@@ -166,15 +173,24 @@ void main() {
   ) async {
     await tester.pumpWidget(_mutexHarness());
 
-    // Tap the card header (onOpen is null in this harness, so a row tap
-    // toggles) by its title text. Indexing IconButtons would be fragile
-    // now that expanded station rows add their own chevron buttons.
-    await tester.tap(find.text('Exercise A'));
+    // House rule: tap the card body opens (no-op here) and chevron
+    // toggles. Scope the chevron lookup to each card via the title
+    // text — indexing icon buttons would be fragile now that expanded
+    // station rows add their own chevrons.
+    Finder chevronFor(String title) => find.descendant(
+      of: find.ancestor(
+        of: find.text(title),
+        matching: find.byType(ExpandableTile),
+      ),
+      matching: find.byIcon(Icons.expand_more),
+    );
+
+    await tester.tap(chevronFor('Exercise A'));
     await tester.pumpAndSettle();
     expect(find.text('Station A'), findsOneWidget);
     expect(find.text('Station B'), findsNothing);
 
-    await tester.tap(find.text('Exercise B'));
+    await tester.tap(chevronFor('Exercise B'));
     await tester.pumpAndSettle();
     expect(find.text('Station A'), findsNothing);
     expect(find.text('Station B'), findsOneWidget);

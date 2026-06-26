@@ -200,9 +200,13 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
       ),
       subtitle: Text(subtitle, style: accent.textStyle),
       expanded: _expanded,
-      // No onOpen: tapping the row toggles, matching the previous
-      // ExpansionTile behaviour where the row itself was the expand
-      // affordance.
+      // House rule (all ExpandableTiles): tap row opens sheet, chevron
+      // is the only expand affordance. From the cross-exercise team
+      // overview we drill into the team-in-this-exercise player view.
+      onOpen: () => ContextSheet.of(context).show(
+        context,
+        TeamSheetTarget(exerciseUuid: exercise.uuid, teamIndex: teamIndex),
+      ),
       onToggle: _toggleExpanded,
       body: Column(
         mainAxisSize: MainAxisSize.min,

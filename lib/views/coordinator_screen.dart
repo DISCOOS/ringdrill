@@ -1384,6 +1384,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           ),
           trailing: scheduleRow,
           expanded: _expandedStationIndex == stationIndex,
+          // House rule (all ExpandableTiles): tap the row opens the
+          // sheet, the chevron is the only expand affordance. Even on
+          // CoordinatorScreen — which is itself the exercise view — we
+          // route through the station sheet so the surface stays
+          // consistent with Poster/Øvelser/Markører/Lag.
+          onOpen: () => ContextSheet.of(context).show(
+            context,
+            StationSheetTarget(
+              exerciseUuid: widget.uuid,
+              stationIndex: station.index,
+            ),
+          ),
           onToggle: () => _toggleStation(stationIndex),
           body: _buildStationDetail(stationIndex),
         ),
@@ -1582,6 +1594,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               ],
             ),
             expanded: _expandedTeamIndex == teamIndex,
+            // House rule (all ExpandableTiles): tap row opens sheet,
+            // chevron is the only expand affordance. CoordinatorScreen
+            // routes to the team-in-exercise player view so the rule
+            // holds across Poster/Øvelser/Markører/Lag/Spill.
+            onOpen: () => ContextSheet.of(context).show(
+              context,
+              TeamSheetTarget(
+                exerciseUuid: widget.uuid,
+                teamIndex: teamIndex,
+              ),
+            ),
             onToggle: () => _toggleTeam(teamIndex),
             body: _buildTeamDetail(teamIndex, event),
           );

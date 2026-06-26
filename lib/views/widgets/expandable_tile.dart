@@ -15,13 +15,14 @@ import 'package:ringdrill/views/widgets/live_accent.dart';
 /// tint covers the whole header (including the chevron strip) instead
 /// of stopping at the chevron edge.
 ///
-/// Two interaction modes:
-///  * [onOpen] non-null — tapping the row fires [onOpen] (e.g. push
-///    the detail screen) and tapping the chevron fires [onToggle].
-///    Used by Stations, Exercises and RolePlays.
-///  * [onOpen] null — tapping the row fires [onToggle] instead.
-///    Used by Team's exercise sections where the row itself is the
-///    expand affordance.
+/// House rule (one rule, no exceptions): tap the row body fires
+/// [onOpen] (e.g. open a context sheet for the underlying entity), tap
+/// the chevron fires [onToggle] (expand the inline body). Every
+/// expandable in the app obeys this — Øvelser/Poster/Markører/Lag and
+/// the CoordinatorScreen sub-rows alike — so muscle memory is the same
+/// everywhere. The [onOpen]-null fallback is kept only as a last
+/// resort for tiles with no expand affordance ([body] == null), where
+/// the tile is just a plain header.
 ///
 /// The chevron is rendered only when both [body] and [onToggle] are
 /// provided. When [body] is null the tile is a plain header with no
@@ -44,7 +45,12 @@ class ExpandableTile extends StatelessWidget {
     this.margin = const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
     this.elevation = 2,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  });
+  }) : assert(
+         body == null || onToggle == null || onOpen != null,
+         'House rule: an expandable row (body + onToggle set) must also '
+         'supply onOpen. Tap row opens the sheet, chevron expands. Plain '
+         'headers without onToggle are exempt.',
+       );
 
   static const Duration animationDuration = Duration(milliseconds: 200);
 
