@@ -53,6 +53,16 @@ class AppLocalizationsNb extends AppLocalizations {
       'Trykk Tillat for å motta varsler. Du kan endre dette senere i innstillingene.';
 
   @override
+  String get skipForNow => 'Hopp over for nå';
+
+  @override
+  String get onboardingWelcomeHeading => 'Velkommen til RingDrill';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Planlegg og gjennomfør postbaserte øvelser.';
+
+  @override
   String get openSettings => 'Åpne innstillinger';
 
   @override
@@ -1757,7 +1767,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get primerBody =>
-      'Hvert lag er på vei til neste post. Når runden er over, rykker alle videre samtidig. Det er hele RingDrill.';
+      'Lagene roterer mellom postene på felles klokke. Når runden er over, rykker alle videre samtidig.';
 
   @override
   String get primerOpenExample => 'Åpne et eksempel';

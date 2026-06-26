@@ -53,6 +53,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap Allow to receive notifications. You can change this later in Settings.';
 
   @override
+  String get skipForNow => 'Skip for now';
+
+  @override
+  String get onboardingWelcomeHeading => 'Welcome to RingDrill';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Plan and run station-based training drills.';
+
+  @override
   String get openSettings => 'Open Settings';
 
   @override
@@ -1761,7 +1771,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get primerBody =>
-      'Each team is on its way to the next station. When the round ends, everyone advances together. That is all of RingDrill.';
+      'Teams rotate between stations on a shared clock. When the round ends, everyone advances at once.';
 
   @override
   String get primerOpenExample => 'Open an example';

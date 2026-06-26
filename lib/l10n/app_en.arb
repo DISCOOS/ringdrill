@@ -51,6 +51,18 @@
   "@appNotificationConsentOptIn": {
     "description": "Closing line of the notification pre-prompt"
   },
+  "skipForNow": "Skip for now",
+  "@skipForNow": {
+    "description": "Equal-weight secondary button on the onboarding consent stages — declines without dismissing the flow"
+  },
+  "onboardingWelcomeHeading": "Welcome to RingDrill",
+  "@onboardingWelcomeHeading": {
+    "description": "Heading on the first onboarding stage, above the brand mark"
+  },
+  "onboardingWelcomeBody": "Plan and run station-based training drills.",
+  "@onboardingWelcomeBody": {
+    "description": "Short tagline under the welcome heading — sets context without revealing the rotation concept, which is the reveal on the final stage"
+  },
   "openSettings": "Open Settings",
   "@openSettings": {
     "description": "Snackbar action label that deep-links into the OS Settings app"
@@ -1776,7 +1788,7 @@
   "@primerHeading": {
     "description": "Heading on the concept primer card."
   },
-  "primerBody": "Each team is on its way to the next station. When the round ends, everyone advances together. That is all of RingDrill.",
+  "primerBody": "Teams rotate between stations on a shared clock. When the round ends, everyone advances at once.",
   "@primerBody": {
     "description": "Body copy on the concept primer card, explaining the ring rotation."
   },

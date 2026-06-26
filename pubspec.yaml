@@ -136,6 +136,9 @@ flutter:
     - assets/templates/ringdrill-standard-v1.en.md.mustache
     - assets/example/onboarding-example.nb.drill
     - assets/example/onboarding-example.en.drill
+    # Brand mark used as the welcome hero on the first onboarding
+    # stage. 512×512 PNG is plenty for the ~160 px render target.
+    - assets/images/ringdrill-v2-512x512.png
 
 sentry:
   upload_sources: true

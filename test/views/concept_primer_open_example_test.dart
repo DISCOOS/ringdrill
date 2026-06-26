@@ -69,6 +69,12 @@ void main() {
       final router = await _pumpPrimer(tester);
       expect(_location(router), '/welcome');
 
+      // The CTA lives on the start stage. Advance past welcome with
+      // the Next button (two-stage flow because isFirstLaunch is
+      // false in `buildRouter(false, false)` — consent stages are
+      // covered by their own widget tests).
+      await tester.tap(find.text(l10n.nextLabel));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.primerOpenExample));
       await tester.pumpAndSettle();
 
@@ -112,6 +118,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_location(router), '/welcome');
+    await tester.tap(find.text(l10n.nextLabel));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.primerOpenExample));
     await tester.pumpAndSettle();
 
@@ -139,6 +147,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_location(router), '/welcome');
+    await tester.tap(find.text(l10n.nextLabel));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.primerOpenExample));
     await tester.pumpAndSettle();
 

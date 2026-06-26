@@ -56,11 +56,26 @@ Future<GoRouter> _pumpRouterWithGate(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+  // isFirstLaunch=false keeps the flow to the two-stage variant
+  // (welcome + start). Consent stages are exercised in their own
+  // widget tests; here we only care that the start CTAs still wire
+  // up navigation and the onboarding-seen flag.
   final router = buildRouter(false, isOnboardingSeen);
   addTearDown(router.dispose);
   await tester.pumpWidget(_app(router));
   await tester.pumpAndSettle();
   return router;
+}
+
+/// Advance the [PageView] in [ConceptPrimerScreen] from the welcome
+/// stage to the start stage by tapping "Next". The two-stage flow
+/// used in these tests only needs a single advance.
+Future<void> _advanceToStart(
+  WidgetTester tester,
+  AppLocalizations l10n,
+) async {
+  await tester.tap(find.text(l10n.nextLabel));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -84,21 +99,6 @@ void main() {
 
   // CTA flag-writes and navigation -------------------------------------------
 
-  testWidgets('"Hopp over" marks onboarding seen and leaves /welcome', (
-    tester,
-  ) async {
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    final router = await _pumpRouterWithGate(tester, false);
-    expect(_location(router), '/welcome');
-
-    await tester.tap(find.text(l10n.primerSkip));
-    await tester.pumpAndSettle();
-
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool(AppConfig.keyOnboardingSeen), isTrue);
-    expect(_location(router), isNot('/welcome'));
-  });
-
   testWidgets('"Start en tom plan" marks onboarding seen and leaves /welcome', (
     tester,
   ) async {
@@ -106,6 +106,7 @@ void main() {
     final router = await _pumpRouterWithGate(tester, false);
     expect(_location(router), '/welcome');
 
+    await _advanceToStart(tester, l10n);
     await tester.tap(find.text(l10n.primerStartEmpty));
     await tester.pumpAndSettle();
 
@@ -121,6 +122,7 @@ void main() {
       final router = await _pumpRouterWithGate(tester, false);
       expect(_location(router), '/welcome');
 
+      await _advanceToStart(tester, l10n);
       await tester.tap(find.text(l10n.primerOpenExample));
       await tester.pumpAndSettle();
 
@@ -140,13 +142,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData.light(),
-        home: Scaffold(
-          body: ConceptPrimerContent(
-            onSkip: () {},
-            onOpenExample: () {},
-            onStartEmpty: () {},
-          ),
-        ),
+        home: const Scaffold(body: ConceptPrimerContent()),
       ),
     );
     await tester.pump();
@@ -163,13 +159,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData.dark(),
-        home: Scaffold(
-          body: ConceptPrimerContent(
-            onSkip: () {},
-            onOpenExample: () {},
-            onStartEmpty: () {},
-          ),
-        ),
+        home: const Scaffold(body: ConceptPrimerContent()),
       ),
     );
     await tester.pump();

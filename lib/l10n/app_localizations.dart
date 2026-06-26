@@ -176,6 +176,24 @@ abstract class AppLocalizations {
   /// **'Tap Allow to receive notifications. You can change this later in Settings.'**
   String get appNotificationConsentOptIn;
 
+  /// Equal-weight secondary button on the onboarding consent stages — declines without dismissing the flow
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get skipForNow;
+
+  /// Heading on the first onboarding stage, above the brand mark
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to RingDrill'**
+  String get onboardingWelcomeHeading;
+
+  /// Short tagline under the welcome heading — sets context without revealing the rotation concept, which is the reveal on the final stage
+  ///
+  /// In en, this message translates to:
+  /// **'Plan and run station-based training drills.'**
+  String get onboardingWelcomeBody;
+
   /// Snackbar action label that deep-links into the OS Settings app
   ///
   /// In en, this message translates to:
@@ -3029,7 +3047,7 @@ abstract class AppLocalizations {
   /// Body copy on the concept primer card, explaining the ring rotation.
   ///
   /// In en, this message translates to:
-  /// **'Each team is on its way to the next station. When the round ends, everyone advances together. That is all of RingDrill.'**
+  /// **'Teams rotate between stations on a shared clock. When the round ends, everyone advances at once.'**
   String get primerBody;
 
   /// Primary CTA on the concept primer — opens a bundled example plan (stubbed until stage 3).
