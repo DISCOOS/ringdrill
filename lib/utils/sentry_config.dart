@@ -38,6 +38,16 @@ class SentryConfig {
       // tracing/profiling instrumentation observes the same future
       // error and reports it anyway. Nothing actionable on our side.
       if (_isLocateMeTimeout(event)) return null;
+      // Backstop for browser-extension noise. `ignoreErrors` below is
+      // supposed to drop these by substring, but for JS-bridged
+      // `onunhandledrejection` events on Flutter web the partial-match
+      // filter does not always fire (observed on release 1.0.3+25 with
+      // "Invalid call to runtime.sendMessage(). Tab not found."). The
+      // explicit check here runs on the Dart side after the bridge has
+      // handed the event over and matches the exception value as a
+      // plain substring, so variants with trailing detail (`Tab not
+      // found.`, port IDs, extension IDs, ...) are caught too.
+      if (_isBrowserExtensionNoise(event)) return null;
       if (AppBuildInfo.hasCommit) {
         // sentry-dart 9.x made data classes mutable, so adding tags is
         // an in-place edit rather than a copyWith. Initialise the map
@@ -118,6 +128,42 @@ class SentryConfig {
       'The message port closed before a response was received',
       'Receiving end does not exist',
     ];
+  }
+
+  /// Substrings that mark an exception as browser-extension messaging
+  /// noise. Matched against `exception.value` and the event message,
+  /// case-sensitive, as a plain `contains` so trailing detail like
+  /// `. Tab not found.` or extension IDs is ignored. Kept narrow so we
+  /// only swallow WebExtensions-internal call sites — RingDrill has no
+  /// access to `chrome.runtime` itself.
+  static const List<String> _browserExtensionNoiseSubstrings = [
+    'runtime.sendMessage',
+    'Extension context invalidated',
+    'The message port closed before a response was received',
+    'Receiving end does not exist',
+  ];
+
+  /// True when the event looks like WebExtensions messaging noise
+  /// (password manager, ad blocker, translator content scripts firing
+  /// `chrome.runtime.sendMessage` into a closing tab and so on). See
+  /// the long comment on `options.ignoreErrors` for the rationale.
+  static bool _isBrowserExtensionNoise(SentryEvent event) {
+    bool matches(String? text) {
+      if (text == null || text.isEmpty) return false;
+      for (final needle in _browserExtensionNoiseSubstrings) {
+        if (text.contains(needle)) return true;
+      }
+      return false;
+    }
+
+    if (matches(event.message?.formatted)) return true;
+    final exceptions = event.exceptions;
+    if (exceptions != null) {
+      for (final exception in exceptions) {
+        if (matches(exception.value)) return true;
+      }
+    }
+    return false;
   }
 
   /// True when the event is a `TimeoutException` raised by the
