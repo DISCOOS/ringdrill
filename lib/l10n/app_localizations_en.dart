@@ -293,6 +293,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get programTab => 'Plan';
+
+  @override
   String exercise(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1152,7 +1155,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publishAsActivePlan => 'Publish as...';
 
   @override
-  String get defaultPlanName => 'Default plan';
+  String get defaultPlanName => 'New plan';
+
+  @override
+  String get cannotDeleteLastPlan =>
+      'Can\'t delete your last plan. Rename it or add a new one first.';
 
   @override
   String get libraryMigrationNotice =>

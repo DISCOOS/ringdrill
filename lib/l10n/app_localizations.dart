@@ -578,6 +578,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Program} =1{Program} other{Programs}}'**
   String program(num count);
 
+  /// Bottom navigation label and AppBar fallback title for the Program tab. The tab hosts the active training plan (exercises, stations, markers, teams); using the singular plan term avoids colliding with the inner 'Exercises' segment label.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get programTab;
+
   /// Exercise with plurals
   ///
   /// In en, this message translates to:
@@ -1946,11 +1952,17 @@ abstract class AppLocalizations {
   /// **'Publish as...'**
   String get publishAsActivePlan;
 
-  /// No description provided for @defaultPlanName.
+  /// Name given to an auto-created plan. Phrased to invite renaming rather than feel permanent.
   ///
   /// In en, this message translates to:
-  /// **'Default plan'**
+  /// **'New plan'**
   String get defaultPlanName;
+
+  /// Snackbar shown when the user tries to delete their only remaining plan. Per ADR-0038 the app always keeps at least one plan around.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t delete your last plan. Rename it or add a new one first.'**
+  String get cannotDeleteLastPlan;
 
   /// No description provided for @libraryMigrationNotice.
   ///

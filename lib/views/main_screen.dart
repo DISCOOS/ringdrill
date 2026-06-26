@@ -720,12 +720,20 @@ class _MainScreenState extends State<MainScreen>
         _showAutoStoppedSnackBar(event);
       }
     });
-    // Gated startup validation: only when a stored active-program reference
-    // exists. Skipped on fresh install so no auto-created plan appears.
+    // Defense-in-depth (ADR-0038): every path that lands on
+    // [MainScreen] should have an active plan. The onboarding flow's
+    // `_dismiss` does the heavy lifting — both Start-empty and
+    // Open-example guarantee `activeProgram != null` before the
+    // user arrives here. This post-frame fallback catches the rare
+    // edge cases (catalog deep links that activate nothing, plan
+    // deletion that bypassed the last-plan guard, a hot restart
+    // landing here without going through onboarding) and creates
+    // the default plan rather than letting the surface render with
+    // a null plan.
+    //
+    // `ensureActiveProgram` is idempotent: it is a no-op whenever
+    // `activeProgramUuid` is already set, so this is cheap.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      final prefs = await SharedPreferences.getInstance();
-      if (!prefs.containsKey(AppConfig.keyActiveProgram)) return;
       if (!mounted) return;
       final localizations = AppLocalizations.of(context)!;
       await ProgramService().ensureActiveProgram(localizations);
@@ -1247,7 +1255,14 @@ class _MainScreenState extends State<MainScreen>
 
   List<Destination> _buildDestinations(AppLocalizations localizations) {
     return [
-      Destination(icon: Icons.update, label: localizations.exercise(2)),
+      // The Program tab hosts the active training plan (the inner
+      // segments are exercises, stations, markers, teams). Using
+      // `exercise(2)` here used to land "Øvelser" both on the bottom
+      // nav AND on the inner segment label, which read as the same
+      // word at two levels of hierarchy and confused first-time
+      // users. `programTab` ("Plan" / "Øvingsplan") describes the
+      // tab as a whole.
+      Destination(icon: Icons.update, label: localizations.programTab),
       Destination(icon: Icons.map, label: localizations.mapTab),
       Destination(icon: Icons.badge, label: localizations.rosterTab),
     ];

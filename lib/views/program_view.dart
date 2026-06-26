@@ -354,6 +354,13 @@ class _ProgramViewState extends State<ProgramView> {
         return false;
       },
       child: Column(
+        // Stretch so every child fills the available width. Without
+        // this the default cross-axis center alignment was sizing
+        // the `AnimatedSize` to its child's intrinsic width and
+        // centering it within the parent — which made the
+        // description and brief-intro snippets render visually
+        // centered instead of left-aligned.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
@@ -413,8 +420,16 @@ class _ProgramViewState extends State<ProgramView> {
     BuildContext context,
     AppLocalizations localizations,
   ) async {
+    // On the very first launch there is no active plan yet — the
+    // user tapped the empty-state "Edit plan" action without ever
+    // adding an exercise. The previous early-return left the button
+    // doing nothing; instead, create the default plan on demand
+    // (same pattern as `saveExercise` and friends) so the form has
+    // something to edit. After `ensureActiveProgram`,
+    // `activeProgram` is guaranteed non-null.
+    await _programService.ensureActiveProgram(localizations);
     final program = _programService.activeProgram;
-    if (program == null) return;
+    if (program == null || !context.mounted) return;
     final updated = await openFormSurface<Program>(
       context,
       builder: (_) => ProgramFormScreen(program: program),
@@ -585,100 +600,190 @@ class _ProgramOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final program = ProgramService().activeProgram;
-    if (program == null) return const SizedBox.shrink();
 
-    final description = program.description.trim();
-    final briefIntro = _firstParagraphText(program.briefIntroMd);
-    final hasContent = description.isNotEmpty || briefIntro != null;
+    // The "no content" branch covers two cases that present the same
+    // way to the user: there is no plan yet at all (first launch
+    // before they tap anything), or there is a plan but its
+    // description / brief sections are empty. Render the same
+    // teaching affordance in both — the row turns the otherwise
+    // empty space above the segmented switcher into a discoverable
+    // entry point for the ProgramFormScreen.
+    final description = program?.description.trim() ?? '';
+    final briefIntro = program == null
+        ? null
+        : _firstParagraphText(program.briefIntroMd);
+    final comms = program == null
+        ? null
+        : _firstParagraphText(program.commsMd);
+    final beforeRound = program == null
+        ? null
+        : _firstParagraphText(program.beforeRoundMd);
+    final hasContent =
+        description.isNotEmpty ||
+        briefIntro != null ||
+        comms != null ||
+        beforeRound != null;
     if (!hasContent) {
-      // Locally-created plans start with no description and no brief content.
-      // Surface the form anyway so the user has a discoverable entry point,
-      // rather than returning to the silent SizedBox.shrink the overview used
-      // to render in this state.
-      return Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: TextButton.icon(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      final scheme = Theme.of(context).colorScheme;
+      final textTheme = Theme.of(context).textTheme;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        // Subtle "settings-row" affordance: muted background + leading
+        // pencil + trailing chevron read as tappable without competing
+        // with the segmented switcher below or the FAB's add-exercise
+        // CTA. Less prominent than a FilledButton/tonal would be, more
+        // discoverable than the bare TextButton it replaces.
+        child: Material(
+          color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: onEdit,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      l10n.editProgram,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
-            icon: const Icon(Icons.edit_outlined, size: 16),
-            label: Text(l10n.editProgram),
-            onPressed: onEdit,
           ),
         ),
       );
     }
 
+    // Render the filled state in the SAME soft container the empty
+    // state uses, so the visual language is consistent: same muted
+    // surface, same rounded corners, same tap target opening the
+    // ProgramFormScreen. The content inside the container changes
+    // (description + optional brief sections + Show more/less),
+    // but the container itself is one stable element above the
+    // segmented switcher — no competing Card elevation.
+    final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final labelStyle = textTheme.labelSmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+    final briefSections = <({String label, String text})>[
+      if (briefIntro != null)
+        (label: l10n.briefSectionProgramIntro, text: briefIntro),
+      if (comms != null)
+        (label: l10n.briefSectionProgramComms, text: comms),
+      if (beforeRound != null)
+        (label: l10n.briefSectionProgramBeforeRound, text: beforeRound),
+    ];
     final maxLines = expanded ? null : _collapsedLines;
     final overflow = expanded ? TextOverflow.clip : TextOverflow.ellipsis;
 
-    return InkWell(
-      onTap: onEdit,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final maxWidth = constraints.maxWidth;
-            final truncatable =
-                (description.isNotEmpty &&
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Material(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onEdit,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxWidth = constraints.maxWidth;
+                final descriptionOverflows =
+                    description.isNotEmpty &&
                     _exceedsLines(
                       context,
                       description,
                       textTheme.bodyMedium,
                       maxWidth,
-                    )) ||
-                (briefIntro != null &&
-                    _exceedsLines(
-                      context,
-                      briefIntro,
-                      textTheme.bodySmall,
-                      maxWidth,
-                    ));
+                    );
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (description.isNotEmpty)
-                  Text(
-                    description,
-                    style: textTheme.bodyMedium,
-                    maxLines: maxLines,
-                    overflow: overflow,
-                  ),
-                if (briefIntro != null) ...[
-                  if (description.isNotEmpty) const SizedBox(height: 6),
-                  Text(
-                    briefIntro,
-                    style: textTheme.bodySmall,
-                    maxLines: maxLines,
-                    overflow: overflow,
-                  ),
-                ],
-                // TODO(DESIGN-004): render program.commsMd preview here when
-                // program-level brief fields land. Brief is opened from the
-                // AppBar action, not here.
-                if (truncatable)
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        minimumSize: const Size(0, 32),
+                // Edge case: brief sections are filled but
+                // description is empty. Collapsed-state would
+                // otherwise be blank above the toggle, so promote
+                // the first brief section into the always-visible
+                // slot (with its label, since it's not the
+                // description). The remaining sections still hide
+                // behind "Show more".
+                final hasDescription = description.isNotEmpty;
+                final primaryBrief = hasDescription
+                    ? null
+                    : briefSections.firstOrNull;
+                final hiddenWhenCollapsed = hasDescription
+                    ? briefSections
+                    : briefSections.skip(1).toList();
+                final toggleVisible =
+                    descriptionOverflows || hiddenWhenCollapsed.isNotEmpty;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasDescription)
+                      Text(
+                        description,
+                        style: textTheme.bodyMedium,
+                        maxLines: maxLines,
+                        overflow: overflow,
+                      )
+                    else if (primaryBrief != null) ...[
+                      Text(primaryBrief.label, style: labelStyle),
+                      const SizedBox(height: 2),
+                      Text(
+                        primaryBrief.text,
+                        style: textTheme.bodyMedium,
+                        maxLines: maxLines,
+                        overflow: overflow,
                       ),
-                      onPressed: onToggleExpanded,
-                      child: Text(expanded ? l10n.showLess : l10n.showMore),
-                    ),
-                  ),
-              ],
-            );
-          },
+                    ],
+                    if (expanded)
+                      for (final section in hiddenWhenCollapsed) ...[
+                        const SizedBox(height: 8),
+                        Text(section.label, style: labelStyle),
+                        const SizedBox(height: 2),
+                        Text(section.text, style: textTheme.bodySmall),
+                      ],
+                    if (toggleVisible)
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            minimumSize: const Size(0, 32),
+                          ),
+                          onPressed: onToggleExpanded,
+                          child: Text(
+                            expanded ? l10n.showLess : l10n.showMore,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -1127,7 +1232,11 @@ abstract class ProgramPageControllerBase extends ScreenController {
   @override
   String title(BuildContext context) =>
       programService.activeProgram?.name ??
-      AppLocalizations.of(context)!.exercise(2);
+      // Generic tab label when no plan is active yet (first launch
+      // before any plan has been created). Matches the bottom nav
+      // label so the user sees a consistent name in both chrome
+      // surfaces.
+      AppLocalizations.of(context)!.programTab;
 
   @override
   Widget? buildFAB(BuildContext context, BoxConstraints constraints) {

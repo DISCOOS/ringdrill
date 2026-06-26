@@ -324,6 +324,10 @@
   "@program": {
     "description": "Program with plurals"
   },
+  "programTab": "Plan",
+  "@programTab": {
+    "description": "Bottom navigation label and AppBar fallback title for the Program tab. The tab hosts the active training plan (exercises, stations, markers, teams); using the singular plan term avoids colliding with the inner 'Exercises' segment label."
+  },
   "exercise": "{count, plural, =0{Exercise} =1{Exercise} other{Exercises}}",
   "@exercise": {
     "description": "Exercise with plurals"
@@ -1101,7 +1105,14 @@
   },
   "publishActivePlan": "Publish",
   "publishAsActivePlan": "Publish as...",
-  "defaultPlanName": "Default plan",
+  "defaultPlanName": "New plan",
+  "@defaultPlanName": {
+    "description": "Name given to an auto-created plan. Phrased to invite renaming rather than feel permanent."
+  },
+  "cannotDeleteLastPlan": "Can't delete your last plan. Rename it or add a new one first.",
+  "@cannotDeleteLastPlan": {
+    "description": "Snackbar shown when the user tries to delete their only remaining plan. Per ADR-0038 the app always keeps at least one plan around."
+  },
   "libraryMigrationNotice": "Library and catalog are new. Your existing plan has been moved to Default plan and is still active.",
   "installedAndActivated": "Installed and activated {name}",
   "openedAndActivated": "Opened {name}",
