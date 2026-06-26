@@ -7,6 +7,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/locale_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_io/io.dart';
@@ -290,9 +291,18 @@ class NotificationService {
   }
 
   Future<AppLocalizations> _loadLocalization() async {
-    final parts = Intl.getCurrentLocale().split('_');
-    final locale = Locale(parts.first, parts.last);
-    return await AppLocalizations.delegate.load(locale);
+    // `Intl.getCurrentLocale()` mirrors the OS locale, which on some
+    // Android builds still reports the legacy `no_NO` form. Feeding
+    // that straight to the delegate throws (see crash report
+    // 7577434203 — `unsupported locale "no_NO"`). Resolve through the
+    // shared helper so legacy Norwegian codes land on `nb` and
+    // unsupported languages fall back to English.
+    final language = languageOfLocaleTag(Intl.getCurrentLocale());
+    final candidate = Locale(language);
+    final locale = AppLocalizations.delegate.isSupported(candidate)
+        ? candidate
+        : const Locale('en');
+    return AppLocalizations.delegate.load(locale);
   }
 
   String _generateChannelId() {

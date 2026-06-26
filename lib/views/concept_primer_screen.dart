@@ -7,6 +7,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/locale_utils.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/widgets/onboarding/analytics_consent_stage.dart';
@@ -123,7 +124,9 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
 
   Future<void> _openExample() async {
     try {
-      final langCode = Intl.getCurrentLocale().split('_').first;
+      // `languageOfLocaleTag` already maps legacy `no`/`nn` onto `nb`
+      // so OnePlus / older Android builds still pick the nb asset.
+      final langCode = languageOfLocaleTag(Intl.getCurrentLocale());
       final locale = langCode == 'nb' ? 'nb' : 'en';
       final assetName = 'onboarding-example.$locale.drill';
       final assetPath = 'assets/example/$assetName';

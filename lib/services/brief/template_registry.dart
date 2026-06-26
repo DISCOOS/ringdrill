@@ -1,3 +1,5 @@
+import 'package:ringdrill/utils/locale_utils.dart';
+
 /// A registered brief template. Identified by [id]. Loaded from [assetPath]
 /// via the Flutter asset bundle.
 ///
@@ -37,16 +39,8 @@ class _TemplateFamily {
   /// when [locale] is null or unknown.
   BriefTemplate forLocale(String? locale) {
     if (locale == null) return fallback;
-    return variants[_languageOf(locale)] ?? fallback;
+    return variants[languageOfLocaleTag(locale)] ?? fallback;
   }
-}
-
-/// Extracts the lowercased language subtag from a BCP 47 / ICU locale tag:
-/// `en` -> `en`, `en_US` -> `en`, `nb-NO` -> `nb`.
-String _languageOf(String locale) {
-  final tag = locale.trim().toLowerCase();
-  final sep = tag.indexOf(RegExp(r'[-_]'));
-  return sep < 0 ? tag : tag.substring(0, sep);
 }
 
 /// In-memory registry of brief templates. v1 has a single family

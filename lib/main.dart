@@ -11,6 +11,7 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/locale_utils.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/main_screen.dart';
@@ -279,6 +280,12 @@ class _RingDrillAppState extends State<RingDrillApp> {
       debugShowCheckedModeBanner: false,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
+      // Flutter's default resolver doesn't know the legacy ISO-639-1
+      // Norwegian code `no` (still reported by some Android builds as
+      // `no_NO`), so Norwegian users would otherwise fall through to
+      // English. `resolveSupportedLocale` normalises `no`/`nn` -> `nb`
+      // before matching against [supportedLocales].
+      localeListResolutionCallback: resolveSupportedLocale,
       // ADR-0037 part 2: clamp the upper text-scale bound app-wide so Dynamic
       // Type is honoured up to 1.3 (which the chrome can absorb) but cannot
       // grow past it. Smaller user sizes are left untouched.
