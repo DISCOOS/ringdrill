@@ -455,7 +455,7 @@ release-notes:
 	echo "Wrote $$OUT"; \
 	echo ""; \
 	for LOC in en-US no-NO; do \
-		BODY=$$(sed -n "/<$$LOC>/,/<\\/$$LOC>/{//!p}" "$$OUT"); \
+		BODY=$$(awk -v loc="$$LOC" '$$0 == "<" loc ">" {f=1; next} $$0 == "</" loc ">" {f=0} f' "$$OUT"); \
 		LEN=$$(printf '%s' "$$BODY" | wc -c | tr -d ' '); \
 		if [ "$$LEN" -gt 500 ]; then \
 			echo "WARN: $$LOC is $$LEN chars, Play caps each note at 500."; \
