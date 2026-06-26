@@ -279,7 +279,28 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// Per-round phase tiles. Sized to its content (no inner
   /// scrollable) so the outer SingleChildScrollView in [build] owns
   /// the whole screen's scroll context.
+  ///
+  /// At narrow widths (e.g. bottom sheet half-snap ≈ 200 px) the
+  /// PhaseHeaders + PhaseTile band cannot fit: PhaseHeaders alone
+  /// requires ~264 px (78 px title + 3×62 px header cells), and
+  /// PhaseTile's fixed phase columns + dividers require ~192 px before
+  /// the title. We swap to a compact stacked rendering below the
+  /// breakpoint so the rotation data stays readable instead of
+  /// overflowing.
+  static const double _compactRotationBreakpoint = 270;
+
   Widget _buildTeamRotations(ExerciseEvent event) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _compactRotationBreakpoint) {
+          return _buildTeamRotationsCompact(event);
+        }
+        return _buildTeamRotationsTable(event);
+      },
+    );
+  }
+
+  Widget _buildTeamRotationsTable(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -327,6 +348,122 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         }),
       ],
     );
+  }
+
+  /// Compact per-round layout used when the surrounding container
+  /// (typically a bottom sheet half-snap) is too narrow to fit the
+  /// table. Each round renders as a card with a title row and one row
+  /// per phase (label + time).
+  Widget _buildTeamRotationsCompact(ExerciseEvent event) {
+    final localizations = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(_exercise.schedule.length, (index) {
+        final teamIndex = _exercise.teamIndex(widget.stationIndex, index);
+        final none = teamIndex == -1;
+        final title =
+            '${localizations.team(1)} '
+            '${none ? '×' : teamIndex + 1}';
+        final isCurrent = event.isRunning && index == event.currentRound;
+        final decoration = none ? TextDecoration.lineThrough : null;
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: InkWell(
+            onTap: none
+                ? null
+                : () {
+                    ContextSheet.of(context).replace(
+                      TeamSheetTarget(
+                        exerciseUuid: _exercise.uuid,
+                        teamIndex: teamIndex,
+                      ),
+                    );
+                  },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? Colors.blueAccent
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: isCurrent
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        color: isCurrent ? Colors.white : null,
+                        decoration: decoration,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  ..._compactPhaseRows(
+                    event: event,
+                    roundIndex: index,
+                    decoration: decoration,
+                    localizations: localizations,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  List<Widget> _compactPhaseRows({
+    required ExerciseEvent event,
+    required int roundIndex,
+    required TextDecoration? decoration,
+    required AppLocalizations localizations,
+  }) {
+    final phases = _exercise.schedule[roundIndex];
+    final isCurrentRound =
+        event.isRunning && roundIndex == event.currentRound;
+    return List<Widget>.generate(phases.length, (phaseIndex) {
+      final isCurrentPhase =
+          isCurrentRound && phaseIndex == event.phase.index - 1;
+      final label = switch (phaseIndex) {
+        0 => localizations.drill,
+        1 => localizations.eval,
+        2 => localizations.roll,
+        _ => '${phaseIndex + 1}',
+      };
+      final time = phases[phaseIndex].toMaterial().formal();
+      final style = TextStyle(
+        fontWeight: isCurrentPhase ? FontWeight.bold : FontWeight.normal,
+        decoration: decoration,
+      );
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 64,
+              child: Text(label.toUpperCase(), style: style),
+            ),
+            Text(time, style: style),
+          ],
+        ),
+      );
+    });
   }
 
   ExerciseEvent _initialData() {
