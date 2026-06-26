@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/program_diff_widgets.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -87,7 +90,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -109,13 +112,18 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
               controller: _tabController,
               tabs: [
                 Tab(text: localizations.libraryMyPlans),
+                Tab(text: localizations.libraryOnlineTab),
                 Tab(text: localizations.addFromFile),
               ],
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [_buildFromPlans(context), _buildFromFile(context)],
+                children: [
+                  _buildFromPlans(context),
+                  _buildFromCatalog(context),
+                  _buildFromFile(context),
+                ],
               ),
             ),
           ],
@@ -196,6 +204,60 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
         TabFooter(subtitle: localizations.addExercisesMyPlansSubtitle),
       ],
     );
+  }
+
+  Widget _buildFromCatalog(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final activeSlug = _activeCatalogSlug();
+    return CatalogBrowser(
+      subtitle: localizations.addExercisesOnlineSubtitle,
+      installedSlugs: _installedCatalogSlugs(),
+      // Hide the active plan's catalog source: merging it back into itself
+      // would either be a no-op (same content) or silently duplicate every
+      // exercise. The user is already adding to that plan.
+      itemFilter: activeSlug == null
+          ? null
+          : (item) => item.slug != activeSlug,
+      onItemTap: (context, item) => _mergeFromCatalog(context, item),
+    );
+  }
+
+  String? _activeCatalogSlug() {
+    return _programService.activeProgram?.source.whenOrNull(
+      catalog: (slug, latestEtag, installedAt) => slug,
+    );
+  }
+
+  Set<String> _installedCatalogSlugs() {
+    return _programService
+        .listPrograms()
+        .map(
+          (program) => program.source.whenOrNull(
+            catalog: (slug, latestEtag, installedAt) => slug,
+          ),
+        )
+        .whereType<String>()
+        .toSet();
+  }
+
+  Future<void> _mergeFromCatalog(
+    BuildContext context,
+    MarketFeedItem item,
+  ) async {
+    final localizations = AppLocalizations.of(context)!;
+    try {
+      final download = await active_actions.buildCatalogClient().download(
+        item.slug,
+      );
+      if (!context.mounted) return;
+      final source = download.file.program();
+      await _mergeIntoActivePlan(context, source);
+    } on Exception catch (e, stackTrace) {
+      if (context.mounted) {
+        _showSnackBar(context, localizations.libraryErrorLoad);
+      }
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+    }
   }
 
   Future<void> _mergeFromFile(BuildContext context) async {

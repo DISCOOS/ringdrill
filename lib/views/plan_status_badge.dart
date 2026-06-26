@@ -6,7 +6,7 @@ import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
-import 'package:ringdrill/views/library_view.dart';
+import 'package:ringdrill/views/widgets/catalog_browser.dart';
 
 /// Compact status indicator for the AppBar showing whether the active plan
 /// is local-only or linked to the online catalog.

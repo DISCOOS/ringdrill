@@ -1670,6 +1670,12 @@ abstract class AppLocalizations {
   /// **'Pick a plan to pull exercises from'**
   String get addExercisesMyPlansSubtitle;
 
+  /// No description provided for @addExercisesOnlineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull exercises from a plan in the online library'**
+  String get addExercisesOnlineSubtitle;
+
   /// No description provided for @addExercisesFromFileSubtitle.
   ///
   /// In en, this message translates to:

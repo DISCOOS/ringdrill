@@ -364,7 +364,13 @@ Future<void> publishAsActivePlan(BuildContext context) async {
   );
 }
 
-DrillClient _buildPublishClient() {
+/// Builds a [DrillClient] pointed at the catalog endpoint. When the base URL
+/// resolves to a local `netlify functions:serve` (no /api/* or /d/* redirects),
+/// the deep-link calls are routed directly at the function path. See ADR-0013.
+///
+/// Exposed publicly so the library dialog, the add-exercises sheet and the
+/// publish helpers all share one DrillClient construction recipe.
+DrillClient buildCatalogClient() {
   final baseUrl = AppConfig.catalogBaseUrl(
     isWeb: kIsWeb,
     isRelease: kReleaseMode,
@@ -375,6 +381,8 @@ DrillClient _buildPublishClient() {
     deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
   );
 }
+
+DrillClient _buildPublishClient() => buildCatalogClient();
 
 Future<DrillFile?> pickOpenPlanFile(BuildContext context) {
   return ProgramPageController.pickOpenFile(

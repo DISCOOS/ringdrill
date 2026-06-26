@@ -1,21 +1,20 @@
 import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
+import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -57,36 +56,18 @@ class _LibraryBody extends StatefulWidget {
 class _LibraryBodyState extends State<_LibraryBody>
     with SingleTickerProviderStateMixin {
   final _programService = ProgramService();
-  final _catalogStatus = CatalogStatusService();
   late final TabController _tabController;
-  late Future<MarketFeedPageResponse> _feed;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _catalogStatus.listenable.addListener(_onCatalogStatusChanged);
-    // Defer the first catalog probe to a follow-up event loop task so the
-    // initial CatalogStatusService.setStatus(checking) call inside
-    // _loadFeed() runs after the surrounding frame has finished building.
-    // Calling setStatus synchronously from initState() notifies any
-    // ValueListenableBuilder<CatalogStatus> already in the tree (e.g. the
-    // appbar plan badge) while the framework is still in the build phase,
-    // which trips the "setState() or markNeedsBuild() called during build"
-    // assertion. FutureBuilder is fine with a future that completes a tick
-    // later — it just shows the progress indicator in the meantime.
-    _feed = Future<MarketFeedPageResponse>(_loadFeed);
   }
 
   @override
   void dispose() {
-    _catalogStatus.listenable.removeListener(_onCatalogStatusChanged);
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _onCatalogStatusChanged() {
-    if (mounted) setState(() {});
   }
 
   @override
@@ -202,96 +183,22 @@ class _LibraryBodyState extends State<_LibraryBody>
 
   Widget _buildCatalog(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _feed = _loadFeed();
-              });
-              await _feed;
-            },
-            child: FutureBuilder<MarketFeedPageResponse>(
-              future: _feed,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final currentState = _catalogStatus.value.state;
-                if (currentState == CatalogServiceState.unavailable ||
-                    currentState == CatalogServiceState.corsBlocked) {
-                  return ListView(
-                    children: [
-                      const SizedBox(height: 80),
-                      EmptyState(
-                        icon: Icons.cloud_off,
-                        text: localizations.libraryErrorLoad,
-                      ),
-                    ],
-                  );
-                }
-                final items = snapshot.data?.items ?? const <MarketFeedItem>[];
-                if (items.isEmpty) {
-                  return ListView(
-                    children: [
-                      const SizedBox(height: 80),
-                      EmptyState(
-                        icon: Icons.cloud_outlined,
-                        text: localizations.libraryEmptyCatalog,
-                      ),
-                    ],
-                  );
-                }
-                final installedSlugs = _installedCatalogSlugs();
-                final colors = Theme.of(context).colorScheme;
-                return ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    final installed = installedSlugs.contains(item.slug);
-                    final trailingChildren = <Widget>[
-                      if (installed)
-                        Chip(label: Text(localizations.libraryInstalled))
-                      else
-                        FilledButton(
-                          onPressed: () => _installCatalog(item),
-                          child: Text(localizations.libraryInstall),
-                        ),
-                    ];
-                    return ListTile(
-                      leading: Icon(
-                        installed
-                            ? Icons.cloud_done_outlined
-                            : Icons.cloud_outlined,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      title: Text(item.name),
-                      subtitle: Text(_catalogSubtitle(localizations, item)),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: trailingChildren,
-                      ),
-                      onTap: installed ? null : () => _installCatalog(item),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-        TabFooter(
-          subtitle: localizations.libraryOnlineSubtitle,
-          trailing: _CatalogStatusIndicator(
-            status: _catalogStatus.value,
-            onRefresh: () {
-              setState(() {
-                _feed = _loadFeed();
-              });
-            },
-          ),
-        ),
-      ],
+    return CatalogBrowser(
+      subtitle: localizations.libraryOnlineSubtitle,
+      installedSlugs: _installedCatalogSlugs(),
+      trailingBuilder: (context, item, installed) {
+        if (installed) {
+          return Chip(label: Text(localizations.libraryInstalled));
+        }
+        return FilledButton(
+          onPressed: () => _installCatalog(item),
+          child: Text(localizations.libraryInstall),
+        );
+      },
+      onItemTap: (context, item) async {
+        if (_installedCatalogSlugs().contains(item.slug)) return;
+        await _installCatalog(item);
+      },
     );
   }
 
@@ -334,28 +241,7 @@ class _LibraryBodyState extends State<_LibraryBody>
     );
   }
 
-  Future<MarketFeedPageResponse> _loadFeed() =>
-      active_actions.probeCatalogService(context);
-
-  String _catalogBaseUrl() {
-    return AppConfig.catalogBaseUrl(
-      isWeb: kIsWeb,
-      isRelease: kReleaseMode,
-      isDebug: kDebugMode,
-    );
-  }
-
-  // Builds a DrillClient configured for the catalog endpoint. When the
-  // base URL points at a local `netlify functions:serve` (no /api/* or
-  // /d/* redirects), we route the deep-link calls directly at the
-  // function path. See ADR-0013.
-  DrillClient _buildCatalogClient() {
-    final baseUrl = _catalogBaseUrl();
-    return DrillClient(
-      baseUrl: baseUrl,
-      deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
-    );
-  }
+  DrillClient _buildCatalogClient() => active_actions.buildCatalogClient();
 
   Set<String> _installedCatalogSlugs() {
     return _programService
@@ -384,16 +270,6 @@ class _LibraryBodyState extends State<_LibraryBody>
       '${program.exercises.length} ${localizations.exercise(program.exercises.length).toLowerCase()}',
       program.metadata.updated.toLocal().toString().split('.').first,
     ].join(' · ');
-  }
-
-  String _catalogSubtitle(AppLocalizations localizations, MarketFeedItem item) {
-    final parts = <String>[
-      localizations.librarySourceCatalog(item.slug),
-      if (item.tags.isNotEmpty) item.tags.join(', '),
-      if (item.updatedAt != null)
-        item.updatedAt!.toLocal().toString().split('.').first,
-    ];
-    return parts.join(' · ');
   }
 
   Future<void> _activate(
@@ -666,100 +542,3 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 }
 
-class _CatalogStatusIndicator extends StatelessWidget {
-  const _CatalogStatusIndicator({
-    required this.status,
-    required this.onRefresh,
-  });
-
-  final CatalogStatus status;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
-    final visual = catalogStatusVisual(status.state, localizations);
-    final color = visual.isError
-        ? theme.colorScheme.error
-        : theme.colorScheme.onSurfaceVariant;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Tooltip(
-          message: status.tooltip ?? visual.label,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 160),
-                child: Text(
-                  visual.label,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: color),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(visual.icon, size: 18, color: color),
-            ],
-          ),
-        ),
-        IconButton(
-          tooltip: localizations.libraryRetry,
-          icon: const Icon(Icons.refresh),
-          iconSize: 20,
-          visualDensity: VisualDensity.compact,
-          onPressed: onRefresh,
-        ),
-      ],
-    );
-  }
-}
-
-/// Helper that maps a [CatalogServiceState] to icon, label, and error flag.
-/// Lives here so the AppBar plan badge can reuse the same mapping.
-class CatalogStatusVisual {
-  const CatalogStatusVisual({
-    required this.icon,
-    required this.label,
-    required this.isError,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isError;
-}
-
-CatalogStatusVisual catalogStatusVisual(
-  CatalogServiceState state,
-  AppLocalizations localizations,
-) {
-  return switch (state) {
-    CatalogServiceState.unknown => CatalogStatusVisual(
-      icon: Icons.cloud_queue,
-      label: localizations.catalogServiceChecking,
-      isError: false,
-    ),
-    CatalogServiceState.checking => CatalogStatusVisual(
-      icon: Icons.cloud_sync,
-      label: localizations.catalogServiceChecking,
-      isError: false,
-    ),
-    CatalogServiceState.online => CatalogStatusVisual(
-      icon: Icons.cloud_done,
-      label: localizations.catalogServiceOnline,
-      isError: false,
-    ),
-    CatalogServiceState.unavailable => CatalogStatusVisual(
-      icon: Icons.cloud_off,
-      label: localizations.catalogServiceUnavailable,
-      isError: true,
-    ),
-    CatalogServiceState.corsBlocked => CatalogStatusVisual(
-      icon: Icons.policy,
-      label: localizations.catalogServiceCorsBlocked,
-      isError: true,
-    ),
-  };
-}

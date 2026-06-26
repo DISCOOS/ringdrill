@@ -1000,6 +1000,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get addExercisesMyPlansSubtitle => 'Velg en plan å hente øvelser fra';
 
   @override
+  String get addExercisesOnlineSubtitle =>
+      'Hent øvelser fra en plan i nett-biblioteket';
+
+  @override
   String get addExercisesFromFileSubtitle =>
       'Importer øvelser fra en .drill-fil';
 

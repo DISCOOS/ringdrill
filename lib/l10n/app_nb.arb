@@ -277,6 +277,7 @@
   "planStatusUnpublished": "Upublisert",
   "planStatusUnpublishedTooltip": "Trykk for å publisere endringene dine til katalogen",
   "addExercisesMyPlansSubtitle": "Velg en plan å hente øvelser fra",
+  "addExercisesOnlineSubtitle": "Hent øvelser fra en plan i nett-biblioteket",
   "addExercisesFromFileSubtitle": "Importer øvelser fra en .drill-fil",
   "addExercisesEmptyMyPlans": "Du har ingen andre planer å hente fra ennå",
   "librarySourceLocal": "Lokal",

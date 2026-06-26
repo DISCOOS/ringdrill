@@ -1052,6 +1052,7 @@
   "planStatusUnpublished": "Unpublished",
   "planStatusUnpublishedTooltip": "Tap to publish your changes to the catalog",
   "addExercisesMyPlansSubtitle": "Pick a plan to pull exercises from",
+  "addExercisesOnlineSubtitle": "Pull exercises from a plan in the online library",
   "addExercisesFromFileSubtitle": "Import exercises from a .drill file",
   "addExercisesEmptyMyPlans": "No other plans to pull from yet",
   "librarySourceLocal": "Local",
