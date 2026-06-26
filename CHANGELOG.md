@@ -1,3 +1,31 @@
+## 1.0.3+26 - 2026-06-26
+
+Changes since 1.0.3+25:
+
+- build(release): make VERSION optional with interactive prompt (a1eaf54)
+- feat(roster): show active plan name in Roster tab header (05cfa09)
+- fix(station): compact rotation view at narrow widths (2338c0b)
+- fix(map): guard non-finite LatLng at marker producers and in MapView (9d3ae94)
+- feat(add-exercises): browse online catalog and merge exercises (64c2d57)
+- test: stop tearDown from tripping LastProgramDeletionException (7930d92)
+- build: add `make release` and `make publish` one-shot targets (091bd51)
+- fix(start-here): dismiss the pill on any user-driven plan change (4733e45)
+- feat(program-tab): rename to "Plan" and redesign overview as soft container (defece4)
+- feat(plan): always keep exactly one active plan around (94f192d)
+- copy(exercises): tighten the empty-state to a single-line CTA (60458ae)
+- test(drill-player): anchor sheet-closes-on-stop test to the wall clock (69fab40)
+- feat(onboarding): implement four-stage first-launch flow (eb5ec77)
+- feat(notifications): defer OS prompt behind in-app rationale (e4f85fe)
+- docs(adr): accept ADR-0038 — four-stage first-launch onboarding (6c6a9d0)
+- feat(consent): ask for analytics consent before the welcome flow (ee39c4c)
+- fix(notifications): stop reporting permission-decline as init failure (b941831)
+- chore(make): add `make i18n` and stop claiming `make build` covers l10n (272f3f5)
+- fix(about): stop spamming Sentry on harmless launchUrl false-positives (9eef517)
+- fix(sentry): drop locate-me GPS timeouts from beforeSend (ff4d92a)
+- chore(ios): refresh Podfile.lock after CocoaPods reinstall (dd0d11f)
+- docs: add App Store review notes and TestFlight tester guide (8b70501)
+- fix(map): stop reporting GPS locate timeouts to Sentry (c4ebede)
+
 ## 1.0.3+25 - 2026-06-07
 
 Changes since 1.0.3+22:
