@@ -45,6 +45,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0035 | [Give exercises an explicit order field and user-driven reordering](./0035-exercise-ordering.md) | Accepted |
 | ADR-0036 | [Extract a shared reorder section and let stations be reordered in the Stations segment and coordinator](./0036-shared-reorder-and-station-ordering.md) | Proposed |
 | ADR-0037 | [Size text for legibility on iOS: tighten the baseline type scale and clamp scaling at 1.3](./0037-text-sizing-and-legibility.md) | Accepted |
+| ADR-0038 | [Gate first-launch consent and rationale behind a four-stage onboarding](./0038-notification-consent-flow.md) | Accepted |
 
 ## When to write an ADR
 
