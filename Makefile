@@ -3,7 +3,7 @@
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
-	release-tag \
+	release-tag release-notes \
 	require-clean-tree \
 	netlify-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
@@ -63,21 +63,21 @@ i18n:
 # AFTER upload so they never reach the public CDN — serving them would
 # expose the unminified source to anyone who opens DevTools.
 
+# --wasm produces both dart2wasm and dart2js outputs. The
+# boot loader picks dart2wasm when the browser supports WASM
+# GC (Chrome 119+, Firefox 120+, Safari 18.2+) and falls back
+# to dart2js otherwise, so iOS 17 and older users see no
+# regression. Expected gain: TBT down ~50-70%, TTI down
+# ~30-50%, Performance score up 10-20 points.
+#
+# Bundle is ~15-25% larger because both compilations ship; the
+# CDN serves only one variant per request based on the
+# browser's capability headers.
+#
+# If a WASM-related regression shows up in production, fall
+# back to `build-web-js` (dart2js only) until the issue is
+# diagnosed. Same release-web wiring works for either target.
 build-web:
-	# --wasm produces both dart2wasm and dart2js outputs. The
-	# boot loader picks dart2wasm when the browser supports WASM
-	# GC (Chrome 119+, Firefox 120+, Safari 18.2+) and falls back
-	# to dart2js otherwise, so iOS 17 and older users see no
-	# regression. Expected gain: TBT down ~50-70%, TTI down
-	# ~30-50%, Performance score up 10-20 points.
-	#
-	# Bundle is ~15-25% larger because both compilations ship; the
-	# CDN serves only one variant per request based on the
-	# browser's capability headers.
-	#
-	# If a WASM-related regression shows up in production, fall
-	# back to `build-web-js` (dart2js only) until the issue is
-	# diagnosed. Same release-web wiring works for either target.
 	flutter build web \
 		--wasm \
 		--release \
@@ -87,13 +87,13 @@ build-web:
 	mkdir -p build/web/.well-known
 	cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
 
+# dart2js-only fallback. Kept around so we can bisect WASM
+# regressions without reverting commits, and so we have a
+# known-good path if dart2wasm breaks for some plugin update.
+# Drops to roughly the bundle size and runtime characteristics
+# we had pre-WASM. Swap into release-web by hand:
+#   make build-web-js upload-symbols-web strip-source-maps-web
 build-web-js:
-	# dart2js-only fallback. Kept around so we can bisect WASM
-	# regressions without reverting commits, and so we have a
-	# known-good path if dart2wasm breaks for some plugin update.
-	# Drops to roughly the bundle size and runtime characteristics
-	# we had pre-WASM. Swap into release-web by hand:
-	#   make build-web-js upload-symbols-web strip-source-maps-web
 	flutter build web \
 		--release \
 		--pwa-strategy=offline-first \
@@ -383,6 +383,86 @@ release: release-tag release-web release-android release-ios
 	echo ""; \
 	echo "Release $$VERSION_OUT built (web + android + ios). Publish with:"; \
 	echo "  make publish"
+
+# Generate Google Play release-notes scaffolding for the current pubspec
+# version. Writes store/release-notes/google-play/<version>.txt with the
+# two-locale wrapper that Play's Console import expects:
+#
+#   <en-US>
+#   ...
+#   </en-US>
+#   <no-NO>
+#   ...
+#   </no-NO>
+#
+# Behaviour:
+#   - Version comes from pubspec.yaml unless VERSION= is passed.
+#   - English block is pre-filled from the CHANGELOG.md entry for that
+#     version, with `docs/test/chore/build/refactor` commits filtered out
+#     and the trailing `(abcdef0)` SHA stripped. The result is raw material
+#     to distill into store-friendly copy, not the final text.
+#   - Norwegian block stays as a placeholder for now (translation deferred).
+#   - Refuses to overwrite an existing file unless FORCE=1.
+#   - Reports the per-locale character count and warns if either block
+#     exceeds Play's 500-character per-release-note limit.
+#
+# Usage:
+#   make release-notes                     # current pubspec version
+#   make release-notes VERSION=1.0.3+27    # explicit version
+#   make release-notes FORCE=1             # overwrite an existing file
+#
+# Not wired into `make release` on purpose: notes are written by hand
+# AFTER the bump, often during the upload step in Play Console, so the
+# author can read the final CHANGELOG entry before distilling.
+release-notes:
+	@set -e; \
+	if [ -n "$(VERSION)" ]; then \
+		VER="$(VERSION)"; \
+	else \
+		VER=$$(awk '/^version:/ {print $$2; exit}' pubspec.yaml); \
+	fi; \
+	if [ -z "$$VER" ]; then \
+		echo "ERROR: could not resolve version. Pass VERSION= or set version in pubspec.yaml."; \
+		exit 1; \
+	fi; \
+	DIR=store/release-notes/google-play; \
+	OUT="$$DIR/$$VER.txt"; \
+	mkdir -p "$$DIR"; \
+	if [ -f "$$OUT" ] && [ "$(FORCE)" != "1" ]; then \
+		echo "ERROR: $$OUT already exists. Re-run with FORCE=1 to overwrite."; \
+		exit 1; \
+	fi; \
+	HINT=$$(awk -v ver="$$VER" ' \
+		index($$0, "## " ver " ") == 1 {found=1; next} \
+		found && /^## / {exit} \
+		found {print} \
+	' CHANGELOG.md \
+		| grep -E '^- ' \
+		| grep -vE '^- (docs|test|chore|build|refactor)(\(|:)' \
+		| sed -E 's/ \([0-9a-f]{7,}\)$$//'); \
+	{ \
+		echo "<en-US>"; \
+		if [ -n "$$HINT" ]; then \
+			printf '%s\n' "$$HINT"; \
+		else \
+			echo "Write English release notes here (max 500 chars)."; \
+		fi; \
+		echo "</en-US>"; \
+		echo "<no-NO>"; \
+		echo "Skriv norske versjonsnotater her (maks 500 tegn)."; \
+		echo "</no-NO>"; \
+	} > "$$OUT"; \
+	echo "Wrote $$OUT"; \
+	echo ""; \
+	for LOC in en-US no-NO; do \
+		BODY=$$(sed -n "/<$$LOC>/,/<\\/$$LOC>/{//!p}" "$$OUT"); \
+		LEN=$$(printf '%s' "$$BODY" | wc -c | tr -d ' '); \
+		if [ "$$LEN" -gt 500 ]; then \
+			echo "WARN: $$LOC is $$LEN chars, Play caps each note at 500."; \
+		else \
+			echo "OK:   $$LOC is $$LEN chars (limit 500)."; \
+		fi; \
+	done
 
 # Push the release commit and tag to origin. Pair with `make release`.
 #

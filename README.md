@@ -37,7 +37,7 @@ To get started with developing for RingDrill using Flutter, follow these steps:
      ```bash
      flutter pub get
      ```
-   - If you're targeting Android, verify and set the `compileSdkVersion` in the `android/app/build.gradle` file to match the target SDK version (34 in this case).
+   - Android `compileSdk` is delegated to `flutter.compileSdkVersion` in `android/app/build.gradle.kts`; override only if you need to pin it.
    - If you're targeting iOS, ensure that the iOS deployment target is appropriately set in `ios/Podfile`.
 
 4. **Generate Code Using Build Runner**:  
@@ -52,40 +52,58 @@ To get started with developing for RingDrill using Flutter, follow these steps:
    make watch
    ```
 
-6. **Create Release Builds**:  
-   For generating a release build using Shorebird, execute (iOS requires a
-   macOS host with Xcode and signing configured per ADR-0021):
+6. **Cut a Release** (one-shot):
+   `make release` bumps `pubspec.yaml`, prepends a `CHANGELOG.md` entry,
+   commits and tags, then builds web + Android + iOS. iOS requires a macOS
+   host with Xcode and signing configured per ADR-0021.
    ```bash
-   make release-android
-   make release-ios
+   make release                     # interactive: prompts for version
+   make release VERSION=1.0.3+17    # non-interactive: use this exact version
+   ```
+   Without `VERSION` you get a prompt:
+   ```
+     [1] Increment build → X.Y.Z+N+1   (Enter)
+     [2] Enter version
+     [3] Cancel
+   ```
+   Rules enforced by `release-tag` (the first step inside `release`):
+   - working tree must be clean;
+   - `VERSION` (if supplied) must match `X.Y.Z+N`;
+   - build number `+N` must be strictly greater than the current pubspec
+     build number, independent of `X.Y.Z` — App Store and Play Store both
+     require monotonically increasing build numbers across uploads, so
+     `1.0.3+25 -> 1.1.0+1` is rejected;
+   - refuses to overwrite an existing tag, or to "bump" to the version
+     `pubspec.yaml` is already on.
+
+   To run individual steps instead of the one-shot:
+   ```bash
+   make release-tag      # version bump + commit + tag only
+   make release-web      # web build + Sentry symbols
+   make release-android  # Shorebird Android release
+   make release-ios      # Shorebird iOS release
    ```
 
-7. **Patch Builds** (*Optional*):  
-   If deploying incremental code-push patch updates, run:
+7. **Publish the Release**:
+   The tag is local until you push. Sanity-check the artifacts first, then:
    ```bash
-   make patch-android
-   make patch-ios
+   make publish          # git push --follow-tags (refuses dirty trees)
    ```
+   Pushing the tag triggers the web deploy workflow on GitHub Actions;
+   Shorebird Android/iOS are already on Shorebird's CDN from step 6.
 
-8. **Cut a Release Tag**:
-   When the working tree is clean and you want to mark a new release, bump
-   `pubspec.yaml`, prepend a `CHANGELOG.md` entry, commit and tag in one step:
-   ```bash
-   make release-tag VERSION=1.0.3+17
-   ```
-   `VERSION` must follow Flutter's `X.Y.Z+N` shape. The changelog window is
-   `git log <last-tag>..HEAD --no-merges`, so each release lines up with the
-   previous tag. The target refuses to run on a dirty tree, to overwrite an
-   existing tag, or to "bump" to the version `pubspec.yaml` is already on.
-   Push afterwards with:
-   ```bash
-   git push --follow-tags
-   ```
    To tag a previous commit (e.g. retroactively tag the commit that bumped
    to `1.0.2+16`), pass the SHA to `git tag` directly:
    ```bash
    git tag -a "1.0.2+16" <sha> -m "Released 1.0.2+16"
    git push origin 1.0.2+16
+   ```
+
+8. **Patch Builds** (*Optional*):
+   If deploying incremental code-push patch updates, run:
+   ```bash
+   make patch-android
+   make patch-ios
    ```
 
 9. **Run the Application**:  
@@ -95,13 +113,13 @@ To get started with developing for RingDrill using Flutter, follow these steps:
    ```
    
 10. **Run the Admin CLI**:
-   To activate: 
+    To activate:
     ```bash
-   dart pub global activate -s path .
+    dart pub global activate -s path .
     ```
-   See usage for additional information:
+    See usage for additional information:
     ```bash
-   ringdrill -h
+    ringdrill -h
     ```
 
 11. **Run the Netlify backend locally**:
