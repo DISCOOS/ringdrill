@@ -233,11 +233,20 @@ class _RingDrillAppState extends State<RingDrillApp> {
             prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
         final service = NotificationService();
 
+        // First-launch users have not been through the in-app
+        // rationale yet (see ADR-0038), so we attach the plugin
+        // without firing the OS permission dialog. The
+        // ConceptPrimerScreen flow flips the flag and runs init
+        // again once the user has answered the rationale.
+        final consentAsked =
+            prefs.getBool(AppConfig.keyNotificationConsentAsked) ?? false;
+
         final init = await service.init(
           playSound: playSound,
           enableVibration: vibrateEnabled,
           fullScreenIntent: isFullScreenIntentEnabled,
           urgentThreshold: threshold,
+          requestPermissions: consentAsked,
         );
 
         if (!init) {

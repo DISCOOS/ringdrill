@@ -8,6 +8,7 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/widgets/analytics_consent_dialog.dart';
 import 'package:ringdrill/views/widgets/concept_primer_content.dart';
+import 'package:ringdrill/views/widgets/notification_consent_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Full-screen wrapper for [ConceptPrimerContent], shown once on first launch.
@@ -36,11 +37,16 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
   void initState() {
     super.initState();
     if (widget.isFirstLaunch) {
-      // Microtask so the surrounding Scaffold is built first — the
-      // dialog needs an attached `Overlay` to attach to.
+      // Microtask so the surrounding Scaffold is built first — both
+      // dialogs need an attached `Overlay` to mount into. Analytics
+      // consent runs first; notification consent follows so the iOS
+      // system prompt fires only after the user has read RingDrill's
+      // own rationale (ADR-0038).
       Future.microtask(() async {
         if (!mounted) return;
         await showAnalyticsConsentDialog(context);
+        if (!mounted) return;
+        await maybeShowNotificationConsentPrompt(context);
       });
     }
   }

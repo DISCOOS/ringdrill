@@ -39,6 +39,26 @@
   "@appAnalyticsConsentOptIn": {
     "description": "Message"
   },
+  "appNotificationConsent": "Enable Notifications",
+  "@appNotificationConsent": {
+    "description": "Title of the in-app pre-prompt that explains why RingDrill wants to send notifications, shown before the OS permission dialog"
+  },
+  "appNotificationConsentMessage": "RingDrill uses notifications to alert you about station rotations, round transitions, and exercise completion — even when the app is in the background.",
+  "@appNotificationConsentMessage": {
+    "description": "Rationale shown in the notification pre-prompt"
+  },
+  "appNotificationConsentOptIn": "Tap Allow to receive notifications. You can change this later in Settings.",
+  "@appNotificationConsentOptIn": {
+    "description": "Closing line of the notification pre-prompt"
+  },
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Snackbar action label that deep-links into the OS Settings app"
+  },
+  "notificationsDeniedBanner": "Notifications are off. Enable them in Settings to get rotation and station alerts.",
+  "@notificationsDeniedBanner": {
+    "description": "Snackbar/banner shown when the user has declined notification permission and exercises will not produce alerts"
+  },
   "appAnalyticsConsentCollectedData": "This includes information about your device (e.g., device model, OS version) and crash reports in case of failures. This data is sent to and processed by Sentry.io.",
   "@appAnalyticsConsentCollectedData": {
     "description": "Message"

@@ -13,6 +13,35 @@ import 'package:universal_io/io.dart';
 
 enum NotificationAction { exerciseStop, showSettings, promptReshow }
 
+/// Coarse status of the OS-level notification permission, as
+/// observed during the most recent [NotificationService.init].
+///
+/// Surfaces enough detail for UI to render an actionable
+/// re-engagement affordance (Settings link, banner, etc.) without
+/// re-reading the plugin or re-requesting the OS permission. See
+/// [ADR-0038](../../docs/adrs/0038-notification-consent-flow.md).
+enum NotificationPermissionState {
+  /// `init()` has not run yet, so no signal is available.
+  unknown,
+
+  /// `FlutterLocalNotificationsPlugin.initialize` returned `true`
+  /// and `requestPermissions` resolved to `true`. Notifications
+  /// will fire.
+  granted,
+
+  /// Plugin initialised but `requestPermissions` returned `false`
+  /// (user declined, never granted, or revoked permission from
+  /// OS Settings). Calling `requestPermissions` again is a no-op
+  /// on iOS — recovery requires the user to flip the toggle in
+  /// the OS Settings app.
+  denied,
+
+  /// `FlutterLocalNotificationsPlugin.initialize` reported a
+  /// failure. Actionable bug on our side; reported to Sentry by
+  /// the caller.
+  pluginFailed,
+}
+
 class NotificationEvent {
   final DateTime when;
   final Exercise? exercise;
@@ -37,16 +66,27 @@ class NotificationService {
 
   NotificationService._internal();
 
-  bool get isEnabled => _enabled;
-  bool _enabled = false;
+  /// Current OS-level notification permission state, as observed
+  /// during the most recent call to [init] that requested it. See
+  /// [NotificationPermissionState] for the discrete values that drive
+  /// UI affordances (re-engagement banners, settings deep-links).
+  NotificationPermissionState get permissionState => _permissionState;
+  NotificationPermissionState _permissionState =
+      NotificationPermissionState.unknown;
 
-  /// True when [FlutterLocalNotificationsPlugin.initialize] has reported
-  /// success at least once. Distinct from [isEnabled], which also
-  /// requires the user to have granted runtime permission. A user
-  /// declining the iOS/Android permission prompt is expected behaviour
-  /// (notifications stay off), not a bug — callers can use this getter
-  /// to tell that from a genuine plugin-side failure that warrants a
-  /// Sentry report.
+  /// True when [permissionState] is `granted` — convenience for old
+  /// call sites that just want to know whether notifications will
+  /// fire.
+  bool get isEnabled =>
+      _permissionState == NotificationPermissionState.granted;
+
+  /// True when [FlutterLocalNotificationsPlugin.initialize] reported
+  /// success during the most recent [init] call. Distinct from
+  /// [isEnabled], which also requires the user to have granted
+  /// runtime permission. A user declining the iOS/Android permission
+  /// prompt is expected behaviour (notifications stay off), not a
+  /// bug — callers can use this getter to tell that from a genuine
+  /// plugin-side failure that warrants a Sentry report.
   bool get isPluginInitialized => _pluginInitialized;
   bool _pluginInitialized = false;
 
@@ -85,23 +125,35 @@ class NotificationService {
           false;
       final threshold =
           prefs.getInt(AppConfig.keyUrgentNotificationThreshold) ?? 2;
+      // Defer the OS permission prompt to the dedicated pre-prompt
+      // flow (see ADR-0038) — `initFromPrefs` is called from boot
+      // and from the Settings page where firing the OS dialog would
+      // be jarring.
+      final consentAsked =
+          prefs.getBool(AppConfig.keyNotificationConsentAsked) ?? false;
       return init(
         playSound: playSound,
         enableVibration: vibrateEnabled,
         fullScreenIntent: isFullScreenIntentEnabled,
         urgentThreshold: threshold,
+        requestPermissions: consentAsked,
       );
     }
     await cancel(); // Disable notifications
     return false;
   }
 
-  // Initialize notifications
+  // Initialize notifications. Pass [requestPermissions] = `false` to
+  // attach the plugin without triggering the iOS/Android system
+  // permission dialog — used during the deferred-consent flow in
+  // ADR-0038, where the OS prompt only fires after the user has
+  // accepted the in-app rationale.
   Future<bool> init({
     required bool playSound,
     required bool enableVibration,
     required bool fullScreenIntent,
     required int urgentThreshold,
+    bool requestPermissions = true,
   }) async {
     _wasUrgent = false;
     _urgentCount = 0;
@@ -112,16 +164,16 @@ class NotificationService {
 
     _localizations = await _loadLocalization();
 
-    await _init();
+    await _init(requestPermissions: requestPermissions);
 
     if (ExerciseService().last != null) {
       _notify(ExerciseService().last!);
     }
 
-    return _enabled;
+    return _permissionState == NotificationPermissionState.granted;
   }
 
-  Future<void> _init() async {
+  Future<void> _init({required bool requestPermissions}) async {
     await cancel();
 
     // Generate a dynamic notification channel ID based on settings
@@ -184,34 +236,57 @@ class NotificationService {
     );
 
     _pluginInitialized = success == true;
-    if (success == true) {
-      // Workaround to prevent lazy permission request on Darwin platforms
-      if (Platform.isAndroid) {
-        _enabled =
-            await _flutterLocalNotificationsPlugin
-                .resolvePlatformSpecificImplementation<
-                  AndroidFlutterLocalNotificationsPlugin
-                >()
-                ?.requestNotificationsPermission() ??
-            false;
-      } else if (Platform.isIOS) {
-        _enabled =
-            await _flutterLocalNotificationsPlugin
-                .resolvePlatformSpecificImplementation<
-                  IOSFlutterLocalNotificationsPlugin
-                >()
-                ?.requestPermissions(alert: true, badge: true, sound: true) ??
-            false;
-      } else if (Platform.isMacOS) {
-        _enabled =
-            await _flutterLocalNotificationsPlugin
-                .resolvePlatformSpecificImplementation<
-                  MacOSFlutterLocalNotificationsPlugin
-                >()
-                ?.requestPermissions(alert: true, badge: true, sound: true) ??
-            false;
-      }
+
+    if (success != true) {
+      _permissionState = NotificationPermissionState.pluginFailed;
+      return;
     }
+
+    if (!requestPermissions) {
+      // Plugin attached but the OS permission prompt is deferred to
+      // the in-app rationale (ADR-0038), or this is an internal
+      // channel-rebuild after a `_wasUrgent` flip. Leave
+      // `_permissionState` alone so a previously-granted state is
+      // preserved across the rebuild.
+      return;
+    }
+
+    bool granted = false;
+    // Workaround to prevent lazy permission request on Darwin platforms
+    if (Platform.isAndroid) {
+      granted =
+          await _flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >()
+              ?.requestNotificationsPermission() ??
+          false;
+    } else if (Platform.isIOS) {
+      granted =
+          await _flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin
+              >()
+              ?.requestPermissions(alert: true, badge: true, sound: true) ??
+          false;
+    } else if (Platform.isMacOS) {
+      granted =
+          await _flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                MacOSFlutterLocalNotificationsPlugin
+              >()
+              ?.requestPermissions(alert: true, badge: true, sound: true) ??
+          false;
+    } else {
+      // Other platforms (Linux, Windows) do not gate notifications
+      // behind a runtime permission. Treat plugin success as the
+      // grant signal.
+      granted = true;
+    }
+
+    _permissionState = granted
+        ? NotificationPermissionState.granted
+        : NotificationPermissionState.denied;
   }
 
   Future<AppLocalizations> _loadLocalization() async {
@@ -339,7 +414,9 @@ class NotificationService {
 
     if (_wasUrgent != isUrgent) {
       _wasUrgent = isUrgent;
-      await _init();
+      // Channel-rebuild only — do not re-prompt the user. The
+      // previous permission state is preserved (ADR-0038).
+      await _init(requestPermissions: false);
     }
 
     final androidNotificationDetails = AndroidNotificationDetails(
@@ -405,7 +482,8 @@ class NotificationService {
     // with sound/vibration enabled before posting.
     if (!_wasUrgent) {
       _wasUrgent = true;
-      await _init();
+      // Channel-rebuild only — see comment in `_notify`.
+      await _init(requestPermissions: false);
     }
     final androidNotificationDetails = AndroidNotificationDetails(
       _currentChannelId!,

@@ -42,6 +42,24 @@ class AppLocalizationsNb extends AppLocalizations {
       'Du kan velge om du vil aktivere denne funksjonen nå eller senere i innstillingene.';
 
   @override
+  String get appNotificationConsent => 'Tillat varsler';
+
+  @override
+  String get appNotificationConsentMessage =>
+      'RingDrill bruker varsler for å varsle om post-overganger, rundeskifter og når en øvelse er ferdig — også når appen ligger i bakgrunnen.';
+
+  @override
+  String get appNotificationConsentOptIn =>
+      'Trykk Tillat for å motta varsler. Du kan endre dette senere i innstillingene.';
+
+  @override
+  String get openSettings => 'Åpne innstillinger';
+
+  @override
+  String get notificationsDeniedBanner =>
+      'Varsler er av. Slå dem på i innstillingene for å få rotasjons- og post-varsler.';
+
+  @override
   String get appAnalyticsConsentCollectedData =>
       'Dette inkluderer informasjon om enheten din (f.eks. enhetsmodell, OS-versjon) og krasjrapporter i tilfelle feil. Disse dataene sendes til og behandles av Sentry.io.';
 

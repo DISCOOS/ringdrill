@@ -42,6 +42,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can choose whether to enable this feature now or later in the settings.';
 
   @override
+  String get appNotificationConsent => 'Enable Notifications';
+
+  @override
+  String get appNotificationConsentMessage =>
+      'RingDrill uses notifications to alert you about station rotations, round transitions, and exercise completion — even when the app is in the background.';
+
+  @override
+  String get appNotificationConsentOptIn =>
+      'Tap Allow to receive notifications. You can change this later in Settings.';
+
+  @override
+  String get openSettings => 'Open Settings';
+
+  @override
+  String get notificationsDeniedBanner =>
+      'Notifications are off. Enable them in Settings to get rotation and station alerts.';
+
+  @override
   String get appAnalyticsConsentCollectedData =>
       'This includes information about your device (e.g., device model, OS version) and crash reports in case of failures. This data is sent to and processed by Sentry.io.';
 

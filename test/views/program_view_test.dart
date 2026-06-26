@@ -262,7 +262,6 @@ void main() {
           routes: const [routeProgram, routeMap],
           location: routeProgram,
           navigatorKey: GlobalKey<NavigatorState>(),
-          isFirstLaunch: false,
           shellChild: const SizedBox.shrink(),
         ),
       ),

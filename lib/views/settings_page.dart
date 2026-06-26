@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/map_settings.dart';
@@ -389,6 +390,26 @@ class _NotificationSettingsWidgetState
           title: Text(localizations.enableNotifications),
           subtitle: Text(localizations.enableNotificationsMessage),
         ),
+
+        // Re-engagement affordance for users who have the in-app
+        // toggle on but the OS-level permission off (declined the
+        // system prompt, or revoked it from OS Settings). Deep-link
+        // them straight to Settings — iOS does not let us re-show
+        // the permission dialog (ADR-0038). `Geolocator.openAppSettings`
+        // is reused because its implementation is platform-generic;
+        // the geolocator-shaped name is misleading.
+        if (isNotificationsEnabled &&
+            NotificationService().permissionState ==
+                NotificationPermissionState.denied)
+          ListTile(
+            leading: const Icon(Icons.notifications_off_outlined),
+            title: Text(localizations.notificationsDeniedBanner),
+            trailing: TextButton(
+              onPressed: () =>
+                  unawaited(Geolocator.openAppSettings()),
+              child: Text(localizations.openSettings),
+            ),
+          ),
 
         const Divider(),
 

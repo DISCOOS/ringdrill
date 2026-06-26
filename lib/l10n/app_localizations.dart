@@ -158,6 +158,36 @@ abstract class AppLocalizations {
   /// **'You can choose whether to enable this feature now or later in the settings.'**
   String get appAnalyticsConsentOptIn;
 
+  /// Title of the in-app pre-prompt that explains why RingDrill wants to send notifications, shown before the OS permission dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Notifications'**
+  String get appNotificationConsent;
+
+  /// Rationale shown in the notification pre-prompt
+  ///
+  /// In en, this message translates to:
+  /// **'RingDrill uses notifications to alert you about station rotations, round transitions, and exercise completion — even when the app is in the background.'**
+  String get appNotificationConsentMessage;
+
+  /// Closing line of the notification pre-prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Allow to receive notifications. You can change this later in Settings.'**
+  String get appNotificationConsentOptIn;
+
+  /// Snackbar action label that deep-links into the OS Settings app
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get openSettings;
+
+  /// Snackbar/banner shown when the user has declined notification permission and exercises will not produce alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off. Enable them in Settings to get rotation and station alerts.'**
+  String get notificationsDeniedBanner;
+
   /// Message
   ///
   /// In en, this message translates to:
