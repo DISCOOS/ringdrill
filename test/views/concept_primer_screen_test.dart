@@ -7,7 +7,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
-import 'package:ringdrill/views/main_screen.dart';
+import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/widgets/concept_primer_content.dart';
 import 'package:ringdrill/views/widgets/ring_rotation_figure.dart';
 import 'package:shared_preferences/shared_preferences.dart';

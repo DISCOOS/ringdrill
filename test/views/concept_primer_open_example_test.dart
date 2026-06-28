@@ -9,7 +9,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/views/main_screen.dart';
+import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _seedUuid = 'open-example-seed-program';

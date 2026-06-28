@@ -58,7 +58,7 @@ feature name DESIGN-001 settled on is "DrillPlayer"; the folder follows.
 `shell/`
 * `main_screen.dart`, `app_routes.dart`, `install_link_handler.dart`, `patch_alert_widget.dart`
 * already present: `master_detail_scope.dart`, `open_form_surface.dart`, `window_size_class.dart`, `detail_empty_pane.dart`
-* moved in 2026-06-28: `main_drawer.dart`, `deep_link_launchers.dart` (extracted from `main_screen.dart`)
+* added 2026-06-28: `main_drawer.dart`, `deep_link_launchers.dart`, `app_router.dart` (the GoRouter builder + redirect helpers, extracted from `main_screen.dart`)
 
 `exercise/`
 * `exercise_form_screen.dart`, `team_exercise_screen.dart`, `exercise_control_button.dart`

@@ -14,7 +14,7 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/locale_utils.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/feedback.dart';
-import 'package:ringdrill/views/main_screen.dart';
+import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/web/pwa_update_web.dart'
     if (dart.library.io) 'package:ringdrill/web/pwa_update_stub.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';

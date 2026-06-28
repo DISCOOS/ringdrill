@@ -10,7 +10,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
-import 'package:ringdrill/views/main_screen.dart';
+import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _programUuid = 'routing-program';
