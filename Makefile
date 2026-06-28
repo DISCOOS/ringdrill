@@ -1,5 +1,5 @@
 .PHONY: \
-	build watch i18n release publish \
+	build watch i18n release patch publish \
 	build-web build-web-js upload-symbols-web strip-source-maps-web release-web \
 	release-android patch-android \
 	release-ios patch-ios \
@@ -8,7 +8,7 @@
 	netlify-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
 .SILENT: \
-	build watch i18n release
+	build watch i18n release patch
 
 # Local Netlify dev configuration. Override on the command line, e.g.:
 #   make catalog-seed SEED_DRILL=path/to/other.drill
@@ -383,6 +383,38 @@ release: release-tag release-web release-android release-ios
 	echo ""; \
 	echo "Release $$VERSION_OUT built (web + android + ios). Publish with:"; \
 	echo "  make publish"
+
+# One-shot Shorebird patch for both stores. Code-push to the X.Y.Z+N
+# already on Shorebird's CDN — does NOT bump pubspec.yaml and does NOT
+# create a git tag. The git commit metadata baked in via
+# $(DART_DEFINE_GIT) still makes the patched binary traceable on the
+# About page and in Sentry.
+#
+# Order matters and the steps are sequential:
+#   1. patch-android (works on any host) builds the AAB delta, uploads
+#      to Shorebird, then runs sentry_dart_plugin to push the new
+#      obfuscation mapping. Mapping is tied to the patch-specific
+#      $(GIT_COMMIT), so Sentry can still resolve obfuscated stack
+#      traces from this patch.
+#   2. patch-ios runs the same flow against the iOS released version.
+#      Requires macOS + Xcode; on Linux/Windows this target will fail.
+#
+# Shorebird does NOT have a single command that patches both platforms
+# in one operation — `shorebird patch` takes a single platform
+# argument, and the iOS half can only run on macOS. Two operations is
+# the only path; this target just chains them so the user does not
+# have to.
+#
+# If the Android half succeeds but the iOS half fails, the Android
+# patch is already live. Re-running `make patch` will then attempt a
+# second Android patch on top of the first, which Shorebird will
+# refuse unless --allow-native-diffs is set. The right recovery is to
+# fix the iOS issue and run `make patch-ios` alone.
+patch: patch-android patch-ios
+	@VERSION_OUT=$$(awk '/^version:/ {print $$2; exit}' pubspec.yaml); \
+	echo ""; \
+	echo "Patched $$VERSION_OUT (android + ios) via Shorebird code-push."; \
+	echo "No tag was created; pubspec.yaml is unchanged."
 
 # Generate Google Play release-notes scaffolding for the current pubspec
 # version. Writes store/release-notes/google-play/<version>.txt with the

@@ -146,7 +146,10 @@ sentry:
   upload_debug_symbols: true
   project: ringdrill
   org: discoos
-  log_level: debug
+  # info keeps upload summaries (counts, URLs, warnings) but drops the
+  # per-file enumeration that `debug` emits during source-map and dSYM
+  # upload. Bump back to `debug` when troubleshooting a failed upload.
+  log_level: info
 
 executables:
   ringdrill: ringdrill
