@@ -71,9 +71,17 @@ class DrillMiniPlayer extends StatefulWidget {
   /// wide/extended docked bar passes a taller value for more breathing room.
   final double height;
 
-  /// Optional exercise to show in idle (not-yet-started) state. When set,
-  /// the mini player displays the first round and a play button instead of
-  /// collapsing to [SizedBox.shrink]. Ignored when an exercise is running.
+  /// Scopes the bar to a specific exercise. When set, the bar:
+  /// - shows the first round + play button while idle (instead of
+  ///   collapsing to [SizedBox.shrink]),
+  /// - shows the running state when this exact exercise is running,
+  /// - hides itself entirely when a DIFFERENT exercise is running, so
+  ///   the user looking at e.g. exercise #3's coordinator doesn't see a
+  ///   stop button that would act on exercise #1.
+  ///
+  /// Leave null for the global floating bar (root of MainScreen, stations
+  /// map) that should always mirror the running exercise regardless of
+  /// which screen hosts it.
   final Exercise? exercise;
 
   /// Called when the play button is tapped in idle state. When null, falls
@@ -119,6 +127,18 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
   @override
   Widget build(BuildContext context) {
     final isStarted = ExerciseService().isStarted;
+    // When the bar is scoped to a specific exercise (e.g. embedded in a
+    // CoordinatorScreen) and a DIFFERENT exercise is the one actually
+    // running, hide the bar entirely. The running-state UI (stop button,
+    // countdown) belongs to whichever screen is showing the live
+    // exercise, not to the bystander's. The global floating bar at the
+    // root of MainScreen passes `exercise: null` and is unaffected.
+    if (widget.exercise != null &&
+        isStarted &&
+        _event != null &&
+        _event!.exercise.uuid != widget.exercise!.uuid) {
+      return const SizedBox.shrink();
+    }
     final event = isStarted ? _event : null;
     final idleExercise = !isStarted ? widget.exercise : null;
 

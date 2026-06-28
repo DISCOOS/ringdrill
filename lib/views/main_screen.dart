@@ -1556,10 +1556,18 @@ class _MainScreenState extends State<MainScreen>
                   builder: (context, target, _) {
                     // Resolve the exercise for the idle (not-yet-started)
                     // mini player. Null when target isn't an exercise or
-                    // the exercise isn't found.
-                    final idleExercise = target is ExerciseSheetTarget
+                    // the exercise isn't found. When another exercise is
+                    // already running we drop the selected one and let the
+                    // bar reflect the global running state — otherwise the
+                    // selection would suppress the docked bar via
+                    // [DrillMiniPlayer]'s mismatch guard, hiding the only
+                    // place wide users can see what's live.
+                    final selectedExercise = target is ExerciseSheetTarget
                         ? ProgramService().getExercise(target.exerciseUuid)
                         : null;
+                    final idleExercise = ExerciseService().isStarted
+                        ? null
+                        : selectedExercise;
                     if (ExerciseService().isStarted || idleExercise != null) {
                       // No rounded corners in the wide/extended layout — the
                       // mini player is a flush bottom bar docked under the rail
