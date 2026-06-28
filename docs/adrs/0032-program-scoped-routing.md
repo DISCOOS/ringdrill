@@ -36,12 +36,23 @@ Concretely, every path that looks *into* a concrete program carries the program 
 
 ### Canonical scheme
 
-* `/program/:uuid` — Program tab. The four segments (Øvelser/Poster/Markører/Team) are view state, not path segments, per DESIGN-006.
+* `/program/:uuid` — Program tab. Redirects to `/program/:uuid/exercises` (the default segment) so every visible view in the Program tab has a canonical URL.
+* `/program/:uuid/exercises` | `/program/:uuid/stations` | `/program/:uuid/script` | `/program/:uuid/teams` — the four Program-tab segments (Øvelser/Poster/Markører/Team) from DESIGN-006. Plural form keeps these segment views distinct from singular detail paths below them. Initially this section called the segments "view state, not path segments"; that turned out to break browser-back, deep-linking and shared URLs for those views, so they are promoted to path segments here.
 * `/program/:uuid/map` — Map tab for that plan.
 * `/program/:uuid/roster` — Roster tab (`nb` "Bemanning") for that plan.
 * `/program/:uuid/exercise/:exerciseId` — exercise detail, with `/station/:stationIndex` and `/team/:teamIndex` below it. Teams are program-scoped, so `/program/:uuid/team/:teamIndex` is also valid and the exercise-nested team path redirects to it.
 * `/program/:uuid/roleplay/:roleUuid` — role detail.
 * `/program/:uuid/brief` and `/program/:uuid/exercise/:exerciseId/brief` — realigns the brief route from today's `/brief/program/:programUuid` into the same prefix.
+
+### Activation contract
+
+Rendering a program-scoped path is also what mutates in-memory navigation state. UI actions that change navigation must therefore go through `router.go(...)`, never through the underlying state setters directly:
+
+* Plan activation (library "open plan", create-new-plan, install-link landing): call `router.go(programPath(uuid))`. `ProgramService.setActive` runs as the redirect-gate side effect, not at the UI call site.
+* Segment selection in the Program tab: call `router.go(programSegmentPath(uuid, segment))`. `ProgramPageController.activeSegment` is written by the redirect gate, not by the segment switcher.
+* Tab switching is already URL-bound via `MainScreen._onDestinationSelected` and stays unchanged.
+
+`setActive` and `activeSegment` remain as the in-memory representations widgets listen to; the contract is about *who writes* to them.
 
 ### Out of scope for the prefix
 
@@ -61,6 +72,7 @@ Old un-prefixed paths are kept as redirects, not as canonical routes. An incomin
 * Bad: app launch must build the initial URL from the resolved active-or-default program. `ensureActiveProgram` already finds it, so this is wiring rather than new logic.
 * Bad: a deep link now mutates which program is active. This is intended for "open shared plan", but it is a global side effect to keep in mind when reasoning about navigation.
 * Bad: a back-compat redirect layer must live alongside the canonical routes until the old paths can be retired.
+* Bad: the segment switcher and the UI-initiated plan-activation call sites (library, create-new-plan, install/open flows) must be migrated from direct state writes to `router.go(...)`. Manageable but touches several files.
 
 ## Pros and cons of the options
 
@@ -79,4 +91,4 @@ Old un-prefixed paths are kept as redirects, not as canonical routes. An incomin
 
 * Related design: [DESIGN-006](../design/006-program-tab-consolidation.md) (the tab consolidation this routing supports). DESIGN-006 stage 2 implements against this ADR.
 * Related ADRs: [ADR-0008](./0008-persistent-program-library-and-catalog.md) (active plan and library), [ADR-0024](./0024-account-and-identity-model.md) / [ADR-0025](./0025-authorization-and-publish-policy.md) (account-scoped plans), [ADR-0015](./0015-shareable-install-links.md) (install links), [ADR-0026](./0026-sheet-based-context-navigation.md) (the detail sheets these paths launch).
-* Related code: `lib/views/main_screen.dart` (go_router shell, `_ContextSheetDeepLinkLauncher`, `_initTab`), `lib/views/app_routes.dart` (route constants), `lib/services/program_service.dart` (`activeProgram`, `ensureActiveProgram`, owning-program lookup).
+* Related code: `lib/views/main_screen.dart` (go_router shell, `_ContextSheetDeepLinkLauncher`, `_initTab`, `_routeForTab`), `lib/views/shell/app_router.dart` (`_activateCanonicalProgramPath`, redirect gate — extend with segment), `lib/views/app_routes.dart` (route constants — add `programSegmentPath`), `lib/views/program_view.dart` (`_ProgramSegmentSwitcher` — call `router.go`), `lib/views/library_view.dart` (`_activate` — route instead of `setActive`), `lib/views/active_plan_actions.dart` (`createNewPlan` and siblings — route instead of `setActive`), `lib/services/program_service.dart` (`activeProgram`, `ensureActiveProgram`, owning-program lookup).

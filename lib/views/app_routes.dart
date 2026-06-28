@@ -7,6 +7,27 @@ const String routeProgram = '/program';
 
 String programPath(String programUuid) => '$routeProgram/$programUuid';
 
+/// Path slugs for the four Program-tab segments (ADR-0032 *Canonical scheme*).
+/// Kept here so the router and the segment switcher share one canonical list
+/// without dragging the [ProgramSegment] enum into [app_routes.dart].
+const String programSegmentExercisesSlug = 'exercises';
+const String programSegmentStationsSlug = 'stations';
+const String programSegmentScriptSlug = 'script';
+const String programSegmentTeamsSlug = 'teams';
+
+const List<String> programSegmentSlugs = [
+  programSegmentExercisesSlug,
+  programSegmentStationsSlug,
+  programSegmentScriptSlug,
+  programSegmentTeamsSlug,
+];
+
+/// Default segment when only the program UUID is present in the URL.
+const String programSegmentDefaultSlug = programSegmentExercisesSlug;
+
+String programSegmentPath(String programUuid, String segmentSlug) =>
+    '${programPath(programUuid)}/$segmentSlug';
+
 String programMapPath(String programUuid) => '${programPath(programUuid)}/map';
 
 String programExercisePath(String programUuid, String exerciseUuid) =>

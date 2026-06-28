@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
@@ -14,6 +15,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/export_plan_dialog.dart';
@@ -235,7 +237,10 @@ Future<void> createNewPlan(BuildContext context) async {
   if (name == null || !context.mounted) return;
 
   final program = await ProgramService().createProgram(name: name);
-  await ProgramService().setActive(program.uuid);
+  // ADR-0032 *Activation contract*: route to the new plan so the URL and
+  // the in-memory active program move together. The redirect gate runs
+  // `setActive` as a side effect.
+  if (context.mounted) context.go(programPath(program.uuid));
 }
 
 Future<void> addExercises(BuildContext context) =>
@@ -408,6 +413,12 @@ Future<void> installPickedPlanFile(BuildContext context) async {
     );
     if (context.mounted) {
       _showSnackBar(context, localizations.openedAndActivated(program.name));
+      // ADR-0032 *Activation contract*: move the URL to the newly active
+      // plan. `installFromFile(activate: true)` already wrote
+      // `activeProgramUuid` on disk, so the redirect gate's idempotent
+      // check short-circuits the post-frame setActive — only the URL
+      // catches up here.
+      context.go(programPath(program.uuid));
     }
   } catch (e, stackTrace) {
     if (context.mounted) {

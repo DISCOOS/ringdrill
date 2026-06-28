@@ -114,6 +114,14 @@ String? _activateCanonicalProgramPath(String location) {
       }
     });
   }
+  // Bare `/program/:uuid` has no canonical landing — promote it to the
+  // default segment so every Program-tab view has a stable URL (ADR-0032
+  // *Canonical scheme*). MainScreen reads the segment back out of the URL
+  // in `_initTab` and writes it to `ProgramPageController.activeSegment`,
+  // so segment selection flows URL → state, never the other way around.
+  if (segments.length == 2) {
+    return programSegmentPath(candidateUuid, programSegmentDefaultSlug);
+  }
   return null;
 }
 
@@ -255,6 +263,31 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                 builder: (BuildContext context, GoRouterState state) =>
                     const SizedBox.shrink(),
                 routes: [
+                  // Program-tab segments (ADR-0032 *Canonical scheme*). The
+                  // visible UI is the IndexedStack in MainScreen, so the
+                  // builders return a stub — MainScreen reads the segment slug
+                  // out of `state.matchedLocation` and writes it to
+                  // `ProgramPageController.activeSegment` in `_initTab`.
+                  GoRoute(
+                    path: programSegmentExercisesSlug,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const SizedBox.shrink(),
+                  ),
+                  GoRoute(
+                    path: programSegmentStationsSlug,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const SizedBox.shrink(),
+                  ),
+                  GoRoute(
+                    path: programSegmentScriptSlug,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const SizedBox.shrink(),
+                  ),
+                  GoRoute(
+                    path: programSegmentTeamsSlug,
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const SizedBox.shrink(),
+                  ),
                   GoRoute(
                     path: 'map',
                     builder: (BuildContext context, GoRouterState state) =>

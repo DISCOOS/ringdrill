@@ -46,6 +46,28 @@ export 'package:ringdrill/web/program_page_controller.dart'
 
 enum ProgramSegment { exercises, stations, script, teams }
 
+/// URL slug for a [ProgramSegment]. Mirrors the constants in
+/// [app_routes.dart] and is used by the segment switcher and the router
+/// redirect gate (ADR-0032 *Activation contract*).
+extension ProgramSegmentUrl on ProgramSegment {
+  String get urlSlug => switch (this) {
+    ProgramSegment.exercises => programSegmentExercisesSlug,
+    ProgramSegment.stations => programSegmentStationsSlug,
+    ProgramSegment.script => programSegmentScriptSlug,
+    ProgramSegment.teams => programSegmentTeamsSlug,
+  };
+}
+
+/// Inverse of [ProgramSegmentUrl.urlSlug]. Returns `null` for unknown
+/// slugs so the redirect gate can fall back to the default segment.
+ProgramSegment? programSegmentFromSlug(String slug) => switch (slug) {
+  programSegmentExercisesSlug => ProgramSegment.exercises,
+  programSegmentStationsSlug => ProgramSegment.stations,
+  programSegmentScriptSlug => ProgramSegment.script,
+  programSegmentTeamsSlug => ProgramSegment.teams,
+  _ => null,
+};
+
 enum _SortAction { byStartTime, alphabetically }
 
 class ProgramView extends StatefulWidget {
@@ -539,7 +561,20 @@ class _ProgramSegmentSwitcher extends StatelessWidget {
                   ],
                   selected: {activeSegment},
                   onSelectionChanged: (selected) {
-                    controller.activeSegment.value = selected.single;
+                    // ADR-0032 *Activation contract*: segment selection
+                    // flows URL → state. Push the canonical path and let
+                    // MainScreen._initTab write `activeSegment` when the
+                    // router rebuilds. Falls back to a direct write only
+                    // if no program is active (defensive — the switcher
+                    // should not be visible in that case).
+                    final uuid = ProgramService().activeProgramUuid;
+                    if (uuid == null) {
+                      controller.activeSegment.value = selected.single;
+                      return;
+                    }
+                    context.go(
+                      programSegmentPath(uuid, selected.single.urlSlug),
+                    );
                   },
                 ),
               ),

@@ -122,7 +122,12 @@ void main() {
     await _go(tester, router, programPath(_otherProgramUuid));
 
     expect(ProgramService().activeProgramUuid, _otherProgramUuid);
-    expect(_location(router), programPath(_otherProgramUuid));
+    // Bare `/program/:uuid` redirects to the default segment per ADR-0032
+    // *Canonical scheme*. Every Program-tab view has a stable URL.
+    expect(
+      _location(router),
+      programSegmentPath(_otherProgramUuid, programSegmentDefaultSlug),
+    );
   });
 
   testWidgets('unknown program uuid falls back to active program', (
@@ -132,7 +137,10 @@ void main() {
 
     await _go(tester, router, programPath('does-not-exist'));
 
-    expect(_location(router), programPath(_programUuid));
+    expect(
+      _location(router),
+      programSegmentPath(_programUuid, programSegmentDefaultSlug),
+    );
     expect(ProgramService().activeProgramUuid, _programUuid);
   });
 
@@ -148,7 +156,10 @@ void main() {
       routeRolePlays,
     ]) {
       await _go(tester, router, legacy);
-      expect(_location(router), programPath(_programUuid));
+      expect(
+        _location(router),
+        programSegmentPath(_programUuid, programSegmentDefaultSlug),
+      );
     }
     await _go(tester, router, routeMap);
     expect(_location(router), programMapPath(_programUuid));
@@ -202,7 +213,10 @@ void main() {
     );
 
     expect(navigationBar.destinations, hasLength(3));
-    expect(_location(router), programPath(_programUuid));
+    expect(
+      _location(router),
+      programSegmentPath(_programUuid, programSegmentDefaultSlug),
+    );
   });
 
   testWidgets(
@@ -221,4 +235,28 @@ void main() {
       expect(find.byIcon(Icons.filter_list), findsOneWidget);
     },
   );
+
+  testWidgets('segment paths resolve as their own canonical URLs', (
+    tester,
+  ) async {
+    final router = await _pumpRouter(tester);
+
+    for (final slug in programSegmentSlugs) {
+      await _go(tester, router, programSegmentPath(_programUuid, slug));
+      expect(_location(router), programSegmentPath(_programUuid, slug));
+    }
+  });
+
+  testWidgets('tapping a segment updates the URL', (tester) async {
+    final router = await _pumpRouter(tester);
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    await tester.tap(find.text(l10n.scriptSegment));
+    await tester.pumpAndSettle();
+
+    expect(
+      _location(router),
+      programSegmentPath(_programUuid, programSegmentScriptSlug),
+    );
+  });
 }

@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path/path.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:universal_io/io.dart';
@@ -113,6 +115,10 @@ class OpenFileWidget extends StatelessWidget {
             showCloseIcon: true,
           ),
         );
+        // ADR-0032 *Activation contract*: move the URL to the newly
+        // active plan; installFromFile already wrote `activeProgramUuid`,
+        // so the redirect gate short-circuits and only the URL catches up.
+        context.go(programPath(program.uuid));
       }
     } on Exception catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));

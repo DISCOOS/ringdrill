@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
@@ -11,6 +12,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
@@ -278,14 +280,26 @@ class _LibraryBodyState extends State<_LibraryBody>
     bool closeOnSuccess = false,
   }) async {
     final localizations = AppLocalizations.of(context)!;
-    try {
-      await _programService.setActive(uuid);
-      if (mounted) setState(() {});
-      if (closeOnSuccess && context.mounted) Navigator.pop(context);
-    } on StateError {
-      if (!context.mounted) return;
+    // Snapshot the router before any navigation. After `Navigator.pop`
+    // the bottom-sheet `context` is deactivated and `context.go` becomes
+    // a no-op; reading the [GoRouter] now gives us a long-lived handle
+    // that survives the pop.
+    final router = GoRouter.of(context);
+    // ExerciseService guard is enforced inside ProgramService.setActive,
+    // but we re-check here so we can surface the user-friendly snackbar
+    // without going through the router. The router would still refuse
+    // activation, but the URL would have already moved, which is worse UX.
+    if (ExerciseService().isStarted &&
+        _programService.activeProgramUuid != uuid) {
       _showSnackBar(context, localizations.libraryCannotSwitchRunning);
+      return;
     }
+    if (closeOnSuccess && context.mounted) Navigator.pop(context);
+    // ADR-0032 *Activation contract*: UI-initiated plan activation goes
+    // through the router; `_activateCanonicalProgramPath` runs `setActive`
+    // as the redirect-gate side effect so the URL and the in-memory active
+    // program never disagree.
+    router.go(programPath(uuid));
   }
 
   Future<void> _installFromFile(BuildContext context) async {

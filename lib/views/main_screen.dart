@@ -183,6 +183,19 @@ class _MainScreenState extends State<MainScreen>
     }
     if (loc.startsWith('$routeProgram/')) {
       _currentTab = 0;
+      // ADR-0032 *Activation contract*: segment selection flows URL → state.
+      // The redirect gate promotes bare `/program/:uuid` to the default
+      // segment path, so by the time we land here the third segment is the
+      // segment slug. Detail paths (e.g. `team/:idx`) have a non-segment slug
+      // in that slot; leave [activeSegment] alone so the backdrop keeps the
+      // user's last choice.
+      final segments = Uri.parse(loc).pathSegments;
+      if (segments.length >= 3) {
+        final segment = programSegmentFromSlug(segments[2]);
+        if (segment != null) {
+          _programPageController.activeSegment.value = segment;
+        }
+      }
       return;
     }
     _currentTab = widget.routes.indexWhere(
@@ -494,7 +507,14 @@ class _MainScreenState extends State<MainScreen>
     final activeUuid = ProgramService().activeProgramUuid;
     if (activeUuid == null) return widget.routes[tab];
     return switch (tab) {
-      0 => programPath(activeUuid),
+      // Tab 0 preserves the currently-selected segment so switching to Map
+      // and back lands on the same lens. The redirect gate handles bare
+      // `/program/:uuid` as a fallback, so even if the controller has not
+      // been initialised yet the URL still resolves.
+      0 => programSegmentPath(
+        activeUuid,
+        _programPageController.activeSegment.value.urlSlug,
+      ),
       1 => programMapPath(activeUuid),
       2 => programRosterPath(activeUuid),
       _ => widget.routes[tab],
