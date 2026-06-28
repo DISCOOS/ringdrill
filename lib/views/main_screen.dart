@@ -5,23 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
-import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/about_page.dart';
-import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
+import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/install_link_handler.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
-import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
@@ -33,7 +33,6 @@ import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
-import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
@@ -42,7 +41,6 @@ import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
 import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_io/io.dart';
 
 String _activeProgramPath() {
@@ -687,6 +685,11 @@ class _MainScreenState extends State<MainScreen>
 
   int _currentTab = 0;
   bool _migrationSnackBarChecked = false;
+  // Single-shot guard for the ContextSheet → DrillPlayer upgrade. Set
+  // synchronously when we schedule the upgrade and cleared when the
+  // DrillPlayer route is dismissed, so the per-minute event tick can't
+  // re-pop the drill player as a stale "close the context sheet" action.
+  bool _upgradingToDrillPlayer = false;
 
   @override
   void initState() {
@@ -718,6 +721,30 @@ class _MainScreenState extends State<MainScreen>
       setState(() {});
       if (event.isDone && event.autoStopped) {
         _showAutoStoppedSnackBar(event);
+      }
+      // Narrow layout: when an exercise starts while it's open inside a
+      // modal ContextSheet (the user tapped play on the mini bar inside
+      // that draggable bottom sheet), upgrade to the fullscreen immersive
+      // DrillPlayer sheet. Without this the bottom sheet stays at 92%
+      // height and the user has to dismiss + reopen to land in fullscreen.
+      // Master-detail (wide) has its own play-then-open flow and is
+      // skipped by the `isModal` gate.
+      if (!event.isDone &&
+          !_upgradingToDrillPlayer &&
+          ExerciseService().isStarted &&
+          _contextSheetController.isModal) {
+        final target = _contextSheetController.target.value;
+        if (target is ExerciseSheetTarget &&
+            target.exerciseUuid == event.exercise.uuid) {
+          _upgradingToDrillPlayer = true;
+          _contextSheetController.close();
+          // Open the immersive sheet synchronously on top of the popping
+          // context sheet — mirrors the wide-layout onPlay flow, where the
+          // wrapping Navigator queues push + pop in the same frame.
+          _openDrillPlayer(context).whenComplete(() {
+            _upgradingToDrillPlayer = false;
+          });
+        }
       }
     });
     // Defense-in-depth (ADR-0038): every path that lands on
@@ -1292,10 +1319,10 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 
-  void _openDrillPlayer(BuildContext context) {
+  Future<void> _openDrillPlayer(BuildContext context) {
     final last = ExerciseService().last;
-    if (last == null) return;
-    showDrillPlayerSheet<void>(
+    if (last == null) return Future<void>.value();
+    return showDrillPlayerSheet<void>(
       context: context,
       builder: (_) => CoordinatorScreen(uuid: last.exercise.uuid),
     );

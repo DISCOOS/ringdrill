@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
-import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/brief_screen.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
@@ -315,8 +312,8 @@ class _DefaultContextSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final body = switch (target) {
-      ExerciseSheetTarget(:final exerciseUuid) => _ExerciseSheetBody(
-        exerciseUuid: exerciseUuid,
+      ExerciseSheetTarget(:final exerciseUuid) => CoordinatorScreen(
+        uuid: exerciseUuid,
       ),
       StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
         StationExerciseScreen(uuid: exerciseUuid, stationIndex: stationIndex),
@@ -360,63 +357,3 @@ Widget defaultContextSheetBody(
   return _DefaultContextSheetBody(target: target);
 }
 
-/// Wraps [CoordinatorScreen] for an [ExerciseSheetTarget] and auto-closes
-/// the [ContextSheet] when the exercise transitions to live, so the
-/// DrillMiniPlayer in MainScreen becomes visible without a manual close.
-class _ExerciseSheetBody extends StatefulWidget {
-  const _ExerciseSheetBody({required this.exerciseUuid});
-
-  final String exerciseUuid;
-
-  @override
-  State<_ExerciseSheetBody> createState() => _ExerciseSheetBodyState();
-}
-
-class _ExerciseSheetBodyState extends State<_ExerciseSheetBody> {
-  StreamSubscription<ExerciseEvent>? _sub;
-  bool _closed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _sub = ExerciseService().events.listen((event) {
-      if (!mounted || _closed) return;
-      if (event.exercise.uuid == widget.exerciseUuid &&
-          ExerciseService().isStarted) {
-        // In master-detail the coordinator stays in the detail pane when the
-        // exercise starts. Closing would clear the scope target and prevent
-        // the play bar from reappearing when the exercise stops.
-        if (MasterDetailScope.maybeOf(context) != null) return;
-        _closed = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          ContextSheet.of(context).close();
-        });
-      }
-    });
-    // Guard against the race where the exercise is already live when the
-    // sheet opens (e.g. deep-link into a running exercise).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _closed) return;
-      final last = ExerciseService().last;
-      if (last != null &&
-          last.exercise.uuid == widget.exerciseUuid &&
-          ExerciseService().isStarted) {
-        if (MasterDetailScope.maybeOf(context) != null) return;
-        _closed = true;
-        ContextSheet.of(context).close();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CoordinatorScreen(uuid: widget.exerciseUuid);
-  }
-}
