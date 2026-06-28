@@ -1,6 +1,7 @@
 ---
 status: accepted
 date: 2026-05-28
+last-updated: 2026-06-28
 deciders: ["@kengu"]
 consulted: []
 informed: []
@@ -41,7 +42,7 @@ lib/views/
   team/
   station/
   cast/         ← RolePlay + Actor (English umbrella; Norwegian UI stays "Markører")
-  player/       ← coordinator + observer player and phase widgets
+  drill_player/ ← coordinator + observer player, mini bar and phase widgets
   library/
   brief/
   spatial/      ← map, position picking, UTM, lat/lng widgets
@@ -49,10 +50,15 @@ lib/views/
   widgets/      ← pure UI infrastructure only
 ```
 
+The folder is `drill_player/`, not `player/` as originally drafted. The
+feature name DESIGN-001 settled on is "DrillPlayer"; the folder follows.
+
 ### File assignment
 
 `shell/`
 * `main_screen.dart`, `app_routes.dart`, `install_link_handler.dart`, `patch_alert_widget.dart`
+* already present: `master_detail_scope.dart`, `open_form_surface.dart`, `window_size_class.dart`, `detail_empty_pane.dart`
+* moved in 2026-06-28: `main_drawer.dart`, `deep_link_launchers.dart` (extracted from `main_screen.dart`)
 
 `exercise/`
 * `exercise_form_screen.dart`, `team_exercise_screen.dart`, `exercise_control_button.dart`
@@ -68,8 +74,11 @@ lib/views/
 * `roleplay_form_screen.dart`, `roleplay_screen.dart`, `roleplays_view.dart`, `actor_form_screen.dart`
 * moved in from `views/widgets/`: `cast_picker_sheet.dart`, `cast_roster_sheet.dart`, `role_code_badge.dart`, `role_marker.dart`, `role_mini_map.dart`, `role_position_panel.dart`
 
-`player/`
+`drill_player/`
 * `coordinator_screen.dart`, `program_view.dart`, `program_page_controller.dart`, `phase_headers.dart`, `phase_tile.dart`, `phase_widget.dart`
+* already present (DESIGN-001 V1): `drill_mini_player.dart`, `mini_round_row.dart`, `phase_colors.dart`
+* added 2026-06-28: `docked_drill_mini_player.dart`, `drill_player_coordinator.dart` (extracted from `main_screen.dart`)
+* to be moved from `views/widgets/` during the remaining cutover: `drill_player_sheet.dart`
 
 `library/`
 * `library_view.dart`, `catalog_conflict_dialog.dart`, `add_exercises_dialog.dart`, `export_plan_dialog.dart`, `publish_plan_dialog.dart`, `plan_status_badge.dart`, `program_diff_widgets.dart`, `active_plan_actions.dart`
@@ -110,7 +119,24 @@ A widget belongs in `views/widgets/` only if it has no domain reference and coul
 
 ### Migration
 
-* Single-PR refactor. Partial moves leave imports inconsistent.
+* **Status 2026-06-28:** `shell/` and `drill_player/` are populated. Both
+  folders compile, are imported by their host shells, and form the
+  current source of truth for those features. The remaining feature
+  folders (`exercise`, `team`, `station`, `cast`, `library`, `brief`,
+  `spatial`, `settings`) are still flat at `lib/views/`.
+* The two populated folders were added as a byproduct of refactoring
+  `main_screen.dart`. They are coherent on their own (no half-moved
+  feature) and do not count as the "partial moves" the original draft
+  warned against.
+* Remaining cutover: single PR for the rest. Do **not** re-touch
+  `shell/` or `drill_player/` during that PR — they are already on
+  their final path. Naming choices already settled: `drill_player`
+  (not `player`), `shell`, `cast`, `spatial`, single `widgets/`.
+* Wait for DESIGN-006 ([[project_program_tab_consolidation]]) to land
+  before the remaining cutover. DESIGN-006 reshapes Stations/RolePlays
+  into segments and adds Roster; the assignments above (especially
+  `station/`, `cast/`, `team/`) must be reviewed against the post-006
+  surface before files move.
 * No `*.freezed.dart` / `*.g.dart` paths change, so `make build` is not required.
 * `flutter analyze` and `flutter test` must pass before merging. The known-broken `test/widget_test.dart` smoke test stays excluded per [CLAUDE.md](../../CLAUDE.md).
 * `bin/ringdrill.dart` and `netlify/functions/` are untouched.
