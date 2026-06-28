@@ -15,6 +15,20 @@ sealed class ContextSheetTarget {
   const ContextSheetTarget();
 }
 
+/// Returns the exercise UUID associated with [target], if any. Station,
+/// team, and role targets resolve to their parent exercise; targets that
+/// span a whole program (team overview, brief) yield null. Used by the
+/// docked/embedded mini player and the auto-upgrade-to-fullscreen flow to
+/// scope themselves to the selected item's owning exercise.
+String? exerciseUuidOf(ContextSheetTarget? target) => switch (target) {
+  ExerciseSheetTarget(:final exerciseUuid) => exerciseUuid,
+  StationSheetTarget(:final exerciseUuid) => exerciseUuid,
+  TeamSheetTarget(:final exerciseUuid) => exerciseUuid,
+  RoleSheetTarget(:final rolePlayUuid) =>
+    ProgramService().getRolePlay(rolePlayUuid)?.exerciseUuid,
+  _ => null,
+};
+
 class ExerciseSheetTarget extends ContextSheetTarget {
   const ExerciseSheetTarget({required this.exerciseUuid});
 

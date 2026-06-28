@@ -733,9 +733,8 @@ class _MainScreenState extends State<MainScreen>
           !_upgradingToDrillPlayer &&
           ExerciseService().isStarted &&
           _contextSheetController.isModal) {
-        final target = _contextSheetController.target.value;
-        if (target is ExerciseSheetTarget &&
-            target.exerciseUuid == event.exercise.uuid) {
+        final targetUuid = exerciseUuidOf(_contextSheetController.target.value);
+        if (targetUuid != null && targetUuid == event.exercise.uuid) {
           _upgradingToDrillPlayer = true;
           _contextSheetController.close();
           // Open the immersive sheet synchronously on top of the popping
@@ -1554,17 +1553,26 @@ class _MainScreenState extends State<MainScreen>
                 ValueListenableBuilder<ContextSheetTarget?>(
                   valueListenable: _contextSheetController.targetNotifier,
                   builder: (context, target, _) {
-                    // Resolve the exercise for the idle (not-yet-started)
-                    // mini player. Null when target isn't an exercise or
-                    // the exercise isn't found. When another exercise is
-                    // already running we drop the selected one and let the
-                    // bar reflect the global running state — otherwise the
-                    // selection would suppress the docked bar via
-                    // [DrillMiniPlayer]'s mismatch guard, hiding the only
-                    // place wide users can see what's live.
-                    final selectedExercise = target is ExerciseSheetTarget
-                        ? ProgramService().getExercise(target.exerciseUuid)
-                        : null;
+                    // Resolve the exercise behind whatever the user has
+                    // selected. ExerciseSheetTarget points at it directly;
+                    // station/team carry it via `exerciseUuid`; role lives
+                    // through its [RolePlay.exerciseUuid]. TeamOverview and
+                    // brief span a whole program and yield null. The mini
+                    // player then shows the parent exercise's idle state so
+                    // users browsing the Poster/Markører/Team segments still
+                    // get a play affordance for the selected item's owning
+                    // exercise.
+                    //
+                    // When another exercise is already running we drop the
+                    // selected one and let the bar reflect the global
+                    // running state — otherwise the selection would
+                    // suppress the docked bar via [DrillMiniPlayer]'s
+                    // mismatch guard, hiding the only place wide users can
+                    // see what's live.
+                    final selectedExerciseUuid = exerciseUuidOf(target);
+                    final selectedExercise = selectedExerciseUuid == null
+                        ? null
+                        : ProgramService().getExercise(selectedExerciseUuid);
                     final idleExercise = ExerciseService().isStarted
                         ? null
                         : selectedExercise;

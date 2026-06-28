@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -106,6 +110,22 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
           },
         ),
       ),
+      // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
+      // the parent exercise so the user can start it from the team view
+      // (modal context sheet in narrow). In master-detail (wide) the
+      // docked bar lives in the master column instead.
+      bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
+          ? DrillMiniPlayer(
+              exercise: widget.exercise,
+              height: 64,
+              applyBottomInset: true,
+              onOpen: () {},
+              onPlay: () {
+                unawaited(HapticFeedback.mediumImpact());
+                _exerciseService.start(widget.exercise);
+              },
+            )
+          : null,
     );
   }
 

@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -192,6 +197,25 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
           ),
         ),
       ),
+      // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
+      // the parent exercise so the user can start it from the role view
+      // (modal context sheet in narrow). In master-detail (wide) the
+      // docked bar lives in the master column instead. We require a
+      // resolvable parent exercise — orphaned roleplays just get the
+      // body, no bar.
+      bottomNavigationBar:
+          (MasterDetailScope.maybeOf(context) == null && exercise != null)
+          ? DrillMiniPlayer(
+              exercise: exercise,
+              height: 64,
+              applyBottomInset: true,
+              onOpen: () {},
+              onPlay: () {
+                unawaited(HapticFeedback.mediumImpact());
+                ExerciseService().start(exercise);
+              },
+            )
+          : null,
     );
   }
 }
