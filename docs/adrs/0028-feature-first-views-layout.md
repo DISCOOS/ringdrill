@@ -58,7 +58,7 @@ feature name DESIGN-001 settled on is "DrillPlayer"; the folder follows.
 `shell/`
 * `main_screen.dart`, `app_routes.dart`, `install_link_handler.dart`, `patch_alert_widget.dart`
 * already present: `master_detail_scope.dart`, `open_form_surface.dart`, `window_size_class.dart`, `detail_empty_pane.dart`
-* added 2026-06-28: `main_drawer.dart`, `deep_link_launchers.dart`, `app_router.dart` (the GoRouter builder + redirect helpers, extracted from `main_screen.dart`)
+* added 2026-06-28: `main_drawer.dart`, `deep_link_launchers.dart`, `app_router.dart` (the GoRouter builder + redirect helpers, extracted from `main_screen.dart`), `wide_shell.dart` (the rail + master/detail composition), `shell_chrome.dart` (the `Destination` class + `shellPanelColor`/`shellMasterAccent`/`wrapInRailPadding` helpers shared by both layouts), `shell_notifications.dart` (`showAutoStoppedSnackBar` + `maybeShowLibraryMigrationSnackBar`)
 
 `exercise/`
 * `exercise_form_screen.dart`, `team_exercise_screen.dart`, `exercise_control_button.dart`
@@ -132,11 +132,10 @@ A widget belongs in `views/widgets/` only if it has no domain reference and coul
   `shell/` or `drill_player/` during that PR — they are already on
   their final path. Naming choices already settled: `drill_player`
   (not `player`), `shell`, `cast`, `spatial`, single `widgets/`.
-* Wait for DESIGN-006 ([[project_program_tab_consolidation]]) to land
-  before the remaining cutover. DESIGN-006 reshapes Stations/RolePlays
-  into segments and adds Roster; the assignments above (especially
-  `station/`, `cast/`, `team/`) must be reviewed against the post-006
-  surface before files move.
+* DESIGN-006 stages 1-4 landed (Program-tab consolidation + Roster
+  view-shell). The remaining cutover is no longer gated by it.
+  Stage 5 (person-with-role model) is deferred to its own design and
+  does not move file boundaries here.
 * No `*.freezed.dart` / `*.g.dart` paths change, so `make build` is not required.
 * `flutter analyze` and `flutter test` must pass before merging. The known-broken `test/widget_test.dart` smoke test stays excluded per [CLAUDE.md](../../CLAUDE.md).
 * `bin/ringdrill.dart` and `netlify/functions/` are untouched.
