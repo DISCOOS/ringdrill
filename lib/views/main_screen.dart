@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,13 +9,11 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
-import 'package:ringdrill/views/about_page.dart';
-import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
-import 'package:ringdrill/views/coordinator_screen.dart';
+import 'package:ringdrill/views/drill_player/docked_drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/feedback.dart';
+import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
 import 'package:ringdrill/views/install_link_handler.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/page_widget.dart';
@@ -26,7 +22,9 @@ import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/roster_view.dart';
+import 'package:ringdrill/views/shell/deep_link_launchers.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
+import 'package:ringdrill/views/shell/main_drawer.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
@@ -34,7 +32,6 @@ import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
-import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/web/platform_widget.dart'
@@ -218,7 +215,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
               opaque: false,
               barrierColor: Colors.transparent,
               transitionsBuilder: (_, _, _, child) => child,
-              child: _BriefDeepLinkLauncher(
+              child: BriefDeepLinkLauncher(
                 target: BriefSheetTarget(
                   programUuid: state.pathParameters['programUuid']!,
                 ),
@@ -234,7 +231,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
               opaque: false,
               barrierColor: Colors.transparent,
               transitionsBuilder: (_, _, _, child) => child,
-              child: _BriefDeepLinkLauncher(
+              child: BriefDeepLinkLauncher(
                 target: BriefSheetTarget(
                   exerciseUuid: state.pathParameters['exerciseUuid']!,
                 ),
@@ -295,7 +292,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                           opaque: false,
                           barrierColor: Colors.transparent,
                           transitionsBuilder: (_, _, _, child) => child,
-                          child: _BriefDeepLinkLauncher(
+                          child: BriefDeepLinkLauncher(
                             target: BriefSheetTarget(
                               programUuid: state.pathParameters['programUuid']!,
                             ),
@@ -309,7 +306,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                     path: 'exercise/:exerciseId/station/:stationIndex',
                     parentNavigatorKey: key,
                     builder: (BuildContext context, GoRouterState state) =>
-                        _ContextSheetDeepLinkLauncher(
+                        ContextSheetDeepLinkLauncher(
                           target: StationSheetTarget(
                             exerciseUuid: state.pathParameters['exerciseId']!,
                             stationIndex: int.parse(
@@ -336,7 +333,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                           opaque: false,
                           barrierColor: Colors.transparent,
                           transitionsBuilder: (_, _, _, child) => child,
-                          child: _BriefDeepLinkLauncher(
+                          child: BriefDeepLinkLauncher(
                             target: BriefSheetTarget(
                               exerciseUuid: state.pathParameters['exerciseId']!,
                             ),
@@ -350,7 +347,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                     path: 'exercise/:exerciseId',
                     parentNavigatorKey: key,
                     builder: (BuildContext context, GoRouterState state) =>
-                        _ContextSheetDeepLinkLauncher(
+                        ContextSheetDeepLinkLauncher(
                           target: ExerciseSheetTarget(
                             exerciseUuid: state.pathParameters['exerciseId']!,
                           ),
@@ -372,7 +369,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                       // Open the cross-exercise team overview, not a single
                       // exercise's player view. TeamScreen highlights the live
                       // exercise itself, so no running/first guess is needed.
-                      return _ContextSheetDeepLinkLauncher(
+                      return ContextSheetDeepLinkLauncher(
                         target: TeamOverviewSheetTarget(teamIndex: teamIndex),
                         fallbackRoute: programPath(
                           state.pathParameters['programUuid']!,
@@ -384,7 +381,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                     path: 'roleplay/:roleUuid',
                     parentNavigatorKey: key,
                     builder: (BuildContext context, GoRouterState state) =>
-                        _ContextSheetDeepLinkLauncher(
+                        ContextSheetDeepLinkLauncher(
                           target: RoleSheetTarget(
                             rolePlayUuid: state.pathParameters['roleUuid']!,
                           ),
@@ -428,7 +425,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                 path: ':exerciseId/:stationIndex',
                 parentNavigatorKey: key,
                 builder: (BuildContext context, GoRouterState state) =>
-                    _ContextSheetDeepLinkLauncher(
+                    ContextSheetDeepLinkLauncher(
                       target: StationSheetTarget(
                         exerciseUuid: state.pathParameters['exerciseId']!,
                         stationIndex: int.parse(
@@ -462,7 +459,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                   // Open the cross-exercise team overview (TeamScreen), which
                   // shows every exercise the team is in and highlights the live
                   // one. No running/first-exercise guess.
-                  return _ContextSheetDeepLinkLauncher(
+                  return ContextSheetDeepLinkLauncher(
                     target: TeamOverviewSheetTarget(teamIndex: teamIndex),
                     fallbackRoute: routeTeams,
                   );
@@ -481,7 +478,7 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
                 path: ':roleUuid',
                 parentNavigatorKey: key,
                 builder: (BuildContext context, GoRouterState state) =>
-                    _ContextSheetDeepLinkLauncher(
+                    ContextSheetDeepLinkLauncher(
                       target: RoleSheetTarget(
                         rolePlayUuid: state.pathParameters['roleUuid']!,
                       ),
@@ -514,90 +511,6 @@ void _showOpenFileBottomSheet(
       );
     },
   );
-}
-
-class _BriefDeepLinkLauncher extends StatefulWidget {
-  const _BriefDeepLinkLauncher({
-    required this.target,
-    required this.fallbackRoute,
-  });
-
-  final BriefSheetTarget target;
-  final String fallbackRoute;
-
-  @override
-  State<_BriefDeepLinkLauncher> createState() => _BriefDeepLinkLauncherState();
-}
-
-class _BriefDeepLinkLauncherState extends State<_BriefDeepLinkLauncher> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openSheet());
-  }
-
-  Future<void> _openSheet() async {
-    if (!mounted) return;
-    final controller = ContextSheet.currentController;
-    if (controller == null) {
-      context.go(widget.fallbackRoute);
-      return;
-    }
-    await controller.show(context, widget.target);
-    if (!mounted) return;
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    } else {
-      context.go(widget.fallbackRoute);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
-}
-
-class _ContextSheetDeepLinkLauncher extends StatefulWidget {
-  const _ContextSheetDeepLinkLauncher({
-    required this.target,
-    required this.fallbackRoute,
-  });
-
-  final ContextSheetTarget target;
-  final String fallbackRoute;
-
-  @override
-  State<_ContextSheetDeepLinkLauncher> createState() =>
-      _ContextSheetDeepLinkLauncherState();
-}
-
-class _ContextSheetDeepLinkLauncherState
-    extends State<_ContextSheetDeepLinkLauncher> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openSheet());
-  }
-
-  Future<void> _openSheet() async {
-    if (!mounted) return;
-    final controller = ContextSheet.currentController;
-    if (controller == null) {
-      context.go(widget.fallbackRoute);
-      return;
-    }
-    await controller.show(context, widget.target);
-    if (!mounted) return;
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    } else {
-      context.go(widget.fallbackRoute);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 class Destination {
@@ -685,11 +598,7 @@ class _MainScreenState extends State<MainScreen>
 
   int _currentTab = 0;
   bool _migrationSnackBarChecked = false;
-  // Single-shot guard for the ContextSheet → DrillPlayer upgrade. Set
-  // synchronously when we schedule the upgrade and cleared when the
-  // DrillPlayer route is dismissed, so the per-minute event tick can't
-  // re-pop the drill player as a stale "close the context sheet" action.
-  bool _upgradingToDrillPlayer = false;
+  final DrillPlayerCoordinator _drillPlayer = DrillPlayerCoordinator();
 
   @override
   void initState() {
@@ -722,29 +631,11 @@ class _MainScreenState extends State<MainScreen>
       if (event.isDone && event.autoStopped) {
         _showAutoStoppedSnackBar(event);
       }
-      // Narrow layout: when an exercise starts while it's open inside a
-      // modal ContextSheet (the user tapped play on the mini bar inside
-      // that draggable bottom sheet), upgrade to the fullscreen immersive
-      // DrillPlayer sheet. Without this the bottom sheet stays at 92%
-      // height and the user has to dismiss + reopen to land in fullscreen.
-      // Master-detail (wide) has its own play-then-open flow and is
-      // skipped by the `isModal` gate.
-      if (!event.isDone &&
-          !_upgradingToDrillPlayer &&
-          ExerciseService().isStarted &&
-          _contextSheetController.isModal) {
-        final targetUuid = exerciseUuidOf(_contextSheetController.target.value);
-        if (targetUuid != null && targetUuid == event.exercise.uuid) {
-          _upgradingToDrillPlayer = true;
-          _contextSheetController.close();
-          // Open the immersive sheet synchronously on top of the popping
-          // context sheet — mirrors the wide-layout onPlay flow, where the
-          // wrapping Navigator queues push + pop in the same frame.
-          _openDrillPlayer(context).whenComplete(() {
-            _upgradingToDrillPlayer = false;
-          });
-        }
-      }
+      _drillPlayer.maybeUpgradeOnExerciseEvent(
+        context: context,
+        controller: _contextSheetController,
+        event: event,
+      );
     });
     // Defense-in-depth (ADR-0038): every path that lands on
     // [MainScreen] should have an active plan. The onboarding flow's
@@ -909,7 +800,10 @@ class _MainScreenState extends State<MainScreen>
             appBar: (useRail || isMapTab)
                 ? null
                 : _buildAppBar(context, constraints, page, hasRail: false),
-            drawer: _buildDrawer(context, localizations),
+            drawer: MainDrawer(
+              localizations: localizations,
+              onOpenSettings: () => MainScreen.showSettings(context, true),
+            ),
             // StackFit.expand is load-bearing: without it the Stack sizes
             // itself to the biggest non-positioned child, but the only
             // non-positioned child here is the Offstage shell sentinel
@@ -1051,208 +945,6 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  Widget? _buildDrawer(BuildContext context, AppLocalizations localizations) {
-    final activeProgram = ProgramService().activeProgram;
-    final hasActivePlan = activeProgram != null;
-    final isCatalogActive =
-        activeProgram != null && active_actions.isCatalogProgram(activeProgram);
-    return NavigationDrawer(
-      elevation: 8,
-      children: [
-        Container(
-          // Hardcode the brand-deep tone here regardless of theme so the
-          // drawer header remains a distinct brand surface. Was
-          // `appBarTheme.backgroundColor`, which now resolves to the
-          // light scaffold tone in light mode and would render the
-          // hardcoded white app-name text invisible.
-          color: RingDrillColors.brandDeep,
-          padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 16.0),
-          child: Row(
-            children: [
-              Text(
-                localizations.appName,
-                // ADR-0037: themed titleMedium instead of a hardcoded 18.
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16.0),
-        _drawerTile(
-          context,
-          icon: Icons.folder_open,
-          title: localizations.openPlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.openPlan(context);
-          },
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.add_circle_outline,
-          title: localizations.newPlanAction,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.createNewPlan(context);
-          },
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.playlist_add,
-          title: localizations.addExercisesAction,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.addExercises(context);
-          },
-        ),
-        const Divider(),
-        _drawerTile(
-          context,
-          icon: Icons.link,
-          title: localizations.shareActivePlan,
-          enabled: isCatalogActive,
-          disabledTooltip: hasActivePlan
-              ? localizations.planStatusLocalTooltip
-              : localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.shareActivePlan(context);
-          },
-        ),
-        if (ProgramPageController.canSendDrillFile)
-          _drawerTile(
-            context,
-            icon: Icons.send,
-            title: localizations.sendToAction,
-            enabled: hasActivePlan,
-            disabledTooltip: localizations.requiresActivePlan,
-            onTap: () async {
-              Navigator.pop(context);
-              await active_actions.sendActivePlanTo(context);
-            },
-          ),
-        if (ProgramPageController.canSaveDrillFile)
-          _drawerTile(
-            context,
-            icon: Icons.download,
-            title: localizations.exportAsDrill,
-            enabled: hasActivePlan,
-            disabledTooltip: localizations.requiresActivePlan,
-            onTap: () async {
-              Navigator.pop(context);
-              await active_actions.exportActivePlan(context);
-            },
-          ),
-        _drawerTile(
-          context,
-          icon: Icons.cloud_upload_outlined,
-          title: localizations.publishActivePlan,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.publishActivePlan(context);
-          },
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.cloud_sync_outlined,
-          title: localizations.publishAsActivePlan,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.publishAsActivePlan(context);
-          },
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.refresh,
-          title: localizations.libraryRefresh,
-          enabled: isCatalogActive,
-          disabledTooltip: hasActivePlan
-              ? localizations.planStatusLocalTooltip
-              : localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.refreshActivePlanFromCatalog(context);
-          },
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.delete,
-          title: localizations.libraryDelete,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            Navigator.pop(context);
-            await active_actions.deleteActivePlan(context);
-          },
-        ),
-        const Divider(),
-        _drawerTile(
-          context,
-          icon: Icons.settings,
-          title: localizations.settings,
-          onTap: () => MainScreen.showSettings(context, true),
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.info,
-          title: localizations.about,
-          onTap: () {
-            Navigator.pop(context);
-            openFormSurface<void>(
-              context,
-              builder: (context) => const AboutPage(),
-            );
-          },
-        ),
-        _drawerTile(
-          context,
-          icon: Icons.feedback,
-          title: localizations.feedback,
-          onTap: () {
-            Navigator.pop(context);
-            showFeedbackSheet(
-              context,
-              appState: {
-                '_exerciseService': {
-                  'lastEvent': ExerciseService().last?.toJson(),
-                },
-              },
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _drawerTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool enabled = true,
-    String? disabledTooltip,
-  }) {
-    final tile = ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      enabled: enabled,
-      onTap: enabled ? onTap : null,
-    );
-    if (enabled || disabledTooltip == null) return tile;
-    return Tooltip(message: disabledTooltip, child: tile);
-  }
-
   void _onDestinationSelected(int tab) {
     setState(() {
       _currentTab = tab;
@@ -1310,20 +1002,13 @@ class _MainScreenState extends State<MainScreen>
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: DrillMiniPlayer(onOpen: () => _openDrillPlayer(context)),
+              child: DrillMiniPlayer(
+                onOpen: () => _drillPlayer.openDrillPlayer(context),
+              ),
             ),
           ),
         _buildNavBar(localizations, useRail)!,
       ],
-    );
-  }
-
-  Future<void> _openDrillPlayer(BuildContext context) {
-    final last = ExerciseService().last;
-    if (last == null) return Future<void>.value();
-    return showDrillPlayerSheet<void>(
-      context: context,
-      builder: (_) => CoordinatorScreen(uuid: last.exercise.uuid),
     );
   }
 
@@ -1550,67 +1235,9 @@ class _MainScreenState extends State<MainScreen>
                 // Mini player spans the left region (rail + master) and is
                 // pinned to the bottom. It deliberately does not extend into
                 // the detail pane.
-                ValueListenableBuilder<ContextSheetTarget?>(
-                  valueListenable: _contextSheetController.targetNotifier,
-                  builder: (context, target, _) {
-                    // Resolve the exercise behind whatever the user has
-                    // selected. ExerciseSheetTarget points at it directly;
-                    // station/team carry it via `exerciseUuid`; role lives
-                    // through its [RolePlay.exerciseUuid]. TeamOverview and
-                    // brief span a whole program and yield null. The mini
-                    // player then shows the parent exercise's idle state so
-                    // users browsing the Poster/Markører/Team segments still
-                    // get a play affordance for the selected item's owning
-                    // exercise.
-                    //
-                    // When another exercise is already running we drop the
-                    // selected one and let the bar reflect the global
-                    // running state — otherwise the selection would
-                    // suppress the docked bar via [DrillMiniPlayer]'s
-                    // mismatch guard, hiding the only place wide users can
-                    // see what's live.
-                    final selectedExerciseUuid = exerciseUuidOf(target);
-                    final selectedExercise = selectedExerciseUuid == null
-                        ? null
-                        : ProgramService().getExercise(selectedExerciseUuid);
-                    final idleExercise = ExerciseService().isStarted
-                        ? null
-                        : selectedExercise;
-                    if (ExerciseService().isStarted || idleExercise != null) {
-                      // No rounded corners in the wide/extended layout — the
-                      // mini player is a flush bottom bar docked under the rail
-                      // + master. Rounded corners are reserved for the narrow
-                      // (portrait/mobile) floating mini bar in
-                      // [_buildBottomChrome]. `applyBottomInset` lets the bar
-                      // paint its own background through the bottom safe-area
-                      // inset (content stays above it), instead of an external
-                      // SafeArea that left the inset dark below the bar.
-                      return DrillMiniPlayer(
-                        // Taller than the narrow floating bar (48) so the
-                        // docked wide bar has more breathing room.
-                        height: 64,
-                        applyBottomInset: true,
-                        exercise: idleExercise,
-                        onPlay: idleExercise == null
-                            ? null
-                            : () {
-                                unawaited(HapticFeedback.mediumImpact());
-                                ExerciseService().start(idleExercise);
-                                // Clear the detail target so the master/detail
-                                // pane empties once the exercise goes live —
-                                // the running exercise lives in the fullscreen
-                                // drill player, not the detail pane. Without
-                                // this the started exercise's coordinator stays
-                                // pinned in the detail pane after the player is
-                                // closed, until another item is selected.
-                                _contextSheetController.close();
-                                _openDrillPlayer(context);
-                              },
-                        onOpen: () => _openDrillPlayer(context),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                DockedDrillMiniPlayer(
+                  controller: _contextSheetController,
+                  openDrillPlayer: _drillPlayer.openDrillPlayer,
                 ),
               ],
             ),
