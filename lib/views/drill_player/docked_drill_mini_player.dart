@@ -77,6 +77,9 @@ class DockedDrillMiniPlayer extends StatelessWidget {
                   controller.close();
                   openDrillPlayer(context);
                 },
+          onPickExercise: (picked) => controller.replace(
+            ExerciseSheetTarget(exerciseUuid: picked.uuid),
+          ),
           onOpen: () => openDrillPlayer(context),
         );
       },

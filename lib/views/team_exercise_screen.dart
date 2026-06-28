@@ -124,6 +124,9 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
                 unawaited(HapticFeedback.mediumImpact());
                 _exerciseService.start(widget.exercise);
               },
+              onPickExercise: (picked) => ContextSheet.of(
+                context,
+              ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
             )
           : null,
     );

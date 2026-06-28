@@ -198,6 +198,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                 unawaited(HapticFeedback.mediumImpact());
                 _exerciseService.start(_exercise);
               },
+              onPickExercise: (picked) => ContextSheet.of(
+                context,
+              ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
             )
           : null,
     );

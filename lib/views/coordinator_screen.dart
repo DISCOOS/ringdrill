@@ -365,6 +365,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                       unawaited(HapticFeedback.mediumImpact());
                       _exerciseService.start(_exercise!);
                     },
+                    onPickExercise: (picked) => ContextSheet.of(
+                      context,
+                    ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
                     bodyBuilder: _buildMiniPlayerBody,
                 )
               : _buildExerciseStatus(event),

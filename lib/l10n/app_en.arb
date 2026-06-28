@@ -1649,6 +1649,10 @@
   "@pickExerciseForRole": {
     "description": "Title of the exercise-picker sheet opened before creating a new role from the Markører segment."
   },
+  "exercisePickerTitle": "Switch exercise",
+  "@exercisePickerTitle": {
+    "description": "Title of the bottom-sheet picker shown when the user taps the exercise badge in the DrillMiniPlayer to switch which exercise is bound to the current view before any exercise has started."
+  },
   "detailEmptyTeam": "Select a team",
   "@detailEmptyTeam": {
     "description": "Empty detail pane text shown on the teams tab."

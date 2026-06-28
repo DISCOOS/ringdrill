@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/drill_player/exercise_picker_sheet.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/drill_player/phase_colors.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
@@ -30,6 +31,7 @@ class DrillMiniPlayer extends StatefulWidget {
     super.key,
     this.exercise,
     this.onPlay,
+    this.onPickExercise,
     required this.onOpen,
     this.height = 48,
     this.bodyBuilder,
@@ -87,6 +89,14 @@ class DrillMiniPlayer extends StatefulWidget {
   /// Called when the play button is tapped in idle state. When null, falls
   /// back to calling [ExerciseService().start] directly.
   final VoidCallback? onPlay;
+
+  /// Called with the picked [Exercise] when the user taps the exercise
+  /// badge (the `# n` chip) in idle state and selects a different
+  /// exercise from the picker sheet. When null, the badge is plain and
+  /// the picker is not shown. Only wired in idle state — the running
+  /// state's badge stays non-interactive so users can't try to switch
+  /// while an exercise is live.
+  final ValueChanged<Exercise>? onPickExercise;
 
   final VoidCallback onOpen;
 
@@ -464,7 +474,12 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
                 Row(
                   children: [
                   const SizedBox(width: 8),
-                  ExerciseNumberBadge(label: exerciseLabel, size: 36),
+                  _IdleBadge(
+                    label: exerciseLabel,
+                    onPick: widget.onPickExercise == null
+                        ? null
+                        : () => _openExercisePicker(context, exercise),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Padding(
@@ -557,6 +572,41 @@ class _DrillMiniPlayerState extends State<DrillMiniPlayer> {
         ),
       ),
       ),
+    );
+  }
+
+  /// Opens the exercise-picker sheet from the idle badge and forwards
+  /// the picked exercise to [DrillMiniPlayer.onPickExercise]. Wrapped in
+  /// a method so the build code stays terse and the host can rely on
+  /// `onPickExercise` being called with a real choice (the sheet itself
+  /// returns `null` for "no change", which we just drop on the floor).
+  Future<void> _openExercisePicker(
+    BuildContext context,
+    Exercise current,
+  ) async {
+    final picked = await showExercisePickerSheet(context, current: current);
+    if (picked == null) return;
+    widget.onPickExercise?.call(picked);
+  }
+}
+
+/// Tappable wrapper around [ExerciseNumberBadge] used by the idle state.
+/// When [onPick] is non-null a feedback ripple appears around the chip;
+/// otherwise the badge renders as a plain visual element.
+class _IdleBadge extends StatelessWidget {
+  const _IdleBadge({required this.label, required this.onPick});
+
+  final String label;
+  final VoidCallback? onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = ExerciseNumberBadge(label: label, size: 36);
+    if (onPick == null) return badge;
+    return InkWell(
+      onTap: onPick,
+      borderRadius: BorderRadius.circular(18),
+      child: badge,
     );
   }
 }

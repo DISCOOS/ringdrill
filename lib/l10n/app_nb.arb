@@ -776,6 +776,10 @@
   "@pickExerciseForRole": {
     "description": "Tittel på øvelsesvelger-arket som åpnes før man oppretter en ny markørordre fra Markører-segmentet."
   },
+  "exercisePickerTitle": "Bytt øvelse",
+  "@exercisePickerTitle": {
+    "description": "Tittel på bottom-sheet-velgeren som åpnes når brukeren trykker på øvelses-merket i DrillMiniPlayer for å bytte hvilken øvelse den nåværende visningen er knyttet til, før noen øvelse har startet."
+  },
 
   "rosterTab": "Bemanning",
   "@rosterTab": {

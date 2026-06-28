@@ -2846,6 +2846,12 @@ abstract class AppLocalizations {
   /// **'Select exercise'**
   String get pickExerciseForRole;
 
+  /// Title of the bottom-sheet picker shown when the user taps the exercise badge in the DrillMiniPlayer to switch which exercise is bound to the current view before any exercise has started.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch exercise'**
+  String get exercisePickerTitle;
+
   /// Empty detail pane text shown on the teams tab.
   ///
   /// In en, this message translates to:

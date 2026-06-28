@@ -214,6 +214,9 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                 unawaited(HapticFeedback.mediumImpact());
                 ExerciseService().start(exercise);
               },
+              onPickExercise: (picked) => ContextSheet.of(
+                context,
+              ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
             )
           : null,
     );
