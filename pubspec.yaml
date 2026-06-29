@@ -139,6 +139,9 @@ flutter:
     # Brand mark used as the welcome hero on the first onboarding
     # stage. 512×512 PNG is plenty for the ~160 px render target.
     - assets/images/ringdrill-v2-512x512.png
+    # Migration explainer copy, loaded at runtime by MigrationPage.
+    - lib/l10n/migration_explainer_nb.md
+    - lib/l10n/migration_explainer_en.md
 
 sentry:
   upload_sources: true
