@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -21,7 +22,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Mounts a four-stage flow on first launch (welcome → analytics
 /// consent → notification consent → start) and a two-stage flow when
-/// consent has already been captured (welcome → start). Stages are
+/// consent has already been captured (welcome → start). On web the
+/// notification stage is dropped — `_startNotificationService` in
+/// `main.dart` is gated by `!kIsWeb`, so asking for OS notification
+/// permission on the PWA would set a flag nothing reads. Stages are
 /// pushed onto the page controller in order; the user advances by
 /// tapping a footer button on each stage. There is no swipe-back,
 /// no system-back, and no global Skip — every choice on every stage
@@ -59,7 +63,10 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
   @override
   void initState() {
     super.initState();
-    _total = widget.isFirstLaunch ? 4 : 2;
+    // First launch: welcome + analytics + (notifications on native) + start.
+    // Web drops the notification stage since the notification service is
+    // disabled there. Non-first-launch: welcome + start.
+    _total = widget.isFirstLaunch ? (kIsWeb ? 3 : 4) : 2;
   }
 
   @override
@@ -168,13 +175,18 @@ class _ConceptPrimerScreenState extends State<ConceptPrimerScreen> {
           onChoice: _onAnalytics,
         ),
       );
-      stages.add(
-        NotificationConsentStage(
-          stageIndex: idx++,
-          totalStages: _total,
-          onChoice: _onNotifications,
-        ),
-      );
+      // Skip the OS-notification rationale on web. The PWA does not
+      // run `NotificationService`, so the Allow tap would only write
+      // a flag that nothing reads.
+      if (!kIsWeb) {
+        stages.add(
+          NotificationConsentStage(
+            stageIndex: idx++,
+            totalStages: _total,
+            onChoice: _onNotifications,
+          ),
+        );
+      }
     }
 
     stages.add(

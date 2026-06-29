@@ -48,9 +48,20 @@ class OnboardingScaffold extends StatelessWidget {
           ),
         ),
         Expanded(child: body),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: footer,
+        // Footer is centred and capped to the same readable column as
+        // the body (see the 480 px ConstrainedBox each stage uses).
+        // Without this, on wide windows (web on desktop, tablet
+        // landscape) the action buttons stretched edge-to-edge while
+        // the body sat in a narrow column, which read as visually
+        // unbalanced and oversized.
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: footer,
+            ),
+          ),
         ),
       ],
     );
