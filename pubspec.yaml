@@ -28,7 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  sentry_flutter: ^9.6.0
+  sentry_flutter: ^10.0.0-alpha.1
   flutter:
     sdk: flutter
   flutter_web_plugins:
@@ -42,42 +42,42 @@ dependencies:
   # its public API directly (InlineSyntax for the <mark>/<curr-mark> search
   # highlight syntax in lib/views/widgets/brief_markdown.dart).
   markdown: ^7.2.1
-  upgrader: ^13.3.0
+  upgrader: ^13.5.0
   flutter_map: ^8.2.2
   flutter_map_marker_cluster: ^8.2.2
-  geolocator: ^14.0.1
+  geolocator: ^14.0.3
   google_fonts: ^8.1.0
   url_launcher: ^6.3.2
   osm_nominatim: ^4.0.1
   json_annotation: ^4.9.0
   crypto: ^3.0.6
-  package_info_plus: ^10.1.0
+  package_info_plus: ^10.2.0
   freezed_annotation: ^3.1.0
   shared_preferences: ^2.5.3
   shorebird_code_push: ^2.0.4
   flutter_local_notifications: ^21.0.0
 
-  flutter_native_splash: ^2.4.6
+  flutter_native_splash: ^2.4.8
   flutter_localizations:
     sdk: flutter
   intl: any
-  path_provider: ^2.1.5
+  path_provider: ^2.1.6
   path: ^1.9.1
   universal_io: ^2.2.2
-  share_plus: ^13.1.0
+  share_plus: ^13.2.0
   archive: ^4.0.7
   proj4dart: ^3.0.0
   web: ^1.1.1
   file_picker: ^12.0.0-beta.3
-  go_router: ^17.2.3
+  go_router: ^17.3.0
   http: ^1.5.0
   meta: ^1.16.0
-  mustache_template: ^2.0.0
+  mustache_template: ^2.0.5
   http_parser: ^4.1.2
   args: ^2.7.0
 
 dev_dependencies:
-  sentry_dart_plugin: ^3.1.1
+  sentry_dart_plugin: ^3.4.0
   flutter_test:
     sdk: flutter
   visibility_detector: ^0.4.0+2
