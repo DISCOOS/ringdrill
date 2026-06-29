@@ -3121,6 +3121,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About the migration to web.ringdrill.app'**
   String get migrationSettingsEntry;
+
+  /// Heading for the first section of the migration explainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are we moving?'**
+  String get migrationExplainerWhyTitle;
+
+  /// Body text explaining why the migration is happening.
+  ///
+  /// In en, this message translates to:
+  /// **'The web app is moving to a new domain, web.ringdrill.app, for better performance, stability and easier updates. The new domain will have its own dedicated app.'**
+  String get migrationExplainerWhyBody;
+
+  /// Heading for the section explaining what changes for the user.
+  ///
+  /// In en, this message translates to:
+  /// **'What changes for you?'**
+  String get migrationExplainerChangesTitle;
+
+  /// Body text explaining what changes for the user.
+  ///
+  /// In en, this message translates to:
+  /// **'The existing app at ringdrill.app will stop receiving updates. The new app is installed from web.ringdrill.app as a fresh PWA, just like you did when you installed this one.'**
+  String get migrationExplainerChangesBody;
+
+  /// Heading for the section with the step-by-step guide.
+  ///
+  /// In en, this message translates to:
+  /// **'How to transfer your plans'**
+  String get migrationExplainerStepsTitle;
+
+  /// First step in the migration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Export all my plans\" here in the app, or in the banner at the top.'**
+  String get migrationExplainerStep1;
+
+  /// Second step in the migration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Open web.ringdrill.app and install the new app.'**
+  String get migrationExplainerStep2;
+
+  /// Third step in the migration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Import and select the ZIP file you just downloaded.'**
+  String get migrationExplainerStep3;
+
+  /// Fourth step in the migration guide.
+  ///
+  /// In en, this message translates to:
+  /// **'All your plans are now available in the new app.'**
+  String get migrationExplainerStep4;
+
+  /// Fifth step in the migration guide: uninstall the old PWA after a successful migration.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall the old app from your home screen or browser once you\'ve checked that all your plans are in place in the new one.'**
+  String get migrationExplainerStep5;
+
+  /// Heading for the section explaining what happens to local data.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens to my data here?'**
+  String get migrationExplainerDataTitle;
+
+  /// Body text explaining what happens to local data.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plans are stored in the browser at ringdrill.app and will not disappear automatically. You can export them again from here until you clear browser data for this domain. A later update will add a dedicated migration page on the new domain that can transfer your data directly.'**
+  String get migrationExplainerDataBody;
 }
 
 class _AppLocalizationsDelegate

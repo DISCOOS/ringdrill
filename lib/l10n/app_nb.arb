@@ -971,5 +971,53 @@
   "migrationSettingsEntry": "Om migrasjon til web.ringdrill.app",
   "@migrationSettingsEntry": {
     "description": "Innstillingsrad som åpner migrasjonsbeskrivelsessiden."
+  },
+  "migrationExplainerWhyTitle": "Hvorfor flytter vi?",
+  "@migrationExplainerWhyTitle": {
+    "description": "Overskrift på første seksjon i migrasjonsbeskrivelsen."
+  },
+  "migrationExplainerWhyBody": "Web-appen flyttes til et nytt domene, web.ringdrill.app, for bedre ytelse, stabilitet og enklere oppdateringer. Det nye domenet vil ha sin egen dedikerte app-løsning.",
+  "@migrationExplainerWhyBody": {
+    "description": "Brødtekst som forklarer hvorfor migrasjonen skjer."
+  },
+  "migrationExplainerChangesTitle": "Hva endrer seg for deg?",
+  "@migrationExplainerChangesTitle": {
+    "description": "Overskrift på seksjonen som forklarer konsekvenser for brukeren."
+  },
+  "migrationExplainerChangesBody": "Den eksisterende appen på ringdrill.app slutter å motta oppdateringer. Den nye appen installeres fra web.ringdrill.app som en ny PWA, akkurat som du gjorde da du installerte denne.",
+  "@migrationExplainerChangesBody": {
+    "description": "Brødtekst som forklarer hva som endrer seg for brukeren."
+  },
+  "migrationExplainerStepsTitle": "Slik overfører du planene dine",
+  "@migrationExplainerStepsTitle": {
+    "description": "Overskrift på seksjonen med trinnvis veiledning."
+  },
+  "migrationExplainerStep1": "Trykk «Eksporter alle planene mine» her i appen, eller i varselet øverst.",
+  "@migrationExplainerStep1": {
+    "description": "Første trinn i migrasjonsveiledningen."
+  },
+  "migrationExplainerStep2": "Åpne web.ringdrill.app og installer den nye appen.",
+  "@migrationExplainerStep2": {
+    "description": "Andre trinn i migrasjonsveiledningen."
+  },
+  "migrationExplainerStep3": "Velg Importer og pek på ZIP-filen du nettopp lastet ned.",
+  "@migrationExplainerStep3": {
+    "description": "Tredje trinn i migrasjonsveiledningen."
+  },
+  "migrationExplainerStep4": "Alle planene dine er nå tilgjengelige i den nye appen.",
+  "@migrationExplainerStep4": {
+    "description": "Fjerde trinn i migrasjonsveiledningen."
+  },
+  "migrationExplainerStep5": "Avinstaller den gamle appen fra hjemskjermen eller nettleseren når du har sjekket at alle planene er på plass i den nye.",
+  "@migrationExplainerStep5": {
+    "description": "Femte trinn i migrasjonsveiledningen: avinstaller den gamle PWA-en etter vellykket migrering."
+  },
+  "migrationExplainerDataTitle": "Hva skjer med dataene mine her?",
+  "@migrationExplainerDataTitle": {
+    "description": "Overskrift på seksjonen som forklarer hva som skjer med lokal data."
+  },
+  "migrationExplainerDataBody": "Planene dine er lagret i nettleseren på ringdrill.app og forsvinner ikke automatisk. Du kan eksportere dem igjen her frem til du sletter nettleserdata for dette domenet. Etter neste oppdatering vil en egen migrasjonside på det nye domenet hjelpe deg med å overføre direkte.",
+  "@migrationExplainerDataBody": {
+    "description": "Brødtekst som forklarer hva som skjer med lokal data."
   }
 }

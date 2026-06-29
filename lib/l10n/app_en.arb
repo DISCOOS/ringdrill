@@ -1845,5 +1845,53 @@
   "migrationSettingsEntry": "About the migration to web.ringdrill.app",
   "@migrationSettingsEntry": {
     "description": "Settings list tile that opens the migration explainer page."
+  },
+  "migrationExplainerWhyTitle": "Why are we moving?",
+  "@migrationExplainerWhyTitle": {
+    "description": "Heading for the first section of the migration explainer."
+  },
+  "migrationExplainerWhyBody": "The web app is moving to a new domain, web.ringdrill.app, for better performance, stability and easier updates. The new domain will have its own dedicated app.",
+  "@migrationExplainerWhyBody": {
+    "description": "Body text explaining why the migration is happening."
+  },
+  "migrationExplainerChangesTitle": "What changes for you?",
+  "@migrationExplainerChangesTitle": {
+    "description": "Heading for the section explaining what changes for the user."
+  },
+  "migrationExplainerChangesBody": "The existing app at ringdrill.app will stop receiving updates. The new app is installed from web.ringdrill.app as a fresh PWA, just like you did when you installed this one.",
+  "@migrationExplainerChangesBody": {
+    "description": "Body text explaining what changes for the user."
+  },
+  "migrationExplainerStepsTitle": "How to transfer your plans",
+  "@migrationExplainerStepsTitle": {
+    "description": "Heading for the section with the step-by-step guide."
+  },
+  "migrationExplainerStep1": "Tap \"Export all my plans\" here in the app, or in the banner at the top.",
+  "@migrationExplainerStep1": {
+    "description": "First step in the migration guide."
+  },
+  "migrationExplainerStep2": "Open web.ringdrill.app and install the new app.",
+  "@migrationExplainerStep2": {
+    "description": "Second step in the migration guide."
+  },
+  "migrationExplainerStep3": "Choose Import and select the ZIP file you just downloaded.",
+  "@migrationExplainerStep3": {
+    "description": "Third step in the migration guide."
+  },
+  "migrationExplainerStep4": "All your plans are now available in the new app.",
+  "@migrationExplainerStep4": {
+    "description": "Fourth step in the migration guide."
+  },
+  "migrationExplainerStep5": "Uninstall the old app from your home screen or browser once you've checked that all your plans are in place in the new one.",
+  "@migrationExplainerStep5": {
+    "description": "Fifth step in the migration guide: uninstall the old PWA after a successful migration."
+  },
+  "migrationExplainerDataTitle": "What happens to my data here?",
+  "@migrationExplainerDataTitle": {
+    "description": "Heading for the section explaining what happens to local data."
+  },
+  "migrationExplainerDataBody": "Your plans are stored in the browser at ringdrill.app and will not disappear automatically. You can export them again from here until you clear browser data for this domain. A later update will add a dedicated migration page on the new domain that can transfer your data directly.",
+  "@migrationExplainerDataBody": {
+    "description": "Body text explaining what happens to local data."
   }
 }

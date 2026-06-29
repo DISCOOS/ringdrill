@@ -1814,4 +1814,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get migrationSettingsEntry =>
       'About the migration to web.ringdrill.app';
+
+  @override
+  String get migrationExplainerWhyTitle => 'Why are we moving?';
+
+  @override
+  String get migrationExplainerWhyBody =>
+      'The web app is moving to a new domain, web.ringdrill.app, for better performance, stability and easier updates. The new domain will have its own dedicated app.';
+
+  @override
+  String get migrationExplainerChangesTitle => 'What changes for you?';
+
+  @override
+  String get migrationExplainerChangesBody =>
+      'The existing app at ringdrill.app will stop receiving updates. The new app is installed from web.ringdrill.app as a fresh PWA, just like you did when you installed this one.';
+
+  @override
+  String get migrationExplainerStepsTitle => 'How to transfer your plans';
+
+  @override
+  String get migrationExplainerStep1 =>
+      'Tap \"Export all my plans\" here in the app, or in the banner at the top.';
+
+  @override
+  String get migrationExplainerStep2 =>
+      'Open web.ringdrill.app and install the new app.';
+
+  @override
+  String get migrationExplainerStep3 =>
+      'Choose Import and select the ZIP file you just downloaded.';
+
+  @override
+  String get migrationExplainerStep4 =>
+      'All your plans are now available in the new app.';
+
+  @override
+  String get migrationExplainerStep5 =>
+      'Uninstall the old app from your home screen or browser once you\'ve checked that all your plans are in place in the new one.';
+
+  @override
+  String get migrationExplainerDataTitle => 'What happens to my data here?';
+
+  @override
+  String get migrationExplainerDataBody =>
+      'Your plans are stored in the browser at ringdrill.app and will not disappear automatically. You can export them again from here until you clear browser data for this domain. A later update will add a dedicated migration page on the new domain that can transfer your data directly.';
 }

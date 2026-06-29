@@ -1810,4 +1810,48 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get migrationSettingsEntry => 'Om migrasjon til web.ringdrill.app';
+
+  @override
+  String get migrationExplainerWhyTitle => 'Hvorfor flytter vi?';
+
+  @override
+  String get migrationExplainerWhyBody =>
+      'Web-appen flyttes til et nytt domene, web.ringdrill.app, for bedre ytelse, stabilitet og enklere oppdateringer. Det nye domenet vil ha sin egen dedikerte app-løsning.';
+
+  @override
+  String get migrationExplainerChangesTitle => 'Hva endrer seg for deg?';
+
+  @override
+  String get migrationExplainerChangesBody =>
+      'Den eksisterende appen på ringdrill.app slutter å motta oppdateringer. Den nye appen installeres fra web.ringdrill.app som en ny PWA, akkurat som du gjorde da du installerte denne.';
+
+  @override
+  String get migrationExplainerStepsTitle => 'Slik overfører du planene dine';
+
+  @override
+  String get migrationExplainerStep1 =>
+      'Trykk «Eksporter alle planene mine» her i appen, eller i varselet øverst.';
+
+  @override
+  String get migrationExplainerStep2 =>
+      'Åpne web.ringdrill.app og installer den nye appen.';
+
+  @override
+  String get migrationExplainerStep3 =>
+      'Velg Importer og pek på ZIP-filen du nettopp lastet ned.';
+
+  @override
+  String get migrationExplainerStep4 =>
+      'Alle planene dine er nå tilgjengelige i den nye appen.';
+
+  @override
+  String get migrationExplainerStep5 =>
+      'Avinstaller den gamle appen fra hjemskjermen eller nettleseren når du har sjekket at alle planene er på plass i den nye.';
+
+  @override
+  String get migrationExplainerDataTitle => 'Hva skjer med dataene mine her?';
+
+  @override
+  String get migrationExplainerDataBody =>
+      'Planene dine er lagret i nettleseren på ringdrill.app og forsvinner ikke automatisk. Du kan eksportere dem igjen her frem til du sletter nettleserdata for dette domenet. Etter neste oppdatering vil en egen migrasjonside på det nye domenet hjelpe deg med å overføre direkte.';
 }

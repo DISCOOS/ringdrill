@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:markdown_widget/markdown_widget.dart';
 import 'package:ringdrill/data/bulk_export.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
@@ -10,20 +9,16 @@ import 'package:ringdrill/web/trigger_download_web.dart'
 /// Full-page migration explainer opened from the "Om migrasjon" /
 /// "About the migration" settings entry.
 ///
-/// Loads locale-specific markdown from the bundled asset files and renders
-/// it via [MarkdownWidget]. A re-export button at the bottom lets the user
-/// trigger the same ZIP export as the [MigrationBanner] primary action.
+/// Renders the explainer with native typography from the app theme rather
+/// than via a Markdown widget so the page matches the rest of the app. A
+/// re-export button at the bottom triggers the same ZIP export as the
+/// MigrationBanner primary action.
 class MigrationPage extends StatelessWidget {
   const MigrationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final locale = Localizations.localeOf(context);
-    final assetPath = locale.languageCode == 'nb'
-        ? 'lib/l10n/migration_explainer_nb.md'
-        : 'lib/l10n/migration_explainer_en.md';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -35,36 +30,48 @@ class MigrationPage extends StatelessWidget {
         title: Text(l10n.migrationSettingsEntry),
       ),
       body: SafeArea(
-        child: FutureBuilder<String>(
-          future: DefaultAssetBundle.of(context).loadString(assetPath),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return Column(
-              children: [
-                Expanded(
-                  child: MarkdownWidget(
-                    data: snapshot.data!,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    config: isDark
-                        ? MarkdownConfig.darkConfig
-                        : MarkdownConfig.defaultConfig,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                children: [
+                  _Section(
+                    title: l10n.migrationExplainerWhyTitle,
+                    body: l10n.migrationExplainerWhyBody,
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () => _export(context),
-                      child: Text(l10n.migrationBannerExport),
-                    ),
+                  _Section(
+                    title: l10n.migrationExplainerChangesTitle,
+                    body: l10n.migrationExplainerChangesBody,
                   ),
+                  _StepsSection(
+                    title: l10n.migrationExplainerStepsTitle,
+                    steps: [
+                      l10n.migrationExplainerStep1,
+                      l10n.migrationExplainerStep2,
+                      l10n.migrationExplainerStep3,
+                      l10n.migrationExplainerStep4,
+                      l10n.migrationExplainerStep5,
+                    ],
+                  ),
+                  _Section(
+                    title: l10n.migrationExplainerDataTitle,
+                    body: l10n.migrationExplainerDataBody,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => _export(context),
+                  child: Text(l10n.migrationBannerExport),
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -78,5 +85,79 @@ class MigrationPage extends StatelessWidget {
         .toList();
     final bytes = exportAllPrograms(programs);
     await triggerDownload(bulkExportFileName(DateTime.now()), bytes);
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(body, style: theme.textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepsSection extends StatelessWidget {
+  const _StepsSection({required this.title, required this.steps});
+
+  final String title;
+  final List<String> steps;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (var i = 0; i < steps.length; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    child: Text(
+                      '${i + 1}.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(steps[i], style: theme.textTheme.bodyMedium),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
