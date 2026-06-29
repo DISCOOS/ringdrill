@@ -968,6 +968,10 @@
   "@migrationBannerOpenNewApp": {
     "description": "Sekundærknapp på migrasjonsbanneret — åpner web.ringdrill.app."
   },
+  "migrationBannerMoreInfoHint": "Du finner mer informasjon om migrasjonen i menyen.",
+  "@migrationBannerMoreInfoHint": {
+    "description": "Henvisning under migrasjonsbanneret som peker på «Om migrasjon»-oppføringen i menyen."
+  },
   "migrationSettingsEntry": "Om migrasjon til web.ringdrill.app",
   "@migrationSettingsEntry": {
     "description": "Innstillingsrad som åpner migrasjonsbeskrivelsessiden."

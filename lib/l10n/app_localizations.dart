@@ -3116,6 +3116,12 @@ abstract class AppLocalizations {
   /// **'Open the new app'**
   String get migrationBannerOpenNewApp;
 
+  /// Hint below the migration banner pointing to the "About the migration" entry in the drawer.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll find more information about the migration in the menu.'**
+  String get migrationBannerMoreInfoHint;
+
   /// Settings list tile that opens the migration explainer page.
   ///
   /// In en, this message translates to:

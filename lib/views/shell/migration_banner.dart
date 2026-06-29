@@ -134,6 +134,28 @@ class _MigrationBannerState extends State<MigrationBanner> {
                           color: cs.onSecondaryContainer,
                         ),
                   ),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.menu,
+                        size: 14,
+                        color: cs.onSecondaryContainer,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          l10n.migrationBannerMoreInfoHint,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: cs.onSecondaryContainer,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
