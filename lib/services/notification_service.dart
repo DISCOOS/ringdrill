@@ -59,6 +59,7 @@ class NotificationService {
   static const int idExerciseNotification = 1001;
   static const String idActionStopExercise = 'stop_exercise';
   static const String idActionShowSettings = 'show_settings';
+  static const String idExerciseCategory = 'app.ringdrill.exercise';
   static final NotificationService _instance = NotificationService._internal();
   final StreamController<NotificationEvent> _eventController =
       StreamController<NotificationEvent>.broadcast();
@@ -78,8 +79,7 @@ class NotificationService {
   /// True when [permissionState] is `granted` — convenience for old
   /// call sites that just want to know whether notifications will
   /// fire.
-  bool get isEnabled =>
-      _permissionState == NotificationPermissionState.granted;
+  bool get isEnabled => _permissionState == NotificationPermissionState.granted;
 
   /// True when [FlutterLocalNotificationsPlugin.initialize] reported
   /// success during the most recent [init] call. Distinct from
@@ -192,7 +192,7 @@ class NotificationService {
           requestAlertPermission: false,
           notificationCategories: [
             DarwinNotificationCategory(
-              _localizations.exerciseNotifications,
+              idExerciseCategory,
               actions: <DarwinNotificationAction>[
                 DarwinNotificationAction.plain(
                   idActionStopExercise,
