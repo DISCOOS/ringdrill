@@ -179,6 +179,34 @@
   "@openFailure": {
     "description": "Message"
   },
+  "openInvalidDrill": "\"{name}\" is not a valid RingDrill file.",
+  "@openInvalidDrill": {
+    "description": "Shown when a chosen file is not a .drill archive at all (renamed file, wrong type, etc.).",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openEmptyDrill": "\"{name}\" is empty or has no content.",
+  "@openEmptyDrill": {
+    "description": "Shown when the chosen .drill file has no bytes or no entries.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openCorruptDrill": "\"{name}\" is damaged or incomplete.",
+  "@openCorruptDrill": {
+    "description": "Shown when a .drill archive is structurally valid ZIP but the program manifest is broken.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openUnsupportedSchema": "\"{name}\" uses a newer format. Update RingDrill to open it.",
+  "@openUnsupportedSchema": {
+    "description": "Shown when the .drill archive declares a schema this build does not understand.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
 
   "exportedProgram": "Exported Program",
   "@exportedProgram": {

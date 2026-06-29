@@ -9,6 +9,71 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:universal_io/io.dart';
 
+/// Why a `.drill` archive could not be parsed.
+///
+/// Distinguishes user-input problems (wrong file dragged onto the open
+/// sheet, half-downloaded blob, archive from a future RingDrill version)
+/// from genuine bugs. The UI maps each reason to a localized message and
+/// — critically — does NOT report these to Sentry, because they are not
+/// our defects.
+enum DrillFormatReason {
+  /// File bytes are empty, or the file does not exist on disk by the time
+  /// we try to read it.
+  empty,
+
+  /// Bytes are not a valid ZIP container at all (renamed `.pdf`, `.txt`,
+  /// truncated download, etc.).
+  notArchive,
+
+  /// Valid ZIP, but `program.json` is missing. Either a manually crafted
+  /// zip or a `.drill` produced by a very different tool.
+  missingProgram,
+
+  /// `program.json` (or `metadata.json`, or one of the entity manifests)
+  /// is present but the JSON or the schema-shape is wrong.
+  corruptManifest,
+
+  /// The archive declares a schema version this build does not know how
+  /// to read. Hint to the user: upgrade RingDrill.
+  schemaUnsupported,
+}
+
+/// Thrown by [DrillFile.program] when the archive cannot be parsed for
+/// reasons that are user-visible rather than a programming error.
+///
+/// Implements [FormatException] for backwards compatibility — any
+/// existing `on FormatException` catch sites keep working — but adds a
+/// typed [reason] so the import path can pick a useful message instead
+/// of the generic "Open failed, try again." snackbar.
+class DrillFormatException implements FormatException {
+  DrillFormatException(this.reason, this.message, {this.cause});
+
+  /// What category of format problem this is. Drives the user-visible
+  /// message.
+  final DrillFormatReason reason;
+
+  /// Human-readable, English diagnostic. Used in logs and as a fallback;
+  /// the UI maps [reason] to a localized message.
+  @override
+  final String message;
+
+  /// Original exception that triggered this wrap (ZIP decode error, JSON
+  /// parse error, …). Kept so debug logs still surface the underlying
+  /// cause; never logged to Sentry.
+  final Object? cause;
+
+  @override
+  dynamic get source => null;
+
+  @override
+  int get offset => -1;
+
+  @override
+  String toString() => cause == null
+      ? 'DrillFormatException(${reason.name}): $message'
+      : 'DrillFormatException(${reason.name}): $message (cause: $cause)';
+}
+
 class DrillFile {
   static const drillSchema1_0 = '1.0';
   static const drillSchema1_1 = '1.1';
@@ -65,7 +130,49 @@ class DrillFile {
     Program? program;
     ProgramMetadata? metadata;
 
-    final archive = ZipDecoder().decodeBytes(content);
+    if (content.isEmpty) {
+      throw DrillFormatException(
+        DrillFormatReason.empty,
+        'Invalid .drill archive: file is empty.',
+      );
+    }
+
+    // ZipDecoder is unfortunately lenient: feed it ASCII garbage and it
+    // happily returns an Archive with zero entries instead of throwing,
+    // which would then look like "empty zip" to the user even though
+    // they handed us a PDF. The fix is a cheap magic-byte sniff up
+    // front: every ZIP starts with "PK" (0x50 0x4B). Anything that
+    // doesn't is not a ZIP, full stop — surface that as `notArchive`
+    // before ZipDecoder gets a chance to lie about it.
+    if (content.length < 2 || content[0] != 0x50 || content[1] != 0x4B) {
+      throw DrillFormatException(
+        DrillFormatReason.notArchive,
+        'Invalid .drill archive: bytes are not a ZIP container '
+        '(missing PK signature).',
+      );
+    }
+
+    final Archive archive;
+    try {
+      archive = ZipDecoder().decodeBytes(content);
+    } catch (e) {
+      // Bytes had the PK signature but ZipDecoder still rejected them
+      // (truncated central directory, etc.). Treat as not-a-(usable)-
+      // archive so the user gets the same "wrong file" message instead
+      // of a raw RangeError / ArchiveException reaching the snackbar.
+      throw DrillFormatException(
+        DrillFormatReason.notArchive,
+        'Invalid .drill archive: bytes are not a valid ZIP container.',
+        cause: e,
+      );
+    }
+
+    if (archive.files.isEmpty) {
+      throw DrillFormatException(
+        DrillFormatReason.empty,
+        'Invalid .drill archive: ZIP container has no entries.',
+      );
+    }
 
     // Pass 1: index all archive entries by name.
     final index = <String, List<int>>{};
@@ -75,19 +182,49 @@ class DrillFile {
       }
     }
 
+    // Early fast-fail for the by-far most common breakage mode (the
+    // Sentry ticket that triggered this hardening). Catching it before
+    // we attempt to parse other entries means a `.drill` that ALSO has
+    // a malformed team manifest still surfaces the real problem
+    // ("program.json is missing") rather than a misleading "corrupt
+    // manifest" from the unrelated team entry that the iteration would
+    // otherwise hit first.
+    if (!index.containsKey('program.json')) {
+      throw DrillFormatException(
+        DrillFormatReason.missingProgram,
+        'Invalid .drill archive: missing required entry "program.json".',
+      );
+    }
+
     // Pass 2: classify and deserialize by exact path shape.
     for (final entry in index.entries) {
       final name = entry.key;
       final bytes = entry.value;
 
       if (name == 'program.json') {
-        final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-        program = Program.fromJson(json);
+        try {
+          final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+          program = Program.fromJson(json);
+        } catch (e) {
+          throw DrillFormatException(
+            DrillFormatReason.corruptManifest,
+            'Invalid .drill archive: program.json could not be parsed.',
+            cause: e,
+          );
+        }
         continue;
       }
       if (name == 'metadata.json') {
-        final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-        metadata = ProgramMetadata.fromJson(json);
+        try {
+          final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+          metadata = ProgramMetadata.fromJson(json);
+        } catch (e) {
+          throw DrillFormatException(
+            DrillFormatReason.corruptManifest,
+            'Invalid .drill archive: metadata.json could not be parsed.',
+            cause: e,
+          );
+        }
         continue;
       }
       if (name == 'program/intro.md') {
@@ -106,25 +243,36 @@ class DrillFile {
       final segments = name.split('/');
 
       if (segments.length == 2) {
-        // <folder>/<uuid>.json — entity manifests
+        // <folder>/<uuid>.json — entity manifests.
+        // Wrap per-entry so a single corrupt team/session/etc. surfaces
+        // as a typed format error (corruptManifest) instead of a raw
+        // TypeError/FormatException leaking through to the snackbar.
         final folder = segments[0];
         final file = segments[1];
         if (!file.endsWith('.json')) continue;
-        final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+        try {
+          final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
 
-        if (folder == 'teams') {
-          teams.add(Team.fromJson(json));
-        } else if (folder == 'sessions') {
-          sessions.add(Session.fromJson(json));
-        } else if (folder == 'exercises') {
-          final uuid = file.substring(0, file.length - 5); // strip .json
-          exerciseJsons[uuid] = json;
-        } else if (folder == 'roleplays') {
-          final uuid = file.substring(0, file.length - 5); // strip .json
-          rolePlayJsons[uuid] = json;
-        } else if (folder == 'actors') {
-          final uuid = file.substring(0, file.length - 5);
-          actorJsons[uuid] = json;
+          if (folder == 'teams') {
+            teams.add(Team.fromJson(json));
+          } else if (folder == 'sessions') {
+            sessions.add(Session.fromJson(json));
+          } else if (folder == 'exercises') {
+            final uuid = file.substring(0, file.length - 5); // strip .json
+            exerciseJsons[uuid] = json;
+          } else if (folder == 'roleplays') {
+            final uuid = file.substring(0, file.length - 5); // strip .json
+            rolePlayJsons[uuid] = json;
+          } else if (folder == 'actors') {
+            final uuid = file.substring(0, file.length - 5);
+            actorJsons[uuid] = json;
+          }
+        } catch (e) {
+          throw DrillFormatException(
+            DrillFormatReason.corruptManifest,
+            'Invalid .drill archive: entry "$name" could not be parsed.',
+            cause: e,
+          );
         }
         continue;
       }
@@ -170,7 +318,18 @@ class DrillFile {
     for (final entry in exerciseJsons.entries) {
       final uuid = entry.key;
       final json = entry.value;
-      var exercise = Exercise.fromJson(json);
+      late final Exercise base;
+      try {
+        base = Exercise.fromJson(json);
+      } catch (e) {
+        throw DrillFormatException(
+          DrillFormatReason.corruptManifest,
+          'Invalid .drill archive: entry "exercises/$uuid.json" '
+          'could not be parsed.',
+          cause: e,
+        );
+      }
+      var exercise = base;
 
       final exMd = exerciseMdFields[uuid];
       if (exMd != null && exMd.isNotEmpty) {
@@ -213,7 +372,18 @@ class DrillFile {
       final legacyBehavior = json['behavior'] as String?;
       final legacyBackground = json['background'] as String?;
 
-      var rp = RolePlay.fromJson(json);
+      late final RolePlay rpBase;
+      try {
+        rpBase = RolePlay.fromJson(json);
+      } catch (e) {
+        throw DrillFormatException(
+          DrillFormatReason.corruptManifest,
+          'Invalid .drill archive: entry "roleplays/$uuid.json" '
+          'could not be parsed.',
+          cause: e,
+        );
+      }
+      var rp = rpBase;
 
       final mdFields = rolePlayMdFields[uuid];
       final behavior = mdFields != null && mdFields.containsKey('behavior.md')
@@ -242,7 +412,18 @@ class DrillFile {
 
       final legacyNotes = json['notes'] as String?;
 
-      var actor = Actor.fromJson(json);
+      late final Actor actorBase;
+      try {
+        actorBase = Actor.fromJson(json);
+      } catch (e) {
+        throw DrillFormatException(
+          DrillFormatReason.corruptManifest,
+          'Invalid .drill archive: entry "actors/$uuid.json" '
+          'could not be parsed.',
+          cause: e,
+        );
+      }
+      var actor = actorBase;
 
       final notes = actorNotesFields.containsKey(uuid)
           ? actorNotesFields[uuid]
@@ -255,7 +436,8 @@ class DrillFile {
     }
 
     if (program == null) {
-      throw const FormatException(
+      throw DrillFormatException(
+        DrillFormatReason.missingProgram,
         'Invalid .drill archive: missing required entry "program.json".',
       );
     }
@@ -263,6 +445,33 @@ class DrillFile {
     // Fall back to the embedded metadata on the program shell so we can
     // still import those older archives instead of crashing.
     final effectiveMetadata = metadata ?? program.metadata;
+
+    // Reject archives from a future schema version this build does not
+    // know how to read. We only know about 1.0/1.1/1.2 today; anything
+    // higher is most likely from a newer RingDrill. Accept the unknown-
+    // but-non-numeric case (treat as legacy) so we don't accidentally
+    // refuse archives produced by tooling that left schema blank.
+    final schemaStr = effectiveMetadata.schema;
+    if (schemaStr != null && schemaStr.isNotEmpty) {
+      final parts = schemaStr.split('.');
+      final major = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
+      final minor = parts.length > 1 ? int.tryParse(parts[1]) : null;
+      final currentSplit = drillSchemaCurrent.split('.');
+      final currentMajor = int.parse(currentSplit[0]);
+      final currentMinor = int.parse(currentSplit[1]);
+      if (major != null && minor != null) {
+        final isFuture =
+            major > currentMajor ||
+            (major == currentMajor && minor > currentMinor);
+        if (isFuture) {
+          throw DrillFormatException(
+            DrillFormatReason.schemaUnsupported,
+            'Invalid .drill archive: schema "$schemaStr" is newer than '
+            'supported ($drillSchemaCurrent). Update RingDrill.',
+          );
+        }
+      }
+    }
 
     var result = program.copyWith(
       teams: teams,

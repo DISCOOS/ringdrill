@@ -160,6 +160,26 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String openInvalidDrill(String name) {
+    return '\"$name\" er ikke en gyldig RingDrill-fil.';
+  }
+
+  @override
+  String openEmptyDrill(String name) {
+    return '\"$name\" er tom eller mangler innhold.';
+  }
+
+  @override
+  String openCorruptDrill(String name) {
+    return '\"$name\" er skadet eller ufullstendig.';
+  }
+
+  @override
+  String openUnsupportedSchema(String name) {
+    return '\"$name\" bruker et nyere format. Oppdater RingDrill for å åpne den.';
+  }
+
+  @override
   String get exportedProgram => 'Eksportert Program';
 
   @override

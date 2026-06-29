@@ -368,6 +368,30 @@ abstract class AppLocalizations {
   /// **'Open \"{name}\" failed. Please try again.'**
   String openFailure(Object name);
 
+  /// Shown when a chosen file is not a .drill archive at all (renamed file, wrong type, etc.).
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is not a valid RingDrill file.'**
+  String openInvalidDrill(String name);
+
+  /// Shown when the chosen .drill file has no bytes or no entries.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is empty or has no content.'**
+  String openEmptyDrill(String name);
+
+  /// Shown when a .drill archive is structurally valid ZIP but the program manifest is broken.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is damaged or incomplete.'**
+  String openCorruptDrill(String name);
+
+  /// Shown when the .drill archive declares a schema this build does not understand.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" uses a newer format. Update RingDrill to open it.'**
+  String openUnsupportedSchema(String name);
+
   /// Label
   ///
   /// In en, this message translates to:

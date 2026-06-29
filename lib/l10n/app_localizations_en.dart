@@ -160,6 +160,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String openInvalidDrill(String name) {
+    return '\"$name\" is not a valid RingDrill file.';
+  }
+
+  @override
+  String openEmptyDrill(String name) {
+    return '\"$name\" is empty or has no content.';
+  }
+
+  @override
+  String openCorruptDrill(String name) {
+    return '\"$name\" is damaged or incomplete.';
+  }
+
+  @override
+  String openUnsupportedSchema(String name) {
+    return '\"$name\" uses a newer format. Update RingDrill to open it.';
+  }
+
+  @override
   String get exportedProgram => 'Exported Program';
 
   @override

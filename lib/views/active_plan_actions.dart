@@ -18,6 +18,7 @@ import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
@@ -419,6 +420,16 @@ Future<void> installPickedPlanFile(BuildContext context) async {
       // check short-circuits the post-frame setActive — only the URL
       // catches up here.
       context.go(programPath(program.uuid));
+    }
+  } on DrillFormatException catch (e) {
+    // Format errors come from the user picking the wrong file, not from
+    // an app bug. Show a reason-specific localized message and skip
+    // Sentry so the channel stays signal-only.
+    if (context.mounted) {
+      _showSnackBar(
+        context,
+        drillFormatMessage(localizations, drillFile.fileName, e),
+      );
     }
   } catch (e, stackTrace) {
     if (context.mounted) {

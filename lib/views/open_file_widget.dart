@@ -7,6 +7,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
+import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:universal_io/io.dart';
@@ -120,6 +121,20 @@ class OpenFileWidget extends StatelessWidget {
         // so the redirect gate short-circuits and only the URL catches up.
         context.go(programPath(program.uuid));
       }
+    } on DrillFormatException catch (e) {
+      // User picked the wrong file (or a half-downloaded one). Show the
+      // specific reason and skip Sentry — this is bad input, not a bug.
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(drillFormatMessage(localizations, name, e)),
+            dismissDirection: DismissDirection.endToStart,
+            showCloseIcon: true,
+            duration: const Duration(seconds: 15),
+          ),
+        );
+      }
     } on Exception catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       if (context.mounted) {
@@ -176,6 +191,20 @@ class OpenFileWidget extends StatelessWidget {
             content: Text(localizations.importSuccess(name)),
             dismissDirection: DismissDirection.endToStart,
             showCloseIcon: true,
+          ),
+        );
+      }
+    } on DrillFormatException catch (e) {
+      // Same split as the open path: typed format errors are user input,
+      // not a defect, so they get a specific message and skip Sentry.
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(drillFormatMessage(localizations, name, e)),
+            dismissDirection: DismissDirection.endToStart,
+            showCloseIcon: true,
+            duration: const Duration(seconds: 15),
           ),
         );
       }
