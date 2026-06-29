@@ -11,6 +11,8 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/web/legacy_host_web.dart'
+    if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,6 +36,17 @@ class SettingsPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
+            if (isLegacyHost()) ...[
+              ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: Text(localizations.migrationSettingsEntry),
+                onTap: () => openFormSurface<void>(
+                  context,
+                  builder: (_) => const MigrationPage(),
+                ),
+              ),
+              const Divider(),
+            ],
             AppUserRoleSettings(),
             const Divider(),
             AnalyticsConsentSettings(),
@@ -41,15 +54,6 @@ class SettingsPage extends StatelessWidget {
             NotificationSettingsWidget(),
             const Divider(),
             const MapSettingsWidget(),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: Text(localizations.migrationSettingsEntry),
-              onTap: () => openFormSurface<void>(
-                context,
-                builder: (_) => const MigrationPage(),
-              ),
-            ),
           ],
         ),
       ),
