@@ -2,17 +2,15 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/app_routes.dart';
-import 'package:ringdrill/views/main_screen.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -246,24 +244,21 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final router = GoRouter(
-      routes: [
-        for (final route in [routeProgram, routeMap])
-          GoRoute(path: route, builder: (_, _) => const SizedBox.shrink()),
-      ],
-    );
+
+    // After ADR-0032 the segment switcher pushes canonical
+    // /program/:uuid/:segment paths through `context.go(...)`. The
+    // hand-rolled GoRouter we used before had no segment routes and never
+    // re-rendered MainScreen with a new `location`, so taps short-circuited
+    // with `No GoRouter found in context`. Pump the production router and
+    // wrap it in `MaterialApp.router` so URL → state actually flows.
+    await ProgramService().setActive(_programUuid);
+    final router = buildRouter(false, true);
     addTearDown(router.dispose);
     await tester.pumpWidget(
-      MaterialApp(
+      MaterialApp.router(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: MainScreen(
-          router: router,
-          routes: const [routeProgram, routeMap],
-          location: routeProgram,
-          navigatorKey: GlobalKey<NavigatorState>(),
-          shellChild: const SizedBox.shrink(),
-        ),
+        routerConfig: router,
       ),
     );
     await tester.pumpAndSettle();
