@@ -1809,5 +1809,5 @@ class AppLocalizationsNb extends AppLocalizations {
   String get migrationBannerOpenNewApp => 'Åpne den nye appen';
 
   @override
-  String get migrationSettingsEntry => 'Om migrasjon';
+  String get migrationSettingsEntry => 'Om migrasjon til web.ringdrill.app';
 }

@@ -3119,7 +3119,7 @@ abstract class AppLocalizations {
   /// Settings list tile that opens the migration explainer page.
   ///
   /// In en, this message translates to:
-  /// **'About the migration'**
+  /// **'About the migration to web.ringdrill.app'**
   String get migrationSettingsEntry;
 }
 

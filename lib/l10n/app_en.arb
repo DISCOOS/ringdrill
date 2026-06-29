@@ -1842,7 +1842,7 @@
   "@migrationBannerOpenNewApp": {
     "description": "Secondary action button on the migration banner — opens web.ringdrill.app."
   },
-  "migrationSettingsEntry": "About the migration",
+  "migrationSettingsEntry": "About the migration to web.ringdrill.app",
   "@migrationSettingsEntry": {
     "description": "Settings list tile that opens the migration explainer page."
   }
