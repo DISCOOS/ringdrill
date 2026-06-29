@@ -6,8 +6,11 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/feedback.dart';
+import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/web/legacy_host_web.dart'
+    if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 
 /// Navigation drawer for the app shell. Owns its own tile list and all
 /// "active plan" actions; the host shell only mounts it as
@@ -162,6 +165,18 @@ class MainDrawer extends StatelessWidget {
           },
         ),
         const Divider(),
+        if (isLegacyHost())
+          _DrawerTile(
+            icon: Icons.swap_horiz,
+            title: localizations.migrationSettingsEntry,
+            onTap: () {
+              Navigator.pop(context);
+              openFormSurface<void>(
+                context,
+                builder: (_) => const MigrationPage(),
+              );
+            },
+          ),
         _DrawerTile(
           icon: Icons.settings,
           title: localizations.settings,
