@@ -36,6 +36,15 @@ GIT_COMMIT_SHORT := $(shell git rev-parse --short HEAD 2>/dev/null || echo unkno
 GIT_DIRTY        := $(shell git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || echo -dirty)
 DART_DEFINE_GIT  := --dart-define=GIT_COMMIT=$(GIT_COMMIT)$(GIT_DIRTY) --dart-define=GIT_COMMIT_SHORT=$(GIT_COMMIT_SHORT)$(GIT_DIRTY)
 
+# Migration kill-switch for ADR-0039 Phase 1. When set to `true` the in-app
+# migration banner, drawer entry and explainer are completely hidden. Used
+# while Phase 1 is on apex but `web.ringdrill.app` (Phase 2) has not yet
+# been stood up, so users do not see a banner pointing at a domain that
+# does not resolve. Default empty leaves the host detection in
+# lib/web/legacy_host_web.dart in charge.
+MIGRATION_DISABLED ?=
+DART_DEFINE_MIGRATION := $(if $(MIGRATION_DISABLED),--dart-define=MIGRATION_DISABLED=$(MIGRATION_DISABLED),)
+
 build:
 	echo "Run code generation..."
 	dart run build_runner build --delete-conflicting-outputs
@@ -83,7 +92,8 @@ build-web:
 		--release \
 		--pwa-strategy=offline-first \
 		--source-maps \
-		$(DART_DEFINE_GIT)
+		$(DART_DEFINE_GIT) \
+		$(DART_DEFINE_MIGRATION)
 	mkdir -p build/web/.well-known
 	cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
 
@@ -98,7 +108,8 @@ build-web-js:
 		--release \
 		--pwa-strategy=offline-first \
 		--source-maps \
-		$(DART_DEFINE_GIT)
+		$(DART_DEFINE_GIT) \
+		$(DART_DEFINE_MIGRATION)
 	mkdir -p build/web/.well-known
 	cp -f web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
 

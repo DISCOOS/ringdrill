@@ -118,6 +118,15 @@ jobs:
         # Compiles the web bundle with source maps and stages the
         # assetlinks.json file. The same command works locally for a
         # one-off prod build sanity check.
+        #
+        # MIGRATION_DISABLED=true hides the ADR-0039 Phase 1 migration
+        # banner, drawer entry and explainer in production. Phase 1
+        # code is shipped to apex this way so users do not see a banner
+        # pointing at `web.ringdrill.app` while Phase 2 has not yet
+        # stood up that domain. Remove this env (or flip to "false")
+        # when Phase 2 is verified and the migration UI should go live.
+        env:
+          MIGRATION_DISABLED: "true"
         run: make build-web
 
       - name: Upload sources and source maps to Sentry
