@@ -78,6 +78,16 @@ class SentryConfig {
     options.replay.sessionSampleRate = 0.1;
     options.replay.onErrorSampleRate = 1.0;
 
+    // Attach a Dart stack trace to events that don't carry one — most
+    // notably `Sentry.captureMessage(...)` calls (e.g. the
+    // `NotificationService failed to initialize` capture in main.dart).
+    // Without this option Sentry falls back to the iOS native thread state,
+    // which only resolves to Mach-O addresses like `App +0x... →
+    // kDartIsolateSnapshotInstructions` because the Dart AOT DWARF is split
+    // out by `--split-debug-info` into the symbols file Sentry uploads
+    // separately. The native frames carry no link to those symbols.
+    options.attachStacktrace = true;
+
     // Filter out well-known noise that we cannot act on. Matched as
     // substrings against the exception value. Anything originating from
     // browser-extension internals (chrome.runtime, WebExtensions messaging)
