@@ -38,14 +38,15 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0028 | [Group `lib/views/` by feature and distribute shared domain widgets](./0028-feature-first-views-layout.md) | Accepted |
 | ADR-0029 | [Surface a live mini player via ActivityKit on iOS and a foreground service notification on Android](./0029-live-activity-and-foreground-service.md) | Accepted |
 | ADR-0030 | [Adopt a Material 3 master/detail layout on medium and expanded viewports, promote forms to modal dialogs and anchor the drill mini-player to the master column](./0030-wide-screen-master-detail-layout.md) | Accepted |
-| ADR-0031 | [Row edit affordances use swipe and long-press; pencil reserved for AppBar](./0031-row-edit-affordances.md) | Proposed |
+| ADR-0031 | [Row edit affordances use swipe and long-press; pencil reserved for AppBar](./0031-row-edit-affordances.md) | Accepted |
 | ADR-0032 | [Prefix every program-scoped path with `/program/:uuid/` and drive activation from the URL](./0032-program-scoped-routing.md) | Accepted |
 | ADR-0033 | [Adopt a selective platform-adaptive UI layer on iOS, keeping Material as the base](./0033-platform-adaptive-ui-on-ios.md) | Accepted |
 | ADR-0034 | [Centralise numbering in one module and make number formats configurable per plan](./0034-configurable-numbering-formats.md) | Accepted |
 | ADR-0035 | [Give exercises an explicit order field and user-driven reordering](./0035-exercise-ordering.md) | Accepted |
-| ADR-0036 | [Extract a shared reorder section and let stations be reordered in the Stations segment and coordinator](./0036-shared-reorder-and-station-ordering.md) | Proposed |
+| ADR-0036 | [Extract a shared reorder section and let stations be reordered in the Stations segment and coordinator](./0036-shared-reorder-and-station-ordering.md) | Accepted |
 | ADR-0037 | [Size text for legibility on iOS: tighten the baseline type scale and clamp scaling at 1.3](./0037-text-sizing-and-legibility.md) | Accepted |
 | ADR-0038 | [Gate first-launch consent and rationale behind a four-stage onboarding](./0038-notification-consent-flow.md) | Accepted |
+| ADR-0039 | [Split the site, PWA and API across separate origins](./0039-site-pwa-api-origins.md) | Accepted |
 
 ## When to write an ADR
 

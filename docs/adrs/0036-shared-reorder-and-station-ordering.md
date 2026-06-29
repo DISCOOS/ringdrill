@@ -1,6 +1,6 @@
 ---
-status: proposed
-date: 2026-06-04
+status: accepted
+date: 2026-06-29
 deciders: ["@kengu"]
 consulted: []
 informed: []

@@ -100,6 +100,17 @@ When adding tests, prefer pure-Dart unit tests against `models/`, `data/` and `u
 * `.drill` files served by Netlify are forced to `Content-Disposition: attachment` with the custom MIME type. Do not change this without also updating the share/import handlers in `lib/data/drill_file.dart` and `lib/views/shared_file_widget.dart`.
 * The Shorebird `app_id` in `shorebird.yaml` is public and safe to commit. `sentry.properties` is gitignored and must not be committed.
 
+## Domain and hosting
+
+* The domain `ringdrill.app` is registered with **GoDaddy**. Renewal, WHOIS contacts and ownership records live in the GoDaddy account belonging to DISCOOS.
+* DNS authority is delegated to Netlify (NS1-based nameservers) today. [ADR-0039](./adrs/0039-site-pwa-api-origins.md) migrates DNS authority to Cloudflare and splits hosting across three origins:
+  - `ringdrill.app` (apex): static site on Cloudflare Pages (`ringdrill-site` project)
+  - `web.ringdrill.app`: Flutter PWA on Cloudflare Pages (`ringdrill-pwa` project)
+  - `api.ringdrill.app`: Netlify functions only, no static hosting
+* Until that migration lands, `ringdrill.app` continues to serve the Flutter PWA from Netlify alongside the functions. After migration, only Netlify functions remain on Netlify; the rest moves to Cloudflare.
+* SSL certificates are issued and renewed automatically by each hosting provider (Netlify today; Cloudflare for apex/www/web and Netlify for api after migration). No manual cert handling.
+* The registrar (GoDaddy) is only used for nameserver delegation. All record management happens at the DNS provider, not at the registrar.
+
 ## Backend (Netlify functions)
 
 Endpoints (see `netlify.toml` for the redirect map):
