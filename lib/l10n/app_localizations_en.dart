@@ -571,9 +571,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openNotification => 'Open notification';
 
   @override
-  String get exerciseNotifications => 'Show notification';
-
-  @override
   String stopExerciseFirst(Object exercise) {
     return 'Stop $exercise first!';
   }

@@ -992,12 +992,6 @@ abstract class AppLocalizations {
   /// **'Open notification'**
   String get openNotification;
 
-  /// Message
-  ///
-  /// In en, this message translates to:
-  /// **'Show notification'**
-  String get exerciseNotifications;
-
   /// Parameterized message
   ///
   /// In en, this message translates to:

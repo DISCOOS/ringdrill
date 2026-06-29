@@ -569,9 +569,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get openNotification => 'Åpne varsel';
 
   @override
-  String get exerciseNotifications => 'Vis varsel';
-
-  @override
   String stopExerciseFirst(Object exercise) {
     return 'Stop $exercise først!';
   }

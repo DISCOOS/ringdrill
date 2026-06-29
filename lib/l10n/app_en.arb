@@ -613,10 +613,6 @@
   "@openNotification": {
     "description": "Message"
   },
-  "exerciseNotifications": "Show notification",
-  "@exerciseNotifications": {
-    "description": "Message"
-  },
   "stopExerciseFirst": "Stop {exercise} first!",
   "@stopExerciseFirst": {
     "description": "Parameterized message"
