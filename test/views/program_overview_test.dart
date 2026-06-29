@@ -2,12 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
@@ -112,17 +114,77 @@ class _HarnessControllers {
 }
 
 Widget _harness(_HarnessControllers controllers, {bool chrome = false}) {
-  return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: ValueListenableBuilder<ProgramSegment>(
-      valueListenable: controllers.program.activeSegment,
+  return _ProgramOverviewHarness(controllers: controllers, chrome: chrome);
+}
+
+/// Stateful wrapper that owns the in-test [GoRouter] so its `dispose()` is
+/// invoked when the Flutter test tears down the widget tree. The router
+/// exists because [_ProgramSegmentSwitcher] in `program_view.dart` pushes
+/// canonical `/program/:uuid/:segment` paths through `context.go(...)` per
+/// ADR-0032 *Activation contract* — the URL is the source of truth, and the
+/// controller's `activeSegment` is updated by the redirect gate, not by the
+/// switcher itself. The redirect here mirrors `MainScreen._initTab` in
+/// production: when the URL ends in a recognised segment slug, write that
+/// slug into the controller so the segmented button reflects the tap.
+class _ProgramOverviewHarness extends StatefulWidget {
+  const _ProgramOverviewHarness({
+    required this.controllers,
+    required this.chrome,
+  });
+
+  final _HarnessControllers controllers;
+  final bool chrome;
+
+  @override
+  State<_ProgramOverviewHarness> createState() =>
+      _ProgramOverviewHarnessState();
+}
+
+class _ProgramOverviewHarnessState extends State<_ProgramOverviewHarness> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = GoRouter(
+      initialLocation: programSegmentPath(
+        _programUuid,
+        programSegmentDefaultSlug,
+      ),
+      redirect: (context, state) {
+        final segments = state.uri.pathSegments;
+        if (segments.length >= 3 && segments[0] == 'program') {
+          final segment = programSegmentFromSlug(segments[2]);
+          if (segment != null) {
+            widget.controllers.program.activeSegment.value = segment;
+          }
+        }
+        return null;
+      },
+      routes: [
+        GoRoute(
+          path: '/program/:uuid/:segment',
+          builder: (context, _) => _buildBody(context),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return ValueListenableBuilder<ProgramSegment>(
+      valueListenable: widget.controllers.program.activeSegment,
       builder: (context, _, child) {
         return Scaffold(
-          appBar: chrome
+          appBar: widget.chrome
               ? AppBar(
                   actions: [
-                    ...?controllers.program.buildActions(
+                    ...?widget.controllers.program.buildActions(
                       context,
                       const BoxConstraints(),
                     ),
@@ -130,18 +192,30 @@ Widget _harness(_HarnessControllers controllers, {bool chrome = false}) {
                 )
               : null,
           body: child!,
-          floatingActionButton: chrome
-              ? controllers.program.buildFAB(context, const BoxConstraints())
+          floatingActionButton: widget.chrome
+              ? widget.controllers.program.buildFAB(
+                  context,
+                  const BoxConstraints(),
+                )
               : null,
         );
       },
       child: ProgramView(
-        controller: controllers.program,
-        stationListController: controllers.stationList,
-        rolePlaysController: controllers.rolePlays,
+        controller: widget.controllers.program,
+        stationListController: widget.controllers.stationList,
+        rolePlaysController: widget.controllers.rolePlays,
       ),
-    ),
-  );
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: _router,
+    );
+  }
 }
 
 
