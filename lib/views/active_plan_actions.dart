@@ -398,44 +398,63 @@ Future<DrillFile?> pickOpenPlanFile(BuildContext context) {
   );
 }
 
-Future<void> installPickedPlanFile(BuildContext context) async {
+/// Outcome of [installPickedPlanFile]. The caller decides where to
+/// surface the message — typically inline inside the host dialog,
+/// because a snackbar dispatched from inside a modal dialog ends up
+/// behind the modal backdrop and the user never sees it.
+class InstallPickedOutcome {
+  const InstallPickedOutcome._({
+    this.program,
+    this.errorMessage,
+    this.isFormatError = false,
+  });
+
+  /// Set on success. The plan has already been installed and activated.
+  final Program? program;
+
+  /// Localized, user-ready message. Null on success and on user cancel.
+  final String? errorMessage;
+
+  /// True when [errorMessage] originated from a [DrillFormatException]
+  /// (user picked the wrong file). False for generic install failures
+  /// or system-state refusals such as "cannot switch while running".
+  final bool isFormatError;
+
+  bool get isSuccess => program != null;
+  bool get isCancelled => program == null && errorMessage == null;
+}
+
+Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
   if (ExerciseService().isStarted) {
-    _showSnackBar(context, localizations.libraryCannotSwitchRunning);
-    return;
+    return InstallPickedOutcome._(
+      errorMessage: localizations.libraryCannotSwitchRunning,
+    );
   }
   final drillFile = await pickOpenPlanFile(context);
-  if (!context.mounted || drillFile == null) return;
+  if (!context.mounted || drillFile == null) {
+    return const InstallPickedOutcome._();
+  }
 
   try {
     final program = await ProgramService().installFromFile(
       drillFile,
       activate: true,
     );
-    if (context.mounted) {
-      _showSnackBar(context, localizations.openedAndActivated(program.name));
-      // ADR-0032 *Activation contract*: move the URL to the newly active
-      // plan. `installFromFile(activate: true)` already wrote
-      // `activeProgramUuid` on disk, so the redirect gate's idempotent
-      // check short-circuits the post-frame setActive — only the URL
-      // catches up here.
-      context.go(programPath(program.uuid));
-    }
+    return InstallPickedOutcome._(program: program);
   } on DrillFormatException catch (e) {
-    // Format errors come from the user picking the wrong file, not from
-    // an app bug. Show a reason-specific localized message and skip
-    // Sentry so the channel stays signal-only.
-    if (context.mounted) {
-      _showSnackBar(
-        context,
-        drillFormatMessage(localizations, drillFile.fileName, e),
-      );
-    }
+    // Format errors come from the user picking the wrong file, not
+    // from an app bug. Surface the reason-specific localized message
+    // and skip Sentry so that channel stays signal-only.
+    return InstallPickedOutcome._(
+      errorMessage: drillFormatMessage(localizations, drillFile.fileName, e),
+      isFormatError: true,
+    );
   } catch (e, stackTrace) {
-    if (context.mounted) {
-      _showSnackBar(context, localizations.openFailure(drillFile.fileName));
-    }
     unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+    return InstallPickedOutcome._(
+      errorMessage: localizations.openFailure(drillFile.fileName),
+    );
   }
 }
 

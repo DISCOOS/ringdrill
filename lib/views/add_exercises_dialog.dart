@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/data/drill_client.dart';
+import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/program_diff_widgets.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
+import 'package:ringdrill/views/widgets/picker_error_banner.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -87,10 +90,20 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
   final _programService = ProgramService();
   late final TabController _tabController;
 
+  /// Last error message produced by the From-File tab's picker flow.
+  /// Rendered inline so the user sees it instead of having it disappear
+  /// behind the modal backdrop — same reasoning as the library dialog.
+  String? _fromFileError;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_fromFileError != null && _tabController.index != 2) {
+        setState(() => _fromFileError = null);
+      }
+    });
   }
 
   @override
@@ -161,6 +174,14 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
                     label: Text(localizations.libraryFromFilePickAction),
                     onPressed: () => _mergeFromFile(context),
                   ),
+                  if (_fromFileError != null) ...[
+                    const SizedBox(height: 20),
+                    PickerErrorBanner(
+                      message: _fromFileError!,
+                      onDismiss: () =>
+                          setState(() => _fromFileError = null),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -261,6 +282,9 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
   }
 
   Future<void> _mergeFromFile(BuildContext context) async {
+    // Wipe any stale banner before kicking off — re-tapping after a
+    // bad pick should read as a fresh attempt, not a stuck error.
+    if (_fromFileError != null) setState(() => _fromFileError = null);
     final localizations = AppLocalizations.of(context)!;
     final drillFile = await ProgramPageController.pickOpenFile(
       context,
@@ -283,9 +307,25 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
       if (!context.mounted || program == null) return;
       _showSnackBar(context, localizations.importSuccess(drillFile.fileName));
       Navigator.pop(context);
+    } on DrillFormatException catch (e) {
+      // Format errors are bad input, not bugs. Show the reason-
+      // specific message inline so the user sees it (a snackbar from
+      // inside this dialog lands behind the modal backdrop), and
+      // skip Sentry.
+      if (mounted) {
+        setState(() {
+          _fromFileError = drillFormatMessage(
+            localizations,
+            drillFile.fileName,
+            e,
+          );
+        });
+      }
     } on Exception catch (e, stackTrace) {
-      if (context.mounted) {
-        _showSnackBar(context, localizations.importFailure(drillFile.fileName));
+      if (mounted) {
+        setState(() {
+          _fromFileError = localizations.importFailure(drillFile.fileName);
+        });
       }
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
     }

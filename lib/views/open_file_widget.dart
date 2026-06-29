@@ -95,61 +95,64 @@ class OpenFileWidget extends StatelessWidget {
     File file,
   ) async {
     final name = basename(file.path);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening program: $name'),
-        dismissDirection: DismissDirection.endToStart,
-        showCloseIcon: true,
-      ),
-    );
+    // Snapshot the messenger and router BEFORE the sheet is popped. The
+    // sheet's BuildContext becomes deactivated on pop, and any snackbar
+    // we'd then post via `ScaffoldMessenger.of(context)` would either
+    // throw or — worse — render under the bottom sheet that is still
+    // animating out. Holding a long-lived handle lets us close the
+    // sheet first and then post the result on the underlying screen.
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final navigator = Navigator.of(context);
+
+    // The "Opening program: …" pre-flight snack used to be posted on
+    // the sheet messenger and immediately covered by the sheet itself.
+    // Removed: by the time the user has tapped Open they already know
+    // we are opening, and the success/failure snack below carries the
+    // outcome.
+    if (navigator.canPop()) navigator.pop();
+
     try {
       final program = await ProgramService().installFromFile(
         DrillFile.fromFile(file),
         activate: true,
       );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.openedAndActivated(program.name)),
-            dismissDirection: DismissDirection.endToStart,
-            showCloseIcon: true,
-          ),
-        );
-        // ADR-0032 *Activation contract*: move the URL to the newly
-        // active plan; installFromFile already wrote `activeProgramUuid`,
-        // so the redirect gate short-circuits and only the URL catches up.
-        context.go(programPath(program.uuid));
-      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(localizations.openedAndActivated(program.name)),
+          dismissDirection: DismissDirection.endToStart,
+          showCloseIcon: true,
+        ),
+      );
+      // ADR-0032 *Activation contract*: move the URL to the newly
+      // active plan; installFromFile already wrote `activeProgramUuid`,
+      // so the redirect gate short-circuits and only the URL catches up.
+      router.go(programPath(program.uuid));
     } on DrillFormatException catch (e) {
       // User picked the wrong file (or a half-downloaded one). Show the
       // specific reason and skip Sentry — this is bad input, not a bug.
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(drillFormatMessage(localizations, name, e)),
-            dismissDirection: DismissDirection.endToStart,
-            showCloseIcon: true,
-            duration: const Duration(seconds: 15),
-          ),
-        );
-      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(drillFormatMessage(localizations, name, e)),
+          dismissDirection: DismissDirection.endToStart,
+          showCloseIcon: true,
+          duration: const Duration(seconds: 15),
+        ),
+      );
     } on Exception catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.openFailure(name)),
-            dismissDirection: DismissDirection.endToStart,
-            showCloseIcon: true,
-            duration: const Duration(seconds: 15),
-          ),
-        );
-      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(localizations.openFailure(name)),
+          dismissDirection: DismissDirection.endToStart,
+          showCloseIcon: true,
+          duration: const Duration(seconds: 15),
+        ),
+      );
     }
-    if (context.mounted) Navigator.pop(context);
   }
 
   void _handleImportFile(
@@ -158,13 +161,14 @@ class OpenFileWidget extends StatelessWidget {
     File file,
   ) async {
     final name = basename(file.path);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Importing program: $name'),
-        dismissDirection: DismissDirection.endToStart,
-        showCloseIcon: true,
-      ),
-    );
+    // See _handleOpenFile for why the messenger and navigator are
+    // snapshotted before any pop. Import has the added wrinkle of
+    // selectExercises, which itself wants a live context — so we keep
+    // the sheet open while we read the file and let the user choose,
+    // and only close it before posting the result snack.
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     try {
       final program = await ProgramService().importProgram(
         localizations,
@@ -184,9 +188,10 @@ class OpenFileWidget extends StatelessWidget {
               : items.where((e) => selected.contains(e.uuid));
         },
       );
-      if (context.mounted && program != null) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (navigator.canPop()) navigator.pop();
+      if (program != null) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
           SnackBar(
             content: Text(localizations.importSuccess(name)),
             dismissDirection: DismissDirection.endToStart,
@@ -197,31 +202,28 @@ class OpenFileWidget extends StatelessWidget {
     } on DrillFormatException catch (e) {
       // Same split as the open path: typed format errors are user input,
       // not a defect, so they get a specific message and skip Sentry.
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(drillFormatMessage(localizations, name, e)),
-            dismissDirection: DismissDirection.endToStart,
-            showCloseIcon: true,
-            duration: const Duration(seconds: 15),
-          ),
-        );
-      }
+      if (navigator.canPop()) navigator.pop();
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(drillFormatMessage(localizations, name, e)),
+          dismissDirection: DismissDirection.endToStart,
+          showCloseIcon: true,
+          duration: const Duration(seconds: 15),
+        ),
+      );
     } on Exception catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.importFailure(name)),
-            dismissDirection: DismissDirection.endToStart,
-            showCloseIcon: true,
-            duration: const Duration(seconds: 15),
-          ),
-        );
-      }
+      if (navigator.canPop()) navigator.pop();
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(localizations.importFailure(name)),
+          dismissDirection: DismissDirection.endToStart,
+          showCloseIcon: true,
+          duration: const Duration(seconds: 15),
+        ),
+      );
     }
-    if (context.mounted) Navigator.pop(context);
   }
 }

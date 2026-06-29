@@ -17,6 +17,7 @@ import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
+import 'package:ringdrill/views/widgets/picker_error_banner.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -60,10 +61,25 @@ class _LibraryBodyState extends State<_LibraryBody>
   final _programService = ProgramService();
   late final TabController _tabController;
 
+  /// Last error message produced by the From-File tab's picker flow.
+  /// Rendered as an inline banner above the pick-file button so the
+  /// user can read and dismiss it without leaving the dialog — a
+  /// snackbar from inside a modal lands behind the modal backdrop
+  /// and never reaches the user.
+  String? _fromFileError;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Clear the From-File error as soon as the user navigates away
+    // from the tab — re-entering on a clean slate matches the
+    // expectation that errors are scoped to the in-progress action.
+    _tabController.addListener(() {
+      if (_fromFileError != null && _tabController.index != 2) {
+        setState(() => _fromFileError = null);
+      }
+    });
   }
 
   @override
@@ -233,6 +249,14 @@ class _LibraryBodyState extends State<_LibraryBody>
                     label: Text(localizations.libraryFromFilePickAction),
                     onPressed: () => _installFromFile(context),
                   ),
+                  if (_fromFileError != null) ...[
+                    const SizedBox(height: 20),
+                    PickerErrorBanner(
+                      message: _fromFileError!,
+                      onDismiss: () =>
+                          setState(() => _fromFileError = null),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -303,12 +327,25 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 
   Future<void> _installFromFile(BuildContext context) async {
-    final before = _programService.activeProgramUuid;
-    await active_actions.installPickedPlanFile(context);
+    // Clear any stale banner before kicking off a fresh attempt so a
+    // second pick of the same bad file still reads as a new failure.
+    if (_fromFileError != null) setState(() => _fromFileError = null);
+    final router = GoRouter.of(context);
+    final outcome = await active_actions.installPickedPlanFile(context);
     if (!context.mounted) return;
-    if (_programService.activeProgramUuid != null &&
-        _programService.activeProgramUuid != before) {
+    if (outcome.isSuccess) {
+      // ADR-0032 *Activation contract*: navigate to the newly active
+      // plan, then close the library dialog. installFromFile already
+      // wrote `activeProgramUuid`, so the redirect gate short-circuits
+      // and only the URL catches up.
+      router.go(programPath(outcome.program!.uuid));
       Navigator.pop(context);
+      return;
+    }
+    if (outcome.errorMessage != null) {
+      // Inline error inside the dialog so the message is not
+      // covered by the modal backdrop.
+      setState(() => _fromFileError = outcome.errorMessage);
     }
   }
 
@@ -555,4 +592,5 @@ class _LibraryBodyState extends State<_LibraryBody>
     );
   }
 }
+
 
