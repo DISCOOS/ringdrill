@@ -1824,5 +1824,26 @@
   "startHereCue": "Start here",
   "@startHereCue": {
     "description": "First-run-only inline pill label beside the first Program FAB, nudging the user to create their first exercise."
+  },
+
+  "migrationBannerHeading": "The web app is moving to web.ringdrill.app.",
+  "@migrationBannerHeading": {
+    "description": "Bold heading on the in-app migration banner shown when the PWA runs on the legacy apex origin."
+  },
+  "migrationBannerBody": "Download your plans here and open the new app.",
+  "@migrationBannerBody": {
+    "description": "Body line on the migration banner below the heading."
+  },
+  "migrationBannerExport": "Export all my plans",
+  "@migrationBannerExport": {
+    "description": "Primary action button on the migration banner — triggers bulk ZIP export."
+  },
+  "migrationBannerOpenNewApp": "Open the new app",
+  "@migrationBannerOpenNewApp": {
+    "description": "Secondary action button on the migration banner — opens web.ringdrill.app."
+  },
+  "migrationSettingsEntry": "About the migration",
+  "@migrationSettingsEntry": {
+    "description": "Settings list tile that opens the migration explainer page."
   }
 }

@@ -4,6 +4,7 @@ import 'package:ringdrill/views/drill_player/docked_drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/drill_player_coordinator.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/migration_banner.dart';
 import 'package:ringdrill/views/shell/shell_chrome.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -121,16 +122,27 @@ class WideShell extends StatelessWidget {
     // widths render the compact narrow layout instead, so there is no
     // longer a "rail without detail" branch here.
     if (currentTab == 1) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
+      return Column(
         children: [
-          rail,
-          Expanded(child: tabs),
+          const MigrationBanner(),
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                rail,
+                Expanded(child: tabs),
+              ],
+            ),
+          ),
         ],
       );
     }
 
-    return MasterDetailScope(
+    return Column(
+      children: [
+        const MigrationBanner(),
+        Expanded(
+          child: MasterDetailScope(
       target: contextSheetController.targetNotifier,
       emptyPaneBuilder: emptyPaneBuilder,
       child: Row(
@@ -219,6 +231,9 @@ class WideShell extends StatelessWidget {
           const Expanded(child: MasterDetailPane()),
         ],
       ),
+        ),
+      ),
+      ],
     );
   }
 }

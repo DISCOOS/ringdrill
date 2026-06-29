@@ -1793,4 +1793,21 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get startHereCue => 'Start her';
+
+  @override
+  String get migrationBannerHeading =>
+      'Web-appen flytter til web.ringdrill.app.';
+
+  @override
+  String get migrationBannerBody =>
+      'Last ned planene dine her og åpne den nye appen.';
+
+  @override
+  String get migrationBannerExport => 'Eksporter alle planene mine';
+
+  @override
+  String get migrationBannerOpenNewApp => 'Åpne den nye appen';
+
+  @override
+  String get migrationSettingsEntry => 'Om migrasjon';
 }

@@ -950,5 +950,26 @@
   "startHereCue": "Start her",
   "@startHereCue": {
     "description": "Engangs inline-pill-merkelapp ved siden av første Program-FAB, som nudger brukeren til å opprette sin første øvelse."
+  },
+
+  "migrationBannerHeading": "Web-appen flytter til web.ringdrill.app.",
+  "@migrationBannerHeading": {
+    "description": "Fet overskrift på migrasjonsvarsel-banneret som vises når PWA kjører på det gamle apex-domenet."
+  },
+  "migrationBannerBody": "Last ned planene dine her og åpne den nye appen.",
+  "@migrationBannerBody": {
+    "description": "Brødtekst på migrasjonsbanneret under overskriften."
+  },
+  "migrationBannerExport": "Eksporter alle planene mine",
+  "@migrationBannerExport": {
+    "description": "Primærknapp på migrasjonsbanneret — starter ZIP-eksport av alle planer."
+  },
+  "migrationBannerOpenNewApp": "Åpne den nye appen",
+  "@migrationBannerOpenNewApp": {
+    "description": "Sekundærknapp på migrasjonsbanneret — åpner web.ringdrill.app."
+  },
+  "migrationSettingsEntry": "Om migrasjon",
+  "@migrationSettingsEntry": {
+    "description": "Innstillingsrad som åpner migrasjonsbeskrivelsessiden."
   }
 }

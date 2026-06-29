@@ -3091,6 +3091,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start here'**
   String get startHereCue;
+
+  /// Bold heading on the in-app migration banner shown when the PWA runs on the legacy apex origin.
+  ///
+  /// In en, this message translates to:
+  /// **'The web app is moving to web.ringdrill.app.'**
+  String get migrationBannerHeading;
+
+  /// Body line on the migration banner below the heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Download your plans here and open the new app.'**
+  String get migrationBannerBody;
+
+  /// Primary action button on the migration banner — triggers bulk ZIP export.
+  ///
+  /// In en, this message translates to:
+  /// **'Export all my plans'**
+  String get migrationBannerExport;
+
+  /// Secondary action button on the migration banner — opens web.ringdrill.app.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the new app'**
+  String get migrationBannerOpenNewApp;
+
+  /// Settings list tile that opens the migration explainer page.
+  ///
+  /// In en, this message translates to:
+  /// **'About the migration'**
+  String get migrationSettingsEntry;
 }
 
 class _AppLocalizationsDelegate

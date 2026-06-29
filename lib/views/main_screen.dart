@@ -19,6 +19,7 @@ import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/roster_view.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/main_drawer.dart';
+import 'package:ringdrill/views/shell/migration_banner.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/shell_chrome.dart';
 import 'package:ringdrill/views/shell/shell_notifications.dart';
@@ -310,9 +311,14 @@ class _MainScreenState extends State<MainScreen>
                     drillPlayer: _drillPlayer,
                   )
                 : SafeArea(
-                    // Keep all tabs in memory allowing state to persist
-                    // between tab switches.
-                    child: tabsStack,
+                    child: Column(
+                      children: [
+                        const MigrationBanner(),
+                        // Keep all tabs in memory allowing state to persist
+                        // between tab switches.
+                        Expanded(child: tabsStack),
+                      ],
+                    ),
                   ),
             shellSentinel,
           ],
