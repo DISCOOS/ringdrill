@@ -1,0 +1,26 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+const { frontmatter } = Astro.props;
+const lang = (frontmatter.lang as 'nb' | 'en') ?? 'en';
+const canonicalPath: string = frontmatter.canonicalPath ?? Astro.url.pathname;
+// Same page in the other language (slugs stay English).
+const altHref =
+  lang === 'nb' ? `/en${canonicalPath}` : canonicalPath.replace(/^\/en/, '') || '/';
+---
+<BaseLayout
+  lang={lang}
+  title={frontmatter.title}
+  description={frontmatter.description}
+  canonicalPath={canonicalPath}
+>
+  <Nav lang={lang} langHref={altHref} />
+  <main class="section">
+    <article class="container prose">
+      <slot />
+    </article>
+  </main>
+  <Footer lang={lang} langHref={altHref} />
+</BaseLayout>

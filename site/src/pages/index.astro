@@ -1,15 +1,21 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Hero from '../components/Hero.astro';
+import Features from '../components/Features.astro';
+import Screenshots from '../components/Screenshots.astro';
+import Cta from '../components/Cta.astro';
+import Footer from '../components/Footer.astro';
+import { t } from '../i18n';
+const c = t('nb');
 ---
-<BaseLayout
-  lang="nb"
-  description="Effektiv stasjonsbasert trening. Planlegg, kjør og følg opp øvelser uten klissete regneark."
->
-  <h1>RingDrill</h1>
-  <p>Effektiv stasjonsbasert trening. Planlegg, kjør og følg opp øvelser uten klissete regneark.</p>
-  <p>
-    <a href="https://play.google.com/store/apps/details?id=org.discoos.ringdrill">Last ned</a>
-    &nbsp;·&nbsp;
-    <a href="https://web.ringdrill.app/">Åpne web-versjonen</a>
-  </p>
+<BaseLayout lang="nb" title={c.htmlTitle} description={c.metaDescription}>
+  <Nav lang="nb" />
+  <main>
+    <Hero lang="nb" />
+    <Features lang="nb" />
+    <Screenshots lang="nb" />
+    <Cta lang="nb" />
+  </main>
+  <Footer lang="nb" />
 </BaseLayout>

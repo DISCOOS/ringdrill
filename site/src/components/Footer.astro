@@ -1,0 +1,50 @@
+---
+import { t, type Lang } from '../i18n';
+interface Props { lang: Lang; langHref?: string; }
+const { lang, langHref } = Astro.props;
+const c = t(lang);
+const switchHref = langHref ?? c.nav.langSwitchHref;
+---
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <a class="brand" href={lang === 'nb' ? '/' : '/en/'}>
+          <img src="/brand/logo.png" alt="" />
+          <span>RingDrill</span>
+        </a>
+        <p>{c.footer.tagline}</p>
+      </div>
+
+      <div class="footer__col">
+        <h4>{c.footer.colMade}</h4>
+        <ul>
+          <li><a href={c.footer.madeByHref}>{c.footer.madeBy}</a></li>
+        </ul>
+      </div>
+
+      <div class="footer__col">
+        <h4>{c.footer.colLinks}</h4>
+        <ul>
+          {c.footer.links.map((l) => (
+            <li><a href={l.href}>{l.label}</a></li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="footer__col">
+        <h4>{c.footer.colLegal}</h4>
+        <ul>
+          {c.footer.legal.map((l) => (
+            <li><a href={l.href}>{l.label}</a></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <span>{c.footer.copyrightPre}<a href={c.footer.repoHref}>{c.footer.openSource}</a>{c.footer.copyrightPost}</span>
+      <a href={switchHref}>{c.nav.langSwitch}</a>
+    </div>
+  </div>
+</footer>

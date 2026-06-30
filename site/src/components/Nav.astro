@@ -1,0 +1,21 @@
+---
+import { t, type Lang } from '../i18n';
+interface Props { lang: Lang; langHref?: string; }
+const { lang, langHref } = Astro.props;
+const c = t(lang);
+const home = lang === 'nb' ? '/' : '/en/';
+const switchHref = langHref ?? c.nav.langSwitchHref;
+---
+<nav class="nav">
+  <div class="container nav__inner">
+    <a class="brand" href={home}>
+      <img src="/brand/logo.png" alt="" />
+      <span>RingDrill</span>
+    </a>
+    <div class="nav__links">
+      <a class="nav__hide-sm" href={`${home}#features`}>{c.nav.features}</a>
+      <a class="nav__hide-sm" href={switchHref}>{c.nav.langSwitch}</a>
+      <a class="btn btn--primary btn--sm" href={c.hero.primaryHref}>{c.nav.download}</a>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,18 @@
+---
+// Minimal client-side redirect page. Used for retired paths (e.g. /tos -> /terms).
+const { frontmatter } = Astro.props;
+const to: string = frontmatter.redirectTo;
+const siteDomain = 'ringdrill.app';
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <link rel="canonical" href={`https://${siteDomain}${to}`} />
+    <meta http-equiv="refresh" content={`0; url=${to}`} />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <p>This page has moved to <a href={to}>{to}</a>.</p>
+  </body>
+</html>

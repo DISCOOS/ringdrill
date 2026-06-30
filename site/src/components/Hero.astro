@@ -1,0 +1,87 @@
+---
+import { t, type Lang } from '../i18n';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const c = t(lang);
+const heroShot = `/screenshots/${lang}/03-live.png`;
+---
+<section class="hero section section--deep">
+  <div class="container hero__grid">
+    <div class="hero__copy">
+      <span class="eyebrow">{c.hero.eyebrow}</span>
+      <h1>{c.hero.title}</h1>
+      <p class="lead">{c.hero.lead}</p>
+      <div class="hero__cta">
+        <a class="btn btn--primary" href={c.hero.primaryHref}>{c.hero.primaryCta}</a>
+        <a class="btn btn--ghost" href={c.hero.secondaryHref}>{c.hero.secondaryCta}</a>
+      </div>
+      <p class="hero__note">{c.hero.note}</p>
+    </div>
+
+    <div class="hero__visual" aria-hidden="true">
+      <svg class="hero__rings" viewBox="0 0 400 400" fill="none">
+        <!-- dashed route, echoing the logo -->
+        <path d="M126 150 C 196 96, 250 150, 274 198 S 220 300, 150 270"
+              stroke="rgba(191,230,236,0.55)" stroke-width="2" stroke-dasharray="2 9"
+              stroke-linecap="round" />
+        <circle cx="200" cy="200" r="150" stroke="rgba(255,255,255,0.30)" stroke-width="1.5" />
+        <circle cx="200" cy="200" r="116" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" />
+        <!-- station markers on the outer ring -->
+        <g class="station station--amber"><circle cx="296" cy="118" r="15" /></g>
+        <g class="station station--teal"><circle cx="118" cy="160" r="13" /></g>
+        <g class="station station--teal"><circle cx="150" cy="308" r="13" /></g>
+        <g class="station station--teal"><circle cx="290" cy="296" r="13" /></g>
+        <g class="cross" stroke="rgba(232,246,248,0.7)" stroke-width="2" stroke-linecap="round">
+          <line x1="206" y1="234" x2="206" y2="248" />
+          <line x1="199" y1="241" x2="213" y2="241" />
+        </g>
+      </svg>
+      <div class="hero__phone">
+        <img src={heroShot} alt="" loading="eager" decoding="async" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero { padding-top: clamp(48px, 7vw, 88px); padding-bottom: clamp(56px, 9vw, 108px); }
+  .hero__grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: clamp(32px, 6vw, 80px);
+    align-items: center;
+  }
+  .hero__copy { display: flex; flex-direction: column; gap: 16px; }
+  .hero__copy h1 { margin-top: 4px; }
+  .hero__cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .hero__note { color: var(--on-deep-muted); font-size: 0.9375rem; margin-top: 4px; }
+
+  .hero__visual {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    max-width: 460px;
+    margin-inline: auto;
+    width: 100%;
+  }
+  .hero__rings { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .station circle { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35)); }
+  .station--teal circle { fill: #38c5d3; stroke: #e8f6f8; stroke-width: 3; }
+  .station--amber circle { fill: #ef8a25; stroke: #ffe2b8; stroke-width: 3; }
+
+  .hero__phone {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 52%;
+    border-radius: 30px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 6px rgba(8, 30, 38, 0.9), 0 0 0 7px rgba(255,255,255,0.08);
+    background: #05242e;
+  }
+  .hero__phone img { width: 100%; height: auto; display: block; }
+
+  @media (max-width: 880px) {
+    .hero__grid { grid-template-columns: 1fr; }
+    .hero__visual { max-width: 340px; }
+  }
+</style>

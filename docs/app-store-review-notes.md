@@ -85,6 +85,18 @@ Location is used only when the user taps the "locate me" button on the map,
 solely to centre the map on the current position. It is never stored or
 transmitted off the device.
 
+### Supplementary: privacy policy and terms URLs
+
+The pages are bilingual and live on the RingDrill site:
+
+- Privacy policy: `https://ringdrill.app/privacy` (Norwegian), `https://ringdrill.app/en/privacy` (English)
+- Terms of use: `https://ringdrill.app/terms` (Norwegian), `https://ringdrill.app/en/terms` (English)
+
+Use the privacy URL that matches the App Store Connect primary language in the
+**App Privacy → Privacy Policy URL** field (a per-locale URL can be set as well).
+The earlier `discoos.org/projects/ringdrill/*` pages have been retired, so make
+sure no store listing still points there.
+
 ---
 
 ## Demo video script

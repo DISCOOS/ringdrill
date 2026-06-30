@@ -1,0 +1,100 @@
+---
+import { t, type Lang } from '../i18n';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const c = t(lang);
+
+// One distinct icon per feature, in order: rotation, timer, map, brief.
+const icons = [
+  // rotation / cycle
+  '<path d="M20 11a8 8 0 0 0-14.3-4.9M4 5v3.5H7.5"/><path d="M4 13a8 8 0 0 0 14.3 4.9M20 19v-3.5H16.5"/>',
+  // live timer
+  '<circle cx="12" cy="13" r="8"/><path d="M12 13V8.8"/><path d="M9.5 2.5h5"/><path d="M18.8 6.2 20 5"/>',
+  // map pin
+  '<path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21Z"/><circle cx="12" cy="10.3" r="2.3"/>',
+  // brief / document
+  '<path d="M7 3.5h7L18.5 8v12.5H7z"/><path d="M13.5 3.5V8.5H18.5"/><path d="M9.5 12.5h6M9.5 15.5h6M9.5 18h4"/>',
+];
+---
+<section id="features" class="section section--band">
+  <div class="container">
+    <span class="eyebrow">{c.features.eyebrow}</span>
+    <h2 class="features__title">{c.features.title}</h2>
+    <ul class="features__grid">
+      {c.features.items.map((item, i) => (
+        <li class="feature">
+          <span class="feature__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <div class="feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={icons[i % icons.length]} />
+          </div>
+          <h3>{item.title}</h3>
+          <p>{item.body}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .features__title { margin-top: 12px; max-width: 22ch; }
+  .features__grid {
+    list-style: none;
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  .feature {
+    --tile: var(--teal);
+    --tile-2: #0f7a86;
+    position: relative;
+    overflow: hidden;
+    background: var(--canvas-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px 26px;
+    box-shadow: var(--shadow-card);
+    display: flex; flex-direction: column; gap: 10px;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+  /* top accent that lights up on hover */
+  .feature::before {
+    content: "";
+    position: absolute; inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--tile), var(--tile-2));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.22s ease;
+  }
+  .feature:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lift);
+    border-color: color-mix(in srgb, var(--tile) 45%, var(--border));
+  }
+  .feature:hover::before { transform: scaleX(1); }
+
+  .feature:nth-child(4) {
+    --tile: var(--amber);
+    --tile-2: #d9701a;
+  }
+
+  .feature__num {
+    position: absolute; top: 16px; right: 20px;
+    font-size: 2rem; font-weight: 800; line-height: 1;
+    color: var(--tile);
+    opacity: 0.16;
+    letter-spacing: -0.02em;
+  }
+  .feature__icon {
+    width: 48px; height: 48px;
+    display: grid; place-items: center;
+    border-radius: 14px;
+    color: #fff;
+    background: linear-gradient(140deg, var(--tile), var(--tile-2));
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--tile) 40%, transparent);
+    margin-bottom: 8px;
+  }
+  .feature__icon svg { width: 26px; height: 26px; }
+  .feature h3 { color: var(--heading); }
+  .feature p { color: var(--body); font-size: 0.9375rem; line-height: 1.6; }
+</style>

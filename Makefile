@@ -5,7 +5,7 @@
 	release-ios patch-ios \
 	release-tag release-notes \
 	require-clean-tree \
-	netlify-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
+	netlify-dev site-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
 .SILENT: \
 	build watch i18n release patch
@@ -203,6 +203,13 @@ patch-ios: require-clean-tree
 netlify-dev:
 	npm install
 	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) npx netlify functions:serve --port 8888
+
+# Local Astro dev server for the site/ project. Runs `astro dev` with HMR
+# at http://localhost:4321/. No Netlify backend required; the CTAs link to
+# the live web.ringdrill.app and play.google.com so there is nothing to stub.
+site-dev:
+	npm --prefix site install
+	npm --prefix site run dev
 
 catalog-seed:
 	@test -f $(SEED_DRILL) || { echo "Seed file $(SEED_DRILL) not found. Set SEED_DRILL=<path>"; exit 1; }

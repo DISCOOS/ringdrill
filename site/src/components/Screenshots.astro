@@ -1,0 +1,50 @@
+---
+import { t, type Lang } from '../i18n';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const c = t(lang);
+---
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">{c.shots.eyebrow}</span>
+    <h2 class="shots__title">{c.shots.title}</h2>
+    <div class="shots">
+      {c.shots.items.map((s) => (
+        <div class="shot">
+          <div class="shot__phone">
+            <img src={s.src} alt={s.alt} loading="lazy" decoding="async" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .shots__title { margin-top: 12px; }
+  .shots {
+    margin-top: 44px;
+    display: grid;
+    gap: clamp(20px, 3vw, 36px);
+    grid-template-columns: repeat(4, 1fr);
+    justify-items: center;
+  }
+  .shot { width: 100%; max-width: 240px; }
+  .shot__phone {
+    width: 100%;
+    border-radius: 28px;
+    padding: 6px;
+    background: linear-gradient(160deg, #0e3340, #05242e);
+    box-shadow: var(--shadow-lift), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  .shot__phone img {
+    width: 100%; height: auto; display: block;
+    border-radius: 22px;
+  }
+  @media (max-width: 860px) {
+    .shots { grid-template-columns: repeat(2, 1fr); gap: 28px; }
+  }
+  @media (max-width: 460px) {
+    .shots { grid-template-columns: 1fr; }
+  }
+</style>

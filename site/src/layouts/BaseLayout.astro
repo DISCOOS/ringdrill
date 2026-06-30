@@ -1,35 +1,280 @@
 ---
+import type { Lang } from '../i18n';
+
 interface Props {
-  lang: 'nb' | 'en';
+  lang: Lang;
   description: string;
   title?: string;
   canonicalPath?: string;
 }
 
-const { lang, description, title = 'RingDrill', canonicalPath = Astro.url.pathname } = Astro.props;
+const {
+  lang,
+  description,
+  title = 'RingDrill',
+  canonicalPath = Astro.url.pathname,
+} = Astro.props;
 
 const siteDomain = 'ringdrill.app';
-const altLang = lang === 'nb' ? 'en' : 'nb';
-const altPath = lang === 'nb' ? `/en${canonicalPath}` : canonicalPath.replace(/^\/en/, '') || '/';
+const altLang: Lang = lang === 'nb' ? 'en' : 'nb';
+const altPath =
+  lang === 'nb' ? `/en${canonicalPath}` : canonicalPath.replace(/^\/en/, '') || '/';
 ---
 <html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#042D3A" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
     <title>{title}</title>
     <link rel="canonical" href={`https://${siteDomain}${canonicalPath}`} />
     <link rel="alternate" hreflang={lang} href={`https://${siteDomain}${canonicalPath}`} />
     <link rel="alternate" hreflang={altLang} href={`https://${siteDomain}${altPath}`} />
     <link rel="alternate" hreflang="x-default" href={`https://${siteDomain}/`} />
-    <style>
+    <link rel="icon" type="image/png" sizes="512x512" href="/brand/logo.png" />
+    <link rel="apple-touch-icon" href="/brand/logo.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={`https://${siteDomain}${canonicalPath}`} />
+    <meta property="og:image" content={`https://${siteDomain}/brand/logo.png`} />
+    <meta property="og:locale" content={lang === 'nb' ? 'nb_NO' : 'en'} />
+
+    <style is:global>
+      /* ----- Design tokens (RingDrill brand: teal-navy / teal / amber) ----- */
+      :root {
+        /* Brand anchors, sampled from the app + logo */
+        --brand-deep: #042d3a;     /* deep teal-navy band */
+        --brand-deep-2: #073a4b;   /* slightly lifted band */
+        --teal: #18909f;           /* primary accent */
+        --teal-bright: #38c5d3;    /* highlight / on-dark accent */
+        --amber: #ef8a25;          /* secondary accent */
+        --amber-bright: #f7b23b;
+
+        --canvas: #ffffff;
+        --canvas-elev: #ffffff;
+        --canvas-band: #f1f6f7;    /* faint teal-tinted band */
+        --heading: #0c2a33;
+        --body: #3a4a50;
+        --muted: #6a7c82;
+        --border: #e0e9ea;
+        --border-strong: #c4d4d6;
+        --accent: var(--teal);
+        --accent-fg: #ffffff;
+        --link: #14707d;
+        --link-underline: rgba(24, 144, 159, 0.4);
+
+        /* On dark bands */
+        --on-deep-heading: #f3fafb;
+        --on-deep-body: #b9d0d6;
+        --on-deep-muted: #8fabb3;
+        --on-deep-border: rgba(255, 255, 255, 0.12);
+
+        --shadow-card: 0 1px 2px rgba(8, 40, 50, 0.05),
+                       0 6px 16px rgba(8, 40, 50, 0.07);
+        --shadow-lift: 0 2px 6px rgba(8, 40, 50, 0.10),
+                       0 18px 40px rgba(8, 40, 50, 0.16);
+
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --radius-pill: 999px;
+
+        --container: 1120px;
+        --gutter: clamp(16px, 4vw, 32px);
+        --section-gap: clamp(64px, 10vw, 112px);
+
+        --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+                     "Inter", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --canvas: #06222c;
+          --canvas-elev: #0a2c38;
+          --canvas-band: #082833;
+          --heading: #eaf5f6;
+          --body: #b9d0d6;
+          --muted: #84a1a8;
+          --border: #123642;
+          --border-strong: #1d4754;
+          --accent: var(--teal-bright);
+          --accent-fg: #05242e;
+          --link: #5fd2dd;
+          --link-underline: rgba(95, 210, 221, 0.5);
+          --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4),
+                         0 6px 18px rgba(0, 0, 0, 0.4);
+          --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5),
+                         0 18px 40px rgba(0, 0, 0, 0.55);
+        }
+      }
+
+      /* ----- Reset ----- */
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a; background: #fff; }
-      body { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem; }
-      h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 1rem; }
-      p { margin-bottom: 1rem; color: #444; }
-      a { color: #0055cc; }
-      a:hover { text-decoration: none; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        font-family: var(--font-sans);
+        font-size: 17px;
+        line-height: 1.65;
+        color: var(--body);
+        background: var(--canvas);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      img, svg { display: block; max-width: 100%; height: auto; }
+      a { color: var(--link); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 3px; }
+      a:hover { text-decoration-color: var(--link); }
+
+      /* ----- Layout ----- */
+      .container {
+        width: 100%;
+        max-width: var(--container);
+        margin: 0 auto;
+        padding-inline: var(--gutter);
+      }
+      .section { padding-block: var(--section-gap); }
+      .section--band { background: var(--canvas-band); border-block: 1px solid var(--border); }
+
+      /* Dark, brand-coloured band with topographic texture */
+      .section--deep {
+        position: relative;
+        isolation: isolate;
+        color: var(--on-deep-body);
+        background:
+          radial-gradient(120% 90% at 78% 8%, rgba(56, 197, 211, 0.16), transparent 55%),
+          radial-gradient(90% 80% at 10% 100%, rgba(239, 138, 37, 0.12), transparent 60%),
+          linear-gradient(160deg, var(--brand-deep-2), var(--brand-deep));
+      }
+      .section--deep::before {
+        content: "";
+        position: absolute; inset: 0; z-index: -1;
+        background-image: url("/brand/topo.svg");
+        background-size: 760px;
+        opacity: 0.5;
+        -webkit-mask-image: radial-gradient(130% 100% at 50% 0%, #000 55%, transparent 100%);
+        mask-image: radial-gradient(130% 100% at 50% 0%, #000 55%, transparent 100%);
+      }
+      .section--deep :where(h1, h2, h3, h4) { color: var(--on-deep-heading); }
+      .section--deep .lead { color: var(--on-deep-body); }
+
+      /* ----- Typography ----- */
+      h1, h2, h3, h4 { color: var(--heading); font-weight: 700; letter-spacing: -0.01em; }
+      h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); line-height: 1.1; letter-spacing: -0.02em; }
+      h2 { font-size: clamp(1.75rem, 3.5vw, 2.5rem); line-height: 1.2; font-weight: 700; }
+      h3 { font-size: 1.125rem; line-height: 1.4; font-weight: 600; }
+      .lead { font-size: clamp(1.125rem, 1.6vw, 1.25rem); color: var(--body); line-height: 1.55; max-width: 60ch; }
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-size: 0.8125rem; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--teal);
+      }
+      .eyebrow::before {
+        content: ""; width: 22px; height: 2px; border-radius: 2px;
+        background: currentColor; opacity: 0.7;
+      }
+      .section--deep .eyebrow { color: var(--teal-bright); }
+
+      /* ----- Buttons ----- */
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 14px 22px;
+        border-radius: var(--radius-pill);
+        font-weight: 600; font-size: 1rem;
+        text-decoration: none;
+        transition: transform 0.08s ease, box-shadow 0.16s ease, background 0.16s ease, color 0.16s ease;
+        white-space: nowrap;
+      }
+      .btn--primary {
+        background: var(--amber); color: #2a1602;
+        box-shadow: 0 1px 2px rgba(8, 40, 50, 0.18), 0 8px 20px rgba(239, 138, 37, 0.28);
+      }
+      .btn--primary:hover {
+        transform: translateY(-1px);
+        background: var(--amber-bright);
+        box-shadow: 0 2px 6px rgba(8, 40, 50, 0.2), 0 14px 30px rgba(239, 138, 37, 0.36);
+        text-decoration: none;
+      }
+      .btn--ghost {
+        background: transparent; color: var(--heading);
+        border: 1px solid var(--border-strong);
+      }
+      .btn--ghost:hover { background: var(--canvas-band); border-color: var(--teal); color: var(--heading); text-decoration: none; }
+      /* Ghost button placed on a dark band */
+      .section--deep .btn--ghost {
+        color: var(--on-deep-heading);
+        border-color: rgba(255, 255, 255, 0.28);
+      }
+      .section--deep .btn--ghost:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--teal-bright);
+        color: var(--on-deep-heading);
+      }
+      .btn--sm { padding: 10px 16px; font-size: 0.9375rem; }
+
+      /* ----- Prose (legal / long-form text) ----- */
+      .prose { max-width: 760px; }
+      .prose > :first-child { margin-top: 0; }
+      .prose h1 { font-size: clamp(2rem, 4vw, 2.75rem); line-height: 1.15; margin-bottom: 8px; }
+      .prose h2 { font-size: 1.5rem; line-height: 1.3; margin-top: 44px; margin-bottom: 12px; }
+      .prose h3 { font-size: 1.15rem; margin-top: 28px; margin-bottom: 8px; }
+      .prose h4 { font-size: 1rem; margin-top: 20px; margin-bottom: 6px; }
+      .prose p { margin-bottom: 16px; }
+      .prose ul, .prose ol { padding-left: 1.4em; margin-bottom: 16px; }
+      .prose ul { list-style: disc; }
+      .prose ol { list-style: decimal; }
+      .prose li { margin-bottom: 6px; }
+      .prose li > ul, .prose li > ol { margin-top: 6px; margin-bottom: 0; }
+      .prose strong { color: var(--heading); }
+      .prose a { color: var(--link); }
+      .prose hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+      .prose__meta { color: var(--muted); font-size: 0.9375rem; margin-bottom: 32px; }
+
+      /* ----- Nav ----- */
+      .nav {
+        position: sticky; top: 0; z-index: 10;
+        background: color-mix(in srgb, var(--canvas) 85%, transparent);
+        backdrop-filter: saturate(140%) blur(8px);
+        -webkit-backdrop-filter: saturate(140%) blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav__inner {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px;
+        height: 64px;
+      }
+      .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--heading); font-weight: 700; text-decoration: none; }
+      .brand img { width: 28px; height: 28px; border-radius: 6px; }
+      .nav__links { display: flex; gap: 24px; align-items: center; }
+      .nav__links a { color: var(--body); text-decoration: none; font-size: 0.9375rem; font-weight: 500; }
+      .nav__links a:hover { color: var(--heading); }
+      .nav__lang { color: var(--muted); font-size: 0.875rem; }
+      @media (max-width: 640px) {
+        .nav__links .nav__hide-sm { display: none; }
+      }
+
+      /* ----- Footer ----- */
+      .footer { border-top: 1px solid var(--border); padding-block: 56px 40px; background: var(--canvas); }
+      .footer__grid {
+        display: grid;
+        gap: 32px;
+        grid-template-columns: 1.4fr repeat(3, 1fr);
+      }
+      @media (max-width: 720px) {
+        .footer__grid { grid-template-columns: 1fr 1fr; }
+        .footer__brand { grid-column: 1 / -1; }
+      }
+      .footer__brand { display: flex; flex-direction: column; gap: 12px; }
+      .footer__brand .brand img { width: 32px; height: 32px; }
+      .footer__brand p { color: var(--muted); max-width: 32ch; }
+      .footer__col h4 { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+      .footer__col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+      .footer__col a { color: var(--body); text-decoration: none; font-size: 0.9375rem; }
+      .footer__col a:hover { color: var(--link); text-decoration: underline; }
+      .footer__bottom { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.875rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     </style>
   </head>
   <body>
