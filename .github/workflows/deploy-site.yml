@@ -1,0 +1,82 @@
+name: Deploy site
+
+# Builds the Astro site at site/ and deploys to Cloudflare Pages project
+# `ringdrill-site` (ringdrill.app).
+#
+# The hourly cron is reserved for a future catalog index that needs to reflect
+# new publishes without a manual rebuild. For Phase 2 there is no catalog data
+# yet, so the scheduled run is a no-op rebuild.
+#
+# Required secrets, all on the PROD environment
+# (Settings -> Environments -> PROD -> Secrets):
+#   CLOUDFLARE_API_TOKEN   - Cloudflare API token with Cloudflare Pages edit
+#                            permissions.
+#   CLOUDFLARE_ACCOUNT_ID  - Cloudflare account ID.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/deploy-site.yml'
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    environment: PROD
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify required secrets are present
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=()
+          [ -z "$CLOUDFLARE_API_TOKEN"  ] && missing+=("CLOUDFLARE_API_TOKEN")
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing or empty repository secrets: ${missing[*]}"
+            echo "Check Settings -> Secrets and variables -> Actions -> Repository secrets."
+            echo "Environment-scoped secrets are NOT visible here unless the job"
+            echo "declares 'environment: <name>'."
+            exit 1
+          fi
+          echo "CLOUDFLARE_API_TOKEN length: ${#CLOUDFLARE_API_TOKEN}"
+          echo "CLOUDFLARE_ACCOUNT_ID length: ${#CLOUDFLARE_ACCOUNT_ID}"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: site/package.json
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install site dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Build site
+        working-directory: site
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@latest pages deploy site/dist \
+            --project-name=ringdrill-site \
+            --branch=main
