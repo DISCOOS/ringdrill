@@ -110,6 +110,7 @@ export function originFromRequest(request) { return new URL(request.url).origin;
 const ALLOWED_ORIGIN_PATTERNS = [
     /^https:\/\/ringdrill\.netlify\.app$/,
     /^https:\/\/ringdrill\.app$/,
+    /^https:\/\/web\.ringdrill\.app$/,
     /^https:\/\/[^/]+--ringdrill\.netlify\.app$/, // deploy previews / branch deploys
     /^http:\/\/localhost(:\d+)?$/,
     /^http:\/\/127\.0\.0\.1(:\d+)?$/,
