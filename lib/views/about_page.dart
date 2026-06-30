@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/app_build_info.dart';
+import 'package:ringdrill/utils/app_flags.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -253,6 +254,39 @@ class _AboutPageState extends State<AboutPage> {
                 ),
               ),
               const Divider(),
+              if (AppFlags.activeOnly.isNotEmpty) ...[
+                ListTile(
+                  leading: const Icon(Icons.flag_outlined),
+                  title: Text(
+                    'Build flags',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                for (final e in AppFlags.activeOnly.entries)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 40),
+                        Expanded(
+                          child: Text(
+                            e.key,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontFamily: 'monospace'),
+                          ),
+                        ),
+                        Text(
+                          e.value.toString(),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                const Divider(),
+              ],
             ],
           ),
         ),
