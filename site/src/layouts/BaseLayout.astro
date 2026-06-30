@@ -1,0 +1,38 @@
+---
+interface Props {
+  lang: 'nb' | 'en';
+  description: string;
+  title?: string;
+  canonicalPath?: string;
+}
+
+const { lang, description, title = 'RingDrill', canonicalPath = Astro.url.pathname } = Astro.props;
+
+const siteDomain = 'ringdrill.app';
+const altLang = lang === 'nb' ? 'en' : 'nb';
+const altPath = lang === 'nb' ? `/en${canonicalPath}` : canonicalPath.replace(/^\/en/, '') || '/';
+---
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="canonical" href={`https://${siteDomain}${canonicalPath}`} />
+    <link rel="alternate" hreflang={lang} href={`https://${siteDomain}${canonicalPath}`} />
+    <link rel="alternate" hreflang={altLang} href={`https://${siteDomain}${altPath}`} />
+    <link rel="alternate" hreflang="x-default" href={`https://${siteDomain}/`} />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a; background: #fff; }
+      body { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem; }
+      h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 1rem; }
+      p { margin-bottom: 1rem; color: #444; }
+      a { color: #0055cc; }
+      a:hover { text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
