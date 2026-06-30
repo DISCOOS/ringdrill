@@ -11,10 +11,13 @@ import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/utils/locale_utils.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
+import 'package:ringdrill/web/legacy_host_web.dart'
+    if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 import 'package:ringdrill/web/pwa_update_web.dart'
     if (dart.library.io) 'package:ringdrill/web/pwa_update_stub.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -70,6 +73,13 @@ Future<void> main() async {
     if (analyticsConsent) {
       // Run app with Sentry on consent
       await SentryFlutter.init(SentryConfig.apply);
+      Sentry.configureScope((scope) {
+        for (final e in AppFlags.all.entries) {
+          scope.setTag('flag.${e.key}', e.value.toString());
+        }
+        scope.setTag('app.origin', kIsWeb ? Uri.base.host : 'native');
+        scope.setTag('app.legacy_apex', isLegacyHost().toString());
+      });
       runApp(
         FeedbackBoundary(
           child: SentryWidget(
