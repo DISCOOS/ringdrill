@@ -47,6 +47,9 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0037 | [Size text for legibility on iOS: tighten the baseline type scale and clamp scaling at 1.3](./0037-text-sizing-and-legibility.md) | Accepted |
 | ADR-0038 | [Gate first-launch consent and rationale behind a four-stage onboarding](./0038-notification-consent-flow.md) | Accepted |
 | ADR-0039 | [Split the site, PWA and API across separate origins](./0039-site-pwa-api-origins.md) | Accepted |
+| ADR-0040 | Catalog feed schema extension (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
+| ADR-0041 | Brief pre-rendering port from Dart to Node (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
+| ADR-0042 | [Centralise build-time feature flags with sunset telemetry](./0042-feature-flags-and-sunset-telemetry.md) | Proposed |
 
 ## When to write an ADR
 
@@ -73,6 +76,7 @@ When an ADR is replaced, mark the old one `status: superseded by ADR-NNNN` and l
 
 * `proposed` -- under discussion, not yet binding.
 * `accepted` -- in force.
+* `reserved` -- the number is held for a planned ADR that has been named in another ADR's `Future ADRs referenced` section but not yet written. Replaced by a real status when the ADR is drafted.
 * `deprecated` -- no longer recommended, but not actively replaced.
 * `superseded by ADR-NNNN` -- replaced by another ADR.
 
