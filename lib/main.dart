@@ -74,8 +74,8 @@ Future<void> main() async {
       // Run app with Sentry on consent
       await SentryFlutter.init(SentryConfig.apply);
       Sentry.configureScope((scope) {
-        for (final e in AppFlags.all.entries) {
-          scope.setTag('flag.${e.key}', e.value.toString());
+        for (final f in AppFlags.all) {
+          scope.setTag('flag.${f.name}', f.value.toString());
         }
         scope.setTag('app.origin', kIsWeb ? Uri.base.host : 'native');
         scope.setTag('app.legacy_apex', isLegacyHost().toString());
