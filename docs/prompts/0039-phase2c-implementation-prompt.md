@@ -120,6 +120,17 @@ The first successful deploy of each workflow lands the artifact at `ringdrill-{s
 * Astro `/migrate` page — Phase 3
 * `drills-preview` Netlify function — Phase 3
 * Lighthouse audit on the new PWA workflow
+* Creating `deploy-functions.yml` or modifying `deploy-web.yml` — see the note below
+
+## Do NOT split functions out from `deploy-web.yml` yet
+
+ADR-0039 describes a final state with three workflows: `deploy-pwa.yml`, `deploy-site.yml` and `deploy-functions.yml`. Phase 2c only adds the first two. `deploy-functions.yml` belongs in Phase 3, not here. Three reasons:
+
+1. **`deploy-web.yml` is still the right tool for apex.** In Phase 2, the apex Netlify site continues to serve both the Flutter PWA and the Netlify Functions. `deploy-web.yml` deploys both in one shot. Splitting functions out now would either leave apex without function updates or require two workflows targeting the same Netlify site.
+2. **The CORS change from Phase 2a is picked up automatically.** The next `deploy-web.yml` run after Phase 2a merges redeploys `_shared.js` along with the PWA. No new workflow is needed to ship the allowlist update.
+3. **The natural split point is Phase 3.** Apex moves to Cloudflare, the Netlify site downsizes to functions only and gets the `api.ringdrill.app` custom domain. At that point `deploy-web.yml` loses its purpose and is replaced by `deploy-functions.yml` (functions-only deploy targeting `api.ringdrill.app`). Splitting before that creates a race over the same Netlify site for no gain.
+
+If you find yourself wanting to touch `deploy-web.yml` for any reason while implementing Phase 2c, stop and check whether the change really needs to land before Phase 3.
 
 ## Definition of done
 
