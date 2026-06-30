@@ -1,3 +1,5 @@
+import 'package:ringdrill/utils/app_flags.dart';
+
 class AppConfig {
   static const String keyIsFirstLaunch = 'app:isFirstLaunch:v1';
   static const String keyOnboardingSeen = 'app:onboardingSeen:v1';
@@ -30,17 +32,8 @@ class AppConfig {
   static const String briefViewerBaseUrl = 'https://ringdrill.app';
   static const String apiBaseUrl = 'https://api.ringdrill.app';
 
-  /// Optional local backend override, set at build time via
-  ///
-  ///   flutter run --dart-define=RINGDRILL_LOCAL_BASE_URL=http://localhost:8888
-  ///
-  /// Only takes effect in debug builds (see [catalogBaseUrl]). Release builds
-  /// cannot be coerced into talking to a localhost backend at runtime.
-  /// See ADR-0013 for the rationale.
-  static const String localBaseUrl = String.fromEnvironment(
-    'RINGDRILL_LOCAL_BASE_URL',
-    defaultValue: '',
-  );
+  /// Optional local backend override — see [AppFlags.localBaseUrl].
+  static String get localBaseUrl => AppFlags.localBaseUrl;
 
   /// Returns the base URL the Flutter client should use when talking to the
   /// catalog/backend.
