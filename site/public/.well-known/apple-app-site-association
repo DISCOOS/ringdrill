@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["G2C47B233E.app.ringdrill"],
+        "components": [
+          {
+            "/": "/i/*",
+            "comment": "RingDrill shareable install links (ADR-0015)"
+          }
+        ]
+      }
+    ]
+  }
+}
