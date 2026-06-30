@@ -15,6 +15,7 @@ Live web-version is available on https://ringdrill.app
 * [`docs/adrs/`](docs/adrs/): Architecture Decision Records (MADR format). Read these to understand why a non-obvious choice was made, and add a new one when you make such a choice.
 * [`AGENTS.md`](AGENTS.md): operating guide for AI coding agents (Claude Code, Codex, Cursor, etc.) and a quick orientation for human contributors. Read this before letting an agent change code.
 * [`CLAUDE.md`](CLAUDE.md): short pointer file read by Claude Code on startup, defers to `AGENTS.md`.
+* [`docs/feature-flags.md`](docs/feature-flags.md): living index of every build-time dart-define flag, its purpose and its sunset criterion. Updated in the same commit as a flag is added, changed or removed.
 
 ## Getting Started
 To get started with developing for RingDrill using Flutter, follow these steps:
