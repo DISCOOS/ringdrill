@@ -80,6 +80,12 @@ Future<void> main() async {
         scope.setTag('app.origin', kIsWeb ? Uri.base.host : 'native');
         scope.setTag('app.legacy_apex', isLegacyHost().toString());
       });
+      if (isLegacyHost()) {
+        await Sentry.captureMessage(
+          'boot on legacy apex',
+          level: SentryLevel.info,
+        );
+      }
       runApp(
         FeedbackBoundary(
           child: SentryWidget(
