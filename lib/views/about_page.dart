@@ -254,7 +254,7 @@ class _AboutPageState extends State<AboutPage> {
                 ),
               ),
               const Divider(),
-              if (AppFlags.activeOnly.isNotEmpty) ...[
+              if (kDebugMode && AppFlags.activeOnly.isNotEmpty) ...[
                 ListTile(
                   leading: const Icon(Icons.flag_outlined),
                   title: Text(
@@ -262,28 +262,32 @@ class _AboutPageState extends State<AboutPage> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                for (final e in AppFlags.activeOnly.entries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 2,
-                    ),
-                    child: Row(
+                for (final f in AppFlags.activeOnly)
+                  ListTile(
+                    title: Text(f.name),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(width: 40),
-                        Expanded(
-                          child: Text(
-                            e.key,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(fontFamily: 'monospace'),
-                          ),
+                        Text(
+                          '${f.value}',
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Text(
-                          e.value.toString(),
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          f.description,
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
                     ),
+                    trailing: Chip(
+                      label: Text(
+                        f.kind == AppFlagKind.permanent
+                            ? 'Permanent'
+                            : 'Temporary',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    isThreeLine: true,
                   ),
                 const Divider(),
               ],
