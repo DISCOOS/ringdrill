@@ -39,9 +39,30 @@ A wins because it is cheap to introduce, integrates with infrastructure we alrea
 
 ### Central registry
 
-A new file `lib/utils/app_flags.dart` exports a single `AppFlags` class that holds compile-time constants for every active flag and a `Map<String, Object> all` accessor for debugging.
+A new file `lib/utils/app_flags.dart` exports an `AppFlags` class plus an `AppFlagInfo` data class. Each flag has a structured entry carrying its compile-time value, its lifecycle kind, and a short developer-facing description. The list of entries (`AppFlags.all`) is the single source of truth for in-app debugging surfaces and for keeping `docs/feature-flags.md` honest.
 
 ```dart
+enum AppFlagKind { permanent, temporary }
+
+class AppFlagInfo {
+  const AppFlagInfo({
+    required this.name,
+    required this.value,
+    required this.kind,
+    required this.description,
+  });
+
+  final String name;
+  final Object value;
+  final AppFlagKind kind;
+  final String description;
+
+  bool get isDefault =>
+      (value is bool && value == false) ||
+      (value is String && (value as String).isEmpty) ||
+      (value is num && value == 0);
+}
+
 class AppFlags {
   static const migrationDisabled =
       bool.fromEnvironment('MIGRATION_DISABLED');
@@ -50,15 +71,35 @@ class AppFlags {
   static const localBaseUrl =
       String.fromEnvironment('RINGDRILL_LOCAL_BASE_URL');
 
-  static Map<String, Object> get all => {
-    'MIGRATION_DISABLED': migrationDisabled,
-    'RINGDRILL_FORCE_LEGACY_HOST': forceLegacyHost,
-    'RINGDRILL_LOCAL_BASE_URL': localBaseUrl,
-  };
+  static const List<AppFlagInfo> all = [
+    AppFlagInfo(
+      name: 'MIGRATION_DISABLED',
+      value: migrationDisabled,
+      kind: AppFlagKind.temporary,
+      description: 'Kill switch hiding the in-app migration UI before web.ringdrill.app is live.',
+    ),
+    AppFlagInfo(
+      name: 'RINGDRILL_FORCE_LEGACY_HOST',
+      value: forceLegacyHost,
+      kind: AppFlagKind.temporary,
+      description: 'Dev override that makes isLegacyHost() return true regardless of actual host.',
+    ),
+    AppFlagInfo(
+      name: 'RINGDRILL_LOCAL_BASE_URL',
+      value: localBaseUrl,
+      kind: AppFlagKind.permanent,
+      description: 'Points the catalog client at a local netlify dev instance.',
+    ),
+  ];
+
+  static Iterable<AppFlagInfo> get activeOnly =>
+      all.where((f) => !f.isDefault);
 }
 ```
 
-Existing references in `lib/web/legacy_host_web.dart` and `lib/utils/app_config.dart` keep `bool.fromEnvironment` declarations where compile-time `const` is required, but `AppFlags` becomes the single source of truth for debugging and for the index.
+Existing references in `lib/web/legacy_host_web.dart` and `lib/utils/app_config.dart` keep `bool.fromEnvironment` declarations where compile-time `const` is required, and consume `AppFlags.X` (the bare value constant) where they previously had their own private constant.
+
+The Sentry-tagging code iterates `AppFlags.all` and tags each entry's `name` and `value`. Description and kind stay client-side only — they exist to help developers reading the About page, not Sentry queries.
 
 ### Sentry tagging at boot
 
@@ -82,7 +123,15 @@ Sunset criterion for the migration UI: 0 legacy-apex sessions over 30 consecutiv
 
 ### About page surfacing
 
-When any flag in `AppFlags.all` has a non-default value (i.e. is explicitly set at build time), the About page renders a small "Build flags" section listing each active flag. Helps developers and users identify what a specific build is running with, especially in bug reports.
+In debug builds, when `AppFlags.activeOnly` is non-empty, the About page renders a "Build flags" section listing each active flag as a `ListTile` row:
+
+* `title`: the flag name, e.g. `MIGRATION_DISABLED`, in the same style as other About titles.
+* `subtitle`: a small two-line block. First line is the current value (`true`, `false`, the string), second line is the short developer description from `AppFlagInfo.description`.
+* `trailing`: a compact `Chip` reading `Temporary` or `Permanent` (from `AppFlagInfo.kind`). Gives the lifecycle at a glance without taking subtitle space.
+
+A heading row above the entries identifies the section ("Build flags"), matching the visual rhythm of the existing About sections (version, commit, developed by, etc.).
+
+Release builds do not render the section regardless of flag state. Production users have no use for this information, and Sentry tags already carry the flag state for any bug report we receive from production. Keeping the section debug-only avoids both UI clutter and a low-value support question vector.
 
 ### Living documentation
 

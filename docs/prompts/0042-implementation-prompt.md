@@ -23,6 +23,27 @@ No new dependencies. No infrastructure changes. No new dart-defines beyond what 
 Create `lib/utils/app_flags.dart`:
 
 ```dart
+enum AppFlagKind { permanent, temporary }
+
+class AppFlagInfo {
+  const AppFlagInfo({
+    required this.name,
+    required this.value,
+    required this.kind,
+    required this.description,
+  });
+
+  final String name;
+  final Object value;
+  final AppFlagKind kind;
+  final String description;
+
+  bool get isDefault =>
+      (value is bool && value == false) ||
+      (value is String && (value as String).isEmpty) ||
+      (value is num && value == 0);
+}
+
 class AppFlags {
   static const migrationDisabled =
       bool.fromEnvironment('MIGRATION_DISABLED');
@@ -31,22 +52,32 @@ class AppFlags {
   static const localBaseUrl =
       String.fromEnvironment('RINGDRILL_LOCAL_BASE_URL');
 
-  static Map<String, Object> get all => {
-    'MIGRATION_DISABLED': migrationDisabled,
-    'RINGDRILL_FORCE_LEGACY_HOST': forceLegacyHost,
-    'RINGDRILL_LOCAL_BASE_URL': localBaseUrl,
-  };
+  static const List<AppFlagInfo> all = [
+    AppFlagInfo(
+      name: 'MIGRATION_DISABLED',
+      value: migrationDisabled,
+      kind: AppFlagKind.temporary,
+      description:
+          'Kill switch hiding the in-app migration UI before web.ringdrill.app is live.',
+    ),
+    AppFlagInfo(
+      name: 'RINGDRILL_FORCE_LEGACY_HOST',
+      value: forceLegacyHost,
+      kind: AppFlagKind.temporary,
+      description:
+          'Dev override that makes isLegacyHost() return true regardless of actual host.',
+    ),
+    AppFlagInfo(
+      name: 'RINGDRILL_LOCAL_BASE_URL',
+      value: localBaseUrl,
+      kind: AppFlagKind.permanent,
+      description:
+          'Points the catalog client at a local netlify dev instance.',
+    ),
+  ];
 
-  /// Returns the subset of [all] where the value is non-default. Useful
-  /// for rendering an "active flags" UI without listing flags that are
-  /// silently at their defaults.
-  static Map<String, Object> get activeOnly => {
-    for (final e in all.entries)
-      if (!_isDefault(e.value)) e.key: e.value,
-  };
-
-  static bool _isDefault(Object v) =>
-      v == false || v == '' || v == 0;
+  static Iterable<AppFlagInfo> get activeOnly =>
+      all.where((f) => !f.isDefault);
 }
 ```
 
@@ -54,10 +85,11 @@ Refactor `lib/web/legacy_host_web.dart` and `lib/utils/app_config.dart` so exist
 
 Unit test verifies:
 
-* `AppFlags.all` returns all three keys
-* `AppFlags.all['MIGRATION_DISABLED']` is `false` by default
-* `AppFlags.activeOnly` is empty when no flags are set
-* `AppFlags.activeOnly` contains the flag when one is set (use a separate test process with `--dart-define` if possible, otherwise verify the helper logic with a stub map)
+* `AppFlags.all` has exactly three entries with the expected names
+* Default values are correct (`false`, `false`, `''`)
+* `activeOnly` is empty when no flags are set
+* `AppFlagInfo.isDefault` correctly handles bool `false`, empty string and num zero
+* `kind` and `description` are populated for each entry
 
 Commit: `feat(config): centralise build-time feature flags in AppFlags`. Verify `git status` is clean.
 
@@ -67,8 +99,8 @@ In `lib/main.dart`, after Sentry is initialised inside the existing consent gate
 
 ```dart
 Sentry.configureScope((scope) {
-  for (final e in AppFlags.all.entries) {
-    scope.setTag('flag.${e.key}', e.value.toString());
+  for (final f in AppFlags.all) {
+    scope.setTag('flag.${f.name}', f.value.toString());
   }
   scope.setTag('app.origin', kIsWeb ? Uri.base.host : 'native');
   scope.setTag('app.legacy_apex', isLegacyHost().toString());
@@ -102,15 +134,21 @@ Commit: `feat(observability): emit sunset telemetry event when booting on legacy
 
 ### Step 4 — About page "Build flags" section
 
-Open `lib/views/about_page.dart`. After the existing rows, render a "Build flags" section that only appears when `AppFlags.activeOnly` is non-empty:
+Open `lib/views/about_page.dart`. After the existing rows, render a "Build flags" section that only appears when both `kDebugMode` is `true` AND `AppFlags.activeOnly` is non-empty:
 
-* Use a `Divider` followed by a `ListTile` with `Icons.flag_outlined` as leading and a section heading in `titleMedium` weight.
-* Below, list each entry from `activeOnly` as a small key/value row. Match the typography of the surrounding rows (`bodyMedium`).
-* No translation strings for the heading copy — this is a developer-facing surface. Use English text directly ("Build flags").
+* A heading `ListTile` with `Icons.flag_outlined` leading and a `titleMedium`-weight title "Build flags". Matches the visual rhythm of existing About sections (version, commit, developed by).
+* Then one `ListTile` per active flag:
+  - `title`: the flag name (e.g. `MIGRATION_DISABLED`)
+  - `subtitle`: a `Column` with two rows — the current value (`true`, `false`, or the string) on the first line, the short description from `AppFlagInfo.description` on the second
+  - `trailing`: a compact `Chip` reading `Temporary` or `Permanent` from `AppFlagInfo.kind`. Use a non-fancy chip style; `VisualDensity.compact` and a `labelStyle` of `bodySmall` keeps it from dominating the row.
+* No translation strings for the heading copy or chip labels — this is a developer-facing surface. Use English text directly.
 
-The section must not render at all when `activeOnly` is empty, so production users do not see anything.
+Release builds must NOT render the section regardless of flag state. The Sentry tags carry the same information for production debugging, so the UI surface stays clean for end users.
 
-Acceptance: a debug build with no dart-defines hides the section. A debug build with `--dart-define=MIGRATION_DISABLED=true` shows the section with one row.
+Acceptance:
+* Debug build with no dart-defines → section hidden.
+* Debug build with `--dart-define=MIGRATION_DISABLED=true` → section visible with heading and one entry. Entry shows name on title line, `true` and description on subtitle lines, "Temporary" chip on trailing.
+* Release build with `--dart-define=MIGRATION_DISABLED=true` → section hidden.
 
 Commit: `feat(about): surface active build flags in the About page`. Verify `git status` is clean.
 
