@@ -9,7 +9,7 @@ import 'package:ringdrill/web/legacy_host_stub.dart';
 //   flutter run -d chrome --dart-define=RINGDRILL_FORCE_LEGACY_HOST=true
 //     # Forces isLegacyHost() to return true even on localhost.
 //   flutter build web --dart-define=MIGRATION_DISABLED=true
-//     # Kill switch: forces isLegacyHost() to return false regardless of host
+//     # Feature flag: forces isLegacyHost() to return false regardless of host
 //     # and the force-legacy override. Used in deploy-web.yml during ADR-0039
 //     # Phase 1 rollout before web.ringdrill.app is live.
 void main() {

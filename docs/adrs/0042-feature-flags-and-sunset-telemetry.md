@@ -10,7 +10,7 @@ informed: []
 
 ## Context and problem statement
 
-ADR-0039 introduced a build-time kill switch `MIGRATION_DISABLED` so Phase 1 of the migration could ship to apex without lighting up the migration UI before Phase 2 was ready. That joined two existing dart-define flags: `RINGDRILL_LOCAL_BASE_URL` (debug local-backend override, ADR-0013) and `RINGDRILL_FORCE_LEGACY_HOST` (dev-only banner override).
+ADR-0039 introduced a build-time feature flag `MIGRATION_DISABLED` so Phase 1 of the migration could ship to apex without lighting up the migration UI before Phase 2 was ready. That joined two existing dart-define flags: `RINGDRILL_LOCAL_BASE_URL` (debug local-backend override, ADR-0013) and `RINGDRILL_FORCE_LEGACY_HOST` (dev-only banner override).
 
 Three flags is small, but the pattern is now established. Without conventions in place we end up with ad-hoc flags scattered across `app_config.dart`, `legacy_host_web.dart` and future files, no way to know which flags are active in a given build, and no signal to tell us when legacy code paths gated by a flag can finally be deleted. The `MIGRATION_DISABLED` flag specifically must be removable when the legacy apex PWA is no longer in active use, and we need a concrete signal to know when that moment has arrived.
 
@@ -20,14 +20,14 @@ The decision is about how much operational scaffolding we put around build-time 
 
 * The project is small (one developer, few users). Any operational machinery must be cheap to maintain.
 * All current flags are compile-time `dart-define` values. A runtime flag system requires a service, consent gating (ADR-0006), client cache, fallback logic. More complexity than is justified today.
-* We need to know when legacy code paths can be retired safely. For the migration this is concrete: when the legacy apex PWA has 0 active sessions over a sustained period, we can delete the migration UI, the kill switch and the `/migrate` fallback.
+* We need to know when legacy code paths can be retired safely. For the migration this is concrete: when the legacy apex PWA has 0 active sessions over a sustained period, we can delete the migration UI, the feature flag and the `/migrate` fallback.
 * Sentry is already wired up behind the analytics consent gate (ADR-0006). It can carry tags on every event and on sessions for free.
 * Contributors need to know which flags exist, what they do and when they can be retired.
 
 ## Considered options
 
 * Option A: Centralised compile-time registry + Sentry tagging + living docs index (chosen). Three small lifts: a single Dart class that gathers all flag accessors, Sentry scope tags set at boot, a `docs/feature-flags.md` index with per-flag lifecycle.
-* Option B: Status quo. Each flag declared where it is used, no central index, no telemetry. Easiest right now, but means the migration kill switch lives without a retirement signal and we cannot tell from outside the codebase how many users are still on legacy paths.
+* Option B: Status quo. Each flag declared where it is used, no central index, no telemetry. Easiest right now, but means the migration feature flag lives without a retirement signal and we cannot tell from outside the codebase how many users are still on legacy paths.
 * Option C: Runtime feature flag service. A Netlify function returns flag state, the client caches it. Lets us flip flags without a redeploy. Adds: a flag service, a cache, consent gating for the fetch (per ADR-0006), fallback when the service is unreachable. Too much machinery for our scale.
 * Option D: A/B testing infrastructure. Experiment framework, cohort assignment, variant telemetry. Requires significantly more user base than we have to be useful. Out of scope.
 
@@ -35,7 +35,7 @@ The decision is about how much operational scaffolding we put around build-time 
 
 Chosen option: **A (centralised registry + Sentry tagging + living docs)**.
 
-A wins because it is cheap to introduce, integrates with infrastructure we already have (`bool.fromEnvironment`, Sentry), and gives us a concrete sunset signal for the migration kill switch. B leaves us blind. C and D add complexity that does not pay off at our scale yet; both are kept as future options if usage demands it.
+A wins because it is cheap to introduce, integrates with infrastructure we already have (`bool.fromEnvironment`, Sentry), and gives us a concrete sunset signal for the migration feature flag. B leaves us blind. C and D add complexity that does not pay off at our scale yet; both are kept as future options if usage demands it.
 
 ### Central registry
 
@@ -76,7 +76,7 @@ class AppFlags {
       name: 'MIGRATION_DISABLED',
       value: migrationDisabled,
       kind: AppFlagKind.temporary,
-      description: 'Kill switch hiding the in-app migration UI before web.ringdrill.app is live.',
+      description: 'Feature flag hiding the in-app migration UI before web.ringdrill.app is live.',
     ),
     AppFlagInfo(
       name: 'RINGDRILL_FORCE_LEGACY_HOST',
@@ -117,7 +117,7 @@ Every captured event carries these tags. Sentry queries become "events where `ap
 
 ### Sunset telemetry
 
-When the app boots and `isLegacyHost()` returns true, the app emits an info-level Sentry event once per session with message `boot on legacy apex`. The event carries the relevant tags. Combined with Sentry sessions, this gives a queryable signal over time: "how many sessions in the last 30 days came from the legacy apex". When that number falls toward zero and stays there for a defined window, the kill switch and the migration code paths can be retired.
+When the app boots and `isLegacyHost()` returns true, the app emits an info-level Sentry event once per session with message `boot on legacy apex`. The event carries the relevant tags. Combined with Sentry sessions, this gives a queryable signal over time: "how many sessions in the last 30 days came from the legacy apex". When that number falls toward zero and stays there for a defined window, the feature flag and the migration code paths can be retired.
 
 Sunset criterion for the migration UI: 0 legacy-apex sessions over 30 consecutive days after the Phase 3 cutover lands. At that point ADR-0039's migration code, the `/migrate` page, the `MIGRATION_DISABLED` flag and all related ARB strings can be deleted in a single sane-up commit.
 
@@ -154,7 +154,7 @@ The doc is updated in the same commit as a flag is introduced, modified or delet
 For new flags going forward, use one of two prefixes:
 
 * `RINGDRILL_` for environment or developer overrides that are not part of normal product behaviour (`RINGDRILL_LOCAL_BASE_URL`, `RINGDRILL_FORCE_LEGACY_HOST`).
-* No prefix for kill switches and feature toggles that gate product behaviour in production (`MIGRATION_DISABLED`).
+* No prefix for feature flags that gate product behaviour in production (`MIGRATION_DISABLED`).
 
 Existing flags are not renamed. Consistency applies to new flags only.
 
@@ -163,7 +163,7 @@ Existing flags are not renamed. Consistency applies to new flags only.
 * Runtime flag service. Reserved as a future ADR if scale demands.
 * A/B testing infrastructure.
 * Renaming existing flags to fit any new naming convention.
-* Removing the existing kill switch. That happens against the sunset criterion above.
+* Removing the existing feature flag. That happens against the sunset criterion above.
 
 ### Consequences
 

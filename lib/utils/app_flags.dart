@@ -33,7 +33,7 @@ class AppFlags {
       value: migrationDisabled,
       kind: AppFlagKind.temporary,
       description:
-          'Kill switch hiding the in-app migration UI before web.ringdrill.app is live.',
+          'Feature flag hiding the in-app migration UI before web.ringdrill.app is live.',
     ),
     AppFlagInfo(
       name: 'RINGDRILL_FORCE_LEGACY_HOST',

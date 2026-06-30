@@ -270,7 +270,11 @@ class _AboutPageState extends State<AboutPage> {
                       children: [
                         Text(
                           '${f.value}',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
                         Text(
                           f.description,
