@@ -1,0 +1,104 @@
+name: Deploy PWA
+
+# Builds Flutter web and deploys to Cloudflare Pages project `ringdrill-pwa`
+# (web.ringdrill.app). Mirrors deploy-web.yml except:
+#   - no npm ci / Netlify functions in this artifact;
+#   - no MIGRATION_DISABLED — the host check in isLegacyHost() returns false
+#     for web.ringdrill.app so the kill switch is irrelevant here;
+#   - no Lighthouse audit — audit stays on deploy-web.yml targeting apex
+#     until cutover.
+#
+# Required secrets, all on the PROD environment
+# (Settings -> Environments -> PROD -> Secrets):
+#   SENTRY_AUTH_TOKEN      - Sentry user/org token with the `project:releases`
+#                            scope. Read by sentry_dart_plugin to associate the
+#                            uploaded files with the release defined in
+#                            pubspec.yaml.
+#   CLOUDFLARE_API_TOKEN   - Cloudflare API token with Cloudflare Pages edit
+#                            permissions.
+#   CLOUDFLARE_ACCOUNT_ID  - Cloudflare account ID.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-pwa
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    environment: PROD
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # sentry_dart_plugin reads git refs when stamping the release.
+          # Shallow clones drop those refs and break the upload.
+          fetch-depth: 0
+
+      - name: Verify required secrets are present
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=()
+          [ -z "$SENTRY_AUTH_TOKEN"     ] && missing+=("SENTRY_AUTH_TOKEN")
+          [ -z "$CLOUDFLARE_API_TOKEN"  ] && missing+=("CLOUDFLARE_API_TOKEN")
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing or empty repository secrets: ${missing[*]}"
+            echo "Check Settings -> Secrets and variables -> Actions -> Repository secrets."
+            echo "Environment-scoped secrets are NOT visible here unless the job"
+            echo "declares 'environment: <name>'."
+            exit 1
+          fi
+          echo "SENTRY_AUTH_TOKEN length: ${#SENTRY_AUTH_TOKEN}"
+          echo "CLOUDFLARE_API_TOKEN length: ${#CLOUDFLARE_API_TOKEN}"
+          echo "CLOUDFLARE_ACCOUNT_ID length: ${#CLOUDFLARE_ACCOUNT_ID}"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.23.0
+        with:
+          channel: stable
+          cache: true
+
+      - name: Cache pub-cache and .dart_tool
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: make build-web
+
+      - name: Upload sources and source maps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: make upload-symbols-web
+
+      - name: Strip source maps from published artifact
+        run: make strip-source-maps-web
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@latest pages deploy build/web \
+            --project-name=ringdrill-pwa \
+            --branch=main
