@@ -1,4 +1,23 @@
-import 'package:flutter/foundation.dart';
+enum AppFlagKind { permanent, temporary }
+
+class AppFlagInfo {
+  const AppFlagInfo({
+    required this.name,
+    required this.value,
+    required this.kind,
+    required this.description,
+  });
+
+  final String name;
+  final Object value;
+  final AppFlagKind kind;
+  final String description;
+
+  bool get isDefault =>
+      (value is bool && value == false) ||
+      (value is String && (value as String).isEmpty) ||
+      (value is num && value == 0);
+}
 
 class AppFlags {
   static const migrationDisabled =
@@ -8,26 +27,30 @@ class AppFlags {
   static const localBaseUrl =
       String.fromEnvironment('RINGDRILL_LOCAL_BASE_URL');
 
-  static Map<String, Object> get all => {
-    'MIGRATION_DISABLED': migrationDisabled,
-    'RINGDRILL_FORCE_LEGACY_HOST': forceLegacyHost,
-    'RINGDRILL_LOCAL_BASE_URL': localBaseUrl,
-  };
+  static const List<AppFlagInfo> all = [
+    AppFlagInfo(
+      name: 'MIGRATION_DISABLED',
+      value: migrationDisabled,
+      kind: AppFlagKind.temporary,
+      description:
+          'Kill switch hiding the in-app migration UI before web.ringdrill.app is live.',
+    ),
+    AppFlagInfo(
+      name: 'RINGDRILL_FORCE_LEGACY_HOST',
+      value: forceLegacyHost,
+      kind: AppFlagKind.temporary,
+      description:
+          'Dev override that makes isLegacyHost() return true regardless of actual host.',
+    ),
+    AppFlagInfo(
+      name: 'RINGDRILL_LOCAL_BASE_URL',
+      value: localBaseUrl,
+      kind: AppFlagKind.permanent,
+      description:
+          'Points the catalog client at a local netlify dev instance.',
+    ),
+  ];
 
-  /// Returns the subset of [all] where the value is non-default. Useful
-  /// for rendering an "active flags" UI without listing flags that are
-  /// silently at their defaults.
-  static Map<String, Object> get activeOnly => activeOnlyFrom(all);
-
-  /// Applies the same default-filtering logic as [activeOnly] to an
-  /// arbitrary map. Exposed for testing so the logic can be verified
-  /// without requiring --dart-define overrides in the test runner.
-  @visibleForTesting
-  static Map<String, Object> activeOnlyFrom(Map<String, Object> map) => {
-    for (final e in map.entries)
-      if (!_isDefault(e.value)) e.key: e.value,
-  };
-
-  static bool _isDefault(Object v) =>
-      v == false || v == '' || v == 0;
+  static Iterable<AppFlagInfo> get activeOnly =>
+      all.where((f) => !f.isDefault);
 }
