@@ -28,6 +28,7 @@ class AppConfig {
       'app:migrationBannerDismissedAt:v1';
   static const String ringDrillBaseUrl = 'https://ringdrill.app';
   static const String briefViewerBaseUrl = 'https://ringdrill.app';
+  static const String apiBaseUrl = 'https://api.ringdrill.app';
 
   /// Optional local backend override, set at build time via
   ///
@@ -46,19 +47,32 @@ class AppConfig {
   ///
   /// Resolution order:
   ///   1. If [isDebug] and [localBaseUrl] is non-empty, use [localBaseUrl].
-  ///   2. If running as a release web build, use the empty string (same-origin
-  ///      requests, so the PWA talks to whatever host served it).
-  ///   3. Otherwise use [ringDrillBaseUrl] (production).
+  ///   2. If running as a release web build on `web.ringdrill.app`, use
+  ///      [apiBaseUrl] (cross-origin to the dedicated API subdomain).
+  ///   3. If running as a release web build on apex (`ringdrill.app`), use
+  ///      the empty string (same-origin – the cached PWA's calls to
+  ///      `/.netlify/functions/*` keep working on apex).
+  ///   4. Otherwise use [ringDrillBaseUrl] (production native / debug).
   ///
   /// Pass [kIsWeb], [kReleaseMode] and [kDebugMode] from
   /// `package:flutter/foundation.dart` at the call site.
+  /// [webHost] defaults to `Uri.base.host` when omitted; override in tests.
   static String catalogBaseUrl({
     required bool isWeb,
     required bool isRelease,
     required bool isDebug,
+    String? webHost,
   }) {
     if (isDebug && localBaseUrl.isNotEmpty) return localBaseUrl;
-    return isWeb && isRelease ? '' : ringDrillBaseUrl;
+    if (isWeb && isRelease) {
+      final host = webHost ?? Uri.base.host;
+      if (host == 'web.ringdrill.app') return apiBaseUrl;
+      // Apex stays same-origin. The cached PWA's calls to
+      // /.netlify/functions/* keep working on apex (served directly
+      // by Netlify today, proxied via Cloudflare in Phase 3).
+      return '';
+    }
+    return ringDrillBaseUrl;
   }
 
   /// Returns the deep-link base path the [DrillClient] should use for the
