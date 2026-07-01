@@ -176,7 +176,7 @@ text-decoration:none;text-align:center;transition:transform .06s ease,box-shadow
 .btn-primary{background:var(--brand);color:var(--btn-ink);box-shadow:0 6px 16px -6px rgba(0,83,110,.6)}
 .btn-primary:hover{background:var(--brand-deep)}
 .btn-primary:active{transform:translateY(1px)}
-@media (prefers-color-scheme:dark){.btn-primary{background:var(--accent)}.btn-primary:hover{filter:brightness(1.06)}}
+@media (prefers-color-scheme:dark){.btn-primary{background:var(--accent)}.btn-primary:hover{background:var(--accent);filter:brightness(1.12)}}
 .download{font-size:.9rem;margin-top:.85rem}
 .download a{color:var(--brand-2);text-decoration:none;font-weight:600;border-bottom:1px solid transparent;padding-bottom:1px}
 .download a:hover{border-bottom-color:currentColor}
