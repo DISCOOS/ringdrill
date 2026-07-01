@@ -264,8 +264,12 @@ const altPath =
         grid-template-columns: 1.4fr repeat(3, 1fr);
       }
       @media (max-width: 720px) {
-        .footer__grid { grid-template-columns: 1fr 1fr; }
+        .footer__grid { grid-template-columns: repeat(3, 1fr); }
         .footer__brand { grid-column: 1 / -1; }
+      }
+      @media (max-width: 480px) {
+        .footer { padding-block: 40px 32px; }
+        .footer__grid { grid-template-columns: 1fr; gap: 28px; }
       }
       .footer__brand { display: flex; flex-direction: column; gap: 12px; }
       .footer__brand .brand img { width: 32px; height: 32px; }
@@ -275,6 +279,9 @@ const altPath =
       .footer__col a { color: var(--body); text-decoration: none; font-size: 0.9375rem; }
       .footer__col a:hover { color: var(--link); text-decoration: underline; }
       .footer__bottom { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.875rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+      @media (max-width: 480px) {
+        .footer__bottom { margin-top: 32px; flex-direction: column; align-items: flex-start; gap: 12px; }
+      }
     </style>
   </head>
   <body>
