@@ -76,6 +76,14 @@ sealed class ProgramDiff with _$ProgramDiff {
     /// Remote description when it differs from local. Null when descriptions
     /// match.
     String? descriptionRemote,
+
+    /// Local tags joined as a comma-separated string when they differ from
+    /// remote. Null when tag lists match.
+    String? tagsLocal,
+
+    /// Remote tags joined as a comma-separated string when they differ from
+    /// local. Null when tag lists match.
+    String? tagsRemote,
     @Default([]) List<String> addedExercises,
     @Default([]) List<String> removedExercises,
     @Default([]) List<String> modifiedExercises,
@@ -154,6 +162,7 @@ extension ProgramX on Program {
     final programMap = Map<String, dynamic>.from({
       'name': name,
       'description': description,
+      'tags': tags,
       'briefIntroMd': briefIntroMd,
       'commsMd': commsMd,
       'beforeRoundMd': beforeRoundMd,
@@ -200,12 +209,18 @@ ProgramDiff diffPrograms(Program local, Program remote) {
 
   final nameChanged = local.name != remote.name;
   final descriptionChanged = local.description != remote.description;
+  final localTagsSorted = [...local.tags]..sort();
+  final remoteTagsSorted = [...remote.tags]..sort();
+  final tagsChanged =
+      localTagsSorted.join(',') != remoteTagsSorted.join(',');
 
   return ProgramDiff(
     nameLocal: nameChanged ? local.name : null,
     nameRemote: nameChanged ? remote.name : null,
     descriptionLocal: descriptionChanged ? local.description : null,
     descriptionRemote: descriptionChanged ? remote.description : null,
+    tagsLocal: tagsChanged ? local.tags.join(', ') : null,
+    tagsRemote: tagsChanged ? remote.tags.join(', ') : null,
     addedExercises: exerciseDiff.added,
     removedExercises: exerciseDiff.removed,
     modifiedExercises: exerciseDiff.modified,

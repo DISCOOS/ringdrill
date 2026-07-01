@@ -1176,6 +1176,7 @@
   "catalogDiffRemote": "Catalog version",
   "catalogDiffName": "Plan name",
   "catalogDiffDescription": "Description",
+  "catalogDiffTags": "Tags",
   "catalogDiffExercises": "Exercises",
   "catalogDiffTeams": "Teams",
   "catalogDiffSessions": "Sessions",

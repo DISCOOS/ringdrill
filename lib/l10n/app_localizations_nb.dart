@@ -1260,6 +1260,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogDiffDescription => 'Beskrivelse';
 
   @override
+  String get catalogDiffTags => 'Etiketter';
+
+  @override
   String get catalogDiffExercises => 'Øvelser';
 
   @override

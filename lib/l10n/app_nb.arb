@@ -374,6 +374,7 @@
   "catalogDiffRemote": "Katalogversjon",
   "catalogDiffName": "Plannavn",
   "catalogDiffDescription": "Beskrivelse",
+  "catalogDiffTags": "Etiketter",
   "catalogDiffExercises": "Øvelser",
   "catalogDiffTeams": "Lag",
   "catalogDiffSessions": "Økter",

@@ -2126,6 +2126,12 @@ abstract class AppLocalizations {
   /// **'Description'**
   String get catalogDiffDescription;
 
+  /// No description provided for @catalogDiffTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get catalogDiffTags;
+
   /// No description provided for @catalogDiffExercises.
   ///
   /// In en, this message translates to:

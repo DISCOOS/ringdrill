@@ -39,6 +39,11 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
                 local: diff.descriptionLocal,
                 remote: diff.descriptionRemote,
               ),
+              DiffField(
+                label: localizations.catalogDiffTags,
+                local: diff.tagsLocal,
+                remote: diff.tagsRemote,
+              ),
               DiffGroup(
                 title: localizations.catalogDiffExercises,
                 added: diff.addedExercises,

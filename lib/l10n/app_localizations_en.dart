@@ -1264,6 +1264,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogDiffDescription => 'Description';
 
   @override
+  String get catalogDiffTags => 'Tags';
+
+  @override
   String get catalogDiffExercises => 'Exercises';
 
   @override
