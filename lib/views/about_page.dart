@@ -12,7 +12,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:ringdrill/web/pwa_status_tile.dart'
     if (dart.library.io) 'package:ringdrill/views/pwa_status_tile_io.dart';
 
-const String projectUrl = 'https://www.discoos.org/projects/ringdrill';
+/// Public site URL for RingDrill. The Astro-hosted marketing site at
+/// this apex serves the landing plus the linked pages below (privacy,
+/// terms) after the ADR-0039 Phase 3 cutover. Before cutover apex
+/// still serves the Flutter PWA; those secondary pages 404 until the
+/// cutover lands, which is acceptable for the brief window.
+const String siteUrl = 'https://ringdrill.app';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -207,27 +212,25 @@ class _AboutPageState extends State<AboutPage> {
               ListTile(
                 leading: const Icon(Icons.link_outlined),
                 title: Text(localizations.website),
-                subtitle: const Text(projectUrl), // Your website URL
-                onTap: () => _openExternal(projectUrl),
+                subtitle: const Text(siteUrl),
+                onTap: () => _openExternal(siteUrl),
                 trailing: const Icon(Icons.open_in_new, size: 18),
               ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.link_outlined),
                 title: Text(localizations.privacyPolicy),
-                subtitle: const Text(
-                  '$projectUrl/privacy/',
-                ), // Your website URL
+                subtitle: const Text('$siteUrl/privacy'),
                 trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () => _openExternal('$projectUrl/privacy/'),
+                onTap: () => _openExternal('$siteUrl/privacy'),
               ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.link_outlined),
                 title: Text(localizations.termsOfService),
-                subtitle: const Text('$projectUrl/tos/'), // Your website URL
+                subtitle: const Text('$siteUrl/terms'),
                 trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () => _openExternal('$projectUrl/tos/'),
+                onTap: () => _openExternal('$siteUrl/terms'),
               ),
               const Divider(),
               ListTile(

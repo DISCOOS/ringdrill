@@ -13,6 +13,11 @@ const STRINGS = {
         notFound:       "Ikke funnet",
         exerciseUnit:   "øvelse",
         exercisePlural: "øvelser",
+        kicker:         "Delt øvelsesplan",
+        updated:        "Oppdatert",
+        tagline:        "Rullering uten regneark",
+        about:          "RingDrill planlegger og kjører rullerende øvelser. Åpne planen for å se poster, lag og tider.",
+        moreAt:         "Mer på",
     },
     en: {
         openOnWeb:      "Open the plan",
@@ -20,6 +25,11 @@ const STRINGS = {
         notFound:       "Not found",
         exerciseUnit:   "exercise",
         exercisePlural: "exercises",
+        kicker:         "Shared drill plan",
+        updated:        "Updated",
+        tagline:        "Rotation without spreadsheets",
+        about:          "RingDrill plans and runs rotating drills. Open the plan to see stations, teams and timings.",
+        moreAt:         "More at",
     },
 };
 
