@@ -326,12 +326,11 @@ Future<void> publishActivePlan(BuildContext context) async {
       context,
       programUuid: program.uuid,
       slug: currentSlug,
-      tags: const [],
       client: _buildPublishClient(),
     );
     return;
   }
-  // First-time publish — show the dialog.
+  // First-time publish — show the dialog so the user can pick a slug.
   final input = await showPublishPlanDialog(
     context,
     program: program,
@@ -342,7 +341,6 @@ Future<void> publishActivePlan(BuildContext context) async {
     context,
     programUuid: program.uuid,
     slug: input.slug,
-    tags: input.tags,
     client: _buildPublishClient(),
   );
 }
@@ -365,7 +363,6 @@ Future<void> publishAsActivePlan(BuildContext context) async {
     context,
     programUuid: program.uuid,
     slug: input.slug,
-    tags: input.tags,
     client: _buildPublishClient(),
   );
 }

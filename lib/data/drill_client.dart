@@ -309,11 +309,9 @@ class DrillClient {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
-    List<String> tags = const [],
   }) =>
       _uploadOnce(
         file,
-        tags: tags,
         ownerId: ownerId,
         published: published,
         ifMatchEtag: ifMatchEtag,
@@ -324,7 +322,6 @@ class DrillClient {
     String? ifMatchEtag,
     String ownerId = 'anon',
     bool published = false,
-    List<String> tags = const [],
   }) async {
     final program = file.program();
     final qs = <String, String>{
@@ -336,10 +333,8 @@ class DrillClient {
       // free integer based on the meta's existing versions.
       if (file.version > 0) 'version': (file.version + 1).toString(),
       'slug': file.slug,
-      // TODO: Add name to Drill Program
-      'name': file.fileName,
       'published': published.toString(),
-      if (tags.isNotEmpty) 'tags': tags.join(','),
+      // name, description and tags travel inside program.json (ADR-0043).
     };
 
     final uri = _buildFnUri('drills-upload', query: qs);

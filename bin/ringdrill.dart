@@ -46,11 +46,6 @@ Future<void> main(List<String> argv) async {
       help: 'Upload as published (upload command).',
     )
     ..addOption(
-      'tags',
-      help: 'Comma-separated tags (upload command).',
-      defaultsTo: '',
-    )
-    ..addOption(
       'owner',
       help: 'Owner id (upload command). Default: anon.',
       defaultsTo: 'anon',
@@ -244,7 +239,7 @@ Future<void> _runUpload(
   if (args.length != 1) {
     _fail(
       'Usage: upload <file.drill> '
-      '[--published] [--tags=a,b,c] [--owner=<id>]',
+      '[--published] [--owner=<id>]',
     );
   }
   final path = args[0];
@@ -253,18 +248,9 @@ Future<void> _runUpload(
     _fail('File not found: $path');
   }
   final drillFile = DrillFile.fromFile(file);
-  final tagsStr = (res['tags'] as String).trim();
-  final tags = tagsStr.isEmpty
-      ? const <String>[]
-      : tagsStr
-            .split(',')
-            .map((t) => t.trim())
-            .where((t) => t.isNotEmpty)
-            .toList();
   final response = await client.upload(
     drillFile,
     published: res['published'] as bool,
-    tags: tags,
     ownerId: res['owner'] as String,
   );
   _printUpload(response, jsonOut);
@@ -417,7 +403,7 @@ USAGE:
 
 PUBLIC COMMANDS (no admin token required):
   upload <file.drill>             Upload a .drill file
-                                    [--published] [--tags=a,b,c] [--owner=<id>]
+                                    [--published] [--owner=<id>]
   feed                            Show the public market feed
                                     [--limit=N] [--cursor=C]
   download <slug>                 Download a .drill to disk

@@ -22,10 +22,9 @@ enum PublishDialogMode {
 
 /// Result returned by [showPublishPlanDialog].
 class PublishPlanInput {
-  const PublishPlanInput({required this.slug, required this.tags});
+  const PublishPlanInput({required this.slug});
 
   final String slug;
-  final List<String> tags;
 }
 
 /// Shows the publish-to-catalog dialog and returns the user's input.
@@ -63,7 +62,6 @@ class _PublishPlanDialog extends StatefulWidget {
 
 class _PublishPlanDialogState extends State<_PublishPlanDialog> {
   late final TextEditingController _slugController;
-  final TextEditingController _tagsController = TextEditingController();
   String _sanitizedSlug = '';
 
   @override
@@ -85,7 +83,6 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
   void dispose() {
     _slugController.removeListener(_onSlugChanged);
     _slugController.dispose();
-    _tagsController.dispose();
     super.dispose();
   }
 
@@ -121,16 +118,6 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
               autocorrect: false,
               enableSuggestions: false,
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _tagsController,
-              decoration: InputDecoration(
-                labelText: localizations.libraryPublishTagsLabel,
-                border: const OutlineInputBorder(),
-              ),
-              autocorrect: false,
-              enableSuggestions: false,
-            ),
           ],
         ),
       ),
@@ -141,18 +128,10 @@ class _PublishPlanDialogState extends State<_PublishPlanDialog> {
         ),
         FilledButton(
           onPressed: canSubmit
-              ? () {
-                  final tags = _tagsController.text
-                      .split(',')
-                      .map((s) => s.trim())
-                      .where((s) => s.isNotEmpty)
-                      .toSet()
-                      .toList();
-                  Navigator.pop(
+              ? () => Navigator.pop(
                     context,
-                    PublishPlanInput(slug: _sanitizedSlug, tags: tags),
-                  );
-                }
+                    PublishPlanInput(slug: _sanitizedSlug),
+                  )
               : null,
           child: Text(localizations.libraryPublishSubmit),
         ),
@@ -173,7 +152,6 @@ Future<Program?> runPublishProgram(
   BuildContext context, {
   required String programUuid,
   required String slug,
-  required List<String> tags,
   required DrillClient client,
 }) {
   return _runUpload(
@@ -184,7 +162,6 @@ Future<Program?> runPublishProgram(
     upload: () => ProgramService().publishProgram(
       programUuid,
       slug: slug,
-      tags: tags,
       client: client,
     ),
   );
@@ -197,7 +174,6 @@ Future<Program?> runPublishProgramAs(
   BuildContext context, {
   required String programUuid,
   required String slug,
-  required List<String> tags,
   required DrillClient client,
 }) {
   return _runUpload(
@@ -208,7 +184,6 @@ Future<Program?> runPublishProgramAs(
     upload: () => ProgramService().publishProgramAs(
       programUuid,
       slug: slug,
-      tags: tags,
       client: client,
     ),
   );

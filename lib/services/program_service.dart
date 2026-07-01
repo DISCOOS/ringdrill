@@ -773,7 +773,6 @@ class ProgramService {
   Future<({Program program, bool notModified})> publishProgram(
     String programUuid, {
     required String slug,
-    required List<String> tags,
     required DrillClient client,
   }) async {
     final local = _repo.loadProgram(programUuid);
@@ -811,7 +810,6 @@ class ProgramService {
       file,
       ifMatchEtag: ifMatch,
       published: true,
-      tags: tags,
     );
     debugPrint(
       '[publishProgram] upload version=${upload.version} '
@@ -856,7 +854,6 @@ class ProgramService {
   Future<({Program program, bool notModified})> publishProgramAs(
     String programUuid, {
     required String slug,
-    required List<String> tags,
     required DrillClient client,
   }) async {
     final local = _repo.loadProgram(programUuid);
@@ -876,7 +873,6 @@ class ProgramService {
       return publishProgram(
         programUuid,
         slug: cleanSlug,
-        tags: tags,
         client: client,
       );
     }
@@ -897,7 +893,6 @@ class ProgramService {
     return publishProgram(
       fork.uuid,
       slug: cleanSlug,
-      tags: tags,
       client: client,
     );
   }

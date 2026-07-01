@@ -523,13 +523,12 @@ class _LibraryBodyState extends State<_LibraryBody>
         context,
         programUuid: loaded.uuid,
         slug: currentSlug,
-        tags: const [],
         client: _buildCatalogClient(),
       );
       if (mounted) setState(() {});
       return;
     }
-    // First-time publish — show the dialog so the user can pick slug + tags.
+    // First-time publish — show the dialog so the user can pick a slug.
     final input = await showPublishPlanDialog(
       context,
       program: loaded,
@@ -540,7 +539,6 @@ class _LibraryBodyState extends State<_LibraryBody>
       context,
       programUuid: loaded.uuid,
       slug: input.slug,
-      tags: input.tags,
       client: _buildCatalogClient(),
     );
     if (mounted) setState(() {});
@@ -559,7 +557,6 @@ class _LibraryBodyState extends State<_LibraryBody>
       context,
       programUuid: loaded.uuid,
       slug: input.slug,
-      tags: input.tags,
       client: _buildCatalogClient(),
     );
     if (mounted) setState(() {});
