@@ -233,19 +233,19 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
-  /// **'Get reliable notifications'**
+  /// **'Get notifications'**
   String get getReliableNotifications;
 
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Local notifications aren’t fully supported on the web. Browsers can’t run our code in the background to trigger precise alerts, so timing and reliability are limited. For dependable alerts, use the RingDrill mobile app.'**
+  /// **'RingDrill notifications aren’t supported in the browser or the installed web app. The web can’t run drill timers in the background, so scheduled alerts aren’t delivered. For notifications, use the RingDrill app from the App Store or Google Play.'**
   String get noReliableNotificationsReason;
 
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Use the RingDrill app for the best notification support.'**
+  /// **'Notifications require the RingDrill app.'**
   String get useMobileAppNudge;
 
   /// No description provided for @getOnAndroid.

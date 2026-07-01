@@ -87,15 +87,15 @@
   "@allowAppAnalyticsMessage": {
     "description": "Message"
   },
-  "getReliableNotifications": "Get reliable notifications",
+  "getReliableNotifications": "Get notifications",
   "@getReliableNotifications": {
     "description": "Label"
   },
-  "noReliableNotificationsReason": "Local notifications aren’t fully supported on the web. Browsers can’t run our code in the background to trigger precise alerts, so timing and reliability are limited. For dependable alerts, use the RingDrill mobile app.",
+  "noReliableNotificationsReason": "RingDrill notifications aren’t supported in the browser or the installed web app. The web can’t run drill timers in the background, so scheduled alerts aren’t delivered. For notifications, use the RingDrill app from the App Store or Google Play.",
   "@noReliableNotificationsReason": {
     "description": "Message"
   },
-  "useMobileAppNudge": "Use the RingDrill app for the best notification support.",
+  "useMobileAppNudge": "Notifications require the RingDrill app.",
   "@useMobileAppNudge": {
     "description": "Message"
   },

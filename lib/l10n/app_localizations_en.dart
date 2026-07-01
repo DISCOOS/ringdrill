@@ -84,15 +84,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable collection of analytics and crash reports. This data is linked to your device, but not your identity.';
 
   @override
-  String get getReliableNotifications => 'Get reliable notifications';
+  String get getReliableNotifications => 'Get notifications';
 
   @override
   String get noReliableNotificationsReason =>
-      'Local notifications aren’t fully supported on the web. Browsers can’t run our code in the background to trigger precise alerts, so timing and reliability are limited. For dependable alerts, use the RingDrill mobile app.';
+      'RingDrill notifications aren’t supported in the browser or the installed web app. The web can’t run drill timers in the background, so scheduled alerts aren’t delivered. For notifications, use the RingDrill app from the App Store or Google Play.';
 
   @override
-  String get useMobileAppNudge =>
-      'Use the RingDrill app for the best notification support.';
+  String get useMobileAppNudge => 'Notifications require the RingDrill app.';
 
   @override
   String get getOnAndroid => 'On Android';

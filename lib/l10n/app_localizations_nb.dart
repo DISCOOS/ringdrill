@@ -84,15 +84,14 @@ class AppLocalizationsNb extends AppLocalizations {
       'Aktiver innsamling av analyser og krasjrapporter. Disse dataene er knyttet til enheten din, men ikke identiteten din.';
 
   @override
-  String get getReliableNotifications => 'Få pålitelige varsler';
+  String get getReliableNotifications => 'Få varsler';
 
   @override
   String get noReliableNotificationsReason =>
-      'Lokale varsler er ikke fullt støttet på web. Nettlesere kan ikke kjøre koden vår i bakgrunnen for å utløse presise varsler, så timing og pålitelighet er begrenset. For pålitelige varsler, bruk RingDrill-appen.';
+      'RingDrill-varsler støttes ikke i nettleseren eller den installerte web-appen. Web-en kan ikke kjøre øvelses-timere i bakgrunnen, så planlagte varsler blir ikke levert. For varsler, bruk RingDrill-appen fra App Store eller Google Play.';
 
   @override
-  String get useMobileAppNudge =>
-      'Bruk RingDrill-appen for best mulig varslingsstøtte.';
+  String get useMobileAppNudge => 'Varsler krever RingDrill-appen.';
 
   @override
   String get getOnAndroid => 'På Android';

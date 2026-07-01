@@ -1,9 +1,9 @@
 {
   "shareSuccess": "Deling av \"{name}\" var vellykket!",
   "shareFailure": "Deling mislyktes. Prøv igjen.",
-  "getReliableNotifications": "Få pålitelige varsler",
-  "noReliableNotificationsReason": "Lokale varsler er ikke fullt støttet på web. Nettlesere kan ikke kjøre koden vår i bakgrunnen for å utløse presise varsler, så timing og pålitelighet er begrenset. For pålitelige varsler, bruk RingDrill-appen.",
-  "useMobileAppNudge": "Bruk RingDrill-appen for best mulig varslingsstøtte." ,
+  "getReliableNotifications": "Få varsler",
+  "noReliableNotificationsReason": "RingDrill-varsler støttes ikke i nettleseren eller den installerte web-appen. Web-en kan ikke kjøre øvelses-timere i bakgrunnen, så planlagte varsler blir ikke levert. For varsler, bruk RingDrill-appen fra App Store eller Google Play.",
+  "useMobileAppNudge": "Varsler krever RingDrill-appen.",
   "openInApp": "Åpne i app",
   "getOnAndroid": "På Android",
   "getOniOS": "På iOS",
