@@ -384,6 +384,7 @@ DrillClient buildCatalogClient() {
   );
   return DrillClient(
     baseUrl: baseUrl,
+    functionsBasePath: AppConfig.functionsBasePathFor(baseUrl),
     deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
   );
 }

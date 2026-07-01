@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:universal_io/io.dart';
@@ -109,7 +110,11 @@ class ProgramPageController extends ProgramPageControllerBase {
     AppLocalizations localizations,
     DrillFile drillFile,
   ) async {
-    final client = DrillClient(baseUrl: baseUrl);
+    final client = DrillClient(
+      baseUrl: baseUrl,
+      functionsBasePath: AppConfig.functionsBasePathFor(baseUrl),
+      deepLinkBasePath: AppConfig.deepLinkBasePathFor(baseUrl),
+    );
 
     final result = await client.upload(drillFile);
 

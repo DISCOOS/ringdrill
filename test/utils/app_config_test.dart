@@ -82,4 +82,29 @@ void main() {
       );
     });
   });
+
+  group('AppConfig.functionsBasePathFor', () {
+    test('production baseUrl returns /api', () {
+      expect(
+        AppConfig.functionsBasePathFor('https://ringdrill.app'),
+        equals('/api'),
+      );
+      expect(
+        AppConfig.functionsBasePathFor('https://api.ringdrill.app'),
+        equals('/api'),
+      );
+      expect(AppConfig.functionsBasePathFor(''), equals('/api'));
+    });
+
+    test('localhost baseUrl returns /.netlify/functions', () {
+      expect(
+        AppConfig.functionsBasePathFor('http://localhost:8888'),
+        equals('/.netlify/functions'),
+      );
+      expect(
+        AppConfig.functionsBasePathFor('http://127.0.0.1:8888'),
+        equals('/.netlify/functions'),
+      );
+    });
+  });
 }
