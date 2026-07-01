@@ -65,7 +65,9 @@ class ProgramPageController extends ProgramPageControllerBase {
       allowedExtensions: [DrillFile.drillExtension],
     );
 
-    return path == null;
+    // saveFile returns the chosen path/name on success and null when the
+    // user cancels. Report success only when a path came back.
+    return path != null;
   }
 
   static Future<bool> sendDrillFileTo(

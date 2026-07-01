@@ -65,8 +65,17 @@ class MainDrawer extends StatelessWidget {
           icon: Icons.folder_open,
           title: localizations.openPlan,
           onTap: () async {
+            // Popping the drawer unmounts this tile's BuildContext. The plan
+            // actions await user input (dialogs, file pickers) and then check
+            // `context.mounted`, so handing them the dead drawer context made
+            // them abort silently. Capture the root navigator's context, which
+            // outlives the drawer, and pass that instead.
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.openPlan(context);
+            await active_actions.openPlan(actionContext);
           },
         ),
         _DrawerTile(
@@ -75,8 +84,12 @@ class MainDrawer extends StatelessWidget {
           enabled: hasActivePlan,
           disabledTooltip: localizations.requiresActivePlan,
           onTap: () async {
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.createNewPlan(context);
+            await active_actions.createNewPlan(actionContext);
           },
         ),
         _DrawerTile(
@@ -85,8 +98,12 @@ class MainDrawer extends StatelessWidget {
           enabled: hasActivePlan,
           disabledTooltip: localizations.requiresActivePlan,
           onTap: () async {
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.addExercises(context);
+            await active_actions.addExercises(actionContext);
           },
         ),
         const Divider(),
@@ -98,8 +115,12 @@ class MainDrawer extends StatelessWidget {
               ? localizations.planStatusLocalTooltip
               : localizations.requiresActivePlan,
           onTap: () async {
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.shareActivePlan(context);
+            await active_actions.shareActivePlan(actionContext);
           },
         ),
         if (ProgramPageController.canSendDrillFile)
@@ -109,8 +130,12 @@ class MainDrawer extends StatelessWidget {
             enabled: hasActivePlan,
             disabledTooltip: localizations.requiresActivePlan,
             onTap: () async {
+              final actionContext = Navigator.of(
+                context,
+                rootNavigator: true,
+              ).context;
               Navigator.pop(context);
-              await active_actions.sendActivePlanTo(context);
+              await active_actions.sendActivePlanTo(actionContext);
             },
           ),
         if (ProgramPageController.canSaveDrillFile)
@@ -120,8 +145,12 @@ class MainDrawer extends StatelessWidget {
             enabled: hasActivePlan,
             disabledTooltip: localizations.requiresActivePlan,
             onTap: () async {
+              final actionContext = Navigator.of(
+                context,
+                rootNavigator: true,
+              ).context;
               Navigator.pop(context);
-              await active_actions.exportActivePlan(context);
+              await active_actions.exportActivePlan(actionContext);
             },
           ),
         _DrawerTile(
@@ -130,8 +159,12 @@ class MainDrawer extends StatelessWidget {
           enabled: hasActivePlan,
           disabledTooltip: localizations.requiresActivePlan,
           onTap: () async {
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.publishActivePlan(context);
+            await active_actions.publishActivePlan(actionContext);
           },
         ),
         _DrawerTile(
@@ -140,8 +173,12 @@ class MainDrawer extends StatelessWidget {
           enabled: hasActivePlan,
           disabledTooltip: localizations.requiresActivePlan,
           onTap: () async {
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.publishAsActivePlan(context);
+            await active_actions.publishAsActivePlan(actionContext);
           },
         ),
         _DrawerTile(
@@ -152,8 +189,12 @@ class MainDrawer extends StatelessWidget {
               ? localizations.planStatusLocalTooltip
               : localizations.requiresActivePlan,
           onTap: () async {
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.refreshActivePlanFromCatalog(context);
+            await active_actions.refreshActivePlanFromCatalog(actionContext);
           },
         ),
         _DrawerTile(
@@ -162,8 +203,12 @@ class MainDrawer extends StatelessWidget {
           enabled: hasActivePlan,
           disabledTooltip: localizations.requiresActivePlan,
           onTap: () async {
+            final actionContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
             Navigator.pop(context);
-            await active_actions.deleteActivePlan(context);
+            await active_actions.deleteActivePlan(actionContext);
           },
         ),
         const Divider(),

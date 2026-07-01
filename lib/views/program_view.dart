@@ -1508,6 +1508,21 @@ abstract class ProgramPageControllerBase extends ScreenController {
                             markers: markers,
                             allowStationActions: false,
                             expanded: expandedExerciseUuid == uuid,
+                            // House rule (ExpandableTile): a row with an
+                            // expandable body + chevron must supply onOpen.
+                            // The picker has no context sheet to open, so a
+                            // row tap toggles this exercise's selection —
+                            // matching the trailing switch. The chevron still
+                            // expands the map preview.
+                            onOpen: () {
+                              setState(() {
+                                if (selected.contains(uuid)) {
+                                  selected.remove(uuid);
+                                } else {
+                                  selected.add(uuid);
+                                }
+                              });
+                            },
                             onToggle: () {
                               setState(() {
                                 expandedExerciseUuid =
