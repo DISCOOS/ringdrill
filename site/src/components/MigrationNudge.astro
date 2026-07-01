@@ -2,10 +2,11 @@
 // ADR-0039 Phase 3 migration nudge.
 //
 // Shown on the apex landing to former apex-PWA users after the DNS cutover.
-// It detects, client-side, either Flutter localStorage data left behind on
-// this origin or a lingering Service Worker registration at `/`, and points
-// the visitor at the /migrate export tool. The whole banner is a link; a
-// small close button dismisses it for the current session only.
+// It detects, client-side, Flutter localStorage data left behind on this
+// origin and points the visitor at the /migrate export tool. A visitor with
+// no local library data has nothing to migrate, so an empty localStorage
+// never triggers the banner. The whole banner is a link; a small close
+// button dismisses it for the current session only.
 //
 // Nothing renders server-side beyond a hidden shell — the banner is only
 // revealed by the inline script once a migration signal is found, so cold
@@ -48,6 +49,9 @@ const copy = {
 </div>
 
 <style>
+  /* Author `display: flex` outranks the UA `[hidden]` rule, so the `hidden`
+     attribute (set on cold visits and on dismiss) needs an explicit override. */
+  .nudge[hidden] { display: none; }
   .nudge {
     position: relative;
     display: flex;
@@ -120,17 +124,7 @@ const copy = {
     return false;
   }
 
-  async function hasServiceWorker(): Promise<boolean> {
-    if (!('serviceWorker' in navigator)) return false;
-    try {
-      const reg = await navigator.serviceWorker.getRegistration('/');
-      return reg != null;
-    } catch {
-      return false;
-    }
-  }
-
-  async function maybeShow(): Promise<void> {
+  function maybeShow(): void {
     const el = document.getElementById('migration-nudge');
     if (!el) return;
 
@@ -140,8 +134,10 @@ const copy = {
       // sessionStorage unavailable — fall through and show anyway.
     }
 
-    const signal = hasFlutterData() || (await hasServiceWorker());
-    if (!signal) return;
+    // Only nudge visitors who actually have plans to migrate. A lingering
+    // service worker without any local library data means there is nothing
+    // to export, so an empty localStorage never shows the banner.
+    if (!hasFlutterData()) return;
 
     el.hidden = false;
 
