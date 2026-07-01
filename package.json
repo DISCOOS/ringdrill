@@ -12,7 +12,7 @@
   "description": "",
   "main": "netlify/functions/_shared.js",
   "scripts": {
-    "test": "node --test netlify/functions/__tests__/**/*.test.mjs"
+    "test": "node --test netlify/tests/**/*.test.mjs"
   },
   "keywords": [],
   "author": "",

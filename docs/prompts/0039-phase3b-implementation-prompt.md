@@ -89,7 +89,7 @@ Commit: `feat(api): interim redirect brief URLs to the new PWA`. Verify `git sta
 
 ### Step 4 — Unit test for `drills-preview`
 
-Add `netlify/functions/__tests__/drills-preview.test.js` (or the file naming pattern the existing test suite uses). Cover:
+Add `netlify/tests/drills-preview.test.mjs` following the pattern of `netlify/tests/drills-upload-strip.test.mjs`. Cover:
 
 * Unknown slug → 404 with an HTML body that says so briefly.
 * Unpublished slug (`meta.published: false`) → 404.
@@ -108,7 +108,7 @@ Commit: `test(api): cover drills-preview HTML rendering, locale picking and 404 
 
 ### Step 5 — Verification
 
-* `npm test` in `netlify/functions/__tests__/` clean.
+* `npm test` in `netlify/tests/` clean.
 * Local dev via `make netlify-dev` and `make catalog-seed`. Then:
 
   ```bash

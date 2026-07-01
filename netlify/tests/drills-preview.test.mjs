@@ -9,7 +9,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createHandler, pickLocale, renderHtml } from "../drills-preview.js";
+import { createHandler, pickLocale, renderHtml } from "../functions/drills-preview.js";
 
 // ---------- Fake store fixtures ----------
 
