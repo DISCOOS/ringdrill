@@ -3,8 +3,8 @@ import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/web/install_actions.dart' show openInstallGuide;
 
 import 'web_env.dart';
 
@@ -151,11 +151,11 @@ class _MobileAppNudgeBannerState extends State<MobileAppNudgeBanner> {
     setState(() => _visible = false);
   }
 
-  /// Opens the shareable install guide (`/install`), which offers the
-  /// App Store / Google Play native app and the web-app (PWA) steps per
-  /// platform. Used for every platform except Android, where a direct
-  /// intent to the installed app (or Play Store fallback) is possible.
-  void _openInstallGuide(BuildContext context) => context.push('/install');
+  /// Opens the install guide via the shared helper, which uses the
+  /// same modal-on-wide / full-page-on-narrow surface as About. Direct
+  /// URL visits to `/install` still resolve as a full page via the
+  /// router, so shareable links remain intact.
+  void _openInstallGuide(BuildContext context) => openInstallGuide(context);
 
   void _continueOnWeb() => _dismiss();
 

@@ -7,6 +7,7 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/feedback.dart';
+import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/web/install_actions.dart'
@@ -182,7 +183,14 @@ class MainDrawer extends StatelessWidget {
             title: localizations.migrationSettingsEntry,
             onTap: () {
               Navigator.pop(context);
-              context.push('/migrate');
+              // Same surface treatment as About: modal dialog on wide,
+              // full-page push on narrow. Direct URL visits to `/migrate`
+              // continue to resolve as a full page via app_router.dart,
+              // so shareable links remain intact.
+              openFormSurface<void>(
+                context,
+                builder: (_) => const MigrationPage(),
+              );
             },
           ),
         // Close the install/migrate action group with a divider (only when

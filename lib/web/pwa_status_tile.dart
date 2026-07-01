@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/web/install_actions.dart' show openInstallGuide;
 import 'package:ringdrill/web/web_env.dart';
 
 /// About-page row about the app's install state.
@@ -34,7 +34,7 @@ class PwaStatusTile extends StatelessWidget {
             leading: const Icon(Icons.install_mobile),
             title: Text(l10n.installGuideEntry),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/install'),
+            onTap: () => openInstallGuide(context),
           ),
       ],
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/settings_page.dart'
     show AnalyticsConsentSettings, AppUserRoleSettings;
+import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/web/install_actions.dart' show openInstallGuide;
 import 'package:ringdrill/web/legacy_host_web.dart';
 import 'package:ringdrill/web/pwa_update_web.dart' show forcePwaUpdate;
 import 'package:ringdrill/web/web_env.dart';
@@ -52,14 +54,17 @@ class SettingsPage extends StatelessWidget {
                 leading: const Icon(Icons.install_mobile),
                 title: Text(localizations.installGuideEntry),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/install'),
+                onTap: () => openInstallGuide(context),
               ),
             if (isLegacyHost())
               ListTile(
                 leading: const Icon(Icons.swap_horiz),
                 title: Text(localizations.migrationSettingsEntry),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/migrate'),
+                onTap: () => openFormSurface<void>(
+                  context,
+                  builder: (_) => const MigrationPage(),
+                ),
               ),
             const _ForceUpdateTile(),
           ],
