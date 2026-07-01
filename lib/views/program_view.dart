@@ -873,7 +873,14 @@ class ExerciseCard extends StatefulWidget {
     this.onToggle,
     this.allowStationActions = true,
     this.allowExpand = true,
+    this.selectionControl,
   });
+
+  /// Optional leading-most control, placed to the left of the number badge.
+  /// The export/import picker injects its selection [Switch] here so the
+  /// card is otherwise identical to the exercises tab (badge, styling,
+  /// expandable map preview) while the toggle reads on the left.
+  final Widget? selectionControl;
 
   final Widget? trailing;
   final Exercise exercise;
@@ -975,7 +982,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
 
     final exerciseNum = widget.exerciseNumber;
     final program = widget.program;
-    final leading = (exerciseNum != null && program != null)
+    final Widget? badge = (exerciseNum != null && program != null)
         ? ExerciseNumberBadge(
             label: Numbering.exercise(
               program.exerciseNumberFormat,
@@ -984,6 +991,19 @@ class _ExerciseCardState extends State<ExerciseCard> {
             highlight: isLive,
           )
         : accent.indicator;
+    // Selection control (picker) sits leftmost; the badge follows it. When
+    // no selection control is supplied the leading is just the badge, so the
+    // exercises tab renders exactly as before.
+    final selectionControl = widget.selectionControl;
+    final Widget? leading = selectionControl == null
+        ? badge
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              selectionControl,
+              if (badge != null) ...[const SizedBox(width: 8), badge],
+            ],
+          );
 
     return ExpandableTile(
       accent: accent,
@@ -1424,6 +1444,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
     String? confirmLabel,
     bool preselectAll = false,
     bool showSelectAllControls = false,
+    Program? program,
   }) async {
     final List<String> selected = preselectAll
         ? exercises.map((e) => e.uuid).toList()
@@ -1446,13 +1467,21 @@ abstract class ProgramPageControllerBase extends ScreenController {
                 ?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 );
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                top: 8.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
-              ),
+            // Match the exercises tab: cards use `darkSurface` and there they
+            // contrast because the scaffold behind them is the darker
+            // `brandDeep`. The action sheet's own surface is `darkSurface` too,
+            // which flattens that contrast — so paint the picker body with the
+            // scaffold colour to bring the separation back.
+            final sheetBackground = Theme.of(context).scaffoldBackgroundColor;
+            return ColoredBox(
+              color: sheetBackground,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20.0,
+                  right: 20.0,
+                  top: 8.0,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
+                ),
               child: SafeArea(
                 child: Column(
                   children: [
@@ -1504,6 +1533,13 @@ abstract class ProgramPageControllerBase extends ScreenController {
                           final markers = exercise.getLocations(false);
                           return ExerciseCard(
                             exercise: exercise,
+                            // Reuse the exercises-tab rendering: passing the
+                            // program + 1-based number gives the same #N badge
+                            // and dark-mode card styling. When [program] is
+                            // null (import/add without numbering) no badge is
+                            // shown, same as before.
+                            program: program,
+                            exerciseNumber: program == null ? null : index + 1,
                             localizations: localizations,
                             markers: markers,
                             allowStationActions: false,
@@ -1512,8 +1548,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
                             // expandable body + chevron must supply onOpen.
                             // The picker has no context sheet to open, so a
                             // row tap toggles this exercise's selection —
-                            // matching the trailing switch. The chevron still
-                            // expands the map preview.
+                            // matching the switch. The chevron still expands
+                            // the map preview.
                             onOpen: () {
                               setState(() {
                                 if (selected.contains(uuid)) {
@@ -1529,7 +1565,9 @@ abstract class ProgramPageControllerBase extends ScreenController {
                                     expandedExerciseUuid == uuid ? null : uuid;
                               });
                             },
-                            trailing: Switch.adaptive(
+                            // Selection toggle on the left (leading), before
+                            // the number badge.
+                            selectionControl: Switch.adaptive(
                               value: selected.contains(uuid),
                               onChanged: (bool? value) {
                                 setState(() {
@@ -1578,6 +1616,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
                     const SizedBox(height: 8.0),
                   ],
                 ),
+              ),
               ),
             );
           },

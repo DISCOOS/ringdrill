@@ -364,6 +364,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
       confirmLabel: localizations.importAction,
       preselectAll: true,
       showSelectAllControls: true,
+      program: source,
     );
     if (!context.mounted || selectedUuids.isEmpty) return null;
 

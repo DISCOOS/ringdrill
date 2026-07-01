@@ -86,6 +86,7 @@ Future<ExportPlanInput?> showExportPlanDialog(
     confirmLabel: actionLabel,
     preselectAll: true,
     showSelectAllControls: true,
+    program: program,
   );
   if (selectedUuids.isEmpty) return null;
   return ExportPlanInput(fileName: fileName, selectedUuids: selectedUuids);
