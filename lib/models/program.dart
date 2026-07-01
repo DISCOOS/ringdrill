@@ -30,6 +30,9 @@ sealed class Program with _$Program {
     // lists rather than failing (ADR-0018 backward-compat requirement).
     @Default([]) List<RolePlay> rolePlays,
     @Default([]) List<Actor> actors,
+    // @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
+    // an empty list rather than failing (ADR-0043; same pattern as ADR-0018).
+    @Default(<String>[]) List<String> tags,
     // Markdown brief fields — stored as program/<field>.md, not in JSON.
     @JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,
     @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,

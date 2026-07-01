@@ -46,6 +46,9 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
           ?.map((e) => Actor.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  tags:
+      (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
 );
 
 Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
@@ -64,6 +67,7 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'exercises': instance.exercises,
   'rolePlays': instance.rolePlays,
   'actors': instance.actors,
+  'tags': instance.tags,
 };
 
 const _$ExerciseNumberFormatEnumMap = {ExerciseNumberFormat.hash: 'hash'};
