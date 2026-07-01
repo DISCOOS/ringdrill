@@ -1870,9 +1870,17 @@
   "@migrationBannerOpenNewApp": {
     "description": "Secondary action button on the migration banner — opens web.ringdrill.app."
   },
-  "migrationBannerMoreInfoHint": "You'll find more information about the migration in the menu.",
-  "@migrationBannerMoreInfoHint": {
-    "description": "Hint below the migration banner pointing to the \"About the migration\" entry in the drawer."
+  "migrationBannerReadMore": "Read more",
+  "@migrationBannerReadMore": {
+    "description": "Tertiary action button on the migration banner — opens the full migration explainer page."
+  },
+  "legacyBadgeLabel": "LEGACY",
+  "@legacyBadgeLabel": {
+    "description": "Short label on the persistent legacy marker shown when the PWA runs on the legacy apex origin."
+  },
+  "legacyBadgeTooltip": "You're using the old web app. Tap to move to web.ringdrill.app.",
+  "@legacyBadgeTooltip": {
+    "description": "Tooltip on the persistent legacy marker; tapping it re-surfaces the migration banner."
   },
   "migrationSettingsEntry": "About the migration to web.ringdrill.app",
   "@migrationSettingsEntry": {

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-29
 deciders: ["@kengu"]
 consulted: []
@@ -119,7 +119,7 @@ Every captured event carries these tags. Sentry queries become "events where `ap
 
 When the app boots and `isLegacyHost()` returns true, the app emits an info-level Sentry event once per session with message `boot on legacy apex`. The event carries the relevant tags. Combined with Sentry sessions, this gives a queryable signal over time: "how many sessions in the last 30 days came from the legacy apex". When that number falls toward zero and stays there for a defined window, the feature flag and the migration code paths can be retired.
 
-Sunset criterion for the migration UI: 0 legacy-apex sessions over 30 consecutive days after the Phase 3 cutover lands. At that point ADR-0039's migration code, the `/migrate` page, the `MIGRATION_DISABLED` flag and all related ARB strings can be deleted in a single sane-up commit.
+Sunset criterion for the migration UI: 0 legacy-apex sessions over 30 consecutive days after the Phase 3 cutover lands. At that point ADR-0039's migration code, the `MigrationBanner`, the `LegacyBadge` and its `migrationBannerForceShowTick` notifier (see [Persistent legacy marker](#persistent-legacy-marker)), the `/migrate` page, the `MIGRATION_DISABLED` flag and all related ARB strings can be deleted in a single clean-up commit.
 
 ### About page surfacing
 
@@ -132,6 +132,20 @@ In debug builds, when `AppFlags.activeOnly` is non-empty, the About page renders
 A heading row above the entries identifies the section ("Build flags"), matching the visual rhythm of the existing About sections (version, commit, developed by, etc.).
 
 Release builds do not render the section regardless of flag state. Production users have no use for this information, and Sentry tags already carry the flag state for any bug report we receive from production. Keeping the section debug-only avoids both UI clutter and a low-value support question vector.
+
+### Persistent legacy marker
+
+ADR-0039's `MigrationBanner` is a dismissable call-to-action. It carries the export and "open the new app" actions, and it stays out of the way for 24 hours after the user dismisses it. That serves the action, but it leaves a gap: a user on the legacy apex PWA who dismissed the banner has no standing reminder that they are on the old surface, and no quick way back to the migration actions until the banner re-arms.
+
+A separate persistent marker fills that gap. Unlike the "Build flags" section above, this one is **release-visible** — the legacy users it addresses are production users, not developers. A new `LegacyBadge` widget renders a small, non-dismissable corner marker whenever `isLegacyHost()` returns true. It reuses `isLegacyHost()` directly, so it inherits the same gate: hidden in production before Phase 2, suppressible via `MIGRATION_DISABLED`, forceable in local development via `RINGDRILL_FORCE_LEGACY_HOST`, and — like the banner — shown only for an *installed* PWA (standalone display mode), since browser visitors fail over to the Astro `/migrate` page after cutover. On native builds the stub `isLegacyHost()` returns false, so the marker is web-only for free.
+
+The interaction is a three-layer hierarchy that keeps the primary actions shallow:
+
+1. The `LegacyBadge` is ambient and permanent. Its only job is to signal "this is the old web app". Tapping it does not navigate away — it re-surfaces the `MigrationBanner` even if the user dismissed it, by clearing the 24-hour dismiss state. A shared `migrationBannerForceShowTick` `ValueNotifier` (the same idiom as `stationsTabReselectTick`) carries the signal from the badge to the banner without coupling the two widgets. Normal dismiss behaviour is otherwise unchanged, so the badge is the on-demand escape hatch that brings the banner back.
+2. The `MigrationBanner` keeps the export and "open the new app" actions one tap deep. It gains a "Read more" button that opens the full `MigrationPage` explainer via `openFormSurface`. This button replaces the old `migrationBannerMoreInfoHint` line, which pointed users at the drawer in prose ("You'll find more information about the migration in the menu"). The explicit button removes that "go hunting in the menu" wording, and the `migrationBannerMoreInfoHint` ARB string is deleted.
+3. The `MigrationPage` full-page explainer (why, what changes, the steps, re-export) is reached from the banner's "Read more" button and, unchanged, from the existing "About the migration" drawer entry.
+
+The `LegacyBadge` widget, the `migrationBannerForceShowTick` notifier, the "Read more" button and the new ARB strings all belong to the same removable cluster as the rest of ADR-0039's migration UI. They are deleted together against the sunset criterion below, in the same clean-up commit.
 
 ### Living documentation
 
@@ -197,5 +211,5 @@ Existing flags are not renamed. Consistency applies to new flags only.
 ## Links
 
 * Related ADRs: [ADR-0006](./0006-sentry-behind-consent-gate.md) (Sentry behind consent gate), [ADR-0013](./0013-local-catalog-testing.md) (local catalog testing escape hatch), [ADR-0039](./0039-site-pwa-api-origins.md) (site/PWA/API origin split; introduced `MIGRATION_DISABLED`)
-* Related code: `lib/utils/app_config.dart`, `lib/web/legacy_host_web.dart`, `lib/main.dart`, `lib/views/about_page.dart`
+* Related code: `lib/utils/app_config.dart`, `lib/web/legacy_host_web.dart`, `lib/main.dart`, `lib/views/about_page.dart`, `lib/views/shell/legacy_badge.dart`, `lib/views/shell/migration_banner.dart`, `lib/views/migration_page.dart`
 * Future ADRs deferred: runtime feature flag service (if scale demands), A/B testing infrastructure

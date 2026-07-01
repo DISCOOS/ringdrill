@@ -190,7 +190,7 @@ The migration is staged into three phases. There is no grace period between phas
 
 The first deliverable is a Flutter web release shipped to the current apex (Netlify-hosted Flutter PWA). The release adds:
 
-* Origin detection. When the PWA detects it is running on `ringdrill.app` (not `web.ringdrill.app`), it shows a persistent migration banner inside the app.
+* Origin detection. When the PWA detects it is running on `ringdrill.app` (not `web.ringdrill.app`), it shows a persistent migration banner inside the app. The check (`isLegacyHost()`) additionally requires standalone display mode, so it fires only for an *installed* PWA. A plain browser tab on apex needs no in-app banner: after the Phase 3 cutover a fresh browser visit fails over to the Astro site and is prompted via `/migrate`. `RINGDRILL_FORCE_LEGACY_HOST` bypasses the standalone check for dev testing in an ordinary browser.
 * Banner copy. Heading: "Web-appen flytter til web.ringdrill.app." Body: "Last ned planene dine her og åpne den nye appen." Primary action: "Eksporter alle planene mine". Secondary action: "Åpne den nye appen".
 * Export action. Uses the existing `DrillFile.write()` pipeline (per ADR-0007) to produce one `.drill` archive per `Program`, bundled into one outer ZIP (`ringdrill-eksport-YYYY-MM-DD.zip`).
 * A settings entry "Om migrasjon" with a full explanation: why we are moving, what changes for the user, how to install on the new origin, what happens to data, and a re-export button.

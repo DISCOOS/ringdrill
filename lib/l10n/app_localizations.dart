@@ -3140,11 +3140,23 @@ abstract class AppLocalizations {
   /// **'Open the new app'**
   String get migrationBannerOpenNewApp;
 
-  /// Hint below the migration banner pointing to the "About the migration" entry in the drawer.
+  /// Tertiary action button on the migration banner — opens the full migration explainer page.
   ///
   /// In en, this message translates to:
-  /// **'You\'ll find more information about the migration in the menu.'**
-  String get migrationBannerMoreInfoHint;
+  /// **'Read more'**
+  String get migrationBannerReadMore;
+
+  /// Short label on the persistent legacy marker shown when the PWA runs on the legacy apex origin.
+  ///
+  /// In en, this message translates to:
+  /// **'LEGACY'**
+  String get legacyBadgeLabel;
+
+  /// Tooltip on the persistent legacy marker; tapping it re-surfaces the migration banner.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using the old web app. Tap to move to web.ringdrill.app.'**
+  String get legacyBadgeTooltip;
 
   /// Settings list tile that opens the migration explainer page.
   ///

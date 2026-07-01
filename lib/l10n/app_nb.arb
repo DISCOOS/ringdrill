@@ -972,9 +972,17 @@
   "@migrationBannerOpenNewApp": {
     "description": "Sekundærknapp på migrasjonsbanneret — åpner web.ringdrill.app."
   },
-  "migrationBannerMoreInfoHint": "Du finner mer informasjon om migrasjonen i menyen.",
-  "@migrationBannerMoreInfoHint": {
-    "description": "Henvisning under migrasjonsbanneret som peker på «Om migrasjon»-oppføringen i menyen."
+  "migrationBannerReadMore": "Les mer",
+  "@migrationBannerReadMore": {
+    "description": "Tertiærknapp på migrasjonsbanneret — åpner hele migrasjonsbeskrivelsessiden."
+  },
+  "legacyBadgeLabel": "LEGACY",
+  "@legacyBadgeLabel": {
+    "description": "Kort etikett på den permanente legacy-markøren som vises når PWA-en kjører på det gamle apex-domenet."
+  },
+  "legacyBadgeTooltip": "Du bruker den gamle web-appen. Trykk for å flytte til web.ringdrill.app.",
+  "@legacyBadgeTooltip": {
+    "description": "Tooltip på den permanente legacy-markøren; trykk henter fram migrasjonsbanneret igjen."
   },
   "migrationSettingsEntry": "Om migrasjon til web.ringdrill.app",
   "@migrationSettingsEntry": {

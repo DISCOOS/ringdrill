@@ -4,12 +4,30 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/views/migration_page.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/web/trigger_download_web.dart'
     if (dart.library.io) 'package:ringdrill/web/trigger_download_stub.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ringdrill/web/legacy_host_web.dart'
     if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
+
+/// Signal that re-surfaces the [MigrationBanner] on demand, even after the
+/// user has dismissed it for the 24-hour window. The [LegacyBadge] bumps
+/// this tick on tap; the banner listens and clears its dismiss state.
+///
+/// A shared [ValueNotifier] (the same idiom as `stationsTabReselectTick`)
+/// keeps the ambient badge and the banner decoupled — the badge does not
+/// need a reference to the banner's state. See ADR-0042 "Persistent legacy
+/// marker".
+final ValueNotifier<int> migrationBannerForceShowTick = ValueNotifier<int>(0);
+
+/// Whether the [MigrationBanner] is currently on screen. The `LegacyBadge`
+/// listens to this and hides itself while the banner is visible, so the two
+/// legacy surfaces are mutually exclusive and never overlap. The banner
+/// keeps this in sync as it loads, is dismissed, or is force-shown.
+final ValueNotifier<bool> migrationBannerVisible = ValueNotifier<bool>(false);
 
 /// Banner shown at the top of the app on every screen when the PWA is
 /// running on the legacy apex origin (`ringdrill.app`). Prompts the user
@@ -24,6 +42,7 @@ class MigrationBanner extends StatefulWidget {
     @visibleForTesting this.nowOverride,
     @visibleForTesting this.onExportOverride,
     @visibleForTesting this.onOpenNewAppOverride,
+    @visibleForTesting this.onReadMoreOverride,
   });
 
   final bool Function()? isLegacyHostOverride;
@@ -34,6 +53,9 @@ class MigrationBanner extends StatefulWidget {
 
   /// If set, replaces `launchUrl` in tests.
   final Future<void> Function(Uri)? onOpenNewAppOverride;
+
+  /// If set, replaces opening the [MigrationPage] explainer in tests.
+  final void Function()? onReadMoreOverride;
 
   @override
   State<MigrationBanner> createState() => _MigrationBannerState();
@@ -48,6 +70,36 @@ class _MigrationBannerState extends State<MigrationBanner> {
   void initState() {
     super.initState();
     _loadDismissState();
+    migrationBannerForceShowTick.addListener(_onForceShow);
+  }
+
+  @override
+  void dispose() {
+    migrationBannerForceShowTick.removeListener(_onForceShow);
+    // The banner is leaving the tree, so it is no longer visible. Let the
+    // LegacyBadge take over.
+    migrationBannerVisible.value = false;
+    super.dispose();
+  }
+
+  bool get _isLegacy =>
+      widget.isLegacyHostOverride?.call() ?? isLegacyHost();
+
+  /// Publish whether the banner is currently on screen so the [LegacyBadge]
+  /// can hide itself while the banner is showing (mutually exclusive).
+  void _syncVisible() {
+    migrationBannerVisible.value = _isLegacy && _loaded && !_dismissed;
+  }
+
+  /// Re-surface the banner on demand (tapped from the [LegacyBadge]).
+  /// Clears both the in-memory dismiss flag and the stored 24-hour
+  /// timestamp so the banner stays visible until the user dismisses it
+  /// again. Normal dismiss behaviour is otherwise unchanged.
+  Future<void> _onForceShow() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConfig.keyMigrationBannerDismissedAt);
+    if (mounted) setState(() => _dismissed = false);
+    _syncVisible();
   }
 
   Future<void> _loadDismissState() async {
@@ -60,6 +112,7 @@ class _MigrationBannerState extends State<MigrationBanner> {
       _dismissed = now.difference(dismissedAt) < const Duration(hours: 24);
     }
     setState(() => _loaded = true);
+    _syncVisible();
   }
 
   Future<void> _dismiss() async {
@@ -70,6 +123,7 @@ class _MigrationBannerState extends State<MigrationBanner> {
       now.millisecondsSinceEpoch,
     );
     if (mounted) setState(() => _dismissed = true);
+    _syncVisible();
   }
 
   Future<void> _export() async {
@@ -101,10 +155,17 @@ class _MigrationBannerState extends State<MigrationBanner> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  void _readMore() {
+    if (widget.onReadMoreOverride != null) {
+      widget.onReadMoreOverride!();
+      return;
+    }
+    openFormSurface<void>(context, builder: (_) => const MigrationPage());
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isLegacy = widget.isLegacyHostOverride?.call() ?? isLegacyHost();
-    if (!isLegacy || !_loaded || _dismissed) return const SizedBox.shrink();
+    if (!_isLegacy || !_loaded || _dismissed) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
@@ -134,28 +195,6 @@ class _MigrationBannerState extends State<MigrationBanner> {
                           color: cs.onSecondaryContainer,
                         ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.menu,
-                        size: 14,
-                        color: cs.onSecondaryContainer,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          l10n.migrationBannerMoreInfoHint,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: cs.onSecondaryContainer,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -169,6 +208,10 @@ class _MigrationBannerState extends State<MigrationBanner> {
                         onPressed: _openNewApp,
                         child: Text(l10n.migrationBannerOpenNewApp),
                       ),
+                      TextButton(
+                        onPressed: _readMore,
+                        child: Text(l10n.migrationBannerReadMore),
+                      ),
                     ],
                   ),
                 ],
@@ -177,7 +220,6 @@ class _MigrationBannerState extends State<MigrationBanner> {
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: _dismiss,
-              tooltip: l10n.dismiss,
             ),
           ],
         ),

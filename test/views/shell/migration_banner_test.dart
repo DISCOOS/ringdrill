@@ -166,5 +166,59 @@ void main() {
 
       expect(launchedUri?.host, 'web.ringdrill.app');
     });
+
+    testWidgets('read-more action calls read-more override', (tester) async {
+      var readMoreCalled = false;
+
+      await tester.pumpWidget(
+        _harness(
+          MigrationBanner(
+            isLegacyHostOverride: () => true,
+            nowOverride: _nowFn,
+            onReadMoreOverride: () => readMoreCalled = true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Read more'));
+      await tester.pumpAndSettle();
+
+      expect(readMoreCalled, isTrue);
+    });
+  });
+
+  group('MigrationBanner force-show', () {
+    testWidgets('force-show tick re-surfaces a dismissed banner',
+        (tester) async {
+      // Dismissed 1 hour ago, so it starts hidden.
+      final oneHourAgo = _now.subtract(const Duration(hours: 1));
+      SharedPreferences.setMockInitialValues({
+        AppConfig.keyMigrationBannerDismissedAt:
+            oneHourAgo.millisecondsSinceEpoch,
+      });
+
+      await tester.pumpWidget(
+        _harness(
+          MigrationBanner(
+            isLegacyHostOverride: () => true,
+            nowOverride: _nowFn,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('web.ringdrill.app'), findsNothing);
+
+      // The LegacyBadge bumps this tick on tap.
+      migrationBannerForceShowTick.value++;
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('web.ringdrill.app'), findsOneWidget);
+
+      // The stored dismiss timestamp is cleared so it stays visible.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt(AppConfig.keyMigrationBannerDismissedAt), isNull);
+    });
   });
 }

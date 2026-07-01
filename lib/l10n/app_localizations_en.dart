@@ -1832,8 +1832,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get migrationBannerOpenNewApp => 'Open the new app';
 
   @override
-  String get migrationBannerMoreInfoHint =>
-      'You\'ll find more information about the migration in the menu.';
+  String get migrationBannerReadMore => 'Read more';
+
+  @override
+  String get legacyBadgeLabel => 'LEGACY';
+
+  @override
+  String get legacyBadgeTooltip =>
+      'You\'re using the old web app. Tap to move to web.ringdrill.app.';
 
   @override
   String get migrationSettingsEntry =>

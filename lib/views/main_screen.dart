@@ -18,6 +18,7 @@ import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/roster_view.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
+import 'package:ringdrill/views/shell/legacy_badge.dart';
 import 'package:ringdrill/views/shell/main_drawer.dart';
 import 'package:ringdrill/views/shell/migration_banner.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -32,6 +33,8 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
+import 'package:ringdrill/web/legacy_host_web.dart'
+    if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({
@@ -331,9 +334,12 @@ class _MainScreenState extends State<MainScreen>
                 child: scaffoldBody,
               )
             : scaffoldBody;
-        return ContextSheet(
-          controller: _contextSheetController,
-          child: Scaffold(
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: ContextSheet(
+                controller: _contextSheetController,
+                child: Scaffold(
             key: _scaffoldKey,
             extendBody: true,
             extendBodyBehindAppBar: true,
@@ -369,7 +375,17 @@ class _MainScreenState extends State<MainScreen>
               localizations,
               useRail,
             ),
-          ),
+                ),
+              ),
+            ),
+            // Persistent legacy marker (ADR-0042). Mounted above the whole
+            // app — like Flutter's debug banner — so the diagonal ribbon
+            // sits in the top-right screen corner, clear of the migration
+            // banner's controls below. Hidden off legacy apex via its own
+            // `isLegacyHost()` gate. The AppBar nudges its actions left in
+            // compact so the ribbon does not cover the plan status badge.
+            const Positioned(top: 0, right: 0, child: LegacyBadge()),
+          ],
         );
       },
     );
@@ -416,7 +432,14 @@ class _MainScreenState extends State<MainScreen>
         ...?page.controller.buildActions(context, constraints),
         const PlanStatusBadge(),
       ],
-      actionsPadding: EdgeInsets.only(right: 16.0),
+      // On the compact layout the LegacyBadge ribbon sits in the top-right
+      // screen corner (over this AppBar). Nudge the actions left on legacy
+      // so the ribbon does not cover the plan status badge. The wide layout
+      // is unaffected: its top-right corner is the detail pane, not this
+      // (master) AppBar.
+      actionsPadding: EdgeInsets.only(
+        right: (!hasRail && isLegacyHost()) ? 60.0 : 16.0,
+      ),
     );
 
     // PlanStatusBadge reads `theme.appBarTheme.foregroundColor` from the
