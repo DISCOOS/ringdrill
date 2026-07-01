@@ -2912,6 +2912,30 @@ abstract class AppLocalizations {
   /// **'Short description shown under the plan name in the brief'**
   String get programDescriptionHint;
 
+  /// Field/section label for the tags chip editor in ProgramFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get programEditorTagsLabel;
+
+  /// Hint text inside the tag input field in ProgramFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a tag'**
+  String get programEditorTagsHint;
+
+  /// Tooltip on the delete icon chip in the tags editor in ProgramFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove tag'**
+  String get programEditorTagRemoveTooltip;
+
+  /// Validation message shown when a tag exceeds the maximum length.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag is too long (max 40 characters)'**
+  String get programEditorTagTooLong;
+
   /// Optional section label for Program.briefIntroMd in ProgramFormScreen. Booklet label: "Generelt om spill og øvingsledelse".
   ///
   /// In en, this message translates to:

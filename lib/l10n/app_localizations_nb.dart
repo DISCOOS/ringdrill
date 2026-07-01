@@ -1707,6 +1707,18 @@ class AppLocalizationsNb extends AppLocalizations {
       'Kort beskrivelse som vises under plannavnet i briefen';
 
   @override
+  String get programEditorTagsLabel => 'Etiketter';
+
+  @override
+  String get programEditorTagsHint => 'Legg til en etikett';
+
+  @override
+  String get programEditorTagRemoveTooltip => 'Fjern etikett';
+
+  @override
+  String get programEditorTagTooLong => 'Etiketten er for lang (maks 40 tegn)';
+
+  @override
   String get briefSectionProgramIntro => 'Generelt om spill og øvingsledelse';
 
   @override

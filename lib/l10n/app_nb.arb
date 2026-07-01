@@ -809,6 +809,22 @@
   "@programDescriptionHint": {
     "description": "Plassholdertekst for Program.description-feltet."
   },
+  "programEditorTagsLabel": "Etiketter",
+  "@programEditorTagsLabel": {
+    "description": "Felt-/seksjonsoverskrift for etikett-redigeringen i ProgramFormScreen."
+  },
+  "programEditorTagsHint": "Legg til en etikett",
+  "@programEditorTagsHint": {
+    "description": "Plassholdertekst i etikett-inndata-feltet i ProgramFormScreen."
+  },
+  "programEditorTagRemoveTooltip": "Fjern etikett",
+  "@programEditorTagRemoveTooltip": {
+    "description": "Verktøytips på slett-ikonet i etikett-redigeringen i ProgramFormScreen."
+  },
+  "programEditorTagTooLong": "Etiketten er for lang (maks 40 tegn)",
+  "@programEditorTagTooLong": {
+    "description": "Valideringsmelding som vises når en etikett overskrider makslengden."
+  },
   "briefSectionProgramIntro": "Generelt om spill og øvingsledelse",
   "@briefSectionProgramIntro": {
     "description": "Etikett for valgfri seksjon for Program.briefIntroMd i ProgramFormScreen. Speiler heftet."

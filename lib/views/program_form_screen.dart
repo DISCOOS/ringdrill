@@ -5,6 +5,8 @@ import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 
+const _kTagMaxLength = 40;
+
 /// Optional addable sections on [Program] beyond name + description.
 enum _Section { briefIntro, comms, beforeRound }
 
@@ -29,6 +31,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
 
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _tagInputController = TextEditingController();
   final _briefIntroController = TextEditingController();
   final _commsController = TextEditingController();
   final _beforeRoundController = TextEditingController();
@@ -37,8 +40,10 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   final _commsFocus = FocusNode();
   final _beforeRoundFocus = FocusNode();
 
+  late List<String> _tags;
   late Set<_Section> _activeSections;
   late StationNumberFormat _stationNumberFormat;
+  String? _tagError;
 
   @override
   void initState() {
@@ -46,6 +51,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     final p = widget.program;
     _nameController.text = p.name;
     _descriptionController.text = p.description;
+    _tags = List<String>.from(p.tags);
     _briefIntroController.text = p.briefIntroMd ?? '';
     _commsController.text = p.commsMd ?? '';
     _beforeRoundController.text = p.beforeRoundMd ?? '';
@@ -61,6 +67,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _tagInputController.dispose();
     _briefIntroController.dispose();
     _commsController.dispose();
     _beforeRoundController.dispose();
@@ -68,6 +75,29 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     _commsFocus.dispose();
     _beforeRoundFocus.dispose();
     super.dispose();
+  }
+
+  void _submitTag(AppLocalizations l) {
+    final raw = _tagInputController.text;
+    final tag = raw.trim().toLowerCase();
+    if (tag.isEmpty) return;
+    if (tag.length > _kTagMaxLength) {
+      setState(() => _tagError = l.programEditorTagTooLong);
+      return;
+    }
+    if (_tags.contains(tag)) {
+      _tagInputController.clear();
+      return;
+    }
+    setState(() {
+      _tags.add(tag);
+      _tagError = null;
+    });
+    _tagInputController.clear();
+  }
+
+  void _removeTag(String tag) {
+    setState(() => _tags.remove(tag));
   }
 
   void _addSection(_Section section) {
@@ -166,6 +196,17 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                       alignLabelWithHint: true,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  _TagsEditor(
+                    tags: _tags,
+                    controller: _tagInputController,
+                    errorText: _tagError,
+                    onSubmit: () => _submitTag(localizations),
+                    onRemove: _removeTag,
+                    label: localizations.programEditorTagsLabel,
+                    hint: localizations.programEditorTagsHint,
+                    removeTooltip: localizations.programEditorTagRemoveTooltip,
+                  ),
                   const SizedBox(height: 24),
                   _StationNumberFormatPicker(
                     value: _stationNumberFormat,
@@ -193,6 +234,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     final updated = widget.program.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
+      tags: List<String>.unmodifiable(_tags),
       stationNumberFormat: _stationNumberFormat,
       briefIntroMd: _readSection(_Section.briefIntro),
       commsMd: _readSection(_Section.comms),
@@ -200,6 +242,80 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       metadata: widget.program.metadata.copyWith(updated: DateTime.now()),
     );
     Navigator.of(context).pop(updated);
+  }
+}
+
+/// Chip-style tag editor. Existing tags are shown as deletable chips above a
+/// text input. Pressing Enter or the submit action on the keyboard adds the
+/// tag.
+class _TagsEditor extends StatelessWidget {
+  const _TagsEditor({
+    required this.tags,
+    required this.controller,
+    required this.onSubmit,
+    required this.onRemove,
+    required this.label,
+    required this.hint,
+    required this.removeTooltip,
+    this.errorText,
+  });
+
+  final List<String> tags;
+  final TextEditingController controller;
+  final VoidCallback onSubmit;
+  final ValueChanged<String> onRemove;
+  final String label;
+  final String hint;
+  final String removeTooltip;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (tags.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final tag in tags)
+                Chip(
+                  label: Text(tag),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  deleteButtonTooltipMessage: removeTooltip,
+                  onDeleted: () => onRemove(tag),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hint,
+            errorText: errorText,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: hint,
+              onPressed: onSubmit,
+            ),
+          ),
+          textInputAction: TextInputAction.done,
+          autocorrect: false,
+          enableSuggestions: false,
+          onSubmitted: (_) => onSubmit(),
+        ),
+      ],
+    );
   }
 }
 

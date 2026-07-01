@@ -1707,6 +1707,22 @@
   "@programDescriptionHint": {
     "description": "Hint text for the Program.description field."
   },
+  "programEditorTagsLabel": "Tags",
+  "@programEditorTagsLabel": {
+    "description": "Field/section label for the tags chip editor in ProgramFormScreen."
+  },
+  "programEditorTagsHint": "Add a tag",
+  "@programEditorTagsHint": {
+    "description": "Hint text inside the tag input field in ProgramFormScreen."
+  },
+  "programEditorTagRemoveTooltip": "Remove tag",
+  "@programEditorTagRemoveTooltip": {
+    "description": "Tooltip on the delete icon chip in the tags editor in ProgramFormScreen."
+  },
+  "programEditorTagTooLong": "Tag is too long (max 40 characters)",
+  "@programEditorTagTooLong": {
+    "description": "Validation message shown when a tag exceeds the maximum length."
+  },
   "briefSectionProgramIntro": "Intro",
   "@briefSectionProgramIntro": {
     "description": "Optional section label for Program.briefIntroMd in ProgramFormScreen. Booklet label: \"Generelt om spill og øvingsledelse\"."

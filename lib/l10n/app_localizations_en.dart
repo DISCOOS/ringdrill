@@ -1710,6 +1710,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Short description shown under the plan name in the brief';
 
   @override
+  String get programEditorTagsLabel => 'Tags';
+
+  @override
+  String get programEditorTagsHint => 'Add a tag';
+
+  @override
+  String get programEditorTagRemoveTooltip => 'Remove tag';
+
+  @override
+  String get programEditorTagTooLong => 'Tag is too long (max 40 characters)';
+
+  @override
   String get briefSectionProgramIntro => 'Intro';
 
   @override
