@@ -269,7 +269,10 @@ class DrillClient {
   /// Can be empty ("") to use same-origin in web builds.
   final String baseUrl;
 
-  /// Path prefix for Netlify Functions (default: "/.netlify/functions").
+  /// Public path prefix for the catalog API (default: "/api"). Aliased in
+  /// `netlify.toml` to the `/.netlify/functions/*` implementation paths so
+  /// old cached PWAs that still call the implementation paths keep working
+  /// on the Netlify side.
   final String functionsBasePath;
 
   /// Path prefix for deep links (default: "/d").
@@ -279,7 +282,7 @@ class DrillClient {
 
   DrillClient({
     required this.baseUrl,
-    this.functionsBasePath = '/.netlify/functions',
+    this.functionsBasePath = '/api',
     this.deepLinkBasePath = '/d',
     http.Client? httpClient,
   }) : _http = httpClient ?? http.Client();
@@ -339,7 +342,7 @@ class DrillClient {
       if (tags.isNotEmpty) 'tags': tags.join(','),
     };
 
-    final uri = _buildFnUri('drills-upload', query: qs);
+    final uri = _buildFnUri('drills/upload', query: qs);
     final res = await _http.post(
       uri,
       headers: {
@@ -413,7 +416,7 @@ class DrillClient {
     String? ifNoneMatch,
   }) async {
     final path = _slugVerPath(slug, version);
-    final uri = _buildFnUri('drills-head/$path');
+    final uri = _buildFnUri('drills/head/$path');
     final res = await _http.head(uri, headers: {'if-none-match': ?ifNoneMatch});
 
     if (res.statusCode == 304) {
@@ -489,7 +492,7 @@ class DrillClient {
     String? cursor,
   }) async {
     final uri = _buildFnUri(
-      'market-feed',
+      'market/feed',
       query: {'limit': limit.toString(), 'cursor': ?cursor},
     );
     final res = await _http.get(uri);
@@ -543,7 +546,7 @@ class DrillClient {
     required String slug,
   }) async {
     final uri = _buildFnUri(
-      'drills-admin',
+      'admin',
       query: {'action': 'versions', 'slug': slug},
     );
     final res = await _http.get(
@@ -571,7 +574,7 @@ class DrillClient {
     String? cursor,
   }) async {
     final uri = _buildFnUri(
-      'drills-admin',
+      'admin',
       query: {
         'action': 'listall',
         'limit': limit.toString(),
@@ -626,7 +629,7 @@ class DrillClient {
     required String adminToken,
   }) async {
     final uri = _buildFnUri(
-      'drills-admin',
+      'admin',
       query: {'action': action, 'slug': slug, 'version': ?version},
     );
     final res = await _http.get(
