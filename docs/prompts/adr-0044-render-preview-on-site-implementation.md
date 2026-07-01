@@ -6,7 +6,7 @@ The goal: move `/i/<slug>` rendering from the Netlify function `netlify/function
 
 ## Sequencing — read this first
 
-The final cutover (routing `/i/*` to the site and deleting `drills-preview.js`) is gated on the apex migration to Cloudflare (ADR-0039). **Do not flip routing or delete the function in this change.** Build the API endpoint and the site route so they run *alongside* the existing function, verify parity, and stop. Step 6 (cutover) is documented but explicitly deferred until apex is on Cloudflare. If you believe apex has already migrated, confirm with the requester before touching `netlify.toml`'s `/i/*` redirect.
+The final cutover (making the native site route win and deleting `drills-preview.js`) is deferred and coordinated with ADR-0039. **Do not flip routing or delete the function in this change.** Build the API endpoint and the site route so they run *alongside* the existing function, verify parity, and stop. `/i/` keeps working across the ADR-0039 apex flip on its own — ADR-0039 proxies the Cloudflare apex `/i/*` to `api.ringdrill.app`, so this route is not a prerequisite for that flip. Step 6 (cutover) is documented but explicitly deferred. If you believe it is time to cut over, confirm with the requester before touching any `_redirects` or `netlify.toml` routing.
 
 ## Ground rules
 
@@ -93,9 +93,9 @@ Prove the site route emits the same crawler-visible head as the function. Add a 
 
 Files expected in this commit: the site test file and any fixture.
 
-### Step 6. Cutover — DEFERRED until apex is on Cloudflare (do not execute now)
+### Step 6. Cutover — DEFERRED (do not execute now)
 
-Documented for completeness, gated on ADR-0039. When apex is on Cloudflare: point `/i/*` at the site route instead of the Netlify function, confirm parity on real traffic, then delete `netlify/functions/drills-preview.js`, its `STRINGS`, `netlify/tests/drills-preview.test.mjs`, and the old `/i/*` redirect. This is a separate change with its own commit and its own verification. Do not start it in this round.
+Documented for completeness, coordinated with ADR-0039. Note the apex cutover does **not** depend on this route: ADR-0039 proxies the Cloudflare apex `/i/*` to `https://api.ringdrill.app/i/:splat` (status-200 `_redirects`), so `drills-preview` keeps serving `/i/` after the DNS flip with no gap. This ADR's cutover is the reverse-direction swap: once the native `/i/[slug]` route is deployed and parity-checked on the Cloudflare host, remove the `/i/* → api.ringdrill.app` line from the apex `_redirects` so the native route wins, then delete `netlify/functions/drills-preview.js`, its `STRINGS`, `netlify/tests/drills-preview.test.mjs`. Order matters only here: the route must be live before the proxy line is removed. Separate change, separate commit and verification. Do not start it in this round.
 
 ### Step 7. Docs
 

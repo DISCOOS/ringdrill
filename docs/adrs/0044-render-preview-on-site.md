@@ -74,8 +74,10 @@ Sequencing matters. This lands **after** the apex is on Cloudflare per ADR-0039,
 
 1. Add `GET /api/drills/:slug/meta` (Netlify function) returning the meta JSON, `404` for unpublished or missing, with `s-maxage` cache headers. Match the per-item shape `market-feed.js` already returns for consistency. `drills-preview.js` keeps running unchanged.
 2. Add the Cloudflare adapter and enable on-demand rendering for the preview route only, keeping every existing page prerendered. Build the Astro `/i/[slug]` on-demand route consuming that endpoint, porting the current preview layout into a site component that reuses site tokens and `t(lang)`. The route fetches meta from a configurable API base (`PUBLIC_RINGDRILL_API_BASE`, default production) so `make site-dev` can point it at the local `make netlify-dev` backend for debugging. Verify OG/canonical/hreflang parity with a crawler check (Slack/Facebook debugger or equivalent).
-3. After the apex is on Cloudflare (ADR-0039), flip `/i/*` routing from the Netlify function to the site route. Once traffic confirms parity, retire `drills-preview.js`, its `STRINGS` dictionary and its tests.
-4. `/d/<slug>` download stays a function.
+3. **The apex cutover does not require this ADR.** ADR-0039 already routes the Cloudflare apex `/i/*` to `https://api.ringdrill.app/i/:splat` with a status-200 `_redirects` proxy, so `drills-preview` keeps rendering `/i/` after the DNS flip with no gap. `/i/` therefore does not break at cutover, and this ADR is not a prerequisite for it. The site route is an independent optimisation that can land any time after ADR-0039.
+4. This ADR's cutover = replace the ADR-0039 `/i/*` proxy with the native Cloudflare route. Deploy the `/i/[slug]` route, confirm parity on the Cloudflare host, then remove the `/i/* → api.ringdrill.app` line from the apex `_redirects` so the native route wins. Order matters only here: the route must be live before the proxy line is removed, or there is a brief gap.
+5. After parity on real traffic, retire `drills-preview.js`, its `STRINGS` dictionary and its tests.
+6. `/d/<slug>` download stays a Netlify function, reached from the Cloudflare apex via the ADR-0039 `/d/* → api.ringdrill.app` proxy. This ADR does not touch it.
 
 ## Links
 
