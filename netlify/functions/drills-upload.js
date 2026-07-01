@@ -12,42 +12,42 @@ import {
 const KNOWN_SCHEMA_MAX = "1.2";
 
 /**
- * Read the plan-level name and description from a `program.json` entry.
+ * Read the plan-level name, description and tags from a `program.json` entry.
  *
  * `files` is the already-unzipped archive map (name -> Uint8Array), so this
  * reuses the unzip stripActorsAndValidate already did rather than opening the
- * archive a second time. Returns { name, description } with each field either
- * a string or null when absent/unparseable — never throws.
+ * archive a second time. Returns { name, description, tags } with each field
+ * either a non-null value or null/[] when absent/unparseable — never throws.
  */
 export function programInfoFromArchive(files) {
     const entry = files?.["program.json"];
-    if (!entry) return { name: null, description: null };
+    if (!entry) return { name: null, description: null, tags: [] };
     try {
         const p = JSON.parse(strFromU8(entry));
         return {
             name: typeof p?.name === "string" ? p.name : null,
             description: typeof p?.description === "string" ? p.description : null,
+            tags: Array.isArray(p?.tags) ? p.tags : [],
         };
     } catch {
-        return { name: null, description: null };
+        return { name: null, description: null, tags: [] };
     }
 }
 
 /**
- * Resolve the catalog `name` and `description` from the query params and the
- * plan's own program.json. Query wins when present; program.json fills the
- * gaps; slug/"" are the final fallbacks. An explicit empty `?description=`
- * is honoured as an intentional override (query is null only when absent).
+ * Resolve the catalog `name`, `description` and `tags` solely from the plan's
+ * own program.json. The query string no longer overrides plan content fields
+ * (ADR-0043): name, description and tags have a single source of truth.
  *
- * Tags are deliberately not resolved here: the .drill format has no tags
- * field, so tags stay a publish-time query param.
+ * name  = program.name when non-empty, else slug.
+ * description = program.description ?? "".
+ * tags  = program.tags (already [] when absent).
  */
-export function resolveCatalogFields({ nameParam, descriptionParam, program, slug }) {
-    const name = (nameParam && nameParam.trim()) || program?.name || slug;
-    const description = descriptionParam != null
-        ? descriptionParam
-        : (program?.description ?? "");
-    return { name, description };
+export function resolveCatalogFields({ program, slug }) {
+    const name = (program?.name && program.name.trim()) ? program.name : slug;
+    const description = program?.description ?? "";
+    const tags = Array.isArray(program?.tags) ? program.tags : [];
+    return { name, description, tags };
 }
 
 /**
@@ -145,7 +145,6 @@ export default async function (request) {
 
         const explicitVersion = qs.get("version");
         const published = (qs.get("published") || "false").toLowerCase() === "true";
-        const tags      = (qs.get("tags") || "").split(",").map(s => s.trim()).filter(Boolean);
 
         const rawBytes = await readDrillBytes(request);
 
@@ -157,14 +156,9 @@ export default async function (request) {
         if (archiveError) return archiveError;
         const bytes = strippedBytes;
 
-        // Catalog name/description: query params win, program.json fills gaps.
-        // Tags stay query-only — the .drill format has no tags field.
-        const { name, description } = resolveCatalogFields({
-            nameParam: qs.get("name"),
-            descriptionParam: qs.get("description"),
-            program,
-            slug,
-        });
+        // Plan content (name, description, tags) comes solely from program.json.
+        // The query string carries only operation params (ADR-0043).
+        const { name, description, tags } = resolveCatalogFields({ program, slug });
 
         // ---- Slug claim / ownership check ----
         const slugTakenResponse = () => withCors(request, new Response(
@@ -281,7 +275,7 @@ export default async function (request) {
         currentMeta.name = name;
         currentMeta.description = description;
         currentMeta.published = !!published;
-        currentMeta.tags = Array.from(new Set([...(currentMeta.tags || []), ...tags]));
+        currentMeta.tags = tags;
         const without = (currentMeta.versions || []).filter(v => v.v !== version);
         currentMeta.versions = [
             ...without,
