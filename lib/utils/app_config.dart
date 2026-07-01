@@ -40,11 +40,15 @@ class AppConfig {
   ///
   /// Resolution order:
   ///   1. If [isDebug] and [localBaseUrl] is non-empty, use [localBaseUrl].
-  ///   2. If running as a release web build on `web.ringdrill.app`, use
-  ///      [apiBaseUrl] (cross-origin to the dedicated API subdomain).
-  ///   3. If running as a release web build on apex (`ringdrill.app`), use
+  ///   2. If running as a release web build on apex (`ringdrill.app`), use
   ///      the empty string (same-origin – the cached PWA's calls to
-  ///      `/.netlify/functions/*` keep working on apex).
+  ///      `/.netlify/functions/*` keep working there because Netlify hosts
+  ///      both the PWA and the functions on apex until Phase 3).
+  ///   3. If running as a release web build on any other host
+  ///      (`web.ringdrill.app`, `ringdrill-pwa.pages.dev`, deploy previews,
+  ///      etc.), use [apiBaseUrl] (cross-origin to the dedicated API
+  ///      subdomain). Same-origin would fail because Cloudflare Pages does
+  ///      not serve Netlify functions.
   ///   4. Otherwise use [ringDrillBaseUrl] (production native / debug).
   ///
   /// Pass [kIsWeb], [kReleaseMode] and [kDebugMode] from
@@ -59,11 +63,12 @@ class AppConfig {
     if (isDebug && localBaseUrl.isNotEmpty) return localBaseUrl;
     if (isWeb && isRelease) {
       final host = webHost ?? Uri.base.host;
-      if (host == 'web.ringdrill.app') return apiBaseUrl;
-      // Apex stays same-origin. The cached PWA's calls to
-      // /.netlify/functions/* keep working on apex (served directly
-      // by Netlify today, proxied via Cloudflare in Phase 3).
-      return '';
+      // Apex is the only origin where same-origin still works: Netlify
+      // hosts both the PWA and the functions there until Phase 3.
+      if (host == 'ringdrill.app') return '';
+      // Every other host is on Cloudflare Pages (or a preview) and must
+      // call the API subdomain explicitly.
+      return apiBaseUrl;
     }
     return ringDrillBaseUrl;
   }

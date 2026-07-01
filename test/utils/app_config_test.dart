@@ -27,6 +27,32 @@ void main() {
       );
     });
 
+    test('release web build on pages.dev preview returns api URL', () {
+      // Cloudflare Pages preview URLs (deploy-hash prefix) must also
+      // route to api.ringdrill.app because same-origin has no functions.
+      expect(
+        AppConfig.catalogBaseUrl(
+          isWeb: true,
+          isRelease: true,
+          isDebug: false,
+          webHost: 'e8a25d51.ringdrill-pwa.pages.dev',
+        ),
+        equals(AppConfig.apiBaseUrl),
+      );
+    });
+
+    test('release web build on unknown host returns api URL', () {
+      expect(
+        AppConfig.catalogBaseUrl(
+          isWeb: true,
+          isRelease: true,
+          isDebug: false,
+          webHost: 'some-other-host.example.com',
+        ),
+        equals(AppConfig.apiBaseUrl),
+      );
+    });
+
     test('debug build with local URL override returns the local URL', () {
       // Exercisable when built with
       // --dart-define=RINGDRILL_LOCAL_BASE_URL=http://localhost:8888.
