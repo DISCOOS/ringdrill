@@ -115,6 +115,11 @@
     status = 200
 
 [[redirects]]
+    from = "/i/*"
+    to = "/.netlify/functions/drills-preview?slug=:splat"
+    status = 200
+
+[[redirects]]
     from = "/d/*"
     to = "/.netlify/functions/deep-link/:splat"
     status = 200
