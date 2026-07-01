@@ -8,6 +8,11 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
+    // caches.delete() clears ONLY the Cache Storage API (the old Flutter app
+    // shell + cached network responses). It deliberately does NOT touch
+    // localStorage, IndexedDB or cookies, so the user's plans — stored in
+    // localStorage via the SharedPreferences web shim — survive untouched
+    // and remain exportable from /migrate (ADR-0039).
     const cacheNames = await caches.keys();
     await Promise.all(cacheNames.map((n) => caches.delete(n)));
     await self.registration.unregister();
