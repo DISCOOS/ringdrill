@@ -1,24 +1,25 @@
 import 'package:ringdrill/utils/app_flags.dart';
-import 'package:ringdrill/web/web_env.dart';
 import 'package:web/web.dart' as web;
 
 /// Whether the migration UI (banner + [LegacyBadge]) should show.
 ///
-/// Only relevant for an *installed* PWA on the legacy apex origin. A plain
-/// browser tab on `ringdrill.app` needs no in-app banner: after the ADR-0039
-/// Phase 3 cutover a fresh browser visit fails over to the Astro site, which
-/// prompts migration via `/migrate`. So we additionally require standalone
-/// display mode ([WebEnv.isStandalone] — matchMedia `display-mode: standalone`
-/// plus `navigator.standalone` on iOS).
+/// Any visit to the legacy apex origin (`ringdrill.app`) qualifies, in
+/// any display mode. `RINGDRILL_FORCE_LEGACY_HOST` short-circuits so a
+/// non-apex dev browser can still exercise the UI.
 ///
-/// `RINGDRILL_FORCE_LEGACY_HOST` short-circuits before the standalone check
-/// so a normal (non-installed) dev browser can still exercise the migration
-/// UI.
+/// An earlier version additionally required `WebEnv.isStandalone` on the
+/// theory that browser-tab visitors would migrate via the Astro `/migrate`
+/// surface post-Phase 3. That reasoning was wrong: post-Phase 3, fresh
+/// browser-tab visits go straight to Cloudflare/Astro and never reach
+/// this function. The only visitors who still hit the Flutter build are
+/// cached-SW loads on this origin, and they have data to migrate whether
+/// their display mode is standalone or a browser tab. `isStandalone`
+/// therefore only ever filtered out a subset of the exact audience the
+/// banner is meant for. Removed.
 bool isLegacyHost() {
   if (AppFlags.migrationDisabled) return false;
   if (AppFlags.forceLegacyHost) return true;
-  return checkIsLegacyHostName(web.window.location.hostname) &&
-      WebEnv.isStandalone;
+  return checkIsLegacyHostName(web.window.location.hostname);
 }
 
 bool checkIsLegacyHostName(String hostname) => hostname == 'ringdrill.app';
