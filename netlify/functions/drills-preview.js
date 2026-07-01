@@ -273,7 +273,7 @@ export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _read
                 status: 200,
                 headers: {
                     "content-type": "text/html; charset=utf-8",
-                    "cache-control": "public, max-age=300, s-maxage=600",
+                    "cache-control": "public, max-age=0, s-maxage=600, must-revalidate",
                     "content-language": locale,
                     "vary": "Accept-Language",
                 },
