@@ -896,10 +896,10 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
-  /// Label
+  /// Label for the About page: shown as the drawer menu entry and as the AppBar title on the page itself.
   ///
   /// In en, this message translates to:
-  /// **'About'**
+  /// **'About RingDrill'**
   String get about;
 
   /// Label

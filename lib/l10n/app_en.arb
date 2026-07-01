@@ -551,9 +551,9 @@
   "@settings": {
     "description": "Label"
   },
-  "about": "About",
+  "about": "About RingDrill",
   "@about": {
-    "description": "Label"
+    "description": "Label for the About page: shown as the drawer menu entry and as the AppBar title on the page itself."
   },
   "version": "Version",
   "@version": {

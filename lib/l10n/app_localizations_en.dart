@@ -526,7 +526,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
-  String get about => 'About';
+  String get about => 'About RingDrill';
 
   @override
   String get version => 'Version';

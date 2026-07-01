@@ -128,26 +128,8 @@ class _AboutPageState extends State<AboutPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // App Name and Icon
-              Row(
-                children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    size: 40,
-                    color: Colors.blue,
-                  ),
-                  const SizedBox(width: 16.0),
-                  Text(
-                    localizations.appName,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16.0),
-
-              // App Purpose or Description
+              // App purpose or description. The app name is already the
+              // AppBar title above, so no redundant icon + headline here.
               Text(
                 localizations.appDescription,
                 style: Theme.of(context).textTheme.bodyMedium,

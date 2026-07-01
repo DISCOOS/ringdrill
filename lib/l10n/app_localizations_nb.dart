@@ -523,7 +523,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get settings => 'Innstillinger';
 
   @override
-  String get about => 'Om';
+  String get about => 'Om RingDrill';
 
   @override
   String get version => 'Versjon';
