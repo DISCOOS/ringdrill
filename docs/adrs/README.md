@@ -50,6 +50,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0040 | Catalog feed schema extension (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
 | ADR-0041 | Brief pre-rendering port from Dart to Node (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
 | ADR-0042 | [Centralise build-time feature flags with sunset telemetry](./0042-feature-flags-and-sunset-telemetry.md) | Proposed |
+| ADR-0043 | [Tags live in the `.drill` format and publish is last-write-wins](./0043-tags-in-drill-format.md) | Proposed |
 
 ## When to write an ADR
 
