@@ -1,0 +1,197 @@
+---
+// ADR-0039 Phase 3 /migrate export tool.
+//
+// Client-side only: reads the Flutter PWA's localStorage on this origin,
+// builds one `.drill` per program bundled into a dated outer ZIP, and offers
+// it as a download. No server calls. See ../lib/migrate.ts for the logic.
+import { type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+
+const copy = {
+  nb: {
+    homeHref: '/',
+    heading: 'Flytt planene dine til den nye web-appen',
+    intro:
+      'RingDrill har flyttet til web.ringdrill.app. Planene dine ligger fortsatt lagret i denne nettleseren på ringdrill.app. Last dem ned her og importer dem i den nye appen.',
+    loading: 'Leser lagrede planer …',
+    // {n} is replaced client-side with the number of programs found.
+    foundTemplate: 'Vi fant {n} plan(er) lagret i denne nettleseren.',
+    downloadCta: 'Last ned alle planene mine',
+    preparing: 'Lager nedlasting …',
+    error: 'Noe gikk galt under nedlastingen. Prøv igjen.',
+    emptyHeading: 'Ingen planer å flytte',
+    emptyBody:
+      'Vi fant ingen RingDrill-planer lagret i denne nettleseren. Har du allerede flyttet dem, eller brukte du en annen enhet, er det ikke noe mer å gjøre her.',
+    emptyLink: 'Til forsiden',
+    doneHeading: 'Nedlastingen er klar',
+    doneBody:
+      'Filen er lastet ned. Åpne den nye web-appen og importer den for å ta med planene dine.',
+    openCta: 'Åpne web-appen og importer',
+    note: 'Planene dine blir liggende i denne nettleseren til du sletter nettleserdataene for ringdrill.app. Du kan komme tilbake hit og hente dem ut på nytt senere.',
+  },
+  en: {
+    homeHref: '/en/',
+    heading: 'Move your plans to the new web app',
+    intro:
+      'RingDrill has moved to web.ringdrill.app. Your plans are still stored in this browser on ringdrill.app. Download them here and import them into the new app.',
+    loading: 'Reading stored plans …',
+    foundTemplate: 'We found {n} plan(s) stored in this browser.',
+    downloadCta: 'Download all my plans',
+    preparing: 'Preparing download …',
+    error: 'Something went wrong while preparing the download. Please try again.',
+    emptyHeading: 'Nothing to migrate',
+    emptyBody:
+      'We found no RingDrill plans stored in this browser. If you have already moved them, or used another device, there is nothing more to do here.',
+    emptyLink: 'Back to home',
+    doneHeading: 'Your download is ready',
+    doneBody:
+      'The file has downloaded. Open the new web app and import it to bring your plans across.',
+    openCta: 'Open the web app and import',
+    note: 'Your plans stay in this browser until you clear the browser data for ringdrill.app. You can return here and export them again later.',
+  },
+}[lang];
+
+const openHref = 'https://web.ringdrill.app/?import=guide';
+---
+<section class="section">
+  <div class="container migrate">
+    <h1>{copy.heading}</h1>
+    <p class="lead">{copy.intro}</p>
+
+    <div
+      id="migrate-app"
+      class="migrate__panel"
+      data-found-template={copy.foundTemplate}
+      data-preparing={copy.preparing}
+      data-download={copy.downloadCta}
+      data-error={copy.error}
+    >
+      <p id="migrate-loading" class="migrate__status">{copy.loading}</p>
+
+      <div id="migrate-empty" hidden>
+        <h2>{copy.emptyHeading}</h2>
+        <p>{copy.emptyBody}</p>
+        <p><a class="btn btn--ghost" href={copy.homeHref}>{copy.emptyLink}</a></p>
+      </div>
+
+      <div id="migrate-ready" hidden>
+        <p id="migrate-found" class="migrate__found"></p>
+        <p>
+          <button id="migrate-download" type="button" class="btn btn--primary">
+            {copy.downloadCta}
+          </button>
+        </p>
+      </div>
+
+      <div id="migrate-done" class="migrate__done" hidden>
+        <h2>{copy.doneHeading}</h2>
+        <p>{copy.doneBody}</p>
+        <p><a class="btn btn--primary" href={openHref}>{copy.openCta}</a></p>
+      </div>
+    </div>
+
+    <p class="migrate__note">{copy.note}</p>
+  </div>
+</section>
+
+<style>
+  .migrate { max-width: 760px; }
+  .migrate .lead { margin-top: 12px; }
+  .migrate__panel {
+    margin-top: 32px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--canvas-band);
+  }
+  .migrate__status { color: var(--muted); }
+  .migrate__found { font-weight: 600; color: var(--heading); margin-bottom: 16px; }
+  .migrate__panel h2 { margin-bottom: 8px; }
+  .migrate__panel p + p { margin-top: 16px; }
+  .migrate__done { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 24px; }
+  .migrate__note { margin-top: 24px; color: var(--muted); font-size: 0.9375rem; max-width: 60ch; }
+  .btn[disabled] { opacity: 0.6; cursor: default; pointer-events: none; }
+</style>
+
+<script>
+  import { buildExport, countPrograms, readStorage } from '../lib/migrate';
+
+  const app = document.getElementById('migrate-app');
+  const loading = document.getElementById('migrate-loading');
+  const empty = document.getElementById('migrate-empty');
+  const ready = document.getElementById('migrate-ready');
+  const found = document.getElementById('migrate-found');
+  const done = document.getElementById('migrate-done');
+  const button = document.getElementById(
+    'migrate-download',
+  ) as HTMLButtonElement | null;
+
+  function readEntries(): Record<string, string> {
+    try {
+      return readStorage(window.localStorage);
+    } catch {
+      return {};
+    }
+  }
+
+  function triggerDownload(bytes: Uint8Array, filename: string): void {
+    const blob = new Blob([bytes], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function init(): void {
+    if (!app || !loading) return;
+
+    const entries = readEntries();
+    const count = countPrograms(entries);
+
+    loading.hidden = true;
+
+    if (count === 0) {
+      if (empty) empty.hidden = false;
+      return;
+    }
+
+    if (ready) ready.hidden = false;
+    if (found) {
+      found.textContent = (app.dataset.foundTemplate ?? '{n}').replace(
+        '{n}',
+        String(count),
+      );
+    }
+
+    button?.addEventListener('click', () => {
+      button.disabled = true;
+      button.textContent = app.dataset.preparing ?? button.textContent;
+      try {
+        const result = buildExport(entries, new Date());
+        if (!result) {
+          button.disabled = false;
+          button.textContent = app.dataset.download ?? button.textContent;
+          return;
+        }
+        triggerDownload(result.bytes, result.filename);
+        if (ready) ready.hidden = true;
+        if (done) done.hidden = false;
+      } catch {
+        button.disabled = false;
+        button.textContent = app.dataset.download ?? button.textContent;
+        if (found) found.textContent = app.dataset.error ?? '';
+      }
+    });
+  }
+
+  init();
+</script>

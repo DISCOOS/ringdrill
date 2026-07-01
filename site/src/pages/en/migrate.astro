@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import MigrateApp from '../../components/MigrateApp.astro';
+---
+<BaseLayout
+  lang="en"
+  title="RingDrill: Move your plans"
+  description="Export every RingDrill plan stored in this browser and take it to the new web app at web.ringdrill.app."
+  canonicalPath="/en/migrate"
+>
+  <Nav lang="en" langHref="/migrate" />
+  <main>
+    <MigrateApp lang="en" />
+  </main>
+  <Footer lang="en" langHref="/migrate" />
+</BaseLayout>
