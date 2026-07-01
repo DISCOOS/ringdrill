@@ -1,0 +1,13 @@
+# Proxy dynamic paths to the Netlify API subdomain. Status 200 keeps the
+# browser URL as ringdrill.app/... which is required for App-Links,
+# Universal Links and stable share links (ADR-0015, ADR-0021, ADR-0039).
+/api/*                  https://api.ringdrill.app/api/:splat                  200
+/.netlify/functions/*   https://api.ringdrill.app/.netlify/functions/:splat   200
+/d/*                    https://api.ringdrill.app/d/:splat                    200
+/i/*                    https://api.ringdrill.app/i/:splat                    200
+/brief/*                https://api.ringdrill.app/brief/:splat                200
+
+# Vanity redirects for people who type these paths from muscle memory.
+# 301 so the browser URL updates.
+/web                    https://web.ringdrill.app/                            301
+/app                    https://web.ringdrill.app/                            301
