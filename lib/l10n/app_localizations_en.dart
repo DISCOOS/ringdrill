@@ -1842,8 +1842,76 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'re using the old web app. Tap to move to web.ringdrill.app.';
 
   @override
-  String get migrationSettingsEntry =>
-      'About the migration to web.ringdrill.app';
+  String get settingsWebAppSection => 'Web app';
+
+  @override
+  String get installStatusTitle => 'Installed as app';
+
+  @override
+  String get installStatusInstalled => 'Installed';
+
+  @override
+  String get installStatusBrowser => 'Running in browser';
+
+  @override
+  String get installGuideEntry => 'How to install on your device';
+
+  @override
+  String get installGuideTitle => 'Install RingDrill';
+
+  @override
+  String get installGuideIntro =>
+      'Install RingDrill as an app for a full-screen experience, faster start-up and more reliable notifications. Pick your device below.';
+
+  @override
+  String get installGuideAlreadyInstalled =>
+      'RingDrill is already installed on this device. Open it from your home screen or app list.';
+
+  @override
+  String get installGuideInstallButton => 'Install now';
+
+  @override
+  String get installGuideAndroidTitle => 'Android (Chrome)';
+
+  @override
+  String get installGuideAndroidSteps =>
+      '1. Open the browser menu (⋮).\n2. Tap “Install app” or “Add to Home screen”.\n3. Confirm to add RingDrill to your home screen.';
+
+  @override
+  String get installGuideIosTitle => 'iPhone and iPad (Safari)';
+
+  @override
+  String get installGuideIosSteps =>
+      '1. Open RingDrill in Safari.\n2. Tap the Share button.\n3. Choose “Add to Home Screen”, then tap “Add”.';
+
+  @override
+  String get installGuideDesktopTitle => 'Computer (Chrome or Edge)';
+
+  @override
+  String get installGuideDesktopSteps =>
+      '1. Click the install icon in the address bar, or open the browser menu.\n2. Choose “Install RingDrill”.\n3. Confirm to add it as an app.';
+
+  @override
+  String get installGuideNativeTitle => 'Install from App Store';
+
+  @override
+  String get installGuidePlayTitle => 'Install from Google Play';
+
+  @override
+  String get installGuideNativeIntro =>
+      'The RingDrill app gives the best experience on your device.';
+
+  @override
+  String get installGuideAppStoreButton => 'Get in App Store';
+
+  @override
+  String get installGuidePlayStoreButton => 'Get on Google Play';
+
+  @override
+  String get installGuidePwaTitle => 'Install as web app';
+
+  @override
+  String get migrationSettingsEntry => 'How to migrate to the new web app';
 
   @override
   String get migrationExplainerWhyTitle => 'Why are we moving?';

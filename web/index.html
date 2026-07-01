@@ -23,6 +23,10 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <meta name="apple-mobile-web-app-title" content="ringdrill">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- Smart App Banner: offers to open/get the native app on iOS Safari.
+       This is the sanctioned way to reach an installed native app from a
+       browser tab (a page cannot launch an installed PWA/app itself). -->
+  <meta name="apple-itunes-app" content="app-id=6777269410">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
@@ -79,7 +83,10 @@
       window.ringdrillEnv = {
         isMobile: () => /Android|iPhone|iPad|iPod/i.test(ua),
         isAndroid: () => /Android/i.test(ua),
-        isiOS: () => /iPhone|iPad|iPod/i.test(ua),
+        isiOS: () => /iPhone|iPad|iPod/i.test(ua) || isIpadOS(),
+        // macOS (not iPadOS-pretending-to-be-Mac). Used to offer the native
+        // App Store app, which is installable on Apple Silicon Macs.
+        isMac: () => /Macintosh|Mac OS X/i.test(ua) && !isIpadOS(),
         isStandalone: () =>
                 window.matchMedia?.("(display-mode: standalone)")?.matches ||
                 window.navigator.standalone === true,

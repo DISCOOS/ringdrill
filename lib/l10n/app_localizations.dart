@@ -3158,10 +3158,136 @@ abstract class AppLocalizations {
   /// **'You\'re using the old web app. Tap to move to web.ringdrill.app.'**
   String get legacyBadgeTooltip;
 
+  /// Settings section heading grouping web-app/PWA actions (install status, install guide, force update).
+  ///
+  /// In en, this message translates to:
+  /// **'Web app'**
+  String get settingsWebAppSection;
+
+  /// Title of the About/Settings row showing whether the web app runs as an installed PWA.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed as app'**
+  String get installStatusTitle;
+
+  /// Value shown when the web app is running as an installed PWA (standalone display mode).
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get installStatusInstalled;
+
+  /// Value shown when the web app is running in a normal browser tab, not installed.
+  ///
+  /// In en, this message translates to:
+  /// **'Running in browser'**
+  String get installStatusBrowser;
+
+  /// List tile / action that opens the install guide page.
+  ///
+  /// In en, this message translates to:
+  /// **'How to install on your device'**
+  String get installGuideEntry;
+
+  /// Title of the install guide page.
+  ///
+  /// In en, this message translates to:
+  /// **'Install RingDrill'**
+  String get installGuideTitle;
+
+  /// Intro paragraph on the install guide page.
+  ///
+  /// In en, this message translates to:
+  /// **'Install RingDrill as an app for a full-screen experience, faster start-up and more reliable notifications. Pick your device below.'**
+  String get installGuideIntro;
+
+  /// Shown on the install guide when the app already runs as an installed PWA.
+  ///
+  /// In en, this message translates to:
+  /// **'RingDrill is already installed on this device. Open it from your home screen or app list.'**
+  String get installGuideAlreadyInstalled;
+
+  /// Button that triggers the browser install prompt when available.
+  ///
+  /// In en, this message translates to:
+  /// **'Install now'**
+  String get installGuideInstallButton;
+
+  /// Heading for the Android install instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Android (Chrome)'**
+  String get installGuideAndroidTitle;
+
+  /// Step-by-step Android install instructions, newline separated.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Open the browser menu (⋮).\n2. Tap “Install app” or “Add to Home screen”.\n3. Confirm to add RingDrill to your home screen.'**
+  String get installGuideAndroidSteps;
+
+  /// Heading for the iOS install instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone and iPad (Safari)'**
+  String get installGuideIosTitle;
+
+  /// Step-by-step iOS install instructions, newline separated.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Open RingDrill in Safari.\n2. Tap the Share button.\n3. Choose “Add to Home Screen”, then tap “Add”.'**
+  String get installGuideIosSteps;
+
+  /// Heading for the desktop install instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Computer (Chrome or Edge)'**
+  String get installGuideDesktopTitle;
+
+  /// Step-by-step desktop install instructions, newline separated.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Click the install icon in the address bar, or open the browser menu.\n2. Choose “Install RingDrill”.\n3. Confirm to add it as an app.'**
+  String get installGuideDesktopSteps;
+
+  /// Heading for the native app section of the install guide on Apple devices (App Store).
+  ///
+  /// In en, this message translates to:
+  /// **'Install from App Store'**
+  String get installGuideNativeTitle;
+
+  /// Heading for the native app section of the install guide on Android (Google Play).
+  ///
+  /// In en, this message translates to:
+  /// **'Install from Google Play'**
+  String get installGuidePlayTitle;
+
+  /// Intro line under the native app section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'The RingDrill app gives the best experience on your device.'**
+  String get installGuideNativeIntro;
+
+  /// Button linking to the App Store listing (iOS and macOS).
+  ///
+  /// In en, this message translates to:
+  /// **'Get in App Store'**
+  String get installGuideAppStoreButton;
+
+  /// Button linking to the Google Play listing (Android).
+  ///
+  /// In en, this message translates to:
+  /// **'Get on Google Play'**
+  String get installGuidePlayStoreButton;
+
+  /// Heading for the PWA (add-to-home-screen) section of the install guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Install as web app'**
+  String get installGuidePwaTitle;
+
   /// Settings list tile that opens the migration explainer page.
   ///
   /// In en, this message translates to:
-  /// **'About the migration to web.ringdrill.app'**
+  /// **'How to migrate to the new web app'**
   String get migrationSettingsEntry;
 
   /// Heading for the first section of the migration explainer.

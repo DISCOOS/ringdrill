@@ -9,6 +9,8 @@ import 'package:ringdrill/utils/app_flags.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:ringdrill/web/pwa_status_tile.dart'
+    if (dart.library.io) 'package:ringdrill/views/pwa_status_tile_io.dart';
 
 const String projectUrl = 'https://www.discoos.org/projects/ringdrill';
 
@@ -189,6 +191,8 @@ class _AboutPageState extends State<AboutPage> {
                     ? IconButton(onPressed: update, icon: Icon(Icons.update))
                     : null,
               ),
+              // Install status (web only). Renders nothing on native builds.
+              const PwaStatusTile(),
               // Commit row. Always visible so the user can see which
               // source tree produced the binary; the GitHub link is
               // only wired up when --dart-define=GIT_COMMIT=... was

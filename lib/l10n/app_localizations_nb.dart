@@ -1839,7 +1839,76 @@ class AppLocalizationsNb extends AppLocalizations {
       'Du bruker den gamle web-appen. Trykk for å flytte til web.ringdrill.app.';
 
   @override
-  String get migrationSettingsEntry => 'Om migrasjon til web.ringdrill.app';
+  String get settingsWebAppSection => 'Web-app';
+
+  @override
+  String get installStatusTitle => 'Installert som app';
+
+  @override
+  String get installStatusInstalled => 'Installert';
+
+  @override
+  String get installStatusBrowser => 'Kjører i nettleser';
+
+  @override
+  String get installGuideEntry => 'Slik installerer du lokalt';
+
+  @override
+  String get installGuideTitle => 'Installer RingDrill';
+
+  @override
+  String get installGuideIntro =>
+      'Installer RingDrill som app for fullskjerm, raskere oppstart og mer pålitelige varsler. Velg enheten din under.';
+
+  @override
+  String get installGuideAlreadyInstalled =>
+      'RingDrill er allerede installert på denne enheten. Åpne den fra hjem-skjermen eller app-listen.';
+
+  @override
+  String get installGuideInstallButton => 'Installer nå';
+
+  @override
+  String get installGuideAndroidTitle => 'Android (Chrome)';
+
+  @override
+  String get installGuideAndroidSteps =>
+      '1. Åpne nettlesermenyen (⋮).\n2. Trykk «Installer app» eller «Legg til på startskjerm».\n3. Bekreft for å legge RingDrill til på startskjermen.';
+
+  @override
+  String get installGuideIosTitle => 'iPhone og iPad (Safari)';
+
+  @override
+  String get installGuideIosSteps =>
+      '1. Åpne RingDrill i Safari.\n2. Trykk Del-knappen.\n3. Velg «Legg til på Hjem-skjerm», og trykk «Legg til».';
+
+  @override
+  String get installGuideDesktopTitle => 'Datamaskin (Chrome eller Edge)';
+
+  @override
+  String get installGuideDesktopSteps =>
+      '1. Klikk installer-ikonet i adressefeltet, eller åpne nettlesermenyen.\n2. Velg «Installer RingDrill».\n3. Bekreft for å legge den til som app.';
+
+  @override
+  String get installGuideNativeTitle => 'Installer fra App Store';
+
+  @override
+  String get installGuidePlayTitle => 'Installer fra Google Play';
+
+  @override
+  String get installGuideNativeIntro =>
+      'RingDrill-appen gir den beste opplevelsen på enheten din.';
+
+  @override
+  String get installGuideAppStoreButton => 'Hent i App Store';
+
+  @override
+  String get installGuidePlayStoreButton => 'Hent på Google Play';
+
+  @override
+  String get installGuidePwaTitle => 'Installer som web-app';
+
+  @override
+  String get migrationSettingsEntry => 'Slik migrerer du til ny web-app';
 
   @override
   String get migrationExplainerWhyTitle => 'Hvorfor flytter vi?';

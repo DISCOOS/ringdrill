@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -6,9 +7,10 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/views/about_page.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/feedback.dart';
-import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/web/install_actions.dart'
+    if (dart.library.io) 'package:ringdrill/views/install_actions_io.dart';
 import 'package:ringdrill/web/legacy_host_web.dart'
     if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 
@@ -165,18 +167,27 @@ class MainDrawer extends StatelessWidget {
           },
         ),
         const Divider(),
+        if (canShowInstallEntry)
+          _DrawerTile(
+            icon: Icons.install_mobile,
+            title: localizations.installGuideEntry,
+            onTap: () {
+              Navigator.pop(context);
+              openInstallGuide(context);
+            },
+          ),
         if (isLegacyHost())
           _DrawerTile(
             icon: Icons.swap_horiz,
             title: localizations.migrationSettingsEntry,
             onTap: () {
               Navigator.pop(context);
-              openFormSurface<void>(
-                context,
-                builder: (_) => const MigrationPage(),
-              );
+              context.push('/migrate');
             },
           ),
+        // Close the install/migrate action group with a divider (only when
+        // at least one of the two entries is present).
+        if (canShowInstallEntry || isLegacyHost()) const Divider(),
         _DrawerTile(
           icon: Icons.settings,
           title: localizations.settings,

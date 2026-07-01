@@ -33,6 +33,18 @@ class AppConfig {
   static const String briefViewerBaseUrl = 'https://ringdrill.app';
   static const String apiBaseUrl = 'https://api.ringdrill.app';
 
+  /// Native app store listings. Fixed for the app's lifetime, so plain
+  /// constants — no build-time override layer (the App Store id and Play
+  /// package never change per build).
+  ///
+  /// NB: The App Store id (`6777269410`) is also hardcoded in `web/index.html`
+  /// as the Smart App Banner meta tag (`apple-itunes-app`). If the id ever
+  /// changes, update both places.
+  static const String appStoreUrl =
+      'https://apps.apple.com/no/app/ringdrill-app/id6777269410';
+  static const String playStoreUrl =
+      'https://play.google.com/store/apps/details?id=org.discoos.ringdrill';
+
   /// Optional local backend override — see [AppFlags.localBaseUrl].
   static String get localBaseUrl => AppFlags.localBaseUrl;
 

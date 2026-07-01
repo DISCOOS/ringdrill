@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/data/bulk_export.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
@@ -25,7 +26,11 @@ class MigrationPage extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.close),
           tooltip: l10n.cancel,
-          onPressed: () => Navigator.pop(context),
+          // Reached via push (drawer/Settings) or cold via the shareable
+          // `/migrate` URL. Pop when possible, otherwise go home so we never
+          // pop the last page off the go_router stack.
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/'),
         ),
         title: Text(l10n.migrationSettingsEntry),
       ),

@@ -1882,7 +1882,91 @@
   "@legacyBadgeTooltip": {
     "description": "Tooltip on the persistent legacy marker; tapping it re-surfaces the migration banner."
   },
-  "migrationSettingsEntry": "About the migration to web.ringdrill.app",
+  "settingsWebAppSection": "Web app",
+  "@settingsWebAppSection": {
+    "description": "Settings section heading grouping web-app/PWA actions (install status, install guide, force update)."
+  },
+  "installStatusTitle": "Installed as app",
+  "@installStatusTitle": {
+    "description": "Title of the About/Settings row showing whether the web app runs as an installed PWA."
+  },
+  "installStatusInstalled": "Installed",
+  "@installStatusInstalled": {
+    "description": "Value shown when the web app is running as an installed PWA (standalone display mode)."
+  },
+  "installStatusBrowser": "Running in browser",
+  "@installStatusBrowser": {
+    "description": "Value shown when the web app is running in a normal browser tab, not installed."
+  },
+  "installGuideEntry": "How to install on your device",
+  "@installGuideEntry": {
+    "description": "List tile / action that opens the install guide page."
+  },
+  "installGuideTitle": "Install RingDrill",
+  "@installGuideTitle": {
+    "description": "Title of the install guide page."
+  },
+  "installGuideIntro": "Install RingDrill as an app for a full-screen experience, faster start-up and more reliable notifications. Pick your device below.",
+  "@installGuideIntro": {
+    "description": "Intro paragraph on the install guide page."
+  },
+  "installGuideAlreadyInstalled": "RingDrill is already installed on this device. Open it from your home screen or app list.",
+  "@installGuideAlreadyInstalled": {
+    "description": "Shown on the install guide when the app already runs as an installed PWA."
+  },
+  "installGuideInstallButton": "Install now",
+  "@installGuideInstallButton": {
+    "description": "Button that triggers the browser install prompt when available."
+  },
+  "installGuideAndroidTitle": "Android (Chrome)",
+  "@installGuideAndroidTitle": {
+    "description": "Heading for the Android install instructions."
+  },
+  "installGuideAndroidSteps": "1. Open the browser menu (⋮).\n2. Tap “Install app” or “Add to Home screen”.\n3. Confirm to add RingDrill to your home screen.",
+  "@installGuideAndroidSteps": {
+    "description": "Step-by-step Android install instructions, newline separated."
+  },
+  "installGuideIosTitle": "iPhone and iPad (Safari)",
+  "@installGuideIosTitle": {
+    "description": "Heading for the iOS install instructions."
+  },
+  "installGuideIosSteps": "1. Open RingDrill in Safari.\n2. Tap the Share button.\n3. Choose “Add to Home Screen”, then tap “Add”.",
+  "@installGuideIosSteps": {
+    "description": "Step-by-step iOS install instructions, newline separated."
+  },
+  "installGuideDesktopTitle": "Computer (Chrome or Edge)",
+  "@installGuideDesktopTitle": {
+    "description": "Heading for the desktop install instructions."
+  },
+  "installGuideDesktopSteps": "1. Click the install icon in the address bar, or open the browser menu.\n2. Choose “Install RingDrill”.\n3. Confirm to add it as an app.",
+  "@installGuideDesktopSteps": {
+    "description": "Step-by-step desktop install instructions, newline separated."
+  },
+  "installGuideNativeTitle": "Install from App Store",
+  "@installGuideNativeTitle": {
+    "description": "Heading for the native app section of the install guide on Apple devices (App Store)."
+  },
+  "installGuidePlayTitle": "Install from Google Play",
+  "@installGuidePlayTitle": {
+    "description": "Heading for the native app section of the install guide on Android (Google Play)."
+  },
+  "installGuideNativeIntro": "The RingDrill app gives the best experience on your device.",
+  "@installGuideNativeIntro": {
+    "description": "Intro line under the native app section heading."
+  },
+  "installGuideAppStoreButton": "Get in App Store",
+  "@installGuideAppStoreButton": {
+    "description": "Button linking to the App Store listing (iOS and macOS)."
+  },
+  "installGuidePlayStoreButton": "Get on Google Play",
+  "@installGuidePlayStoreButton": {
+    "description": "Button linking to the Google Play listing (Android)."
+  },
+  "installGuidePwaTitle": "Install as web app",
+  "@installGuidePwaTitle": {
+    "description": "Heading for the PWA (add-to-home-screen) section of the install guide."
+  },
+  "migrationSettingsEntry": "How to migrate to the new web app",
   "@migrationSettingsEntry": {
     "description": "Settings list tile that opens the migration explainer page."
   },

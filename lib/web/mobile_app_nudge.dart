@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 
 import 'web_env.dart';
@@ -90,19 +91,15 @@ class MobileAppNudgeBanner extends StatefulWidget {
       showContinueOnWeb: showContinueOnWeb,
       controller: MobileAppNudgeController(
         always: always,
-        // Used in settings
         onlyOnce: onlyOnce,
-        // We only support android for now
         showOnAndroid: true,
-        // TODO: Enable when iOS app is released. Remember to
-        //  1. Add Smart App Banner to web/index.html:
-        //     <meta name="apple-itunes-app" content="app-id=YOUR_APP_ID, app-argument=https://ringdrill.app/i/<slug>" />
-        //  2. Universal Links are already wired (web/.well-known/apple-app-site-association,
-        //     appID G2C47B233E.app.ringdrill, path /i/*, per ADR-0021); just verify it is
-        //     served as JSON at https://ringdrill.app/.well-known/apple-app-site-association.
-        //  3. Change the button logic for iOS to open the App Store (or a universal link that opens the app if installed).
-        showOniOS: false,
-        // TODO: When desktop apps are released, point to download page
+        // iOS (and iPadOS) app is live in the App Store, so promote it here
+        // too. The non-Android button opens the install guide, which offers
+        // the App Store link on Apple. The Smart App Banner in web/index.html
+        // additionally offers "Open"/"Get" from Safari.
+        showOniOS: true,
+        // No native desktop app to promote yet; desktop users get the PWA
+        // via the install guide.
         showOnDesktop: false,
       ),
       playStoreUrl:
@@ -154,21 +151,11 @@ class _MobileAppNudgeBannerState extends State<MobileAppNudgeBanner> {
     setState(() => _visible = false);
   }
 
-  void _openApp() {
-    if (WebEnv.isAndroid) {
-      _getOnAndroid();
-    } else if (WebEnv.isiOS) {
-      _getOniOS();
-    } else if (WebEnv.isDesktop) {
-      _getOnDesktop();
-    }
-  }
-
-  void _installWebApp() async {
-    await WebEnv.promptInstall();
-    // optional: re-check standalone next reload; don’t nag now.
-    _dismiss();
-  }
+  /// Opens the shareable install guide (`/install`), which offers the
+  /// App Store / Google Play native app and the web-app (PWA) steps per
+  /// platform. Used for every platform except Android, where a direct
+  /// intent to the installed app (or Play Store fallback) is possible.
+  void _openInstallGuide(BuildContext context) => context.push('/install');
 
   void _continueOnWeb() => _dismiss();
 
@@ -177,13 +164,6 @@ class _MobileAppNudgeBannerState extends State<MobileAppNudgeBanner> {
     if (!_visible) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
-    final supportsInstall = WebEnv.hasInstallPrompt;
-
-    final showOpenBtn =
-        WebEnv.isiOS && widget.controller.showOniOS ||
-        WebEnv.isAndroid && widget.controller.showOnAndroid ||
-        WebEnv.isDesktop && widget.controller.showOnDesktop;
-
     final localizations = AppLocalizations.of(context)!;
 
     return SafeArea(
@@ -223,31 +203,21 @@ class _MobileAppNudgeBannerState extends State<MobileAppNudgeBanner> {
                           spacing: 8,
                           alignment: WrapAlignment.end,
                           children: [
-                            if (WebEnv.isDesktop) ...[
-                              if (widget.controller.showOniOS)
-                                FilledButton(
-                                  onPressed: _getOniOS,
-                                  child: Text(localizations.getOniOS),
-                                ),
-                              if (widget.controller.showOnAndroid)
-                                FilledButton(
-                                  onPressed: _getOnAndroid,
-                                  child: Text(localizations.getOnAndroid),
-                                ),
-                              if (widget.controller.showOnDesktop)
-                                FilledButton(
-                                  onPressed: _getOnDesktop,
-                                  child: Text(localizations.getOnDesktop),
-                                ),
-                            ] else if (showOpenBtn)
+                            // Android can open the installed app directly (or
+                            // fall back to Play). Every other platform routes
+                            // to the install guide, which offers the App Store
+                            // / Play native app and the PWA steps. A browser
+                            // tab cannot launch an already-installed app, so we
+                            // never pretend to "open" it elsewhere.
+                            if (WebEnv.isAndroid)
                               FilledButton(
-                                onPressed: _openApp,
+                                onPressed: _getOnAndroid,
                                 child: Text(localizations.openInApp),
-                              ),
-                            if (supportsInstall)
-                              TextButton(
-                                onPressed: _installWebApp,
-                                child: Text(localizations.installWebApp),
+                              )
+                            else
+                              FilledButton(
+                                onPressed: () => _openInstallGuide(context),
+                                child: Text(localizations.installGuideEntry),
                               ),
                             if (widget.showContinueOnWeb)
                               TextButton(
@@ -282,18 +252,6 @@ class _MobileAppNudgeBannerState extends State<MobileAppNudgeBanner> {
         : widget.playStoreUrl;
     _launch(url);
     // no further logic needed; Chrome handles the fallback
-  }
-
-  void _getOniOS() {
-    // Until iOS app is live, keep this hidden (showOpenBtn=false).
-    // When live: navigate to App Store URL here instead.
-    throw UnimplementedError('Add support for iOS App store');
-  }
-
-  void _getOnDesktop() {
-    // Until desktop apps are live, keep this hidden (showOpenBtn=false).
-    // When live: navigate to download page here instead.
-    throw UnimplementedError('Add support for download desktop apps');
   }
 }
 

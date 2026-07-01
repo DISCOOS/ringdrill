@@ -14,6 +14,9 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/install_link_handler.dart';
+import 'package:ringdrill/views/migration_page.dart';
+import 'package:ringdrill/web/install_guide_page.dart'
+    if (dart.library.io) 'package:ringdrill/views/install_guide_page_io.dart';
 import 'package:ringdrill/views/main_screen.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/shell/deep_link_launchers.dart';
@@ -194,6 +197,25 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
         builder: (context, state) =>
             ConceptPrimerScreen(isFirstLaunch: isFirstLaunch),
       ),
+      // Web-only shareable routes. Both are pushed over the root navigator
+      // so they render as full pages rather than shell tabs. They only make
+      // sense on the web (install/migration are web concerns), so they are
+      // not registered on native builds at all.
+      if (kIsWeb) ...[
+        // Shareable install guide.
+        GoRoute(
+          path: '/install',
+          parentNavigatorKey: key,
+          builder: (context, state) => const InstallGuidePage(),
+        ),
+        // Shareable migration explainer (legacy apex → new web app). Handy
+        // to hand to a stuck user as a direct link.
+        GoRoute(
+          path: '/migrate',
+          parentNavigatorKey: key,
+          builder: (context, state) => const MigrationPage(),
+        ),
+      ],
       // Brief routes — not tabs; pushed over the root navigator as a
       // fullscreen modal bottom sheet. The program variant is listed first so
       // go_router matches the more specific `program/` path before the bare

@@ -8,6 +8,8 @@ external JSBoolean? _isMobile();
 external JSBoolean? _isAndroid();
 @JS('window.ringdrillEnv.isiOS')
 external JSBoolean? _isiOS();
+@JS('window.ringdrillEnv.isMac')
+external JSBoolean? _isMac();
 @JS('window.ringdrillEnv.isStandalone')
 external JSBoolean? _isStandalone();
 @JS('window.ringdrillEnv.isDesktop')
@@ -35,7 +37,12 @@ class WebEnv {
   static bool get isMobile => _jsBool(_isMobile());
   static bool get isAndroid => _jsBool(_isAndroid());
   static bool get isiOS => _jsBool(_isiOS());
+  static bool get isMac => _jsBool(_isMac());
   static bool get isDesktop => _jsBool(_isDesktop());
+
+  /// True on Apple platforms where the native App Store app is available
+  /// and installable (iPhone, iPad, and Apple Silicon Macs).
+  static bool get isApple => isiOS || isMac;
   static bool get isStandalone => _jsBool(_isStandalone());
 
   // 'granted' | 'denied' | 'default' | 'unsupported'

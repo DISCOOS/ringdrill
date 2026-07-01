@@ -984,7 +984,91 @@
   "@legacyBadgeTooltip": {
     "description": "Tooltip på den permanente legacy-markøren; trykk henter fram migrasjonsbanneret igjen."
   },
-  "migrationSettingsEntry": "Om migrasjon til web.ringdrill.app",
+  "settingsWebAppSection": "Web-app",
+  "@settingsWebAppSection": {
+    "description": "Overskrift i Settings som samler web-app/PWA-handlinger (status, installasjonsveileder, tving oppdatering)."
+  },
+  "installStatusTitle": "Installert som app",
+  "@installStatusTitle": {
+    "description": "Tittel på raden i About/Settings som viser om web-appen kjører som installert PWA."
+  },
+  "installStatusInstalled": "Installert",
+  "@installStatusInstalled": {
+    "description": "Verdi når web-appen kjører som installert PWA (standalone)."
+  },
+  "installStatusBrowser": "Kjører i nettleser",
+  "@installStatusBrowser": {
+    "description": "Verdi når web-appen kjører i en vanlig nettleserfane, ikke installert."
+  },
+  "installGuideEntry": "Slik installerer du lokalt",
+  "@installGuideEntry": {
+    "description": "Rad/handling som åpner installasjonsveilederen."
+  },
+  "installGuideTitle": "Installer RingDrill",
+  "@installGuideTitle": {
+    "description": "Tittel på installasjonsveiledersiden."
+  },
+  "installGuideIntro": "Installer RingDrill som app for fullskjerm, raskere oppstart og mer pålitelige varsler. Velg enheten din under.",
+  "@installGuideIntro": {
+    "description": "Introtekst på installasjonsveilederen."
+  },
+  "installGuideAlreadyInstalled": "RingDrill er allerede installert på denne enheten. Åpne den fra hjem-skjermen eller app-listen.",
+  "@installGuideAlreadyInstalled": {
+    "description": "Vises på veilederen når appen allerede kjører som installert PWA."
+  },
+  "installGuideInstallButton": "Installer nå",
+  "@installGuideInstallButton": {
+    "description": "Knapp som utløser nettleserens install-prompt når den er tilgjengelig."
+  },
+  "installGuideAndroidTitle": "Android (Chrome)",
+  "@installGuideAndroidTitle": {
+    "description": "Overskrift for Android-instruksjonene."
+  },
+  "installGuideAndroidSteps": "1. Åpne nettlesermenyen (⋮).\n2. Trykk «Installer app» eller «Legg til på startskjerm».\n3. Bekreft for å legge RingDrill til på startskjermen.",
+  "@installGuideAndroidSteps": {
+    "description": "Android-installasjonssteg, linjeskilt."
+  },
+  "installGuideIosTitle": "iPhone og iPad (Safari)",
+  "@installGuideIosTitle": {
+    "description": "Overskrift for iOS-instruksjonene."
+  },
+  "installGuideIosSteps": "1. Åpne RingDrill i Safari.\n2. Trykk Del-knappen.\n3. Velg «Legg til på Hjem-skjerm», og trykk «Legg til».",
+  "@installGuideIosSteps": {
+    "description": "iOS-installasjonssteg, linjeskilt."
+  },
+  "installGuideDesktopTitle": "Datamaskin (Chrome eller Edge)",
+  "@installGuideDesktopTitle": {
+    "description": "Overskrift for desktop-instruksjonene."
+  },
+  "installGuideDesktopSteps": "1. Klikk installer-ikonet i adressefeltet, eller åpne nettlesermenyen.\n2. Velg «Installer RingDrill».\n3. Bekreft for å legge den til som app.",
+  "@installGuideDesktopSteps": {
+    "description": "Desktop-installasjonssteg, linjeskilt."
+  },
+  "installGuideNativeTitle": "Installer fra App Store",
+  "@installGuideNativeTitle": {
+    "description": "Overskrift for native app-seksjonen på Apple-enheter (App Store)."
+  },
+  "installGuidePlayTitle": "Installer fra Google Play",
+  "@installGuidePlayTitle": {
+    "description": "Overskrift for native app-seksjonen på Android (Google Play)."
+  },
+  "installGuideNativeIntro": "RingDrill-appen gir den beste opplevelsen på enheten din.",
+  "@installGuideNativeIntro": {
+    "description": "Introlinje under native app-overskriften."
+  },
+  "installGuideAppStoreButton": "Hent i App Store",
+  "@installGuideAppStoreButton": {
+    "description": "Knapp som lenker til App Store (iOS og macOS)."
+  },
+  "installGuidePlayStoreButton": "Hent på Google Play",
+  "@installGuidePlayStoreButton": {
+    "description": "Knapp som lenker til Google Play (Android)."
+  },
+  "installGuidePwaTitle": "Installer som web-app",
+  "@installGuidePwaTitle": {
+    "description": "Overskrift for PWA-seksjonen (legg til på hjem-skjerm)."
+  },
+  "migrationSettingsEntry": "Slik migrerer du til ny web-app",
   "@migrationSettingsEntry": {
     "description": "Innstillingsrad som åpner migrasjonsbeskrivelsessiden."
   },
