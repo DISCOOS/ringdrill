@@ -100,16 +100,22 @@ class InstallGuidePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 if (isApple)
-                  FilledButton.icon(
-                    onPressed: () => _open(AppConfig.appStoreUrl),
-                    icon: const Icon(Icons.apple),
-                    label: Text(l10n.installGuideAppStoreButton),
+                  Align(
+                    alignment: Alignment.center,
+                    child: FilledButton.icon(
+                      onPressed: () => _open(AppConfig.appStoreUrl),
+                      icon: const Icon(Icons.apple),
+                      label: Text(l10n.installGuideAppStoreButton),
+                    ),
                   ),
                 if (isAndroid)
-                  FilledButton.icon(
-                    onPressed: () => _open(AppConfig.playStoreUrl),
-                    icon: const Icon(Icons.shop),
-                    label: Text(l10n.installGuidePlayStoreButton),
+                  Align(
+                    alignment: Alignment.center,
+                    child: FilledButton.icon(
+                      onPressed: () => _open(AppConfig.playStoreUrl),
+                      icon: const Icon(Icons.shop),
+                      label: Text(l10n.installGuidePlayStoreButton),
+                    ),
                   ),
                 const SizedBox(height: 24),
               ],
@@ -118,10 +124,13 @@ class InstallGuidePage extends StatelessWidget {
               _SectionTitle(l10n.installGuidePwaTitle),
               const SizedBox(height: 8),
               if (hasInstallPrompt) ...[
-                FilledButton.tonalIcon(
-                  onPressed: () => WebEnv.promptInstall(),
-                  icon: const Icon(Icons.install_desktop),
-                  label: Text(l10n.installGuideInstallButton),
+                Align(
+                  alignment: Alignment.center,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => WebEnv.promptInstall(),
+                    icon: const Icon(Icons.install_desktop),
+                    label: Text(l10n.installGuideInstallButton),
+                  ),
                 ),
                 const SizedBox(height: 12),
               ],

@@ -68,8 +68,8 @@ class MigrationPage extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
+              child: Align(
+                alignment: Alignment.center,
                 child: FilledButton(
                   onPressed: () => _export(context),
                   child: Text(l10n.migrationBannerExport),
