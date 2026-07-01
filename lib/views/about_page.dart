@@ -260,9 +260,9 @@ class _AboutPageState extends State<AboutPage> {
               const Divider(),
               if (kDebugMode && AppFlags.activeOnly.isNotEmpty) ...[
                 ListTile(
-                  leading: const Icon(Icons.flag_outlined),
+                  leading: const Icon(Icons.developer_mode),
                   title: Text(
-                    'Build flags',
+                    localizations.developerInfoSectionTitle,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -289,8 +289,8 @@ class _AboutPageState extends State<AboutPage> {
                     trailing: Chip(
                       label: Text(
                         f.kind == AppFlagKind.permanent
-                            ? 'Permanent'
-                            : 'Temporary',
+                            ? localizations.buildFlagKindPermanent
+                            : localizations.buildFlagKindTemporary,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       visualDensity: VisualDensity.compact,

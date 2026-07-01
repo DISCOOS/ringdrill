@@ -1119,5 +1119,17 @@
   "migrationExplainerDataBody": "Planene dine er lagret i nettleseren på ringdrill.app og forsvinner ikke automatisk. Du kan eksportere dem igjen her frem til du sletter nettleserdata for dette domenet. Etter neste oppdatering vil en egen migrasjonside på det nye domenet hjelpe deg med å overføre direkte.",
   "@migrationExplainerDataBody": {
     "description": "Brødtekst som forklarer hva som skjer med lokal data."
+  },
+  "developerInfoSectionTitle": "Utviklerinformasjon",
+  "@developerInfoSectionTitle": {
+    "description": "Overskrift på debug-seksjonen i Om-siden som viser aktive build-time-flagg og annen utvikler-relevant info (kun synlig i debug-bygg). Se ADR-0042."
+  },
+  "buildFlagKindTemporary": "Midlertidig",
+  "@buildFlagKindTemporary": {
+    "description": "Merkelapp for et build-time-flagg som er ment å fjernes når sunset-kriteriet er oppfylt."
+  },
+  "buildFlagKindPermanent": "Permanent",
+  "@buildFlagKindPermanent": {
+    "description": "Merkelapp for et build-time-flagg som er del av permanent infrastruktur (typisk dev-tools)."
   }
 }

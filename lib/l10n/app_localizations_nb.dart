@@ -1952,4 +1952,13 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get migrationExplainerDataBody =>
       'Planene dine er lagret i nettleseren på ringdrill.app og forsvinner ikke automatisk. Du kan eksportere dem igjen her frem til du sletter nettleserdata for dette domenet. Etter neste oppdatering vil en egen migrasjonside på det nye domenet hjelpe deg med å overføre direkte.';
+
+  @override
+  String get developerInfoSectionTitle => 'Utviklerinformasjon';
+
+  @override
+  String get buildFlagKindTemporary => 'Midlertidig';
+
+  @override
+  String get buildFlagKindPermanent => 'Permanent';
 }

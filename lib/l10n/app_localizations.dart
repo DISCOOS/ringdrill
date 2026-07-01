@@ -3361,6 +3361,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your plans are stored in the browser at ringdrill.app and will not disappear automatically. You can export them again from here until you clear browser data for this domain. A later update will add a dedicated migration page on the new domain that can transfer your data directly.'**
   String get migrationExplainerDataBody;
+
+  /// Heading for the debug-only section on the About page that shows active build-time flags and other developer-relevant info. See ADR-0042.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer info'**
+  String get developerInfoSectionTitle;
+
+  /// Chip label for a build-time flag scheduled to be removed once its sunset criterion is met.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary'**
+  String get buildFlagKindTemporary;
+
+  /// Chip label for a build-time flag that is part of permanent infrastructure (typically dev tools).
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent'**
+  String get buildFlagKindPermanent;
 }
 
 class _AppLocalizationsDelegate

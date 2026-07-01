@@ -1955,4 +1955,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get migrationExplainerDataBody =>
       'Your plans are stored in the browser at ringdrill.app and will not disappear automatically. You can export them again from here until you clear browser data for this domain. A later update will add a dedicated migration page on the new domain that can transfer your data directly.';
+
+  @override
+  String get developerInfoSectionTitle => 'Developer info';
+
+  @override
+  String get buildFlagKindTemporary => 'Temporary';
+
+  @override
+  String get buildFlagKindPermanent => 'Permanent';
 }

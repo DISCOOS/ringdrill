@@ -123,13 +123,15 @@ Sunset criterion for the migration UI: 0 legacy-apex sessions over 30 consecutiv
 
 ### About page surfacing
 
-In debug builds, when `AppFlags.activeOnly` is non-empty, the About page renders a "Build flags" section listing each active flag as a `ListTile` row:
+In debug builds, when `AppFlags.activeOnly` is non-empty, the About page renders a "Developer info" section listing each active flag as a `ListTile` row:
 
 * `title`: the flag name, e.g. `MIGRATION_DISABLED`, in the same style as other About titles.
 * `subtitle`: a small two-line block. First line is the current value (`true`, `false`, the string), second line is the short developer description from `AppFlagInfo.description`.
 * `trailing`: a compact `Chip` reading `Temporary` or `Permanent` (from `AppFlagInfo.kind`). Gives the lifecycle at a glance without taking subtitle space.
 
-A heading row above the entries identifies the section ("Build flags"), matching the visual rhythm of the existing About sections (version, commit, developed by, etc.).
+The section heading is "Developer info" / "Utviklerinformasjon", framed broadly so future debug items (device info, feature toggles, dev tools) can slot in alongside build flags without another rename.
+
+**Localization split:** UI chrome is localized so the section fits the surrounding About page in the current app language. This means the section heading and the `Temporary` / `Permanent` chip label go through ARB (`developerInfoSectionTitle`, `buildFlagKindTemporary`, `buildFlagKindPermanent`). Flag data stays English: flag names are the dart-define keys themselves and would be misleading if translated; values are raw data; descriptions live next to the flag definition in `AppFlags` as code documentation and are written for developers reading the code, not localized end users.
 
 Release builds do not render the section regardless of flag state. Production users have no use for this information, and Sentry tags already carry the flag state for any bug report we receive from production. Keeping the section debug-only avoids both UI clutter and a low-value support question vector.
 
