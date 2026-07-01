@@ -3,8 +3,9 @@
 /// Extracted from `lib/web/pwa_update_web.dart` and `lib/main.dart` so the
 /// rules can be unit-tested on the Dart VM. The surrounding service-worker
 /// plumbing (detecting a waiting worker, posting `SKIP_WAITING`, reloading on
-/// `controllerchange`) is browser-only and lives in `pwa_update_web.dart`;
+/// `controllerchange`) is browser-only and lives in `pwa_update_web.dart`
 /// this file deliberately imports nothing web-specific.
+library;
 
 /// Whether a pending update is safe to apply automatically, without asking.
 ///
