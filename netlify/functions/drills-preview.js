@@ -97,7 +97,7 @@ body{font-family:system-ui,sans-serif;background:#fff;color:#334155;line-height:
 main{max-width:640px;margin:0 auto}
 h1{color:#0f172a;font-size:1.75rem;margin-bottom:.5rem}
 .tags{color:#64748b;font-size:.875rem;margin-bottom:.5rem}
-.tags span+span::before{content:"\00b7";margin:0 .25rem}
+.tags span+span::before{content:"·";margin:0 .25rem}
 .meta{color:#64748b;font-size:.875rem;margin-bottom:1.5rem}
 .actions{display:flex;flex-wrap:wrap;gap:.75rem;margin:1.25rem 0}
 .btn{display:inline-block;padding:.625rem 1.25rem;border-radius:.375rem;font-size:.9375rem;font-weight:600;text-decoration:none;text-align:center}
