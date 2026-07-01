@@ -1,5 +1,6 @@
 void listenForPwaUpdates({
-  required void Function(void Function() reloadNow) onUpdateReady,
+  required void Function(void Function() reloadNow, bool canAutoApply)
+  onUpdateReady,
 }) async {
   // No-op on non-web platforms.
 }

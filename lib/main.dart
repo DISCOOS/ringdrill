@@ -6,6 +6,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart' show GoRouter;
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
+import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -13,6 +14,7 @@ import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/utils/locale_utils.dart';
+import 'package:ringdrill/utils/pwa_update_policy.dart';
 import 'package:ringdrill/utils/sentry_config.dart';
 import 'package:ringdrill/views/feedback.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
@@ -216,7 +218,21 @@ class _RingDrillAppState extends State<RingDrillApp> {
   void _startPwaUpdatesListener() {
     if (kIsWeb) {
       listenForPwaUpdates(
-        onUpdateReady: (reloadNow) {
+        onUpdateReady: (reloadNow, canAutoApply) {
+          // Apply automatically only when the web layer says it is safe (a
+          // load-time update while online, so the new build's assets can be
+          // fetched and we won't strand the app offline) AND no drill is
+          // running (a reload would interrupt the live exercise). Everything
+          // else prompts with "Restart now" and keeps the current, fully
+          // cached build serving.
+          final action = decidePwaUpdateAction(
+            canAutoApply: canAutoApply,
+            isExerciseRunning: ExerciseService().isStarted,
+          );
+          if (action == PwaUpdateAction.autoApply) {
+            reloadNow();
+            return;
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               showCloseIcon: true,

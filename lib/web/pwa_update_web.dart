@@ -1,20 +1,40 @@
 // lib/web/pwa_update_web.dart
 import 'dart:js_interop';
 
+import 'package:ringdrill/utils/pwa_update_policy.dart';
 import 'package:web/web.dart' as web;
 
-typedef OnUpdateReady = void Function(void Function() reloadNow);
+/// Called when a new build is ready to activate. [reloadNow] applies it
+/// (SKIP_WAITING → controllerchange → reload).
+///
+/// [canAutoApply] is true only when it is safe to switch versions without
+/// asking: the worker was already waiting at page load (a refresh, not a
+/// mid-session surprise) AND the device is online. The online requirement
+/// matters because activating a new Flutter service worker triggers its
+/// offline precache; doing that while offline could leave the app unable to
+/// fetch assets the new build needs, i.e. a broken offline state. When false
+/// the caller should prompt ("Restart now") and leave the current, fully
+/// cached build serving.
+typedef OnUpdateReady =
+    void Function(void Function() reloadNow, bool canAutoApply);
 
 void listenForPwaUpdates({required OnUpdateReady onUpdateReady}) {
   final swContainer = web.window.navigator.serviceWorker;
 
   void wire(web.ServiceWorkerRegistration reg) {
-    void promptIfWaiting() {
+    void promptIfWaiting({required bool atStartup}) {
       final waiting = reg.waiting;
       if (waiting != null) {
+        // Only safe to auto-apply on a load-time (refresh) update while
+        // online — activating offline risks purging into a build whose
+        // assets aren't all cached yet.
+        final canAutoApply = computeCanAutoApply(
+          atStartup: atStartup,
+          isOnline: web.window.navigator.onLine,
+        );
         onUpdateReady(() {
           waiting.postMessage({'type': 'SKIP_WAITING'}.jsify());
-        });
+        }, canAutoApply);
       }
     }
 
@@ -23,7 +43,8 @@ void listenForPwaUpdates({required OnUpdateReady onUpdateReady}) {
         'statechange',
         ((web.Event _) {
           if (installing.state == 'installed' && reg.waiting != null) {
-            promptIfWaiting();
+            // Arrived after load → treat as a mid-session update.
+            promptIfWaiting(atStartup: false);
           }
         }).toJS,
       );
@@ -31,8 +52,9 @@ void listenForPwaUpdates({required OnUpdateReady onUpdateReady}) {
 
     // 1) If a SW is already waiting from a previous session, surface it now.
     //    Without this the snackbar never fires for users who were stuck after
-    //    missing the installation moment in an earlier visit.
-    promptIfWaiting();
+    //    missing the installation moment in an earlier visit. This is the
+    //    load-time (refresh) path, so callers may auto-apply it.
+    promptIfWaiting(atStartup: true);
 
     // 2) If a SW is currently mid-install, wire up its statechange so we
     //    catch the transition to 'installed' that the listener in (3) would
