@@ -1,0 +1,162 @@
+---
+// ADR-0039 Phase 3 migration nudge.
+//
+// Shown on the apex landing to former apex-PWA users after the DNS cutover.
+// It detects, client-side, either Flutter localStorage data left behind on
+// this origin or a lingering Service Worker registration at `/`, and points
+// the visitor at the /migrate export tool. The whole banner is a link; a
+// small close button dismisses it for the current session only.
+//
+// Nothing renders server-side beyond a hidden shell — the banner is only
+// revealed by the inline script once a migration signal is found, so cold
+// visitors with no local data never see it.
+import { type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+
+const copy = {
+  nb: {
+    heading: 'Web-appen er flyttet til web.ringdrill.app',
+    body: 'Klikk her for å hente ut planene dine og åpne den nye appen.',
+    dismiss: 'Lukk',
+    href: '/migrate',
+  },
+  en: {
+    heading: 'The web app has moved to web.ringdrill.app',
+    body: 'Click here to export your plans and open the new app.',
+    dismiss: 'Dismiss',
+    href: '/en/migrate',
+  },
+}[lang];
+---
+<div id="migration-nudge" class="nudge" hidden>
+  <a class="nudge__link" href={copy.href}>
+    <span class="nudge__heading">{copy.heading}</span>
+    <span class="nudge__body">{copy.body}</span>
+  </a>
+  <button
+    type="button"
+    class="nudge__close"
+    id="migration-nudge-close"
+    aria-label={copy.dismiss}
+    title={copy.dismiss}
+  >&times;</button>
+</div>
+
+<style>
+  .nudge {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* secondaryContainer-equivalent: muted teal tint, unmissable but calm. */
+    background: color-mix(in srgb, var(--teal) 16%, var(--canvas));
+    border-bottom: 1px solid color-mix(in srgb, var(--teal) 32%, var(--border));
+    color: var(--heading);
+  }
+  .nudge__link {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px var(--gutter);
+    text-decoration: none;
+    color: inherit;
+  }
+  .nudge__link:hover { text-decoration: none; }
+  .nudge__link:hover .nudge__body { text-decoration: underline; }
+  .nudge__heading { font-weight: 700; color: var(--heading); }
+  .nudge__body { color: var(--body); font-size: 0.9375rem; }
+  .nudge__close {
+    flex: 0 0 auto;
+    margin-right: max(calc(var(--gutter) - 12px), 8px);
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .nudge__close:hover { background: color-mix(in srgb, var(--teal) 20%, transparent); color: var(--heading); }
+</style>
+
+<script>
+  const DISMISS_KEY = 'ringdrill:migration-nudge-dismissed';
+  // shared_preferences (web) writes localStorage keys under a `flutter.`
+  // prefix by default. Match both the raw and prefixed forms so this works
+  // against real installs as well as devtools-seeded test keys.
+  const FLUTTER_PREFIX = 'flutter.';
+  const LIBRARY_PREFIXES = ['p:', 'pe:', 'pt:', 'ps:'];
+  const LIBRARY_EXACT = ['app:librarySchema:v1'];
+
+  function stripPrefix(key: string): string {
+    return key.startsWith(FLUTTER_PREFIX)
+      ? key.slice(FLUTTER_PREFIX.length)
+      : key;
+  }
+
+  function hasFlutterData(): boolean {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const raw = localStorage.key(i);
+        if (raw === null) continue;
+        const key = stripPrefix(raw);
+        if (LIBRARY_EXACT.includes(key)) return true;
+        if (LIBRARY_PREFIXES.some((p) => key.startsWith(p))) return true;
+      }
+    } catch {
+      // localStorage blocked (private mode / policy) — no signal.
+    }
+    return false;
+  }
+
+  async function hasServiceWorker(): Promise<boolean> {
+    if (!('serviceWorker' in navigator)) return false;
+    try {
+      const reg = await navigator.serviceWorker.getRegistration('/');
+      return reg != null;
+    } catch {
+      return false;
+    }
+  }
+
+  async function maybeShow(): Promise<void> {
+    const el = document.getElementById('migration-nudge');
+    if (!el) return;
+
+    try {
+      if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
+    } catch {
+      // sessionStorage unavailable — fall through and show anyway.
+    }
+
+    const signal = hasFlutterData() || (await hasServiceWorker());
+    if (!signal) return;
+
+    el.hidden = false;
+
+    const close = document.getElementById('migration-nudge-close');
+    close?.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      el.hidden = true;
+      try {
+        sessionStorage.setItem(DISMISS_KEY, '1');
+      } catch {
+        // ignore — dismissal just won't persist this session.
+      }
+    });
+  }
+
+  maybeShow();
+</script>
