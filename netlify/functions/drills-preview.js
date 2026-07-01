@@ -8,16 +8,14 @@ import {
 
 const STRINGS = {
     nb: {
-        openInApp:      "Åpne i app",
-        openOnWeb:      "Åpne på web",
+        openOnWeb:      "Åpne planen",
         download:       "Last ned .drill",
         notFound:       "Ikke funnet",
         exerciseUnit:   "øvelse",
         exercisePlural: "øvelser",
     },
     en: {
-        openInApp:      "Open in app",
-        openOnWeb:      "Open on web",
+        openOnWeb:      "Open the plan",
         download:       "Download .drill",
         notFound:       "Not found",
         exerciseUnit:   "exercise",
@@ -113,8 +111,7 @@ a:hover{opacity:.85}
 <h1>${esc(name)}</h1>
 ${tagsHtml}${countLine}
 <div class="actions">
-<a class="btn btn-primary" href="${canonical}">${s.openInApp}</a>
-<a class="btn btn-secondary" href="${webUrl}">${s.openOnWeb}</a>
+<a class="btn btn-primary" href="${webUrl}">${s.openOnWeb}</a>
 </div>
 <p class="download"><a href="${downloadUrl}">${s.download}</a></p>
 </main>

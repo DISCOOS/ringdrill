@@ -99,16 +99,16 @@ test("renderHtml nb: contains h1 with name", () => {
 
 test("renderHtml nb: contains Norwegian button labels", () => {
     const html = renderHtml({ slug: "sprint-1", meta: SAMPLE_META, locale: "nb" });
-    assert.ok(html.includes("Åpne i app"), "nb openInApp");
-    assert.ok(html.includes("Åpne på web"), "nb openOnWeb");
+    assert.ok(html.includes("Åpne planen"), "nb openOnWeb");
     assert.ok(html.includes("Last ned .drill"), "nb download");
+    assert.ok(!html.includes("Åpne i app"), "no self-referential app CTA");
 });
 
 test("renderHtml en: contains English button labels", () => {
     const html = renderHtml({ slug: "sprint-1", meta: SAMPLE_META, locale: "en" });
-    assert.ok(html.includes("Open in app"), "en openInApp");
-    assert.ok(html.includes("Open on web"), "en openOnWeb");
+    assert.ok(html.includes("Open the plan"), "en openOnWeb");
     assert.ok(html.includes("Download .drill"), "en download");
+    assert.ok(!html.includes("Open in app"), "no self-referential app CTA");
 });
 
 test("renderHtml: og:url points at ringdrill.app/i/<slug>", () => {
@@ -213,8 +213,7 @@ test("published slug (default locale) → 200 nb", async () => {
     const body = await res.text();
     assert.ok(body.includes('<html lang="nb">'), "html lang=nb");
     assert.equal(res.headers.get("content-language"), "nb");
-    assert.ok(body.includes("Åpne i app"), "Norwegian open-in-app label");
-    assert.ok(body.includes("Åpne på web"), "Norwegian open-on-web label");
+    assert.ok(body.includes("Åpne planen"), "Norwegian open-plan label");
 });
 
 test("published slug with ?lang=en → 200 en", async () => {
@@ -224,8 +223,7 @@ test("published slug with ?lang=en → 200 en", async () => {
     const body = await res.text();
     assert.ok(body.includes('<html lang="en">'), "html lang=en");
     assert.equal(res.headers.get("content-language"), "en");
-    assert.ok(body.includes("Open in app"), "English open-in-app label");
-    assert.ok(body.includes("Open on web"), "English open-on-web label");
+    assert.ok(body.includes("Open the plan"), "English open-plan label");
 });
 
 test("Accept-Language: en-GB,en;q=0.9 → English variant", async () => {
@@ -235,7 +233,7 @@ test("Accept-Language: en-GB,en;q=0.9 → English variant", async () => {
     }));
     const body = await res.text();
     assert.ok(body.includes('<html lang="en">'));
-    assert.ok(body.includes("Open in app"));
+    assert.ok(body.includes("Open the plan"));
 });
 
 test("Accept-Language: nb-NO,en;q=0.5 → Norwegian variant (first supported wins)", async () => {
@@ -245,7 +243,7 @@ test("Accept-Language: nb-NO,en;q=0.5 → Norwegian variant (first supported win
     }));
     const body = await res.text();
     assert.ok(body.includes('<html lang="nb">'));
-    assert.ok(body.includes("Åpne i app"));
+    assert.ok(body.includes("Åpne planen"));
 });
 
 // ---------- Handler: OG meta, canonical, hreflang ----------
