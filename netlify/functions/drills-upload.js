@@ -12,14 +12,54 @@ import {
 const KNOWN_SCHEMA_MAX = "1.2";
 
 /**
+ * Read the plan-level name and description from a `program.json` entry.
+ *
+ * `files` is the already-unzipped archive map (name -> Uint8Array), so this
+ * reuses the unzip stripActorsAndValidate already did rather than opening the
+ * archive a second time. Returns { name, description } with each field either
+ * a string or null when absent/unparseable — never throws.
+ */
+export function programInfoFromArchive(files) {
+    const entry = files?.["program.json"];
+    if (!entry) return { name: null, description: null };
+    try {
+        const p = JSON.parse(strFromU8(entry));
+        return {
+            name: typeof p?.name === "string" ? p.name : null,
+            description: typeof p?.description === "string" ? p.description : null,
+        };
+    } catch {
+        return { name: null, description: null };
+    }
+}
+
+/**
+ * Resolve the catalog `name` and `description` from the query params and the
+ * plan's own program.json. Query wins when present; program.json fills the
+ * gaps; slug/"" are the final fallbacks. An explicit empty `?description=`
+ * is honoured as an intentional override (query is null only when absent).
+ *
+ * Tags are deliberately not resolved here: the .drill format has no tags
+ * field, so tags stay a publish-time query param.
+ */
+export function resolveCatalogFields({ nameParam, descriptionParam, program, slug }) {
+    const name = (nameParam && nameParam.trim()) || program?.name || slug;
+    const description = descriptionParam != null
+        ? descriptionParam
+        : (program?.description ?? "");
+    return { name, description };
+}
+
+/**
  * Strip the actors/ folder from a .drill archive and validate the schema.
- * Returns { strippedBytes, error } where error is a Response when invalid.
+ * Returns { strippedBytes, program, error } where error is a Response when
+ * invalid and program is the { name, description } read from program.json.
  *
  * Actors are local PII (phone, real name) and must never reach the catalog.
  * The strip happens here rather than in the client because the same .drill
  * may legitimately carry actors/ peer-to-peer (USB, AirDrop, email).
  */
-function stripActorsAndValidate(request, bytes) {
+export function stripActorsAndValidate(request, bytes) {
     let files;
     try {
         files = unzipSync(new Uint8Array(bytes));
@@ -52,6 +92,11 @@ function stripActorsAndValidate(request, bytes) {
         }
     }
 
+    // Plan-level name/description live in program.json — read them here while
+    // the archive is unzipped so the caller can seed catalog meta from the
+    // authoritative source instead of relying only on query params.
+    const program = programInfoFromArchive(files);
+
     // Strip actors/ folder entries (PII — never published to catalog)
     const stripped = {};
     for (const [name, data] of Object.entries(files)) {
@@ -60,7 +105,7 @@ function stripActorsAndValidate(request, bytes) {
         }
     }
 
-    return { strippedBytes: Buffer.from(zipSync(stripped)) };
+    return { strippedBytes: Buffer.from(zipSync(stripped)), program };
 }
 
 /**
@@ -99,7 +144,6 @@ export default async function (request) {
             ?? (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now().toString(36));
 
         const explicitVersion = qs.get("version");
-        const name      = qs.get("name") || slug;
         const published = (qs.get("published") || "false").toLowerCase() === "true";
         const tags      = (qs.get("tags") || "").split(",").map(s => s.trim()).filter(Boolean);
 
@@ -109,9 +153,18 @@ export default async function (request) {
         // actors/ contains PII (phone, real name) and must never reach the
         // catalog. The strip is server-side only; peer-to-peer .drill files
         // legitimately carry actors/.
-        const { strippedBytes, error: archiveError } = stripActorsAndValidate(request, rawBytes);
+        const { strippedBytes, program, error: archiveError } = stripActorsAndValidate(request, rawBytes);
         if (archiveError) return archiveError;
         const bytes = strippedBytes;
+
+        // Catalog name/description: query params win, program.json fills gaps.
+        // Tags stay query-only — the .drill format has no tags field.
+        const { name, description } = resolveCatalogFields({
+            nameParam: qs.get("name"),
+            descriptionParam: qs.get("description"),
+            program,
+            slug,
+        });
 
         // ---- Slug claim / ownership check ----
         const slugTakenResponse = () => withCors(request, new Response(
@@ -137,7 +190,7 @@ export default async function (request) {
 
         const { latest, meta } = keysFor({ ownerId, programId, version: "_" });
         const currentMeta = await readJson(meta, {
-            programId, slug, name, ownerId, description: "", published: false, tags: [], versions: []
+            programId, slug, name, ownerId, description, published: false, tags: [], versions: []
         });
 
         // Sort meta.versions once — used by the OCC check and the "is this a
@@ -226,6 +279,7 @@ export default async function (request) {
         const etag = toStrongEtag(sha256Hex(bytes));
         currentMeta.slug = slug;
         currentMeta.name = name;
+        currentMeta.description = description;
         currentMeta.published = !!published;
         currentMeta.tags = Array.from(new Set([...(currentMeta.tags || []), ...tags]));
         const without = (currentMeta.versions || []).filter(v => v.v !== version);
