@@ -15,3 +15,4 @@ Notes are additive. Do not rewrite older notes when new information arrives — 
 ## Index
 
 * [Netlify Functions v2 `path` config replaces the default URL](./netlify-functions-v2-path-config.md) — 2026-07-01
+* [Pull-to-refresh: which lists need it, and which do not](./pull-to-refresh-list-audit.md) — 2026-07-01
