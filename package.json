@@ -12,12 +12,14 @@
   "description": "",
   "main": "netlify/functions/_shared.js",
   "scripts": {
-    "test": "node --test netlify/tests/**/*.test.mjs"
+    "test": "node --test netlify/tests/**/*.test.mjs",
+    "og:image": "node tools/generate-og-image.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "netlify-cli": "26.0.2"
   }
 }

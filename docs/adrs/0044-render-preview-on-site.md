@@ -45,7 +45,7 @@ Sequencing matters. This lands **after** the apex is on Cloudflare per ADR-0039,
 * Good: Origins align with ADR-0039 — the branded page is on the site, the data on the API.
 * Good: The catalog stays dynamic. On-demand rendering handles slugs unknown at build time, unlike a pre-render.
 * Bad: One extra hop (site render fetches meta JSON from the API) versus the function's direct blob read. Mitigated by `s-maxage` on the endpoint and Cloudflare edge caching.
-* Bad: The Astro page must reproduce the exact `<head>` the function emits (`og:*`, `canonical`, `hreflang`, `og:locale`). Parity is a real risk during the port and must be verified with a crawler check.
+* Bad: The Astro page must reproduce the exact `<head>` the function emits (`og:title`/`description`/`url`/`type`/`locale`/`site_name`, `og:image` with 1200×630 dimensions, the `twitter:*` card tags, `canonical`, `hreflang`). Parity is a real risk during the port and must be verified with a crawler check. `og:image` is load-bearing: without it, Messenger/Facebook render only the bare domain with no card.
 * Bad: The route now depends on API availability. A meta `404`/`5xx` must render a graceful not-found, matching today's function behaviour.
 * Bad: The site ships today as a fully static Astro build with no adapter. This introduces on-demand rendering (a Cloudflare adapter) for the first time, while keeping every existing page prerendered. That is a non-trivial addition to the site's build and deploy.
 * Bad: Sequencing couples this to the apex migration.

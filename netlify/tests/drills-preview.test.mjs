@@ -111,6 +111,16 @@ test("renderHtml en: contains English button labels", () => {
     assert.ok(!html.includes("Open in app"), "no self-referential app CTA");
 });
 
+test("renderHtml: og:image is an absolute PNG with dimensions and twitter card", () => {
+    const html = renderHtml({ slug: "sprint-1", meta: SAMPLE_META, locale: "nb" });
+    assert.ok(html.includes('property="og:image" content="https://ringdrill.app/og-default.png"'), "og:image absolute");
+    assert.ok(html.includes('property="og:image:width" content="1200"'), "og:image:width");
+    assert.ok(html.includes('property="og:image:height" content="630"'), "og:image:height");
+    assert.ok(html.includes('property="og:image:type" content="image/png"'), "og:image:type");
+    assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), "twitter summary_large_image");
+    assert.ok(html.includes('name="twitter:image" content="https://ringdrill.app/og-default.png"'), "twitter:image");
+});
+
 test("renderHtml: og:url points at ringdrill.app/i/<slug>", () => {
     const html = renderHtml({ slug: "sprint-1", meta: SAMPLE_META, locale: "nb" });
     assert.ok(html.includes('content="https://ringdrill.app/i/sprint-1"'));

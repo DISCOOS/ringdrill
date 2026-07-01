@@ -75,6 +75,11 @@ export function renderHtml({ slug, meta, locale }) {
     const canonical = `https://ringdrill.app/i/${slug}`;
     const webUrl = `https://web.ringdrill.app/i/${slug}`;
     const downloadUrl = `https://ringdrill.app/d/${slug}`;
+    // Static 1200×630 share card. Absolute URL so link crawlers (Slack, iMessage,
+    // Messenger, etc.) resolve it — they do not run JS and need a real image, or
+    // no rich card renders. Served at the apex root by web/ (PWA) today and
+    // site/public/ after the ADR-0039 apex migration; same path resolves in both.
+    const ogImage = "https://ringdrill.app/og-default.png";
 
     const tagsHtml = tags.length
         ? `<ul class="tags">${tags.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`
@@ -135,6 +140,16 @@ export function renderHtml({ slug, meta, locale }) {
 <meta property="og:type" content="website">
 <meta property="og:locale" content="${ogLocale}">
 <meta property="og:site_name" content="RingDrill">
+<meta property="og:image" content="${ogImage}">
+<meta property="og:image:secure_url" content="${ogImage}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(name)} · RingDrill">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(name)}">
+<meta name="twitter:description" content="${esc(ogDesc)}">
+<meta name="twitter:image" content="${ogImage}">
 <link rel="canonical" href="${canonical}">
 <link rel="alternate" hreflang="nb" href="${canonical}">
 <link rel="alternate" hreflang="en" href="${canonical}">
