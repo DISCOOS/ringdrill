@@ -118,6 +118,11 @@ upload-symbols-web:
 
 strip-source-maps-web:
 	find build/web -type f -name '*.js.map' -delete
+	# Also drop the trailing `//# sourceMappingURL=...` comment from the JS.
+	# Deleting the .map file alone leaves the reference in main.dart.js, so
+	# the browser and Sentry's source scraper still try to fetch the now-404
+	# map and log it as a download error. Removing the comment stops that.
+	find build/web -type f -name '*.js' -exec sed -i '/^\/\/# sourceMappingURL=/d' {} +
 
 # Refuse to build a release from a working tree that has uncommitted
 # changes. Without this gate, $(DART_DEFINE_GIT) would tag the binary
