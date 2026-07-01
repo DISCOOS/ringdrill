@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:ringdrill/utils/app_flags.dart';
 
 class AppConfig {
@@ -78,9 +79,28 @@ class AppConfig {
   /// alias, served via the redirect in `netlify.toml`). When the backend
   /// is a local `netlify functions:serve` instance the redirect is not
   /// applied, so the client must call the function directly. See ADR-0013.
+  ///
+  /// The local branch is gated on [kDebugMode] so release builds
+  /// constant-fold the check away and Dart tree-shakes [_looksLocal].
   static String deepLinkBasePathFor(String baseUrl) {
-    if (_looksLocal(baseUrl)) return '/.netlify/functions/deep-link';
+    if (kDebugMode && _looksLocal(baseUrl)) {
+      return '/.netlify/functions/deep-link';
+    }
     return '/d';
+  }
+
+  /// Returns the functions base path the [DrillClient] should use for the
+  /// given [baseUrl]. In production the path is `/api` (public alias,
+  /// served via the redirects in `netlify.toml`). When the backend is a
+  /// local `netlify functions:serve` instance those redirects are not
+  /// applied, so the client must call the implementation path directly.
+  /// See ADR-0013 and the comment in `make netlify-dev`.
+  ///
+  /// The local branch is gated on [kDebugMode] so release builds
+  /// constant-fold the check away and Dart tree-shakes [_looksLocal].
+  static String functionsBasePathFor(String baseUrl) {
+    if (kDebugMode && _looksLocal(baseUrl)) return '/.netlify/functions';
+    return '/api';
   }
 
   static bool _looksLocal(String baseUrl) {
