@@ -120,6 +120,16 @@
     status = 200
 
 [[redirects]]
+    from = "/brief/program/*"
+    to = "https://web.ringdrill.app/brief/program/:splat"
+    status = 302
+
+[[redirects]]
+    from = "/brief/*"
+    to = "https://web.ringdrill.app/brief/:splat"
+    status = 302
+
+[[redirects]]
     from = "/d/*"
     to = "/.netlify/functions/deep-link/:splat"
     status = 200
