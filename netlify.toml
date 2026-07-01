@@ -57,6 +57,43 @@
 [functions]
     directory = "netlify/functions"
 
+# Public API aliases.
+#
+# Two forms are supported. Both route to the same Netlify function.
+#
+# Function-name form (`/api/<function-name>`) is what DrillClient uses
+# after the ADR-0039 Phase 2a refactor. Dash-separated because that is
+# how the .js files are named under netlify/functions/ and the Netlify
+# function name equals the file basename.
+#
+# REST-style slash-form (`/api/<noun>/<verb>`) is the canonical public
+# API surface referenced by docs, ADRs, plans/, robots.txt and external
+# consumers. Kept as a stable alias so those references never break
+# even if the client's URL construction changes.
+#
+# The direct `/.netlify/functions/<name>` path always works too — it is
+# served natively by Netlify and does not require an entry here. The
+# old cached PWA on apex still uses it, and continues to.
+[[redirects]]
+    from = "/api/drills-upload"
+    to = "/.netlify/functions/drills-upload"
+    status = 200
+
+[[redirects]]
+    from = "/api/drills-head/*"
+    to = "/.netlify/functions/drills-head/:splat"
+    status = 200
+
+[[redirects]]
+    from = "/api/market-feed"
+    to = "/.netlify/functions/market-feed"
+    status = 200
+
+[[redirects]]
+    from = "/api/drills-admin"
+    to = "/.netlify/functions/drills-admin"
+    status = 200
+
 [[redirects]]
     from = "/api/drills/upload"
     to = "/.netlify/functions/drills-upload"
@@ -68,18 +105,18 @@
     status = 200
 
 [[redirects]]
-    from = "/d/*"
-    to = "/.netlify/functions/deep-link/:splat"
-    status = 200
-
-[[redirects]]
     from = "/api/market/feed"
-    to  = "/.netlify/functions/market-feed"
+    to = "/.netlify/functions/market-feed"
     status = 200
 
 [[redirects]]
     from = "/api/admin"
-    to  = "/.netlify/functions/drills-admin"
+    to = "/.netlify/functions/drills-admin"
+    status = 200
+
+[[redirects]]
+    from = "/d/*"
+    to = "/.netlify/functions/deep-link/:splat"
     status = 200
 
 # Serve .well-known files as-is (before the SPA catch-all)
