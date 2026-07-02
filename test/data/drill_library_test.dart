@@ -85,6 +85,30 @@ void main() {
       final content = _emptyZip();
       expect(DrillLibrary.sniff(content), DrillArchiveKind.invalid);
     });
+
+    test(
+      'Finder-repacked bundle (nested folder + __MACOSX/.DS_Store) -> library',
+      () {
+        // Mirrors what Finder produces when someone extracts a downloaded
+        // bundle, edits a file, then re-compresses the folder: every real
+        // entry sits one level deeper, plus junk cruft is added.
+        final drillFile = DrillFile.fromProgram(_program('u1', 'Alfa'), 'alfa');
+        final archive = Archive()
+          ..addFile(_entry('bundle/', ''))
+          ..addFile(_entry('__MACOSX/._bundle', 'junk'))
+          ..addFile(_entry('bundle/.DS_Store', 'junk'))
+          ..addFile(
+            ArchiveFile(
+              'bundle/alfa.drill',
+              drillFile.content.length,
+              drillFile.content,
+            ),
+          )
+          ..addFile(_entry('__MACOSX/bundle/._alfa.drill', 'junk'));
+        final content = ZipEncoder().encode(archive);
+        expect(DrillLibrary.sniff(content), DrillArchiveKind.library);
+      },
+    );
   });
 
   group('DrillLibrary.entries — round-trip', () {
@@ -118,6 +142,50 @@ void main() {
       expect(caught!.reason, DrillLibraryReason.noDrillEntries);
       expect(caught, isA<FormatException>());
     });
+
+    test(
+      'Finder-repacked bundle decodes the nested .drill and skips cruft',
+      () {
+        final drillFile = DrillFile.fromProgram(_program('u1', 'Alfa'), 'alfa');
+        final archive = Archive()
+          ..addFile(_entry('bundle/', ''))
+          ..addFile(_entry('__MACOSX/._bundle', 'junk'))
+          ..addFile(_entry('bundle/.DS_Store', 'junk'))
+          ..addFile(
+            ArchiveFile(
+              'bundle/alfa.drill',
+              drillFile.content.length,
+              drillFile.content,
+            ),
+          )
+          ..addFile(_entry('__MACOSX/bundle/._alfa.drill', 'junk'));
+        final bundle = ZipEncoder().encode(archive);
+
+        final files = DrillLibrary.entries(bundle);
+
+        expect(files.length, 1);
+        expect(files.single.fileName, 'alfa.drill');
+        expect(files.single.program().uuid, 'u1');
+      },
+    );
+
+    test(
+      'ZIP with only __MACOSX/.DS_Store cruft -> entries() throws noDrillEntries',
+      () {
+        final archive = Archive()
+          ..addFile(_entry('bundle/.DS_Store', 'junk'))
+          ..addFile(_entry('__MACOSX/._bundle', 'junk'));
+        final bundle = ZipEncoder().encode(archive);
+        DrillLibraryException? caught;
+        try {
+          DrillLibrary.entries(bundle);
+        } on DrillLibraryException catch (e) {
+          caught = e;
+        }
+        expect(caught, isNotNull);
+        expect(caught!.reason, DrillLibraryReason.noDrillEntries);
+      },
+    );
 
     test('empty bytes -> DrillLibraryReason.empty', () {
       DrillLibraryException? caught;

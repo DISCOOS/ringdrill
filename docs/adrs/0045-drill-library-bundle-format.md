@@ -47,10 +47,12 @@ A byte buffer is classified by sniffing, not by extension:
 
 * Not a ZIP (no `PK` magic bytes) → invalid.
 * ZIP containing a top-level `program.json` → a single `.drill` (existing path, `DrillFile`).
-* ZIP containing at least one `*.drill` entry and no top-level `program.json` → a drill library (new path).
+* ZIP containing at least one `*.drill` entry anywhere in the archive, at any nesting depth, and no top-level `program.json` → a drill library (new path).
 * ZIP that is neither → invalid.
 
-A single `.drill` and a library are therefore always distinguishable, because a `.drill` has `program.json` at its root and a library has `.drill` files at its root instead.
+A single `.drill` and a library are therefore always distinguishable, because a `.drill` has `program.json` at its root and a library never does.
+
+`program.json` is checked at the literal root only — that is the `.drill` format's own invariant (ADR-0007), not a container concern. The `.drill` entries that make up a library are matched at any depth on purpose: the bundle can be repacked by any tool (Finder, Explorer, a plain `zip` command) before it reaches the app, and those commonly wrap everything in an extra folder or add metadata cruft (`__MACOSX/`, `.DS_Store`). That cruft is ignored; a `.drill` entry still counts wherever it sits.
 
 Implementation lives in a new `lib/data/drill_library.dart`, mirroring `DrillFile`:
 

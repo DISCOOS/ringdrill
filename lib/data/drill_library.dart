@@ -1,14 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:path/path.dart' as path;
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/models/program.dart';
 
 /// How a byte buffer is classified before import.
 ///
-/// `single` = top-level `program.json` present (a `.drill`, ADR-0007).
-/// `library` = one or more top-level `*.drill` entries and no top-level
-/// `program.json` (a drill library, ADR-0045). `invalid` otherwise.
+/// `single` = top-level `program.json` present (a `.drill`, ADR-0007) —
+/// this is the actual `.drill` format's own invariant, not a container
+/// concern, so it is checked at the literal root only. `library` = one or
+/// more `*.drill` entries anywhere in the archive (any nesting depth) and
+/// no top-level `program.json` (a drill library, ADR-0045). `invalid`
+/// otherwise.
 enum DrillArchiveKind { single, library, invalid }
 
 /// Why a drill-library bundle could not be parsed at the container level.
@@ -24,7 +28,7 @@ enum DrillLibraryReason {
   /// Bytes are not a valid ZIP container at all.
   notArchive,
 
-  /// Valid ZIP, but no top-level `*.drill` entries (and no top-level
+  /// Valid ZIP, but no `*.drill` entries at any depth (and no top-level
   /// `program.json` either, otherwise this would be a single `.drill`).
   noDrillEntries,
 }
@@ -68,9 +72,11 @@ class DrillLibraryException implements FormatException {
 /// carries its own schema per ADR-0007. Detection is content-based, so the
 /// file extension does not matter for import.
 class DrillLibrary {
-  /// Classify [content] without fully parsing it. Cheap magic-byte + top-
-  /// level entry-name inspection. Nested paths are ignored when deciding —
-  /// only top-level entry names matter, matching what [fromPrograms] writes.
+  /// Classify [content] without fully parsing it. Cheap magic-byte + entry-
+  /// name inspection. The bundle can be repacked by any tool (Finder,
+  /// Explorer, a plain `zip` command) and those commonly wrap everything in
+  /// a folder or add metadata cruft (`__MACOSX/`, `.DS_Store`) — a `.drill`
+  /// entry still counts wherever it sits, so only that cruft is ignored.
   static DrillArchiveKind sniff(List<int> content) {
     if (content.length < 2 || content[0] != 0x50 || content[1] != 0x4B) {
       return DrillArchiveKind.invalid;
@@ -85,17 +91,21 @@ class DrillLibrary {
     if (archive.files.isEmpty) return DrillArchiveKind.invalid;
 
     var hasTopLevelProgramJson = false;
-    var hasTopLevelDrillEntry = false;
+    var hasDrillEntry = false;
     for (final file in archive.files) {
-      if (!file.isFile || file.name.contains('/')) continue;
-      if (file.name == 'program.json') hasTopLevelProgramJson = true;
+      if (!file.isFile || _isPackagingCruft(file.name)) continue;
+      // program.json is the .drill format's own root manifest (ADR-0007),
+      // not a container concern, so this stays a literal top-level check.
+      if (!file.name.contains('/') && file.name == 'program.json') {
+        hasTopLevelProgramJson = true;
+      }
       if (file.name.endsWith('.${DrillFile.drillExtension}')) {
-        hasTopLevelDrillEntry = true;
+        hasDrillEntry = true;
       }
     }
 
     if (hasTopLevelProgramJson) return DrillArchiveKind.single;
-    if (hasTopLevelDrillEntry) return DrillArchiveKind.library;
+    if (hasDrillEntry) return DrillArchiveKind.library;
     return DrillArchiveKind.invalid;
   }
 
@@ -145,21 +155,37 @@ class DrillLibrary {
     final drillEntries = archive.files.where(
       (file) =>
           file.isFile &&
-          !file.name.contains('/') &&
+          !_isPackagingCruft(file.name) &&
           file.name.endsWith('.${DrillFile.drillExtension}'),
     );
     if (drillEntries.isEmpty) {
       throw DrillLibraryException(
         DrillLibraryReason.noDrillEntries,
-        'Invalid drill library$label: no top-level '
+        'Invalid drill library$label: no '
         '.${DrillFile.drillExtension} entries found.',
       );
     }
 
+    // Use the basename, not the full (possibly nested) path: the fileName
+    // ends up in user-facing messages if this entry fails to parse, and
+    // "sar-training-weekend.drill" reads better than a folder-prefixed path.
     return drillEntries
-        .map((file) => DrillFile.fromBytes(file.name, file.content as List<int>))
+        .map(
+          (file) => DrillFile.fromBytes(
+            path.basename(file.name),
+            file.content as List<int>,
+          ),
+        )
         .toList();
   }
+
+  /// True for entries that real zip tools add but that are never a `.drill`
+  /// this app produced: macOS Finder's resource-fork shadow folder and
+  /// Finder's own `.DS_Store` index. Filtered out everywhere entries are
+  /// counted so a Finder-repacked bundle does not report misleading
+  /// "skipped" counts for junk that was never a plan.
+  static bool _isPackagingCruft(String name) =>
+      name.startsWith('__MACOSX/') || path.basename(name) == '.DS_Store';
 
   /// Encode a library: one `.drill` per program inside an outer ZIP, slug
   /// collisions disambiguated with a counter. This is the mechanism
