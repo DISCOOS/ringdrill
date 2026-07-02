@@ -92,6 +92,21 @@ class MainDrawer extends StatelessWidget {
             await active_actions.createNewPlan(actionContext);
           },
         ),
+        if (ProgramPageController.canSaveDrillFile)
+          _DrawerTile(
+            icon: Icons.download,
+            title: localizations.libraryDownloadAction,
+            enabled: hasActivePlan,
+            disabledTooltip: localizations.requiresActivePlan,
+            onTap: () async {
+              final actionContext = Navigator.of(
+                context,
+                rootNavigator: true,
+              ).context;
+              Navigator.pop(context);
+              await active_actions.downloadActivePlan(actionContext);
+            },
+          ),
         _DrawerTile(
           icon: Icons.playlist_add,
           title: localizations.addExercisesAction,
@@ -136,21 +151,6 @@ class MainDrawer extends StatelessWidget {
               ).context;
               Navigator.pop(context);
               await active_actions.sendActivePlanTo(actionContext);
-            },
-          ),
-        if (ProgramPageController.canSaveDrillFile)
-          _DrawerTile(
-            icon: Icons.download,
-            title: localizations.libraryDownloadAction,
-            enabled: hasActivePlan,
-            disabledTooltip: localizations.requiresActivePlan,
-            onTap: () async {
-              final actionContext = Navigator.of(
-                context,
-                rootNavigator: true,
-              ).context;
-              Navigator.pop(context);
-              await active_actions.downloadActivePlan(actionContext);
             },
           ),
         _DrawerTile(
