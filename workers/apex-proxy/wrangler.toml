@@ -1,0 +1,20 @@
+# Apex reverse proxy for ringdrill.app — see src/index.js and ADR-0039.
+#
+# Deploys a standalone Worker bound to the dynamic apex path prefixes. The
+# Pages project `ringdrill-site` keeps serving everything else; Worker routes
+# win only for the patterns listed below.
+
+name = "ringdrill-apex-proxy"
+main = "src/index.js"
+compatibility_date = "2026-07-02"
+
+# Bind the Worker to the paths that must proxy to api.ringdrill.app.
+# `/i/*` is proxied for now; when the native Astro `/i/[slug]` route lands
+# (ADR-0044) remove that route so the site serves it directly.
+routes = [
+  { pattern = "ringdrill.app/api/*", zone_name = "ringdrill.app" },
+  { pattern = "ringdrill.app/.netlify/functions/*", zone_name = "ringdrill.app" },
+  { pattern = "ringdrill.app/d/*", zone_name = "ringdrill.app" },
+  { pattern = "ringdrill.app/i/*", zone_name = "ringdrill.app" },
+  { pattern = "ringdrill.app/brief/*", zone_name = "ringdrill.app" },
+]
