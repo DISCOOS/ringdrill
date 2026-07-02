@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nanoid/nanoid.dart';
-import 'package:ringdrill/data/bulk_export.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
@@ -20,12 +19,12 @@ import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/download_all_plans_dialog.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
-import 'package:ringdrill/views/select_plans_dialog.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/web/trigger_download_web.dart'
     if (dart.library.io) 'package:ringdrill/web/trigger_download_stub.dart';
@@ -253,13 +252,13 @@ Future<void> createNewPlan(BuildContext context) async {
 Future<void> addExercises(BuildContext context) =>
     showAddExercisesDialog(context);
 
-/// Lets the user pick which saved plans to include (everything is
-/// preselected, mirroring the exercise picker in the single-plan export
-/// flow — see [showSelectPlansDialog]), then encodes the chosen plans into
-/// one drill-library ZIP and downloads (web) or shares (native) it via
-/// [triggerDownload] — the same cross-platform path
-/// `MigrationPage._export` already uses for the migration exporter
-/// (ADR-0045).
+/// Same name-then-choose flow as [exportActivePlan], one level up: lets
+/// the user name the bundle and pick which saved plans to include
+/// (everything is preselected — see [showDownloadAllPlansDialog]), then
+/// encodes the chosen plans into one drill-library ZIP and downloads
+/// (web) or shares (native) it via [triggerDownload] — the same
+/// cross-platform path `MigrationPage._export` already uses for the
+/// migration exporter (ADR-0045).
 Future<void> downloadAllPlans(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
   final programs = ProgramService()
@@ -268,20 +267,17 @@ Future<void> downloadAllPlans(BuildContext context) async {
       .whereType<Program>()
       .toList();
 
-  final selectedUuids = await showSelectPlansDialog(
+  final input = await showDownloadAllPlansDialog(
     context,
     programs: programs,
     localizations: localizations,
     title: localizations.libraryDownloadAll,
     actionLabel: localizations.downloadAction,
   );
-  if (selectedUuids == null || !context.mounted) return;
-  final selected = programs
-      .where((program) => selectedUuids.contains(program.uuid))
-      .toList();
+  if (input == null || !context.mounted) return;
 
-  final fileName = bulkExportFileName(DateTime.now());
-  final bytes = DrillLibrary.fromPrograms(selected);
+  final fileName = '${input.fileName}.zip';
+  final bytes = DrillLibrary.fromPrograms(input.programs);
   try {
     await triggerDownload(fileName, bytes);
     if (context.mounted) {
@@ -382,8 +378,8 @@ Future<void> sendActivePlanTo(BuildContext context) async {
 Future<void> exportActivePlan(BuildContext context) async {
   await _exportSelected(
     context,
-    title: (localizations) => localizations.exportAsDrill,
-    actionLabel: (localizations) => localizations.exportAction,
+    title: (localizations) => localizations.libraryDownloadPlan,
+    actionLabel: (localizations) => localizations.downloadAction,
     onSave: ProgramPageController.saveDrillFile,
     onSuccess: (localizations, file) => localizations.exportSuccess(file),
     onFailure: (localizations, file) => localizations.exportFailure(file),

@@ -1946,18 +1946,6 @@ abstract class AppLocalizations {
   /// **'SEND TO...'**
   String get sendToActionButton;
 
-  /// No description provided for @exportAsDrill.
-  ///
-  /// In en, this message translates to:
-  /// **'Export as .drill'**
-  String get exportAsDrill;
-
-  /// No description provided for @exportAction.
-  ///
-  /// In en, this message translates to:
-  /// **'EXPORT'**
-  String get exportAction;
-
   /// No description provided for @downloadAction.
   ///
   /// In en, this message translates to:
@@ -2000,6 +1988,12 @@ abstract class AppLocalizations {
   /// **'No exercises to choose from yet'**
   String get selectExercisesDisabledTooltip;
 
+  /// No description provided for @selectPlansDisabledTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'No plans to choose from yet'**
+  String get selectPlansDisabledTooltip;
+
   /// No description provided for @selectAll.
   ///
   /// In en, this message translates to:
@@ -2017,6 +2011,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All exercises are included. Tap \'CHOOSE...\' to pick specific ones.'**
   String get exportAllExercisesHint;
+
+  /// No description provided for @exportAllPlansHint.
+  ///
+  /// In en, this message translates to:
+  /// **'All plans are included. Tap \'CHOOSE...\' to pick specific ones.'**
+  String get exportAllPlansHint;
 
   /// No description provided for @selectedOfTotal.
   ///

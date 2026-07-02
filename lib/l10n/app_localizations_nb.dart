@@ -1160,12 +1160,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get sendToActionButton => 'SEND TIL...';
 
   @override
-  String get exportAsDrill => 'Eksporter som .drill';
-
-  @override
-  String get exportAction => 'EKSPORTER';
-
-  @override
   String get downloadAction => 'LAST NED';
 
   @override
@@ -1188,6 +1182,9 @@ class AppLocalizationsNb extends AppLocalizations {
       'Ingen øvelser å velge blant enda';
 
   @override
+  String get selectPlansDisabledTooltip => 'Ingen planer å velge blant enda';
+
+  @override
   String get selectAll => 'VELG ALLE';
 
   @override
@@ -1196,6 +1193,10 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get exportAllExercisesHint =>
       'Alle øvelser inkluderes. Trykk «VELG...» for å plukke selv.';
+
+  @override
+  String get exportAllPlansHint =>
+      'Alle planer inkluderes. Trykk «VELG...» for å plukke selv.';
 
   @override
   String selectedOfTotal(int selected, int total) {

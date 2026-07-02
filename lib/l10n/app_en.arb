@@ -1138,8 +1138,6 @@
   "planUrlCopied": "URL copied",
   "sendToAction": "Send to...",
   "sendToActionButton": "SEND TO...",
-  "exportAsDrill": "Export as .drill",
-  "exportAction": "EXPORT",
   "downloadAction": "DOWNLOAD",
   "libraryDownloadAction": "Download…",
   "libraryDownloadAll": "Download all",
@@ -1147,9 +1145,11 @@
   "importAction": "IMPORT",
   "selectExercisesAction": "CHOOSE...",
   "selectExercisesDisabledTooltip": "No exercises to choose from yet",
+  "selectPlansDisabledTooltip": "No plans to choose from yet",
   "selectAll": "SELECT ALL",
   "selectNone": "SELECT NONE",
   "exportAllExercisesHint": "All exercises are included. Tap 'CHOOSE...' to pick specific ones.",
+  "exportAllPlansHint": "All plans are included. Tap 'CHOOSE...' to pick specific ones.",
   "selectedOfTotal": "{selected} of {total} selected",
   "@selectedOfTotal": {
     "placeholders": {

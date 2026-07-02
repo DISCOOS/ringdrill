@@ -323,8 +323,6 @@
   "planUrlCopied": "URL kopiert",
   "sendToAction": "Send til...",
   "sendToActionButton": "SEND TIL...",
-  "exportAsDrill": "Eksporter som .drill",
-  "exportAction": "EKSPORTER",
   "downloadAction": "LAST NED",
   "libraryDownloadAction": "Last ned…",
   "libraryDownloadAll": "Last ned alle",
@@ -332,9 +330,11 @@
   "importAction": "IMPORTER",
   "selectExercisesAction": "VELG...",
   "selectExercisesDisabledTooltip": "Ingen øvelser å velge blant enda",
+  "selectPlansDisabledTooltip": "Ingen planer å velge blant enda",
   "selectAll": "VELG ALLE",
   "selectNone": "VELG INGEN",
   "exportAllExercisesHint": "Alle øvelser inkluderes. Trykk «VELG...» for å plukke selv.",
+  "exportAllPlansHint": "Alle planer inkluderes. Trykk «VELG...» for å plukke selv.",
   "selectedOfTotal": "{selected} av {total} valgt",
   "@selectedOfTotal": {
     "placeholders": {
