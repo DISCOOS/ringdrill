@@ -2054,6 +2054,12 @@ abstract class AppLocalizations {
   /// **'Can\'t delete your last plan. Rename it or add a new one first.'**
   String get cannotDeleteLastPlan;
 
+  /// Snackbar shown when the user tries to delete the currently active plan. Deleting it would leave no plan active, so another plan must be activated first.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a different plan first, then delete this one.'**
+  String get cannotDeleteActivePlan;
+
   /// No description provided for @libraryMigrationNotice.
   ///
   /// In en, this message translates to:

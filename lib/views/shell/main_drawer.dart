@@ -197,20 +197,6 @@ class MainDrawer extends StatelessWidget {
             await active_actions.refreshActivePlanFromCatalog(actionContext);
           },
         ),
-        _DrawerTile(
-          icon: Icons.delete,
-          title: localizations.libraryDelete,
-          enabled: hasActivePlan,
-          disabledTooltip: localizations.requiresActivePlan,
-          onTap: () async {
-            final actionContext = Navigator.of(
-              context,
-              rootNavigator: true,
-            ).context;
-            Navigator.pop(context);
-            await active_actions.deleteActivePlan(actionContext);
-          },
-        ),
         const Divider(),
         if (canShowInstallEntry)
           _DrawerTile(

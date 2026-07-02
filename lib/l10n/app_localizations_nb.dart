@@ -1230,6 +1230,10 @@ class AppLocalizationsNb extends AppLocalizations {
       'Kan ikke slette eneste plan. Endre navn eller legg til en ny først.';
 
   @override
+  String get cannotDeleteActivePlan =>
+      'Åpne en annen plan først, og slett så denne.';
+
+  @override
   String get libraryMigrationNotice =>
       'Bibliotek og katalog er nytt. Den eksisterende planen din er flyttet til Standardplan og er fortsatt aktiv.';
 

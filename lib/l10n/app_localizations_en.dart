@@ -1234,6 +1234,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Can\'t delete your last plan. Rename it or add a new one first.';
 
   @override
+  String get cannotDeleteActivePlan =>
+      'Open a different plan first, then delete this one.';
+
+  @override
   String get libraryMigrationNotice =>
       'Library and catalog are new. Your existing plan has been moved to Default plan and is still active.';
 

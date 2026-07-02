@@ -458,9 +458,13 @@ class _LibraryBodyState extends State<_LibraryBody>
 
   Future<bool> _confirmDelete(BuildContext context, Program program) async {
     final localizations = context.l10n;
-    if (_programService.activeProgramUuid == program.uuid &&
-        ExerciseService().isStarted) {
-      _showSnackBar(context, localizations.libraryCannotSwitchRunning);
+    // Deleting the active plan would leave nothing active for the app to
+    // fall back on — require the user to explicitly activate a different
+    // plan first (which itself refuses while an exercise is running, via
+    // _activate's own ExerciseService guard) rather than the app silently
+    // picking one, or worse, leaving activeProgramUuid pointing at nothing.
+    if (_programService.activeProgramUuid == program.uuid) {
+      _showSnackBar(context, localizations.cannotDeleteActivePlan);
       return false;
     }
     // Per ADR-0038 the library always keeps at least one plan

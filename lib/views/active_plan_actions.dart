@@ -14,11 +14,9 @@ import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
-import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
-import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/download_all_plans_dialog.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/export_plan_dialog.dart';
@@ -66,46 +64,6 @@ Future<void> renameActivePlan(BuildContext context) async {
     return;
   }
   await renamePlan(context, program);
-}
-
-/// Show the delete-confirmation dialog for [program] and remove it from the
-/// library when confirmed. Refuses with a snackbar if the program is active
-/// and an exercise is currently running.
-Future<void> deletePlan(BuildContext context, Program program) async {
-  final localizations = context.l10n;
-  final programService = ProgramService();
-  if (programService.activeProgramUuid == program.uuid &&
-      ExerciseService().isStarted) {
-    _showSnackBar(context, localizations.libraryCannotSwitchRunning);
-    return;
-  }
-  // Per ADR-0038 the library always keeps at least one plan around.
-  // Refuse with a snackbar before the destructive-confirm dialog so
-  // the user knows what they need to do instead.
-  if (programService.listPrograms().length <= 1) {
-    _showSnackBar(context, localizations.cannotDeleteLastPlan);
-    return;
-  }
-  final confirmed = await confirmDestructive(
-    context,
-    title: localizations.confirm,
-    message: localizations.confirmDeleteExercise,
-    confirmLabel: localizations.delete,
-  );
-  if (!confirmed) return;
-  await programService.deleteProgram(program.uuid);
-}
-
-/// Convenience wrapper that deletes the currently active plan. Used by the
-/// drawer's delete entry; shows a snackbar when there is no active plan.
-Future<void> deleteActivePlan(BuildContext context) async {
-  final localizations = AppLocalizations.of(context)!;
-  final program = ProgramService().activeProgram;
-  if (program == null) {
-    _showSnackBar(context, localizations.requiresActivePlan);
-    return;
-  }
-  await deletePlan(context, program);
 }
 
 /// Pulls the latest version of a catalog-sourced [program] and merges it

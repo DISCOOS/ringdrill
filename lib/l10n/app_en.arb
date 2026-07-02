@@ -1176,6 +1176,10 @@
   "@cannotDeleteLastPlan": {
     "description": "Snackbar shown when the user tries to delete their only remaining plan. Per ADR-0038 the app always keeps at least one plan around."
   },
+  "cannotDeleteActivePlan": "Open a different plan first, then delete this one.",
+  "@cannotDeleteActivePlan": {
+    "description": "Snackbar shown when the user tries to delete the currently active plan. Deleting it would leave no plan active, so another plan must be activated first."
+  },
   "libraryMigrationNotice": "Library and catalog are new. Your existing plan has been moved to Default plan and is still active.",
   "installedAndActivated": "Installed and activated {name}",
   "openedAndActivated": "Opened {name}",

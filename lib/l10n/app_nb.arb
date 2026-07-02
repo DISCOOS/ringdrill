@@ -347,6 +347,7 @@
   "publishAsActivePlan": "Publiser som...",
   "defaultPlanName": "Ny plan",
   "cannotDeleteLastPlan": "Kan ikke slette eneste plan. Endre navn eller legg til en ny først.",
+  "cannotDeleteActivePlan": "Åpne en annen plan først, og slett så denne.",
   "libraryMigrationNotice": "Bibliotek og katalog er nytt. Den eksisterende planen din er flyttet til Standardplan og er fortsatt aktiv.",
   "installedAndActivated": "Installert og aktivert {name}",
   "openedAndActivated": "Åpnet {name}",
