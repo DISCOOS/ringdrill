@@ -8,12 +8,3 @@ export const LANGUAGE_NAMES: Record<string, string> = {
   nb: 'Norsk',
   en: 'English',
 };
-
-/**
- * Distinct, sorted language codes actually present across `items`. Nulls
- * (plan has no language set) are excluded — the filter's "All languages"
- * option covers those, not a per-code entry.
- */
-export function distinctLanguageCodes(items: { languageCode: string | null }[]): string[] {
-  return [...new Set(items.map((i) => i.languageCode).filter((c): c is string => Boolean(c)))].sort();
-}

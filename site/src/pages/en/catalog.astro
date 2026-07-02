@@ -8,7 +8,7 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import CatalogCard from '../../components/CatalogCard.astro';
 import { fetchCatalog } from '../../lib/catalog';
-import { distinctLanguageCodes, LANGUAGE_NAMES } from '../../lib/languages';
+import { LANGUAGE_NAMES } from '../../lib/languages';
 import { t } from '../../i18n';
 
 const lang = 'en';
@@ -16,7 +16,15 @@ const c = t(lang);
 
 const apiBase = import.meta.env.PUBLIC_RINGDRILL_API_BASE || 'https://api.ringdrill.app';
 const result = await fetchCatalog({ apiBase });
-const languageCodes = distinctLanguageCodes(result.items);
+// Static, not derived from the current result set: the filter always
+// offers every language the app itself supports (ADR-0007), so it is
+// never hidden or missing an option just because nobody has published in
+// that language yet. Selecting one still only narrows to items that
+// declare it (plus items with no language set, which always stay
+// visible) -- an empty result for a given language is a legitimate,
+// informative "nobody has published in this language yet", not a sign
+// the control is broken.
+const languageCodes = Object.keys(LANGUAGE_NAMES);
 
 // Mirrors market-feed.js's own max-age=30 so Cloudflare's edge absorbs
 // repeat traffic instead of re-fetching the feed on every visit.
@@ -42,18 +50,16 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
                 placeholder={c.catalog.searchPlaceholder}
                 aria-label={c.catalog.searchPlaceholder}
               />
-              {languageCodes.length > 1 && (
-                <select
-                  class="catalog__language-filter"
-                  id="catalog-language-filter"
-                  aria-label={c.catalog.languageFilterLabel}
-                >
-                  <option value="">{c.catalog.allLanguages}</option>
-                  {languageCodes.map((code) => (
-                    <option value={code}>{LANGUAGE_NAMES[code] ?? code}</option>
-                  ))}
-                </select>
-              )}
+              <select
+                class="catalog__language-filter"
+                id="catalog-language-filter"
+                aria-label={c.catalog.languageFilterLabel}
+              >
+                <option value="">{c.catalog.allLanguages}</option>
+                {languageCodes.map((code) => (
+                  <option value={code}>{LANGUAGE_NAMES[code] ?? code}</option>
+                ))}
+              </select>
             </div>
           )}
         </div>
