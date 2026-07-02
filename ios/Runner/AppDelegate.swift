@@ -33,6 +33,16 @@ import flutter_local_notifications
     override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
       // Handle Share Extension (ringdrill://import)
       if url.scheme == "ringdrill", url.host == "import" {
+        // A shared ringdrill.app link (Web Share API, "Share" on a chat
+        // link, etc.) rides along as a query param — see
+        // ShareViewController.launchMainApp. No App-Group file round-trip
+        // needed for a link, unlike the .drill file case below.
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+           let link = components.queryItems?.first(where: { $0.name == "link" })?.value {
+          methodChannel?.invokeMethod("onSharedLink", arguments: link)
+          return true
+        }
+
         let fileManager = FileManager.default
         if let sharedURL = fileManager
             .containerURL(forSecurityApplicationGroupIdentifier: "group.app.ringdrill.shared")?

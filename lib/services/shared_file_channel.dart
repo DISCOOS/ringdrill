@@ -34,6 +34,15 @@ class SharedFileChannel {
           _controller.add(file);
 
           break;
+        case 'onSharedLink':
+          final String raw = call.arguments;
+          final uri = Uri.tryParse(raw);
+          if (uri == null) {
+            Sentry.captureMessage('[shared_file] Invalid shared link: $raw');
+            return;
+          }
+          _linkController.add(uri);
+          break;
         case 'onSharedFileError':
           Sentry.captureMessage(
             '[shared_file] Error receiving file: ${call.arguments}',
@@ -44,6 +53,13 @@ class SharedFileChannel {
   }
 
   final StreamController<File> _controller = StreamController<File>.broadcast();
+  final StreamController<Uri> _linkController =
+      StreamController<Uri>.broadcast();
 
   Stream<File> get files => _controller.stream;
+
+  /// Shared `ringdrill.app/i/…` or `/o/…` links (e.g. a "Share" on a chat
+  /// link, or the Web Share API on the catalog page) that arrived via the
+  /// OS share sheet rather than as a real `.drill` file.
+  Stream<Uri> get links => _linkController.stream;
 }

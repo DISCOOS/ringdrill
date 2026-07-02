@@ -658,6 +658,17 @@ class ProgramService {
     bool activate = false,
   }) async {
     final download = await client.download(item.slug);
+    return installFromCatalogFile(item, download, activate: activate);
+  }
+
+  /// Same as [installFromCatalog], but for a caller that already downloaded
+  /// the blob (e.g. a bottom sheet offering both "Open" and "Import" off a
+  /// single fetch of a shared `/i/<slug>` link — see `install_link_handler`).
+  Future<Program> installFromCatalogFile(
+    MarketFeedItem item,
+    DrillDownloadResponse download, {
+    bool activate = false,
+  }) async {
     final installed = await installFromFile(download.file, activate: activate);
     final catalogProgram = installed.copyWith(
       source: ProgramSource.catalog(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as path;
@@ -15,6 +17,20 @@ class SharedFileWidget extends StatefulWidget {
 
 class _SharedFileWidgetState extends State<SharedFileWidget> {
   final handled = <File>[];
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _linkSubscription = SharedFileChannel().links.listen(_handleSharedLink);
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
@@ -37,5 +53,21 @@ class _SharedFileWidgetState extends State<SharedFileWidget> {
         GoRouter.of(context).go(path.normalize('/o/${file.path}'));
       });
     }
+  }
+
+  void _handleSharedLink(Uri uri) {
+    // No dedup guard here (unlike _handleDrillFile's `handled` list): this
+    // callback is wired via StreamSubscription.listen(), which delivers each
+    // native event exactly once, so there is no rebuild-multiplication risk
+    // to guard against. A Set-based guard would (and did) permanently
+    // blacklist a link after its first use for the life of the app process,
+    // silently no-opping a legitimate re-share/reinstall of the same plan.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Reuses the same /i/:slug and /o/ handling app_router.dart already
+      // wires up for App Links, so a link shared via the OS share sheet
+      // installs/opens exactly like tapping the link directly.
+      GoRouter.of(context).go(uri.path);
+    });
   }
 }

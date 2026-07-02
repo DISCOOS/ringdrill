@@ -10,6 +10,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as path;
+import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
@@ -22,7 +24,6 @@ import 'package:ringdrill/views/main_screen.dart';
 import 'package:ringdrill/views/open_file_widget.dart';
 import 'package:ringdrill/views/shell/deep_link_launchers.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
-import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/web/platform_widget.dart'
     if (dart.library.io) 'package:ringdrill/views/platform_widget.dart';
 import 'package:universal_io/io.dart';
@@ -549,17 +550,17 @@ void _showOpenFileBottomSheet(
   required String location,
   required String filePath,
 }) {
-  showRingdrillActionSheet<void>(
-    context: context,
-    builder: (context) {
-      // REMEMBER! OpenFileWidget
-      // requires a ProgramPageController
-      // instance to exist in the widget tree
-      return OpenFileWidget(
-        file: File(filePath),
-        location: location,
-        isOnline: false,
-      );
-    },
+  // REMEMBER! OpenFileWidget requires a ProgramPageController instance to
+  // exist in the widget tree.
+  showOpenFileBottomSheet(
+    context,
+    OpenFileWidget(
+      fileName: path.basename(filePath),
+      loadFile: () async => DrillFile.fromFile(File(filePath)),
+      openProgram: (file) =>
+          ProgramService().installFromFile(file, activate: true),
+      location: location,
+      isOnline: false,
+    ),
   );
 }

@@ -72,6 +72,28 @@ class MainActivity : FlutterActivity() {
                 "hasExtra=${intent.hasExtra(Intent.EXTRA_STREAM)} " +
                 "clipDataCount=${intent.clipData?.itemCount ?: 0} data=${intent.data}")
 
+        // 0) A "Share" from Messenger/Chrome/etc. on a ringdrill.app link (e.g.
+        // the Web Share API call on the catalog page, or "Share" on a chat
+        // link) arrives as ACTION_SEND with the URL in EXTRA_TEXT, not as a
+        // file stream. Route it to Flutter as a link so the normal /i/<slug>
+        // install flow runs. Without this, execution fell through to the
+        // EXTRA_STREAM/clipData handling below, which would pick up whatever
+        // unrelated content:// URI the sharing app happened to attach (e.g. a
+        // link-preview thumbnail) and copy it into a bogus "shared.drill".
+        if (intent.action == Intent.ACTION_SEND && !intent.hasExtra(Intent.EXTRA_STREAM)) {
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+            val link = extractRingDrillLink(text)
+            if (link != null) {
+                Log.d("RingDrillShare", "Resolved shared link: $link")
+                methodChannel.invokeMethod("onSharedLink", link)
+                return
+            }
+            if ((intent.type ?: "").startsWith("text/")) {
+                Log.w("RingDrillShare", "Text share with no RingDrill link, ignoring: $text")
+                return
+            }
+        }
+
         // 1) Try ACTION_SEND: EXTRA_STREAM
         val fromExtra: Uri? = if (intent.action == Intent.ACTION_SEND)
             intent.getParcelableExtra(Intent.EXTRA_STREAM) else null
@@ -117,11 +139,29 @@ class MainActivity : FlutterActivity() {
                     Log.d("RingDrillShare", "Copying to: ${tempFile.absolutePath}")
                     inputStream.use { ins -> FileOutputStream(tempFile).use { outs -> ins.copyTo(outs) } }
 
+                    // Guard against copying something that isn't actually a
+                    // .drill archive (e.g. a stray content:// URI the sender
+                    // attached alongside shared text). Fail fast here with a
+                    // clear error instead of handing Flutter a file named
+                    // "shared.drill" that will only fail deep inside the ZIP
+                    // parser with a confusing message.
+                    if (!looksLikeZip(tempFile)) {
+                        Log.w("RingDrillShare", "Copied content is not a ZIP, ignoring: ${tempFile.absolutePath}")
+                        tempFile.delete()
+                        methodChannel.invokeMethod("onSharedFileError", "Not a valid .drill file")
+                        return
+                    }
+
                     methodChannel.invokeMethod("onSharedFilePath", tempFile.absolutePath)
                     Log.d("RingDrillShare", "Sent to Flutter: ${tempFile.absolutePath}")
                 }
                 "file" -> {
                     val file = uri.toFile()
+                    if (!looksLikeZip(file)) {
+                        Log.w("RingDrillShare", "File is not a ZIP, ignoring: ${file.absolutePath}")
+                        methodChannel.invokeMethod("onSharedFileError", "Not a valid .drill file")
+                        return
+                    }
                     methodChannel.invokeMethod("onSharedFilePath", file.absolutePath)
                     Log.d("RingDrillShare", "Sent to Flutter: ${file.absolutePath}")
                 }
@@ -132,6 +172,29 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             Log.e("RingDrillShare", "Error handling shared file", e)
             methodChannel.invokeMethod("onSharedFileError", e.message ?: "Unknown error")
+        }
+    }
+
+    // Pull a ringdrill.app /i/ or /o/ link out of shared text (Web Share API,
+    // "Share" on a chat link, etc). /d/ is excluded: it is the raw-download
+    // alias and has no corresponding in-app route.
+    private fun extractRingDrillLink(text: String?): String? {
+        if (text.isNullOrBlank()) return null
+        val match = Regex("""https://ringdrill\.app/(?:i|o)/\S+""").find(text) ?: return null
+        return match.value.trimEnd('.', ',', ')', ']', '"', '\'')
+    }
+
+    // Cheap magic-byte sniff: every ZIP (and therefore every .drill archive)
+    // starts with the "PK" signature. Catches junk copied from an unrelated
+    // content:// URI before it reaches Flutter's ZIP parser.
+    private fun looksLikeZip(file: File): Boolean {
+        return try {
+            file.inputStream().use { ins ->
+                val header = ByteArray(2)
+                ins.read(header) == 2 && header[0] == 0x50.toByte() && header[1] == 0x4B.toByte()
+            }
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -147,6 +210,16 @@ class MainActivity : FlutterActivity() {
                 // Scrub so Flutter/go_router doesn’t treat it as an initial route
                 src.data = null
                 src.clipData = null
+            }
+        } else if (src?.action == Intent.ACTION_SEND) {
+            // ACTION_SEND has no `data` to scrub, but still needs to be
+            // stashed: configureFlutterEngine()'s cold-start branch only
+            // calls handleSharedFile() when pendingFileIntent is non-null.
+            // Without this, a cold-started app (process killed, then
+            // relaunched by tapping a shared link/file) never processes the
+            // share at all — the app opens, but the content is dropped.
+            if (pendingFileIntent == null) {
+                pendingFileIntent = Intent(src)
             }
         }
     }

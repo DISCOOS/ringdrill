@@ -2,25 +2,48 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path/path.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:universal_io/io.dart';
+
+/// Shows [OpenFileWidget] in the app's standard action-sheet chrome. Shared
+/// by the `/o/<path>` (local file) and `/i/<slug>` (catalog link) redirect
+/// handlers so both offer the same Open/Import choice.
+void showOpenFileBottomSheet(BuildContext context, OpenFileWidget sheet) {
+  showRingdrillActionSheet<void>(context: context, builder: (_) => sheet);
+}
 
 class OpenFileWidget extends StatelessWidget {
   const OpenFileWidget({
     super.key,
-    required this.file,
+    required this.fileName,
+    required this.loadFile,
+    required this.openProgram,
     required this.isOnline,
     required this.location,
   });
 
-  final File file;
+  /// Display name shown in the sheet title (e.g. `foo.drill` or
+  /// `<slug>.drill`) — does not need to be an on-disk path.
+  final String fileName;
+
+  /// Lazily produces the [DrillFile] to open/import. Deferred to button-tap
+  /// time (mirroring the previous local-file behavior) rather than eagerly
+  /// awaited before the sheet renders — for a `/i/<slug>` catalog link this
+  /// is a network download, and the sheet should appear immediately.
+  final Future<DrillFile> Function() loadFile;
+
+  /// Installs [file] as the active program. Local `/o/` files use plain
+  /// `installFromFile`; catalog `/i/` links use `installFromCatalogFile` so
+  /// the result keeps its catalog-source tag (slug/etag) for later refresh.
+  final Future<Program> Function(DrillFile file) openProgram;
+
   final bool isOnline;
   final String location;
 
@@ -42,7 +65,7 @@ class OpenFileWidget extends StatelessWidget {
           // Title
           Center(
             child: Text(
-              '${localizations.programFile} ${basename(file.path)}',
+              '${localizations.programFile} $fileName',
               style: Theme.of(context).textTheme.headlineSmall,
               overflow: TextOverflow.ellipsis,
             ),
@@ -73,13 +96,13 @@ class OpenFileWidget extends StatelessWidget {
               ElevatedButton(
                 child: Text(localizations.open),
                 onPressed: () {
-                  _handleOpenFile(context, localizations, file);
+                  _handleOpenFile(context, localizations);
                 },
               ),
               ElevatedButton(
                 child: Text(localizations.import),
                 onPressed: () {
-                  _handleImportFile(context, localizations, file);
+                  _handleImportFile(context, localizations);
                 },
               ),
             ],
@@ -92,9 +115,8 @@ class OpenFileWidget extends StatelessWidget {
   void _handleOpenFile(
     BuildContext context,
     AppLocalizations localizations,
-    File file,
   ) async {
-    final name = basename(file.path);
+    final name = fileName;
     // Snapshot the messenger and router BEFORE the sheet is popped. The
     // sheet's BuildContext becomes deactivated on pop, and any snackbar
     // we'd then post via `ScaffoldMessenger.of(context)` would either
@@ -113,10 +135,7 @@ class OpenFileWidget extends StatelessWidget {
     if (navigator.canPop()) navigator.pop();
 
     try {
-      final program = await ProgramService().installFromFile(
-        DrillFile.fromFile(file),
-        activate: true,
-      );
+      final program = await openProgram(await loadFile());
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
@@ -158,9 +177,8 @@ class OpenFileWidget extends StatelessWidget {
   void _handleImportFile(
     BuildContext context,
     AppLocalizations localizations,
-    File file,
   ) async {
-    final name = basename(file.path);
+    final name = fileName;
     // See _handleOpenFile for why the messenger and navigator are
     // snapshotted before any pop. Import has the added wrinkle of
     // selectExercises, which itself wants a live context — so we keep
@@ -172,7 +190,7 @@ class OpenFileWidget extends StatelessWidget {
     try {
       final program = await ProgramService().importProgram(
         localizations,
-        DrillFile.fromFile(file),
+        await loadFile(),
         onSelect: (items) async {
           final selected = await ProgramPageControllerBase.selectExercises(
             context,
