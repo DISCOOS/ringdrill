@@ -87,6 +87,37 @@ export function keysFor({ ownerId, programId, version }) {
 export function sha256Hex(buf) { return crypto.createHash("sha256").update(buf).digest("hex"); }
 export function toStrongEtag(hex) { return `"${hex}"`; }
 
+/* ---------- Catalog projection (ADR-0040) ---------- */
+
+// The latest (highest-versioned) entry in a meta.json `versions` array, or
+// null when there are none. Shared so the feed and metaToFeedItem agree on
+// what "latest" means.
+export function latestVersionEntry(versions) {
+    if (!Array.isArray(versions) || versions.length === 0) return null;
+    return versions.slice().sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true })).pop();
+}
+
+// Project a stored meta.json blob into the public catalog item shape.
+// Single source of truth for the feed / per-slug meta contract (ADR-0040).
+// All derived fields degrade gracefully for legacy blobs written before
+// ADR-0040 (missing exerciseCount → null, author → ownerId, accessPolicy →
+// public for anon plans else account, per ADR-0025).
+export function metaToFeedItem(meta, { origin }) {
+    const latest = latestVersionEntry(meta.versions);
+    return {
+        programId: meta.programId,
+        slug: meta.slug,
+        name: meta.name,
+        description: typeof meta.description === "string" ? meta.description : "",
+        exerciseCount: Number.isInteger(meta.exerciseCount) ? meta.exerciseCount : null,
+        author: meta.author ?? meta.ownerId ?? null,
+        accessPolicy: meta.accessPolicy ?? (meta.ownerId === "anon" ? "public" : "account"),
+        tags: Array.isArray(meta.tags) ? meta.tags : [],
+        latestUrl: `${origin}/d/${meta.slug}`,
+        updatedAt: latest?.updatedAt || null,
+    };
+}
+
 export function sanitizeSlug(s) {
     return (s || "").toLowerCase().trim()
         .replace(/\s+/g, "-")
