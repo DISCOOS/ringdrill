@@ -2,11 +2,38 @@ import { describe, expect, it } from 'vitest';
 import { strFromU8, unzipSync } from 'fflate';
 import {
   buildExport,
+  clearFlutterData,
   countPrograms,
   exportFileName,
   hasFlutterData,
+  ringdrillKeys,
   sanitizeSlug,
 } from './migrate';
+
+/** Minimal in-memory `Storage` for exercising `clearFlutterData`. */
+function fakeStorage(seed: Record<string, string>): Storage {
+  const map = new Map(Object.entries(seed));
+  return {
+    get length() {
+      return map.size;
+    },
+    key(i: number): string | null {
+      return [...map.keys()][i] ?? null;
+    },
+    getItem(k: string): string | null {
+      return map.has(k) ? map.get(k)! : null;
+    },
+    setItem(k: string, v: string): void {
+      map.set(k, v);
+    },
+    removeItem(k: string): void {
+      map.delete(k);
+    },
+    clear(): void {
+      map.clear();
+    },
+  } as Storage;
+}
 
 /**
  * Build a fake localStorage snapshot with `count` programs, each holding a
@@ -56,6 +83,52 @@ describe('hasFlutterData', () => {
 
   it('ignores unrelated keys', () => {
     expect(hasFlutterData({ 'theme': 'dark', 'other:thing': '1' })).toBe(false);
+  });
+});
+
+describe('ringdrillKeys', () => {
+  it('lists every library key, prefixed or bare', () => {
+    const store = {
+      ...fakeStore([PROGRAMS[0]]),
+      'flutter.pt:prog-alpha:team-1': '{}',
+      'flutter.app:librarySchema:v1': '1',
+      'theme': 'dark',
+      'other:thing': '1',
+    };
+    expect(ringdrillKeys(store).sort()).toEqual(
+      [
+        'p:prog-alpha',
+        'pe:prog-alpha:ex-a1',
+        'flutter.pt:prog-alpha:team-1',
+        'flutter.app:librarySchema:v1',
+      ].sort(),
+    );
+  });
+});
+
+describe('clearFlutterData', () => {
+  it('removes library keys and leaves unrelated keys intact', () => {
+    const storage = fakeStorage({
+      ...fakeStore(PROGRAMS),
+      'flutter.app:librarySchema:v1': '1',
+      'theme': 'dark',
+      'consent:analytics': 'false',
+    });
+
+    const removed = clearFlutterData(storage);
+
+    expect(removed).toBe(PROGRAMS.length * 2 + 1);
+    expect(storage.getItem('theme')).toBe('dark');
+    expect(storage.getItem('consent:analytics')).toBe('false');
+    expect(storage.getItem('p:prog-alpha')).toBeNull();
+    expect(storage.getItem('flutter.app:librarySchema:v1')).toBeNull();
+    expect(storage.length).toBe(2);
+  });
+
+  it('returns 0 when there is nothing to clear', () => {
+    const storage = fakeStorage({ theme: 'dark' });
+    expect(clearFlutterData(storage)).toBe(0);
+    expect(storage.length).toBe(1);
   });
 });
 

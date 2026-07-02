@@ -90,6 +90,29 @@ function stripPrefix(key: string): string {
   return key.startsWith(FLUTTER_PREFIX) ? key.slice(FLUTTER_PREFIX.length) : key;
 }
 
+/** `p*:` key prefixes that make up a stored program library (see header). */
+const RINGDRILL_KEY_PREFIXES = [
+  'p:',
+  'pe:',
+  'pem:',
+  'pt:',
+  'ps:',
+  'pr:',
+  'prm:',
+  'pa:',
+  'pan:',
+  'pgm:',
+];
+
+/** Standalone marker keys the Flutter PWA writes alongside the library. */
+const RINGDRILL_KEY_MARKERS = new Set(['app:librarySchema:v1']);
+
+/** True if a prefix-stripped key belongs to RingDrill's stored library. */
+function isRingdrillKey(strippedKey: string): boolean {
+  if (RINGDRILL_KEY_MARKERS.has(strippedKey)) return true;
+  return RINGDRILL_KEY_PREFIXES.some((prefix) => strippedKey.startsWith(prefix));
+}
+
 /** Normalise entries: strip the `flutter.` prefix from every key. */
 function normalise(entries: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
@@ -101,19 +124,33 @@ function normalise(entries: Record<string, string>): Record<string, string> {
 
 /** True if the store holds any Flutter library data worth migrating. */
 export function hasFlutterData(entries: Record<string, string>): boolean {
-  const normalised = normalise(entries);
-  for (const key of Object.keys(normalised)) {
-    if (key === 'app:librarySchema:v1') return true;
-    if (
-      key.startsWith('p:') ||
-      key.startsWith('pe:') ||
-      key.startsWith('pt:') ||
-      key.startsWith('ps:')
-    ) {
-      return true;
-    }
+  return Object.keys(entries).some((key) => isRingdrillKey(stripPrefix(key)));
+}
+
+/**
+ * The original (unstripped) keys in `entries` that belong to RingDrill's
+ * stored library. Unrelated keys (theme, analytics consent, …) are left out.
+ */
+export function ringdrillKeys(entries: Record<string, string>): string[] {
+  return Object.keys(entries).filter((key) => isRingdrillKey(stripPrefix(key)));
+}
+
+/**
+ * Remove every RingDrill program-library key from `storage`, leaving
+ * unrelated keys untouched. Returns the number of keys removed.
+ *
+ * Keys are collected before removal so the live index does not shift
+ * mid-iteration.
+ */
+export function clearFlutterData(storage: Storage): number {
+  const keys: string[] = [];
+  for (let i = 0; i < storage.length; i++) {
+    const key = storage.key(i);
+    if (key === null) continue;
+    if (isRingdrillKey(stripPrefix(key))) keys.push(key);
   }
-  return false;
+  for (const key of keys) storage.removeItem(key);
+  return keys.length;
 }
 
 function groupPrograms(entries: Record<string, string>): ProgramGroup[] {
