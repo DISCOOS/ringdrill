@@ -3,11 +3,13 @@
 Efficient station-based training. Organize, run and track drills with ease. 
 
 [![Google Play](https://playbadges.pavi2410.me/badge/full?id=org.discoos.ringdrill)](https://play.google.com/store/apps/details?id=org.discoos.ringdrill)
+[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/no/app/ringdrill-app/id6777269410)
 
 ## Online version
-[![Netlify Status](https://api.netlify.com/api/v1/badges/1da1f642-4138-499f-8e22-6679dfddd3cd/deploy-status)](https://app.netlify.com/projects/ringdrill/deploys) 
+[![Deploy PWA](https://github.com/DISCOOS/ringdrill/actions/workflows/deploy-pwa.yml/badge.svg)](https://github.com/DISCOOS/ringdrill/actions/workflows/deploy-pwa.yml)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/1da1f642-4138-499f-8e22-6679dfddd3cd/deploy-status)](https://app.netlify.com/projects/ringdrill/deploys)
 
-Live web-version is available on https://ringdrill.app
+Live web-version is available on https://web.ringdrill.app
 
 ## Documentation
 
