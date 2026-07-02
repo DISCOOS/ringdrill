@@ -17,6 +17,7 @@ import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/picker_error_banner.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:share_plus/share_plus.dart';
@@ -148,27 +149,35 @@ class _LibraryBodyState extends State<_LibraryBody>
   Widget _buildMyPlans(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final programs = _programService.listPrograms();
-    return Column(
-      children: [
-        Expanded(
-          child: programs.isEmpty
-              ? EmptyState(
-                  icon: Icons.folder_open_outlined,
-                  text: localizations.libraryEmptyMyPlans,
-                )
-              : _buildMyPlansList(context, localizations, programs),
-        ),
-        TabFooter(
-          subtitle: localizations.libraryMyPlansSubtitle,
-          trailing: IconButton(
-            icon: const Icon(Icons.download_outlined),
-            tooltip: localizations.libraryExportAll,
-            onPressed: programs.isEmpty
-                ? null
-                : () => active_actions.downloadAllPlans(context),
+    // Match the picker sheets (select_plans_dialog.dart,
+    // ProgramPageControllerBase.selectExercises): ExpandableTile cards use
+    // the default card surface, which only contrasts against a lighter
+    // scaffold behind it. Paint the tab body with the scaffold colour so
+    // "Mine planer" reads with the same card contrast as the pickers.
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          Expanded(
+            child: programs.isEmpty
+                ? EmptyState(
+                    icon: Icons.folder_open_outlined,
+                    text: localizations.libraryEmptyMyPlans,
+                  )
+                : _buildMyPlansList(context, localizations, programs),
           ),
-        ),
-      ],
+          TabFooter(
+            subtitle: localizations.libraryMyPlansSubtitle,
+            trailing: IconButton(
+              icon: const Icon(Icons.download_outlined),
+              tooltip: localizations.libraryExportAll,
+              onPressed: programs.isEmpty
+                  ? null
+                  : () => active_actions.downloadAllPlans(context),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -210,7 +219,9 @@ class _LibraryBodyState extends State<_LibraryBody>
           ),
           confirmDismiss: (_) => _confirmDelete(context, program),
           onDismissed: (_) => _deleteProgram(program),
-          child: ListTile(
+          child: ExpandableTile(
+            // Radio icon, not the picker's Switch: this list is
+            // single-select (which plan is active), not multi-select.
             leading: Icon(
               isActive
                   ? Icons.radio_button_checked
@@ -224,7 +235,8 @@ class _LibraryBodyState extends State<_LibraryBody>
                     mainAxisSize: MainAxisSize.min,
                     children: trailingChildren,
                   ),
-            onTap: () => _activate(context, program.uuid, closeOnSuccess: true),
+            onOpen: () =>
+                _activate(context, program.uuid, closeOnSuccess: true),
             onLongPress: () => _showPlanActions(context, program),
           ),
         );
@@ -269,9 +281,9 @@ class _LibraryBodyState extends State<_LibraryBody>
                     Text(
                       localizations.importGuideHint,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.primary,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: colors.primary),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -296,8 +308,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                     const SizedBox(height: 20),
                     PickerErrorBanner(
                       message: _fromFileError!,
-                      onDismiss: () =>
-                          setState(() => _fromFileError = null),
+                      onDismiss: () => setState(() => _fromFileError = null),
                     ),
                   ],
                   if (_fromFileBundleResult != null) ...[
@@ -332,7 +343,6 @@ class _LibraryBodyState extends State<_LibraryBody>
         .whereType<String>()
         .toSet();
   }
-
 
   Future<void> _activate(
     BuildContext context,
@@ -708,4 +718,3 @@ class _BundleResultBanner extends StatelessWidget {
     );
   }
 }
-

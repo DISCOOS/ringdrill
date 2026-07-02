@@ -4,6 +4,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
 
 /// Builds the widget shown in the [ListTile.trailing] slot for one catalog
 /// item. Return `null` to render no trailing affordance.
@@ -106,92 +107,105 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              _reload();
-              await _feed;
-            },
-            child: FutureBuilder<MarketFeedPageResponse>(
-              future: _feed,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final currentState = _catalogStatus.value.state;
-                if (currentState == CatalogServiceState.unavailable ||
-                    currentState == CatalogServiceState.corsBlocked) {
-                  return ListView(
-                    children: [
-                      const SizedBox(height: 80),
-                      EmptyState(
-                        icon: Icons.cloud_off,
-                        text: localizations.libraryErrorLoad,
-                      ),
-                    ],
-                  );
-                }
-                final allItems =
-                    snapshot.data?.items ?? const <MarketFeedItem>[];
-                final filter = widget.itemFilter;
-                final items = filter == null
-                    ? allItems
-                    : allItems.where(filter).toList(growable: false);
-                if (items.isEmpty) {
-                  return ListView(
-                    children: [
-                      const SizedBox(height: 80),
-                      EmptyState(
-                        icon: Icons.cloud_outlined,
-                        text: localizations.libraryEmptyCatalog,
-                      ),
-                    ],
-                  );
-                }
-                return ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    final installed = widget.installedSlugs.contains(item.slug);
-                    final trailing = widget.trailingBuilder?.call(
-                      context,
-                      item,
-                      installed,
-                    );
-                    return ListTile(
-                      leading: Icon(
-                        installed
-                            ? Icons.cloud_done_outlined
-                            : Icons.cloud_outlined,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      title: Text(item.name),
-                      subtitle: Text(_catalogSubtitle(localizations, item)),
-                      trailing: trailing,
-                      onTap: () => widget.onItemTap(context, item),
-                    );
-                  },
-                );
+    // Match the picker sheets (select_plans_dialog.dart,
+    // ProgramPageControllerBase.selectExercises): ExpandableTile cards use
+    // the default card surface, which only contrasts against a lighter
+    // scaffold behind it. Paint the tab body with the scaffold colour so
+    // "På nett" reads with the same card contrast as the pickers.
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _reload();
+                await _feed;
               },
+              child: FutureBuilder<MarketFeedPageResponse>(
+                future: _feed,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final currentState = _catalogStatus.value.state;
+                  if (currentState == CatalogServiceState.unavailable ||
+                      currentState == CatalogServiceState.corsBlocked) {
+                    return ListView(
+                      children: [
+                        const SizedBox(height: 80),
+                        EmptyState(
+                          icon: Icons.cloud_off,
+                          text: localizations.libraryErrorLoad,
+                        ),
+                      ],
+                    );
+                  }
+                  final allItems =
+                      snapshot.data?.items ?? const <MarketFeedItem>[];
+                  final filter = widget.itemFilter;
+                  final items = filter == null
+                      ? allItems
+                      : allItems.where(filter).toList(growable: false);
+                  if (items.isEmpty) {
+                    return ListView(
+                      children: [
+                        const SizedBox(height: 80),
+                        EmptyState(
+                          icon: Icons.cloud_outlined,
+                          text: localizations.libraryEmptyCatalog,
+                        ),
+                      ],
+                    );
+                  }
+                  return ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final installed = widget.installedSlugs.contains(
+                        item.slug,
+                      );
+                      final trailing = widget.trailingBuilder?.call(
+                        context,
+                        item,
+                        installed,
+                      );
+                      return ExpandableTile(
+                        leading: Icon(
+                          installed
+                              ? Icons.cloud_done_outlined
+                              : Icons.cloud_outlined,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        title: Text(item.name),
+                        subtitle: Text(_catalogSubtitle(localizations, item)),
+                        trailing: trailing,
+                        onOpen: () => widget.onItemTap(context, item),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
-        ),
-        TabFooter(
-          subtitle: widget.subtitle,
-          trailing: _CatalogStatusIndicator(
-            status: _catalogStatus.value,
-            onRefresh: _reload,
+          TabFooter(
+            subtitle: widget.subtitle,
+            trailing: _CatalogStatusIndicator(
+              status: _catalogStatus.value,
+              onRefresh: _reload,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _CatalogStatusIndicator extends StatelessWidget {
-  const _CatalogStatusIndicator({required this.status, required this.onRefresh});
+  const _CatalogStatusIndicator({
+    required this.status,
+    required this.onRefresh,
+  });
 
   final CatalogStatus status;
   final VoidCallback onRefresh;
