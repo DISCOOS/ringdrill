@@ -39,7 +39,7 @@ class ProgramPageController extends ProgramPageControllerBase {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       dialogTitle: localizations.openProgram,
-      allowedExtensions: [DrillFile.drillExtension],
+      allowedExtensions: [DrillFile.drillExtension, 'zip'],
     );
 
     if (result == null) return null;
