@@ -44,8 +44,10 @@ function parseExerciseFiles(files) {
 }
 
 // Centroid (simple average) of [lng, lat] pairs. null when there are none —
-// never a fake (0, 0). See ADR-0040's map-center addendum for why this is a
-// single coarse point, not a bounding box or per-station detail.
+// never a fake (0, 0). Now used mainly as the reverse-geocode input for
+// `place` — the card itself renders `mapBounds`, not this point (see
+// ADR-0040's bounding-box addendum, which supersedes the original
+// centroid-only map-center addendum).
 function computeMapCenter(positions) {
     if (!positions.length) return null;
     const [sumLng, sumLat] = positions.reduce(
@@ -53,6 +55,62 @@ function computeMapCenter(positions) {
         [0, 0],
     );
     return { lat: sumLat / positions.length, lng: sumLng / positions.length };
+}
+
+// Bounding box (min/max lat/lng) of [lng, lat] pairs. null when there are
+// none — never a degenerate {0,0,0,0} box. See ADR-0040's bounding-box
+// addendum: this is what the catalog card actually renders (fitBounds +
+// a rectangle), not `mapCenter`.
+function computeMapBounds(positions) {
+    if (!positions.length) return null;
+    let north = -Infinity, south = Infinity, east = -Infinity, west = Infinity;
+    for (const [lng, lat] of positions) {
+        if (lat > north) north = lat;
+        if (lat < south) south = lat;
+        if (lng > east) east = lng;
+        if (lng < west) west = lng;
+    }
+    return { north, south, east, west };
+}
+
+// Identifying User-Agent required by Nominatim's usage policy
+// (https://operations.osmfoundation.org/policies/nominatim/).
+const NOMINATIM_USER_AGENT = "RingDrill/1.0 (+https://ringdrill.app)";
+
+/**
+ * Best-effort reverse geocode of a map center into a coarse place name
+ * (e.g. "Bergen, Norway") via OpenStreetMap's free public Nominatim
+ * instance. `zoom=10` asks for city/town-level granularity, not street- or
+ * house-level. Never throws: network failure, timeout, non-OK response or
+ * an address with nothing usable all degrade to `null` — same "omit, don't
+ * fake" rule the rest of this file follows. See ADR-0040's bounding-box
+ * addendum for the rate-limit/no-autocomplete reasoning that keeps this
+ * call within Nominatim's usage policy (called once per publish, only when
+ * `mapCenter` changed — see the caller).
+ */
+export async function resolvePlaceName(center) {
+    if (!center) return null;
+    try {
+        const url = new URL("https://nominatim.openstreetmap.org/reverse");
+        url.searchParams.set("format", "jsonv2");
+        url.searchParams.set("lat", String(center.lat));
+        url.searchParams.set("lon", String(center.lng));
+        url.searchParams.set("zoom", "10");
+        url.searchParams.set("addressdetails", "1");
+        const res = await fetch(url, {
+            headers: { "User-Agent": NOMINATIM_USER_AGENT, "Accept-Language": "en" },
+            signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) return null;
+        const body = await res.json();
+        const a = body?.address || {};
+        const locality = a.city || a.town || a.village || a.municipality || a.county || null;
+        const country = a.country || null;
+        if (!locality && !country) return null;
+        return [locality, country].filter(Boolean).join(", ");
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -75,15 +133,17 @@ function computeMapCenter(positions) {
  * program.json is missing or malformed.
  *
  * `mapCenter` is the centroid of every positioned station across every
- * exercise file — a single coarse point, not a bounding box or per-station
- * detail (privacy: station coordinates are real-world, often SAR, exercise
- * locations). `null` when no exercise carries a positioned station.
+ * exercise file, used as the reverse-geocode input for `place`. `mapBounds`
+ * is the min/max lat/lng across the same positions — what the catalog card
+ * actually renders (ADR-0040's bounding-box addendum). Both `null` when no
+ * exercise carries a positioned station.
  */
 export function programInfoFromArchive(files) {
     const { count: exerciseCount, positions } = parseExerciseFiles(files);
     const mapCenter = computeMapCenter(positions);
+    const mapBounds = computeMapBounds(positions);
     const entry = files?.["program.json"];
-    if (!entry) return { name: null, description: null, tags: [], exerciseCount, mapCenter };
+    if (!entry) return { name: null, description: null, tags: [], exerciseCount, mapCenter, mapBounds };
     try {
         const p = JSON.parse(strFromU8(entry));
         return {
@@ -92,9 +152,10 @@ export function programInfoFromArchive(files) {
             tags: Array.isArray(p?.tags) ? p.tags : [],
             exerciseCount,
             mapCenter,
+            mapBounds,
         };
     } catch {
-        return { name: null, description: null, tags: [], exerciseCount, mapCenter };
+        return { name: null, description: null, tags: [], exerciseCount, mapCenter, mapBounds };
     }
 }
 
@@ -360,8 +421,30 @@ export default async function (request) {
         currentMeta.description = description;
         currentMeta.published = !!published;
         currentMeta.tags = tags;
+        // ---- Reverse-geocode a coarse place name (ADR-0040 addendum) ----
+        // Captured before mapCenter is overwritten below. Only call out to
+        // Nominatim when the map center actually moved since the last
+        // publish (or there was none stored yet) — an unchanged center
+        // reuses the previously resolved place, keeping this well within
+        // Nominatim's ~1req/s usage policy since it's gated on a human
+        // publish action, not a per-feed-read cost.
+        const prevCenter = currentMeta.mapCenter;
+        let place;
+        if (!program.mapCenter) {
+            place = null;
+        } else {
+            const centerUnchanged = prevCenter
+                && Math.abs(prevCenter.lat - program.mapCenter.lat) < 1e-6
+                && Math.abs(prevCenter.lng - program.mapCenter.lng) < 1e-6;
+            place = (centerUnchanged && currentMeta.place)
+                ? currentMeta.place
+                : await resolvePlaceName(program.mapCenter);
+        }
+
         currentMeta.exerciseCount = program.exerciseCount;
         currentMeta.mapCenter = program.mapCenter;
+        currentMeta.mapBounds = program.mapBounds;
+        currentMeta.place = place;
         currentMeta.languageCode = program.languageCode;
         const { author, accessPolicy } = resolvePublishPolicy({ ownerId });
         currentMeta.author = author;

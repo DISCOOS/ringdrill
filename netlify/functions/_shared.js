@@ -103,7 +103,9 @@ export function latestVersionEntry(versions) {
 // ADR-0040 (missing exerciseCount → null, author → ownerId, accessPolicy →
 // public for anon plans else account, per ADR-0025; missing/malformed
 // mapCenter → null, per ADR-0040's map-center addendum; missing/malformed
-// languageCode → null, per ADR-0007's languageCode addendum).
+// mapBounds/place → null, per ADR-0040's bounding-box addendum;
+// missing/malformed languageCode → null, per ADR-0007's languageCode
+// addendum).
 export function metaToFeedItem(meta, { origin }) {
     const latest = latestVersionEntry(meta.versions);
     return {
@@ -117,6 +119,15 @@ export function metaToFeedItem(meta, { origin }) {
         mapCenter: (meta.mapCenter && Number.isFinite(meta.mapCenter.lat) && Number.isFinite(meta.mapCenter.lng))
             ? { lat: meta.mapCenter.lat, lng: meta.mapCenter.lng }
             : null,
+        mapBounds: (meta.mapBounds
+            && Number.isFinite(meta.mapBounds.north) && Number.isFinite(meta.mapBounds.south)
+            && Number.isFinite(meta.mapBounds.east) && Number.isFinite(meta.mapBounds.west))
+            ? {
+                north: meta.mapBounds.north, south: meta.mapBounds.south,
+                east: meta.mapBounds.east, west: meta.mapBounds.west,
+            }
+            : null,
+        place: (typeof meta.place === "string" && meta.place) ? meta.place : null,
         languageCode: typeof meta.languageCode === "string" ? meta.languageCode : null,
         tags: Array.isArray(meta.tags) ? meta.tags : [],
         latestUrl: `${origin}/d/${meta.slug}`,

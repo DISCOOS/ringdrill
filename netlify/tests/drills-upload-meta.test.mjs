@@ -11,6 +11,7 @@ import { zipSync, strFromU8, unzipSync } from "fflate";
 import {
     programInfoFromArchive,
     resolveCatalogFields,
+    resolvePlaceName,
     resolvePublishPolicy,
     stripActorsAndValidate,
 } from "../functions/drills-upload.js";
@@ -21,16 +22,16 @@ const enc = (obj) => new TextEncoder().encode(JSON.stringify(obj));
 
 test("programInfoFromArchive: reads name, description and tags from program.json", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"] }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"], exerciseCount: 0, mapCenter: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"], exerciseCount: 0, mapCenter: null, mapBounds: null });
 });
 
 test("programInfoFromArchive: missing program.json → nulls and empty tags", () => {
-    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null });
+    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null, mapBounds: null });
 });
 
 test("programInfoFromArchive: missing description field → null description", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Only name" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [], exerciseCount: 0, mapCenter: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [], exerciseCount: 0, mapCenter: null, mapBounds: null });
 });
 
 test("programInfoFromArchive: missing tags field → empty array, not null", () => {
@@ -47,12 +48,12 @@ test("programInfoFromArchive: tags: [] deserializes to empty array", () => {
 
 test("programInfoFromArchive: malformed program.json → nulls and empty tags, never throws", () => {
     const files = { "program.json": new TextEncoder().encode("{not json") };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null, mapBounds: null });
 });
 
 test("programInfoFromArchive: non-string fields ignored", () => {
     const files = { "program.json": enc({ name: 42, description: { nested: true }, tags: "not-an-array" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null, mapBounds: null });
 });
 
 // ---------- programInfoFromArchive: exerciseCount (ADR-0040) ----------
@@ -179,6 +180,141 @@ test("programInfoFromArchive: non-finite coordinates are excluded from the avera
     assert.deepEqual(programInfoFromArchive(files).mapCenter, { lat: 60, lng: 10 });
 });
 
+// ---------- programInfoFromArchive: mapBounds (ADR-0040 bounding-box addendum) ----------
+//
+// mapBounds is the min/max lat/lng across every positioned station across
+// every exercise file — what the catalog card actually renders (fitBounds +
+// a rectangle), superseding the earlier centroid-only precision rule.
+
+test("programInfoFromArchive: mapBounds spans the min/max of positioned stations across exercises", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({
+            uuid: "e1",
+            stations: [{ uuid: "s1", position: { coordinates: [10, 60] } }],
+        }),
+        "exercises/e2.json": enc({
+            uuid: "e2",
+            stations: [{ uuid: "s2", position: { coordinates: [12, 62] } }],
+        }),
+    };
+    assert.deepEqual(programInfoFromArchive(files).mapBounds, { north: 62, south: 60, east: 12, west: 10 });
+});
+
+test("programInfoFromArchive: mapBounds for a single positioned station is a zero-area box, not null", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({
+            uuid: "e1",
+            stations: [{ uuid: "s1", position: { coordinates: [10, 60] } }],
+        }),
+    };
+    assert.deepEqual(programInfoFromArchive(files).mapBounds, { north: 60, south: 60, east: 10, west: 10 });
+});
+
+test("programInfoFromArchive: no positioned stations anywhere → mapBounds null, never a degenerate box", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({ uuid: "e1", stations: [{ uuid: "s1" }] }),
+    };
+    assert.equal(programInfoFromArchive(files).mapBounds, null);
+});
+
+test("programInfoFromArchive: non-finite coordinates are excluded from mapBounds", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({
+            uuid: "e1",
+            stations: [
+                { uuid: "s1", position: { coordinates: [10, 60] } },
+                { uuid: "s2", position: { coordinates: ["not-a-number", 60] } },
+                { uuid: "s3", position: { coordinates: [10] } },
+            ],
+        }),
+    };
+    assert.deepEqual(programInfoFromArchive(files).mapBounds, { north: 60, south: 60, east: 10, west: 10 });
+});
+
+// ---------- resolvePlaceName (ADR-0040 bounding-box addendum) ----------
+//
+// Reverse-geocodes mapCenter via Nominatim. Tests stub the global fetch so
+// no real network call is made.
+
+test("resolvePlaceName: null center → null, no fetch attempted", async () => {
+    const originalFetch = globalThis.fetch;
+    let called = false;
+    globalThis.fetch = async () => { called = true; };
+    try {
+        assert.equal(await resolvePlaceName(null), null);
+        assert.equal(called, false);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("resolvePlaceName: builds place from city + country address fields", async () => {
+    const originalFetch = globalThis.fetch;
+    let requestedUrl;
+    globalThis.fetch = async (url) => {
+        requestedUrl = url;
+        return {
+            ok: true,
+            json: async () => ({ address: { city: "Bergen", country: "Norway" } }),
+        };
+    };
+    try {
+        const place = await resolvePlaceName({ lat: 60.39, lng: 5.32 });
+        assert.equal(place, "Bergen, Norway");
+        const u = new URL(String(requestedUrl));
+        assert.equal(u.hostname, "nominatim.openstreetmap.org");
+        assert.equal(u.searchParams.get("lat"), "60.39");
+        assert.equal(u.searchParams.get("lon"), "5.32");
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("resolvePlaceName: falls back through town/village/municipality/county when city is absent", () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => ({ address: { village: "Eidene", country: "Norway" } }),
+    });
+    return resolvePlaceName({ lat: 1, lng: 2 })
+        .then((place) => assert.equal(place, "Eidene, Norway"))
+        .finally(() => { globalThis.fetch = originalFetch; });
+});
+
+test("resolvePlaceName: non-OK response → null", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: false });
+    try {
+        assert.equal(await resolvePlaceName({ lat: 1, lng: 2 }), null);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("resolvePlaceName: network failure → null, never throws", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => { throw new Error("network down"); };
+    try {
+        assert.equal(await resolvePlaceName({ lat: 1, lng: 2 }), null);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test("resolvePlaceName: address with no usable fields → null", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({ address: {} }) });
+    try {
+        assert.equal(await resolvePlaceName({ lat: 1, lng: 2 }), null);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 // ---------- resolvePublishPolicy ----------
 
 test("resolvePublishPolicy: anon owner → author 'anon', accessPolicy 'public'", () => {
@@ -259,7 +395,7 @@ test("stripActorsAndValidate: returns { name, description, tags } from program.j
     const bytes = Buffer.from(zipSync(files));
     const { strippedBytes, program, error } = stripActorsAndValidate(null, bytes);
     assert.equal(error, undefined);
-    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: 0, mapCenter: null, languageCode: null });
+    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: 0, mapCenter: null, mapBounds: null, languageCode: null });
     // program.json survives the strip
     assert.ok(unzipSync(new Uint8Array(strippedBytes))["program.json"]);
 });

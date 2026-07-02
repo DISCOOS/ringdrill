@@ -19,6 +19,8 @@ test("metaToFeedItem: a full modern blob projects every field", () => {
         author: "Kari",
         accessPolicy: "shared",
         mapCenter: { lat: 61, lng: 11 },
+        mapBounds: { north: 62, south: 60, east: 12, west: 10 },
+        place: "Bergen, Norway",
         languageCode: "nb",
         tags: ["a", "b"],
         ownerId: "acc-1",
@@ -36,6 +38,8 @@ test("metaToFeedItem: a full modern blob projects every field", () => {
         author: "Kari",
         accessPolicy: "shared",
         mapCenter: { lat: 61, lng: 11 },
+        mapBounds: { north: 62, south: 60, east: 12, west: 10 },
+        place: "Bergen, Norway",
         languageCode: "nb",
         tags: ["a", "b"],
         latestUrl: "https://api.ringdrill.app/d/sprint-1",
@@ -58,6 +62,8 @@ test("metaToFeedItem: legacy blob (no exerciseCount/author/accessPolicy) → gra
     assert.equal(item.accessPolicy, "public");
     assert.equal(item.description, "");
     assert.equal(item.mapCenter, null);
+    assert.equal(item.mapBounds, null);
+    assert.equal(item.place, null);
     assert.equal(item.languageCode, null);
 });
 
@@ -110,6 +116,39 @@ test("metaToFeedItem: missing mapCenter → null", () => {
     const meta = { programId: "prog-8", slug: "no-center", name: "No Center", ownerId: "anon", versions: [] };
     const item = metaToFeedItem(meta, { origin: ORIGIN });
     assert.equal(item.mapCenter, null);
+});
+
+// ---------- metaToFeedItem: mapBounds + place (ADR-0040 bounding-box addendum) ----------
+
+test("metaToFeedItem: mapBounds passes through when every side is finite", () => {
+    const meta = { programId: "prog-12", slug: "bounded", name: "Bounded", ownerId: "anon", mapBounds: { north: 62, south: 60, east: 12, west: 10 }, versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.deepEqual(item.mapBounds, { north: 62, south: 60, east: 12, west: 10 });
+});
+
+test("metaToFeedItem: malformed mapBounds (non-finite side) → null, never thrown", () => {
+    const meta = { programId: "prog-13", slug: "bad-bounds", name: "Bad Bounds", ownerId: "anon", mapBounds: { north: "not-a-number", south: 60, east: 12, west: 10 }, versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.equal(item.mapBounds, null);
+});
+
+test("metaToFeedItem: missing mapBounds → null", () => {
+    const meta = { programId: "prog-14", slug: "no-bounds", name: "No Bounds", ownerId: "anon", versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.equal(item.mapBounds, null);
+});
+
+test("metaToFeedItem: place passes through when a non-empty string", () => {
+    const meta = { programId: "prog-15", slug: "placed", name: "Placed", ownerId: "anon", place: "Bergen, Norway", versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.equal(item.place, "Bergen, Norway");
+});
+
+test("metaToFeedItem: missing/empty/non-string place → null", () => {
+    for (const place of [undefined, "", 42, null]) {
+        const meta = { programId: "prog-16", slug: "no-place", name: "No Place", ownerId: "anon", place, versions: [] };
+        assert.equal(metaToFeedItem(meta, { origin: ORIGIN }).place, null);
+    }
 });
 
 // ---------- metaToFeedItem: languageCode (ADR-0007 addendum) ----------
