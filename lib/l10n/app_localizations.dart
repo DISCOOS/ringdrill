@@ -1673,7 +1673,7 @@ abstract class AppLocalizations {
   /// No description provided for @importGuideHint.
   ///
   /// In en, this message translates to:
-  /// **'Choose the .zip you downloaded to import your plans.'**
+  /// **'You\'ve just downloaded a .zip with all your plans from the old app. Pick that file below to import them here — nothing is activated automatically, and the plan you\'re using now is untouched.'**
   String get importGuideHint;
 
   /// No description provided for @planStatusLocal.

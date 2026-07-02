@@ -277,7 +277,7 @@
   "importBundleSuccess": "Importerte {count} planer",
   "importBundlePartial": "Importerte {imported} planer, {skipped} hoppet over",
   "importBundleEmpty": "Fant ingen planer i fila",
-  "importGuideHint": "Velg .zip-fila du lastet ned for å importere planene dine.",
+  "importGuideHint": "Du har nettopp lastet ned en .zip med alle planene dine fra den gamle appen. Velg den fila under for å importere dem hit — ingen blir aktivert automatisk, og planen du bruker nå berøres ikke.",
   "planStatusLocal": "Lokal",
   "planStatusLocalTooltip": "Denne planen ligger bare på enheten din",
   "planStatusOnlineTooltip": "Denne planen er koblet til nett-biblioteket",

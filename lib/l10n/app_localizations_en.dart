@@ -1016,7 +1016,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importGuideHint =>
-      'Choose the .zip you downloaded to import your plans.';
+      'You\'ve just downloaded a .zip with all your plans from the old app. Pick that file below to import them here — nothing is activated automatically, and the plan you\'re using now is untouched.';
 
   @override
   String get planStatusLocal => 'Local';

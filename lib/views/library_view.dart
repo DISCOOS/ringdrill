@@ -293,24 +293,22 @@ class _LibraryBodyState extends State<_LibraryBody>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (widget.initialTab == LibraryTab.fromFile) ...[
-                    Text(
-                      localizations.importGuideHint,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: colors.primary),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
                   Icon(
                     Icons.upload_file_outlined,
                     size: 64,
                     color: colors.primary,
                   ),
                   const SizedBox(height: 16),
+                  // The `?import=guide` deep link (ADR-0045) lands here with
+                  // no other context — the generic "pick a .drill or .zip"
+                  // hint alone left first-time migration users unsure what
+                  // they were even looking for. Guide mode replaces it with
+                  // a fuller explanation of what happened and what happens
+                  // next, instead of stacking both hints.
                   Text(
-                    localizations.libraryFromFileHint,
+                    widget.initialTab == LibraryTab.fromFile
+                        ? localizations.importGuideHint
+                        : localizations.libraryFromFileHint,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),

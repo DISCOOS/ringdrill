@@ -1011,7 +1011,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get importGuideHint =>
-      'Velg .zip-fila du lastet ned for å importere planene dine.';
+      'Du har nettopp lastet ned en .zip med alle planene dine fra den gamle appen. Velg den fila under for å importere dem hit — ingen blir aktivert automatisk, og planen du bruker nå berøres ikke.';
 
   @override
   String get planStatusLocal => 'Lokal';

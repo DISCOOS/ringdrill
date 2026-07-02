@@ -1092,7 +1092,7 @@
     }
   },
   "importBundleEmpty": "No plans found in the file",
-  "importGuideHint": "Choose the .zip you downloaded to import your plans.",
+  "importGuideHint": "You've just downloaded a .zip with all your plans from the old app. Pick that file below to import them here — nothing is activated automatically, and the plan you're using now is untouched.",
   "planStatusLocal": "Local",
   "planStatusLocalTooltip": "This plan lives only on your device",
   "planStatusOnlineTooltip": "This plan is linked to the online library",
