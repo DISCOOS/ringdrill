@@ -223,6 +223,12 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--canvas-band);
+    /* Always visible, even before Leaflet mounts or if it fails to (a
+       backend outage, a JS error, tiles that never load) — the goal is
+       to be able to tell "a map was expected here" apart from "there is
+       no map data for this plan" at a glance, not just a same-color
+       blob that blends into the card either way. */
+    border: 1px solid var(--border-strong);
   }
   /* Place (left) and the exercise-count/updated meta (right) share one
      line below the map. It must never wrap: the meta text is short and
