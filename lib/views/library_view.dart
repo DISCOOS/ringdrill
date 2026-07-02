@@ -258,6 +258,13 @@ class _LibraryBodyState extends State<_LibraryBody>
     return CatalogBrowser(
       subtitle: localizations.libraryOnlineSubtitle,
       installedSlugs: _installedCatalogSlugs(),
+      // Same radio semantics as "Mine planer" — checked when this catalog
+      // item is the currently active plan. The cloud icon is dropped here
+      // since installed status is already shown via trailingBuilder's chip.
+      showActiveRadio: true,
+      activeSlug: _programService.activeProgram?.source.whenOrNull(
+        catalog: (slug, latestEtag, installedAt) => slug,
+      ),
       trailingBuilder: (context, item, installed) {
         if (installed) {
           return Chip(label: Text(localizations.libraryInstalled));

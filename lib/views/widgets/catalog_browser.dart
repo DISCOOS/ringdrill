@@ -29,6 +29,8 @@ class CatalogBrowser extends StatefulWidget {
     this.installedSlugs = const <String>{},
     this.trailingBuilder,
     this.itemFilter,
+    this.showActiveRadio = false,
+    this.activeSlug,
   });
 
   /// Invoked when the user taps a catalog tile.
@@ -39,7 +41,8 @@ class CatalogBrowser extends StatefulWidget {
   final String subtitle;
 
   /// Slugs already installed locally. Used to drive the "already in library"
-  /// affordance via [trailingBuilder] and the leading icon variant.
+  /// affordance via [trailingBuilder] and (when [showActiveRadio] is false)
+  /// the leading icon variant.
   final Set<String> installedSlugs;
 
   /// Optional builder for the per-tile trailing widget. When omitted, no
@@ -49,6 +52,19 @@ class CatalogBrowser extends StatefulWidget {
   /// Optional predicate to hide feed items (e.g. the active plan's catalog
   /// source in the add-exercises sheet). When omitted, every item is shown.
   final CatalogItemFilter? itemFilter;
+
+  /// When true, each row's leading is a radio icon — checked when
+  /// `item.slug == activeSlug` — mirroring "Mine planer", instead of the
+  /// installed/not-installed cloud icon. The library's "På nett" tab opts
+  /// in: it already shows installed status via [trailingBuilder]'s chip,
+  /// so the cloud icon there was redundant. The add-exercises sheet
+  /// leaves this false — it has no [trailingBuilder] and no "active"
+  /// concept, so the cloud icon stays the only installed-status signal.
+  final bool showActiveRadio;
+
+  /// Slug of the item that matches the currently active plan, if any.
+  /// Only consulted when [showActiveRadio] is true.
+  final String? activeSlug;
 
   @override
   State<CatalogBrowser> createState() => _CatalogBrowserState();
@@ -177,18 +193,26 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                         item,
                         installed,
                       );
+                      final leadingIcon = widget.showActiveRadio
+                          ? Icon(
+                              item.slug == widget.activeSlug
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              size: 24,
+                            )
+                          : Icon(
+                              installed
+                                  ? Icons.cloud_done_outlined
+                                  : Icons.cloud_outlined,
+                              color: colors.onSurfaceVariant,
+                              size: 24,
+                            );
                       return ExpandableTile(
-                        leading: Icon(
-                          installed
-                              ? Icons.cloud_done_outlined
-                              : Icons.cloud_outlined,
-                          color: colors.onSurfaceVariant,
-                          // See the matching comment in library_view.dart's
-                          // Mine planer list: size explicitly so the row
-                          // height is driven by the text block, not an
-                          // oversized icon.
-                          size: 24,
-                        ),
+                        // See the matching comment in library_view.dart's
+                        // Mine planer list: size explicitly so the row
+                        // height is driven by the text block, not an
+                        // oversized icon.
+                        leading: leadingIcon,
                         title: Text(item.name),
                         subtitle: Text(_catalogSubtitle(localizations, item)),
                         // ExpandableTile only wraps trailing in 4px of
