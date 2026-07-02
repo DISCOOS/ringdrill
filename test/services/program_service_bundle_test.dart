@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -68,7 +69,7 @@ void main() {
       final result = await ProgramService().installBundle(bundle);
 
       expect(result.imported, 2);
-      expect(result.skipped, 0);
+      expect(result.skipped, isEmpty);
       expect(result.hasFailures, isFalse);
       // Bundle import never activates anything (ADR-0045) — the
       // pre-existing active plan is left exactly as it was.
@@ -90,7 +91,9 @@ void main() {
       final result = await ProgramService().installBundle(bundle);
 
       expect(result.imported, 2);
-      expect(result.skipped, 1);
+      expect(result.skipped, hasLength(1));
+      expect(result.skipped.single.fileName, 'corrupt.drill');
+      expect(result.skipped.single.reason, DrillFormatReason.notArchive);
       expect(result.hasFailures, isTrue);
       expect(
         ProgramService().listPrograms().map((p) => p.uuid),

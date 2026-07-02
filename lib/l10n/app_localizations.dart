@@ -1664,6 +1664,12 @@ abstract class AppLocalizations {
   /// **'Imported {imported} plans, {skipped} skipped'**
   String importBundlePartial(int imported, int skipped);
 
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String importBundleMoreSkipped(int count);
+
   /// No description provided for @importBundleEmpty.
   ///
   /// In en, this message translates to:

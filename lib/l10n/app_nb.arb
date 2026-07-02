@@ -276,6 +276,7 @@
   "libraryExportAll": "Last ned alle planer",
   "importBundleSuccess": "Importerte {count} planer",
   "importBundlePartial": "Importerte {imported} planer, {skipped} hoppet over",
+  "importBundleMoreSkipped": "+{count} flere",
   "importBundleEmpty": "Fant ingen planer i fila",
   "importGuideHint": "Du har nettopp lastet ned en .zip med alle planene dine fra den gamle appen. Velg den fila under for å importere dem hit — ingen blir aktivert automatisk, og planen du bruker nå berøres ikke.",
   "planStatusLocal": "Lokal",

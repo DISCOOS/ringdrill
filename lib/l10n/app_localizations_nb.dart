@@ -1007,6 +1007,11 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String importBundleMoreSkipped(int count) {
+    return '+$count flere';
+  }
+
+  @override
   String get importBundleEmpty => 'Fant ingen planer i fila';
 
   @override

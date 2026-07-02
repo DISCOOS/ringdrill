@@ -1012,6 +1012,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String importBundleMoreSkipped(int count) {
+    return '+$count more';
+  }
+
+  @override
   String get importBundleEmpty => 'No plans found in the file';
 
   @override

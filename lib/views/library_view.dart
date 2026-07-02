@@ -15,6 +15,7 @@ import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/drill_format_messages.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
@@ -691,42 +692,76 @@ class _BundleResultBanner extends StatelessWidget {
   final BundleInstallResult result;
   final VoidCallback onDismiss;
 
+  /// Cap on how many skipped-entry lines are listed individually before
+  /// collapsing the rest into a "+N more" line — a bundle with many
+  /// failures would otherwise push the "Velg fil" button off-screen.
+  static const int _maxSkippedListed = 5;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     final message = result.hasFailures
-        ? localizations.importBundlePartial(result.imported, result.skipped)
+        ? localizations.importBundlePartial(
+            result.imported,
+            result.skipped.length,
+          )
         : localizations.importBundleSuccess(result.imported);
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: colors.onPrimaryContainer);
     return Container(
       decoration: BoxDecoration(
         color: colors.primaryContainer,
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            Icons.check_circle_outline,
-            color: colors.onPrimaryContainer,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
                 color: colors.onPrimaryContainer,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(message, style: textStyle)),
+              IconButton(
+                icon: Icon(Icons.close, color: colors.onPrimaryContainer),
+                iconSize: 20,
+                visualDensity: VisualDensity.compact,
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                onPressed: onDismiss,
+              ),
+            ],
+          ),
+          // Per-file reason list — the summary count alone ("1 hoppet
+          // over") gives no way to act on it, e.g. re-export just that
+          // one plan. Each line reuses drillFormatMessage so the wording
+          // matches the single-.drill open/import failure exactly.
+          if (result.hasFailures)
+            Padding(
+              padding: const EdgeInsets.only(left: 28, right: 8, bottom: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final entry in result.skipped.take(_maxSkippedListed))
+                    Text(
+                      '•  ${drillFormatMessage(localizations, entry.fileName, entry.reason)}',
+                      style: textStyle,
+                    ),
+                  if (result.skipped.length > _maxSkippedListed)
+                    Text(
+                      localizations.importBundleMoreSkipped(
+                        result.skipped.length - _maxSkippedListed,
+                      ),
+                      style: textStyle,
+                    ),
+                ],
               ),
             ),
-          ),
-          IconButton(
-            icon: Icon(Icons.close, color: colors.onPrimaryContainer),
-            iconSize: 20,
-            visualDensity: VisualDensity.compact,
-            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-            onPressed: onDismiss,
-          ),
         ],
       ),
     );

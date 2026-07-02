@@ -1,13 +1,14 @@
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 
-/// Maps a [DrillFormatException] to the localized message the UI should
-/// show in a snackbar.
+/// Maps a [DrillFormatReason] to the localized message the UI should show
+/// in a snackbar (or a bundle's per-file skipped-entry list).
 ///
-/// Centralized here so both [OpenFileWidget] and the picker-driven flow
-/// in `active_plan_actions.dart` give identical wording for the same
-/// failure mode. The fallback for an unknown reason is [openFailure],
-/// which preserves today's "Open … failed. Please try again." text.
+/// Centralized here so [OpenFileWidget], the picker-driven flow in
+/// `active_plan_actions.dart`, and the bundle-import skipped-entry list in
+/// `library_view.dart` all give identical wording for the same failure
+/// mode. The fallback for an unknown reason is [openFailure], which
+/// preserves today's "Open … failed. Please try again." text.
 ///
 /// These messages are intentionally non-actionable beyond "this file is
 /// the problem" because the user cannot do anything inside the app to
@@ -16,9 +17,9 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 String drillFormatMessage(
   AppLocalizations l10n,
   String fileName,
-  DrillFormatException e,
+  DrillFormatReason reason,
 ) {
-  switch (e.reason) {
+  switch (reason) {
     case DrillFormatReason.empty:
       return l10n.openEmptyDrill(fileName);
     case DrillFormatReason.notArchive:

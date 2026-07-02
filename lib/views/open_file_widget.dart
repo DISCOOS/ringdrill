@@ -135,7 +135,7 @@ class OpenFileWidget extends StatelessWidget {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          content: Text(drillFormatMessage(localizations, name, e)),
+          content: Text(drillFormatMessage(localizations, name, e.reason)),
           dismissDirection: DismissDirection.endToStart,
           showCloseIcon: true,
           duration: const Duration(seconds: 15),
@@ -206,7 +206,7 @@ class OpenFileWidget extends StatelessWidget {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          content: Text(drillFormatMessage(localizations, name, e)),
+          content: Text(drillFormatMessage(localizations, name, e.reason)),
           dismissDirection: DismissDirection.endToStart,
           showCloseIcon: true,
           duration: const Duration(seconds: 15),

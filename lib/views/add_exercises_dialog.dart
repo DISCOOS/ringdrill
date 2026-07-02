@@ -317,7 +317,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
           _fromFileError = drillFormatMessage(
             localizations,
             drillFile.fileName,
-            e,
+            e.reason,
           );
         });
       }

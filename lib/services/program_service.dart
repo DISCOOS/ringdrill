@@ -97,12 +97,22 @@ class BundleInstallResult {
   /// Number of inner `.drill` entries successfully installed.
   final int imported;
 
-  /// Number of inner `.drill` entries that failed to parse and were
-  /// skipped rather than aborting the rest of the bundle.
-  final int skipped;
+  /// Inner `.drill` entries that failed to parse and were skipped rather
+  /// than aborting the rest of the bundle, one per failure, so the UI can
+  /// tell the user which files were skipped and why instead of just a count.
+  final List<SkippedDrillEntry> skipped;
 
-  bool get hasFailures => skipped > 0;
-  bool get isEmpty => imported == 0 && skipped == 0;
+  bool get hasFailures => skipped.isNotEmpty;
+  bool get isEmpty => imported == 0 && skipped.isEmpty;
+}
+
+/// One inner `.drill` entry that [ProgramService.installBundle] could not
+/// install, and why.
+class SkippedDrillEntry {
+  const SkippedDrillEntry({required this.fileName, required this.reason});
+
+  final String fileName;
+  final DrillFormatReason reason;
 }
 
 class ProgramEvent {
@@ -628,13 +638,15 @@ class ProgramService {
   }) async {
     final files = DrillLibrary.entries(content, sourceName: sourceName);
     var imported = 0;
-    var skipped = 0;
+    final skipped = <SkippedDrillEntry>[];
     for (final file in files) {
       try {
         await installFromFile(file, activate: false);
         imported++;
-      } on DrillFormatException {
-        skipped++;
+      } on DrillFormatException catch (e) {
+        skipped.add(
+          SkippedDrillEntry(fileName: file.fileName, reason: e.reason),
+        );
       }
     }
     return BundleInstallResult(imported: imported, skipped: skipped);

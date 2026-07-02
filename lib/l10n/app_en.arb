@@ -1091,6 +1091,15 @@
       }
     }
   },
+  "importBundleMoreSkipped": "+{count} more",
+  "@importBundleMoreSkipped": {
+    "description": "Message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "importBundleEmpty": "No plans found in the file",
   "importGuideHint": "You've just downloaded a .zip with all your plans from the old app. Pick that file below to import them here — nothing is activated automatically, and the plan you're using now is untouched.",
   "planStatusLocal": "Local",

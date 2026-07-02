@@ -529,10 +529,7 @@ Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
       errorMessage: drillFormatMessage(
         localizations,
         drillFile.fileName,
-        DrillFormatException(
-          DrillFormatReason.notArchive,
-          'Invalid file: not a .drill or drill-library archive.',
-        ),
+        DrillFormatReason.notArchive,
       ),
       isFormatError: true,
     );
@@ -578,7 +575,11 @@ Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
     // from an app bug. Surface the reason-specific localized message
     // and skip Sentry so that channel stays signal-only.
     return InstallPickedOutcome._(
-      errorMessage: drillFormatMessage(localizations, drillFile.fileName, e),
+      errorMessage: drillFormatMessage(
+        localizations,
+        drillFile.fileName,
+        e.reason,
+      ),
       isFormatError: true,
     );
   } catch (e, stackTrace) {
