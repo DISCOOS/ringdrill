@@ -49,7 +49,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0039 | [Split the site, PWA and API across separate origins](./0039-site-pwa-api-origins.md) | Accepted |
 | ADR-0040 | Catalog feed schema extension (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
 | ADR-0041 | Brief pre-rendering port from Dart to Node (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
-| ADR-0042 | [Centralise build-time feature flags with sunset telemetry](./0042-feature-flags-and-sunset-telemetry.md) | Proposed |
+| ADR-0042 | [Centralise build-time feature flags with sunset telemetry](./0042-feature-flags-and-sunset-telemetry.md) | Accepted |
 | ADR-0043 | [Tags live in the `.drill` format and publish is last-write-wins](./0043-tags-in-drill-format.md) | Accepted |
 | ADR-0044 | [Render the shareable preview on the site and expose plan meta as JSON](./0044-render-preview-on-site.md) | Proposed |
 
