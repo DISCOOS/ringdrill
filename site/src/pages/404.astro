@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+<BaseLayout lang="nb" title="Siden finnes ikke · RingDrill" description="Fant ikke siden du lette etter.">
+  <Nav lang="nb" />
+  <main>
+    <section class="section">
+      <div class="container prose">
+        <p class="eyebrow">404</p>
+        <h1>Siden finnes ikke</h1>
+        <p class="lead">Vi fant ikke siden du lette etter. Lenken kan være utdatert, eller adressen feilskrevet.</p>
+        <p><a class="btn btn--primary" href="/">Til forsiden</a> <a class="btn btn--ghost" href="https://web.ringdrill.app/">Åpne på web</a></p>
+      </div>
+    </section>
+  </main>
+  <Footer lang="nb" />
+</BaseLayout>

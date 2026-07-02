@@ -84,6 +84,7 @@ export const strings = {
         { label: 'App Store', href: 'https://apps.apple.com/app/id6777269410' },
         { label: 'Åpne på web', href: 'https://web.ringdrill.app/' },
         { label: 'Kildekode på GitHub', href: 'https://github.com/DISCOOS/ringdrill' },
+        { label: 'API', href: 'https://ringdrill.app/api/docs' },
       ],
       colLegal: 'Juridisk',
       legal: [
@@ -177,6 +178,7 @@ export const strings = {
         { label: 'App Store', href: 'https://apps.apple.com/app/id6777269410' },
         { label: 'Open on web', href: 'https://web.ringdrill.app/' },
         { label: 'Source on GitHub', href: 'https://github.com/DISCOOS/ringdrill' },
+        { label: 'API', href: 'https://ringdrill.app/api/docs' },
       ],
       colLegal: 'Legal',
       legal: [

@@ -114,6 +114,27 @@
     to = "/.netlify/functions/drills-admin"
     status = 200
 
+# Interactive API reference and its OpenAPI spec.
+[[redirects]]
+    from = "/api/docs"
+    to = "/.netlify/functions/api-docs"
+    status = 200
+
+[[redirects]]
+    from = "/api/openapi.json"
+    to = "/.netlify/functions/openapi"
+    status = 200
+
+# Catch-all for unknown /api/* paths. MUST stay below every real /api/ entry
+# above (first match wins) and above the SPA fallback (`/* -> /index.html`)
+# below. Without it, an unknown /api/ path serves the app shell with HTTP 200;
+# the function returns a JSON 404 instead. The rewrite status is 200 so the
+# function's own 404 status flows through to the client.
+[[redirects]]
+    from = "/api/*"
+    to = "/.netlify/functions/api-not-found"
+    status = 200
+
 [[redirects]]
     from = "/i/*"
     to = "/.netlify/functions/drills-preview?slug=:splat"
