@@ -103,3 +103,23 @@ Field semantics and defaults:
 
 * Related ADRs: [ADR-0039](./0039-site-pwa-api-origins.md) (site/PWA/API origin split, which references this ADR), [ADR-0043](./0043-tags-in-drill-format.md) (name/description/tags live in `program.json`, publish is last-write-wins), [ADR-0044](./0044-render-preview-on-site.md) (meta JSON endpoint that returns `exerciseCount`), [ADR-0008](./0008-persistent-program-library-and-catalog.md) and [ADR-0010](./0010-live-catalog-updates.md) (catalog and HEAD polling), [ADR-0024](./0024-account-and-identity-model.md) and [ADR-0025](./0025-authorization-and-publish-policy.md) (Account/Identity and `accessPolicy`)
 * Related code: `netlify/functions/market-feed.js`, `netlify/functions/drills-upload.js`, `netlify/functions/drills-preview.js`, `netlify/functions/_shared.js`, `lib/data/drill_client.dart` (`MarketFeedItem`), `lib/views/widgets/catalog_browser.dart`, `site/` catalog route (planned, ADR-0039)
+
+## Addendum (2026-07-02): map center for the public catalog
+
+The site `/catalog` route (ADR-0039) is being implemented next, with a small map preview per card (Leaflet.js, same tile provider as the in-app map). That needs one more derived field. This addendum extends the schema decided above; it does not change or reopen it.
+
+**Field.** `mapCenter: { lat: number, lng: number } | null`, added to the feed item shape. The full shape is now:
+
+```
+{ programId, slug, name, description, exerciseCount, author, accessPolicy, mapCenter, tags, latestUrl, updatedAt }
+```
+
+**Semantics.** The centroid — a simple average — of every positioned station's coordinates across every exercise in the plan. `null` when the plan has no positioned stations, or if computation fails for any reason at publish time. Never a fake `(0, 0)` — same "omit, don't fake" rule `exerciseCount` already follows.
+
+**Precision is deliberately coarse.** A single approximate point, not a bounding box, not per-station pins. Station coordinates are real-world locations — often actual search-and-rescue exercise sites — and `/catalog` is unauthenticated and public. The in-app map shows exact per-station positions to someone who already has the plan open; the public catalog card shows only "roughly here." This is an intentional, permanent precision gap between the two surfaces, not a placeholder to later sharpen.
+
+**Derivation.** Computed in `drills-upload.js` at publish time, extending the same unzip pass `exerciseCount` uses: for each `exercises/<uuid>.json` archive entry, read `stations[].position` (present when set, GeoJSON `{"coordinates":[lng, lat]}` — note the GeoJSON longitude-first order, matching the Flutter side's `NullableLatLngJsonConverter` in `lib/models/lat_lng_converter.dart`). Collect every finite coordinate across every exercise and average. Persisted into `meta.json` as `mapCenter`, projected through `metaToFeedItem` in `_shared.js` exactly like the other fields this ADR added. Legacy blobs (no `mapCenter` key) project as `null` and self-heal on next publish, same as `exerciseCount`.
+
+**Tile provider and attribution.** The public map reuses the same tile provider as the in-app map (`lib/views/map_view.dart`): Kartverket, the Norwegian Mapping Authority, `https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png`. Confirmed acceptable for this public, higher-traffic origin. Unlike the in-app map — which renders no attribution today, a separate pre-existing gap not addressed here — the public map **must** show a visible "© Kartverket" attribution.
+
+**Consequences.** One more field that must keep degrading gracefully for legacy blobs. A small new Node-side average calculation (plain arithmetic, no new backend dependency). The site gains its first third-party JS dependency (Leaflet) and its first third-party network dependency beyond its own API origin (Kartverket tiles), both scoped to the `/catalog` page.
