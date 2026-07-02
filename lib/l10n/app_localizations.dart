@@ -3140,6 +3140,18 @@ abstract class AppLocalizations {
   /// **'Example: {example}'**
   String stationNumberFormatPreview(String example);
 
+  /// Label for the plan-content language picker in ProgramFormScreen. Distinct from the app's own UI language.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan language'**
+  String get planLanguageLabel;
+
+  /// Option in the plan-language picker meaning no content language has been chosen yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get planLanguageNotSet;
+
   /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///
   /// In en, this message translates to:

@@ -1852,6 +1852,15 @@
     }
   },
 
+  "planLanguageLabel": "Plan language",
+  "@planLanguageLabel": {
+    "description": "Label for the plan-content language picker in ProgramFormScreen. Distinct from the app's own UI language."
+  },
+  "planLanguageNotSet": "Not set",
+  "@planLanguageNotSet": {
+    "description": "Option in the plan-language picker meaning no content language has been chosen yet."
+  },
+
   "exerciseReorderMode": "Reorder",
   "@exerciseReorderMode": {
     "description": "List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active)."

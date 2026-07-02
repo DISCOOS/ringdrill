@@ -223,4 +223,73 @@ void main() {
 
     expect(captured!.briefIntroMd, isNull);
   });
+
+  testWidgets('selecting a plan language saves languageCode', (tester) async {
+    Program? captured;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              captured = await Navigator.push<Program>(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) => ProgramFormScreen(program: _baseProgram()),
+                ),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String?>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Norsk').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.save));
+    await tester.pumpAndSettle();
+
+    expect(captured!.metadata.languageCode, 'nb');
+  });
+
+  testWidgets('plan language stays null when left untouched', (tester) async {
+    Program? captured;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              captured = await Navigator.push<Program>(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) => ProgramFormScreen(program: _baseProgram()),
+                ),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.save));
+    await tester.pumpAndSettle();
+
+    expect(captured!.metadata.languageCode, isNull);
+  });
 }

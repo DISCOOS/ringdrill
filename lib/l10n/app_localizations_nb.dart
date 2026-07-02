@@ -1842,6 +1842,12 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get planLanguageLabel => 'Planens språk';
+
+  @override
+  String get planLanguageNotSet => 'Ikke angitt';
+
+  @override
   String get exerciseReorderMode => 'Ordne';
 
   @override

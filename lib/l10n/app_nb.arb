@@ -924,6 +924,9 @@
     }
   },
 
+  "planLanguageLabel": "Planens språk",
+  "planLanguageNotSet": "Ikke angitt",
+
   "exerciseReorderMode": "Ordne",
   "@exerciseReorderMode": {
     "description": "Listehodet-veksler som aktiverer omsorteringsmodus (dragepunkter vises, dra-for-å-sortere blir tilgjengelig)."

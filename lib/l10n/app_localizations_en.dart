@@ -1845,6 +1845,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get planLanguageLabel => 'Plan language';
+
+  @override
+  String get planLanguageNotSet => 'Not set';
+
+  @override
   String get exerciseReorderMode => 'Reorder';
 
   @override

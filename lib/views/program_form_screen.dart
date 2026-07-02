@@ -43,6 +43,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   late List<String> _tags;
   late Set<_Section> _activeSections;
   late StationNumberFormat _stationNumberFormat;
+  String? _languageCode;
   String? _tagError;
 
   @override
@@ -56,6 +57,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     _commsController.text = p.commsMd ?? '';
     _beforeRoundController.text = p.beforeRoundMd ?? '';
     _stationNumberFormat = p.stationNumberFormat;
+    _languageCode = p.metadata.languageCode;
     _activeSections = {
       if (p.briefIntroMd != null) _Section.briefIntro,
       if (p.commsMd != null) _Section.comms,
@@ -212,6 +214,11 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                     value: _stationNumberFormat,
                     onChanged: (f) => setState(() => _stationNumberFormat = f),
                   ),
+                  const SizedBox(height: 16),
+                  _LanguagePicker(
+                    value: _languageCode,
+                    onChanged: (v) => setState(() => _languageCode = v),
+                  ),
                   const Divider(height: 32),
                   OptionalFieldSections<_Section>(
                     sections: sectionSpecs,
@@ -239,7 +246,10 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       briefIntroMd: _readSection(_Section.briefIntro),
       commsMd: _readSection(_Section.comms),
       beforeRoundMd: _readSection(_Section.beforeRound),
-      metadata: widget.program.metadata.copyWith(updated: DateTime.now()),
+      metadata: widget.program.metadata.copyWith(
+        updated: DateTime.now(),
+        languageCode: _languageCode,
+      ),
     );
     Navigator.of(context).pop(updated);
   }
@@ -377,6 +387,48 @@ class _StationNumberFormatPicker extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Display name per ISO 639-1 code, scoped to the locales the app's own UI
+/// currently supports ([AppLocalizations.supportedLocales]). Extend this —
+/// and `site/src/lib/languages.ts`'s `LANGUAGE_NAMES` — whenever a new UI
+/// locale (ARB file) is added.
+const kPlanLanguageNames = <String, String>{'nb': 'Norsk', 'en': 'English'};
+
+/// Dropdown for the plan's *content* language (ADR-0007 addendum) — what
+/// language the plan's own name/briefs/exercises are written in, distinct
+/// from the app's UI locale. Options come from
+/// [AppLocalizations.supportedLocales] so a future third ARB locale extends
+/// this picker with no code change here.
+class _LanguagePicker extends StatelessWidget {
+  const _LanguagePicker({required this.value, required this.onChanged});
+
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return DropdownButtonFormField<String?>(
+      initialValue: value,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.planLanguageLabel),
+      items: [
+        DropdownMenuItem<String?>(
+          value: null,
+          child: Text(l10n.planLanguageNotSet),
+        ),
+        for (final locale in AppLocalizations.supportedLocales)
+          DropdownMenuItem<String?>(
+            value: locale.languageCode,
+            child: Text(
+              kPlanLanguageNames[locale.languageCode] ?? locale.languageCode,
+            ),
+          ),
+      ],
+      onChanged: onChanged,
     );
   }
 }
