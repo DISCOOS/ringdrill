@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/data/program_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
@@ -87,6 +88,21 @@ class CatalogRefreshOutcome {
   /// right user-facing wording (e.g. "Updated from catalog" vs. "Discarded
   /// local changes").
   final bool remoteUnchanged;
+}
+
+/// Result of installing a drill-library bundle (ADR-0045).
+class BundleInstallResult {
+  const BundleInstallResult({required this.imported, required this.skipped});
+
+  /// Number of inner `.drill` entries successfully installed.
+  final int imported;
+
+  /// Number of inner `.drill` entries that failed to parse and were
+  /// skipped rather than aborting the rest of the bundle.
+  final int skipped;
+
+  bool get hasFailures => skipped > 0;
+  bool get isEmpty => imported == 0 && skipped == 0;
 }
 
 class ProgramEvent {
@@ -598,6 +614,30 @@ class ProgramService {
       ProgramEvent(ProgramEventType.programInstalled, installed, file: file),
     );
     return installed;
+  }
+
+  /// Install every program in a drill-library bundle into the local
+  /// library. Never activates anything and never touches the active plan
+  /// (ADR-0045). Best-effort per entry: a [DrillFormatException] on one
+  /// entry increments [BundleInstallResult.skipped] and does not abort the
+  /// rest. Container-level failures ([DrillLibraryException]) propagate to
+  /// the caller.
+  Future<BundleInstallResult> installBundle(
+    List<int> content, {
+    String? sourceName,
+  }) async {
+    final files = DrillLibrary.entries(content, sourceName: sourceName);
+    var imported = 0;
+    var skipped = 0;
+    for (final file in files) {
+      try {
+        await installFromFile(file, activate: false);
+        imported++;
+      } on DrillFormatException {
+        skipped++;
+      }
+    }
+    return BundleInstallResult(imported: imported, skipped: skipped);
   }
 
   Future<Program> installFromCatalog(
