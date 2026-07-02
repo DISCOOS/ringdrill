@@ -68,16 +68,26 @@ class _LibraryBodyState extends State<_LibraryBody>
   /// and never reaches the user.
   String? _fromFileError;
 
+  /// Result of the last successful drill-library import. Rendered inline
+  /// like [_fromFileError] instead of navigating away, because a bundle
+  /// import (unlike a single `.drill`) never activates anything — the
+  /// user stays on the "Mine planer" list to see what landed.
+  BundleInstallResult? _fromFileBundleResult;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    // Clear the From-File error as soon as the user navigates away
+    // Clear the From-File feedback as soon as the user navigates away
     // from the tab — re-entering on a clean slate matches the
-    // expectation that errors are scoped to the in-progress action.
+    // expectation that feedback is scoped to the in-progress action.
     _tabController.addListener(() {
-      if (_fromFileError != null && _tabController.index != 2) {
-        setState(() => _fromFileError = null);
+      if ((_fromFileError != null || _fromFileBundleResult != null) &&
+          _tabController.index != 2) {
+        setState(() {
+          _fromFileError = null;
+          _fromFileBundleResult = null;
+        });
       }
     });
   }
@@ -257,6 +267,14 @@ class _LibraryBodyState extends State<_LibraryBody>
                           setState(() => _fromFileError = null),
                     ),
                   ],
+                  if (_fromFileBundleResult != null) ...[
+                    const SizedBox(height: 20),
+                    _BundleResultBanner(
+                      result: _fromFileBundleResult!,
+                      onDismiss: () =>
+                          setState(() => _fromFileBundleResult = null),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -328,8 +346,13 @@ class _LibraryBodyState extends State<_LibraryBody>
 
   Future<void> _installFromFile(BuildContext context) async {
     // Clear any stale banner before kicking off a fresh attempt so a
-    // second pick of the same bad file still reads as a new failure.
-    if (_fromFileError != null) setState(() => _fromFileError = null);
+    // second pick of the same bad file still reads as a new outcome.
+    if (_fromFileError != null || _fromFileBundleResult != null) {
+      setState(() {
+        _fromFileError = null;
+        _fromFileBundleResult = null;
+      });
+    }
     final router = GoRouter.of(context);
     final outcome = await active_actions.installPickedPlanFile(context);
     if (!context.mounted) return;
@@ -340,6 +363,13 @@ class _LibraryBodyState extends State<_LibraryBody>
       // and only the URL catches up.
       router.go(programPath(outcome.program!.uuid));
       Navigator.pop(context);
+      return;
+    }
+    if (outcome.isBundle) {
+      // A bundle import never activates anything (ADR-0045): stay in the
+      // dialog, refresh the "Mine planer" list, and show the summary
+      // inline instead of navigating.
+      setState(() => _fromFileBundleResult = outcome.bundle);
       return;
     }
     if (outcome.errorMessage != null) {
@@ -590,4 +620,55 @@ class _LibraryBodyState extends State<_LibraryBody>
   }
 }
 
+/// Inline summary shown after a drill-library import. Mirrors
+/// [PickerErrorBanner]'s shape but uses the primary palette instead of the
+/// error one — a bundle import is a (possibly partial) success, not a
+/// picked-the-wrong-file failure.
+class _BundleResultBanner extends StatelessWidget {
+  const _BundleResultBanner({required this.result, required this.onDismiss});
+
+  final BundleInstallResult result;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).colorScheme;
+    final message = result.hasFailures
+        ? localizations.importBundlePartial(result.imported, result.skipped)
+        : localizations.importBundleSuccess(result.imported);
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            color: colors.onPrimaryContainer,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colors.onPrimaryContainer,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, color: colors.onPrimaryContainer),
+            iconSize: 20,
+            visualDensity: VisualDensity.compact,
+            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+            onPressed: onDismiss,
+          ),
+        ],
+      ),
+    );
+  }
+}
 

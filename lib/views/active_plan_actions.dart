@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
+import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
@@ -403,23 +404,32 @@ Future<DrillFile?> pickOpenPlanFile(BuildContext context) {
 class InstallPickedOutcome {
   const InstallPickedOutcome._({
     this.program,
+    this.bundle,
     this.errorMessage,
     this.isFormatError = false,
   });
 
-  /// Set on success. The plan has already been installed and activated.
+  /// Set on single-`.drill` success. The plan has already been installed
+  /// and activated.
   final Program? program;
+
+  /// Set on drill-library success. Every contained plan has already been
+  /// installed; per ADR-0045 nothing is activated.
+  final BundleInstallResult? bundle;
 
   /// Localized, user-ready message. Null on success and on user cancel.
   final String? errorMessage;
 
-  /// True when [errorMessage] originated from a [DrillFormatException]
-  /// (user picked the wrong file). False for generic install failures
-  /// or system-state refusals such as "cannot switch while running".
+  /// True when [errorMessage] originated from a format problem (user
+  /// picked the wrong file, or a bundle had no readable entries). False
+  /// for generic install failures or system-state refusals such as
+  /// "cannot switch while running".
   final bool isFormatError;
 
   bool get isSuccess => program != null;
-  bool get isCancelled => program == null && errorMessage == null;
+  bool get isBundle => bundle != null;
+  bool get isCancelled =>
+      program == null && bundle == null && errorMessage == null;
 }
 
 Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
@@ -432,6 +442,53 @@ Future<InstallPickedOutcome> installPickedPlanFile(BuildContext context) async {
   final drillFile = await pickOpenPlanFile(context);
   if (!context.mounted || drillFile == null) {
     return const InstallPickedOutcome._();
+  }
+
+  final kind = DrillLibrary.sniff(drillFile.content);
+  if (kind == DrillArchiveKind.invalid) {
+    // Same wrong-file message as the single-.drill path below: from the
+    // user's perspective this is one failure mode ("picked the wrong
+    // file"), regardless of which parser ultimately rejected it.
+    return InstallPickedOutcome._(
+      errorMessage: drillFormatMessage(
+        localizations,
+        drillFile.fileName,
+        DrillFormatException(
+          DrillFormatReason.notArchive,
+          'Invalid file: not a .drill or drill-library archive.',
+        ),
+      ),
+      isFormatError: true,
+    );
+  }
+
+  if (kind == DrillArchiveKind.library) {
+    try {
+      final result = await ProgramService().installBundle(
+        drillFile.content,
+        sourceName: drillFile.fileName,
+      );
+      if (result.isEmpty) {
+        return InstallPickedOutcome._(
+          errorMessage: localizations.importBundleEmpty,
+          isFormatError: true,
+        );
+      }
+      return InstallPickedOutcome._(bundle: result);
+    } on DrillLibraryException {
+      // Container-level failure even though sniff() classified this as a
+      // library — same user-input-problem rationale as DrillFormatException
+      // below, so no Sentry noise.
+      return InstallPickedOutcome._(
+        errorMessage: localizations.importBundleEmpty,
+        isFormatError: true,
+      );
+    } catch (e, stackTrace) {
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+      return InstallPickedOutcome._(
+        errorMessage: localizations.openFailure(drillFile.fileName),
+      );
+    }
   }
 
   try {
