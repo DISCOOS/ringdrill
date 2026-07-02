@@ -144,7 +144,16 @@ class _LibraryBodyState extends State<_LibraryBody>
                 )
               : _buildMyPlansList(context, localizations, programs),
         ),
-        TabFooter(subtitle: localizations.libraryMyPlansSubtitle),
+        TabFooter(
+          subtitle: localizations.libraryMyPlansSubtitle,
+          trailing: IconButton(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: localizations.libraryExportAll,
+            onPressed: programs.isEmpty
+                ? null
+                : () => active_actions.downloadAllPlans(context),
+          ),
+        ),
       ],
     );
   }

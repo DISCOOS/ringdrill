@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:ringdrill/data/bulk_export.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
@@ -24,6 +25,8 @@ import 'package:ringdrill/views/export_plan_dialog.dart';
 import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/publish_plan_dialog.dart';
+import 'package:ringdrill/web/trigger_download_web.dart'
+    if (dart.library.io) 'package:ringdrill/web/trigger_download_stub.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> openPlan(BuildContext context) => showOpenPlanDialog(context);
@@ -247,6 +250,32 @@ Future<void> createNewPlan(BuildContext context) async {
 
 Future<void> addExercises(BuildContext context) =>
     showAddExercisesDialog(context);
+
+/// Encodes every saved plan into one drill-library ZIP and downloads (web)
+/// or shares (native) it via [triggerDownload] — the same cross-platform
+/// path `MigrationPage._export` already uses for the migration exporter
+/// (ADR-0045).
+Future<void> downloadAllPlans(BuildContext context) async {
+  final localizations = AppLocalizations.of(context)!;
+  final programs = ProgramService()
+      .listPrograms()
+      .map((shell) => ProgramService().loadProgram(shell.uuid))
+      .whereType<Program>()
+      .toList();
+  final fileName = bulkExportFileName(DateTime.now());
+  final bytes = DrillLibrary.fromPrograms(programs);
+  try {
+    await triggerDownload(fileName, bytes);
+    if (context.mounted) {
+      _showSnackBar(context, localizations.exportSuccess(fileName));
+    }
+  } catch (e, stackTrace) {
+    if (context.mounted) {
+      _showSnackBar(context, localizations.exportFailure(fileName));
+    }
+    unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+  }
+}
 
 /// Copies the catalog deep-link URL for the currently active plan to the
 /// clipboard. Requires the active plan to be catalog-published — the drawer
