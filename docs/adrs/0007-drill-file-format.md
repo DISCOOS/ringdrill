@@ -83,3 +83,13 @@ Implementation lives in `lib/data/drill_file.dart` (`DrillFile.fromFile`, `fromB
 * Related code: `lib/data/drill_file.dart`, `lib/data/drill_client.dart`, `netlify/functions/drills-upload.js`, `netlify/functions/drills-head.js`, `netlify/functions/deep-link.js`, `netlify.toml`
 * Operating rule (in [`AGENTS.md`](../../AGENTS.md)): "Drill file format is versioned."
 * Note: `DrillFile.drillMimeType` carries a TODO to register the MIME type with IANA. Until then we use the `vnd.` vendor tree convention.
+
+## Addendum (2026-07-02): `languageCode` on `ProgramMetadata`
+
+`ProgramMetadata` (`metadata.json`) gains an optional `languageCode: String?` — the ISO 639-1 code of the human language the plan's *content* (name, description, briefs, exercise/station/team names) is written in. This is unrelated to the app's own UI locale (`lib/l10n/`); a Norwegian-UI user can author an English-content plan and vice versa — the two have always been, and remain, independent concepts.
+
+**No schema bump.** Same reasoning as every other additive `metadata.json`/`program.json` field this repo has added: `schema` describes the archive layout (1.0–1.2), not the presence of optional keys within a part. `freezed`/`json_serializable` deserialize old archives without `languageCode` fine (absent → `null`), and the Netlify upload path already reads `metadata.json` defensively.
+
+**Value set is scoped to the app's supported UI locales, not a separate curated list.** Today that means `nb`/`en` only — the plan-language picker in `lib/views/program_form_screen.dart` sources its options from `AppLocalizations.supportedLocales` (generated from `app_nb.arb`/`app_en.arb`), so a future third UI locale extends the plan-language options for free, with no separate list to remember to update. `languageCode: null` is a valid, expected state (plan not yet tagged) — readers must treat it as "unknown," never coerce it to a default language.
+
+**Consumers**: `netlify/functions/drills-upload.js` reads it off `metadata.json` at publish time (same unzip pass already used for `exerciseCount`/`mapCenter`) and persists it to `meta.json`; the catalog feed and the `/i/<slug>` preview page project it (see ADR-0040's language addendum for the catalog-side contract).
