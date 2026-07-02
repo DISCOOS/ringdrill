@@ -98,12 +98,13 @@ const updatedLabel = item.updatedAt
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
 
-  // Same tile provider as the in-app map (lib/views/map_view.dart). Unlike
-  // the in-app map, this public map MUST show a visible attribution — see
-  // the map-center addendum in docs/adrs/0040-catalog-feed-schema-extension.md.
+  // Same tile provider as the in-app map (lib/views/map_view.dart). The
+  // "© Kartverket" attribution this needs is shown once for the whole page
+  // (see .catalog__map-attribution in catalog.astro / en/catalog.astro),
+  // not per card — so each map's own attribution control is disabled here
+  // rather than duplicating "Leaflet | © Kartverket" on every card.
   const KARTVERKET_TOPO_URL =
     'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png';
-  const ATTRIBUTION = '&copy; Kartverket';
 
   const containers = document.querySelectorAll<HTMLElement>(
     '.catalog-card__map[data-lat]:not([data-mounted])',
@@ -126,12 +127,9 @@ const updatedLabel = item.updatedAt
       dragging: false,
       scrollWheelZoom: false,
       doubleClickZoom: false,
-      attributionControl: true,
+      attributionControl: false,
     });
 
-    L.tileLayer(KARTVERKET_TOPO_URL, {
-      maxZoom: 18,
-      attribution: ATTRIBUTION,
-    }).addTo(map);
+    L.tileLayer(KARTVERKET_TOPO_URL, { maxZoom: 18 }).addTo(map);
   }
 </script>

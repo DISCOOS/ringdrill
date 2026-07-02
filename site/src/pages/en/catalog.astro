@@ -30,9 +30,14 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
         <p class="lead">{c.catalog.lead}</p>
 
         {result.items.length > 0 ? (
-          <ul class="catalog__grid">
-            {result.items.map((item) => <CatalogCard item={item} lang="en" />)}
-          </ul>
+          <>
+            <ul class="catalog__grid">
+              {result.items.map((item) => <CatalogCard item={item} lang="en" />)}
+            </ul>
+            {result.items.some((item) => item.mapCenter) && (
+              <p class="catalog__map-attribution">{c.catalog.mapAttribution}</p>
+            )}
+          </>
         ) : (
           <div class="catalog__empty prose">
             <p class="lead">{result.failed ? c.catalog.emptyUnavailable : c.catalog.emptyNoPlans}</p>
@@ -54,4 +59,5 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
     gap: 20px;
   }
   .catalog__empty { margin-top: 40px; }
+  .catalog__map-attribution { margin-top: 16px; color: var(--muted); font-size: 0.8125rem; }
 </style>

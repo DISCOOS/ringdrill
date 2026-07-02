@@ -84,6 +84,7 @@ export const strings = {
       download: 'Last ned',
       exerciseUnit: 'øvelse',
       exercisePlural: 'øvelser',
+      mapAttribution: 'Kartdata © Kartverket',
     },
 
     footer: {
@@ -191,6 +192,7 @@ export const strings = {
       download: 'Download',
       exerciseUnit: 'exercise',
       exercisePlural: 'exercises',
+      mapAttribution: 'Map data © Kartverket',
     },
 
     footer: {
