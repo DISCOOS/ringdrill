@@ -28,14 +28,19 @@ const updatedLabel = item.updatedAt
 <li class="catalog-card">
   <h3><a href={previewUrl}>{item.name}</a></h3>
   {item.description && <p class="catalog-card__desc">{item.description}</p>}
-  {(exerciseLabel || item.tags.length > 0) && (
-    <div class="catalog-card__badges">
-      {exerciseLabel && <span class="catalog-card__badge">{exerciseLabel}</span>}
-      {item.tags.map((tag) => <span class="catalog-card__badge">{tag}</span>)}
-    </div>
+  {item.tags.length > 0 && (
+    <ul class="catalog-card__tags">
+      {item.tags.map((tag) => <li>{tag}</li>)}
+    </ul>
   )}
-  {updatedLabel && (
-    <p class="catalog-card__updated">{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></p>
+  {(exerciseLabel || updatedLabel) && (
+    <p class="catalog-card__meta">
+      {exerciseLabel && <span>{exerciseLabel}</span>}
+      {exerciseLabel && updatedLabel && <span class="sep" aria-hidden="true">·</span>}
+      {updatedLabel && (
+        <span>{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></span>
+      )}
+    </p>
   )}
   {item.mapCenter && (
     <div
@@ -76,15 +81,27 @@ const updatedLabel = item.updatedAt
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .catalog-card__badges { display: flex; flex-wrap: wrap; gap: 6px; }
-  .catalog-card__badge {
+  /* Matches the .tags/.tags li chip styling in drills-preview.js's rendered
+     /i/<slug> page — same pill shape, weight and chip-tinted color, so a
+     tag reads the same wherever it's shown. */
+  .catalog-card__tags {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+  }
+  .catalog-card__tags li {
     background: var(--canvas-band);
-    color: var(--muted);
-    font-size: 0.8125rem;
-    padding: 2px 10px;
+    color: var(--link);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
     border-radius: var(--radius-pill);
   }
-  .catalog-card__updated { color: var(--muted); font-size: 0.8125rem; margin: 0; }
+  .catalog-card__meta { color: var(--muted); font-size: 0.85rem; margin: 0; }
+  .catalog-card__meta .sep { margin: 0 0.45rem; opacity: 0.6; }
   .catalog-card__map {
     height: 140px;
     border-radius: var(--radius-md);
