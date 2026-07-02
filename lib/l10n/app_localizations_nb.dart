@@ -1065,6 +1065,17 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String catalogExerciseCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count øvelser',
+      one: '1 øvelse',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get libraryActive => 'Aktiv';
 
   @override

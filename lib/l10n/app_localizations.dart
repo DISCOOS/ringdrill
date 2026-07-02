@@ -1754,6 +1754,12 @@ abstract class AppLocalizations {
   /// **'From catalog · {slug}'**
   String librarySourceCatalog(Object slug);
 
+  /// Exercise-count line shown on a catalog card (ADR-0040).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 exercise} other{{count} exercises}}'**
+  String catalogExerciseCount(num count);
+
   /// No description provided for @libraryActive.
   ///
   /// In en, this message translates to:

@@ -128,6 +128,22 @@ class MarketFeedItem {
   final String programId;
   final String slug;
   final String name;
+
+  /// Plan description (ADR-0040). Empty when the plan has none.
+  final String description;
+
+  /// Number of exercises in the plan at publish time (ADR-0040). `null` on
+  /// legacy blobs published before this field existed — omit the count line
+  /// rather than showing 0.
+  final int? exerciseCount;
+
+  /// Author reference. Today mirrors the opaque `ownerId` (often "anon");
+  /// ADR-0024 resolves this to an account display name.
+  final String? author;
+
+  /// One of `account | shared | public` (ADR-0025). Parsed but not yet
+  /// surfaced in the UI — lights up with ADR-0024/0025.
+  final String? accessPolicy;
   final List<String> tags;
   final Uri latestUrl;
   final DateTime? updatedAt;
@@ -135,6 +151,10 @@ class MarketFeedItem {
     required this.programId,
     required this.slug,
     required this.name,
+    this.description = '',
+    this.exerciseCount,
+    this.author,
+    this.accessPolicy,
     required this.tags,
     required this.latestUrl,
     this.updatedAt,
@@ -144,6 +164,10 @@ class MarketFeedItem {
     programId: j['programId'] as String,
     slug: j['slug'] as String,
     name: j['name'] as String,
+    description: j['description'] as String? ?? '',
+    exerciseCount: (j['exerciseCount'] as num?)?.toInt(),
+    author: j['author'] as String?,
+    accessPolicy: j['accessPolicy'] as String?,
     tags: (j['tags'] as List<dynamic>? ?? const <dynamic>[])
         .map((e) => e.toString())
         .toList(),

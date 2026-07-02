@@ -1114,6 +1114,10 @@
   "librarySourceLocal": "Local",
   "librarySourceImported": "Imported from {fileName}",
   "librarySourceCatalog": "From catalog · {slug}",
+  "catalogExerciseCount": "{count, plural, =1{1 exercise} other{{count} exercises}}",
+  "@catalogExerciseCount": {
+    "description": "Exercise-count line shown on a catalog card (ADR-0040)."
+  },
   "libraryActive": "Active",
   "libraryInstalled": "In my plans",
   "libraryInstall": "Open",

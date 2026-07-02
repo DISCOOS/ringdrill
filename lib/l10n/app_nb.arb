@@ -291,6 +291,7 @@
   "librarySourceLocal": "Lokal",
   "librarySourceImported": "Importert fra {fileName}",
   "librarySourceCatalog": "Fra katalog · {slug}",
+  "catalogExerciseCount": "{count, plural, =1{1 øvelse} other{{count} øvelser}}",
   "libraryActive": "Aktiv",
   "libraryInstalled": "I mine planer",
   "libraryInstall": "Åpne",
