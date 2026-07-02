@@ -66,7 +66,7 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
 
         {result.items.length > 0 ? (
           <>
-            <ul class="catalog__grid">
+            <ul class="catalog__grid" id="catalog-grid">
               {result.items.map((item) => <CatalogCard item={item} lang="en" />)}
             </ul>
             {result.items.some((item) => item.mapCenter || item.mapBounds) && (
@@ -129,19 +129,33 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
   .catalog__grid {
     list-style: none;
     margin-top: 40px;
-    /* Masonry-style: a CSS multi-column layout, not a grid. Cards flow
-       top-to-bottom within a column before wrapping to the next one, so
-       short cards (no map) stack together instead of each being stretched
-       to match a taller sibling in the same "row" — a real grid can't do
-       that without JS. Two columns max even on very wide screens; the
-       bounding-box map reads better wide than the previous 3+ column
-       layout allowed. Each card sets break-inside: avoid (CatalogCard.astro)
-       so a map is never split across the column break. */
+    /* Masonry-style fallback for no-JS: a CSS multi-column layout, not a
+       grid, so short cards (no map) stack together instead of each being
+       stretched to match a taller sibling in the same "row". This is only
+       the fallback because column-fill defaults to "balance", which aims
+       for equal-height columns rather than filling the first column
+       before spilling into the next — the script below reparents cards
+       into two explicit, height-balanced <ul>s (.catalog__grid--split)
+       once it can measure their real rendered height, which is what
+       actually keeps the next card in whichever column is shortest. */
     columns: 2;
     column-gap: 24px;
   }
   @media (max-width: 720px) {
     .catalog__grid { columns: 1; }
+  }
+  .catalog__grid--split {
+    columns: initial;
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .catalog__column {
+    flex: 1 1 0;
+    min-width: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
   .catalog__empty { margin-top: 40px; }
   .catalog__map-attribution {
@@ -180,4 +194,45 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
 
   select?.addEventListener('change', applyFilters);
   search?.addEventListener('input', applyFilters);
+
+  // Two-column masonry, done by hand: CSS multi-column's column-fill
+  // defaults to "balance" (aim for equal-height columns), not "fill the
+  // first column, then spill into the next", so a card can land at the
+  // top of column 2 while column 1 still has room — see the CSS comment
+  // on .catalog__grid. Captured once, in the server-rendered order, so a
+  // resize can always rebuild from the original order rather than
+  // whatever order cards happen to be in after a previous reflow.
+  const grid = document.getElementById('catalog-grid');
+  const cards = grid
+    ? Array.from(grid.querySelectorAll<HTMLLIElement>(':scope > .catalog-card'))
+    : [];
+
+  function layoutCatalogGrid() {
+    if (!grid || cards.length === 0) return;
+    const isTwoColumn = window.matchMedia('(min-width: 721px)').matches;
+
+    if (!isTwoColumn) {
+      grid.classList.remove('catalog__grid--split');
+      grid.replaceChildren(...cards);
+      return;
+    }
+
+    const columns = [document.createElement('ul'), document.createElement('ul')];
+    columns.forEach((col) => col.classList.add('catalog__column'));
+    grid.classList.add('catalog__grid--split');
+    grid.replaceChildren(...columns);
+
+    // Greedy shortest-column placement, measured as each card lands in
+    // its new column (so it reflects that column's real width, not the
+    // old layout's), not estimated up front.
+    const heights = [0, 0];
+    for (const card of cards) {
+      const target = heights[0] <= heights[1] ? 0 : 1;
+      columns[target].appendChild(card);
+      heights[target] += card.getBoundingClientRect().height;
+    }
+  }
+
+  layoutCatalogGrid();
+  window.addEventListener('resize', layoutCatalogGrid);
 </script>
