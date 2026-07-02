@@ -25,7 +25,7 @@ export const strings = {
       primaryHref:
         'https://play.google.com/store/apps/details?id=org.discoos.ringdrill',
       iosCta: 'Last ned for iOS',
-      iosHref: 'https://apps.apple.com/app/id6777269410',
+      iosHref: 'https://apps.apple.com/no/app/ringdrill-app/id6777269410?l=nb',
       secondaryCta: 'Åpne på web',
       secondaryHref: 'https://web.ringdrill.app/',
       note: 'Gratis på Android og iOS. Eller åpne på web.',
@@ -81,7 +81,7 @@ export const strings = {
       colLinks: 'Lenker',
       links: [
         { label: 'Google Play', href: 'https://play.google.com/store/apps/details?id=org.discoos.ringdrill' },
-        { label: 'App Store', href: 'https://apps.apple.com/app/id6777269410' },
+        { label: 'App Store', href: 'https://apps.apple.com/no/app/ringdrill-app/id6777269410?l=nb' },
         { label: 'Åpne på web', href: 'https://web.ringdrill.app/' },
         { label: 'Kildekode på GitHub', href: 'https://github.com/DISCOOS/ringdrill' },
         { label: 'API', href: 'https://ringdrill.app/api/docs' },
@@ -119,7 +119,7 @@ export const strings = {
       primaryHref:
         'https://play.google.com/store/apps/details?id=org.discoos.ringdrill',
       iosCta: 'Download for iOS',
-      iosHref: 'https://apps.apple.com/app/id6777269410',
+      iosHref: 'https://apps.apple.com/no/app/ringdrill-app/id6777269410?l=en',
       secondaryCta: 'Open on web',
       secondaryHref: 'https://web.ringdrill.app/',
       note: 'Free on Android and iOS. Or open on the web.',
@@ -175,7 +175,7 @@ export const strings = {
       colLinks: 'Links',
       links: [
         { label: 'Google Play', href: 'https://play.google.com/store/apps/details?id=org.discoos.ringdrill' },
-        { label: 'App Store', href: 'https://apps.apple.com/app/id6777269410' },
+        { label: 'App Store', href: 'https://apps.apple.com/no/app/ringdrill-app/id6777269410?l=en' },
         { label: 'Open on web', href: 'https://web.ringdrill.app/' },
         { label: 'Source on GitHub', href: 'https://github.com/DISCOOS/ringdrill' },
         { label: 'API', href: 'https://ringdrill.app/api/docs' },
