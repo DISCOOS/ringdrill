@@ -325,6 +325,7 @@
   "sendToActionButton": "SEND TIL...",
   "exportAsDrill": "Eksporter som .drill",
   "exportAction": "EKSPORTER",
+  "downloadAction": "LAST NED",
   "libraryDownloadAction": "Last ned…",
   "libraryDownloadAll": "Last ned alle",
   "libraryDownloadPlan": "Last ned plan",

@@ -1140,6 +1140,7 @@
   "sendToActionButton": "SEND TO...",
   "exportAsDrill": "Export as .drill",
   "exportAction": "EXPORT",
+  "downloadAction": "DOWNLOAD",
   "libraryDownloadAction": "Download…",
   "libraryDownloadAll": "Download all",
   "libraryDownloadPlan": "Download plan",

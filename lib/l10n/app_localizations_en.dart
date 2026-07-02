@@ -1170,6 +1170,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportAction => 'EXPORT';
 
   @override
+  String get downloadAction => 'DOWNLOAD';
+
+  @override
   String get libraryDownloadAction => 'Download…';
 
   @override
