@@ -36,6 +36,7 @@ const updatedLabel = item.updatedAt
   : null;
 
 const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toString();
+const languageLabel = item.languageCode ? (LANGUAGE_NAMES[item.languageCode] ?? item.languageCode) : null;
 
 // Precomputed, lowercased search blob for the client-side search box in
 // catalog.astro/en/catalog.astro — matches name, description, tags and
@@ -71,18 +72,15 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
       data-west={item.mapBounds?.west}
     />
   )}
-  {(item.place || item.languageCode || exerciseLabel || updatedLabel) && (
+  {(item.place || languageLabel || exerciseLabel || updatedLabel) && (
     <div class="catalog-card__info">
       {item.place && (
         <span class="catalog-card__place" title={item.place}>{item.place}</span>
       )}
-      {item.languageCode && (
-        <span class="catalog-card__lang-chip">
-          {LANGUAGE_NAMES[item.languageCode] ?? item.languageCode}
-        </span>
-      )}
-      {(exerciseLabel || updatedLabel) && (
+      {(languageLabel || exerciseLabel || updatedLabel) && (
         <p class="catalog-card__meta">
+          {languageLabel && <span>{languageLabel}</span>}
+          {languageLabel && (exerciseLabel || updatedLabel) && <span class="sep" aria-hidden="true">·</span>}
           {exerciseLabel && <span>{exerciseLabel}</span>}
           {exerciseLabel && updatedLabel && <span class="sep" aria-hidden="true">·</span>}
           {updatedLabel && (
@@ -229,6 +227,13 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
        no map data for this plan" at a glance, not just a same-color
        blob that blends into the card either way. */
     border: 1px solid var(--border-strong);
+    /* Leaflet's own panes/controls use z-index up to 1000. Its container
+       is only position: relative (z-index: auto), which doesn't start a
+       new stacking context, so those values would otherwise compare
+       directly against the sticky nav's z-index (BaseLayout.astro) and
+       paint over it wherever a scrolling card's map overlaps the header.
+       isolation: isolate contains them to this box. */
+    isolation: isolate;
   }
   /* Place (left) and the exercise-count/updated meta (right) share one
      line below the map. It must never wrap: the meta text is short and
@@ -243,10 +248,9 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     flex-wrap: nowrap;
   }
   /* Reverse-geocoded / derived metadata, not author-entered like the tags
-     above them — an outline instead of a filled chip marks these as
+     above them — an outline instead of a filled chip marks this as
      "about the plan", not a curated label the plan owner picked. */
-  .catalog-card__place,
-  .catalog-card__lang-chip {
+  .catalog-card__place {
     background: transparent;
     border: 1px solid var(--border-strong);
     color: var(--muted);
@@ -255,8 +259,6 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     padding: 0.2rem 0.6rem;
     border-radius: var(--radius-pill);
     white-space: nowrap;
-  }
-  .catalog-card__place {
     /* flex: 0 (don't grow) 1 (but do shrink) — sizes to its own text by
        default, only yielding width when the row is actually tight, rather
        than stretching to fill whatever space justify-content: space-between
@@ -265,9 +267,6 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     flex: 0 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .catalog-card__lang-chip {
-    flex: 0 0 auto;
   }
   .catalog-card__meta {
     color: var(--muted);
