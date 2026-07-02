@@ -1958,6 +1958,24 @@ abstract class AppLocalizations {
   /// **'EXPORT'**
   String get exportAction;
 
+  /// No description provided for @libraryDownloadAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Download…'**
+  String get libraryDownloadAction;
+
+  /// No description provided for @libraryDownloadAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Download all'**
+  String get libraryDownloadAll;
+
+  /// No description provided for @libraryDownloadPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Download plan'**
+  String get libraryDownloadPlan;
+
   /// No description provided for @importAction.
   ///
   /// In en, this message translates to:

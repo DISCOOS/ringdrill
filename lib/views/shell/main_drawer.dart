@@ -141,7 +141,7 @@ class MainDrawer extends StatelessWidget {
         if (ProgramPageController.canSaveDrillFile)
           _DrawerTile(
             icon: Icons.download,
-            title: localizations.exportAsDrill,
+            title: localizations.libraryDownloadAction,
             enabled: hasActivePlan,
             disabledTooltip: localizations.requiresActivePlan,
             onTap: () async {
@@ -150,7 +150,7 @@ class MainDrawer extends StatelessWidget {
                 rootNavigator: true,
               ).context;
               Navigator.pop(context);
-              await active_actions.exportActivePlan(actionContext);
+              await active_actions.downloadActivePlan(actionContext);
             },
           ),
         _DrawerTile(

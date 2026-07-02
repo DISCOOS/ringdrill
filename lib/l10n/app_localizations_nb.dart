@@ -1166,6 +1166,15 @@ class AppLocalizationsNb extends AppLocalizations {
   String get exportAction => 'EKSPORTER';
 
   @override
+  String get libraryDownloadAction => 'Last ned…';
+
+  @override
+  String get libraryDownloadAll => 'Last ned alle';
+
+  @override
+  String get libraryDownloadPlan => 'Last ned plan';
+
+  @override
   String get importAction => 'IMPORTER';
 
   @override
