@@ -84,7 +84,14 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
           {exerciseLabel && <span>{exerciseLabel}</span>}
           {exerciseLabel && updatedLabel && <span class="sep" aria-hidden="true">·</span>}
           {updatedLabel && (
-            <span>{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></span>
+            <span class="catalog-card__updated" title={c.catalog.updated}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <path d="M21 3v6h-6" />
+              </svg>
+              <span class="sr-only">{c.catalog.updated}</span>
+              <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time>
+            </span>
           )}
         </p>
       )}
@@ -279,6 +286,32 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     white-space: nowrap;
   }
   .catalog-card__meta .sep { margin: 0 0.45rem; opacity: 0.6; }
+  /* An "Oppdatert"/"Updated" label in front of every timestamp read as
+     redundant clutter next to the language/exercise-count text sharing
+     this line — a small icon carries the same meaning with a native
+     title tooltip for a sighted mouse user, and the sr-only text below
+     keeps it announced for screen readers. */
+  .catalog-card__updated {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .catalog-card__updated svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .catalog-card__actions {
     display: flex;
     align-items: center;
