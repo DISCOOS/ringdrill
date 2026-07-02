@@ -102,7 +102,8 @@ export function latestVersionEntry(versions) {
 // All derived fields degrade gracefully for legacy blobs written before
 // ADR-0040 (missing exerciseCount → null, author → ownerId, accessPolicy →
 // public for anon plans else account, per ADR-0025; missing/malformed
-// mapCenter → null, per ADR-0040's map-center addendum).
+// mapCenter → null, per ADR-0040's map-center addendum; missing/malformed
+// languageCode → null, per ADR-0007's languageCode addendum).
 export function metaToFeedItem(meta, { origin }) {
     const latest = latestVersionEntry(meta.versions);
     return {
@@ -116,6 +117,7 @@ export function metaToFeedItem(meta, { origin }) {
         mapCenter: (meta.mapCenter && Number.isFinite(meta.mapCenter.lat) && Number.isFinite(meta.mapCenter.lng))
             ? { lat: meta.mapCenter.lat, lng: meta.mapCenter.lng }
             : null,
+        languageCode: typeof meta.languageCode === "string" ? meta.languageCode : null,
         tags: Array.isArray(meta.tags) ? meta.tags : [],
         latestUrl: `${origin}/d/${meta.slug}`,
         updatedAt: latest?.updatedAt || null,

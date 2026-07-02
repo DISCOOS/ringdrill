@@ -36,6 +36,7 @@ const MODERN_META = {
         author: "acc-1",
         accessPolicy: "account",
         mapCenter: { lat: 61, lng: 11 },
+        languageCode: "nb",
         tags: ["sar"],
         ownerId: "acc-1",
         published: true,
@@ -58,6 +59,7 @@ test("published items carry the widened shape", async () => {
         author: "acc-1",
         accessPolicy: "account",
         mapCenter: { lat: 61, lng: 11 },
+        languageCode: "nb",
         tags: ["sar"],
         latestUrl: "http://api.ringdrill.app/d/modern-plan",
         updatedAt: "2026-02-01T00:00:00.000Z",
@@ -102,6 +104,7 @@ test("a legacy blob (no exerciseCount/author/accessPolicy) projects with gracefu
     assert.equal(items[0].description, "");
     assert.equal(items[0].updatedAt, null);
     assert.equal(items[0].mapCenter, null);
+    assert.equal(items[0].languageCode, null);
 });
 
 test("items are sorted by updatedAt descending", async () => {

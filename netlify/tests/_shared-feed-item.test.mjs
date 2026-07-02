@@ -19,6 +19,7 @@ test("metaToFeedItem: a full modern blob projects every field", () => {
         author: "Kari",
         accessPolicy: "shared",
         mapCenter: { lat: 61, lng: 11 },
+        languageCode: "nb",
         tags: ["a", "b"],
         ownerId: "acc-1",
         versions: [
@@ -35,6 +36,7 @@ test("metaToFeedItem: a full modern blob projects every field", () => {
         author: "Kari",
         accessPolicy: "shared",
         mapCenter: { lat: 61, lng: 11 },
+        languageCode: "nb",
         tags: ["a", "b"],
         latestUrl: "https://api.ringdrill.app/d/sprint-1",
         updatedAt: "2026-02-01T00:00:00.000Z",
@@ -56,6 +58,7 @@ test("metaToFeedItem: legacy blob (no exerciseCount/author/accessPolicy) → gra
     assert.equal(item.accessPolicy, "public");
     assert.equal(item.description, "");
     assert.equal(item.mapCenter, null);
+    assert.equal(item.languageCode, null);
 });
 
 test("metaToFeedItem: legacy blob owned by an account → accessPolicy defaults to account", () => {
@@ -107,6 +110,26 @@ test("metaToFeedItem: missing mapCenter → null", () => {
     const meta = { programId: "prog-8", slug: "no-center", name: "No Center", ownerId: "anon", versions: [] };
     const item = metaToFeedItem(meta, { origin: ORIGIN });
     assert.equal(item.mapCenter, null);
+});
+
+// ---------- metaToFeedItem: languageCode (ADR-0007 addendum) ----------
+
+test("metaToFeedItem: languageCode passes through when a valid string", () => {
+    const meta = { programId: "prog-9", slug: "nb-plan", name: "NB Plan", ownerId: "anon", languageCode: "nb", versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.equal(item.languageCode, "nb");
+});
+
+test("metaToFeedItem: missing languageCode → null", () => {
+    const meta = { programId: "prog-10", slug: "no-lang", name: "No Lang", ownerId: "anon", versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.equal(item.languageCode, null);
+});
+
+test("metaToFeedItem: non-string languageCode → null, never thrown", () => {
+    const meta = { programId: "prog-11", slug: "bad-lang", name: "Bad Lang", ownerId: "anon", languageCode: 42, versions: [] };
+    const item = metaToFeedItem(meta, { origin: ORIGIN });
+    assert.equal(item.languageCode, null);
 });
 
 // ---------- latestVersionEntry ----------

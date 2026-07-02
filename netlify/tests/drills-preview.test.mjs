@@ -181,6 +181,29 @@ test("renderHtml: exerciseCount absent when null", () => {
     assert.ok(!html.includes("øvelse"));
 });
 
+test("renderHtml: languageCode shown as a localized display name (nb reader)", () => {
+    const meta = { ...SAMPLE_META, languageCode: "en" };
+    const html = renderHtml({ slug: "sprint-1", meta, locale: "nb" });
+    assert.ok(html.includes("Engelsk"), "nb reader sees the Norwegian name for English");
+});
+
+test("renderHtml: languageCode shown as a localized display name (en reader)", () => {
+    const meta = { ...SAMPLE_META, languageCode: "nb" };
+    const html = renderHtml({ slug: "sprint-1", meta, locale: "en" });
+    assert.ok(html.includes("Norwegian"), "en reader sees the English name for Norwegian");
+});
+
+test("renderHtml: languageCode absent when not set", () => {
+    const html = renderHtml({ slug: "sprint-1", meta: SAMPLE_META, locale: "nb" });
+    assert.ok(!html.includes("Norsk") && !html.includes("Engelsk"));
+});
+
+test("renderHtml: unrecognized languageCode is omitted, never thrown", () => {
+    const meta = { ...SAMPLE_META, languageCode: "xx" };
+    const html = renderHtml({ slug: "sprint-1", meta, locale: "nb" });
+    assert.ok(!html.includes("undefined"));
+});
+
 test("renderHtml: tags rendered in body", () => {
     const html = renderHtml({ slug: "sprint-1", meta: SAMPLE_META, locale: "nb" });
     assert.ok(html.includes("pace"));

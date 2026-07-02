@@ -18,6 +18,11 @@ const STRINGS = {
         tagline:        "Rullering uten regneark.",
         about:          "RingDrill holder styr på rundetider, rullering og briefer til lag, veiledere og markører.",
         moreAt:         "Mer på",
+        // Plan-content language display names (ADR-0007 addendum), scoped to
+        // the app's currently supported UI locales — extend alongside
+        // lib/views/program_form_screen.dart's kPlanLanguageNames and
+        // site/src/lib/languages.ts's LANGUAGE_NAMES.
+        languageNames:  { nb: "Norsk", en: "Engelsk" },
     },
     en: {
         openOnWeb:      "Open the plan",
@@ -30,6 +35,7 @@ const STRINGS = {
         tagline:        "Rotation without the spreadsheet.",
         about:          "RingDrill keeps track of round times, rotation and briefs for teams, trainers and role-players.",
         moreAt:         "More at",
+        languageNames:  { nb: "Norwegian", en: "English" },
     },
 };
 
@@ -85,8 +91,12 @@ export function renderHtml({ slug, meta, locale }) {
         ? `<ul class="tags">${tags.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`
         : "";
 
-    // ---- Derived meta bits (count + last-updated) rendered as one row ----
+    // ---- Derived meta bits (language + count + last-updated) rendered as one row ----
     const metaBits = [];
+    const languageName = s.languageNames[meta.languageCode];
+    if (languageName) {
+        metaBits.push(`<span>${esc(languageName)}</span>`);
+    }
     if (meta.exerciseCount != null) {
         const unit = meta.exerciseCount !== 1 ? s.exercisePlural : s.exerciseUnit;
         metaBits.push(`<span>${meta.exerciseCount} ${unit}</span>`);
