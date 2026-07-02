@@ -1,0 +1,137 @@
+---
+import { t, type Lang } from '../i18n';
+import type { CatalogItem } from '../lib/catalog';
+
+interface Props {
+  item: CatalogItem;
+  lang: Lang;
+}
+
+const { item, lang } = Astro.props;
+const c = t(lang);
+
+// The front door for "get this plan" is the human preview page (ADR-0015/
+// ADR-0044), never the feed's raw latestUrl (a .drill binary download).
+const previewUrl = `/i/${item.slug}?lang=${lang}`;
+const exerciseLabel =
+  item.exerciseCount == null
+    ? null
+    : `${item.exerciseCount} ${item.exerciseCount === 1 ? c.catalog.exerciseUnit : c.catalog.exercisePlural}`;
+const updatedLabel = item.updatedAt
+  ? new Date(item.updatedAt).toLocaleDateString(lang === 'nb' ? 'nb-NO' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  : null;
+---
+<li class="catalog-card">
+  <h3><a href={previewUrl}>{item.name}</a></h3>
+  {item.description && <p class="catalog-card__desc">{item.description}</p>}
+  {(exerciseLabel || item.tags.length > 0) && (
+    <div class="catalog-card__badges">
+      {exerciseLabel && <span class="catalog-card__badge">{exerciseLabel}</span>}
+      {item.tags.map((tag) => <span class="catalog-card__badge">{tag}</span>)}
+    </div>
+  )}
+  {updatedLabel && (
+    <p class="catalog-card__updated">{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></p>
+  )}
+  {item.mapCenter && (
+    <div
+      class="catalog-card__map"
+      data-lat={item.mapCenter.lat}
+      data-lng={item.mapCenter.lng}
+    />
+  )}
+  <a class="btn btn--primary btn--sm catalog-card__download" href={previewUrl}>{c.catalog.download}</a>
+</li>
+
+<style>
+  .catalog-card {
+    background: var(--canvas-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+  .catalog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lift);
+  }
+  .catalog-card h3 { margin: 0; }
+  .catalog-card h3 a { color: var(--heading); text-decoration: none; }
+  .catalog-card h3 a:hover { color: var(--link); }
+  .catalog-card__desc {
+    color: var(--body);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .catalog-card__badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .catalog-card__badge {
+    background: var(--canvas-band);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+  }
+  .catalog-card__updated { color: var(--muted); font-size: 0.8125rem; margin: 0; }
+  .catalog-card__map {
+    height: 140px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--canvas-band);
+  }
+  .catalog-card__download { align-self: flex-start; margin-top: 4px; }
+</style>
+
+<script>
+  import L from 'leaflet';
+  import 'leaflet/dist/leaflet.css';
+
+  // Same tile provider as the in-app map (lib/views/map_view.dart). Unlike
+  // the in-app map, this public map MUST show a visible attribution — see
+  // the map-center addendum in docs/adrs/0040-catalog-feed-schema-extension.md.
+  const KARTVERKET_TOPO_URL =
+    'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png';
+  const ATTRIBUTION = '&copy; Kartverket';
+
+  const containers = document.querySelectorAll<HTMLElement>(
+    '.catalog-card__map[data-lat]:not([data-mounted])',
+  );
+
+  for (const el of containers) {
+    const lat = Number(el.dataset.lat);
+    const lng = Number(el.dataset.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    el.dataset.mounted = 'true';
+
+    // Zoomed out, non-interactive: this is a coarse approximate area, not
+    // the exact station location, so no marker/pin is placed either — a
+    // pin would read as "the exact spot" and defeat the point of using a
+    // centroid instead of real per-station positions.
+    const map = L.map(el, {
+      center: [lat, lng],
+      zoom: 9,
+      zoomControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      attributionControl: true,
+    });
+
+    L.tileLayer(KARTVERKET_TOPO_URL, {
+      maxZoom: 18,
+      attribution: ATTRIBUTION,
+    }).addTo(map);
+  }
+</script>

@@ -1,0 +1,57 @@
+---
+// On-demand (ADR-0044 rendering pattern applied to ADR-0039's reserved
+// /catalog route): fetched fresh per request, never build-time-static.
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import CatalogCard from '../../components/CatalogCard.astro';
+import { fetchCatalog } from '../../lib/catalog';
+import { t } from '../../i18n';
+
+const lang = 'en';
+const c = t(lang);
+
+const apiBase = import.meta.env.PUBLIC_RINGDRILL_API_BASE || 'https://api.ringdrill.app';
+const result = await fetchCatalog({ apiBase });
+
+// Mirrors market-feed.js's own max-age=30 so Cloudflare's edge absorbs
+// repeat traffic instead of re-fetching the feed on every visit.
+Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
+---
+<BaseLayout lang="en" title={`${c.catalog.title} · RingDrill`} description={c.catalog.lead} canonicalPath="/en/catalog">
+  <Nav lang="en" />
+  <main>
+    <section class="section">
+      <div class="container">
+        <span class="eyebrow">{c.catalog.eyebrow}</span>
+        <h1 class="catalog__title">{c.catalog.title}</h1>
+        <p class="lead">{c.catalog.lead}</p>
+
+        {result.items.length > 0 ? (
+          <ul class="catalog__grid">
+            {result.items.map((item) => <CatalogCard item={item} lang="en" />)}
+          </ul>
+        ) : (
+          <div class="catalog__empty prose">
+            <p class="lead">{result.failed ? c.catalog.emptyUnavailable : c.catalog.emptyNoPlans}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  </main>
+  <Footer lang="en" />
+</BaseLayout>
+
+<style>
+  .catalog__title { margin-top: 12px; }
+  .catalog__grid {
+    list-style: none;
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  .catalog__empty { margin-top: 40px; }
+</style>

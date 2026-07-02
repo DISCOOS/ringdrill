@@ -73,6 +73,18 @@ export const strings = {
       secondary: 'Åpne på web',
     },
 
+    catalog: {
+      eyebrow: 'Katalog',
+      title: 'Delte øvingsplaner',
+      lead: 'Bla i øvingsplaner andre har delt i RingDrill-katalogen.',
+      emptyNoPlans: 'Ingen planer er publisert ennå.',
+      emptyUnavailable: 'Katalogen er midlertidig utilgjengelig. Prøv igjen senere.',
+      updated: 'Oppdatert',
+      download: 'Last ned',
+      exerciseUnit: 'øvelse',
+      exercisePlural: 'øvelser',
+    },
+
     footer: {
       tagline: 'Rullering uten regneark.',
       colMade: 'Laget av',
@@ -165,6 +177,18 @@ export const strings = {
       primary: 'Download for Android',
       ios: 'Download for iOS',
       secondary: 'Open on web',
+    },
+
+    catalog: {
+      eyebrow: 'Catalog',
+      title: 'Shared drill plans',
+      lead: 'Browse drill plans others have shared in the RingDrill catalog.',
+      emptyNoPlans: 'No plans have been published yet.',
+      emptyUnavailable: 'The catalog is temporarily unavailable. Please try again later.',
+      updated: 'Updated',
+      download: 'Download',
+      exerciseUnit: 'exercise',
+      exercisePlural: 'exercises',
     },
 
     footer: {
