@@ -210,11 +210,19 @@ netlify-dev:
 	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) npx netlify functions:serve --port 8888
 
 # Local Astro dev server for the site/ project. Runs `astro dev` with HMR
-# at http://localhost:4321/. No Netlify backend required; the CTAs link to
+# at http://localhost:4321/. Most pages need no backend; the CTAs link to
 # the live web.ringdrill.app and play.google.com so there is nothing to stub.
+#
+# The on-demand /catalog route is the exception: it fetches
+# PUBLIC_RINGDRILL_API_BASE + /api/market-feed at request time. Exporting
+# $(LOCAL_BASE_URL) here means a `make netlify-dev` + `make catalog-seed` in
+# another shell is enough to see seeded local plans at /catalog — the same
+# two-shell workflow ADR-0013 already documents for the app and CLI. Astro
+# falls back to the production API origin when this is unset, so a bare
+# `make site-dev` still works standalone.
 site-dev:
 	npm --prefix site install
-	npm --prefix site run dev
+	PUBLIC_RINGDRILL_API_BASE=$(LOCAL_BASE_URL) npm --prefix site run dev
 
 catalog-seed:
 	@test -f $(SEED_DRILL) || { echo "Seed file $(SEED_DRILL) not found. Set SEED_DRILL=<path>"; exit 1; }

@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "preview", "--", "--host", "localhost"],
       "port": 4321,
       "cwd": "site"
+    },
+    {
+      "name": "site-dev",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/Users/kengu/.nvm/versions/node/v22.18.0/bin:$PATH && PUBLIC_RINGDRILL_API_BASE=http://localhost:8888 npm run dev -- --port 4322"],
+      "port": 4322,
+      "cwd": "site"
     }
   ]
 }

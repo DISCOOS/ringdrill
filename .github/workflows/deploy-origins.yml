@@ -39,9 +39,11 @@ on:
   push:
     branches: [main]
   schedule:
-    # Rebuilds only the site (see the `changes` job) so the catalog index
-    # can refresh without a manual push. No-op today; there is no catalog
-    # data yet (ADR-0039).
+    # Rebuilds only the site (see the `changes` job). Historically this kept
+    # a build-time-static catalog index fresh; /catalog now renders
+    # on-demand per request (ADR-0039's 2026-07-02 implementation note), so
+    # this cron is no longer load-bearing for it specifically. Left in place
+    # as a low-cost safety net and in case a future static page needs it.
     - cron: '0 * * * *'
   workflow_dispatch:
     inputs:

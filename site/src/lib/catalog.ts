@@ -67,7 +67,13 @@ export async function fetchCatalog({
 
   try {
     for (let page = 0; page < maxPages; page++) {
-      const url = new URL('/api/market-feed', apiBase);
+      // The native /.netlify/functions/<name> path always resolves, in both
+      // production (api.ringdrill.app) and local dev (`netlify
+      // functions:serve`, which does NOT apply netlify.toml's /api/* alias
+      // redirects — see the redirect comment in netlify.toml and ADR-0013).
+      // Using it here means `make site-dev` + `make netlify-dev` +
+      // `make catalog-seed` works with no extra local-only routing.
+      const url = new URL('/.netlify/functions/market-feed', apiBase);
       url.searchParams.set('limit', '100');
       if (cursor) url.searchParams.set('cursor', cursor);
 
