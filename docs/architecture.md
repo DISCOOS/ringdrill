@@ -179,7 +179,7 @@ The override is resolved at compile time (via `String.fromEnvironment` in `AppCo
 
 * MIME type: `application/vnd.ringdrill+zip`
 * Extension: `.drill`
-* Current schema: `DrillFile.drillSchema1_0 = '1.0'`
+* Current schema: `DrillFile.drillSchemaCurrent`, currently `'1.2'` (`drillSchema1_0`/`1_1`/`1_2` are still read for backward compatibility).
 
 Bumping the schema requires updating the import code in `lib/data/drill_file.dart`, the Netlify upload handler, and a migration path for existing files.
 
