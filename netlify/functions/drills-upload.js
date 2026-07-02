@@ -11,30 +11,48 @@ import {
 // coordinated changes to the Flutter app and this handler (AGENTS.md).
 const KNOWN_SCHEMA_MAX = "1.2";
 
+// Count top-level `exercises/<uuid>.json` archive entries. Per-station
+// markdown lives at `exercises/<uuid>/stations/<index>/<field>.md` (see
+// DrillFile.fromBytes in lib/data/drill_file.dart) and must not be counted,
+// hence the "no further slash after the uuid" requirement.
+function countExerciseFiles(files) {
+    if (!files) return 0;
+    return Object.keys(files).filter(k => /^exercises\/[^/]+\.json$/.test(k)).length;
+}
+
 /**
- * Read the plan-level name, description, tags and exercise count from a
- * `program.json` entry.
+ * Read the plan-level name, description and tags from a `program.json`
+ * entry, plus the exercise count derived from the archive's exercise files
+ * (ADR-0040).
  *
  * `files` is the already-unzipped archive map (name -> Uint8Array), so this
  * reuses the unzip stripActorsAndValidate already did rather than opening the
  * archive a second time. Returns { name, description, tags, exerciseCount }
- * with each field either a non-null value or null/[] when absent/unparseable
- * — never throws. `exerciseCount` (ADR-0040) is the length of
- * `program.exercises`; absent or malformed → null, never 0.
+ * with name/description either a non-null value or null when absent/
+ * unparseable, tags either the array or [] — never throws.
+ *
+ * `exerciseCount` counts top-level `exercises/<uuid>.json` entries rather
+ * than `program.json.exercises`: DrillFile.build() always serializes
+ * exercises out to individual files and writes `program.exercises: []` (see
+ * lib/data/drill_file.dart), so the embedded array is never populated and
+ * counting it would always yield 0. Counting files is a real measurement of
+ * the unzipped archive, so it is always an integer — never null, even when
+ * program.json is missing or malformed.
  */
 export function programInfoFromArchive(files) {
+    const exerciseCount = countExerciseFiles(files);
     const entry = files?.["program.json"];
-    if (!entry) return { name: null, description: null, tags: [], exerciseCount: null };
+    if (!entry) return { name: null, description: null, tags: [], exerciseCount };
     try {
         const p = JSON.parse(strFromU8(entry));
         return {
             name: typeof p?.name === "string" ? p.name : null,
             description: typeof p?.description === "string" ? p.description : null,
             tags: Array.isArray(p?.tags) ? p.tags : [],
-            exerciseCount: Array.isArray(p?.exercises) ? p.exercises.length : null,
+            exerciseCount,
         };
     } catch {
-        return { name: null, description: null, tags: [], exerciseCount: null };
+        return { name: null, description: null, tags: [], exerciseCount };
     }
 }
 

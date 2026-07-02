@@ -21,16 +21,16 @@ const enc = (obj) => new TextEncoder().encode(JSON.stringify(obj));
 
 test("programInfoFromArchive: reads name, description and tags from program.json", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"] }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"], exerciseCount: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"], exerciseCount: 0 });
 });
 
 test("programInfoFromArchive: missing program.json → nulls and empty tags", () => {
-    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [], exerciseCount: null });
+    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [], exerciseCount: 0 });
 });
 
 test("programInfoFromArchive: missing description field → null description", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Only name" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [], exerciseCount: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [], exerciseCount: 0 });
 });
 
 test("programInfoFromArchive: missing tags field → empty array, not null", () => {
@@ -47,34 +47,63 @@ test("programInfoFromArchive: tags: [] deserializes to empty array", () => {
 
 test("programInfoFromArchive: malformed program.json → nulls and empty tags, never throws", () => {
     const files = { "program.json": new TextEncoder().encode("{not json") };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0 });
 });
 
 test("programInfoFromArchive: non-string fields ignored", () => {
     const files = { "program.json": enc({ name: 42, description: { nested: true }, tags: "not-an-array" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: null });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0 });
 });
 
 // ---------- programInfoFromArchive: exerciseCount (ADR-0040) ----------
+//
+// DrillFile.build() always serializes exercises out to individual
+// `exercises/<uuid>.json` files and writes `program.exercises: []` (see
+// lib/data/drill_file.dart) — the embedded array is never populated in a
+// real archive. exerciseCount must therefore count the archive's exercise
+// files, not `program.json.exercises.length`.
 
-test("programInfoFromArchive: exerciseCount is the length of program.exercises", () => {
-    const files = { "program.json": enc({ uuid: "p1", name: "N", exercises: [{ uuid: "e1" }, { uuid: "e2" }, { uuid: "e3" }] }) };
+test("programInfoFromArchive: counts top-level exercises/<uuid>.json entries", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N", exercises: [] }),
+        "exercises/e1.json": enc({ uuid: "e1" }),
+        "exercises/e2.json": enc({ uuid: "e2" }),
+        "exercises/e3.json": enc({ uuid: "e3" }),
+    };
     assert.equal(programInfoFromArchive(files).exerciseCount, 3);
 });
 
-test("programInfoFromArchive: missing exercises field → exerciseCount null, never 0", () => {
-    const files = { "program.json": enc({ uuid: "p1", name: "N" }) };
-    assert.equal(programInfoFromArchive(files).exerciseCount, null);
+test("programInfoFromArchive: program.json.exercises is ignored (always [] in real archives)", () => {
+    // A hypothetical archive that (incorrectly, or from an old writer) embeds
+    // exercises inline must NOT have those counted — only real exercises/
+    // files count, so the field cannot silently disagree with what's on disk.
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N", exercises: [{ uuid: "e1" }, { uuid: "e2" }] }),
+        "exercises/e1.json": enc({ uuid: "e1" }),
+    };
+    assert.equal(programInfoFromArchive(files).exerciseCount, 1);
 });
 
-test("programInfoFromArchive: exercises: [] → exerciseCount 0", () => {
+test("programInfoFromArchive: no exercises/ entries → exerciseCount 0, not null", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "N", exercises: [] }) };
     assert.equal(programInfoFromArchive(files).exerciseCount, 0);
 });
 
-test("programInfoFromArchive: non-array exercises field → exerciseCount null", () => {
-    const files = { "program.json": enc({ uuid: "p1", name: "N", exercises: "not-an-array" }) };
-    assert.equal(programInfoFromArchive(files).exerciseCount, null);
+test("programInfoFromArchive: per-station markdown under exercises/<uuid>/... is not counted", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({ uuid: "e1" }),
+        "exercises/e1/stations/0/leaderNotesMd.md": new TextEncoder().encode("# notes"),
+    };
+    assert.equal(programInfoFromArchive(files).exerciseCount, 1);
+});
+
+test("programInfoFromArchive: exercise files are counted even when program.json is missing", () => {
+    const files = {
+        "exercises/e1.json": enc({ uuid: "e1" }),
+        "exercises/e2.json": enc({ uuid: "e2" }),
+    };
+    assert.equal(programInfoFromArchive(files).exerciseCount, 2);
 });
 
 // ---------- resolvePublishPolicy ----------
@@ -157,7 +186,7 @@ test("stripActorsAndValidate: returns { name, description, tags } from program.j
     const bytes = Buffer.from(zipSync(files));
     const { strippedBytes, program, error } = stripActorsAndValidate(null, bytes);
     assert.equal(error, undefined);
-    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: null });
+    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: 0 });
     // program.json survives the strip
     assert.ok(unzipSync(new Uint8Array(strippedBytes))["program.json"]);
 });
