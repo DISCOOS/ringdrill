@@ -290,7 +290,15 @@ class _LibraryBodyState extends State<_LibraryBody>
         );
       },
       onItemTap: (context, item) async {
-        if (_installedCatalogSlugs().contains(item.slug)) return;
+        // Already installed: open it exactly like tapping it in "Mine
+        // planer" would, instead of silently doing nothing. Re-downloading
+        // an already-installed plan just to activate it would also be
+        // wrong — the local copy may have edits the catalog doesn't have.
+        final installedProgram = _installedProgramForSlug(item.slug);
+        if (installedProgram != null) {
+          await _activate(context, installedProgram.uuid, closeOnSuccess: true);
+          return;
+        }
         await _installCatalog(item);
       },
     );
@@ -371,6 +379,18 @@ class _LibraryBodyState extends State<_LibraryBody>
         })
         .whereType<String>()
         .toSet();
+  }
+
+  /// The locally-installed [Program] whose catalog source matches [slug],
+  /// or null if that plan hasn't been installed yet.
+  Program? _installedProgramForSlug(String slug) {
+    for (final program in _programService.listPrograms()) {
+      final source = program.source.toJson();
+      if (source['runtimeType'] == 'catalog' && source['slug'] == slug) {
+        return program;
+      }
+    }
+    return null;
   }
 
   Future<void> _activate(
