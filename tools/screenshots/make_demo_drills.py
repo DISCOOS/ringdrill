@@ -74,16 +74,20 @@ def exercise(uuid, name, start_h, start_m, teams, rounds, execm, evalm, rotm, st
     }
 
 
-def build(filename, prog_uuid, prog_name, prog_desc, team_names, exercises):
+def build(filename, prog_uuid, prog_name, prog_desc, team_names, exercises, language):
     teams = [
         {"uuid": uuid, "index": i, "name": nm, "numberOfMembers": None, "position": None}
         for i, (uuid, nm) in enumerate(team_names)
     ]
+    # Per-call metadata (not the shared META literal) so each demo file gets
+    # its own languageCode (ADR-0007 addendum) — nb for demo-no.drill, en for
+    # demo-en.drill, matching this script's own content-language split.
+    meta = {**META, "languageCode": language}
     program = {
         "uuid": prog_uuid,
         "name": prog_name,
         "description": prog_desc,
-        "metadata": META,
+        "metadata": meta,
         "source": {"runtimeType": "local"},
         "contentHash": None,
         "teams": [],
@@ -92,7 +96,7 @@ def build(filename, prog_uuid, prog_name, prog_desc, team_names, exercises):
     }
     path = os.path.join(HERE, filename)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("metadata.json", json.dumps(META))
+        z.writestr("metadata.json", json.dumps(meta))
         z.writestr("program.json", json.dumps(program))
         for ex in exercises:
             z.writestr("exercises/%s.json" % ex["uuid"], json.dumps(ex))
@@ -185,6 +189,7 @@ def main():
             exercise(nid(), "Henteoppdrag (fullskala)", 17, 0, 2, 2, 60, 15, 5, NO_E4),
             exercise(nid(), "Avsluttende øvelse (fullskala)", 20, 0, 1, 3, 45, 10, 5, NO_E5),
         ],
+        "nb",
     )
     build(
         "demo-en.drill",
@@ -201,6 +206,7 @@ def main():
             exercise(nid(), "Casualty pickup (full-scale)", 17, 0, 2, 2, 60, 15, 5, EN_E4),
             exercise(nid(), "Final exercise (full-scale)", 20, 0, 1, 3, 45, 10, 5, EN_E5),
         ],
+        "en",
     )
 
 
