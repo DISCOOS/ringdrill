@@ -109,7 +109,7 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
     });
   }
 
-  Widget _catalogSubtitle(AppLocalizations localizations, MarketFeedItem item) {
+  String _catalogSubtitle(AppLocalizations localizations, MarketFeedItem item) {
     final parts = <String>[
       localizations.librarySourceCatalog(item.slug),
       if (item.exerciseCount != null)
@@ -118,20 +118,7 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
       if (item.updatedAt != null)
         item.updatedAt!.toLocal().toString().split('.').first,
     ];
-    final metaLine = Text(parts.join(' · '));
-    if (item.description.isEmpty) return metaLine;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        metaLine,
-        Text(
-          item.description,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
+    return parts.join(' · ');
   }
 
   @override
@@ -229,7 +216,7 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                         // oversized icon.
                         leading: leadingIcon,
                         title: Text(item.name),
-                        subtitle: _catalogSubtitle(localizations, item),
+                        subtitle: Text(_catalogSubtitle(localizations, item)),
                         // ExpandableTile only wraps trailing in 4px of
                         // padding, unlike the 16px its own `padding` param
                         // gives the leading side. Add the missing 12px here
