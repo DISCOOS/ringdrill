@@ -12,6 +12,8 @@ export interface CatalogItem {
   author: string | null;
   accessPolicy: string | null;
   mapCenter: { lat: number; lng: number } | null;
+  mapBounds: { north: number; south: number; east: number; west: number } | null;
+  place: string | null;
   languageCode: string | null;
   tags: string[];
   latestUrl: string;

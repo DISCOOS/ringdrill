@@ -13,6 +13,11 @@ const c = t(lang);
 // The front door for "get this plan" is the human preview page (ADR-0015/
 // ADR-0044), never the feed's raw latestUrl (a .drill binary download).
 const previewUrl = `/i/${item.slug}?lang=${lang}`;
+
+// Same target drills-preview.js's own primary "Open the plan" button uses
+// (ADR-0015): a path-based share link that installs/activates the plan
+// straight in the PWA, bypassing the preview page.
+const openWebUrl = `https://web.ringdrill.app/i/${item.slug}`;
 const exerciseLabel =
   item.exerciseCount == null
     ? null
@@ -42,14 +47,22 @@ const updatedLabel = item.updatedAt
       )}
     </p>
   )}
-  {item.mapCenter && (
+  {(item.mapBounds || item.mapCenter) && (
     <div
       class="catalog-card__map"
-      data-lat={item.mapCenter.lat}
-      data-lng={item.mapCenter.lng}
+      data-lat={item.mapCenter?.lat}
+      data-lng={item.mapCenter?.lng}
+      data-north={item.mapBounds?.north}
+      data-south={item.mapBounds?.south}
+      data-east={item.mapBounds?.east}
+      data-west={item.mapBounds?.west}
     />
   )}
-  <a class="btn btn--primary btn--sm catalog-card__download" href={previewUrl}>{c.catalog.download}</a>
+  {item.place && <p class="catalog-card__place">{item.place}</p>}
+  <div class="catalog-card__actions">
+    <a class="btn btn--primary btn--sm" href={previewUrl}>{c.catalog.download}</a>
+    <a class="btn btn--ghost btn--sm" href={openWebUrl}>{c.nav.openWeb}</a>
+  </div>
 </li>
 
 <style>
@@ -108,7 +121,17 @@ const updatedLabel = item.updatedAt
     overflow: hidden;
     background: var(--canvas-band);
   }
-  .catalog-card__download { align-self: flex-start; margin-top: 4px; }
+  .catalog-card__place {
+    color: var(--muted);
+    font-size: 0.8125rem;
+    margin: -4px 0 0;
+  }
+  .catalog-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
 </style>
 
 <script>
@@ -116,30 +139,42 @@ const updatedLabel = item.updatedAt
   import 'leaflet/dist/leaflet.css';
 
   // Same tile provider as the in-app map (lib/views/map_view.dart). The
-  // "© Kartverket" attribution this needs is shown once for the whole page
-  // (see .catalog__map-attribution in catalog.astro / en/catalog.astro),
-  // not per card — so each map's own attribution control is disabled here
-  // rather than duplicating "Leaflet | © Kartverket" on every card.
+  // "© Kartverket" / "© OpenStreetMap contributors" attribution this needs
+  // is shown once for the whole page (see .catalog__map-attribution in
+  // catalog.astro / en/catalog.astro), not per card — so each map's own
+  // attribution control is disabled here rather than duplicating it on
+  // every card.
   const KARTVERKET_TOPO_URL =
     'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png';
 
+  // A degenerate box (a single station, or several stations at the exact
+  // same spot) has zero width/height — pad it a little so Leaflet still
+  // renders a visible rectangle instead of a zero-area line.
+  const MIN_PAD_DEGREES = 0.01;
+
   const containers = document.querySelectorAll<HTMLElement>(
-    '.catalog-card__map[data-lat]:not([data-mounted])',
+    '.catalog-card__map:not([data-mounted])',
   );
 
   for (const el of containers) {
+    const north = Number(el.dataset.north);
+    const south = Number(el.dataset.south);
+    const east = Number(el.dataset.east);
+    const west = Number(el.dataset.west);
+    const hasBounds =
+      Number.isFinite(north) && Number.isFinite(south) &&
+      Number.isFinite(east) && Number.isFinite(west);
+
     const lat = Number(el.dataset.lat);
     const lng = Number(el.dataset.lng);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const hasCenter = Number.isFinite(lat) && Number.isFinite(lng);
+
+    if (!hasBounds && !hasCenter) continue;
     el.dataset.mounted = 'true';
 
-    // Zoomed out, non-interactive: this is a coarse approximate area, not
-    // the exact station location, so no marker/pin is placed either — a
-    // pin would read as "the exact spot" and defeat the point of using a
-    // centroid instead of real per-station positions.
+    // Non-interactive: this shows the real extent of the plan's stations
+    // (ADR-0040's bounding-box addendum), not a live map to pan/zoom.
     const map = L.map(el, {
-      center: [lat, lng],
-      zoom: 9,
       zoomControl: false,
       dragging: false,
       scrollWheelZoom: false,
@@ -148,5 +183,24 @@ const updatedLabel = item.updatedAt
     });
 
     L.tileLayer(KARTVERKET_TOPO_URL, { maxZoom: 18 }).addTo(map);
+
+    if (hasBounds) {
+      const padded = L.latLngBounds(
+        [south - MIN_PAD_DEGREES, west - MIN_PAD_DEGREES],
+        [north + MIN_PAD_DEGREES, east + MIN_PAD_DEGREES],
+      );
+      L.rectangle([[south, west], [north, east]], {
+        color: 'var(--teal, #0f766e)',
+        weight: 2,
+        fillOpacity: 0.12,
+        interactive: false,
+      }).addTo(map);
+      map.fitBounds(padded, { maxZoom: 15 });
+    } else {
+      // Legacy blob published before the bounding-box addendum: only a
+      // centroid is on file. Fall back to the old fixed-zoom dot view
+      // rather than showing nothing until the plan is republished.
+      map.setView([lat, lng], 12);
+    }
   }
 </script>

@@ -49,7 +49,7 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
             <ul class="catalog__grid">
               {result.items.map((item) => <CatalogCard item={item} lang="nb" />)}
             </ul>
-            {result.items.some((item) => item.mapCenter) && (
+            {result.items.some((item) => item.mapCenter || item.mapBounds) && (
               <p class="catalog__map-attribution">{c.catalog.mapAttribution}</p>
             )}
           </>
