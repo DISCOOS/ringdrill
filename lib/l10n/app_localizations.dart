@@ -1757,7 +1757,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryInstalled.
   ///
   /// In en, this message translates to:
-  /// **'In library'**
+  /// **'In my plans'**
   String get libraryInstalled;
 
   /// No description provided for @libraryInstall.

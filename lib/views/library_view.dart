@@ -232,11 +232,17 @@ class _LibraryBodyState extends State<_LibraryBody>
             ),
             title: Text(program.name),
             subtitle: Text(programSubtitle(localizations, loaded ?? program)),
+            // ExpandableTile only wraps trailing in 4px of padding, unlike
+            // the 16px its own `padding` param gives the leading side. Add
+            // the missing 12px here so the right edge matches the left.
             trailing: trailingChildren.isEmpty
                 ? null
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: trailingChildren,
+                : Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: trailingChildren,
+                    ),
                   ),
             onOpen: () =>
                 _activate(context, program.uuid, closeOnSuccess: true),

@@ -1067,7 +1067,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryActive => 'Active';
 
   @override
-  String get libraryInstalled => 'In library';
+  String get libraryInstalled => 'In my plans';
 
   @override
   String get libraryInstall => 'Open';

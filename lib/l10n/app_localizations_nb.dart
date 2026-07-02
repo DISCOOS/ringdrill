@@ -1063,7 +1063,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryActive => 'Aktiv';
 
   @override
-  String get libraryInstalled => 'I bibliotek';
+  String get libraryInstalled => 'I mine planer';
 
   @override
   String get libraryInstall => 'Åpne';

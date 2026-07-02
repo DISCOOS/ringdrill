@@ -191,7 +191,16 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                         ),
                         title: Text(item.name),
                         subtitle: Text(_catalogSubtitle(localizations, item)),
-                        trailing: trailing,
+                        // ExpandableTile only wraps trailing in 4px of
+                        // padding, unlike the 16px its own `padding` param
+                        // gives the leading side. Add the missing 12px here
+                        // so the right edge matches the left.
+                        trailing: trailing == null
+                            ? null
+                            : Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: trailing,
+                              ),
                         onOpen: () => widget.onItemTap(context, item),
                       );
                     },

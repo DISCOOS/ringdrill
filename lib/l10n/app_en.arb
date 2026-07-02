@@ -1106,7 +1106,7 @@
   "librarySourceImported": "Imported from {fileName}",
   "librarySourceCatalog": "From catalog · {slug}",
   "libraryActive": "Active",
-  "libraryInstalled": "In library",
+  "libraryInstalled": "In my plans",
   "libraryInstall": "Open",
   "libraryRefresh": "Refresh from catalog",
   "libraryRename": "Rename",

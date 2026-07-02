@@ -291,7 +291,7 @@
   "librarySourceImported": "Importert fra {fileName}",
   "librarySourceCatalog": "Fra katalog · {slug}",
   "libraryActive": "Aktiv",
-  "libraryInstalled": "I bibliotek",
+  "libraryInstalled": "I mine planer",
   "libraryInstall": "Åpne",
   "libraryRefresh": "Oppdater fra katalog",
   "libraryRename": "Gi nytt navn",
