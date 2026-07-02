@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
 
 /// Multi-select picker for choosing which plans go into a drill-library
-/// download. Mirrors [ProgramPageControllerBase.selectExercises] in
-/// `program_view.dart`: every plan starts checked, a "VELG ALLE"/"VELG
-/// INGEN" row plus a "N av M valgt" counter sit above the list, and the
-/// primary button is disabled until at least one plan is checked.
+/// download. Visually mirrors [ProgramPageControllerBase.selectExercises]
+/// in `program_view.dart`: every plan starts checked, a "VELG ALLE"/"VELG
+/// INGEN" row plus a "N av M valgt" counter sit above the list, the
+/// primary button is disabled until at least one plan is checked, and
+/// each row is the same numbered [ExpandableTile] card (leading
+/// [Switch.adaptive] + [ExerciseNumberBadge]) the exercise picker uses —
+/// so picking plans to download feels like the same picker as picking
+/// exercises to export, just with no expand affordance (plans have
+/// nothing to preview inline).
 ///
 /// Returns the selected UUIDs, or `null` if the user cancels.
 Future<List<String>?> showSelectPlansDialog(
@@ -30,115 +37,131 @@ Future<List<String>?> showSelectPlansDialog(
               ?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               );
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 20.0,
-              right: 20.0,
-              top: 8.0,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  const SizedBox(height: 8.0),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          localizations.selectedOfTotal(
-                            selected.length,
-                            programs.length,
+          // Match the exercises tab: ExpandableTile cards use the default
+          // card surface, which only contrasts against a lighter scaffold
+          // behind it. The action sheet's own surface flattens that
+          // contrast, so paint the picker body with the scaffold colour —
+          // same fix as `ProgramPageControllerBase.selectExercises`.
+          final sheetBackground = Theme.of(context).scaffoldBackgroundColor;
+          return ColoredBox(
+            color: sheetBackground,
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 20.0,
+                right: 20.0,
+                top: 8.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
+              ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8.0),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            localizations.selectedOfTotal(
+                              selected.length,
+                              programs.length,
+                            ),
+                            style: headerLabelStyle,
                           ),
-                          style: headerLabelStyle,
                         ),
-                      ),
-                      TextButton(
-                        onPressed: selected.length == programs.length
-                            ? null
-                            : () {
-                                setState(() {
-                                  selected
-                                    ..clear()
-                                    ..addAll(allUuids);
-                                });
-                              },
-                        child: Text(localizations.selectAll),
-                      ),
-                      TextButton(
-                        onPressed: selected.isEmpty
-                            ? null
-                            : () {
-                                setState(() => selected.clear());
-                              },
-                        child: Text(localizations.selectNone),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 16.0),
-                  Expanded(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: programs.length,
-                      itemBuilder: (context, index) {
-                        final program = programs[index];
-                        final uuid = program.uuid;
-                        final checked = selected.contains(uuid);
-                        void toggle() {
-                          setState(() {
-                            if (checked) {
-                              selected.remove(uuid);
-                            } else {
-                              selected.add(uuid);
-                            }
-                          });
-                        }
-
-                        return ListTile(
-                          leading: Switch.adaptive(
-                            value: checked,
-                            onChanged: (_) => toggle(),
-                          ),
-                          title: Text(program.name),
-                          subtitle: Text(
-                            '${program.exercises.length} '
-                            '${localizations.exercise(program.exercises.length).toLowerCase()}',
-                          ),
-                          onTap: toggle,
-                        );
-                      },
+                        TextButton(
+                          onPressed: selected.length == programs.length
+                              ? null
+                              : () {
+                                  setState(() {
+                                    selected
+                                      ..clear()
+                                      ..addAll(allUuids);
+                                  });
+                                },
+                          child: Text(localizations.selectAll),
+                        ),
+                        TextButton(
+                          onPressed: selected.isEmpty
+                              ? null
+                              : () {
+                                  setState(() => selected.clear());
+                                },
+                          child: Text(localizations.selectNone),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 20.0),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: headerLabelStyle,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                    const Divider(height: 16.0),
+                    Expanded(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: programs.length,
+                        itemBuilder: (context, index) {
+                          final program = programs[index];
+                          final uuid = program.uuid;
+                          final checked = selected.contains(uuid);
+                          void toggle() {
+                            setState(() {
+                              if (checked) {
+                                selected.remove(uuid);
+                              } else {
+                                selected.add(uuid);
+                              }
+                            });
+                          }
+
+                          return ExpandableTile(
+                            leading: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Switch.adaptive(
+                                  value: checked,
+                                  onChanged: (_) => toggle(),
+                                ),
+                                const SizedBox(width: 8),
+                                ExerciseNumberBadge(label: '#${index + 1}'),
+                              ],
+                            ),
+                            title: Text(program.name),
+                            subtitle: Text(
+                              '${program.exercises.length} '
+                              '${localizations.exercise(program.exercises.length).toLowerCase()}',
+                            ),
+                            onOpen: toggle,
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: headerLabelStyle,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12.0),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(localizations.cancel),
-                      ),
-                      const SizedBox(width: 8.0),
-                      FilledButton(
-                        onPressed: selected.isEmpty
-                            ? null
-                            : () => Navigator.pop(
-                                context,
-                                List<String>.from(selected),
-                              ),
-                        child: Text(actionLabel),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8.0),
-                ],
+                        const SizedBox(width: 12.0),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(localizations.cancel),
+                        ),
+                        const SizedBox(width: 8.0),
+                        FilledButton(
+                          onPressed: selected.isEmpty
+                              ? null
+                              : () => Navigator.pop(
+                                  context,
+                                  List<String>.from(selected),
+                                ),
+                          child: Text(actionLabel),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                  ],
+                ),
               ),
             ),
           );
