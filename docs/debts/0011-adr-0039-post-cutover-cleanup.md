@@ -1,8 +1,8 @@
 ---
-status: open
+status: resolved
 severity: medium
 discovered: 2026-07-02
-resolved: null
+resolved: 2026-07-02
 related_adrs: ["ADR-0039", "ADR-0044"]
 ---
 
@@ -10,28 +10,26 @@ related_adrs: ["ADR-0039", "ADR-0044"]
 
 ## What
 
-The ADR-0039 apex cutover is live and correct, but two loose ends remain from
-the migration. They are not bugs — everything works — but each will mislead or
-trip up the next contributor if left as is.
+Post-cutover loose ends from the ADR-0039 migration. **All resolved as of
+2026-07-02** — see [History](#history). The three items were:
 
 1. **Dead proxy lines in `site/public/_redirects`.** The `/api/*`,
    `/.netlify/functions/*`, `/d/*`, `/i/*` and `/brief/*` status-200 rewrites to
-   `api.ringdrill.app` are no-ops: Cloudflare Pages cannot 200-proxy to an
-   external origin. The real proxy is the `workers/apex-proxy/` Worker. The
-   lines still read as if they route traffic.
-2. **`/i/*` Worker route is a temporary bridge.** `workers/apex-proxy` proxies
-   `/i/*` to the `drills-preview` function. When ADR-0044 lands the native
-   Astro `/i/[slug]` route, this route must be removed from
-   `workers/apex-proxy/wrangler.toml` (Worker routes take precedence over Pages,
-   so the native route is unreachable until then).
-
-Resolved (2026-07-02): the Phase 3c functions split and the stale
-`deploy-web.yml` duplicate — see [History](#history) — are fixed.
+   `api.ringdrill.app` were no-ops: Cloudflare Pages cannot 200-proxy to an
+   external origin. The real proxy is the `workers/apex-proxy/` Worker. Removed.
+2. **Phase 3c functions-deploy split.** Done — `deploy-web.yml` retired, origins
+   consolidated into `deploy-origins.yml`.
+3. **`/i/*` Worker route is a temporary bridge.** `workers/apex-proxy` proxies
+   `/i/*` to the `drills-preview` function. Retiring it is gated on ADR-0044
+   landing the native Astro `/i/[slug]` route (Worker routes take precedence
+   over Pages, so the native route is unreachable until then). This is now
+   tracked solely in [ADR-0044](../adrs/0044-render-preview-on-site.md) step 4,
+   not here.
 
 ## Where
 
-* `site/public/_redirects` — the five dead 200-proxy lines.
-* `workers/apex-proxy/wrangler.toml` — the `ringdrill.app/i/*` route to retire under ADR-0044.
+* `site/public/_redirects` — dead 200-proxy lines removed; only vanity 301s remain.
+* `workers/apex-proxy/wrangler.toml` — `ringdrill.app/i/*` route stays until ADR-0044 (tracked there).
 
 ## Why it is debt
 
@@ -54,6 +52,12 @@ cache for the apex after cutover so no stale landing-page responses survive for
 dynamic paths.
 
 ## History
+
+**2026-07-02: Dead `_redirects` proxy lines removed.** The five no-op
+status-200 proxy rules were deleted from `site/public/_redirects`, leaving the
+vanity 301s plus a comment noting the apex dynamic paths are proxied by
+`workers/apex-proxy/`. The `/i/*` Worker-route retirement was handed to ADR-0044
+step 4, closing this debt.
 
 **2026-07-02: Phase 3c split done, `deploy-web.yml` deleted.** ADR-0039
 (Implementation section) described replacing `deploy-web.yml` with per-origin

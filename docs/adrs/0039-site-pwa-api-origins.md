@@ -262,6 +262,8 @@ All three origins deploy from GitHub Actions. Netlify auto-publish-from-Git stay
 * `site`: builds Astro under `site/`, then `wrangler pages deploy site/dist --project-name=ringdrill-site`. Runs when the push touches `site/**`, plus an hourly cron so the catalog index reflects new publishes without manual rebuilds (the cron run deploys only `site`).
 * `functions`: pushes the Netlify Functions artefact via `netlify deploy --prod --dir=. --functions=netlify/functions`. No build step; functions are pure JS. Runs when the push touches `netlify/functions/**` or `netlify.toml`, before `pwa` and `site`.
 
+> **Historical note (2026-07-02).** This landed as a single workflow, `.github/workflows/deploy-origins.yml`, with the three path-gated jobs above (`pwa`/`site` `needs: functions`). The interim per-origin files `deploy-web.yml`, `deploy-pwa.yml` and `deploy-site.yml` were deleted. The apex proxy is a separate Worker with its own `deploy-proxy.yml` (see the [implementation correction](#adr-0039-split-the-site-pwa-and-api-across-separate-origins) above). Earlier phase prompts and ops runbooks still name the old workflow files as point-in-time records; this ADR is the current source of truth.
+
 `netlify.toml` is stripped to the `[functions]` block, the `/api/*` redirects, the `/i/*`, `/d/*`, `/brief/*` redirects to the new `drills-preview` and `deep-link` functions, and CORS-related directives. All static-asset header rules move to `_headers` files in the respective Cloudflare projects.
 
 ### Account-readiness
