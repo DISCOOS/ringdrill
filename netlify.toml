@@ -1,7 +1,10 @@
-# The Flutter web build no longer runs on Netlify. It runs in GitHub
-# Actions (.github/workflows/deploy-web.yml) which uploads sources +
-# source maps to Sentry and then pushes the built artifact here via the
-# Netlify CLI. Netlify only serves the CDN and runs the functions below.
+# The Flutter web build no longer deploys to Netlify at all — it ships to
+# Cloudflare Pages (`ringdrill-pwa`) via the `pwa` job in
+# .github/workflows/deploy-origins.yml. This site only receives the
+# `functions` job's deploy (`netlify deploy --functions=netlify/functions`)
+# and never a `--dir` containing a Flutter build, so nothing here is served
+# statically; the redirects below exist to route requests the apex proxy
+# Worker (workers/apex-proxy/) forwards to api.ringdrill.app.
 #
 # Auto-publishing from Git should be turned off in the Netlify dashboard
 # (Site settings -> Build & deploy -> Continuous deployment -> Stop

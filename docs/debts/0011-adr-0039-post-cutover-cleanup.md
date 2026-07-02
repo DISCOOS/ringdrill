@@ -10,7 +10,7 @@ related_adrs: ["ADR-0039", "ADR-0044"]
 
 ## What
 
-The ADR-0039 apex cutover is live and correct, but three loose ends remain from
+The ADR-0039 apex cutover is live and correct, but two loose ends remain from
 the migration. They are not bugs — everything works — but each will mislead or
 trip up the next contributor if left as is.
 
@@ -19,42 +19,33 @@ trip up the next contributor if left as is.
    `api.ringdrill.app` are no-ops: Cloudflare Pages cannot 200-proxy to an
    external origin. The real proxy is the `workers/apex-proxy/` Worker. The
    lines still read as if they route traffic.
-2. **Phase 3c not executed.** ADR-0039 (Implementation section) describes a
-   `deploy-functions.yml` that deploys only the Netlify functions. It does not
-   exist; functions still ship via `deploy-web.yml` alongside the Flutter web
-   build. The ADR reads as if the split is done.
-3. **`/i/*` Worker route is a temporary bridge.** `workers/apex-proxy` proxies
+2. **`/i/*` Worker route is a temporary bridge.** `workers/apex-proxy` proxies
    `/i/*` to the `drills-preview` function. When ADR-0044 lands the native
    Astro `/i/[slug]` route, this route must be removed from
    `workers/apex-proxy/wrangler.toml` (Worker routes take precedence over Pages,
    so the native route is unreachable until then).
 
+Resolved (2026-07-02): the Phase 3c functions split and the stale
+`deploy-web.yml` duplicate — see [History](#history) — are fixed.
+
 ## Where
 
 * `site/public/_redirects` — the five dead 200-proxy lines.
-* `.github/workflows/deploy-web.yml` — still bundles functions; no `deploy-functions.yml`.
-* `docs/adrs/0039-site-pwa-api-origins.md` — Implementation section references `deploy-functions.yml` as if present (corrected with a dated note, but the split itself is pending).
 * `workers/apex-proxy/wrangler.toml` — the `ringdrill.app/i/*` route to retire under ADR-0044.
 
 ## Why it is debt
 
-Everything functions, so this is not a bug. It is debt because the config and
-the ADR now describe an intent that differs from reality. A contributor editing
+Everything functions, so this is not a bug. It is debt because the config now
+describes an intent that differs from reality. A contributor editing
 `_redirects` could reasonably assume the proxy lines matter and waste time, or
-worse, "fix" them and think they changed routing. The missing functions-deploy
-split means a `netlify/functions/**` change rebuilds and redeploys the whole
-Flutter web artefact — slower, and it couples two unrelated deploys. Risk is low
-today but grows as more people touch the hosting config.
+worse, "fix" them and think they changed routing. Risk is low today but grows
+as more people touch the hosting config.
 
 ## Suggested fix
 
 * Delete the five dead proxy lines from `site/public/_redirects`, keeping only
   the vanity 301s. Add a one-line comment that apex dynamic paths are proxied by
   `workers/apex-proxy/`.
-* Split functions out of `deploy-web.yml` into `deploy-functions.yml`
-  (`netlify deploy --prod --dir=. --functions=netlify/functions`, triggered on
-  `netlify/functions/**` and `netlify.toml`), per ADR-0039. Then `deploy-web.yml`
-  only builds and deploys the Flutter web artefact.
 * When ADR-0044 ships, drop the `ringdrill.app/i/*` route from
   `workers/apex-proxy/wrangler.toml` and redeploy (see ADR-0044 step 4).
 
@@ -62,7 +53,20 @@ One-time operational item, not tracked here once done: purge the Cloudflare
 cache for the apex after cutover so no stale landing-page responses survive for
 dynamic paths.
 
+## History
+
+**2026-07-02: Phase 3c split done, `deploy-web.yml` deleted.** ADR-0039
+(Implementation section) described replacing `deploy-web.yml` with per-origin
+deploys, but `deploy-web.yml` had never been retired — on every push to `main`
+it kept rebuilding the Flutter web artefact and pushing it to the old Netlify
+site, duplicating what `deploy-pwa.yml` already deployed to Cloudflare Pages,
+to a destination (`api.ringdrill.app`) meant to be functions-only. Fixed by
+consolidating `functions`, `pwa` and `site` into three ordered, path-gated
+jobs in one workflow, `.github/workflows/deploy-origins.yml` (`pwa`/`site`
+`needs: functions`); `deploy-web.yml`, `deploy-pwa.yml` and `deploy-site.yml`
+were deleted. The PWA now deploys to Cloudflare only.
+
 ## Links
 
 * Related ADRs: [ADR-0039](../adrs/0039-site-pwa-api-origins.md), [ADR-0044](../adrs/0044-render-preview-on-site.md)
-* Related code: `site/public/_redirects`, `workers/apex-proxy/`, `.github/workflows/deploy-web.yml`, `netlify.toml`
+* Related code: `site/public/_redirects`, `workers/apex-proxy/`, `.github/workflows/deploy-origins.yml`, `netlify.toml`

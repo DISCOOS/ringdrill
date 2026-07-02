@@ -1,0 +1,315 @@
+name: Deploy origins
+
+# Deploys the three ADR-0039 origins from one workflow so functions always
+# land before the frontends that call them, and so each origin only rebuilds
+# when its own inputs changed.
+#
+#   functions -> api.ringdrill.app   (Netlify, netlify/functions/** only)
+#   pwa       -> web.ringdrill.app   (Cloudflare Pages, project ringdrill-pwa)
+#   site      -> ringdrill.app       (Cloudflare Pages, project ringdrill-site)
+#
+# `pwa` and `site` declare `needs: functions` so a functions change is live
+# before either frontend redeploys. All three are gated by the `changes`
+# job's output so an unrelated push (e.g. only `lib/**`) does not also
+# redeploy the site, and vice versa. `changes` diffs the pushed commits
+# itself instead of pulling in a marketplace path-filter action, matching
+# this repo's preference for first-party tooling over third-party Action
+# wrappers (see the Netlify-deploy comment this replaced in the old
+# deploy-web.yml, and DEBT-0011).
+#
+# The apex proxy Worker (workers/apex-proxy/) is not one of the three
+# origins and keeps deploying from its own workflow, deploy-proxy.yml.
+#
+# Dry run: trigger via workflow_dispatch (from any branch) with `dry_run`
+# left at its default of true. Every job still runs for real — checkout,
+# build, secret checks, the `changes` path gating, the `functions`-before-
+# `pwa`/`site` ordering — only the final `netlify deploy` / `wrangler pages
+# deploy` command is replaced with an echo. Set `dry_run: false` to publish
+# for real from workflow_dispatch; push events always publish for real.
+#
+# Required secrets, all on the PROD environment
+# (Settings -> Environments -> PROD -> Secrets):
+#   NETLIFY_AUTH_TOKEN     - used by the `functions` job.
+#   NETLIFY_SITE_ID        - used by the `functions` job.
+#   SENTRY_AUTH_TOKEN      - used by the `pwa` job.
+#   CLOUDFLARE_API_TOKEN   - used by the `pwa` and `site` jobs (Pages edit).
+#   CLOUDFLARE_ACCOUNT_ID  - used by the `pwa` and `site` jobs.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Rebuilds only the site (see the `changes` job) so the catalog index
+    # can refresh without a manual push. No-op today; there is no catalog
+    # data yet (ADR-0039).
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: >-
+          Run every job for real (build, secrets, ordering, path gating) but
+          skip the final publish command. Safe way to validate this workflow
+          from a branch without touching Netlify or Cloudflare.
+        type: boolean
+        default: true
+
+jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      functions: ${{ steps.filter.outputs.functions }}
+      pwa: ${{ steps.filter.outputs.pwa }}
+      site: ${{ steps.filter.outputs.site }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Diff against the previous commit
+        id: filter
+        run: |
+          case "${{ github.event_name }}" in
+            schedule)
+              echo "functions=false" >> "$GITHUB_OUTPUT"
+              echo "pwa=false" >> "$GITHUB_OUTPUT"
+              echo "site=true" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+            workflow_dispatch)
+              # No targeted "before" commit on a manual run: deploy everything.
+              files="ALL"
+              ;;
+            *)
+              before="${{ github.event.before }}"
+              if [ -z "$before" ] || ! git cat-file -e "$before" 2>/dev/null; then
+                files="ALL"
+              else
+                files=$(git diff --name-only "$before" "${{ github.sha }}")
+              fi
+              ;;
+          esac
+
+          match() {
+            if [ "$files" = "ALL" ]; then
+              echo "true"
+            elif echo "$files" | grep -qE "$1"; then
+              echo "true"
+            else
+              echo "false"
+            fi
+          }
+
+          {
+            echo "functions=$(match '^(netlify/functions/|netlify\.toml)')"
+            echo "pwa=$(match '^(lib/|pubspec\.yaml|web/)')"
+            echo "site=$(match '^site/')"
+          } >> "$GITHUB_OUTPUT"
+
+  functions:
+    name: Deploy functions
+    needs: changes
+    if: needs.changes.outputs.functions == 'true'
+    runs-on: ubuntu-latest
+    environment: PROD
+    concurrency:
+      group: deploy-origins-functions
+      cancel-in-progress: true
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify required secrets are present
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          missing=()
+          [ -z "$NETLIFY_AUTH_TOKEN" ] && missing+=("NETLIFY_AUTH_TOKEN")
+          [ -z "$NETLIFY_SITE_ID"    ] && missing+=("NETLIFY_SITE_ID")
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing or empty repository secrets: ${missing[*]}"
+            echo "Check Settings -> Environments -> PROD -> Secrets."
+            exit 1
+          fi
+          echo "NETLIFY_AUTH_TOKEN length: ${#NETLIFY_AUTH_TOKEN}"
+          echo "NETLIFY_SITE_ID length: ${#NETLIFY_SITE_ID}"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Install function dependencies
+        # Netlify CLI bundles functions from node_modules/, so the deps
+        # must be installed before the deploy step picks them up.
+        run: npm ci
+
+      - name: Deploy functions to Netlify
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: npx netlify deploy --prod --dir=. --functions=netlify/functions
+
+      - name: Dry run - skip Netlify publish
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          echo "DRY RUN: would run 'npx netlify deploy --prod --dir=. --functions=netlify/functions'"
+
+  pwa:
+    name: Deploy PWA
+    needs: [changes, functions]
+    if: |
+      always() &&
+      needs.changes.outputs.pwa == 'true' &&
+      (needs.functions.result == 'success' || needs.functions.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: PROD
+    concurrency:
+      group: deploy-origins-pwa
+      cancel-in-progress: true
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # sentry_dart_plugin reads git refs when stamping the release.
+          # Shallow clones drop those refs and break the upload.
+          fetch-depth: 0
+
+      - name: Verify required secrets are present
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=()
+          [ -z "$SENTRY_AUTH_TOKEN"     ] && missing+=("SENTRY_AUTH_TOKEN")
+          [ -z "$CLOUDFLARE_API_TOKEN"  ] && missing+=("CLOUDFLARE_API_TOKEN")
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing or empty repository secrets: ${missing[*]}"
+            echo "Check Settings -> Environments -> PROD -> Secrets."
+            exit 1
+          fi
+          echo "SENTRY_AUTH_TOKEN length: ${#SENTRY_AUTH_TOKEN}"
+          echo "CLOUDFLARE_API_TOKEN length: ${#CLOUDFLARE_API_TOKEN}"
+          echo "CLOUDFLARE_ACCOUNT_ID length: ${#CLOUDFLARE_ACCOUNT_ID}"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.23.0
+        with:
+          channel: stable
+          cache: true
+
+      - name: Cache pub-cache and .dart_tool
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: make build-web
+
+      - name: Upload sources and source maps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: make upload-symbols-web
+
+      - name: Strip source maps from published artifact
+        run: make strip-source-maps-web
+
+      - name: Deploy to Cloudflare Pages
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@latest pages deploy build/web \
+            --project-name=ringdrill-pwa \
+            --branch=main
+
+      - name: Dry run - skip Cloudflare Pages publish
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          echo "DRY RUN: would run 'wrangler pages deploy build/web --project-name=ringdrill-pwa'"
+
+  site:
+    name: Deploy site
+    needs: [changes, functions]
+    if: |
+      always() &&
+      needs.changes.outputs.site == 'true' &&
+      (needs.functions.result == 'success' || needs.functions.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: PROD
+    concurrency:
+      group: deploy-origins-site
+      cancel-in-progress: true
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify required secrets are present
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=()
+          [ -z "$CLOUDFLARE_API_TOKEN"  ] && missing+=("CLOUDFLARE_API_TOKEN")
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing or empty repository secrets: ${missing[*]}"
+            echo "Check Settings -> Environments -> PROD -> Secrets."
+            exit 1
+          fi
+          echo "CLOUDFLARE_API_TOKEN length: ${#CLOUDFLARE_API_TOKEN}"
+          echo "CLOUDFLARE_ACCOUNT_ID length: ${#CLOUDFLARE_ACCOUNT_ID}"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: site/package.json
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install site dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Build site
+        working-directory: site
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@latest pages deploy site/dist \
+            --project-name=ringdrill-site \
+            --branch=main
+
+      - name: Dry run - skip Cloudflare Pages publish
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          echo "DRY RUN: would run 'wrangler pages deploy site/dist --project-name=ringdrill-site'"

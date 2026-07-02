@@ -245,11 +245,22 @@ The export format is the standard `.drill` archive (ADR-0007). No "migration for
 
 ### Deploy pipelines
 
-All three origins deploy from GitHub Actions. Netlify auto-publish-from-Git stays off, as today, so a stray push cannot race a workflow. The current `.github/workflows/deploy-web.yml` is replaced by three workflows, one per origin:
+> **Implementation correction (2026-07-02).** The plan below described three
+> separate workflows. They shipped instead as three jobs (`functions`, `pwa`,
+> `site`) in one workflow, `.github/workflows/deploy-origins.yml`, so that
+> `pwa` and `site` can declare `needs: functions` — the API is live before
+> either frontend that calls it redeploys. Each job is gated on its own
+> changed-path check (a `changes` job, plain `git diff`, no marketplace
+> action) instead of a workflow-level `on.push.paths` filter, since a single
+> workflow can't vary that per job. The PWA is Cloudflare-only; it is never
+> also published to Netlify. See [DEBT-0011](../debts/0011-adr-0039-post-cutover-cleanup.md)
+> for the interim state this replaced.
 
-* `deploy-pwa.yml`: builds Flutter web (`make web`), uploads source maps to Sentry (existing step), then `wrangler pages deploy build/web --project-name=ringdrill-pwa`. Triggers: pushes touching `lib/**`, `pubspec.yaml`, `web/**`, or the workflow itself. Replaces the Netlify CLI step in the existing `deploy-web.yml`.
-* `deploy-site.yml`: builds Astro under `site/`, then `wrangler pages deploy site/dist --project-name=ringdrill-site`. Triggers: pushes touching `site/**`, plus an hourly cron so the catalog index reflects new publishes without manual rebuilds.
-* `deploy-functions.yml`: pushes the Netlify Functions artefact via `netlify deploy --prod --dir=. --functions=netlify/functions`. No build step; functions are pure JS. Triggers: pushes touching `netlify/functions/**` or `netlify.toml`.
+All three origins deploy from GitHub Actions. Netlify auto-publish-from-Git stays off, as today, so a stray push cannot race a workflow. The current `.github/workflows/deploy-web.yml` is replaced by three jobs, one per origin, in a single workflow:
+
+* `pwa`: builds Flutter web (`make build-web`), uploads source maps to Sentry (existing step), then `wrangler pages deploy build/web --project-name=ringdrill-pwa`. Runs when the push touches `lib/**`, `pubspec.yaml`, `web/**`, and only after `functions` has succeeded or been skipped. Replaces the Netlify CLI step in the old `deploy-web.yml`.
+* `site`: builds Astro under `site/`, then `wrangler pages deploy site/dist --project-name=ringdrill-site`. Runs when the push touches `site/**`, plus an hourly cron so the catalog index reflects new publishes without manual rebuilds (the cron run deploys only `site`).
+* `functions`: pushes the Netlify Functions artefact via `netlify deploy --prod --dir=. --functions=netlify/functions`. No build step; functions are pure JS. Runs when the push touches `netlify/functions/**` or `netlify.toml`, before `pwa` and `site`.
 
 `netlify.toml` is stripped to the `[functions]` block, the `/api/*` redirects, the `/i/*`, `/d/*`, `/brief/*` redirects to the new `drills-preview` and `deep-link` functions, and CORS-related directives. All static-asset header rules move to `_headers` files in the respective Cloudflare projects.
 
@@ -341,5 +352,5 @@ The site is fully account-unaware in this ADR's scope. The nav reserves space fo
 
 * Related ADRs: [ADR-0008](./0008-persistent-program-library-and-catalog.md), [ADR-0013](./0013-local-catalog-testing.md), [ADR-0014](./0014-server-assigned-drill-version.md), [ADR-0015](./0015-shareable-install-links.md), [ADR-0016](./0016-pwa-cache-strategy.md), [ADR-0021](./0021-ios-bundle-identifier-app-ringdrill.md), [ADR-0023](./0023-brief-theme-tokens.md), [ADR-0024](./0024-account-and-identity-model.md), [ADR-0026](./0026-sheet-based-context-navigation.md)
 * Future ADRs referenced: ADR-0040 (catalog feed schema extension), ADR-0041 (brief pre-rendering port)
-* Related code: `netlify/functions/_shared.js`, `netlify/functions/deep-link.js`, `netlify/functions/market-feed.js`, `netlify/functions/drills-upload.js`, `netlify.toml`, `web/index.html`, `web/manifest.json`, `.github/workflows/deploy-web.yml`, `lib/web/mobile_app_nudge.dart`
+* Related code: `netlify/functions/_shared.js`, `netlify/functions/deep-link.js`, `netlify/functions/market-feed.js`, `netlify/functions/drills-upload.js`, `netlify.toml`, `web/index.html`, `web/manifest.json`, `.github/workflows/deploy-origins.yml`, `lib/web/mobile_app_nudge.dart`
 * External references: Cloudflare Pages `_redirects` proxy syntax, Astro i18n routing, Netlify Functions Blobs API
