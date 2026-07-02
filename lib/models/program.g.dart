@@ -229,6 +229,7 @@ _ProgramMetadata _$ProgramMetadataFromJson(Map<String, dynamic> json) =>
       updated: DateTime.parse(json['updated'] as String),
       version: json['version'] as String,
       schema: json['schema'] as String?,
+      languageCode: json['languageCode'] as String?,
     );
 
 Map<String, dynamic> _$ProgramMetadataToJson(_ProgramMetadata instance) =>
@@ -237,4 +238,5 @@ Map<String, dynamic> _$ProgramMetadataToJson(_ProgramMetadata instance) =>
       'updated': instance.updated.toIso8601String(),
       'version': instance.version,
       'schema': instance.schema,
+      'languageCode': instance.languageCode,
     };

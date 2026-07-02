@@ -319,6 +319,11 @@ sealed class ProgramMetadata with _$ProgramMetadata {
     // Optional schema marker added in schema 1.1 (ADR-0018).
     // Absent in 1.0 archives; readers treat null as '1.0'.
     String? schema,
+    // ISO 639-1 code for the plan's *content* language (name, briefs,
+    // exercise/station/team names) — unrelated to the app's own UI locale.
+    // null until the author picks one via ProgramFormScreen (ADR-0007
+    // addendum). Never defaulted or guessed by readers.
+    String? languageCode,
   }) = _ProgramMetadata;
 
   factory ProgramMetadata.fromJson(Map<String, dynamic> json) =>

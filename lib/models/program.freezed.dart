@@ -1483,7 +1483,11 @@ mixin _$ProgramMetadata {
 
  DateTime get created; DateTime get updated; String get version;// Optional schema marker added in schema 1.1 (ADR-0018).
 // Absent in 1.0 archives; readers treat null as '1.0'.
- String? get schema;
+ String? get schema;// ISO 639-1 code for the plan's *content* language (name, briefs,
+// exercise/station/team names) — unrelated to the app's own UI locale.
+// null until the author picks one via ProgramFormScreen (ADR-0007
+// addendum). Never defaulted or guessed by readers.
+ String? get languageCode;
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1496,16 +1500,16 @@ $ProgramMetadataCopyWith<ProgramMetadata> get copyWith => _$ProgramMetadataCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,created,updated,version,schema);
+int get hashCode => Object.hash(runtimeType,created,updated,version,schema,languageCode);
 
 @override
 String toString() {
-  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema)';
+  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema, languageCode: $languageCode)';
 }
 
 
@@ -1516,7 +1520,7 @@ abstract mixin class $ProgramMetadataCopyWith<$Res>  {
   factory $ProgramMetadataCopyWith(ProgramMetadata value, $Res Function(ProgramMetadata) _then) = _$ProgramMetadataCopyWithImpl;
 @useResult
 $Res call({
- DateTime created, DateTime updated, String version, String? schema
+ DateTime created, DateTime updated, String version, String? schema, String? languageCode
 });
 
 
@@ -1533,12 +1537,13 @@ class _$ProgramMetadataCopyWithImpl<$Res>
 
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,Object? languageCode = freezed,}) {
   return _then(_self.copyWith(
 created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,updated: null == updated ? _self.updated : updated // ignore: cast_nullable_to_non_nullable
 as DateTime,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
 as String,schema: freezed == schema ? _self.schema : schema // ignore: cast_nullable_to_non_nullable
+as String?,languageCode: freezed == languageCode ? _self.languageCode : languageCode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -1621,10 +1626,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema,  String? languageCode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProgramMetadata() when $default != null:
-return $default(_that.created,_that.updated,_that.version,_that.schema);case _:
+return $default(_that.created,_that.updated,_that.version,_that.schema,_that.languageCode);case _:
   return orElse();
 
 }
@@ -1642,10 +1647,10 @@ return $default(_that.created,_that.updated,_that.version,_that.schema);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  DateTime updated,  String version,  String? schema,  String? languageCode)  $default,) {final _that = this;
 switch (_that) {
 case _ProgramMetadata():
-return $default(_that.created,_that.updated,_that.version,_that.schema);}
+return $default(_that.created,_that.updated,_that.version,_that.schema,_that.languageCode);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1659,10 +1664,10 @@ return $default(_that.created,_that.updated,_that.version,_that.schema);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  DateTime updated,  String version,  String? schema)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  DateTime updated,  String version,  String? schema,  String? languageCode)?  $default,) {final _that = this;
 switch (_that) {
 case _ProgramMetadata() when $default != null:
-return $default(_that.created,_that.updated,_that.version,_that.schema);case _:
+return $default(_that.created,_that.updated,_that.version,_that.schema,_that.languageCode);case _:
   return null;
 
 }
@@ -1674,7 +1679,7 @@ return $default(_that.created,_that.updated,_that.version,_that.schema);case _:
 @JsonSerializable()
 
 class _ProgramMetadata implements ProgramMetadata {
-  const _ProgramMetadata({required this.created, required this.updated, required this.version, this.schema});
+  const _ProgramMetadata({required this.created, required this.updated, required this.version, this.schema, this.languageCode});
   factory _ProgramMetadata.fromJson(Map<String, dynamic> json) => _$ProgramMetadataFromJson(json);
 
 @override final  DateTime created;
@@ -1683,6 +1688,11 @@ class _ProgramMetadata implements ProgramMetadata {
 // Optional schema marker added in schema 1.1 (ADR-0018).
 // Absent in 1.0 archives; readers treat null as '1.0'.
 @override final  String? schema;
+// ISO 639-1 code for the plan's *content* language (name, briefs,
+// exercise/station/team names) — unrelated to the app's own UI locale.
+// null until the author picks one via ProgramFormScreen (ADR-0007
+// addendum). Never defaulted or guessed by readers.
+@override final  String? languageCode;
 
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
@@ -1697,16 +1707,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProgramMetadata&&(identical(other.created, created) || other.created == created)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.version, version) || other.version == version)&&(identical(other.schema, schema) || other.schema == schema)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,created,updated,version,schema);
+int get hashCode => Object.hash(runtimeType,created,updated,version,schema,languageCode);
 
 @override
 String toString() {
-  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema)';
+  return 'ProgramMetadata(created: $created, updated: $updated, version: $version, schema: $schema, languageCode: $languageCode)';
 }
 
 
@@ -1717,7 +1727,7 @@ abstract mixin class _$ProgramMetadataCopyWith<$Res> implements $ProgramMetadata
   factory _$ProgramMetadataCopyWith(_ProgramMetadata value, $Res Function(_ProgramMetadata) _then) = __$ProgramMetadataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime created, DateTime updated, String version, String? schema
+ DateTime created, DateTime updated, String version, String? schema, String? languageCode
 });
 
 
@@ -1734,12 +1744,13 @@ class __$ProgramMetadataCopyWithImpl<$Res>
 
 /// Create a copy of ProgramMetadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? created = null,Object? updated = null,Object? version = null,Object? schema = freezed,Object? languageCode = freezed,}) {
   return _then(_ProgramMetadata(
 created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,updated: null == updated ? _self.updated : updated // ignore: cast_nullable_to_non_nullable
 as DateTime,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
 as String,schema: freezed == schema ? _self.schema : schema // ignore: cast_nullable_to_non_nullable
+as String?,languageCode: freezed == languageCode ? _self.languageCode : languageCode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
