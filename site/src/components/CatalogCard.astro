@@ -39,10 +39,9 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
 <li class="catalog-card" data-language={item.languageCode ?? ''}>
   <h3><a href={previewUrl}>{item.name}</a></h3>
   {item.description && <p class="catalog-card__desc">{item.description}</p>}
-  {(item.tags.length > 0 || item.place) && (
+  {item.tags.length > 0 && (
     <ul class="catalog-card__tags">
       {item.tags.map((tag) => <li>{tag}</li>)}
-      {item.place && <li class="catalog-card__tags-place">{item.place}</li>}
     </ul>
   )}
   {(item.mapBounds || item.mapCenter) && (
@@ -56,14 +55,21 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
       data-west={item.mapBounds?.west}
     />
   )}
-  {(exerciseLabel || updatedLabel) && (
-    <p class="catalog-card__meta">
-      {exerciseLabel && <span>{exerciseLabel}</span>}
-      {exerciseLabel && updatedLabel && <span class="sep" aria-hidden="true">·</span>}
-      {updatedLabel && (
-        <span>{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></span>
+  {(item.place || exerciseLabel || updatedLabel) && (
+    <div class="catalog-card__info">
+      {item.place && (
+        <span class="catalog-card__place" title={item.place}>{item.place}</span>
       )}
-    </p>
+      {(exerciseLabel || updatedLabel) && (
+        <p class="catalog-card__meta">
+          {exerciseLabel && <span>{exerciseLabel}</span>}
+          {exerciseLabel && updatedLabel && <span class="sep" aria-hidden="true">·</span>}
+          {updatedLabel && (
+            <span>{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></span>
+          )}
+        </p>
+      )}
+    </div>
   )}
   <div class="catalog-card__actions">
     <a class="btn btn--primary btn--sm" href={previewUrl}>{c.catalog.download}</a>
@@ -73,6 +79,7 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
       class="catalog-card__share"
       data-share-url={shareUrl}
       data-share-title={item.name}
+      data-share-copied-message={c.catalog.shareCopied}
       aria-label={c.catalog.share}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -139,23 +146,49 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
     padding: 0.2rem 0.6rem;
     border-radius: var(--radius-pill);
   }
-  /* Reverse-geocoded, not author-entered like the other tags — an outline
-     instead of a filled chip marks it as "roughly here", not a curated
-     label the plan owner picked. */
-  .catalog-card__tags li.catalog-card__tags-place {
-    background: transparent;
-    border: 1px solid var(--border-strong);
-    color: var(--muted);
-    font-weight: 500;
-  }
-  .catalog-card__meta { color: var(--muted); font-size: 0.75rem; margin: 0; }
-  .catalog-card__meta .sep { margin: 0 0.45rem; opacity: 0.6; }
   .catalog-card__map {
     height: 220px;
     border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--canvas-band);
   }
+  /* Place (left) and the exercise-count/updated meta (right) share one
+     line below the map. It must never wrap: the meta text is short and
+     fixed (flex-shrink: 0), so all the squeezing lands on the place chip,
+     which truncates with an ellipsis instead of pushing meta onto a
+     second line or forcing the card wider than its column. */
+  .catalog-card__info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  /* Reverse-geocoded, not author-entered like the tags above it — an
+     outline instead of a filled chip marks it as "roughly here", not a
+     curated label the plan owner picked. */
+  .catalog-card__place {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--muted);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-pill);
+  }
+  .catalog-card__meta {
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .catalog-card__meta .sep { margin: 0 0.45rem; opacity: 0.6; }
   .catalog-card__actions {
     display: flex;
     align-items: center;
@@ -215,6 +248,33 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
     opacity: 1;
     transform: translateY(0);
   }
+  /* Toast for the clipboard-copy fallback. A single shared element created
+     once in the page (see the script below), not scoped to any one card,
+     so it needs :global — Astro's per-component style scoping only
+     touches elements written in this component's own template. */
+  :global(.catalog-share-toast) {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 12px);
+    max-width: min(92vw, 420px);
+    background: var(--heading);
+    color: var(--canvas);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    text-align: center;
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 100;
+  }
+  :global(.catalog-share-toast.is-visible) {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 </style>
 
 <script>
@@ -267,37 +327,67 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
 
     L.tileLayer(KARTVERKET_TOPO_URL, { maxZoom: 18 }).addTo(map);
 
-    // The catalog grid is a CSS multi-column layout (masonry-style) — a
-    // card's final width isn't always settled at the moment this script
-    // runs, so Leaflet can read a stale/too-small container size and
-    // compute a much-too-zoomed-out fit. invalidateSize() forces it to
-    // re-measure the container right before fitBounds() uses it.
-    map.invalidateSize();
-
     if (hasBounds) {
-      const padded = L.latLngBounds(
-        [south - MIN_PAD_DEGREES, west - MIN_PAD_DEGREES],
-        [north + MIN_PAD_DEGREES, east + MIN_PAD_DEGREES],
-      );
       L.rectangle([[south, west], [north, east]], {
         color: 'var(--teal, #0f766e)',
         weight: 2,
         fillOpacity: 0.12,
         interactive: false,
       }).addTo(map);
-      map.fitBounds(padded, { maxZoom: 15 });
-    } else {
-      // Legacy blob published before the bounding-box addendum: only a
-      // centroid is on file. Fall back to the old fixed-zoom dot view
-      // rather than showing nothing until the plan is republished.
-      map.setView([lat, lng], 12);
     }
+
+    // Fits the view every time this runs, not just once — the catalog
+    // grid is a CSS multi-column layout (masonry-style), and a card's
+    // final width is not settled at the moment this script first runs on
+    // a fresh navigation (only on a same-page reload, empirically, is the
+    // layout already stable). A single invalidateSize() + fitBounds() call
+    // up front still measured a stale/too-small container and produced a
+    // much-too-zoomed-out map. Re-running on every ResizeObserver tick
+    // means whatever size the column layout eventually settles on, the
+    // map catches up to it.
+    const fit = () => {
+      map.invalidateSize();
+      if (hasBounds) {
+        const padded = L.latLngBounds(
+          [south - MIN_PAD_DEGREES, west - MIN_PAD_DEGREES],
+          [north + MIN_PAD_DEGREES, east + MIN_PAD_DEGREES],
+        );
+        map.fitBounds(padded, { maxZoom: 15 });
+      } else {
+        // Legacy blob published before the bounding-box addendum: only a
+        // centroid is on file. Fall back to the old fixed-zoom dot view
+        // rather than showing nothing until the plan is republished.
+        map.setView([lat, lng], 12);
+      }
+    };
+
+    fit();
+    new ResizeObserver(fit).observe(el);
   }
 
   // Share button: native share sheet where available (mobile Safari/Chrome,
   // macOS Safari), clipboard copy as the fallback everywhere else — with a
-  // brief checkmark swap so a click always gives some visible feedback.
+  // brief checkmark swap plus a toast so a click always gives some visible,
+  // legible feedback (a checkmark alone doesn't say *what* happened).
   const CHECK_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L19 8" /></svg>`;
+  const TOAST_DURATION_MS = 3000;
+
+  function showShareToast(message: string) {
+    let toast = document.querySelector<HTMLElement>('.catalog-share-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'catalog-share-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('is-visible');
+    window.clearTimeout(Number(toast.dataset.hideTimer));
+    toast.dataset.hideTimer = String(
+      window.setTimeout(() => toast!.classList.remove('is-visible'), TOAST_DURATION_MS),
+    );
+  }
 
   const shareButtons = document.querySelectorAll<HTMLButtonElement>(
     '.catalog-card__share:not([data-share-bound])',
@@ -308,6 +398,7 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
     button.addEventListener('click', async () => {
       const url = button.dataset.shareUrl;
       const title = button.dataset.shareTitle;
+      const copiedMessage = button.dataset.shareCopiedMessage;
       if (!url) return;
 
       if (navigator.share) {
@@ -325,7 +416,8 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
         await navigator.clipboard.writeText(url);
         const original = button.innerHTML;
         button.innerHTML = CHECK_ICON;
-        setTimeout(() => { button.innerHTML = original; }, 1500);
+        setTimeout(() => { button.innerHTML = original; }, TOAST_DURATION_MS);
+        if (copiedMessage) showShareToast(copiedMessage);
       } catch {
         // Clipboard API unavailable (e.g. insecure context) — nothing more
         // to do.
