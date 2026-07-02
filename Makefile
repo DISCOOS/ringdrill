@@ -5,7 +5,7 @@
 	release-ios patch-ios \
 	release-tag release-notes \
 	require-clean-tree \
-	netlify-dev site-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
+	netlify-dev netlify-dev-catalog-seed-all site-dev catalog-seed catalog-seed-demos catalog-feed catalog-reset
 
 .SILENT: \
 	build watch i18n release patch
@@ -15,6 +15,13 @@
 LOCAL_BASE_URL    ?= http://localhost:8888
 LOCAL_ADMIN_TOKEN ?= dev-token
 SEED_DRILL        ?= test/fixtures/test-7x.drill
+
+# `netlify functions:serve` (see the netlify-dev target below) does not
+# apply netlify.toml's /api/* redirects, so the CLI's default
+# `functions-base-path` of "/api" 404s against it. Point the CLI at the
+# native `/.netlify/functions/*` path instead for every seed/feed target
+# that talks to a locally-served backend.
+LOCAL_FUNCTIONS_BASE_PATH ?= /.netlify/functions
 
 # Git commit metadata injected into builds via --dart-define. The values
 # get baked into the binary (see lib/utils/app_build_info.dart), surface
@@ -202,9 +209,11 @@ patch-ios: require-clean-tree
 # Lambda-compat function host directly on $(LOCAL_BASE_URL).
 #
 # Caveat: redirects in netlify.toml (/api/* and /d/*) do NOT apply here.
-# DrillClient already calls /.netlify/functions/* directly, so upload/
-# feed/head/admin all work. `ringdrill download <slug>` uses /d/<slug>
-# and will return 404 against this mode.
+# DrillClient defaults to calling /api/*, which 404s against this mode —
+# catalog-seed/catalog-seed-demos/catalog-feed below pass
+# --functions-base-path (LOCAL_FUNCTIONS_BASE_PATH) to point it at
+# /.netlify/functions/* directly, which does work. `ringdrill download
+# <slug>` still uses /d/<slug> and will return 404 against this mode.
 netlify-dev:
 	npm install
 	ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) npx netlify functions:serve --port 8888
@@ -228,6 +237,7 @@ catalog-seed:
 	@test -f $(SEED_DRILL) || { echo "Seed file $(SEED_DRILL) not found. Set SEED_DRILL=<path>"; exit 1; }
 	RINGDRILL_BASE_URL=$(LOCAL_BASE_URL) \
 	RINGDRILL_ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) \
+	RINGDRILL_FUNCTIONS_BASE_PATH=$(LOCAL_FUNCTIONS_BASE_PATH) \
 	dart run bin/ringdrill.dart upload $(SEED_DRILL) --published
 
 # Seed the local catalog with the two store-screenshot demo plans (slugs
@@ -246,11 +256,39 @@ catalog-seed-demos:
 		echo "Uploading $$f ..."; \
 		RINGDRILL_BASE_URL=$(LOCAL_BASE_URL) \
 		RINGDRILL_ADMIN_TOKEN=$(LOCAL_ADMIN_TOKEN) \
+		RINGDRILL_FUNCTIONS_BASE_PATH=$(LOCAL_FUNCTIONS_BASE_PATH) \
 		dart run bin/ringdrill.dart upload $$f --published || exit 1; \
 	done
 
+# Convenience one-shot for local /catalog work: starts `make netlify-dev` in
+# the background, waits for it to come up, seeds it with both `catalog-seed`
+# (test-7x.drill, no language) and `catalog-seed-demos` (demo-no/demo-en,
+# nb/en), then attaches to the backend so Ctrl-C stops it cleanly — no more
+# juggling two shells just to get a populated local catalog. Run `make
+# site-dev` in a second shell afterwards to browse it at /catalog.
+netlify-dev-catalog-seed-all:
+	@echo "Starting local backend ($(LOCAL_BASE_URL)) in the background..."
+	@$(MAKE) netlify-dev & \
+	SERVER_PID=$$!; \
+	trap 'echo ""; echo "Stopping local backend (pid $$SERVER_PID)..."; kill $$SERVER_PID 2>/dev/null; pkill -P $$SERVER_PID 2>/dev/null; wait $$SERVER_PID 2>/dev/null' EXIT INT TERM; \
+	echo "Waiting for $(LOCAL_BASE_URL) to come up..."; \
+	until curl -sf "$(LOCAL_BASE_URL)/.netlify/functions/market-feed" >/dev/null 2>&1; do \
+		if ! kill -0 $$SERVER_PID 2>/dev/null; then \
+			echo "ERROR: local backend exited before it came up. See the output above."; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	done; \
+	echo "Backend is up. Seeding catalog..."; \
+	$(MAKE) catalog-seed; \
+	$(MAKE) catalog-seed-demos; \
+	echo ""; \
+	echo "Local backend running at $(LOCAL_BASE_URL). Press Ctrl-C to stop."; \
+	wait $$SERVER_PID
+
 catalog-feed:
 	RINGDRILL_BASE_URL=$(LOCAL_BASE_URL) \
+	RINGDRILL_FUNCTIONS_BASE_PATH=$(LOCAL_FUNCTIONS_BASE_PATH) \
 	dart run bin/ringdrill.dart feed
 
 catalog-reset:

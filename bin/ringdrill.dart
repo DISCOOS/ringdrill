@@ -26,6 +26,16 @@ Future<void> main(List<String> argv) async {
       defaultsTo: Platform.environment['RINGDRILL_BASE_URL'] ?? _defaultBaseUrl,
     )
     ..addOption(
+      'functions-base-path',
+      help:
+          'Path prefix for Netlify function calls '
+          '(env: RINGDRILL_FUNCTIONS_BASE_PATH). Default "/api" relies on '
+          'netlify.toml redirects, which "netlify functions:serve" (ADR-0013) '
+          'does not apply — pass "/.netlify/functions" against that local mode.',
+      defaultsTo:
+          Platform.environment['RINGDRILL_FUNCTIONS_BASE_PATH'] ?? '/api',
+    )
+    ..addOption(
       'token',
       abbr: 't',
       help: 'Admin bearer token (env: RINGDRILL_ADMIN_TOKEN). '
@@ -100,7 +110,11 @@ Future<void> main(List<String> argv) async {
     );
   }
 
-  final client = DrillClient(baseUrl: baseUrl);
+  final functionsBasePath = (res['functions-base-path'] as String).trim();
+  final client = DrillClient(
+    baseUrl: baseUrl,
+    functionsBasePath: functionsBasePath,
+  );
 
   try {
     switch (cmd) {
@@ -423,6 +437,7 @@ ${parser.usage}
 ENV:
   RINGDRILL_BASE_URL     Base URL (default: $_defaultBaseUrl)
   RINGDRILL_ADMIN_TOKEN  Bearer token for admin API
+  RINGDRILL_FUNCTIONS_BASE_PATH  Function-call path prefix (default: /api)
 ''');
 }
 
