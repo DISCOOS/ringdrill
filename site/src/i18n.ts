@@ -11,6 +11,7 @@ export const strings = {
 
     nav: {
       features: 'Funksjoner',
+      catalog: 'Katalog',
       download: 'Last ned',
       openWeb: 'Åpne på web',
       langSwitch: 'English',
@@ -117,6 +118,7 @@ export const strings = {
 
     nav: {
       features: 'Features',
+      catalog: 'Catalog',
       download: 'Download',
       openWeb: 'Open on web',
       langSwitch: 'Norsk',
