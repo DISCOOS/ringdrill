@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@astrojs/cloudflare": "14.1.0",
     "astro": "^7.0.0",
     "fflate": "0.8.3",
     "vitest": "4.1.9"
