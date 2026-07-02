@@ -144,6 +144,8 @@ export function renderHtml({ slug, meta, locale }) {
 <meta name="description" content="${esc(ogDesc)}">
 <meta name="theme-color" content="#00536E" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#002C3F" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="512x512" href="/brand/logo.png">
+<link rel="apple-touch-icon" href="/brand/logo.png">
 <meta property="og:title" content="${esc(name)}">
 <meta property="og:description" content="${esc(ogDesc)}">
 <meta property="og:url" content="${canonical}">
@@ -239,7 +241,7 @@ ${tagsHtml}${metaHtml}${descHtml}
 
 function notFoundHtml(locale) {
     const s = STRINGS[locale] ?? STRINGS.nb;
-    return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><title>${s.notFound} · RingDrill</title></head><body><h1>${s.notFound}</h1></body></html>`;
+    return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><title>${s.notFound} · RingDrill</title><link rel="icon" type="image/png" sizes="512x512" href="/brand/logo.png"></head><body><h1>${s.notFound}</h1></body></html>`;
 }
 
 export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _readJson } = {}) {
