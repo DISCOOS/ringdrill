@@ -74,7 +74,6 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
       data-share-url={shareUrl}
       data-share-title={item.name}
       aria-label={c.catalog.share}
-      title={c.catalog.share}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 3v12" />
@@ -96,6 +95,13 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
     flex-direction: column;
     gap: 10px;
     transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    /* .catalog__grid is a CSS multi-column layout (masonry-style), not a
+       grid — column-gap only spaces columns apart, not stacked items
+       within one, so vertical spacing between cards is a margin here.
+       break-inside keeps a card (and its map) from splitting across the
+       column break. */
+    break-inside: avoid;
+    margin-bottom: 24px;
   }
   .catalog-card:hover {
     transform: translateY(-4px);
@@ -128,7 +134,7 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
   .catalog-card__tags li {
     background: var(--chip-bg);
     color: var(--chip-ink);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     padding: 0.2rem 0.6rem;
     border-radius: var(--radius-pill);
@@ -142,7 +148,7 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
     color: var(--muted);
     font-weight: 500;
   }
-  .catalog-card__meta { color: var(--muted); font-size: 0.85rem; margin: 0; }
+  .catalog-card__meta { color: var(--muted); font-size: 0.75rem; margin: 0; }
   .catalog-card__meta .sep { margin: 0 0.45rem; opacity: 0.6; }
   .catalog-card__map {
     height: 220px;
@@ -155,14 +161,17 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
-    /* Pushes the action row to the bottom of the card regardless of how
-       much content (description length, tag count, map) precedes it, so
-       every card in a grid row lines its buttons up together. Grid rows
-       already stretch every card to the tallest sibling's height. */
+    /* Pushes the action row to the bottom of its own card regardless of
+       how much content (description length, tag count, map) precedes it.
+       The catalog grid is a masonry-style multi-column layout now (see
+       catalog.astro), so this no longer lines actions up across cards in
+       a row — it just keeps each card's own buttons flush to its bottom
+       edge. */
     margin-top: auto;
     padding-top: 4px;
   }
   .catalog-card__share {
+    position: relative;
     margin-left: auto;
     display: inline-flex;
     align-items: center;
@@ -179,6 +188,33 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
   }
   .catalog-card__share:hover { background: var(--canvas-band); border-color: var(--teal); }
   .catalog-card__share svg { width: 18px; height: 18px; }
+  /* Custom tooltip instead of relying on the native title attribute
+     (slow to appear, unstyled, inconsistent across browsers) — an
+     icon-only button needs a legible label on hover/focus, not just an
+     aria-label a mouse user never sees. */
+  .catalog-card__share::after {
+    content: attr(aria-label);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    background: var(--heading);
+    color: var(--canvas);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transform: translateY(2px);
+    pointer-events: none;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+  .catalog-card__share:hover::after,
+  .catalog-card__share:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
 </style>
 
 <script>
@@ -230,6 +266,13 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
     });
 
     L.tileLayer(KARTVERKET_TOPO_URL, { maxZoom: 18 }).addTo(map);
+
+    // The catalog grid is a CSS multi-column layout (masonry-style) — a
+    // card's final width isn't always settled at the moment this script
+    // runs, so Leaflet can read a stale/too-small container size and
+    // compute a much-too-zoomed-out fit. invalidateSize() forces it to
+    // re-measure the container right before fitBounds() uses it.
+    map.invalidateSize();
 
     if (hasBounds) {
       const padded = L.latLngBounds(
@@ -285,8 +328,7 @@ const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toSt
         setTimeout(() => { button.innerHTML = original; }, 1500);
       } catch {
         // Clipboard API unavailable (e.g. insecure context) — nothing more
-        // to do; the button's title attribute still shows the plan link
-        // on hover as a last resort.
+        // to do.
       }
     });
   }
