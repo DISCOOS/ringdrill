@@ -226,6 +226,11 @@ class _LibraryBodyState extends State<_LibraryBody>
               isActive
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
+              // ExpandableTile does not clamp a bare leading Icon to the
+              // standard ListTile leading size the way ListTile does
+              // internally — size explicitly so the row height is driven
+              // by the text block, not an oversized icon.
+              size: 24,
             ),
             title: Text(program.name),
             subtitle: Text(programSubtitle(localizations, loaded ?? program)),

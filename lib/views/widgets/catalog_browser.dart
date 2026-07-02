@@ -176,6 +176,11 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                               ? Icons.cloud_done_outlined
                               : Icons.cloud_outlined,
                           color: colors.onSurfaceVariant,
+                          // See the matching comment in library_view.dart's
+                          // Mine planer list: size explicitly so the row
+                          // height is driven by the text block, not an
+                          // oversized icon.
+                          size: 24,
                         ),
                         title: Text(item.name),
                         subtitle: Text(_catalogSubtitle(localizations, item)),
