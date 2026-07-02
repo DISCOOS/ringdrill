@@ -99,7 +99,7 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
   )}
   <div class="catalog-card__actions">
     <a class="btn btn--primary btn--sm" href={previewUrl}>{c.catalog.download}</a>
-    <a class="btn btn--ghost btn--sm" href={openWebUrl}>{c.nav.openWeb}</a>
+    <a class="btn btn--ghost btn--sm" href={openWebUrl} target="_blank" rel="noopener noreferrer">{c.nav.openWeb}</a>
     <button
       type="button"
       class="catalog-card__share"

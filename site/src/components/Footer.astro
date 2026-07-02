@@ -27,7 +27,11 @@ const switchHref = langHref ?? c.nav.langSwitchHref;
         <h4>{c.footer.colLinks}</h4>
         <ul>
           {c.footer.links.map((l) => (
-            <li><a href={l.href}>{l.label}</a></li>
+            <li>
+              {l.href === 'https://web.ringdrill.app/'
+                ? <a href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>
+                : <a href={l.href}>{l.label}</a>}
+            </li>
           ))}
         </ul>
       </div>
