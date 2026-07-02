@@ -95,44 +95,44 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
 
       <div id="migrate-ready" hidden>
         <p id="migrate-found" class="migrate__found"></p>
-        <p>
+        <div class="migrate__done-actions">
           <button id="migrate-download" type="button" class="btn btn--primary">
             {copy.downloadCta}
           </button>
-        </p>
+          <button
+            type="button"
+            class="btn btn--ghost migrate__danger js-migrate-clear"
+          >{copy.cleanupCta}</button>
+        </div>
       </div>
 
       <div id="migrate-done" class="migrate__done" hidden>
         <h2>{copy.doneHeading}</h2>
         <p>{copy.doneBody}</p>
-        <p><a class="btn btn--primary" href={openHref}>{copy.openCta}</a></p>
-
-        <div class="migrate__cleanup">
-          <p>
-            <button
-              id="migrate-clear"
-              type="button"
-              class="btn btn--ghost migrate__danger"
-            >{copy.cleanupCta}</button>
-          </p>
-
-          <div id="migrate-clear-confirm" hidden>
-            <p>{copy.cleanupConfirmBody}</p>
-            <p class="migrate__cleanup-actions">
-              <button
-                id="migrate-clear-yes"
-                type="button"
-                class="btn migrate__danger migrate__danger--solid"
-              >{copy.cleanupConfirmCta}</button>
-              <button id="migrate-clear-no" type="button" class="btn btn--ghost">
-                {copy.cleanupCancel}
-              </button>
-            </p>
-          </div>
-
-          <p id="migrate-clear-done" class="migrate__status" hidden>{copy.cleanupDone}</p>
+        <div class="migrate__done-actions">
+          <a class="btn btn--primary" href={openHref}>{copy.openCta}</a>
+          <button
+            type="button"
+            class="btn btn--ghost migrate__danger js-migrate-clear"
+          >{copy.cleanupCta}</button>
         </div>
       </div>
+
+      <div id="migrate-clear-confirm" class="migrate__cleanup" hidden>
+        <p>{copy.cleanupConfirmBody}</p>
+        <p class="migrate__cleanup-actions">
+          <button
+            id="migrate-clear-yes"
+            type="button"
+            class="btn migrate__danger migrate__danger--solid"
+          >{copy.cleanupConfirmCta}</button>
+          <button id="migrate-clear-no" type="button" class="btn btn--ghost">
+            {copy.cleanupCancel}
+          </button>
+        </p>
+      </div>
+
+      <p id="migrate-clear-done" class="migrate__status" hidden>{copy.cleanupDone}</p>
     </div>
 
     <p id="migrate-note" class="migrate__note">{copy.note}</p>
@@ -158,7 +158,8 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
   .migrate__done { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 24px; }
   .migrate__note { margin-top: 24px; color: var(--muted); font-size: 0.9375rem; max-width: 60ch; }
   .btn[disabled] { opacity: 0.6; cursor: default; pointer-events: none; }
-  .migrate__cleanup { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 24px; }
+  .migrate__done-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .migrate__cleanup { margin-top: 20px; }
   .migrate__cleanup-actions { display: flex; flex-wrap: wrap; gap: 12px; }
   .migrate__danger { color: var(--danger, #b3261e); border-color: currentColor; }
   .migrate__danger:hover { background: rgba(179, 38, 30, 0.08); border-color: currentColor; color: var(--danger, #b3261e); }
@@ -183,9 +184,9 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
   const button = document.getElementById(
     'migrate-download',
   ) as HTMLButtonElement | null;
-  const clearBtn = document.getElementById(
-    'migrate-clear',
-  ) as HTMLButtonElement | null;
+  const clearTriggers = Array.from(
+    document.querySelectorAll('.js-migrate-clear'),
+  ) as HTMLButtonElement[];
   const clearConfirm = document.getElementById('migrate-clear-confirm');
   const clearYes = document.getElementById(
     'migrate-clear-yes',
@@ -265,21 +266,26 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
       }
     });
 
-    clearBtn?.addEventListener('click', () => {
-      clearBtn.hidden = true;
-      if (clearConfirm) clearConfirm.hidden = false;
-    });
+    const toggleConfirm = (show: boolean): void => {
+      for (const trigger of clearTriggers) trigger.hidden = show;
+      if (clearConfirm) clearConfirm.hidden = !show;
+    };
 
-    clearNo?.addEventListener('click', () => {
-      if (clearConfirm) clearConfirm.hidden = true;
-      clearBtn.hidden = false;
-    });
+    for (const trigger of clearTriggers) {
+      trigger.addEventListener('click', () => toggleConfirm(true));
+    }
+
+    clearNo?.addEventListener('click', () => toggleConfirm(false));
 
     clearYes?.addEventListener('click', () => {
       clearYes.disabled = true;
       try {
         clearFlutterData(window.localStorage);
+        // The stored plans are gone, so the download/open flows no longer
+        // apply. Collapse both panels down to the confirmation message.
         if (clearConfirm) clearConfirm.hidden = true;
+        if (ready) ready.hidden = true;
+        if (done) done.hidden = true;
         if (clearDone) clearDone.hidden = false;
       } catch {
         clearYes.disabled = false;
