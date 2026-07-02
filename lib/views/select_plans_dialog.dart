@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
-import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 
 /// Multi-select picker for choosing which plans go into a drill-library
@@ -10,11 +9,12 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 /// in `program_view.dart`: every plan starts checked, a "VELG ALLE"/"VELG
 /// INGEN" row plus a "N av M valgt" counter sit above the list, the
 /// primary button is disabled until at least one plan is checked, and
-/// each row is the same numbered [ExpandableTile] card (leading
-/// [Switch.adaptive] + [ExerciseNumberBadge]) the exercise picker uses —
+/// each row is the same [ExpandableTile] card the exercise picker uses —
 /// so picking plans to download feels like the same picker as picking
-/// exercises to export, just with no expand affordance (plans have
-/// nothing to preview inline).
+/// exercises to export. Unlike exercises, plans have no inherent order
+/// within the library, so rows skip the numbered badge (it would read as
+/// a meaningless priority) and have no expand affordance (nothing to
+/// preview inline).
 ///
 /// Returns the selected UUIDs, or `null` if the user cancels.
 Future<List<String>?> showSelectPlansDialog(
@@ -109,16 +109,9 @@ Future<List<String>?> showSelectPlansDialog(
                           }
 
                           return ExpandableTile(
-                            leading: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Switch.adaptive(
-                                  value: checked,
-                                  onChanged: (_) => toggle(),
-                                ),
-                                const SizedBox(width: 8),
-                                ExerciseNumberBadge(label: '#${index + 1}'),
-                              ],
+                            leading: Switch.adaptive(
+                              value: checked,
+                              onChanged: (_) => toggle(),
                             ),
                             title: Text(program.name),
                             subtitle: Text(
