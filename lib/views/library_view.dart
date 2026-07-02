@@ -217,7 +217,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                   : Icons.radio_button_unchecked,
             ),
             title: Text(program.name),
-            subtitle: Text(_programSubtitle(localizations, loaded ?? program)),
+            subtitle: Text(programSubtitle(localizations, loaded ?? program)),
             trailing: trailingChildren.isEmpty
                 ? null
                 : Row(
@@ -333,21 +333,6 @@ class _LibraryBodyState extends State<_LibraryBody>
         .toSet();
   }
 
-  String _programSubtitle(AppLocalizations localizations, Program program) {
-    final source = program.source.toJson();
-    final sourceLabel = switch (source['runtimeType']) {
-      'imported' => localizations.librarySourceImported(
-        source['fileName'] as String,
-      ),
-      'catalog' => localizations.librarySourceCatalog(source['slug'] as String),
-      _ => localizations.librarySourceLocal,
-    };
-    return [
-      sourceLabel,
-      '${program.exercises.length} ${localizations.exercise(program.exercises.length).toLowerCase()}',
-      program.metadata.updated.toLocal().toString().split('.').first,
-    ].join(' · ');
-  }
 
   Future<void> _activate(
     BuildContext context,
@@ -651,6 +636,25 @@ class _LibraryBodyState extends State<_LibraryBody>
       ),
     );
   }
+}
+
+/// Source label · exercise count · last-updated line shown under a plan's
+/// name. Shared between the "Mine planer" tab and [showSelectPlansDialog]
+/// so a plan reads the same way wherever it's listed.
+String programSubtitle(AppLocalizations localizations, Program program) {
+  final source = program.source.toJson();
+  final sourceLabel = switch (source['runtimeType']) {
+    'imported' => localizations.librarySourceImported(
+      source['fileName'] as String,
+    ),
+    'catalog' => localizations.librarySourceCatalog(source['slug'] as String),
+    _ => localizations.librarySourceLocal,
+  };
+  return [
+    sourceLabel,
+    '${program.exercises.length} ${localizations.exercise(program.exercises.length).toLowerCase()}',
+    program.metadata.updated.toLocal().toString().split('.').first,
+  ].join(' · ');
 }
 
 /// Inline summary shown after a drill-library import. Mirrors

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/library_view.dart' show programSubtitle;
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 
 /// Multi-select picker for choosing which plans go into a drill-library
@@ -14,7 +15,10 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 /// exercises to export. Unlike exercises, plans have no inherent order
 /// within the library, so rows skip the numbered badge (it would read as
 /// a meaningless priority) and have no expand affordance (nothing to
-/// preview inline).
+/// preview inline). Each row's subtitle is [programSubtitle] — the same
+/// source · exercise count · last-updated line shown in the "Mine
+/// planer" tab — so a plan carries enough context to decide whether to
+/// include it without leaving the picker.
 ///
 /// Returns the selected UUIDs, or `null` if the user cancels.
 Future<List<String>?> showSelectPlansDialog(
@@ -115,8 +119,7 @@ Future<List<String>?> showSelectPlansDialog(
                             ),
                             title: Text(program.name),
                             subtitle: Text(
-                              '${program.exercises.length} '
-                              '${localizations.exercise(program.exercises.length).toLowerCase()}',
+                              programSubtitle(localizations, program),
                             ),
                             onOpen: toggle,
                           );
