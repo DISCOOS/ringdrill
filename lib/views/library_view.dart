@@ -21,7 +21,15 @@ import 'package:ringdrill/views/widgets/picker_error_banner.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
-Future<void> showOpenPlanDialog(BuildContext context) {
+/// Which tab [showOpenPlanDialog] should land on when it opens. Order
+/// matches the [TabBar] in [_LibraryBodyState.build] so `.index` can be
+/// used directly as the [TabController]'s initial index.
+enum LibraryTab { myPlans, online, fromFile }
+
+Future<void> showOpenPlanDialog(
+  BuildContext context, {
+  LibraryTab initialTab = LibraryTab.myPlans,
+}) {
   final width = MediaQuery.sizeOf(context).width;
   if (width > 600) {
     return showDialog<void>(
@@ -34,7 +42,7 @@ Future<void> showOpenPlanDialog(BuildContext context) {
             maxHeight: 560,
             minWidth: 460,
           ),
-          child: const _LibraryBody(),
+          child: _LibraryBody(initialTab: initialTab),
         ),
       ),
     );
@@ -44,13 +52,15 @@ Future<void> showOpenPlanDialog(BuildContext context) {
     context: context,
     builder: (context) => SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.88,
-      child: const _LibraryBody(),
+      child: _LibraryBody(initialTab: initialTab),
     ),
   );
 }
 
 class _LibraryBody extends StatefulWidget {
-  const _LibraryBody();
+  const _LibraryBody({this.initialTab = LibraryTab.myPlans});
+
+  final LibraryTab initialTab;
 
   @override
   State<_LibraryBody> createState() => _LibraryBodyState();
@@ -77,7 +87,11 @@ class _LibraryBodyState extends State<_LibraryBody>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTab.index,
+    );
     // Clear the From-File feedback as soon as the user navigates away
     // from the tab — re-entering on a clean slate matches the
     // expectation that feedback is scoped to the in-progress action.
@@ -251,6 +265,16 @@ class _LibraryBodyState extends State<_LibraryBody>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (widget.initialTab == LibraryTab.fromFile) ...[
+                    Text(
+                      localizations.importGuideHint,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Icon(
                     Icons.upload_file_outlined,
                     size: 64,

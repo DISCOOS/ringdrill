@@ -14,6 +14,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/concept_primer_screen.dart';
 import 'package:ringdrill/views/install_link_handler.dart';
+import 'package:ringdrill/views/library_view.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/web/install_guide_page.dart'
     if (dart.library.io) 'package:ringdrill/views/install_guide_page_io.dart';
@@ -173,6 +174,18 @@ GoRouter buildRouter(bool isFirstLaunch, bool isOnboardingSeen) {
         // ProgramPageController instance
         // to exist in widget tree. Always
         // redirect to programs page!
+        return _activeProgramPath();
+      }
+      // `?import=guide` (ADR-0045): the /migrate exporter sends users here
+      // after downloading their library bundle. Web-only, same as /install
+      // and /migrate below — the migration/import flow is a web concern.
+      if (kIsWeb && state.uri.queryParameters['import'] == 'guide') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final context = key.currentContext;
+          if (context != null) {
+            showOpenPlanDialog(context, initialTab: LibraryTab.fromFile);
+          }
+        });
         return _activeProgramPath();
       }
       // Primer gate: redirect root path to /welcome on first launch, before
