@@ -70,8 +70,13 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
     list-style: none;
     margin-top: 40px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
+    /* Two columns max, even on very wide screens — wider cards read better
+       with the bounding-box map. Collapses to one column below 720px. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+  @media (max-width: 720px) {
+    .catalog__grid { grid-template-columns: 1fr; }
   }
   .catalog__empty { margin-top: 40px; }
   .catalog__map-attribution { margin-top: 16px; color: var(--muted); font-size: 0.8125rem; }

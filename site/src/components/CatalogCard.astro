@@ -22,30 +22,28 @@ const exerciseLabel =
   item.exerciseCount == null
     ? null
     : `${item.exerciseCount} ${item.exerciseCount === 1 ? c.catalog.exerciseUnit : c.catalog.exercisePlural}`;
+// Includes time (not just date) per request — a plan republished several
+// times in one day previously looked identical in the card.
 const updatedLabel = item.updatedAt
-  ? new Date(item.updatedAt).toLocaleDateString(lang === 'nb' ? 'nb-NO' : 'en-US', {
+  ? new Date(item.updatedAt).toLocaleString(lang === 'nb' ? 'nb-NO' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     })
   : null;
+
+const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toString();
 ---
 <li class="catalog-card" data-language={item.languageCode ?? ''}>
   <h3><a href={previewUrl}>{item.name}</a></h3>
   {item.description && <p class="catalog-card__desc">{item.description}</p>}
-  {item.tags.length > 0 && (
+  {(item.tags.length > 0 || item.place) && (
     <ul class="catalog-card__tags">
       {item.tags.map((tag) => <li>{tag}</li>)}
+      {item.place && <li class="catalog-card__tags-place">{item.place}</li>}
     </ul>
-  )}
-  {(exerciseLabel || updatedLabel) && (
-    <p class="catalog-card__meta">
-      {exerciseLabel && <span>{exerciseLabel}</span>}
-      {exerciseLabel && updatedLabel && <span class="sep" aria-hidden="true">·</span>}
-      {updatedLabel && (
-        <span>{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></span>
-      )}
-    </p>
   )}
   {(item.mapBounds || item.mapCenter) && (
     <div
@@ -58,10 +56,32 @@ const updatedLabel = item.updatedAt
       data-west={item.mapBounds?.west}
     />
   )}
-  {item.place && <p class="catalog-card__place">{item.place}</p>}
+  {(exerciseLabel || updatedLabel) && (
+    <p class="catalog-card__meta">
+      {exerciseLabel && <span>{exerciseLabel}</span>}
+      {exerciseLabel && updatedLabel && <span class="sep" aria-hidden="true">·</span>}
+      {updatedLabel && (
+        <span>{c.catalog.updated} <time datetime={item.updatedAt ?? undefined}>{updatedLabel}</time></span>
+      )}
+    </p>
+  )}
   <div class="catalog-card__actions">
     <a class="btn btn--primary btn--sm" href={previewUrl}>{c.catalog.download}</a>
     <a class="btn btn--ghost btn--sm" href={openWebUrl}>{c.nav.openWeb}</a>
+    <button
+      type="button"
+      class="catalog-card__share"
+      data-share-url={shareUrl}
+      data-share-title={item.name}
+      aria-label={c.catalog.share}
+      title={c.catalog.share}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12" />
+        <path d="M7.5 7.5 12 3l4.5 4.5" />
+        <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+      </svg>
+    </button>
   </div>
 </li>
 
@@ -113,21 +133,26 @@ const updatedLabel = item.updatedAt
     padding: 0.2rem 0.6rem;
     border-radius: var(--radius-pill);
   }
+  /* Reverse-geocoded, not author-entered like the other tags — an outline
+     instead of a filled chip marks it as "roughly here", not a curated
+     label the plan owner picked. */
+  .catalog-card__tags li.catalog-card__tags-place {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--muted);
+    font-weight: 500;
+  }
   .catalog-card__meta { color: var(--muted); font-size: 0.85rem; margin: 0; }
   .catalog-card__meta .sep { margin: 0 0.45rem; opacity: 0.6; }
   .catalog-card__map {
-    height: 140px;
+    height: 220px;
     border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--canvas-band);
   }
-  .catalog-card__place {
-    color: var(--muted);
-    font-size: 0.8125rem;
-    margin: -4px 0 0;
-  }
   .catalog-card__actions {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 8px;
     /* Pushes the action row to the bottom of the card regardless of how
@@ -137,6 +162,23 @@ const updatedLabel = item.updatedAt
     margin-top: auto;
     padding-top: 4px;
   }
+  .catalog-card__share {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--heading);
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease;
+  }
+  .catalog-card__share:hover { background: var(--canvas-band); border-color: var(--teal); }
+  .catalog-card__share svg { width: 18px; height: 18px; }
 </style>
 
 <script>
@@ -207,5 +249,45 @@ const updatedLabel = item.updatedAt
       // rather than showing nothing until the plan is republished.
       map.setView([lat, lng], 12);
     }
+  }
+
+  // Share button: native share sheet where available (mobile Safari/Chrome,
+  // macOS Safari), clipboard copy as the fallback everywhere else — with a
+  // brief checkmark swap so a click always gives some visible feedback.
+  const CHECK_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L19 8" /></svg>`;
+
+  const shareButtons = document.querySelectorAll<HTMLButtonElement>(
+    '.catalog-card__share:not([data-share-bound])',
+  );
+
+  for (const button of shareButtons) {
+    button.dataset.shareBound = 'true';
+    button.addEventListener('click', async () => {
+      const url = button.dataset.shareUrl;
+      const title = button.dataset.shareTitle;
+      if (!url) return;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, url });
+          return;
+        } catch {
+          // AbortError (user cancelled) or an unsupported share target —
+          // fall through to the clipboard copy below rather than doing
+          // nothing.
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(url);
+        const original = button.innerHTML;
+        button.innerHTML = CHECK_ICON;
+        setTimeout(() => { button.innerHTML = original; }, 1500);
+      } catch {
+        // Clipboard API unavailable (e.g. insecure context) — nothing more
+        // to do; the button's title attribute still shows the plan link
+        // on hover as a last resort.
+      }
+    });
   }
 </script>
