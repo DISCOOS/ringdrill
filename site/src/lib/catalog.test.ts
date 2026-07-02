@@ -10,6 +10,7 @@ function item(overrides: Partial<CatalogItem> & { slug: string; updatedAt: strin
     author: null,
     accessPolicy: null,
     mapCenter: null,
+    languageCode: null,
     tags: [],
     latestUrl: `https://api.ringdrill.app/d/${overrides.slug}`,
     ...overrides,

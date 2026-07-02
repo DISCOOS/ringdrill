@@ -8,6 +8,7 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import CatalogCard from '../../components/CatalogCard.astro';
 import { fetchCatalog } from '../../lib/catalog';
+import { distinctLanguageCodes, LANGUAGE_NAMES } from '../../lib/languages';
 import { t } from '../../i18n';
 
 const lang = 'en';
@@ -15,6 +16,7 @@ const c = t(lang);
 
 const apiBase = import.meta.env.PUBLIC_RINGDRILL_API_BASE || 'https://api.ringdrill.app';
 const result = await fetchCatalog({ apiBase });
+const languageCodes = distinctLanguageCodes(result.items);
 
 // Mirrors market-feed.js's own max-age=30 so Cloudflare's edge absorbs
 // repeat traffic instead of re-fetching the feed on every visit.
@@ -31,6 +33,19 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
 
         {result.items.length > 0 ? (
           <>
+            {languageCodes.length > 1 && (
+              <div class="catalog__filter">
+                <label class="catalog__filter-label" for="catalog-language-filter">
+                  {c.catalog.languageFilterLabel}
+                </label>
+                <select class="catalog__language-filter" id="catalog-language-filter">
+                  <option value="">{c.catalog.allLanguages}</option>
+                  {languageCodes.map((code) => (
+                    <option value={code}>{LANGUAGE_NAMES[code] ?? code}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <ul class="catalog__grid">
               {result.items.map((item) => <CatalogCard item={item} lang="en" />)}
             </ul>
@@ -60,4 +75,46 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
   }
   .catalog__empty { margin-top: 40px; }
   .catalog__map-attribution { margin-top: 16px; color: var(--muted); font-size: 0.8125rem; }
+  .catalog__filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 28px;
+  }
+  .catalog__filter-label {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .catalog__language-filter {
+    font: inherit;
+    font-size: 0.9375rem;
+    color: var(--heading);
+    background: var(--canvas-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+  }
 </style>
+
+<script>
+  // Client-side language filter (ADR-0007 + ADR-0040 addenda). Independent
+  // of the page's own nb/en language — plan-content language and site UI
+  // language are unrelated axes. Cards with no language set stay visible
+  // under every filter selection; they aren't a language a visitor picked,
+  // they're just unknown.
+  const select = document.getElementById(
+    'catalog-language-filter',
+  ) as HTMLSelectElement | null;
+
+  if (select) {
+    select.addEventListener('change', () => {
+      const selected = select.value;
+      document.querySelectorAll<HTMLElement>('.catalog-card').forEach((card) => {
+        const cardLanguage = card.dataset.language ?? '';
+        const visible = cardLanguage === '' || cardLanguage === selected || selected === '';
+        card.style.display = visible ? '' : 'none';
+      });
+    });
+  }
+</script>

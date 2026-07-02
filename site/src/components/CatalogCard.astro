@@ -25,7 +25,7 @@ const updatedLabel = item.updatedAt
     })
   : null;
 ---
-<li class="catalog-card">
+<li class="catalog-card" data-language={item.languageCode ?? ''}>
   <h3><a href={previewUrl}>{item.name}</a></h3>
   {item.description && <p class="catalog-card__desc">{item.description}</p>}
   {item.tags.length > 0 && (

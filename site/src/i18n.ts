@@ -85,6 +85,8 @@ export const strings = {
       exerciseUnit: 'øvelse',
       exercisePlural: 'øvelser',
       mapAttribution: 'Kartdata © Kartverket',
+      allLanguages: 'Alle språk',
+      languageFilterLabel: 'Språk',
     },
 
     footer: {
@@ -193,6 +195,8 @@ export const strings = {
       exerciseUnit: 'exercise',
       exercisePlural: 'exercises',
       mapAttribution: 'Map data © Kartverket',
+      allLanguages: 'All languages',
+      languageFilterLabel: 'Language',
     },
 
     footer: {

@@ -12,6 +12,7 @@ export interface CatalogItem {
   author: string | null;
   accessPolicy: string | null;
   mapCenter: { lat: number; lng: number } | null;
+  languageCode: string | null;
   tags: string[];
   latestUrl: string;
   updatedAt: string | null;
