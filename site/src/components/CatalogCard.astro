@@ -161,9 +161,12 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
      cards that both have a map are the same height whether or not either
      has tags. Only applied when there's a map (see hasMap in the
      frontmatter) — a map-less, tag-less card has no reason to reserve
-     this and should stay fully compact for the masonry grid. */
+     this and should stay fully compact for the masonry grid. Matches a
+     real tag li's rendered height (2 × 0.2rem padding + its line-height,
+     ~24.5px at the default font size) — an eyeballed 1.25rem left the
+     map noticeably higher on a tag-less card than a tagged one. */
   .catalog-card__tags--reserve {
-    min-height: 1.25rem;
+    min-height: 1.55rem;
   }
   .catalog-card__tags li {
     background: var(--chip-bg);
