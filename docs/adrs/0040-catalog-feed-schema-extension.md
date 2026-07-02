@@ -137,3 +137,28 @@ ADR-0007's addendum adds `languageCode` to `metadata.json` (the archive-format s
 **`/i/<slug>` (drills-preview.js)** projects the same field into its existing meta line (exercise count · updated), as a third bit, shown only when present.
 
 **Consequences.** Same shape as the rest of this ADR: one more optional field, one more thing that must degrade gracefully, no new backend dependency. The `/catalog` filter is the first client-side interactive control on the site beyond simple links/buttons — still plain script, no framework, consistent with the rest of the site.
+
+## Addendum (2026-07-02): bounding box + reverse-geocoded place name (supersedes the "not a bounding box" rule)
+
+The map-center addendum above states the catalog map is deliberately "a single approximate point, not a bounding box, not per-station pins." Revisited: a bounding box over the plan's real station extent is now accepted as fine for this public surface, and a coarse place name is added alongside it. This addendum replaces that one precision rule; everything else in the map-center addendum (tile provider, shared attribution pattern, `mapCenter` itself) stands.
+
+**Fields.** Two additions to the feed item shape, alongside `mapCenter` (which is kept — see below):
+
+```
+{ ..., mapCenter, mapBounds, place, ... }
+```
+
+* `mapBounds: { north, south, east, west } | null` — the min/max latitude and longitude across every positioned station in every exercise in the plan (not padded). `null` under the same conditions as `mapCenter` (no positioned stations, or computation failure) — never a degenerate `{0,0,0,0}` box.
+* `place: string | null` — a coarse, human-readable place name (e.g. `"Bergen, Norway"`) reverse-geocoded from `mapCenter`. `null` when there is no `mapCenter`, or the geocode lookup fails or returns nothing usable.
+
+**`mapCenter`'s role changes.** It is no longer primarily something rendered on the map — the card now renders `mapBounds` (a real rectangle around real positions, fit to the map view) instead of a dot at the averaged center. `mapCenter` is kept in the feed (existing consumers, self-healing legacy data) and now serves mainly as the reverse-geocode input: one lat/lng to hand to a place-name lookup, not a display point in its own right.
+
+**Bounding box derivation.** Computed in the same `parseExerciseFiles` pass in `drills-upload.js` that already collects positions for `mapCenter`: track running min/max lat and lng instead of (in addition to) a running sum. Persisted into `meta.json` as `mapBounds`, projected through `metaToFeedItem` exactly like every other field here. Legacy blobs without a `mapBounds` key project as `null` and self-heal on next publish; until then, the card falls back to rendering the old centroid+fixed-zoom view from `mapCenter` alone, rather than showing nothing.
+
+**Place-name derivation via Nominatim.** `resolvePlaceName(mapCenter)` in `drills-upload.js` calls OpenStreetMap's free public Nominatim instance (`https://nominatim.openstreetmap.org/reverse`, `zoom=10` for city/town-level granularity — not street- or house-level) at publish time, with an identifying `User-Agent` and a 5s timeout, and degrades to `null` on any error, timeout, or unusable response — never throws, never blocks the publish. To respect [Nominatim's usage policy](https://operations.osmfoundation.org/policies/nominatim/) (max ~1 request/second, no autocomplete/search-as-you-type, no bulk geocoding), the lookup only runs once per publish (a human action, not a per-feed-read cost) and only when `mapCenter` actually changed since the plan's last publish (checked against the current `meta.json` before geocoding) — an unchanged center reuses the previously stored `place` instead of re-querying.
+
+**Attribution.** Nominatim/OSM's terms require crediting OpenStreetMap when its data is displayed. The shared page-level attribution line under the `/catalog` grid (already crediting Kartverket for tiles) is extended to also credit OpenStreetMap contributors for place names, so both third-party data sources are attributed once per page rather than per card.
+
+**Privacy re-assessment.** A bounding box over a single tight cluster of stations can approach the precision of the real per-station positions the in-app map shows — more than the old centroid-only view revealed. Accepted as fine for this catalog: plans are published deliberately and publicly, real per-station detail (order, briefs, exact pins) still requires opening the plan itself, and the box is still an extent, not labeled points.
+
+**Consequences.** One more derived field (`mapBounds`) that must degrade gracefully. The backend gains its first outbound network dependency beyond its own storage (a Nominatim HTTP call at publish time) and its first non-Kartverket third-party data source, with its own attribution and rate-limit obligations. `mapCenter`'s purpose narrows from "the thing we draw" to "the thing we geocode."
