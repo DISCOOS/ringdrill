@@ -101,7 +101,8 @@ export function latestVersionEntry(versions) {
 // Single source of truth for the feed / per-slug meta contract (ADR-0040).
 // All derived fields degrade gracefully for legacy blobs written before
 // ADR-0040 (missing exerciseCount → null, author → ownerId, accessPolicy →
-// public for anon plans else account, per ADR-0025).
+// public for anon plans else account, per ADR-0025; missing/malformed
+// mapCenter → null, per ADR-0040's map-center addendum).
 export function metaToFeedItem(meta, { origin }) {
     const latest = latestVersionEntry(meta.versions);
     return {
@@ -112,6 +113,9 @@ export function metaToFeedItem(meta, { origin }) {
         exerciseCount: Number.isInteger(meta.exerciseCount) ? meta.exerciseCount : null,
         author: meta.author ?? meta.ownerId ?? null,
         accessPolicy: meta.accessPolicy ?? (meta.ownerId === "anon" ? "public" : "account"),
+        mapCenter: (meta.mapCenter && Number.isFinite(meta.mapCenter.lat) && Number.isFinite(meta.mapCenter.lng))
+            ? { lat: meta.mapCenter.lat, lng: meta.mapCenter.lng }
+            : null,
         tags: Array.isArray(meta.tags) ? meta.tags : [],
         latestUrl: `${origin}/d/${meta.slug}`,
         updatedAt: latest?.updatedAt || null,
