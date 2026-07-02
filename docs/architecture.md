@@ -183,6 +183,17 @@ The override is resolved at compile time (via `String.fromEnvironment` in `AppCo
 
 Bumping the schema requires updating the import code in `lib/data/drill_file.dart`, the Netlify upload handler, and a migration path for existing files.
 
+### Drill library format
+
+A drill library bundles multiple programs into one outer ZIP, for migration export and for backing up or moving a whole library between devices ([ADR-0045](./adrs/0045-drill-library-bundle-format.md)).
+
+* Outer ZIP, one `.drill` per program: `<slug>.drill`, `<slug>-1.drill`, … for slug collisions.
+* Detected by content, not extension: a top-level `program.json` means a single `.drill`; one or more top-level `*.drill` entries with no top-level `program.json` means a library; anything else is invalid.
+* Carries no schema of its own — each inner `.drill` carries its own schema per the section above.
+* Import is best-effort per entry: a corrupt inner `.drill` is skipped and counted, it does not abort the rest of the bundle. Import never activates a program.
+
+Implementation lives in `lib/data/drill_library.dart` (`DrillLibrary.sniff`, `.entries`, `.fromPrograms`). `lib/data/bulk_export.dart`'s `exportAllPrograms` delegates to `DrillLibrary.fromPrograms`.
+
 ## Where to look first
 
 * Bootstrap and theming: `lib/main.dart`.
