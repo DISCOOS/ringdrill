@@ -233,7 +233,13 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                         isBusy,
                         wrappedOnTap,
                       );
-                      final leadingIcon = isBusy
+                      // Only fall back to a leading spinner when there's no
+                      // trailingBuilder to show one instead — a caller that
+                      // supplies one (e.g. library_view.dart's "Installer"
+                      // button turning into a spinner) already has a busy
+                      // indicator, and showing both reads as two unrelated
+                      // things loading instead of one.
+                      final leadingIcon = isBusy && widget.trailingBuilder == null
                           ? const Padding(
                               padding: EdgeInsets.all(2),
                               child: SizedBox(
