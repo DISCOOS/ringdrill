@@ -21,16 +21,16 @@ const enc = (obj) => new TextEncoder().encode(JSON.stringify(obj));
 
 test("programInfoFromArchive: reads name, description and tags from program.json", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"] }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"], exerciseCount: 0 });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"], exerciseCount: 0, mapCenter: null });
 });
 
 test("programInfoFromArchive: missing program.json → nulls and empty tags", () => {
-    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [], exerciseCount: 0 });
+    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null });
 });
 
 test("programInfoFromArchive: missing description field → null description", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Only name" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [], exerciseCount: 0 });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [], exerciseCount: 0, mapCenter: null });
 });
 
 test("programInfoFromArchive: missing tags field → empty array, not null", () => {
@@ -47,12 +47,12 @@ test("programInfoFromArchive: tags: [] deserializes to empty array", () => {
 
 test("programInfoFromArchive: malformed program.json → nulls and empty tags, never throws", () => {
     const files = { "program.json": new TextEncoder().encode("{not json") };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0 });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null });
 });
 
 test("programInfoFromArchive: non-string fields ignored", () => {
     const files = { "program.json": enc({ name: 42, description: { nested: true }, tags: "not-an-array" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0 });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: 0, mapCenter: null });
 });
 
 // ---------- programInfoFromArchive: exerciseCount (ADR-0040) ----------
@@ -104,6 +104,79 @@ test("programInfoFromArchive: exercise files are counted even when program.json 
         "exercises/e2.json": enc({ uuid: "e2" }),
     };
     assert.equal(programInfoFromArchive(files).exerciseCount, 2);
+});
+
+// ---------- programInfoFromArchive: mapCenter (ADR-0040 addendum) ----------
+//
+// mapCenter is a single coarse centroid of every positioned station across
+// every exercise file — never per-station pins, never a bounding box (see
+// the map-center addendum in docs/adrs/0040-catalog-feed-schema-extension.md).
+
+test("programInfoFromArchive: mapCenter averages positioned stations across exercises", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({
+            uuid: "e1",
+            stations: [{ uuid: "s1", position: { coordinates: [10, 60] } }],
+        }),
+        "exercises/e2.json": enc({
+            uuid: "e2",
+            stations: [{ uuid: "s2", position: { coordinates: [12, 62] } }],
+        }),
+    };
+    assert.deepEqual(programInfoFromArchive(files).mapCenter, { lat: 61, lng: 11 });
+});
+
+test("programInfoFromArchive: stations without a position are ignored, not skewing the average", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({
+            uuid: "e1",
+            stations: [
+                { uuid: "s1", position: { coordinates: [10, 60] } },
+                { uuid: "s2", position: null },
+                { uuid: "s3" },
+            ],
+        }),
+    };
+    assert.deepEqual(programInfoFromArchive(files).mapCenter, { lat: 60, lng: 10 });
+});
+
+test("programInfoFromArchive: a malformed exercises/<uuid>.json is skipped for exerciseCount and mapCenter, never throws", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": new TextEncoder().encode("{not json"),
+        "exercises/e2.json": enc({
+            uuid: "e2",
+            stations: [{ uuid: "s1", position: { coordinates: [10, 60] } }],
+        }),
+    };
+    const result = programInfoFromArchive(files);
+    assert.equal(result.exerciseCount, 2, "malformed file still counts as an exercise file");
+    assert.deepEqual(result.mapCenter, { lat: 60, lng: 10 }, "malformed file contributes no positions, but doesn't throw or drop the good one");
+});
+
+test("programInfoFromArchive: no positioned stations anywhere → mapCenter null, never (0,0)", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({ uuid: "e1", stations: [{ uuid: "s1" }] }),
+    };
+    assert.equal(programInfoFromArchive(files).mapCenter, null);
+});
+
+test("programInfoFromArchive: non-finite coordinates are excluded from the average", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+        "exercises/e1.json": enc({
+            uuid: "e1",
+            stations: [
+                { uuid: "s1", position: { coordinates: [10, 60] } },
+                { uuid: "s2", position: { coordinates: ["not-a-number", 60] } },
+                { uuid: "s3", position: { coordinates: [10] } },
+            ],
+        }),
+    };
+    assert.deepEqual(programInfoFromArchive(files).mapCenter, { lat: 60, lng: 10 });
 });
 
 // ---------- resolvePublishPolicy ----------
@@ -186,7 +259,7 @@ test("stripActorsAndValidate: returns { name, description, tags } from program.j
     const bytes = Buffer.from(zipSync(files));
     const { strippedBytes, program, error } = stripActorsAndValidate(null, bytes);
     assert.equal(error, undefined);
-    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: 0 });
+    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: 0, mapCenter: null });
     // program.json survives the strip
     assert.ok(unzipSync(new Uint8Array(strippedBytes))["program.json"]);
 });

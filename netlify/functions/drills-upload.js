@@ -11,25 +11,60 @@ import {
 // coordinated changes to the Flutter app and this handler (AGENTS.md).
 const KNOWN_SCHEMA_MAX = "1.2";
 
-// Count top-level `exercises/<uuid>.json` archive entries. Per-station
-// markdown lives at `exercises/<uuid>/stations/<index>/<field>.md` (see
-// DrillFile.fromBytes in lib/data/drill_file.dart) and must not be counted,
-// hence the "no further slash after the uuid" requirement.
-function countExerciseFiles(files) {
-    if (!files) return 0;
-    return Object.keys(files).filter(k => /^exercises\/[^/]+\.json$/.test(k)).length;
+// Parse every top-level exercises/<uuid>.json entry once, returning both the
+// exercise count and every finite station position found across them.
+// Per-station markdown lives at exercises/<uuid>/stations/<index>/<field>.md
+// (see DrillFile.fromBytes in lib/data/drill_file.dart) and must not be
+// counted, hence the "no further slash after the uuid" requirement.
+// Malformed individual exercise files are skipped, never thrown — one bad
+// file must not fail the whole publish.
+function parseExerciseFiles(files) {
+    const result = { count: 0, positions: [] };
+    if (!files) return result;
+    for (const name of Object.keys(files)) {
+        if (!/^exercises\/[^/]+\.json$/.test(name)) continue;
+        result.count++;
+        try {
+            const ex = JSON.parse(strFromU8(files[name]));
+            const stations = Array.isArray(ex?.stations) ? ex.stations : [];
+            for (const s of stations) {
+                const coords = s?.position?.coordinates;
+                if (Array.isArray(coords) && coords.length === 2) {
+                    const [lng, lat] = coords;
+                    if (Number.isFinite(lng) && Number.isFinite(lat)) {
+                        result.positions.push([lng, lat]);
+                    }
+                }
+            }
+        } catch {
+            // malformed exercises/<uuid>.json — skip, don't throw
+        }
+    }
+    return result;
+}
+
+// Centroid (simple average) of [lng, lat] pairs. null when there are none —
+// never a fake (0, 0). See ADR-0040's map-center addendum for why this is a
+// single coarse point, not a bounding box or per-station detail.
+function computeMapCenter(positions) {
+    if (!positions.length) return null;
+    const [sumLng, sumLat] = positions.reduce(
+        (acc, [lng, lat]) => [acc[0] + lng, acc[1] + lat],
+        [0, 0],
+    );
+    return { lat: sumLat / positions.length, lng: sumLng / positions.length };
 }
 
 /**
  * Read the plan-level name, description and tags from a `program.json`
- * entry, plus the exercise count derived from the archive's exercise files
- * (ADR-0040).
+ * entry, plus the exercise count and map center derived from the archive's
+ * exercise files (ADR-0040 + its map-center addendum).
  *
  * `files` is the already-unzipped archive map (name -> Uint8Array), so this
  * reuses the unzip stripActorsAndValidate already did rather than opening the
- * archive a second time. Returns { name, description, tags, exerciseCount }
- * with name/description either a non-null value or null when absent/
- * unparseable, tags either the array or [] — never throws.
+ * archive a second time. Returns { name, description, tags, exerciseCount,
+ * mapCenter } with name/description either a non-null value or null when
+ * absent/unparseable, tags either the array or [] — never throws.
  *
  * `exerciseCount` counts top-level `exercises/<uuid>.json` entries rather
  * than `program.json.exercises`: DrillFile.build() always serializes
@@ -38,11 +73,17 @@ function countExerciseFiles(files) {
  * counting it would always yield 0. Counting files is a real measurement of
  * the unzipped archive, so it is always an integer — never null, even when
  * program.json is missing or malformed.
+ *
+ * `mapCenter` is the centroid of every positioned station across every
+ * exercise file — a single coarse point, not a bounding box or per-station
+ * detail (privacy: station coordinates are real-world, often SAR, exercise
+ * locations). `null` when no exercise carries a positioned station.
  */
 export function programInfoFromArchive(files) {
-    const exerciseCount = countExerciseFiles(files);
+    const { count: exerciseCount, positions } = parseExerciseFiles(files);
+    const mapCenter = computeMapCenter(positions);
     const entry = files?.["program.json"];
-    if (!entry) return { name: null, description: null, tags: [], exerciseCount };
+    if (!entry) return { name: null, description: null, tags: [], exerciseCount, mapCenter };
     try {
         const p = JSON.parse(strFromU8(entry));
         return {
@@ -50,9 +91,10 @@ export function programInfoFromArchive(files) {
             description: typeof p?.description === "string" ? p.description : null,
             tags: Array.isArray(p?.tags) ? p.tags : [],
             exerciseCount,
+            mapCenter,
         };
     } catch {
-        return { name: null, description: null, tags: [], exerciseCount };
+        return { name: null, description: null, tags: [], exerciseCount, mapCenter };
     }
 }
 
@@ -314,6 +356,7 @@ export default async function (request) {
         currentMeta.published = !!published;
         currentMeta.tags = tags;
         currentMeta.exerciseCount = program.exerciseCount;
+        currentMeta.mapCenter = program.mapCenter;
         const { author, accessPolicy } = resolvePublishPolicy({ ownerId });
         currentMeta.author = author;
         currentMeta.accessPolicy = accessPolicy;
