@@ -266,12 +266,26 @@ class _LibraryBodyState extends State<_LibraryBody>
       activeSlug: _programService.activeProgram?.source.whenOrNull(
         catalog: (slug, latestEtag, installedAt) => slug,
       ),
-      trailingBuilder: (context, item, installed) {
+      trailingBuilder: (context, item, installed, busy, onTap) {
         if (installed) {
           return Chip(label: Text(localizations.libraryInstalled));
         }
+        if (busy) {
+          return const Padding(
+            padding: EdgeInsets.all(8),
+            child: SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+        // Routed through onTap (CatalogBrowser's busy-tracked handler),
+        // not a direct _installCatalog(item) call — this button and
+        // tapping the row do the same thing, so both must share the one
+        // busy state instead of racing each other.
         return FilledButton(
-          onPressed: () => _installCatalog(item),
+          onPressed: onTap,
           child: Text(localizations.libraryInstall),
         );
       },

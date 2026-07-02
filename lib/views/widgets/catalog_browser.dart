@@ -8,8 +8,23 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 
 /// Builds the widget shown in the [ListTile.trailing] slot for one catalog
 /// item. Return `null` to render no trailing affordance.
+///
+/// [busy] is true while this item's [CatalogBrowser.onItemTap] (e.g. a
+/// catalog download) is in flight — use it to swap an action button for a
+/// spinner. [onTap] is the same busy-tracked handler the row itself uses:
+/// null while ANY item in the list is busy (so a second tap elsewhere can't
+/// race the first), otherwise triggers [CatalogBrowser.onItemTap] for this
+/// item. Wire an action button's `onPressed` to it instead of calling the
+/// caller's install logic directly, so both tap targets share one busy
+/// state.
 typedef CatalogItemTrailingBuilder =
-    Widget? Function(BuildContext context, MarketFeedItem item, bool installed);
+    Widget? Function(
+      BuildContext context,
+      MarketFeedItem item,
+      bool installed,
+      bool busy,
+      VoidCallback? onTap,
+    );
 
 /// Predicate that decides whether [item] should appear in the feed. Return
 /// `false` to hide the item entirely. The default is "include everything".
@@ -73,6 +88,23 @@ class CatalogBrowser extends StatefulWidget {
 class _CatalogBrowserState extends State<CatalogBrowser> {
   final _catalogStatus = CatalogStatusService();
   late Future<MarketFeedPageResponse> _feed;
+
+  /// Slug of the item whose [CatalogBrowser.onItemTap] is currently in
+  /// flight (a network download), or null when nothing is busy. Disables
+  /// every row's tap target while set, and drives the busy row's spinner —
+  /// same reasoning as OpenFileWidget's Open/Import spinner: a catalog tap
+  /// starts a download with no other indication anything happened.
+  String? _busySlug;
+
+  Future<void> _handleTap(BuildContext context, MarketFeedItem item) async {
+    if (_busySlug != null) return;
+    setState(() => _busySlug = item.slug);
+    try {
+      await widget.onItemTap(context, item);
+    } finally {
+      if (mounted) setState(() => _busySlug = null);
+    }
+  }
 
   @override
   void initState() {
@@ -190,12 +222,29 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                       final installed = widget.installedSlugs.contains(
                         item.slug,
                       );
+                      final isBusy = _busySlug == item.slug;
+                      final wrappedOnTap = _busySlug == null
+                          ? () => _handleTap(context, item)
+                          : null;
                       final trailing = widget.trailingBuilder?.call(
                         context,
                         item,
                         installed,
+                        isBusy,
+                        wrappedOnTap,
                       );
-                      final leadingIcon = widget.showActiveRadio
+                      final leadingIcon = isBusy
+                          ? const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : widget.showActiveRadio
                           ? Icon(
                               item.slug == widget.activeSlug
                                   ? Icons.radio_button_checked
@@ -227,7 +276,7 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                                 padding: const EdgeInsets.only(right: 12),
                                 child: trailing,
                               ),
-                        onOpen: () => widget.onItemTap(context, item),
+                        onOpen: wrappedOnTap,
                       );
                     },
                   );
