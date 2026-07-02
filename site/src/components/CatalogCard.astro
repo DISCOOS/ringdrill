@@ -45,15 +45,20 @@ const searchBlob = [item.name, item.description, ...item.tags, item.place]
   .filter((v): v is string => Boolean(v))
   .join(' ')
   .toLowerCase();
+
+// Two cards that both have a map should be the same height regardless of
+// tag count — reserve a tag-row's worth of space even with zero tags, but
+// only when there's a map to match against. A map-less, tag-less card
+// still collapses to nothing here, so it stays as compact as the masonry
+// grid (catalog.astro) intends for the "no map" cards it stacks together.
+const hasMap = Boolean(item.mapBounds || item.mapCenter);
 ---
 <li class="catalog-card" data-language={item.languageCode ?? ''} data-search={searchBlob}>
   <h3><a href={previewUrl}>{item.name}</a></h3>
   {item.description && <p class="catalog-card__desc">{item.description}</p>}
-  {item.tags.length > 0 && (
-    <ul class="catalog-card__tags">
-      {item.tags.map((tag) => <li>{tag}</li>)}
-    </ul>
-  )}
+  <ul class:list={['catalog-card__tags', { 'catalog-card__tags--reserve': hasMap }]}>
+    {item.tags.map((tag) => <li>{tag}</li>)}
+  </ul>
   {(item.mapBounds || item.mapCenter) && (
     <div
       class="catalog-card__map"
@@ -147,6 +152,14 @@ const searchBlob = [item.name, item.description, ...item.tags, item.place]
     gap: 0.4rem;
     margin: 0;
     padding: 0;
+  }
+  /* Reserves a tag-row's worth of height even with zero tags, so two
+     cards that both have a map are the same height whether or not either
+     has tags. Only applied when there's a map (see hasMap in the
+     frontmatter) — a map-less, tag-less card has no reason to reserve
+     this and should stay fully compact for the masonry grid. */
+  .catalog-card__tags--reserve {
+    min-height: 1.25rem;
   }
   .catalog-card__tags li {
     background: var(--chip-bg);
