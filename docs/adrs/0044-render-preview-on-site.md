@@ -37,6 +37,16 @@ Chosen option: **Option A**. The site owns `/i/[slug]` via Astro on-demand rende
 
 The Netlify side retains a thin, correct role: the meta JSON endpoint, and the `/d/<slug>` download (an asset/API concern that stays a function). `drills-preview.js` is retired once the site route is live and the `/i/*` routing flips.
 
+### Relation to ADR-0040 (why keep a separate meta endpoint)
+
+[ADR-0040](./0040-catalog-feed-schema-extension.md) widens the catalog feed item to carry `description`, `exerciseCount`, `author` and `accessPolicy`, so the feed and this per-slug meta endpoint end up with nearly the same fields. That overlap raises the fair question of whether `/api/drills/:slug/meta` is still needed once the feed is widened. It is — the two serve different access patterns and are both kept deliberately:
+
+* The feed is a **bulk browse**: published-only, paginated (`limit` 1–100, cursor), sorted. Locating one slug through it is a page scan in the worst case.
+* The meta endpoint is a **point lookup**: a direct `slug → record → meta.json` blob read (O(1)), which is exactly what a single `/i/[slug]` render needs.
+* Only the meta endpoint can express **clean 404 semantics** for an unpublished or missing single slug. The feed silently omits such plans, which a preview render cannot distinguish from "not on this page".
+
+The right coupling is not to merge them but to keep the shapes from drifting: both project from the same `meta.json` via a shared helper in `_shared.js`, so a field added in one appears in the other. This ADR's step 1 already calls for matching the feed's per-item shape; ADR-0040 makes that shared projection explicit.
+
 Sequencing matters. This lands **after** the apex is on Cloudflare per ADR-0039, so we are not flipping `/i/*` routing mid-migration.
 
 ### Consequences
@@ -74,7 +84,7 @@ Sequencing matters. This lands **after** the apex is on Cloudflare per ADR-0039,
 
 > **Update 2026-07-02 (apex cutover):** ADR-0039 originally specified the apex proxy as a status-200 `_redirects` rule. That does not work — Cloudflare Pages `_redirects` can only 200-rewrite to local paths, not to an external origin (that is a Netlify-only feature). During the apex cutover, unknown `/api/*`, `/d/*`, `/i/*` and `/brief/*` fell through to the Astro landing page. The fix was a standalone Worker, `workers/apex-proxy/`, bound to those prefixes, forwarding verbatim to `api.ringdrill.app`. The steps below have been corrected to reference the Worker instead of `_redirects`.
 
-1. Add `GET /api/drills/:slug/meta` (Netlify function) returning the meta JSON, `404` for unpublished or missing, with `s-maxage` cache headers. Match the per-item shape `market-feed.js` already returns for consistency. `drills-preview.js` keeps running unchanged.
+1. Add `GET /api/drills/:slug/meta` (Netlify function) returning the meta JSON, `404` for unpublished or missing, with `s-maxage` cache headers. Match the per-item shape `market-feed.js` returns (widened by ADR-0040), sharing one projection helper in `_shared.js` so the feed and this endpoint cannot drift. `drills-preview.js` keeps running unchanged.
 2. Add the Cloudflare adapter and enable on-demand rendering for the preview route only, keeping every existing page prerendered. Build the Astro `/i/[slug]` on-demand route consuming that endpoint, porting the current preview layout into a site component that reuses site tokens and `t(lang)`. The route fetches meta from a configurable API base (`PUBLIC_RINGDRILL_API_BASE`, default production) so `make site-dev` can point it at the local `make netlify-dev` backend for debugging. Verify OG/canonical/hreflang parity with a crawler check (Slack/Facebook debugger or equivalent).
 3. **The apex cutover does not require this ADR.** After the DNS flip, apex `/i/*` is proxied to `https://api.ringdrill.app/i/:splat` by the `workers/apex-proxy/` Worker, so `drills-preview` keeps rendering `/i/` with no gap. `/i/` therefore does not break at cutover, and this ADR is not a prerequisite for it. The site route is an independent optimisation that can land any time after ADR-0039.
 4. This ADR's cutover = replace the apex `/i/*` proxy with the native Cloudflare route. Deploy the `/i/[slug]` route, confirm parity on the Cloudflare host, then remove the `ringdrill.app/i/*` route from `workers/apex-proxy/wrangler.toml` and redeploy the Worker so the native Astro route wins. Order matters and is now stricter than the old `_redirects` plan: **Worker routes take precedence over Pages, so the native `/i/[slug]` route is unreachable until the Worker's `/i/*` route is removed.** The route must be live before the Worker route is dropped, or there is a brief gap. (The dead `/i/*` line in `site/public/_redirects` was already removed on 2026-07-02 under [DEBT-0011](../debts/0011-adr-0039-post-cutover-cleanup.md), so nothing remains to clean up there.)
@@ -83,6 +93,6 @@ Sequencing matters. This lands **after** the apex is on Cloudflare per ADR-0039,
 
 ## Links
 
-* Related ADRs: [ADR-0015](./0015-shareable-install-links.md) (shareable install links), [ADR-0039](./0039-site-pwa-api-origins.md) (site/PWA/API origin split), [ADR-0007](./0007-drill-file-format.md) (`.drill` format), [ADR-0008](./0008-persistent-program-library-and-catalog.md) and [ADR-0010](./0010-live-catalog-updates.md) (catalog and HEAD polling)
+* Related ADRs: [ADR-0015](./0015-shareable-install-links.md) (shareable install links), [ADR-0039](./0039-site-pwa-api-origins.md) (site/PWA/API origin split), [ADR-0040](./0040-catalog-feed-schema-extension.md) (catalog feed schema extension — shares the meta projection with this endpoint), [ADR-0007](./0007-drill-file-format.md) (`.drill` format), [ADR-0008](./0008-persistent-program-library-and-catalog.md) and [ADR-0010](./0010-live-catalog-updates.md) (catalog and HEAD polling)
 * Related code: `netlify/functions/drills-preview.js`, `netlify/functions/_shared.js`, `netlify/functions/market-feed.js`, `site/src/i18n.ts`, `netlify.toml`, `workers/apex-proxy/` (apex proxy that actually routes `/i/*`), `site/public/_redirects`
 * Depends on: apex migration to Cloudflare (ADR-0039) landing first.

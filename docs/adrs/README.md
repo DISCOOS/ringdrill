@@ -47,7 +47,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0037 | [Size text for legibility on iOS: tighten the baseline type scale and clamp scaling at 1.3](./0037-text-sizing-and-legibility.md) | Accepted |
 | ADR-0038 | [Gate first-launch consent and rationale behind a four-stage onboarding](./0038-notification-consent-flow.md) | Accepted |
 | ADR-0039 | [Split the site, PWA and API across separate origins](./0039-site-pwa-api-origins.md) | Accepted |
-| ADR-0040 | Catalog feed schema extension (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
+| ADR-0040 | [Extend the catalog feed schema with description, exercise count, author and access policy](./0040-catalog-feed-schema-extension.md) | Accepted |
 | ADR-0041 | Brief pre-rendering port from Dart to Node (reserved, referenced by [ADR-0039](./0039-site-pwa-api-origins.md)) | Reserved |
 | ADR-0042 | [Centralise build-time feature flags with sunset telemetry](./0042-feature-flags-and-sunset-telemetry.md) | Accepted |
 | ADR-0043 | [Tags live in the `.drill` format and publish is last-write-wins](./0043-tags-in-drill-format.md) | Accepted |
