@@ -9,9 +9,11 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
+import 'package:ringdrill/views/library_view.dart' show programSubtitle;
 import 'package:ringdrill/views/program_diff_widgets.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/widgets/catalog_browser.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/picker_error_banner.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -200,30 +202,46 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
         .where((program) => program.uuid != activeUuid)
         .toList();
 
-    return Column(
-      children: [
-        Expanded(
-          child: programs.isEmpty
-              ? EmptyState(
-                  icon: Icons.folder_open_outlined,
-                  text: localizations.addExercisesEmptyMyPlans,
-                )
-              : ListView.builder(
-                  itemCount: programs.length,
-                  itemBuilder: (context, index) {
-                    final program = programs[index];
-                    final loaded =
-                        _programService.loadProgram(program.uuid) ?? program;
-                    return ListTile(
-                      title: Text(program.name),
-                      subtitle: Text(_programSubtitle(localizations, loaded)),
-                      onTap: () => _mergeIntoActivePlan(context, loaded),
-                    );
-                  },
-                ),
-        ),
-        TabFooter(subtitle: localizations.addExercisesMyPlansSubtitle),
-      ],
+    // Mirror the "Åpne plan" dialog's "Mine planer" tab
+    // (_LibraryBodyState._buildMyPlans): ExpandableTile cards on the
+    // scaffold colour, with the shared source · exercise count ·
+    // last-updated subtitle, so pulling exercises from a plan looks like
+    // the same picker as opening one.
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          Expanded(
+            child: programs.isEmpty
+                ? EmptyState(
+                    icon: Icons.folder_open_outlined,
+                    text: localizations.addExercisesEmptyMyPlans,
+                  )
+                : ListView.builder(
+                    // Matches _buildMyPlansList: ExpandableTile's own 5px
+                    // vertical margin plus this 5px makes every edge 10px.
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    itemCount: programs.length,
+                    itemBuilder: (context, index) {
+                      final program = programs[index];
+                      final loaded =
+                          _programService.loadProgram(program.uuid) ?? program;
+                      return ExpandableTile(
+                        // Neutral leading: this list is a source to pull
+                        // exercises from, not a single-select of the active
+                        // plan, so it uses an add glyph rather than the
+                        // active/inactive radio the "Mine planer" tab shows.
+                        leading: const Icon(Icons.playlist_add, size: 24),
+                        title: Text(program.name),
+                        subtitle: Text(programSubtitle(localizations, loaded)),
+                        onOpen: () => _mergeIntoActivePlan(context, loaded),
+                      );
+                    },
+                  ),
+          ),
+          TabFooter(subtitle: localizations.addExercisesMyPlansSubtitle),
+        ],
+      ),
     );
   }
 
@@ -358,10 +376,10 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 
     final selectedUuids = await ProgramPageControllerBase.selectExercises(
       context,
-      localizations.importProgram,
+      localizations.addExercisesTitle,
       source.exercises,
       localizations,
-      confirmLabel: localizations.importAction,
+      confirmLabel: localizations.addAction,
       preselectAll: true,
       showSelectAllControls: true,
       program: source,
@@ -416,22 +434,6 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 
     return apply == true ? selectedUuids : null;
   }
-}
-
-String _programSubtitle(AppLocalizations localizations, Program program) {
-  return [
-    _sourceLabel(localizations, program.source),
-    localizations.exercise(program.exercises.length),
-  ].join(' · ');
-}
-
-String _sourceLabel(AppLocalizations localizations, ProgramSource source) {
-  return source.when(
-    local: () => localizations.librarySourceLocal,
-    imported: (fileName) => localizations.librarySourceImported(fileName),
-    catalog: (slug, latestEtag, installedAt) =>
-        localizations.librarySourceCatalog(slug),
-  );
 }
 
 BoxConstraints _constraintsFor(BuildContext context) {
