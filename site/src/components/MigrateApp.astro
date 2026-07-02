@@ -74,8 +74,13 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
 ---
 <section class="section">
   <div class="container migrate">
-    <h1>{copy.heading}</h1>
-    <p class="lead">{copy.intro}</p>
+    <h1 id="migrate-heading" data-empty-heading={copy.emptyHeading}>{copy.heading}</h1>
+    <p id="migrate-intro" class="lead">{copy.intro}</p>
+
+    <div id="migrate-empty" class="migrate__empty" hidden>
+      <p class="lead">{copy.emptyBody}</p>
+      <p><a class="btn btn--ghost" href={copy.homeHref}>{copy.emptyLink}</a></p>
+    </div>
 
     <div
       id="migrate-app"
@@ -87,12 +92,6 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
       data-cleanup-error={copy.cleanupError}
     >
       <p id="migrate-loading" class="migrate__status">{copy.loading}</p>
-
-      <div id="migrate-empty" hidden>
-        <h2>{copy.emptyHeading}</h2>
-        <p>{copy.emptyBody}</p>
-        <p><a class="btn btn--ghost" href={copy.homeHref}>{copy.emptyLink}</a></p>
-      </div>
 
       <div id="migrate-ready" hidden>
         <p id="migrate-found" class="migrate__found"></p>
@@ -136,13 +135,15 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
       </div>
     </div>
 
-    <p class="migrate__note">{copy.note}</p>
+    <p id="migrate-note" class="migrate__note">{copy.note}</p>
   </div>
 </section>
 
 <style>
   .migrate { max-width: 760px; }
   .migrate .lead { margin-top: 12px; }
+  .migrate__empty { margin-top: 32px; }
+  .migrate__empty p + p { margin-top: 24px; }
   .migrate__panel {
     margin-top: 32px;
     padding: 28px;
@@ -221,6 +222,17 @@ const openHref = 'https://web.ringdrill.app/?import=guide';
     loading.hidden = true;
 
     if (count === 0) {
+      // Nothing to migrate: drop the migration framing (intro, panel, note)
+      // and let the empty message stand on its own as the page's subject.
+      app.hidden = true;
+      const heading = document.getElementById('migrate-heading');
+      if (heading?.dataset.emptyHeading) {
+        heading.textContent = heading.dataset.emptyHeading;
+      }
+      const intro = document.getElementById('migrate-intro');
+      if (intro) intro.hidden = true;
+      const note = document.getElementById('migrate-note');
+      if (note) note.hidden = true;
       if (empty) empty.hidden = false;
       return;
     }
