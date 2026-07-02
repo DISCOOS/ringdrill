@@ -16,6 +16,7 @@ export const strings = {
       openWeb: 'Åpne på web',
       langSwitch: 'English',
       langSwitchHref: '/en/',
+      menu: 'Meny',
     },
 
     hero: {
@@ -129,6 +130,7 @@ export const strings = {
       openWeb: 'Open on web',
       langSwitch: 'Norsk',
       langSwitchHref: '/',
+      menu: 'Menu',
     },
 
     hero: {

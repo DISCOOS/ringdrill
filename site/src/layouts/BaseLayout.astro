@@ -273,6 +273,56 @@ const altPath =
       @media (max-width: 640px) {
         .nav__links .nav__hide-sm { display: none; }
       }
+      /* Hamburger toggle for the links .nav__hide-sm hides below 640px
+         (Funksjoner/Katalog/language switch) -- without it they had no
+         way into the nav on a narrow screen at all, only "Åpne på web"
+         stayed visible. Desktop never sees the button or the panel it
+         opens (Nav.astro). */
+      .nav__toggle {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        flex-shrink: 0;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-strong);
+        background: transparent;
+        color: var(--heading);
+        cursor: pointer;
+      }
+      .nav__toggle svg { width: 18px; height: 18px; }
+      @media (max-width: 640px) {
+        .nav__toggle { display: inline-flex; }
+      }
+      .nav__menu {
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px 20px 16px;
+        border-top: 1px solid var(--border);
+      }
+      /* Relies on the [hidden] attribute (toggled in Nav.astro's script)
+         for the closed state rather than a CSS class, so a no-JS visit
+         never shows a panel with no way to open it -- an unconditional
+         `display: flex` here would win the cascade over the UA's
+         `[hidden] { display: none }` and defeat that. */
+      .nav__menu:not([hidden]) { display: flex; }
+      .nav__menu a {
+        color: var(--body);
+        text-decoration: none;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        padding: 10px 2px;
+      }
+      .nav__menu a:hover { color: var(--heading); }
+      @media (min-width: 641px) {
+        /* Belt-and-suspenders: the toggle that opens this is already
+           gone above 640px, but this guarantees the panel can never be
+           left visibly stuck open by a resize the script's own listener
+           missed. */
+        .nav__menu { display: none !important; }
+      }
 
       /* ----- Footer ----- */
       .footer { border-top: 1px solid var(--border); padding-block: 56px 40px; background: var(--canvas); }

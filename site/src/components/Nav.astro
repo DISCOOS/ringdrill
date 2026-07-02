@@ -17,6 +17,71 @@ const switchHref = langHref ?? c.nav.langSwitchHref;
       <a class="nav__hide-sm" href={`${home}catalog`}>{c.nav.catalog}</a>
       <a class="nav__hide-sm" href={switchHref}>{c.nav.langSwitch}</a>
       <a class="btn btn--ghost btn--sm" href={c.hero.secondaryHref} target="_blank" rel="noopener noreferrer">{c.nav.openWeb}</a>
+      <button
+        type="button"
+        class="nav__toggle"
+        id="nav-toggle"
+        aria-expanded="false"
+        aria-controls="nav-menu"
+        aria-label={c.nav.menu}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 7h16" />
+          <path d="M4 12h16" />
+          <path d="M4 17h16" />
+        </svg>
+      </button>
     </div>
   </div>
+  <!-- Same destinations as the .nav__hide-sm links above, which the
+       640px breakpoint (BaseLayout.astro) hides outright rather than
+       just visually collapsing them — below that width they have no
+       other way in from the nav bar without this panel. -->
+  <div class="nav__menu" id="nav-menu" hidden>
+    <a href={`${home}#features`}>{c.nav.features}</a>
+    <a href={`${home}catalog`}>{c.nav.catalog}</a>
+    <a href={switchHref}>{c.nav.langSwitch}</a>
+  </div>
 </nav>
+
+<script>
+  const toggle = document.getElementById('nav-toggle') as HTMLButtonElement | null;
+  const menu = document.getElementById('nav-menu') as HTMLElement | null;
+
+  function closeMenu() {
+    toggle?.setAttribute('aria-expanded', 'false');
+    if (menu) menu.hidden = true;
+  }
+
+  function openMenu() {
+    toggle?.setAttribute('aria-expanded', 'true');
+    if (menu) menu.hidden = false;
+  }
+
+  toggle?.addEventListener('click', () => {
+    if (toggle.getAttribute('aria-expanded') === 'true') closeMenu();
+    else openMenu();
+  });
+
+  // Picking a destination, or tapping anywhere outside the open panel,
+  // both mean "done with the menu" — close it either way instead of
+  // leaving it open until the next page navigation tears it down.
+  menu?.addEventListener('click', (event) => {
+    if ((event.target as HTMLElement).tagName === 'A') closeMenu();
+  });
+  document.addEventListener('click', (event) => {
+    if (!menu || menu.hidden) return;
+    const target = event.target as Node;
+    if (!menu.contains(target) && !toggle?.contains(target)) closeMenu();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeMenu();
+  });
+
+  // The toggle button itself is only shown below the 640px breakpoint
+  // (BaseLayout.astro) -- if a still-open panel is left stranded by
+  // resizing back past it (e.g. rotating a tablet), close it too.
+  window.addEventListener('resize', () => {
+    if (window.matchMedia('(min-width: 641px)').matches) closeMenu();
+  });
+</script>
