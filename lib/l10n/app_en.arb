@@ -1137,6 +1137,8 @@
   "addExercisesAction": "Add exercises from...",
   "addFromFile": "From file",
   "addFromAnotherPlan": "From another of my plans",
+  "addExercisesTitle": "Add exercises",
+  "addAction": "ADD",
   "pickFile": "Pick file...",
   "confirmChangesTitle": "Confirm changes",
   "apply": "Apply",

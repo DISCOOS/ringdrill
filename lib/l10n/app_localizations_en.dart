@@ -1139,6 +1139,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addFromAnotherPlan => 'From another of my plans';
 
   @override
+  String get addExercisesTitle => 'Add exercises';
+
+  @override
+  String get addAction => 'ADD';
+
+  @override
   String get pickFile => 'Pick file...';
 
   @override

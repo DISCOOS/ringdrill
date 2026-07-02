@@ -1135,6 +1135,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get addFromAnotherPlan => 'Fra en annen av mine planer';
 
   @override
+  String get addExercisesTitle => 'Legg til øvelser';
+
+  @override
+  String get addAction => 'LEGG TIL';
+
+  @override
   String get pickFile => 'Velg fil...';
 
   @override

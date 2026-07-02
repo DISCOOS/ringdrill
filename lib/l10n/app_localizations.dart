@@ -1892,6 +1892,18 @@ abstract class AppLocalizations {
   /// **'From another of my plans'**
   String get addFromAnotherPlan;
 
+  /// No description provided for @addExercisesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add exercises'**
+  String get addExercisesTitle;
+
+  /// No description provided for @addAction.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD'**
+  String get addAction;
+
   /// No description provided for @pickFile.
   ///
   /// In en, this message translates to:

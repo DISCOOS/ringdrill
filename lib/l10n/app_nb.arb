@@ -314,6 +314,8 @@
   "addExercisesAction": "Legg til øvelser fra...",
   "addFromFile": "Fra fil",
   "addFromAnotherPlan": "Fra en annen av mine planer",
+  "addExercisesTitle": "Legg til øvelser",
+  "addAction": "LEGG TIL",
   "pickFile": "Velg fil...",
   "confirmChangesTitle": "Bekreft endringer",
   "apply": "Bruk",
