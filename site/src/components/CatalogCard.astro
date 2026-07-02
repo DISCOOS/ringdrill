@@ -1,6 +1,7 @@
 ---
 import { t, type Lang } from '../i18n';
 import type { CatalogItem } from '../lib/catalog';
+import { LANGUAGE_NAMES } from '../lib/languages';
 
 interface Props {
   item: CatalogItem;
@@ -70,10 +71,15 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
       data-west={item.mapBounds?.west}
     />
   )}
-  {(item.place || exerciseLabel || updatedLabel) && (
+  {(item.place || item.languageCode || exerciseLabel || updatedLabel) && (
     <div class="catalog-card__info">
       {item.place && (
         <span class="catalog-card__place" title={item.place}>{item.place}</span>
+      )}
+      {item.languageCode && (
+        <span class="catalog-card__lang-chip">
+          {LANGUAGE_NAMES[item.languageCode] ?? item.languageCode}
+        </span>
       )}
       {(exerciseLabel || updatedLabel) && (
         <p class="catalog-card__meta">
@@ -169,6 +175,49 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     padding: 0.2rem 0.6rem;
     border-radius: var(--radius-pill);
   }
+  /* "+N" overflow chip (see the script below) for tags that don't fit on
+     the single row the tags list is collapsed to. Its own tooltip lists
+     the hidden tag names — same custom-tooltip pattern as the share
+     button, but centered above the chip and wrapping (a joined tag list
+     can run longer than the share label ever does). */
+  .catalog-card__tags-more {
+    position: relative;
+    flex-shrink: 0;
+    background: var(--canvas-band);
+    color: var(--muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-pill);
+    cursor: default;
+  }
+  .catalog-card__tags-more::after {
+    content: attr(aria-label);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(2px);
+    background: var(--heading);
+    color: var(--canvas);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: normal;
+    text-align: center;
+    width: max-content;
+    max-width: 220px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    z-index: 10;
+  }
+  .catalog-card__tags-more:hover::after,
+  .catalog-card__tags-more:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
   .catalog-card__map {
     height: 220px;
     border-radius: var(--radius-md);
@@ -187,15 +236,11 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     gap: 12px;
     flex-wrap: nowrap;
   }
-  /* Reverse-geocoded, not author-entered like the tags above it — an
-     outline instead of a filled chip marks it as "roughly here", not a
-     curated label the plan owner picked. */
-  .catalog-card__place {
-    min-width: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  /* Reverse-geocoded / derived metadata, not author-entered like the tags
+     above them — an outline instead of a filled chip marks these as
+     "about the plan", not a curated label the plan owner picked. */
+  .catalog-card__place,
+  .catalog-card__lang-chip {
     background: transparent;
     border: 1px solid var(--border-strong);
     color: var(--muted);
@@ -203,6 +248,20 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
     font-weight: 500;
     padding: 0.2rem 0.6rem;
     border-radius: var(--radius-pill);
+    white-space: nowrap;
+  }
+  .catalog-card__place {
+    /* flex: 0 (don't grow) 1 (but do shrink) — sizes to its own text by
+       default, only yielding width when the row is actually tight, rather
+       than stretching to fill whatever space justify-content: space-between
+       leaves it. */
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .catalog-card__lang-chip {
+    flex: 0 0 auto;
   }
   .catalog-card__meta {
     color: var(--muted);
@@ -386,6 +445,67 @@ const hasMap = Boolean(item.mapBounds || item.mapCenter);
 
     fit();
     new ResizeObserver(fit).observe(el);
+  }
+
+  // Collapse a tags list to a single row: hide whatever doesn't fit and
+  // replace it with a "+N" chip whose tooltip lists the hidden names.
+  // Starts from CSS's flex-wrap: wrap (safe no-JS fallback — tags just
+  // wrap onto more lines) and only switches to nowrap here, after
+  // measuring, so there's never a frame where wrapped-and-about-to-change
+  // content is visible; the browser paints straight to the final state.
+  function collapseTags(ul: HTMLUListElement) {
+    const items = Array.from(ul.children).filter(
+      (el): el is HTMLLIElement => el instanceof HTMLLIElement && !el.classList.contains('catalog-card__tags-more'),
+    );
+    ul.querySelector('.catalog-card__tags-more')?.remove();
+    items.forEach((li) => li.style.removeProperty('display'));
+    if (items.length === 0) return;
+
+    ul.style.flexWrap = 'nowrap';
+    const containerWidth = ul.clientWidth;
+    if (containerWidth === 0) return; // Not laid out yet; the ResizeObserver below will re-run this.
+
+    const gapPx = parseFloat(getComputedStyle(ul).columnGap) || 6.4;
+    const widthOfFirst = (n: number) => {
+      let w = 0;
+      for (let i = 0; i < n; i++) w += items[i].getBoundingClientRect().width + (i > 0 ? gapPx : 0);
+      return w;
+    };
+
+    let overflowAt = -1;
+    for (let i = 0; i < items.length; i++) {
+      if (widthOfFirst(i + 1) > containerWidth) { overflowAt = i; break; }
+    }
+    if (overflowAt === -1) return; // Everything fits on one row already.
+
+    const more = document.createElement('li');
+    more.className = 'catalog-card__tags-more';
+    more.tabIndex = 0;
+    ul.appendChild(more);
+
+    // Shrink the visible count until what remains, plus the "+N" chip
+    // itself, actually fits — the chip has its own width too.
+    let visibleCount = overflowAt;
+    more.textContent = `+${items.length - visibleCount}`;
+    while (
+      visibleCount > 0 &&
+      widthOfFirst(visibleCount) + gapPx + more.getBoundingClientRect().width > containerWidth
+    ) {
+      visibleCount--;
+      more.textContent = `+${items.length - visibleCount}`;
+    }
+
+    for (let i = visibleCount; i < items.length; i++) items[i].style.display = 'none';
+    more.setAttribute('aria-label', items.slice(visibleCount).map((li) => li.textContent).join(', '));
+  }
+
+  const tagLists = document.querySelectorAll<HTMLUListElement>(
+    '.catalog-card__tags:not([data-tags-bound])',
+  );
+  for (const ul of tagLists) {
+    ul.dataset.tagsBound = 'true';
+    collapseTags(ul);
+    new ResizeObserver(() => collapseTags(ul)).observe(ul);
   }
 
   // Share button: native share sheet where available (mobile Safari/Chrome,
