@@ -1184,6 +1184,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get selectExercisesAction => 'VELG...';
 
   @override
+  String get selectExercisesDisabledTooltip =>
+      'Ingen øvelser å velge blant enda';
+
+  @override
   String get selectAll => 'VELG ALLE';
 
   @override

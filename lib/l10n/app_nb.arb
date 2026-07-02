@@ -331,6 +331,7 @@
   "libraryDownloadPlan": "Last ned plan",
   "importAction": "IMPORTER",
   "selectExercisesAction": "VELG...",
+  "selectExercisesDisabledTooltip": "Ingen øvelser å velge blant enda",
   "selectAll": "VELG ALLE",
   "selectNone": "VELG INGEN",
   "exportAllExercisesHint": "Alle øvelser inkluderes. Trykk «VELG...» for å plukke selv.",

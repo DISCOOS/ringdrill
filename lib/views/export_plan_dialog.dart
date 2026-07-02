@@ -61,6 +61,7 @@ Future<ExportPlanInput?> showExportPlanDialog(
       title: title,
       actionLabel: actionLabel,
       initialFileName: initialFileName,
+      hasExercises: exercises.isNotEmpty,
     ),
   );
 
@@ -112,12 +113,18 @@ class _ExportSheetContent extends StatefulWidget {
     required this.title,
     required this.actionLabel,
     required this.initialFileName,
+    required this.hasExercises,
   });
 
   final AppLocalizations localizations;
   final String title;
   final String actionLabel;
   final String initialFileName;
+
+  /// False when the plan has no exercises yet — there is nothing to pick
+  /// from, so "VELG ØVELSER..." is disabled rather than opening an empty
+  /// picker that can only ever be confirmed with zero selected.
+  final bool hasExercises;
 
   @override
   State<_ExportSheetContent> createState() => _ExportSheetContentState();
@@ -193,6 +200,13 @@ class _ExportSheetContentState extends State<_ExportSheetContent> {
             ValueListenableBuilder<bool>(
               valueListenable: _canSubmit,
               builder: (context, enabled, _) {
+                final canChooseExercises = enabled && widget.hasExercises;
+                final chooseExercisesButton = TextButton(
+                  onPressed: canChooseExercises
+                      ? () => _pop(_ExportSheetAction.chooseExercises)
+                      : null,
+                  child: Text(localizations.selectExercisesAction),
+                );
                 return _ActionRow(
                   title: widget.title,
                   buttons: [
@@ -200,12 +214,12 @@ class _ExportSheetContentState extends State<_ExportSheetContent> {
                       onPressed: () => _pop(_ExportSheetAction.cancel),
                       child: Text(localizations.cancel),
                     ),
-                    TextButton(
-                      onPressed: enabled
-                          ? () => _pop(_ExportSheetAction.chooseExercises)
-                          : null,
-                      child: Text(localizations.selectExercisesAction),
-                    ),
+                    widget.hasExercises
+                        ? chooseExercisesButton
+                        : Tooltip(
+                            message: localizations.selectExercisesDisabledTooltip,
+                            child: chooseExercisesButton,
+                          ),
                     FilledButton(
                       onPressed: enabled
                           ? () => _pop(_ExportSheetAction.exportAll)

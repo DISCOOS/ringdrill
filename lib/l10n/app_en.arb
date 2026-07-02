@@ -1146,6 +1146,7 @@
   "libraryDownloadPlan": "Download plan",
   "importAction": "IMPORT",
   "selectExercisesAction": "CHOOSE...",
+  "selectExercisesDisabledTooltip": "No exercises to choose from yet",
   "selectAll": "SELECT ALL",
   "selectNone": "SELECT NONE",
   "exportAllExercisesHint": "All exercises are included. Tap 'CHOOSE...' to pick specific ones.",

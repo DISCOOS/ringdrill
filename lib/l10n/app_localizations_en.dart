@@ -1188,6 +1188,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectExercisesAction => 'CHOOSE...';
 
   @override
+  String get selectExercisesDisabledTooltip =>
+      'No exercises to choose from yet';
+
+  @override
   String get selectAll => 'SELECT ALL';
 
   @override

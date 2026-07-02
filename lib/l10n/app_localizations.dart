@@ -1994,6 +1994,12 @@ abstract class AppLocalizations {
   /// **'CHOOSE...'**
   String get selectExercisesAction;
 
+  /// No description provided for @selectExercisesDisabledTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'No exercises to choose from yet'**
+  String get selectExercisesDisabledTooltip;
+
   /// No description provided for @selectAll.
   ///
   /// In en, this message translates to:
