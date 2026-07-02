@@ -259,9 +259,52 @@ test("stripActorsAndValidate: returns { name, description, tags } from program.j
     const bytes = Buffer.from(zipSync(files));
     const { strippedBytes, program, error } = stripActorsAndValidate(null, bytes);
     assert.equal(error, undefined);
-    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: 0, mapCenter: null });
+    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: 0, mapCenter: null, languageCode: null });
     // program.json survives the strip
     assert.ok(unzipSync(new Uint8Array(strippedBytes))["program.json"]);
+});
+
+// ---------- stripActorsAndValidate: languageCode (ADR-0007 addendum) ----------
+
+test("stripActorsAndValidate: reads languageCode from metadata.json", () => {
+    const files = {
+        "metadata.json": enc({ version: "1.0", schema: "1.2", languageCode: "nb" }),
+        "program.json": enc({ uuid: "p1", name: "N" }),
+    };
+    const bytes = Buffer.from(zipSync(files));
+    const { program, error } = stripActorsAndValidate(null, bytes);
+    assert.equal(error, undefined);
+    assert.equal(program.languageCode, "nb");
+});
+
+test("stripActorsAndValidate: missing languageCode → null", () => {
+    const files = {
+        "metadata.json": enc({ version: "1.0", schema: "1.2" }),
+        "program.json": enc({ uuid: "p1", name: "N" }),
+    };
+    const bytes = Buffer.from(zipSync(files));
+    const { program } = stripActorsAndValidate(null, bytes);
+    assert.equal(program.languageCode, null);
+});
+
+test("stripActorsAndValidate: non-string languageCode → null, never thrown", () => {
+    const files = {
+        "metadata.json": enc({ version: "1.0", schema: "1.2", languageCode: 42 }),
+        "program.json": enc({ uuid: "p1", name: "N" }),
+    };
+    const bytes = Buffer.from(zipSync(files));
+    const { program, error } = stripActorsAndValidate(null, bytes);
+    assert.equal(error, undefined);
+    assert.equal(program.languageCode, null);
+});
+
+test("stripActorsAndValidate: missing metadata.json → languageCode null", () => {
+    const files = {
+        "program.json": enc({ uuid: "p1", name: "N" }),
+    };
+    const bytes = Buffer.from(zipSync(files));
+    const { program } = stripActorsAndValidate(null, bytes);
+    assert.equal(program.languageCode, null);
 });
 
 test("stripActorsAndValidate: program read happens before actors are stripped, description intact", () => {

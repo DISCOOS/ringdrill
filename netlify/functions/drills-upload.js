@@ -151,6 +151,9 @@ export function stripActorsAndValidate(request, bytes) {
 
     // Read and validate schema from metadata.json
     const metadataEntry = files["metadata.json"];
+    // ISO 639-1 plan-content language (ADR-0007 addendum) — read alongside
+    // schema since both live in the same already-parsed metadata.json.
+    let languageCode = null;
     if (metadataEntry) {
         let metadata;
         try {
@@ -169,12 +172,14 @@ export function stripActorsAndValidate(request, bytes) {
                 )) };
             }
         }
+        languageCode = typeof metadata?.languageCode === "string" ? metadata.languageCode : null;
     }
 
     // Plan-level name/description live in program.json — read them here while
     // the archive is unzipped so the caller can seed catalog meta from the
     // authoritative source instead of relying only on query params.
     const program = programInfoFromArchive(files);
+    program.languageCode = languageCode;
 
     // Strip actors/ folder entries (PII — never published to catalog)
     const stripped = {};
@@ -357,6 +362,7 @@ export default async function (request) {
         currentMeta.tags = tags;
         currentMeta.exerciseCount = program.exerciseCount;
         currentMeta.mapCenter = program.mapCenter;
+        currentMeta.languageCode = program.languageCode;
         const { author, accessPolicy } = resolvePublishPolicy({ ownerId });
         currentMeta.author = author;
         currentMeta.accessPolicy = accessPolicy;
