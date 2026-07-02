@@ -8,6 +8,8 @@ informed: []
 
 # ADR-0039: Split the site, PWA and API across separate origins
 
+> **Implementation correction (2026-07-02).** The apex cutover is complete, but one load-bearing assumption in this ADR was wrong. Cloudflare Pages `_redirects` **cannot** 200-proxy to an external origin — status-200 rewrites only target local paths (that is a Netlify-only feature). So the apex proxy rules in [Topology](#topology) do not work on Pages, and the decision driver "No Cloudflare Pages Functions, no Workers" (below) could not hold. The apex `/api/*`, `/.netlify/functions/*`, `/d/*`, `/i/*` and `/brief/*` paths are proxied by a standalone Worker, `workers/apex-proxy/`, deployed via `deploy-proxy.yml`. The three-origin topology, the DNS flip and the SW self-unregister stub all landed as designed; only the proxy mechanism changed. Remaining cleanup is tracked in [DEBT-0011](../debts/0011-adr-0039-post-cutover-cleanup.md).
+
 ## Context and problem statement
 
 Today `ringdrill.app` serves the Flutter PWA shell on apex. A cold visit waits 1-3 seconds for the Flutter bootstrap before any content shows. There is no public site, no human-readable preview for install or brief links, no SEO-indexable identity for RingDrill on the web. The shared catalog at `/api/market/feed` is only browsable from inside the app, so the catalog has no presence outside the install footprint. App Store and Play submissions need a marketing URL, a support URL and a privacy URL that resolve to real HTML, not a PWA loader.
@@ -75,15 +77,17 @@ Three origins, each with one clear responsibility:
 | `web.ringdrill.app` | Cloudflare Pages | `ringdrill-pwa`      | Flutter web build artefact (PWA)                               |
 | `api.ringdrill.app` | Netlify          | (functions only)     | All `netlify/functions/*`. No static hosting.                  |
 
-Apex (`ringdrill.app`) `_redirects`:
+Apex (`ringdrill.app`) proxy. **See the [implementation correction](#adr-0039-split-the-site-pwa-and-api-across-separate-origins) — the status-200 proxy below is NOT done via `_redirects` (Cloudflare Pages cannot proxy to an external origin); it is done by the `workers/apex-proxy/` Worker.** The vanity 301s below do work as `_redirects`.
 
 ```
-# Proxy (status 200, URL in browser stays ringdrill.app/...)
-/i/*       https://api.ringdrill.app/i/:splat       200
-/d/*       https://api.ringdrill.app/d/:splat       200
-/brief/*   https://api.ringdrill.app/brief/:splat   200
+# Proxy (status 200, URL in browser stays ringdrill.app/...) — Worker, not _redirects
+/api/*                https://api.ringdrill.app/api/:splat                200
+/.netlify/functions/* https://api.ringdrill.app/.netlify/functions/:splat 200
+/i/*                  https://api.ringdrill.app/i/:splat                  200
+/d/*                  https://api.ringdrill.app/d/:splat                  200
+/brief/*              https://api.ringdrill.app/brief/:splat              200
 
-# Vanity (status 301, URL changes)
+# Vanity (status 301, URL changes) — real _redirects lines
 /web       https://web.ringdrill.app/               301
 /app       https://web.ringdrill.app/               301
 ```

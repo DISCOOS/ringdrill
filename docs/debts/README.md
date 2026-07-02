@@ -18,6 +18,7 @@ A debt entry is not an ADR. ADRs record decisions and their consequences. Debt e
 | DEBT-0008 | [ADR-0028 feature-folder refactor not executed](./0008-feature-folder-refactor-not-executed.md) | Low | Open | 2026-05-31 |
 | DEBT-0009 | [`main_screen.dart` mixes routing and shell](./0009-main-screen-mixes-routing-and-shell.md) | Low | Open | 2026-05-31 |
 | DEBT-0010 | [Global service singletons hinder testability](./0010-global-service-singletons-hinder-testability.md) | Medium | Open | 2026-05-31 |
+| DEBT-0011 | [ADR-0039 post-cutover cleanup](./0011-adr-0039-post-cutover-cleanup.md) | Medium | Open | 2026-07-02 |
 
 ## When to write a debt entry
 
