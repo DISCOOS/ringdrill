@@ -1,0 +1,6 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "assets": {
+    "run_worker_first": true
+  }
+}
