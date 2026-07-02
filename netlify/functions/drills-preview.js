@@ -86,6 +86,13 @@ export function renderHtml({ slug, meta, locale }) {
     // no rich card renders. Served at the apex root by web/ (PWA) today and
     // site/public/ after the ADR-0039 apex migration; same path resolves in both.
     const ogImage = "https://ringdrill.app/og-default.png";
+    // Absolute, not "/brand/logo.png": this page is reachable both as
+    // ringdrill.app/i/<slug> (proxied through the apex Worker) and
+    // directly off the api subdomain via netlify.toml's own /i/*
+    // redirect -- the latter has no static file serving of its own, so
+    // a relative href 404s there silently (see api-docs.js for the same
+    // pattern).
+    const faviconUrl = "https://ringdrill.app/brand/logo.png";
 
     const tagsHtml = tags.length
         ? `<ul class="tags">${tags.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`
@@ -144,8 +151,8 @@ export function renderHtml({ slug, meta, locale }) {
 <meta name="description" content="${esc(ogDesc)}">
 <meta name="theme-color" content="#00536E" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#002C3F" media="(prefers-color-scheme: dark)">
-<link rel="icon" type="image/png" sizes="512x512" href="/brand/logo.png">
-<link rel="apple-touch-icon" href="/brand/logo.png">
+<link rel="icon" type="image/png" sizes="512x512" href="${faviconUrl}">
+<link rel="apple-touch-icon" href="${faviconUrl}">
 <meta property="og:title" content="${esc(name)}">
 <meta property="og:description" content="${esc(ogDesc)}">
 <meta property="og:url" content="${canonical}">
@@ -241,7 +248,7 @@ ${tagsHtml}${metaHtml}${descHtml}
 
 function notFoundHtml(locale) {
     const s = STRINGS[locale] ?? STRINGS.nb;
-    return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><title>${s.notFound} · RingDrill</title><link rel="icon" type="image/png" sizes="512x512" href="/brand/logo.png"></head><body><h1>${s.notFound}</h1></body></html>`;
+    return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><title>${s.notFound} · RingDrill</title><link rel="icon" type="image/png" sizes="512x512" href="https://ringdrill.app/brand/logo.png"></head><body><h1>${s.notFound}</h1></body></html>`;
 }
 
 export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _readJson } = {}) {
