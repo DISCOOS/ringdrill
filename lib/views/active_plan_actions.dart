@@ -618,11 +618,11 @@ Future<void> _exportSelected(
     _showSnackBar(context, localizations.requiresActivePlan);
     return;
   }
+  // A plan with no exercises yet is still a valid .drill (a program shell
+  // with metadata, teams, etc.) — DrillFile.fromProgram and DrillLibrary
+  // both handle an empty exercises list, so there is no reason to block
+  // export/send on exercise count.
   final exercises = programService.loadExercises();
-  if (exercises.isEmpty) {
-    _showSnackBar(context, localizations.noExercisesYet);
-    return;
-  }
 
   final input = await showExportPlanDialog(
     context,
