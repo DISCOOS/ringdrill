@@ -6,7 +6,10 @@ name: Deploy origins
 #
 #   functions -> api.ringdrill.app   (Netlify, netlify/functions/** only)
 #   pwa       -> web.ringdrill.app   (Cloudflare Pages, project ringdrill-pwa)
-#   site      -> ringdrill.app       (Cloudflare Pages, project ringdrill-site)
+#   site      -> ringdrill.app       (Cloudflare Workers, project ringdrill-site — a
+#                                      Pages project of the same name is retired; the
+#                                      @astrojs/cloudflare adapter emits a Workers
+#                                      bundle, not a Pages one, as of v13+)
 #
 # `pwa` and `site` declare `needs: functions` so a functions change is live
 # before either frontend redeploys. All three are gated by the `changes`
@@ -32,7 +35,10 @@ name: Deploy origins
 #   NETLIFY_AUTH_TOKEN     - used by the `functions` job.
 #   NETLIFY_SITE_ID        - used by the `functions` job.
 #   SENTRY_AUTH_TOKEN      - used by the `pwa` job.
-#   CLOUDFLARE_API_TOKEN   - used by the `pwa` and `site` jobs (Pages edit).
+#   CLOUDFLARE_API_TOKEN   - used by the `pwa` job (Pages edit) and the
+#                            `site` job (Workers Scripts edit + Workers KV
+#                            Storage edit — site deploys to a Worker, not
+#                            Pages).
 #   CLOUDFLARE_ACCOUNT_ID  - used by the `pwa` and `site` jobs.
 
 on:
@@ -301,17 +307,22 @@ jobs:
         working-directory: site
         run: npm run build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Workers
+        # @astrojs/cloudflare (v13+) emits a Workers-with-assets bundle
+        # (dist/client + dist/server/{entry.mjs,wrangler.json}), not a
+        # classic Pages Functions bundle — `wrangler deploy` against the
+        # generated config, not `wrangler pages deploy`. See the dated
+        # addendum in docs/adrs/0039-site-pwa-api-origins.md for the
+        # Pages -> Workers cutover this replaced.
         if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        working-directory: site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          npx wrangler@latest pages deploy site/dist \
-            --project-name=ringdrill-site \
-            --branch=main
+          npx wrangler@latest deploy --config dist/server/wrangler.json
 
-      - name: Dry run - skip Cloudflare Pages publish
+      - name: Dry run - skip Cloudflare Workers publish
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
-          echo "DRY RUN: would run 'wrangler pages deploy site/dist --project-name=ringdrill-site'"
+          echo "DRY RUN: would run 'wrangler deploy --config dist/server/wrangler.json' (from site/)"
