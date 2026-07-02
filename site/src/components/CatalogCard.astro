@@ -35,8 +35,18 @@ const updatedLabel = item.updatedAt
   : null;
 
 const shareUrl = new URL(previewUrl, Astro.site ?? 'https://ringdrill.app').toString();
+
+// Precomputed, lowercased search blob for the client-side search box in
+// catalog.astro/en/catalog.astro — matches name, description, tags and
+// place, not just the visible title. Computed here rather than re-derived
+// from the rendered DOM so it still covers text that line-clamp/ellipsis
+// hides visually (a long description, a truncated place chip).
+const searchBlob = [item.name, item.description, ...item.tags, item.place]
+  .filter((v): v is string => Boolean(v))
+  .join(' ')
+  .toLowerCase();
 ---
-<li class="catalog-card" data-language={item.languageCode ?? ''}>
+<li class="catalog-card" data-language={item.languageCode ?? ''} data-search={searchBlob}>
   <h3><a href={previewUrl}>{item.name}</a></h3>
   {item.description && <p class="catalog-card__desc">{item.description}</p>}
   {item.tags.length > 0 && (

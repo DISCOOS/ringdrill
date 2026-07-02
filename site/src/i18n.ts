@@ -89,6 +89,7 @@ export const strings = {
       mapAttribution: 'Kartdata © Kartverket · Stedsnavn © OpenStreetMap-bidragsytere',
       allLanguages: 'Alle språk',
       languageFilterLabel: 'Språk',
+      searchPlaceholder: 'Søk i planer …',
     },
 
     footer: {
@@ -201,6 +202,7 @@ export const strings = {
       mapAttribution: 'Map data © Kartverket · Place names © OpenStreetMap contributors',
       allLanguages: 'All languages',
       languageFilterLabel: 'Language',
+      searchPlaceholder: 'Search plans …',
     },
 
     footer: {

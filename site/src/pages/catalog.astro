@@ -23,29 +23,43 @@ const languageCodes = distinctLanguageCodes(result.items);
 Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
 ---
 <BaseLayout lang="nb" title={`${c.catalog.title} · RingDrill`} description={c.catalog.lead}>
-  <Nav lang="nb" />
+  <Nav lang="nb" langHref="/en/catalog" />
   <main>
     <section class="section section--band">
       <div class="container">
-        <span class="eyebrow">{c.catalog.eyebrow}</span>
-        <h1 class="catalog__title">{c.catalog.title}</h1>
-        <p class="lead">{c.catalog.lead}</p>
-
-        {result.items.length > 0 ? (
-          <>
-            {languageCodes.length > 1 && (
-              <div class="catalog__filter">
-                <label class="catalog__filter-label" for="catalog-language-filter">
-                  {c.catalog.languageFilterLabel}
-                </label>
-                <select class="catalog__language-filter" id="catalog-language-filter">
+        <div class="catalog__header">
+          <div class="catalog__intro">
+            <span class="eyebrow">{c.catalog.eyebrow}</span>
+            <h1 class="catalog__title">{c.catalog.title}</h1>
+            <p class="lead">{c.catalog.lead}</p>
+          </div>
+          {result.items.length > 0 && (
+            <div class="catalog__toolbar">
+              <input
+                type="search"
+                class="catalog__search"
+                id="catalog-search"
+                placeholder={c.catalog.searchPlaceholder}
+                aria-label={c.catalog.searchPlaceholder}
+              />
+              {languageCodes.length > 1 && (
+                <select
+                  class="catalog__language-filter"
+                  id="catalog-language-filter"
+                  aria-label={c.catalog.languageFilterLabel}
+                >
                   <option value="">{c.catalog.allLanguages}</option>
                   {languageCodes.map((code) => (
                     <option value={code}>{LANGUAGE_NAMES[code] ?? code}</option>
                   ))}
                 </select>
-              </div>
-            )}
+              )}
+            </div>
+          )}
+        </div>
+
+        {result.items.length > 0 ? (
+          <>
             <ul class="catalog__grid">
               {result.items.map((item) => <CatalogCard item={item} lang="nb" />)}
             </ul>
@@ -61,11 +75,51 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
       </div>
     </section>
   </main>
-  <Footer lang="nb" />
+  <Footer lang="nb" langHref="/en/catalog" />
 </BaseLayout>
 
 <style>
+  .catalog__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px 24px;
+  }
+  .catalog__intro { flex: 1 1 320px; }
   .catalog__title { margin-top: 12px; }
+  .catalog__toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    /* Roughly aligns with the title, not the eyebrow above it. */
+    margin-top: 44px;
+  }
+  .catalog__search {
+    font: inherit;
+    font-size: 0.9375rem;
+    color: var(--heading);
+    background: var(--canvas-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    min-width: 220px;
+    flex: 1 1 220px;
+  }
+  .catalog__language-filter {
+    font: inherit;
+    font-size: 0.9375rem;
+    color: var(--heading);
+    background: var(--canvas-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    flex: 0 0 auto;
+  }
+  @media (max-width: 720px) {
+    .catalog__toolbar { width: 100%; margin-top: 20px; }
+  }
   .catalog__grid {
     list-style: none;
     margin-top: 40px;
@@ -85,46 +139,34 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
   }
   .catalog__empty { margin-top: 40px; }
   .catalog__map-attribution { margin-top: 16px; color: var(--muted); font-size: 0.8125rem; }
-  .catalog__filter {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 28px;
-  }
-  .catalog__filter-label {
-    color: var(--muted);
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
-  .catalog__language-filter {
-    font: inherit;
-    font-size: 0.9375rem;
-    color: var(--heading);
-    background: var(--canvas-elev);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    padding: 6px 12px;
-  }
 </style>
 
 <script>
-  // Client-side language filter (ADR-0007 + ADR-0040 addenda). Independent
-  // of the page's own nb/en language — plan-content language and site UI
-  // language are unrelated axes. Cards with no language set stay visible
-  // under every filter selection; they aren't a language a visitor picked,
-  // they're just unknown.
+  // Client-side language + free-text filter (ADR-0007 + ADR-0040 addenda).
+  // Language is independent of the page's own nb/en language — plan-content
+  // language and site UI language are unrelated axes. Cards with no
+  // language set stay visible under every language selection; they aren't
+  // a language a visitor picked, they're just unknown. Search matches the
+  // data-search blob (name, description, tags, place — see CatalogCard.astro)
+  // rather than only visible text, so it also catches a truncated
+  // description or place chip.
   const select = document.getElementById(
     'catalog-language-filter',
   ) as HTMLSelectElement | null;
+  const search = document.getElementById('catalog-search') as HTMLInputElement | null;
 
-  if (select) {
-    select.addEventListener('change', () => {
-      const selected = select.value;
-      document.querySelectorAll<HTMLElement>('.catalog-card').forEach((card) => {
-        const cardLanguage = card.dataset.language ?? '';
-        const visible = cardLanguage === '' || cardLanguage === selected || selected === '';
-        card.style.display = visible ? '' : 'none';
-      });
+  function applyFilters() {
+    const selectedLanguage = select?.value ?? '';
+    const query = (search?.value ?? '').trim().toLowerCase();
+    document.querySelectorAll<HTMLElement>('.catalog-card').forEach((card) => {
+      const cardLanguage = card.dataset.language ?? '';
+      const languageMatch =
+        cardLanguage === '' || cardLanguage === selectedLanguage || selectedLanguage === '';
+      const searchMatch = !query || (card.dataset.search ?? '').includes(query);
+      card.style.display = languageMatch && searchMatch ? '' : 'none';
     });
   }
+
+  select?.addEventListener('change', applyFilters);
+  search?.addEventListener('input', applyFilters);
 </script>
