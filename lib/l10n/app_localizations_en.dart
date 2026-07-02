@@ -984,7 +984,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Get a plan from the shared online library';
 
   @override
-  String get libraryFromFileSubtitle => 'Import a .drill file from your device';
+  String get libraryFromFileSubtitle =>
+      'Import a .drill file or a bundled .zip with multiple plans';
 
   @override
   String get libraryEmptyMyPlans =>
@@ -994,10 +995,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryFromFilePickAction => 'Choose file';
 
   @override
-  String get libraryFromFileHint => 'Pick a .drill file from your device';
+  String get libraryFromFileHint =>
+      'Pick a .drill file or an exported .zip with multiple plans';
 
   @override
   String get libraryCatalogBadge => 'From online library';
+
+  @override
+  String get libraryExportAll => 'Download all plans';
+
+  @override
+  String importBundleSuccess(int count) {
+    return 'Imported $count plans';
+  }
+
+  @override
+  String importBundlePartial(int imported, int skipped) {
+    return 'Imported $imported plans, $skipped skipped';
+  }
+
+  @override
+  String get importBundleEmpty => 'No plans found in the file';
+
+  @override
+  String get importGuideHint =>
+      'Choose the .zip you downloaded to import your plans.';
 
   @override
   String get planStatusLocal => 'Local';

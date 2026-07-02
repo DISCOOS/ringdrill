@@ -1625,7 +1625,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryFromFileSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Import a .drill file from your device'**
+  /// **'Import a .drill file or a bundled .zip with multiple plans'**
   String get libraryFromFileSubtitle;
 
   /// No description provided for @libraryEmptyMyPlans.
@@ -1643,7 +1643,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryFromFileHint.
   ///
   /// In en, this message translates to:
-  /// **'Pick a .drill file from your device'**
+  /// **'Pick a .drill file or an exported .zip with multiple plans'**
   String get libraryFromFileHint;
 
   /// No description provided for @libraryCatalogBadge.
@@ -1651,6 +1651,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'From online library'**
   String get libraryCatalogBadge;
+
+  /// No description provided for @libraryExportAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Download all plans'**
+  String get libraryExportAll;
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} plans'**
+  String importBundleSuccess(int count);
+
+  /// Message
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {imported} plans, {skipped} skipped'**
+  String importBundlePartial(int imported, int skipped);
+
+  /// No description provided for @importBundleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No plans found in the file'**
+  String get importBundleEmpty;
+
+  /// No description provided for @importGuideHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the .zip you downloaded to import your plans.'**
+  String get importGuideHint;
 
   /// No description provided for @planStatusLocal.
   ///

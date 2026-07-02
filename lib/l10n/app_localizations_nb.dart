@@ -979,7 +979,8 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryOnlineSubtitle => 'Hent en plan fra bibliotek på nett';
 
   @override
-  String get libraryFromFileSubtitle => 'Importer en .drill-fil fra enheten';
+  String get libraryFromFileSubtitle =>
+      'Importer en .drill-fil eller en pakket .zip med flere planer';
 
   @override
   String get libraryEmptyMyPlans =>
@@ -989,10 +990,31 @@ class AppLocalizationsNb extends AppLocalizations {
   String get libraryFromFilePickAction => 'Velg fil';
 
   @override
-  String get libraryFromFileHint => 'Velg en .drill-fil fra enheten din';
+  String get libraryFromFileHint =>
+      'Velg en .drill-fil eller en eksportert .zip med flere planer';
 
   @override
   String get libraryCatalogBadge => 'Fra nett-bibliotek';
+
+  @override
+  String get libraryExportAll => 'Last ned alle planer';
+
+  @override
+  String importBundleSuccess(int count) {
+    return 'Importerte $count planer';
+  }
+
+  @override
+  String importBundlePartial(int imported, int skipped) {
+    return 'Importerte $imported planer, $skipped hoppet over';
+  }
+
+  @override
+  String get importBundleEmpty => 'Fant ingen planer i fila';
+
+  @override
+  String get importGuideHint =>
+      'Velg .zip-fila du lastet ned for å importere planene dine.';
 
   @override
   String get planStatusLocal => 'Lokal';

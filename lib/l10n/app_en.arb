@@ -1065,11 +1065,35 @@
   "libraryOnlineTab": "Online",
   "libraryMyPlansSubtitle": "Pick a saved plan to continue",
   "libraryOnlineSubtitle": "Get a plan from the shared online library",
-  "libraryFromFileSubtitle": "Import a .drill file from your device",
+  "libraryFromFileSubtitle": "Import a .drill file or a bundled .zip with multiple plans",
   "libraryEmptyMyPlans": "You have no saved plans. Browse 'Online' or 'New from file' to get started.",
   "libraryFromFilePickAction": "Choose file",
-  "libraryFromFileHint": "Pick a .drill file from your device",
+  "libraryFromFileHint": "Pick a .drill file or an exported .zip with multiple plans",
   "libraryCatalogBadge": "From online library",
+  "libraryExportAll": "Download all plans",
+  "importBundleSuccess": "Imported {count} plans",
+  "@importBundleSuccess": {
+    "description": "Message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importBundlePartial": "Imported {imported} plans, {skipped} skipped",
+  "@importBundlePartial": {
+    "description": "Message",
+    "placeholders": {
+      "imported": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "importBundleEmpty": "No plans found in the file",
+  "importGuideHint": "Choose the .zip you downloaded to import your plans.",
   "planStatusLocal": "Local",
   "planStatusLocalTooltip": "This plan lives only on your device",
   "planStatusOnlineTooltip": "This plan is linked to the online library",
