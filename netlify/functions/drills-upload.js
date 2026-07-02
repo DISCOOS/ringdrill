@@ -12,26 +12,45 @@ import {
 const KNOWN_SCHEMA_MAX = "1.2";
 
 /**
- * Read the plan-level name, description and tags from a `program.json` entry.
+ * Read the plan-level name, description, tags and exercise count from a
+ * `program.json` entry.
  *
  * `files` is the already-unzipped archive map (name -> Uint8Array), so this
  * reuses the unzip stripActorsAndValidate already did rather than opening the
- * archive a second time. Returns { name, description, tags } with each field
- * either a non-null value or null/[] when absent/unparseable — never throws.
+ * archive a second time. Returns { name, description, tags, exerciseCount }
+ * with each field either a non-null value or null/[] when absent/unparseable
+ * — never throws. `exerciseCount` (ADR-0040) is the length of
+ * `program.exercises`; absent or malformed → null, never 0.
  */
 export function programInfoFromArchive(files) {
     const entry = files?.["program.json"];
-    if (!entry) return { name: null, description: null, tags: [] };
+    if (!entry) return { name: null, description: null, tags: [], exerciseCount: null };
     try {
         const p = JSON.parse(strFromU8(entry));
         return {
             name: typeof p?.name === "string" ? p.name : null,
             description: typeof p?.description === "string" ? p.description : null,
             tags: Array.isArray(p?.tags) ? p.tags : [],
+            exerciseCount: Array.isArray(p?.exercises) ? p.exercises.length : null,
         };
     } catch {
-        return { name: null, description: null, tags: [] };
+        return { name: null, description: null, tags: [], exerciseCount: null };
     }
+}
+
+/**
+ * Resolve the `author` and `accessPolicy` to write into meta.json at publish
+ * time (ADR-0040). `author` mirrors `ownerId` today — opaque and usually
+ * "anon" — until ADR-0024 resolves it to an account display name.
+ * `accessPolicy` defaults per ADR-0025: anon-owned plans are `public`,
+ * everything else is `account`, until a signed-in publish flow sets a real
+ * value explicitly.
+ */
+export function resolvePublishPolicy({ ownerId }) {
+    return {
+        author: ownerId,
+        accessPolicy: ownerId === "anon" ? "public" : "account",
+    };
 }
 
 /**
@@ -276,6 +295,10 @@ export default async function (request) {
         currentMeta.description = description;
         currentMeta.published = !!published;
         currentMeta.tags = tags;
+        currentMeta.exerciseCount = program.exerciseCount;
+        const { author, accessPolicy } = resolvePublishPolicy({ ownerId });
+        currentMeta.author = author;
+        currentMeta.accessPolicy = accessPolicy;
         const without = (currentMeta.versions || []).filter(v => v.v !== version);
         currentMeta.versions = [
             ...without,

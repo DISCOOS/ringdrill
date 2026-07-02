@@ -11,6 +11,7 @@ import { zipSync, strFromU8, unzipSync } from "fflate";
 import {
     programInfoFromArchive,
     resolveCatalogFields,
+    resolvePublishPolicy,
     stripActorsAndValidate,
 } from "../functions/drills-upload.js";
 
@@ -20,16 +21,16 @@ const enc = (obj) => new TextEncoder().encode(JSON.stringify(obj));
 
 test("programInfoFromArchive: reads name, description and tags from program.json", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"] }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"] });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Winter SAR", description: "Plan-level text", tags: ["sar", "urban"], exerciseCount: null });
 });
 
 test("programInfoFromArchive: missing program.json → nulls and empty tags", () => {
-    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [] });
+    assert.deepEqual(programInfoFromArchive({}), { name: null, description: null, tags: [], exerciseCount: null });
 });
 
 test("programInfoFromArchive: missing description field → null description", () => {
     const files = { "program.json": enc({ uuid: "p1", name: "Only name" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [] });
+    assert.deepEqual(programInfoFromArchive(files), { name: "Only name", description: null, tags: [], exerciseCount: null });
 });
 
 test("programInfoFromArchive: missing tags field → empty array, not null", () => {
@@ -46,12 +47,44 @@ test("programInfoFromArchive: tags: [] deserializes to empty array", () => {
 
 test("programInfoFromArchive: malformed program.json → nulls and empty tags, never throws", () => {
     const files = { "program.json": new TextEncoder().encode("{not json") };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [] });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: null });
 });
 
 test("programInfoFromArchive: non-string fields ignored", () => {
     const files = { "program.json": enc({ name: 42, description: { nested: true }, tags: "not-an-array" }) };
-    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [] });
+    assert.deepEqual(programInfoFromArchive(files), { name: null, description: null, tags: [], exerciseCount: null });
+});
+
+// ---------- programInfoFromArchive: exerciseCount (ADR-0040) ----------
+
+test("programInfoFromArchive: exerciseCount is the length of program.exercises", () => {
+    const files = { "program.json": enc({ uuid: "p1", name: "N", exercises: [{ uuid: "e1" }, { uuid: "e2" }, { uuid: "e3" }] }) };
+    assert.equal(programInfoFromArchive(files).exerciseCount, 3);
+});
+
+test("programInfoFromArchive: missing exercises field → exerciseCount null, never 0", () => {
+    const files = { "program.json": enc({ uuid: "p1", name: "N" }) };
+    assert.equal(programInfoFromArchive(files).exerciseCount, null);
+});
+
+test("programInfoFromArchive: exercises: [] → exerciseCount 0", () => {
+    const files = { "program.json": enc({ uuid: "p1", name: "N", exercises: [] }) };
+    assert.equal(programInfoFromArchive(files).exerciseCount, 0);
+});
+
+test("programInfoFromArchive: non-array exercises field → exerciseCount null", () => {
+    const files = { "program.json": enc({ uuid: "p1", name: "N", exercises: "not-an-array" }) };
+    assert.equal(programInfoFromArchive(files).exerciseCount, null);
+});
+
+// ---------- resolvePublishPolicy ----------
+
+test("resolvePublishPolicy: anon owner → author 'anon', accessPolicy 'public'", () => {
+    assert.deepEqual(resolvePublishPolicy({ ownerId: "anon" }), { author: "anon", accessPolicy: "public" });
+});
+
+test("resolvePublishPolicy: account owner → author mirrors ownerId, accessPolicy 'account'", () => {
+    assert.deepEqual(resolvePublishPolicy({ ownerId: "acc-42" }), { author: "acc-42", accessPolicy: "account" });
 });
 
 // ---------- resolveCatalogFields ----------
@@ -124,7 +157,7 @@ test("stripActorsAndValidate: returns { name, description, tags } from program.j
     const bytes = Buffer.from(zipSync(files));
     const { strippedBytes, program, error } = stripActorsAndValidate(null, bytes);
     assert.equal(error, undefined);
-    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"] });
+    assert.deepEqual(program, { name: "Eidene 2026", description: "Full plan", tags: ["sar"], exerciseCount: null });
     // program.json survives the strip
     assert.ok(unzipSync(new Uint8Array(strippedBytes))["program.json"]);
 });
