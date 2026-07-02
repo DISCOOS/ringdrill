@@ -106,8 +106,8 @@ const updatedLabel = item.updatedAt
     padding: 0;
   }
   .catalog-card__tags li {
-    background: var(--canvas-band);
-    color: var(--link);
+    background: var(--chip-bg);
+    color: var(--chip-ink);
     font-size: 0.75rem;
     font-weight: 600;
     padding: 0.2rem 0.6rem;
@@ -130,7 +130,12 @@ const updatedLabel = item.updatedAt
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 4px;
+    /* Pushes the action row to the bottom of the card regardless of how
+       much content (description length, tag count, map) precedes it, so
+       every card in a grid row lines its buttons up together. Grid rows
+       already stretch every card to the tallest sibling's height. */
+    margin-top: auto;
+    padding-top: 4px;
   }
 </style>
 

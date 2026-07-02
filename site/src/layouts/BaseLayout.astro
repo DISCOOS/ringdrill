@@ -76,6 +76,13 @@ const altPath =
         --link: #14707d;
         --link-underline: rgba(24, 144, 159, 0.4);
 
+        /* Tag/chip colors — matches netlify/functions/drills-preview.js's own
+           --chip-bg/--chip-ink exactly, so a tag reads the same on /catalog
+           and on /i/<slug> (a separate, self-contained CSS system with no
+           shared build step to keep them in sync automatically). */
+        --chip-bg: #e4edf0;
+        --chip-ink: #00536e;
+
         /* On dark bands */
         --on-deep-heading: #f3fafb;
         --on-deep-body: #b9d0d6;
@@ -114,6 +121,8 @@ const altPath =
           --accent-fg: #05242e;
           --link: #5fd2dd;
           --link-underline: rgba(95, 210, 221, 0.5);
+          --chip-bg: #0e5066;
+          --chip-ink: #9fd3de;
           --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4),
                          0 6px 18px rgba(0, 0, 0, 0.4);
           --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5),
