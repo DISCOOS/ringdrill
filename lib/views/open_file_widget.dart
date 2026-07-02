@@ -5,10 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/add_exercises_dialog.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_format_messages.dart';
-import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -29,14 +28,17 @@ class OpenFileWidget extends StatefulWidget {
     required this.location,
   });
 
-  /// Display name shown in the sheet title (e.g. `foo.drill` or
-  /// `<slug>.drill`) — does not need to be an on-disk path.
+  /// Display name shown in the sheet title as a fallback (e.g. `foo.drill`
+  /// or `<slug>.drill`) while the real plan name isn't known yet, or if it
+  /// can't be determined at all — does not need to be an on-disk path.
   final String fileName;
 
-  /// Lazily produces the [DrillFile] to open/import. Deferred to button-tap
-  /// time (mirroring the previous local-file behavior) rather than eagerly
-  /// awaited before the sheet renders — for a `/i/<slug>` catalog link this
-  /// is a network download, and the sheet should appear immediately.
+  /// Produces the [DrillFile] to open/import. Kicked off once, eagerly, in
+  /// [State.initState] rather than per-button-tap: for a `/i/<slug>`
+  /// catalog link this is a network download, and starting it as soon as
+  /// the sheet appears both lets the title update to the plan's real name
+  /// once parsed, and means the download is often already underway (or
+  /// done) by the time the user taps a button.
   final Future<DrillFile> Function() loadFile;
 
   /// Installs [file] as the active program. Local `/o/` files use plain
@@ -51,14 +53,33 @@ class OpenFileWidget extends StatefulWidget {
   State<OpenFileWidget> createState() => _OpenFileWidgetState();
 }
 
-/// Which action, if any, is mid-flight. `loadFile()` is a network download
-/// for a catalog link, so this can take a while — [_busy] drives a spinner
-/// in the tapped button and disables the sheet so a second tap (or Cancel)
-/// can't race the first one.
+/// Which action, if any, is mid-flight. Disables the sheet and shows a
+/// spinner in the tapped button so a second tap (or Cancel) can't race the
+/// first one while `loadFile()`/install/merge are still running.
 enum _Busy { none, opening, importing }
 
 class _OpenFileWidgetState extends State<OpenFileWidget> {
   _Busy _busy = _Busy.none;
+
+  /// Display name for the sheet title: the plan's real name once parsed,
+  /// falling back to [OpenFileWidget.fileName] while loading or on parse
+  /// failure (the real error still surfaces once the user taps a button).
+  String? _programName;
+
+  late final Future<DrillFile> _fileFuture = widget.loadFile();
+  late final Future<Program> _programFuture = _fileFuture.then(
+    (file) => file.program(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _programFuture.then((program) {
+      if (mounted && program.name.isNotEmpty) {
+        setState(() => _programName = program.name);
+      }
+    }, onError: (_) {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +99,8 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
           // Title
           Center(
             child: Text(
-              '${localizations.programFile} ${widget.fileName}',
+              _programName ??
+                  '${localizations.programFile} ${widget.fileName}',
               style: Theme.of(context).textTheme.headlineSmall,
               overflow: TextOverflow.ellipsis,
             ),
@@ -120,9 +142,13 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
                 onPressed: _busy == _Busy.none
                     ? () => _handleImportFile(context, localizations)
                     : null,
+                // "LEGG TIL" (addAction), not a separate "import" label —
+                // this is the exact same merge-into-active-plan action as
+                // "Legg til øvelser fra...", just with the source already
+                // picked (this shared plan), so it should read the same.
                 child: _busy == _Busy.importing
                     ? _buttonSpinner(context)
-                    : Text(localizations.import),
+                    : Text(localizations.addAction),
               ),
             ],
           ),
@@ -157,15 +183,14 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
     final router = GoRouter.of(context);
     final navigator = Navigator.of(context);
 
-    // Unlike the old behavior, the sheet stays open (with a spinner) until
-    // the result is known instead of popping immediately on tap. `loadFile`
-    // can be a network download for a catalog link, and popping right away
-    // made it look like the tap had already finished — the user would see
-    // the sheet vanish and then nothing for several seconds.
+    // The sheet stays open (with a spinner) until the result is known
+    // instead of popping immediately on tap — `loadFile` can be a network
+    // download for a catalog link, and popping right away made it look
+    // like the tap had already finished when nothing had happened yet.
     setState(() => _busy = _Busy.opening);
 
     try {
-      final program = await widget.openProgram(await widget.loadFile());
+      final program = await widget.openProgram(await _fileFuture);
       if (navigator.canPop()) navigator.pop();
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
@@ -214,37 +239,21 @@ class _OpenFileWidgetState extends State<OpenFileWidget> {
     AppLocalizations localizations,
   ) async {
     final name = widget.fileName;
-    // See _handleOpenFile for why the messenger and navigator are
-    // snapshotted before any pop. Import has the added wrinkle of
-    // selectExercises, which itself wants a live context — so we keep
-    // the sheet open while we read the file and let the user choose,
-    // and only close it before posting the result snack.
+    // See _handleOpenFile for why the messenger is snapshotted up front.
+    // The sheet stays open under mergeProgramIntoActivePlan's own selection
+    // screen and diff-confirmation dialog (same as "Legg til øvelser
+    // fra...") and only closes once that whole flow resolves.
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     setState(() => _busy = _Busy.importing);
 
     try {
-      final program = await ProgramService().importProgram(
-        localizations,
-        await widget.loadFile(),
-        onSelect: (items) async {
-          final selected = await ProgramPageControllerBase.selectExercises(
-            context,
-            localizations.importProgram,
-            items.toList(),
-            localizations,
-            confirmLabel: localizations.importAction,
-            preselectAll: true,
-            showSelectAllControls: true,
-          );
-          return selected.isEmpty
-              ? null
-              : items.where((e) => selected.contains(e.uuid));
-        },
-      );
+      final source = await _programFuture;
+      if (!context.mounted) return;
+      final merged = await mergeProgramIntoActivePlan(context, source);
       if (navigator.canPop()) navigator.pop();
-      if (program != null) {
+      if (merged != null) {
         messenger.hideCurrentSnackBar();
         messenger.showSnackBar(
           SnackBar(

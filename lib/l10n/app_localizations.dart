@@ -473,12 +473,6 @@ abstract class AppLocalizations {
   /// BUTTON
   ///
   /// In en, this message translates to:
-  /// **'OPEN'**
-  String get import;
-
-  /// BUTTON
-  ///
-  /// In en, this message translates to:
   /// **'SELECT'**
   String get select;
 
@@ -1987,12 +1981,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download plan'**
   String get libraryDownloadPlan;
-
-  /// No description provided for @importAction.
-  ///
-  /// In en, this message translates to:
-  /// **'IMPORT'**
-  String get importAction;
 
   /// No description provided for @selectExercisesAction.
   ///

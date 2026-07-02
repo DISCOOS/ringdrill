@@ -353,87 +353,100 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
     BuildContext context,
     Program source,
   ) async {
-    final localizations = AppLocalizations.of(context)!;
-    final selectedUuids = await _selectAndConfirmMerge(context, source);
-    if (!context.mounted || selectedUuids == null) return;
-
-    await _programService.mergeFromProgram(
-      localizations,
-      source,
-      selectedUuids,
-    );
-    if (!context.mounted) return;
+    final merged = await mergeProgramIntoActivePlan(context, source);
+    if (!context.mounted || merged == null) return;
     Navigator.pop(context);
   }
+}
 
-  Future<List<String>?> _selectAndConfirmMerge(
-    BuildContext context,
-    Program source,
-  ) async {
-    final localizations = AppLocalizations.of(context)!;
-    final active = _programService.activeProgram;
-    if (active == null) return null;
+/// Shows the exercise-selection screen for merging [source] into the active
+/// plan, confirms via a diff dialog when the merge would touch existing
+/// exercises/teams, then performs the merge. Top-level (not tied to
+/// [_AddExercisesBodyState]) so the Open/Import bottom sheet for a shared
+/// `/i/`/`/o/` plan can run the exact same flow — same selection screen,
+/// same "LEGG TIL"/addAction wording, same diff confirmation — instead of a
+/// second, less complete "import" path with its own label.
+///
+/// Returns the merged active [Program], or null if the user cancelled at
+/// any step (no selection, or declined the diff confirmation).
+Future<Program?> mergeProgramIntoActivePlan(
+  BuildContext context,
+  Program source,
+) async {
+  final localizations = AppLocalizations.of(context)!;
+  final selectedUuids = await _selectAndConfirmMerge(context, source);
+  if (!context.mounted || selectedUuids == null) return null;
 
-    final selectedUuids = await ProgramPageControllerBase.selectExercises(
-      context,
-      localizations.addExercisesTitle,
-      source.exercises,
-      localizations,
-      confirmLabel: localizations.addAction,
-      preselectAll: true,
-      showSelectAllControls: true,
-      program: source,
-    );
-    if (!context.mounted || selectedUuids.isEmpty) return null;
+  return ProgramService().mergeFromProgram(localizations, source, selectedUuids);
+}
 
-    final projected = projectMergedProgram(active, source, selectedUuids);
-    final diff = diffPrograms(active, projected);
-    if (diff.modifiedExercises.isEmpty && diff.modifiedTeams.isEmpty) {
-      return selectedUuids;
-    }
+Future<List<String>?> _selectAndConfirmMerge(
+  BuildContext context,
+  Program source,
+) async {
+  final localizations = AppLocalizations.of(context)!;
+  final active = ProgramService().activeProgram;
+  if (active == null) return null;
 
-    final apply = await showAdaptiveDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.confirmChangesTitle),
-        content: SizedBox(
-          width: 520,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DiffGroup(
-                  title: localizations.catalogDiffExercises,
-                  added: diff.addedExercises,
-                  removed: diff.removedExercises,
-                  modified: diff.modifiedExercises,
-                ),
-                DiffGroup(
-                  title: localizations.catalogDiffTeams,
-                  added: diff.addedTeams,
-                  removed: diff.removedTeams,
-                  modified: diff.modifiedTeams,
-                ),
-              ],
-            ),
+  final selectedUuids = await ProgramPageControllerBase.selectExercises(
+    context,
+    localizations.addExercisesTitle,
+    source.exercises,
+    localizations,
+    confirmLabel: localizations.addAction,
+    preselectAll: true,
+    showSelectAllControls: true,
+    program: source,
+  );
+  if (!context.mounted || selectedUuids.isEmpty) return null;
+
+  final projected = projectMergedProgram(active, source, selectedUuids);
+  final diff = diffPrograms(active, projected);
+  if (diff.modifiedExercises.isEmpty && diff.modifiedTeams.isEmpty) {
+    return selectedUuids;
+  }
+
+  final apply = await showAdaptiveDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(localizations.confirmChangesTitle),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DiffGroup(
+                title: localizations.catalogDiffExercises,
+                added: diff.addedExercises,
+                removed: diff.removedExercises,
+                modified: diff.modifiedExercises,
+              ),
+              DiffGroup(
+                title: localizations.catalogDiffTeams,
+                added: diff.addedTeams,
+                removed: diff.removedTeams,
+                modified: diff.modifiedTeams,
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(localizations.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(localizations.apply),
-          ),
-        ],
       ),
-    );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(localizations.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(localizations.apply),
+        ),
+      ],
+    ),
+  );
 
-    return apply == true ? selectedUuids : null;
-  }
+  return apply == true ? selectedUuids : null;
 }
 
 BoxConstraints _constraintsFor(BuildContext context) {

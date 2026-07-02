@@ -260,10 +260,6 @@
   "@open": {
     "description": "BUTTON"
   },
-  "import": "OPEN",
-  "@import": {
-    "description": "BUTTON"
-  },
   "select": "SELECT",
   "@select": {
     "description": "BUTTON"
@@ -1156,7 +1152,6 @@
   "libraryDownloadAction": "Download…",
   "libraryDownloadAll": "Download all",
   "libraryDownloadPlan": "Download plan",
-  "importAction": "IMPORT",
   "selectExercisesAction": "CHOOSE...",
   "selectExercisesDisabledTooltip": "No exercises to choose from yet",
   "selectPlansDisabledTooltip": "No plans to choose from yet",

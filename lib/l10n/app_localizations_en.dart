@@ -231,9 +231,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get open => 'OPEN';
 
   @override
-  String get import => 'OPEN';
-
-  @override
   String get select => 'SELECT';
 
   @override
@@ -1193,9 +1190,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryDownloadPlan => 'Download plan';
-
-  @override
-  String get importAction => 'IMPORT';
 
   @override
   String get selectExercisesAction => 'CHOOSE...';

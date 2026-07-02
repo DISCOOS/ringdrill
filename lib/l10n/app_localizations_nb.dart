@@ -231,9 +231,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get open => 'ÅPNE';
 
   @override
-  String get import => 'IMPORTER';
-
-  @override
   String get select => 'VELG';
 
   @override
@@ -1189,9 +1186,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get libraryDownloadPlan => 'Last ned plan';
-
-  @override
-  String get importAction => 'IMPORTER';
 
   @override
   String get selectExercisesAction => 'VELG...';
