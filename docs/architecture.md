@@ -8,10 +8,12 @@ RingDrill is a Flutter application for planning, synchronizing and running stati
 
 1. The Flutter app under `lib/` (Android, iOS, web/PWA, macOS, Linux, Windows targets).
 2. A Dart admin CLI under `bin/ringdrill.dart`, published as the `ringdrill` executable via `pubspec.yaml`.
-3. A small Netlify backend under `netlify/functions/` (Node.js) that hosts drill file storage, deep links and a market feed.
-4. Generated localization, freezed and JSON serialization code (do not edit by hand).
+3. A small Netlify backend under `netlify/functions/` (Node.js) that hosts drill file storage, deep links and a market feed, served at `api.ringdrill.app`.
+4. A static Astro site under `site/` (the public site at `ringdrill.app`), deployed to Cloudflare Pages.
+5. A Cloudflare Worker under `workers/apex-proxy/` that reverse-proxies the dynamic apex paths (`/api`, `/d`, `/i`, `/brief`, `/.netlify/functions`) to the API subdomain, because Cloudflare Pages cannot 200-proxy to an external origin. See [ADR-0039](./adrs/0039-site-pwa-api-origins.md).
+6. Generated localization, freezed and JSON serialization code (do not edit by hand).
 
-Owner: DISCOOS (`github.com/DISCOOS/ringdrill`). Distribution channels: Google Play (Android, via Shorebird), Netlify-hosted PWA at `ringdrill.netlify.app`.
+Owner: DISCOOS (`github.com/DISCOOS/ringdrill`). Distribution channels: Google Play (Android, via Shorebird), Apple App Store (iOS), and the web PWA. Public origins are split per [ADR-0039](./adrs/0039-site-pwa-api-origins.md): the site on `ringdrill.app` and the PWA on `web.ringdrill.app` (both Cloudflare Pages), and the API on `api.ringdrill.app` (Netlify functions, Cloudflare-proxied). The dynamic apex paths are reverse-proxied to the API by the `workers/apex-proxy/` Worker.
 
 ## Tech stack
 
@@ -38,7 +40,9 @@ lib/
   utils/                     pure-Dart helpers (projection, time, config, sentry)
   l10n/                      .arb sources + generated AppLocalizations
 bin/ringdrill.dart           admin CLI
-netlify/functions/           Node.js backend (drill upload/head, deep links, admin, market feed)
+netlify/functions/           Node.js backend (drill upload/head, deep links, admin, market feed) — api.ringdrill.app
+site/                        static Astro site (ringdrill.app), deployed to Cloudflare Pages
+workers/apex-proxy/          Cloudflare Worker reverse-proxying dynamic apex paths to the API (ADR-0039)
 test/                        Flutter and pure-Dart tests
 assets/                      app icons, splash images
 android/, ios/, macos/,      platform projects
