@@ -19,7 +19,7 @@ void showOpenFileBottomSheet(BuildContext context, OpenFileWidget sheet) {
   showRingdrillActionSheet<void>(context: context, builder: (_) => sheet);
 }
 
-class OpenFileWidget extends StatelessWidget {
+class OpenFileWidget extends StatefulWidget {
   const OpenFileWidget({
     super.key,
     required this.fileName,
@@ -48,6 +48,19 @@ class OpenFileWidget extends StatelessWidget {
   final String location;
 
   @override
+  State<OpenFileWidget> createState() => _OpenFileWidgetState();
+}
+
+/// Which action, if any, is mid-flight. `loadFile()` is a network download
+/// for a catalog link, so this can take a while — [_busy] drives a spinner
+/// in the tapped button and disables the sheet so a second tap (or Cancel)
+/// can't race the first one.
+enum _Busy { none, opening, importing }
+
+class _OpenFileWidgetState extends State<OpenFileWidget> {
+  _Busy _busy = _Busy.none;
+
+  @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Padding(
@@ -65,7 +78,7 @@ class OpenFileWidget extends StatelessWidget {
           // Title
           Center(
             child: Text(
-              '${localizations.programFile} $fileName',
+              '${localizations.programFile} ${widget.fileName}',
               style: Theme.of(context).textTheme.headlineSmall,
               overflow: TextOverflow.ellipsis,
             ),
@@ -90,20 +103,26 @@ class OpenFileWidget extends StatelessWidget {
             spacing: 8.0,
             children: [
               TextButton(
+                onPressed: _busy == _Busy.none
+                    ? () => Navigator.pop(context)
+                    : null,
                 child: Text(localizations.cancel),
-                onPressed: () => Navigator.pop(context),
               ),
               ElevatedButton(
-                child: Text(localizations.open),
-                onPressed: () {
-                  _handleOpenFile(context, localizations);
-                },
+                onPressed: _busy == _Busy.none
+                    ? () => _handleOpenFile(context, localizations)
+                    : null,
+                child: _busy == _Busy.opening
+                    ? _buttonSpinner(context)
+                    : Text(localizations.open),
               ),
               ElevatedButton(
-                child: Text(localizations.import),
-                onPressed: () {
-                  _handleImportFile(context, localizations);
-                },
+                onPressed: _busy == _Busy.none
+                    ? () => _handleImportFile(context, localizations)
+                    : null,
+                child: _busy == _Busy.importing
+                    ? _buttonSpinner(context)
+                    : Text(localizations.import),
               ),
             ],
           ),
@@ -112,11 +131,22 @@ class OpenFileWidget extends StatelessWidget {
     );
   }
 
+  Widget _buttonSpinner(BuildContext context) => SizedBox(
+    height: 16,
+    width: 16,
+    child: CircularProgressIndicator(
+      strokeWidth: 2,
+      valueColor: AlwaysStoppedAnimation(
+        Theme.of(context).colorScheme.onPrimary,
+      ),
+    ),
+  );
+
   void _handleOpenFile(
     BuildContext context,
     AppLocalizations localizations,
   ) async {
-    final name = fileName;
+    final name = widget.fileName;
     // Snapshot the messenger and router BEFORE the sheet is popped. The
     // sheet's BuildContext becomes deactivated on pop, and any snackbar
     // we'd then post via `ScaffoldMessenger.of(context)` would either
@@ -127,15 +157,16 @@ class OpenFileWidget extends StatelessWidget {
     final router = GoRouter.of(context);
     final navigator = Navigator.of(context);
 
-    // The "Opening program: …" pre-flight snack used to be posted on
-    // the sheet messenger and immediately covered by the sheet itself.
-    // Removed: by the time the user has tapped Open they already know
-    // we are opening, and the success/failure snack below carries the
-    // outcome.
-    if (navigator.canPop()) navigator.pop();
+    // Unlike the old behavior, the sheet stays open (with a spinner) until
+    // the result is known instead of popping immediately on tap. `loadFile`
+    // can be a network download for a catalog link, and popping right away
+    // made it look like the tap had already finished — the user would see
+    // the sheet vanish and then nothing for several seconds.
+    setState(() => _busy = _Busy.opening);
 
     try {
-      final program = await openProgram(await loadFile());
+      final program = await widget.openProgram(await widget.loadFile());
+      if (navigator.canPop()) navigator.pop();
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
@@ -151,6 +182,7 @@ class OpenFileWidget extends StatelessWidget {
     } on DrillFormatException catch (e) {
       // User picked the wrong file (or a half-downloaded one). Show the
       // specific reason and skip Sentry — this is bad input, not a bug.
+      if (navigator.canPop()) navigator.pop();
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
@@ -162,6 +194,7 @@ class OpenFileWidget extends StatelessWidget {
       );
     } on Exception catch (e, stackTrace) {
       unawaited(Sentry.captureException(e, stackTrace: stackTrace));
+      if (navigator.canPop()) navigator.pop();
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
@@ -171,6 +204,8 @@ class OpenFileWidget extends StatelessWidget {
           duration: const Duration(seconds: 15),
         ),
       );
+    } finally {
+      if (mounted) setState(() => _busy = _Busy.none);
     }
   }
 
@@ -178,7 +213,7 @@ class OpenFileWidget extends StatelessWidget {
     BuildContext context,
     AppLocalizations localizations,
   ) async {
-    final name = fileName;
+    final name = widget.fileName;
     // See _handleOpenFile for why the messenger and navigator are
     // snapshotted before any pop. Import has the added wrinkle of
     // selectExercises, which itself wants a live context — so we keep
@@ -187,10 +222,12 @@ class OpenFileWidget extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
+    setState(() => _busy = _Busy.importing);
+
     try {
       final program = await ProgramService().importProgram(
         localizations,
-        await loadFile(),
+        await widget.loadFile(),
         onSelect: (items) async {
           final selected = await ProgramPageControllerBase.selectExercises(
             context,
@@ -242,6 +279,11 @@ class OpenFileWidget extends StatelessWidget {
           duration: const Duration(seconds: 15),
         ),
       );
+    } finally {
+      // The sheet has already popped by this point in every path above
+      // (success, cancel, and error alike), so this is almost always a
+      // no-op — guard with mounted rather than assume that.
+      if (mounted) setState(() => _busy = _Busy.none);
     }
   }
 }
