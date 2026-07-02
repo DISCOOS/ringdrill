@@ -994,9 +994,6 @@ class AppLocalizationsNb extends AppLocalizations {
       'Velg en .drill-fil eller en eksportert .zip med flere planer';
 
   @override
-  String get libraryCatalogBadge => 'Fra nett-bibliotek';
-
-  @override
   String get libraryExportAll => 'Last ned alle planer';
 
   @override

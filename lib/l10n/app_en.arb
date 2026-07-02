@@ -1069,7 +1069,6 @@
   "libraryEmptyMyPlans": "You have no saved plans. Browse 'Online' or 'New from file' to get started.",
   "libraryFromFilePickAction": "Choose file",
   "libraryFromFileHint": "Pick a .drill file or an exported .zip with multiple plans",
-  "libraryCatalogBadge": "From online library",
   "libraryExportAll": "Download all plans",
   "importBundleSuccess": "Imported {count} plans",
   "@importBundleSuccess": {

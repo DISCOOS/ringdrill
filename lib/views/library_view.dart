@@ -187,6 +187,12 @@ class _LibraryBodyState extends State<_LibraryBody>
     List<Program> programs,
   ) {
     return ListView.builder(
+      // ExpandableTile's own margin (vertical: 5) already gives every
+      // between-card gap 10px (5 + 5), matching its horizontal 10px. Without
+      // this, the first card's top and the last card's bottom only get the
+      // single 5px side of their own margin. Add the matching 5px here so
+      // every edge — top, bottom, left, right, and between cards — is 10px.
+      padding: const EdgeInsets.symmetric(vertical: 5),
       itemCount: programs.length,
       itemBuilder: (context, index) {
         final program = programs[index];
@@ -194,18 +200,10 @@ class _LibraryBodyState extends State<_LibraryBody>
             ? _programService.activeProgram
             : program;
         final isActive = _programService.activeProgramUuid == program.uuid;
-        final isCatalog = program.source.toJson()['runtimeType'] == 'catalog';
+        // No catalog badge here: the source is already spelled out as text
+        // in the subtitle ("Fra katalog · slug" via programSubtitle), so a
+        // second cloud icon next to "Aktiv" was redundant.
         final trailingChildren = <Widget>[
-          if (isCatalog)
-            Tooltip(
-              message: localizations.libraryCatalogBadge,
-              child: Icon(
-                Icons.cloud_outlined,
-                size: 20,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          if (isCatalog && isActive) const SizedBox(width: 8),
           if (isActive) Chip(label: Text(localizations.libraryActive)),
         ];
         return Dismissible(

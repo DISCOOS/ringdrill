@@ -159,6 +159,13 @@ class _CatalogBrowserState extends State<CatalogBrowser> {
                     );
                   }
                   return ListView.builder(
+                    // ExpandableTile's own margin (vertical: 5) already gives
+                    // every between-card gap 10px (5 + 5), matching its
+                    // horizontal 10px. Without this, the first card's top
+                    // and the last card's bottom only get the single 5px
+                    // side of their own margin. Add the matching 5px here
+                    // so every edge is 10px.
+                    padding: const EdgeInsets.symmetric(vertical: 5),
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];

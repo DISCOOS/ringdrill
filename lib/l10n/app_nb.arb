@@ -273,7 +273,6 @@
   "libraryEmptyMyPlans": "Du har ingen lagrede planer. Bla i «På nett» eller «Ny fra fil» for å komme i gang.",
   "libraryFromFilePickAction": "Velg fil",
   "libraryFromFileHint": "Velg en .drill-fil eller en eksportert .zip med flere planer",
-  "libraryCatalogBadge": "Fra nett-bibliotek",
   "libraryExportAll": "Last ned alle planer",
   "importBundleSuccess": "Importerte {count} planer",
   "importBundlePartial": "Importerte {imported} planer, {skipped} hoppet over",

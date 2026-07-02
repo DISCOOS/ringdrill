@@ -999,9 +999,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pick a .drill file or an exported .zip with multiple plans';
 
   @override
-  String get libraryCatalogBadge => 'From online library';
-
-  @override
   String get libraryExportAll => 'Download all plans';
 
   @override

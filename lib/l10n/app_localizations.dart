@@ -1646,12 +1646,6 @@ abstract class AppLocalizations {
   /// **'Pick a .drill file or an exported .zip with multiple plans'**
   String get libraryFromFileHint;
 
-  /// No description provided for @libraryCatalogBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'From online library'**
-  String get libraryCatalogBadge;
-
   /// No description provided for @libraryExportAll.
   ///
   /// In en, this message translates to:
