@@ -248,6 +248,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
 
   /// Function to handle editing the exercise
   void _editExercise(BuildContext context) async {
+    // Captured before the await: in compact layout openFormSurface dismisses
+    // the hosting context sheet around the form push, which disposes this
+    // State — the context is gone by the time the form pops. The save must
+    // still run (ProgramService needs no context); only UI work below is
+    // gated on mounted.
+    final localizations = AppLocalizations.of(context)!;
     final numberOfTeams = _programService.loadTeams().length;
     // Navigate to the edit exercise screen
     final newExercise = await openFormSurface<Exercise>(
@@ -257,15 +263,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         numberOfTeams: numberOfTeams == 0 ? null : numberOfTeams,
       ),
     );
-    if (context.mounted && newExercise != null) {
-      await _programService.saveExercise(
-        AppLocalizations.of(context)!,
-        newExercise,
-      );
-      setState(() {
-        _exercise = newExercise;
-      });
-    }
+    if (newExercise == null) return;
+    await _programService.saveExercise(localizations, newExercise);
+    if (!mounted) return;
+    setState(() {
+      _exercise = newExercise;
+    });
   }
 
   @override
@@ -1486,7 +1489,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         markers: _programService.getLocations().toMarkerSpecs(),
       ),
     );
-    if (!mounted || updated == null) return;
+    // No mounted gate on the save: openFormSurface disposes this State when
+    // it dismisses the hosting context sheet around the form push.
+    if (updated == null) return;
     final stations = [..._exercise!.stations];
     stations[stationIndex] = updated;
     await _programService.saveExercise(
@@ -1674,7 +1679,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       context,
       builder: (_) => TeamFormScreen(team: team),
     );
-    if (!mounted || updated == null) return;
+    // No mounted gate on the save: openFormSurface disposes this State when
+    // it dismisses the hosting context sheet around the form push.
+    if (updated == null) return;
     await _programService.saveTeam(localizations, updated);
     if (mounted) setState(() {});
   }

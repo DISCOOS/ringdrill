@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -41,10 +43,18 @@ Future<T?> openFormSurface<T>(
   // returned to where they invoked the form. Use the root navigator's
   // context — the original calling context belonged to the (now disposed)
   // sheet body and is no longer mounted.
+  //
+  // Deliberately NOT awaited: `ContextSheetController.show()` only resolves
+  // when the re-opened sheet is *dismissed*, so awaiting it here parks this
+  // function before `return result`. The caller's
+  // `await openFormSurface(...)` then never resolves and its
+  // `ProgramService.save*` call never runs — the edit silently vanishes
+  // (the editor save-loss regression). The re-open is cosmetic; fire it and
+  // hand the result back immediately.
   if (savedTarget != null &&
       sheetController != null &&
       rootNavigator.mounted) {
-    await sheetController.show(rootNavigator.context, savedTarget);
+    unawaited(sheetController.show(rootNavigator.context, savedTarget));
   }
 
   return result;

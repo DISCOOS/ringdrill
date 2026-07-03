@@ -132,7 +132,9 @@ class _TeamScreenState extends State<TeamScreen> {
       context,
       builder: (_) => TeamFormScreen(team: team),
     );
-    if (!mounted || updated == null) return;
+    // No mounted gate on the save: openFormSurface disposes this State when
+    // it dismisses the hosting context sheet around the form push.
+    if (updated == null) return;
     await _programService.saveTeam(localizations, updated);
     if (mounted) setState(() {});
   }

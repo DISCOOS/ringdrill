@@ -687,6 +687,12 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   /// Function to handle editing the exercise
   void _editStation(BuildContext context) async {
+    // Captured before the await: in compact layout openFormSurface dismisses
+    // the hosting context sheet around the form push, which disposes this
+    // State — the context is gone by the time the form pops. The save must
+    // still run (ProgramService needs no context); only UI work below is
+    // gated on mounted.
+    final localizations = AppLocalizations.of(context)!;
     final stations = _exercise.stations.toList();
 
     // Navigate to the edit exercise screen
@@ -701,13 +707,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     // two unrelated types (Station vs Exercise) so the comparison was
     // always true. Backing out of the form (newStation == null) then
     // ran `stations[i] = null` on a non-nullable list and crashed.
-    if (!context.mounted || newStation == null) return;
+    if (newStation == null) return;
     stations[widget.stationIndex] = newStation;
     final newExercise = _exercise.copyWith(stations: stations);
-    await _programService.saveExercise(
-      AppLocalizations.of(context)!,
-      newExercise,
-    );
+    await _programService.saveExercise(localizations, newExercise);
     if (!mounted) return;
     setState(() {
       _exercise = newExercise;
