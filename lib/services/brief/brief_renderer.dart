@@ -325,6 +325,31 @@ class BriefRenderer {
   /// `#anchor` link taps against the rendered heading list without
   /// duplicating the slug logic.
   static String toAnchor(String heading) => _toAnchor(heading);
+
+  /// Declared plan variables, keyed by name, at the program scope.
+  @visibleForTesting
+  static Map<String, String> programVariables(Program program) =>
+      _programVariables(program);
+
+  /// Effective variable values for a scope: the program's declared values
+  /// overlaid by [exercise]'s overrides, then by [station]'s overrides. See
+  /// ADR-0046 for the resolution chain.
+  @visibleForTesting
+  static Map<String, String> effectiveVariables(
+    Program program, {
+    Exercise? exercise,
+    Station? station,
+  }) => _effectiveVariables(program, exercise: exercise, station: station);
+
+  /// Replaces every `{{var.<name>}}` token in [content] with its value in
+  /// [vars], or with the localized unknown-variable placeholder when
+  /// `<name>` is not a key of [vars].
+  @visibleForTesting
+  static String substituteVariables(
+    String content,
+    Map<String, String> vars,
+    AppLocalizations l10n,
+  ) => _substituteVariables(content, vars, l10n);
 }
 
 // ---------------------------------------------------------------------------
@@ -415,6 +440,62 @@ String _formatUtm(LatLng? latLng) {
 
 String? _effectiveCommsMd(Program program, Exercise exercise) {
   return exercise.commsMd ?? program.commsMd;
+}
+
+// Matches `{{var.<name>}}`, tolerating inner whitespace around the name.
+// Only `var.*` tokens are handled here — every other `{{...}}` expression is
+// left untouched for the subsequent mustache pass.
+final _varTokenPattern = RegExp(r'\{\{\s*var\.([a-z][a-z0-9_]*)\s*\}\}');
+
+/// Declared plan variables, keyed by name, at the program scope.
+Map<String, String> _programVariables(Program program) => {
+  for (final v in program.variables) v.name: v.value,
+};
+
+/// Effective variable values for a scope (ADR-0046): start from the
+/// program's declared values, then overlay [exercise]'s overrides, then
+/// [station]'s overrides — later scopes win. An override key that is not a
+/// declared variable name is ignored, per ADR-0046's "undeclared override
+/// key is meaningless" rule.
+Map<String, String> _effectiveVariables(
+  Program program, {
+  Exercise? exercise,
+  Station? station,
+}) {
+  final vars = _programVariables(program);
+  if (exercise != null) {
+    for (final entry in exercise.variableOverrides.entries) {
+      if (vars.containsKey(entry.key)) vars[entry.key] = entry.value;
+    }
+  }
+  if (station != null) {
+    for (final entry in station.variableOverrides.entries) {
+      if (vars.containsKey(entry.key)) vars[entry.key] = entry.value;
+    }
+  }
+  return vars;
+}
+
+/// Replaces every `{{var.<name>}}` token in [content] with its effective
+/// value, or with the localized unknown-variable placeholder when `<name>`
+/// is not declared. A declared-but-empty variable substitutes the empty
+/// string — that is a valid authoring state, not an error (ADR-0046).
+///
+/// Runs before the mustache pass (see [BriefRenderer]'s `resolveField`), so
+/// cross-references like `{{station.position.utm}}` are still handled by the
+/// existing `Template(...).renderString(...)` call afterwards. A variable
+/// *value* that itself contains `{{...}}` is inserted literally here and may
+/// be re-parsed by that subsequent mustache pass — authors should not put
+/// mustache syntax in variable values in v1.
+String _substituteVariables(
+  String content,
+  Map<String, String> vars,
+  AppLocalizations l10n,
+) {
+  return content.replaceAllMapped(_varTokenPattern, (match) {
+    final name = match.group(1)!;
+    return vars[name] ?? l10n.briefUnknownVariable(name);
+  });
 }
 
 /// Converts a heading string to a GitHub-flavored markdown anchor id:
