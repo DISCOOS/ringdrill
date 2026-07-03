@@ -200,7 +200,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                     ),
                   ),
 
-                  const Divider(height: 32),
+                  SizedBox(height: 16),
 
                   OptionalFieldSections<_StationSection>(
                     sections: [
@@ -216,6 +216,11 @@ class _StationFormScreenState extends State<StationFormScreen> {
                     onAdd: _addSection,
                     onRemove: _removeSection,
                   ),
+                  // Hidden once every optional section has been added: with
+                  // no add-buttons left to show, the divider would sit right
+                  // below the last text field with nothing to separate.
+                  if (_activeSections.length < _StationSection.values.length)
+                    const Divider(height: 32),
                 ],
               ),
             ),
