@@ -222,14 +222,21 @@ class _DiffSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final headerColor = scheme.brightness == Brightness.light
+    // Solid tonal steps (not alpha-blended) so the body reads clearly
+    // against the sheet's own surface behind it, with the header always one
+    // step darker than the body above it.
+    final light = scheme.brightness == Brightness.light;
+    final headerColor = light
         ? scheme.surfaceContainerHigh
         : scheme.surfaceContainer;
+    final bodyColor = light
+        ? scheme.surfaceContainer
+        : scheme.surfaceContainerLow;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        color: bodyColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
