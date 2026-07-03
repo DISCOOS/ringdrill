@@ -103,46 +103,46 @@ class _CatalogConflictContent extends StatelessWidget {
             // Cancel lives only in the header's close "x" now — the legal
             // actions here are the only way to dismiss, so they share a
             // single row instead of splitting into a secondary/primary pair.
-            Row(
+            // Wrap (not Row + Expanded) so the buttons sit grouped at the
+            // trailing edge at their natural width instead of being
+            // stretched apart across the full row; it also wraps to a
+            // second line instead of overflowing if the labels ever don't
+            // fit a narrow screen.
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 // Discard is destructive (throws away local edits), so it
                 // gets the error color even though it sits alongside Fork
                 // as an otherwise equal-weight borderless pair.
-                Expanded(
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                    onPressed: () => Navigator.pop(
-                      context,
-                      CatalogConflictChoice.overwriteLocal,
-                    ),
-                    child: Text(localizations.catalogConflictOverwrite),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.error,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(
-                      context,
-                      CatalogConflictChoice.forkAsLocal,
-                    ),
-                    child: Text(localizations.catalogConflictFork),
+                  onPressed: () => Navigator.pop(
+                    context,
+                    CatalogConflictChoice.overwriteLocal,
                   ),
+                  child: Text(localizations.catalogConflictOverwrite),
                 ),
-                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(
+                    context,
+                    CatalogConflictChoice.forkAsLocal,
+                  ),
+                  child: Text(localizations.catalogConflictFork),
+                ),
                 // Wiki model: anyone can publish updates. We previously hid
                 // this option behind ownsCatalogSlug, which broke the flow
                 // for users who had installed a plan and wanted to
                 // contribute back without ever having published it first.
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(
-                      context,
-                      CatalogConflictChoice.publishMyChanges,
-                    ),
-                    child: Text(localizations.catalogConflictPublish),
+                FilledButton(
+                  onPressed: () => Navigator.pop(
+                    context,
+                    CatalogConflictChoice.publishMyChanges,
                   ),
+                  child: Text(localizations.catalogConflictPublish),
                 ),
               ],
             ),
