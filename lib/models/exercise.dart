@@ -26,6 +26,11 @@ sealed class Exercise with _$Exercise {
     required SimpleTimeOfDay endTime,
     ExerciseMetadata? metadata,
     String? templateId,
+    /// Per-scope value overrides for plan-global variables, keyed by
+    /// DrillVariable.name. A key that does not name a declared variable is
+    /// meaningless and is ignored at resolution time (ADR-0046). This scope
+    /// never declares new variables.
+    @Default(<String, String>{}) Map<String, String> variableOverrides,
     // Markdown brief fields — stored as exercises/<uuid>/<field>.md, not in JSON.
     @JsonKey(includeFromJson: false, includeToJson: false) String? methodMd,
     @JsonKey(includeFromJson: false, includeToJson: false)

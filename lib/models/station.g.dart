@@ -14,6 +14,11 @@ _Station _$StationFromJson(Map<String, dynamic> json) => _Station(
     json['position'] as Map<String, dynamic>?,
   ),
   description: json['description'] as String?,
+  variableOverrides:
+      (json['variableOverrides'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
 );
 
 Map<String, dynamic> _$StationToJson(_Station instance) => <String, dynamic>{
@@ -22,4 +27,5 @@ Map<String, dynamic> _$StationToJson(_Station instance) => <String, dynamic>{
   'variantSuffix': instance.variantSuffix,
   'position': const NullableLatLngJsonConverter().toJson(instance.position),
   'description': instance.description,
+  'variableOverrides': instance.variableOverrides,
 };

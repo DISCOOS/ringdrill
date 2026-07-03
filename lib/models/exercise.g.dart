@@ -33,6 +33,11 @@ _Exercise _$ExerciseFromJson(Map<String, dynamic> json) => _Exercise(
       ? null
       : ExerciseMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
   templateId: json['templateId'] as String?,
+  variableOverrides:
+      (json['variableOverrides'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
 );
 
 Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
@@ -50,6 +55,7 @@ Map<String, dynamic> _$ExerciseToJson(_Exercise instance) => <String, dynamic>{
   'endTime': instance.endTime,
   'metadata': instance.metadata,
   'templateId': instance.templateId,
+  'variableOverrides': instance.variableOverrides,
 };
 
 _ExerciseMetadata _$ExerciseMetadataFromJson(Map<String, dynamic> json) =>
