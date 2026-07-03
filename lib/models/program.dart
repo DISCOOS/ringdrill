@@ -109,6 +109,9 @@ extension ProgramX on Program {
   /// Includes name and description so renames (the most common "small" edit)
   /// are detected as local changes. Excludes uuid, source, contentHash and
   /// metadata timestamps because those drift without being content changes.
+  /// `metadata.languageCode` is the one metadata field that IS included —
+  /// unlike the timestamps, it is user-chosen content (ADR-0007 addendum),
+  /// so changing it must register as a local change.
   ///
   /// All *Md fields are excluded from toJson (ADR-0022) so they are injected
   /// back into the canonical maps before hashing. Actor fields are excluded
@@ -166,6 +169,7 @@ extension ProgramX on Program {
       'briefIntroMd': briefIntroMd,
       'commsMd': commsMd,
       'beforeRoundMd': beforeRoundMd,
+      'languageCode': metadata.languageCode,
     });
 
     final canonical = {

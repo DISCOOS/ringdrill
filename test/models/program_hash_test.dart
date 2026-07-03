@@ -61,6 +61,32 @@ void main() {
     );
   });
 
+  test('content hash changes when metadata.languageCode changes', () {
+    final prog = base();
+    final withLanguage = prog.copyWith(
+      metadata: prog.metadata.copyWith(languageCode: 'nb'),
+    );
+    final differentLanguage = prog.copyWith(
+      metadata: prog.metadata.copyWith(languageCode: 'en'),
+    );
+    expect(
+      prog.computeContentHash(),
+      isNot(withLanguage.computeContentHash()),
+    );
+    expect(
+      withLanguage.computeContentHash(),
+      isNot(differentLanguage.computeContentHash()),
+    );
+  });
+
+  test('content hash is stable across metadata timestamp changes', () {
+    final prog = base();
+    final touched = prog.copyWith(
+      metadata: prog.metadata.copyWith(updated: now.add(const Duration(days: 1))),
+    );
+    expect(prog.computeContentHash(), touched.computeContentHash());
+  });
+
   test('diffPrograms detects added/removed/modified rolePlays', () {
     final local = base().copyWith(rolePlays: [rp1]);
     final remote = base().copyWith(
