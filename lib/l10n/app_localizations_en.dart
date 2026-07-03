@@ -1273,13 +1273,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogConflictCancel => 'Cancel';
 
   @override
-  String get catalogConflictOverwrite => 'Discard local changes';
+  String get catalogConflictOverwrite => 'Discard changes';
 
   @override
-  String get catalogConflictPublish => 'Publish my changes';
+  String get catalogConflictPublish => 'Publish';
 
   @override
-  String get catalogConflictFork => 'Fork as local plan';
+  String get catalogConflictFork => 'Make a copy';
 
   @override
   String catalogRefreshUpToDate(String name) {
@@ -1323,10 +1323,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogDiffModified => 'Modified';
 
   @override
+  String catalogDiffReorderedTo(String number) {
+    return 'Reordered to $number';
+  }
+
+  @override
+  String catalogDiffFieldChanged(String field, String local, String remote) {
+    return '$field changed: $local → $remote';
+  }
+
+  @override
+  String catalogDiffFieldChangedGeneric(String field) {
+    return '$field changed';
+  }
+
+  @override
   String get catalogDiffLocal => 'Your version';
 
   @override
   String get catalogDiffRemote => 'Catalog version';
+
+  @override
+  String get catalogDiffPlan => 'Plan';
 
   @override
   String get catalogDiffName => 'Plan name';

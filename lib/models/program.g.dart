@@ -216,6 +216,7 @@ Map<String, dynamic> _$FieldChangeToJson(_FieldChange instance) =>
 
 _ItemDiff _$ItemDiffFromJson(Map<String, dynamic> json) => _ItemDiff(
   name: json['name'] as String,
+  number: json['number'] as String?,
   changes:
       (json['changes'] as List<dynamic>?)
           ?.map((e) => FieldChange.fromJson(e as Map<String, dynamic>))
@@ -225,6 +226,7 @@ _ItemDiff _$ItemDiffFromJson(Map<String, dynamic> json) => _ItemDiff(
 
 Map<String, dynamic> _$ItemDiffToJson(_ItemDiff instance) => <String, dynamic>{
   'name': instance.name,
+  'number': instance.number,
   'changes': instance.changes,
 };
 

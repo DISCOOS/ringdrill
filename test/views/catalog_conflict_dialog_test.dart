@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 
@@ -201,4 +203,207 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.catalogConflictTitle), findsOneWidget);
   });
+
+  testWidgets('plan-level changes render as the first group', (tester) async {
+    tester.view.physicalSize = const Size(1000, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final planFirstDiff = ProgramDiff(
+      nameLocal: 'My plan',
+      nameRemote: 'My plan (catalog)',
+      modifiedExercises: diff.modifiedExercises,
+    );
+    result = null;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showCatalogConflictDialog(
+                  context,
+                  diff: planFirstDiff,
+                  ownedSlug: true,
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final planGroupTop = tester
+        .getTopLeft(find.text(l10n.catalogDiffPlan))
+        .dy;
+    final exercisesGroupTop = tester
+        .getTopLeft(find.text(l10n.catalogDiffExercises))
+        .dy;
+    expect(planGroupTop, lessThan(exercisesGroupTop));
+  });
+
+  testWidgets(
+    'header close icon pops with the cancel choice, same as the Cancel button',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsNothing);
+      expect(result, CatalogConflictChoice.cancel);
+    },
+  );
+
+  Exercise buildExercise(String uuid, String name, {int index = 0}) =>
+      Exercise(
+        uuid: uuid,
+        index: index,
+        name: name,
+        startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 10,
+        evaluationTime: 5,
+        rotationTime: 2,
+        stations: const [Station(index: 0, name: 'Station 1')],
+        schedule: const [
+          [
+            SimpleTimeOfDay(hour: 8, minute: 0),
+            SimpleTimeOfDay(hour: 8, minute: 10),
+            SimpleTimeOfDay(hour: 8, minute: 15),
+          ],
+        ],
+        endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
+      );
+
+  Future<void> openRealDiffDialog(WidgetTester tester, ProgramDiff realDiff) async {
+    result = null;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showCatalogConflictDialog(
+                  context,
+                  diff: realDiff,
+                  ownedSlug: true,
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets(
+    'a pure reorder of same-named exercises shows one card per exercise, '
+    'not "Other changes"',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Mirrors the reported bug: two exercises sharing a name (a routine
+      // occurrence — the same round repeated) swap positions. Built via the
+      // real diffPrograms(), not a hand-authored ProgramDiff, so this is an
+      // end-to-end regression check on the diff engine itself.
+      final local = Program(
+        uuid: 'p1',
+        name: 'Test',
+        description: '',
+        metadata: ProgramMetadata(
+          created: DateTime(2026),
+          updated: DateTime(2026),
+          version: '1.0',
+        ),
+        teams: const [],
+        sessions: const [],
+        exercises: [
+          buildExercise('ex-1', 'Førsteinnsats søk', index: 0),
+          buildExercise('ex-2', 'Førsteinnsats søk', index: 1),
+        ],
+      );
+      final remote = local.copyWith(
+        exercises: [
+          buildExercise('ex-1', 'Førsteinnsats søk', index: 1),
+          buildExercise('ex-2', 'Førsteinnsats søk', index: 0),
+        ],
+      );
+      final realDiff = diffPrograms(local, remote);
+
+      await openRealDiffDialog(tester, realDiff);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.catalogDiffReorderedTo('#1')), findsOneWidget);
+      expect(find.text(l10n.catalogDiffReorderedTo('#2')), findsOneWidget);
+      expect(find.textContaining(l10n.catalogDiffFieldOther), findsNothing);
+      // Two distinct cards for the two identically-named exercises — the
+      // number badges are what tells them apart.
+      expect(find.text('#1'), findsOneWidget);
+      expect(find.text('#2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'reordering and editing the same exercise shows both facts on one card',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final local = Program(
+        uuid: 'p1',
+        name: 'Test',
+        description: '',
+        metadata: ProgramMetadata(
+          created: DateTime(2026),
+          updated: DateTime(2026),
+          version: '1.0',
+        ),
+        teams: const [],
+        sessions: const [],
+        exercises: [
+          buildExercise('ex-1', 'Warmup', index: 0),
+          buildExercise('ex-2', 'Ladder', index: 1),
+        ],
+      );
+      final remote = local.copyWith(
+        exercises: [
+          buildExercise('ex-1', 'Warmup', index: 1),
+          buildExercise(
+            'ex-2',
+            'Ladder',
+            index: 0,
+          ).copyWith(methodMd: 'New method'),
+        ],
+      );
+      final realDiff = diffPrograms(local, remote);
+
+      await openRealDiffDialog(tester, realDiff);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // 'Ladder' both moved (to #1) and had its method edited — one card,
+      // both facts, not split across two sections.
+      expect(find.text(l10n.catalogDiffReorderedTo('#1')), findsOneWidget);
+      expect(find.textContaining('New method'), findsOneWidget);
+    },
+  );
 }

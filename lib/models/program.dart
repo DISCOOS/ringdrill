@@ -126,11 +126,20 @@ sealed class FieldChange with _$FieldChange {
 /// naming which of its fields changed. [changes] is best-effort: it covers
 /// the fields users actually edit, not every JSON key, so it can be empty
 /// even though the item as a whole compares unequal (see the "other changes"
-/// fallback in `_diffItems`).
+/// fallback in `_diffItems`). A pure reorder (no content change at all) still
+/// produces an [ItemDiff] whose only entry is a `field: 'order'`
+/// [FieldChange] — see `_diffItems`.
+///
+/// [number] is the item's formatted display position (e.g. `"#2"` from
+/// [Numbering.exercise]), used by the view to tell apart same-named items —
+/// a drill program routinely has several exercises sharing a name (e.g. the
+/// same round repeated per team). Null for entity types without a numbering
+/// scheme (teams, sessions, role plays).
 @freezed
 sealed class ItemDiff with _$ItemDiff {
   const factory ItemDiff({
     required String name,
+    String? number,
     @Default([]) List<FieldChange> changes,
   }) = _ItemDiff;
 
@@ -269,6 +278,10 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     name: (e) => e.name,
     canonicalize: _canonicalExerciseMap,
     fieldChanges: _exerciseFieldChanges,
+    // Only exercises have a numbering scheme (Numbering.exercise) — passing
+    // this also turns on per-item reorder detection in _diffItems, keyed by
+    // the local side's formatted position.
+    numbersByUuid: _exerciseNumbersByUuid(local),
   );
   final teamDiff = _diffItems<Team>(
     local.teams,
@@ -322,6 +335,22 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     removedRolePlays: rolePlayDiff.removed,
     modifiedRolePlays: rolePlayDiff.modified,
   );
+}
+
+/// Formatted display position (e.g. `"#2"`) for every exercise in
+/// [program], keyed by uuid — the number the app already shows elsewhere
+/// (see [ExerciseNumberBadge]), computed by sorting the program's own
+/// exercises by [Exercise.index]. Passed into `_diffItems` so a modified or
+/// reordered exercise can be labelled the same way the rest of the app
+/// labels it, disambiguating same-named exercises (a drill program routinely
+/// repeats the same exercise name across rounds/teams).
+Map<String, String> _exerciseNumbersByUuid(Program program) {
+  final sorted = [...program.exercises]
+    ..sort((a, b) => a.index.compareTo(b.index));
+  return {
+    for (var i = 0; i < sorted.length; i++)
+      sorted[i].uuid: Numbering.exercise(program.exerciseNumberFormat, i + 1),
+  };
 }
 
 List<Map<String, dynamic>> _sortedCanonical<T>(
@@ -456,28 +485,97 @@ _diffItems<T>(
   required String Function(T item) name,
   required Map<String, dynamic> Function(T item) canonicalize,
   required List<FieldChange> Function(T local, T remote) fieldChanges,
+  // Local-side formatted position (e.g. "#2"), keyed by uuid. Only
+  // exercises have a numbering scheme (see [Numbering.exercise]) — passing
+  // this also turns on per-item reorder detection below, since without a
+  // way to *label* the new position there is nothing useful to tell the
+  // user beyond the vague "something moved".
+  Map<String, String>? numbersByUuid,
 }) {
   final localById = {for (final item in local) uuid(item): item};
   final remoteById = {for (final item in remote) uuid(item): item};
   final added = <String>[];
   final removed = <String>[];
-  final modified = <ItemDiff>[];
 
+  // 'index' records position, not content — stripped before deciding
+  // whether an item is "modified" so a pure reorder doesn't also read as a
+  // content edit. Reordering is reported separately below as its own
+  // `field: 'order'` change, attributed to the specific item that moved,
+  // instead of a generic "Other changes" or an aggregate note that lists
+  // every item regardless of whether it actually moved.
+  Map<String, dynamic> withoutIndex(T item) =>
+      Map<String, dynamic>.from(canonicalize(item))..remove('index');
+  int? rawIndex(T item) {
+    final value = canonicalize(item)['index'];
+    return value is int ? value : null;
+  }
+
+  T at(Map<String, T> map, String key) => map[key] as T;
+
+  // Reordering is compared by each side's *relative rank* among items
+  // common to both sides, not raw index — an insertion or removal shifts
+  // every later item's absolute index even though nothing about their
+  // relative order changed; only a genuine swap changes an item's rank
+  // relative to its peers.
+  var reorderedUuids = const <String>{};
+  if (numbersByUuid != null) {
+    final commonUuids = localById.keys.where(remoteById.containsKey).toList();
+    final localRanked = [...commonUuids]..sort(
+      (a, b) =>
+          (rawIndex(at(localById, a)) ?? 0).compareTo(
+            rawIndex(at(localById, b)) ?? 0,
+          ),
+    );
+    final remoteRanked = [...commonUuids]..sort(
+      (a, b) =>
+          (rawIndex(at(remoteById, a)) ?? 0).compareTo(
+            rawIndex(at(remoteById, b)) ?? 0,
+          ),
+    );
+    final localRank = {
+      for (var i = 0; i < localRanked.length; i++) localRanked[i]: i,
+    };
+    final remoteRank = {
+      for (var i = 0; i < remoteRanked.length; i++) remoteRanked[i]: i,
+    };
+    reorderedUuids = {
+      for (final u in commonUuids)
+        if (localRank[u] != remoteRank[u]) u,
+    };
+  }
+
+  // (ItemDiff, sortKey) — sortKey is the local raw index when numbered
+  // (keeps same-named exercises in plan order rather than an alphabetical
+  // clump) and is unused otherwise, where entries sort by name instead.
+  final modified = <(ItemDiff, int)>[];
   for (final entry in remoteById.entries) {
     final localItem = localById[entry.key];
     if (localItem == null) {
       added.add(name(entry.value));
-    } else if (jsonEncode(canonicalize(localItem)) !=
-        jsonEncode(canonicalize(entry.value))) {
-      var changes = fieldChanges(localItem, entry.value);
-      // The curated field list above doesn't cover every JSON key — fall
-      // back to a generic marker rather than silently showing "modified"
-      // with no explanation when the actual diff lives in an uncurated
-      // field.
-      if (changes.isEmpty) {
-        changes = const [FieldChange(field: 'other')];
-      }
-      modified.add(ItemDiff(name: name(entry.value), changes: changes));
+      continue;
+    }
+    final contentDiffers =
+        jsonEncode(withoutIndex(localItem)) !=
+        jsonEncode(withoutIndex(entry.value));
+    var changes = contentDiffers
+        ? fieldChanges(localItem, entry.value)
+        : <FieldChange>[];
+    // The curated field list above doesn't cover every JSON key — fall
+    // back to a generic marker rather than silently showing "modified"
+    // with no explanation when the actual diff lives in an uncurated
+    // field.
+    if (contentDiffers && changes.isEmpty) {
+      changes = const [FieldChange(field: 'other')];
+    }
+    final newPosition = numbersByUuid?[entry.key];
+    if (reorderedUuids.contains(entry.key) && newPosition != null) {
+      changes = [FieldChange(field: 'order', local: newPosition), ...changes];
+    }
+    if (changes.isNotEmpty) {
+      modified.add((
+        ItemDiff(name: name(entry.value), number: newPosition, changes: changes),
+        rawIndex(localItem) ?? 0,
+      ));
     }
   }
   for (final entry in localById.entries) {
@@ -488,8 +586,17 @@ _diffItems<T>(
 
   added.sort();
   removed.sort();
-  modified.sort((a, b) => a.name.compareTo(b.name));
-  return (added: added, removed: removed, modified: modified);
+  modified.sort(
+    numbersByUuid != null
+        ? (a, b) => a.$2.compareTo(b.$2)
+        : (a, b) => a.$1.name.compareTo(b.$1.name),
+  );
+
+  return (
+    added: added,
+    removed: removed,
+    modified: modified.map((m) => m.$1).toList(),
+  );
 }
 
 /// Represents an immutable drill session

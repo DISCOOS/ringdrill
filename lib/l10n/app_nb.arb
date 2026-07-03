@@ -357,9 +357,9 @@
   "catalogConflictBody": "Denne katalogplanen har lokale endringer. Se gjennom forskjellene før du velger hvordan du vil fortsette.",
   "catalogConflictBodyLocalOnly": "Denne katalogplanen har lokale endringer. Onlineversjonen er uendret. Se gjennom dine lokale endringer før du velger hvordan du vil fortsette.",
   "catalogConflictCancel": "Avbryt",
-  "catalogConflictOverwrite": "Forkast lokale endringer",
-  "catalogConflictPublish": "Publiser mine endringer",
-  "catalogConflictFork": "Lag lokal kopi",
+  "catalogConflictOverwrite": "Forkast endringer",
+  "catalogConflictPublish": "Publiser",
+  "catalogConflictFork": "Lag kopi",
   "catalogRefreshUpToDate": "{name} er allerede oppdatert",
   "@catalogRefreshUpToDate": {
     "placeholders": {
@@ -395,8 +395,29 @@
   "catalogDiffAdded": "Lagt til",
   "catalogDiffRemoved": "Fjernet",
   "catalogDiffModified": "Endret",
+  "catalogDiffReorderedTo": "Flyttet til {number}",
+  "@catalogDiffReorderedTo": {
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  },
+  "catalogDiffFieldChanged": "{field} endret: {local} → {remote}",
+  "@catalogDiffFieldChanged": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "local": {"type": "String"},
+      "remote": {"type": "String"}
+    }
+  },
+  "catalogDiffFieldChangedGeneric": "{field} endret",
+  "@catalogDiffFieldChangedGeneric": {
+    "placeholders": {
+      "field": {"type": "String"}
+    }
+  },
   "catalogDiffLocal": "Din versjon",
   "catalogDiffRemote": "Katalogversjon",
+  "catalogDiffPlan": "Plan",
   "catalogDiffName": "Plannavn",
   "catalogDiffDescription": "Beskrivelse",
   "catalogDiffTags": "Etiketter",

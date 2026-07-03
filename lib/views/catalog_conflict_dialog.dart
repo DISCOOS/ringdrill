@@ -59,9 +59,28 @@ class _CatalogConflictContent extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              localizations.catalogConflictTitle,
-              style: theme.textTheme.titleLarge,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    localizations.catalogConflictTitle,
+                    style: theme.textTheme.titleLarge,
+                  ),
+                ),
+                // The usual close affordance other sheets/screens give
+                // (e.g. ProgramFormScreen's AppBar leading "x"). Needed
+                // here specifically because this sheet is non-dismissable
+                // — no drag-down, no barrier tap — so without it there
+                // would be no visible way out other than reading the
+                // bottom action row.
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: localizations.catalogConflictCancel,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () =>
+                      Navigator.pop(context, CatalogConflictChoice.cancel),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -75,87 +94,72 @@ class _CatalogConflictContent extends StatelessWidget {
                           : localizations.catalogConflictBody,
                     ),
                     const SizedBox(height: 16),
-                    DiffField(
-                      label: localizations.catalogDiffName,
-                      local: diff.nameLocal,
-                      remote: diff.nameRemote,
-                    ),
-                    DiffField(
-                      label: localizations.catalogDiffDescription,
-                      local: diff.descriptionLocal,
-                      remote: diff.descriptionRemote,
-                    ),
-                    DiffField(
-                      label: localizations.catalogDiffTags,
-                      local: diff.tagsLocal,
-                      remote: diff.tagsRemote,
-                    ),
-                    DiffGroup(
-                      title: localizations.catalogDiffExercises,
-                      added: diff.addedExercises,
-                      removed: diff.removedExercises,
-                      modified: diff.modifiedExercises,
-                    ),
-                    DiffGroup(
-                      title: localizations.catalogDiffTeams,
-                      added: diff.addedTeams,
-                      removed: diff.removedTeams,
-                      modified: diff.modifiedTeams,
-                    ),
-                    DiffGroup(
-                      title: localizations.catalogDiffSessions,
-                      added: diff.addedSessions,
-                      removed: diff.removedSessions,
-                      modified: diff.modifiedSessions,
-                    ),
-                    // "Script" is this app's own name for the role-play
-                    // feature (see ProgramSegment.script) — reused here
-                    // rather than coining a separate "Role plays" label.
-                    DiffGroup(
-                      title: localizations.scriptSegment,
-                      added: diff.addedRolePlays,
-                      removed: diff.removedRolePlays,
-                      modified: diff.modifiedRolePlays,
-                    ),
+                    ProgramDiffView(diff: diff),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 8,
-              runSpacing: 8,
+            Row(
+              children: [
+                // Discard is destructive (throws away local edits), so it
+                // gets the error color even though it sits alongside Fork in
+                // an otherwise equal-weight outlined pair.
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
+                      side: BorderSide(color: theme.colorScheme.error),
+                    ),
+                    onPressed: () => Navigator.pop(
+                      context,
+                      CatalogConflictChoice.overwriteLocal,
+                    ),
+                    child: Text(localizations.catalogConflictOverwrite),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(
+                      context,
+                      CatalogConflictChoice.forkAsLocal,
+                    ),
+                    child: Text(localizations.catalogConflictFork),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
               children: [
                 TextButton(
                   onPressed: () =>
                       Navigator.pop(context, CatalogConflictChoice.cancel),
                   child: Text(localizations.catalogConflictCancel),
                 ),
-                TextButton(
-                  onPressed: () => Navigator.pop(
-                    context,
-                    CatalogConflictChoice.overwriteLocal,
+                const SizedBox(width: 8),
+                // Flexible (not Spacer + bare button) so "Publish my
+                // changes" is capped to the remaining width on narrow
+                // screens — its text wraps instead of overflowing the row —
+                // while still hugging the right edge when it fits on one
+                // line.
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    // Wiki model: anyone can publish updates. We previously
+                    // hid this option behind ownsCatalogSlug, which broke
+                    // the flow for users who had installed a plan and
+                    // wanted to contribute back without ever having
+                    // published it first.
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(
+                        context,
+                        CatalogConflictChoice.publishMyChanges,
+                      ),
+                      child: Text(localizations.catalogConflictPublish),
+                    ),
                   ),
-                  child: Text(localizations.catalogConflictOverwrite),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(
-                    context,
-                    CatalogConflictChoice.forkAsLocal,
-                  ),
-                  child: Text(localizations.catalogConflictFork),
-                ),
-                // Wiki model: anyone can publish updates. We previously hid
-                // this option behind ownsCatalogSlug, which broke the flow
-                // for users who had installed a plan and wanted to
-                // contribute back without ever having published it first.
-                FilledButton(
-                  onPressed: () => Navigator.pop(
-                    context,
-                    CatalogConflictChoice.publishMyChanges,
-                  ),
-                  child: Text(localizations.catalogConflictPublish),
                 ),
               ],
             ),

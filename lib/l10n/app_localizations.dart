@@ -2117,19 +2117,19 @@ abstract class AppLocalizations {
   /// No description provided for @catalogConflictOverwrite.
   ///
   /// In en, this message translates to:
-  /// **'Discard local changes'**
+  /// **'Discard changes'**
   String get catalogConflictOverwrite;
 
   /// No description provided for @catalogConflictPublish.
   ///
   /// In en, this message translates to:
-  /// **'Publish my changes'**
+  /// **'Publish'**
   String get catalogConflictPublish;
 
   /// No description provided for @catalogConflictFork.
   ///
   /// In en, this message translates to:
-  /// **'Fork as local plan'**
+  /// **'Make a copy'**
   String get catalogConflictFork;
 
   /// No description provided for @catalogRefreshUpToDate.
@@ -2198,6 +2198,24 @@ abstract class AppLocalizations {
   /// **'Modified'**
   String get catalogDiffModified;
 
+  /// No description provided for @catalogDiffReorderedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reordered to {number}'**
+  String catalogDiffReorderedTo(String number);
+
+  /// No description provided for @catalogDiffFieldChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} changed: {local} → {remote}'**
+  String catalogDiffFieldChanged(String field, String local, String remote);
+
+  /// No description provided for @catalogDiffFieldChangedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} changed'**
+  String catalogDiffFieldChangedGeneric(String field);
+
   /// No description provided for @catalogDiffLocal.
   ///
   /// In en, this message translates to:
@@ -2209,6 +2227,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Catalog version'**
   String get catalogDiffRemote;
+
+  /// No description provided for @catalogDiffPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get catalogDiffPlan;
 
   /// No description provided for @catalogDiffName.
   ///

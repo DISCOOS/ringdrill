@@ -1457,7 +1457,7 @@ as String?,
 /// @nodoc
 mixin _$ItemDiff {
 
- String get name; List<FieldChange> get changes;
+ String get name; String? get number; List<FieldChange> get changes;
 /// Create a copy of ItemDiff
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1470,16 +1470,16 @@ $ItemDiffCopyWith<ItemDiff> get copyWith => _$ItemDiffCopyWithImpl<ItemDiff>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemDiff&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.changes, changes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemDiff&&(identical(other.name, name) || other.name == name)&&(identical(other.number, number) || other.number == number)&&const DeepCollectionEquality().equals(other.changes, changes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,const DeepCollectionEquality().hash(changes));
+int get hashCode => Object.hash(runtimeType,name,number,const DeepCollectionEquality().hash(changes));
 
 @override
 String toString() {
-  return 'ItemDiff(name: $name, changes: $changes)';
+  return 'ItemDiff(name: $name, number: $number, changes: $changes)';
 }
 
 
@@ -1490,7 +1490,7 @@ abstract mixin class $ItemDiffCopyWith<$Res>  {
   factory $ItemDiffCopyWith(ItemDiff value, $Res Function(ItemDiff) _then) = _$ItemDiffCopyWithImpl;
 @useResult
 $Res call({
- String name, List<FieldChange> changes
+ String name, String? number, List<FieldChange> changes
 });
 
 
@@ -1507,10 +1507,11 @@ class _$ItemDiffCopyWithImpl<$Res>
 
 /// Create a copy of ItemDiff
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? changes = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? number = freezed,Object? changes = null,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,changes: null == changes ? _self.changes : changes // ignore: cast_nullable_to_non_nullable
+as String,number: freezed == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
+as String?,changes: null == changes ? _self.changes : changes // ignore: cast_nullable_to_non_nullable
 as List<FieldChange>,
   ));
 }
@@ -1593,10 +1594,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  List<FieldChange> changes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? number,  List<FieldChange> changes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ItemDiff() when $default != null:
-return $default(_that.name,_that.changes);case _:
+return $default(_that.name,_that.number,_that.changes);case _:
   return orElse();
 
 }
@@ -1614,10 +1615,10 @@ return $default(_that.name,_that.changes);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  List<FieldChange> changes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? number,  List<FieldChange> changes)  $default,) {final _that = this;
 switch (_that) {
 case _ItemDiff():
-return $default(_that.name,_that.changes);}
+return $default(_that.name,_that.number,_that.changes);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1631,10 +1632,10 @@ return $default(_that.name,_that.changes);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  List<FieldChange> changes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? number,  List<FieldChange> changes)?  $default,) {final _that = this;
 switch (_that) {
 case _ItemDiff() when $default != null:
-return $default(_that.name,_that.changes);case _:
+return $default(_that.name,_that.number,_that.changes);case _:
   return null;
 
 }
@@ -1646,10 +1647,11 @@ return $default(_that.name,_that.changes);case _:
 @JsonSerializable()
 
 class _ItemDiff implements ItemDiff {
-  const _ItemDiff({required this.name, final  List<FieldChange> changes = const []}): _changes = changes;
+  const _ItemDiff({required this.name, this.number, final  List<FieldChange> changes = const []}): _changes = changes;
   factory _ItemDiff.fromJson(Map<String, dynamic> json) => _$ItemDiffFromJson(json);
 
 @override final  String name;
+@override final  String? number;
  final  List<FieldChange> _changes;
 @override@JsonKey() List<FieldChange> get changes {
   if (_changes is EqualUnmodifiableListView) return _changes;
@@ -1671,16 +1673,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemDiff&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._changes, _changes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemDiff&&(identical(other.name, name) || other.name == name)&&(identical(other.number, number) || other.number == number)&&const DeepCollectionEquality().equals(other._changes, _changes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,const DeepCollectionEquality().hash(_changes));
+int get hashCode => Object.hash(runtimeType,name,number,const DeepCollectionEquality().hash(_changes));
 
 @override
 String toString() {
-  return 'ItemDiff(name: $name, changes: $changes)';
+  return 'ItemDiff(name: $name, number: $number, changes: $changes)';
 }
 
 
@@ -1691,7 +1693,7 @@ abstract mixin class _$ItemDiffCopyWith<$Res> implements $ItemDiffCopyWith<$Res>
   factory _$ItemDiffCopyWith(_ItemDiff value, $Res Function(_ItemDiff) _then) = __$ItemDiffCopyWithImpl;
 @override @useResult
 $Res call({
- String name, List<FieldChange> changes
+ String name, String? number, List<FieldChange> changes
 });
 
 
@@ -1708,10 +1710,11 @@ class __$ItemDiffCopyWithImpl<$Res>
 
 /// Create a copy of ItemDiff
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? changes = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? number = freezed,Object? changes = null,}) {
   return _then(_ItemDiff(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,changes: null == changes ? _self._changes : changes // ignore: cast_nullable_to_non_nullable
+as String,number: freezed == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
+as String?,changes: null == changes ? _self._changes : changes // ignore: cast_nullable_to_non_nullable
 as List<FieldChange>,
   ));
 }

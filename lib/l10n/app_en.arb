@@ -1195,9 +1195,9 @@
   "catalogConflictBody": "This catalog plan has local changes. Review the differences before choosing how to continue.",
   "catalogConflictBodyLocalOnly": "This catalog plan has local changes. The online version is unchanged. Review your local changes before choosing how to continue.",
   "catalogConflictCancel": "Cancel",
-  "catalogConflictOverwrite": "Discard local changes",
-  "catalogConflictPublish": "Publish my changes",
-  "catalogConflictFork": "Fork as local plan",
+  "catalogConflictOverwrite": "Discard changes",
+  "catalogConflictPublish": "Publish",
+  "catalogConflictFork": "Make a copy",
   "catalogRefreshUpToDate": "{name} is already up to date",
   "@catalogRefreshUpToDate": {
     "placeholders": {
@@ -1233,8 +1233,29 @@
   "catalogDiffAdded": "Added",
   "catalogDiffRemoved": "Removed",
   "catalogDiffModified": "Modified",
+  "catalogDiffReorderedTo": "Reordered to {number}",
+  "@catalogDiffReorderedTo": {
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  },
+  "catalogDiffFieldChanged": "{field} changed: {local} → {remote}",
+  "@catalogDiffFieldChanged": {
+    "placeholders": {
+      "field": {"type": "String"},
+      "local": {"type": "String"},
+      "remote": {"type": "String"}
+    }
+  },
+  "catalogDiffFieldChangedGeneric": "{field} changed",
+  "@catalogDiffFieldChangedGeneric": {
+    "placeholders": {
+      "field": {"type": "String"}
+    }
+  },
   "catalogDiffLocal": "Your version",
   "catalogDiffRemote": "Catalog version",
+  "catalogDiffPlan": "Plan",
   "catalogDiffName": "Plan name",
   "catalogDiffDescription": "Description",
   "catalogDiffTags": "Tags",

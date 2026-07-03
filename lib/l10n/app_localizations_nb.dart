@@ -1269,13 +1269,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogConflictCancel => 'Avbryt';
 
   @override
-  String get catalogConflictOverwrite => 'Forkast lokale endringer';
+  String get catalogConflictOverwrite => 'Forkast endringer';
 
   @override
-  String get catalogConflictPublish => 'Publiser mine endringer';
+  String get catalogConflictPublish => 'Publiser';
 
   @override
-  String get catalogConflictFork => 'Lag lokal kopi';
+  String get catalogConflictFork => 'Lag kopi';
 
   @override
   String catalogRefreshUpToDate(String name) {
@@ -1319,10 +1319,28 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogDiffModified => 'Endret';
 
   @override
+  String catalogDiffReorderedTo(String number) {
+    return 'Flyttet til $number';
+  }
+
+  @override
+  String catalogDiffFieldChanged(String field, String local, String remote) {
+    return '$field endret: $local → $remote';
+  }
+
+  @override
+  String catalogDiffFieldChangedGeneric(String field) {
+    return '$field endret';
+  }
+
+  @override
   String get catalogDiffLocal => 'Din versjon';
 
   @override
   String get catalogDiffRemote => 'Katalogversjon';
+
+  @override
+  String get catalogDiffPlan => 'Plan';
 
   @override
   String get catalogDiffName => 'Plannavn';
