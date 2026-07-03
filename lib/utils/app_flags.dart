@@ -26,6 +26,7 @@ class AppFlags {
       bool.fromEnvironment('RINGDRILL_FORCE_LEGACY_HOST');
   static const localBaseUrl =
       String.fromEnvironment('RINGDRILL_LOCAL_BASE_URL');
+  static const planVariables = bool.fromEnvironment('RINGDRILL_PLAN_VARIABLES');
 
   static const List<AppFlagInfo> all = [
     AppFlagInfo(
@@ -48,6 +49,15 @@ class AppFlags {
       kind: AppFlagKind.permanent,
       description:
           'Points the catalog client at a local netlify dev instance.',
+    ),
+    AppFlagInfo(
+      name: 'RINGDRILL_PLAN_VARIABLES',
+      value: planVariables,
+      kind: AppFlagKind.temporary,
+      description:
+          'Gates the DESIGN-008 plan-variables feature (variable registry, '
+          'section-navigated editor, token-aware fields) while it is built '
+          'across stages.',
     ),
   ];
 
