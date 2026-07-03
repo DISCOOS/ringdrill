@@ -175,16 +175,28 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextFormField(
-                    autofocus: true,
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: localizations.programName,
-                    ),
-                    validator: (value) =>
-                        value != null && value.trim().isNotEmpty
-                        ? null
-                        : localizations.pleaseEnterAName,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          autofocus: true,
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: localizations.programName,
+                          ),
+                          validator: (value) =>
+                              value != null && value.trim().isNotEmpty
+                              ? null
+                              : localizations.pleaseEnterAName,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      _LanguagePicker(
+                        value: _languageCode,
+                        onChanged: (v) => setState(() => _languageCode = v),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -213,11 +225,6 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                   _StationNumberFormatPicker(
                     value: _stationNumberFormat,
                     onChanged: (f) => setState(() => _stationNumberFormat = f),
-                  ),
-                  const SizedBox(height: 16),
-                  _LanguagePicker(
-                    value: _languageCode,
-                    onChanged: (v) => setState(() => _languageCode = v),
                   ),
                   const Divider(height: 32),
                   OptionalFieldSections<_Section>(
@@ -402,6 +409,15 @@ const kPlanLanguageNames = <String, String>{'nb': 'Norsk', 'en': 'English'};
 /// from the app's UI locale. Options come from
 /// [AppLocalizations.supportedLocales] so a future third ARB locale extends
 /// this picker with no code change here.
+///
+/// Sits beside the plan-name field, so it is sized to its content rather
+/// than stretched full-width: `isExpanded: false` lets the closed-state
+/// button size itself to the widest item's text (the underlying
+/// [DropdownButton] lays out every item to pick that width), instead of
+/// jumping in width as the selection changes. Wrapped in [IntrinsicWidth]
+/// because a non-expanded [DropdownButtonFormField] placed directly in a
+/// [Row] would otherwise receive an unbounded main-axis constraint, which
+/// [InputDecorator] asserts against.
 class _LanguagePicker extends StatelessWidget {
   const _LanguagePicker({required this.value, required this.onChanged});
 
@@ -411,24 +427,25 @@ class _LanguagePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return DropdownButtonFormField<String?>(
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(labelText: l10n.planLanguageLabel),
-      items: [
-        DropdownMenuItem<String?>(
-          value: null,
-          child: Text(l10n.planLanguageNotSet),
-        ),
-        for (final locale in AppLocalizations.supportedLocales)
+    return IntrinsicWidth(
+      child: DropdownButtonFormField<String?>(
+        initialValue: value,
+        decoration: InputDecoration(labelText: l10n.planLanguageLabel),
+        items: [
           DropdownMenuItem<String?>(
-            value: locale.languageCode,
-            child: Text(
-              kPlanLanguageNames[locale.languageCode] ?? locale.languageCode,
-            ),
+            value: null,
+            child: Text(l10n.planLanguageNotSet),
           ),
-      ],
-      onChanged: onChanged,
+          for (final locale in AppLocalizations.supportedLocales)
+            DropdownMenuItem<String?>(
+              value: locale.languageCode,
+              child: Text(
+                kPlanLanguageNames[locale.languageCode] ?? locale.languageCode,
+              ),
+            ),
+        ],
+        onChanged: onChanged,
+      ),
     );
   }
 }
