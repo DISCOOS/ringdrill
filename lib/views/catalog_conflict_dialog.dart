@@ -107,12 +107,11 @@ class _CatalogConflictContent extends StatelessWidget {
               children: [
                 // Discard is destructive (throws away local edits), so it
                 // gets the error color even though it sits alongside Fork
-                // in an otherwise equal-weight outlined pair.
+                // as an otherwise equal-weight borderless pair.
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
-                      side: BorderSide(color: theme.colorScheme.error),
                     ),
                     onPressed: () => Navigator.pop(
                       context,
@@ -123,7 +122,7 @@ class _CatalogConflictContent extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton(
+                  child: TextButton(
                     onPressed: () => Navigator.pop(
                       context,
                       CatalogConflictChoice.forkAsLocal,
