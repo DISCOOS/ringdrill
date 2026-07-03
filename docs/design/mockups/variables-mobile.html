@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Variabler og seksjonsnavigert editor (kompakt)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg-page: #f5f5f4;
+    --bg-1: #ffffff;
+    --bg-2: #f1efe8;
+    --bg-3: #e9e7e0;
+    --text-1: #2c2c2a;
+    --text-2: #5f5e5a;
+    --text-3: #888780;
+    --border: rgba(0, 0, 0, 0.12);
+    --accent-bg: #E6F1FB;
+    --accent-tx: #185FA5;
+    --danger-bg: #FCEBEB;
+    --danger-tx: #A32D2D;
+    --warn-bg: #FAEEDA;
+    --warn-tx: #854F0B;
+    --radius: 8px;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page: #1a1a1a; --bg-1: #242322; --bg-2: #2e2d2b; --bg-3: #3a3a37;
+      --text-1: #f1efe8; --text-2: #b4b2a9; --text-3: #888780;
+      --border: rgba(255, 255, 255, 0.12);
+      --accent-bg: #0C447C; --accent-tx: #B5D4F4;
+      --danger-bg: #501313; --danger-tx: #F09595;
+      --warn-bg: #412402; --warn-tx: #FAC775;
+    }
+  }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: var(--bg-page); color: var(--text-1); padding: 24px 16px; box-sizing: border-box; }
+  .grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+  .phone { width: 320px; }
+  .cap { font-size: 12px; color: var(--text-3); margin: 0 0 6px 4px; }
+  .frame { background: var(--bg-1); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .bar .t { flex: 1; display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 500; }
+  .save { font-size: 13px; font-weight: 500; color: #fff; background: #185FA5; padding: 6px 14px; border-radius: var(--radius); }
+  .ti { color: var(--text-2); }
+  .body { padding: 14px; }
+  .lbl { display: block; font-size: 11px; color: var(--text-2); margin-bottom: 3px; }
+  .field { font-size: 14px; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; }
+  .tag { font-size: 12px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px; padding: 4px 10px; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-mono); font-size: 12px; border-radius: 12px; padding: 2px 8px; vertical-align: 1px; }
+  .chip.ok { background: var(--accent-bg); color: var(--accent-tx); }
+  .chip.bad { background: var(--danger-bg); color: var(--danger-tx); border: 1px dashed var(--danger-tx); }
+  .menu { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.18); overflow: hidden; }
+  .menu .h { font-size: 11px; color: var(--text-3); padding: 8px 12px 4px; }
+  .accent { color: var(--accent-tx); }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="phone">
+    <p class="cap">1 · Plan (standardvisning)</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="t">Plan <i class="ti ti-chevron-down" style="font-size:16px"></i></span><span class="save">Lagre</span></div>
+      <div class="body">
+        <label class="lbl accent">Plannavn</label>
+        <div class="field" style="border-color:var(--text-3)">Vinterøvelse Nordland</div>
+        <label class="lbl">Beskrivelse</label>
+        <div class="field" style="color:var(--text-2); min-height:44px">Samvirkeøvelse med fire lag.</div>
+        <label class="lbl" style="margin-bottom:6px">Tagger</label>
+        <div style="display:flex; flex-wrap:wrap; gap:6px"><span class="tag">samvirke</span><span class="tag">vinter</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <p class="cap">2 · Seksjonsbytter åpen</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="t">Plan <i class="ti ti-chevron-up accent" style="font-size:16px"></i></span><span class="save">Lagre</span></div>
+      <div style="padding:6px; background:var(--bg-3)">
+        <div class="row" style="border-radius:var(--radius); background:var(--accent-bg)"><i class="ti ti-check accent" style="font-size:16px"></i><span style="font-size:14px; font-weight:500" class="accent">Plan</span></div>
+        <div class="row"><i class="ti ti-variable" style="font-size:16px"></i><span style="font-size:14px">Variabler</span><span style="margin-left:auto; font-size:12px; color:var(--text-3)">3</span></div>
+        <div style="height:1px; background:var(--border); margin:4px 10px"></div>
+        <div class="row"><i class="ti ti-file-text" style="font-size:16px"></i><span style="font-size:14px">Introduksjon</span></div>
+        <div class="row"><i class="ti ti-file-text" style="font-size:16px"></i><span style="font-size:14px">Kommunikasjon</span></div>
+        <div class="row accent"><i class="ti ti-plus" style="font-size:16px"></i><span style="font-size:14px; font-weight:500">Legg til seksjon</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <p class="cap">3 · Tekstseksjon med slash-meny</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="t">Kommunikasjon <i class="ti ti-chevron-down" style="font-size:16px"></i></span><i class="ti ti-dots-vertical" style="font-size:20px"></i><span class="save">Lagre</span></div>
+      <div class="body" style="font-size:14px; line-height:1.9">
+        <div>Samband skjer på kanal <span class="chip ok"><i class="ti ti-braces" style="font-size:12px"></i>frekvens</span> i hele øvelsen.</div>
+        <div style="margin-top:4px">Nødsignal gis av <span class="chip bad"><i class="ti ti-alert-triangle" style="font-size:12px"></i>ovingsleder</span></div>
+        <div style="margin-top:4px">Oppmøte /
+          <div class="menu" style="margin-top:6px">
+            <div class="row" style="background:var(--accent-bg)"><i class="ti ti-braces accent" style="font-size:15px"></i><span style="font-size:13px; font-weight:500" class="accent">oppmøtested</span><span style="margin-left:auto; font-size:12px" class="accent">Kaia sør</span></div>
+            <div class="row"><i class="ti ti-braces" style="font-size:15px"></i><span style="font-size:13px">frekvens</span><span style="margin-left:auto; font-size:12px; color:var(--text-3)">Kanal 6</span></div>
+            <div class="row"><i class="ti ti-hash" style="font-size:15px"></i><span style="font-size:13px">Antall poster</span><span style="margin-left:auto; font-size:11px; color:var(--text-3)">planfelt</span></div>
+            <div class="row"><i class="ti ti-calendar" style="font-size:15px"></i><span style="font-size:13px">Dato</span><span style="margin-left:auto; font-size:11px; color:var(--text-3)">planfelt</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <p class="cap">4 · Variabler-seksjon</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="t">Variabler <i class="ti ti-chevron-down" style="font-size:16px"></i></span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div style="display:flex; align-items:center; gap:8px; background:var(--warn-bg); border-radius:var(--radius); padding:8px 10px; margin-bottom:12px">
+          <i class="ti ti-info-circle" style="font-size:15px; color:var(--warn-tx)"></i>
+          <span style="font-size:12px; color:var(--warn-tx)">Publiseres med planen. Ikke legg inn reelle persondata.</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border)"><span style="font-family:var(--font-mono); font-size:12px; color:var(--text-2); min-width:96px">frekvens</span><span style="font-size:14px; flex:1">Kanal 6</span><i class="ti ti-dots" style="font-size:18px; color:var(--text-3)"></i></div>
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border)"><span style="font-family:var(--font-mono); font-size:12px; color:var(--text-2); min-width:96px">operasjonsnavn</span><span style="font-size:14px; flex:1">Nordlys</span><i class="ti ti-dots" style="font-size:18px; color:var(--text-3)"></i></div>
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 0"><span style="font-family:var(--font-mono); font-size:12px; color:var(--text-2); min-width:96px">oppmøtested</span><span style="font-size:14px; flex:1">Kaia sør</span><i class="ti ti-dots" style="font-size:18px; color:var(--text-3)"></i></div>
+        <div class="accent" style="display:flex; align-items:center; gap:8px; margin-top:14px"><i class="ti ti-plus" style="font-size:16px"></i><span style="font-size:14px; font-weight:500">Ny variabel</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
