@@ -61,24 +61,24 @@ class _CatalogConflictContent extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Text(
-                    localizations.catalogConflictTitle,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                // The usual close affordance other sheets/screens give
-                // (e.g. ProgramFormScreen's AppBar leading "x"). Needed
-                // here specifically because this sheet is non-dismissable
-                // — no drag-down, no barrier tap — so without it there
-                // would be no visible way out other than reading the
-                // bottom action row.
+                // Leading, not trailing — RingDrill's bottom sheets put the
+                // close "x" on the left (mirrors ProgramFormScreen's AppBar
+                // leading close icon). Needed here specifically because
+                // this sheet is non-dismissable — no drag-down, no barrier
+                // tap — so without it there would be no visible way out
+                // other than reading the bottom action row.
                 IconButton(
                   icon: const Icon(Icons.close),
                   tooltip: localizations.catalogConflictCancel,
                   visualDensity: VisualDensity.compact,
                   onPressed: () =>
                       Navigator.pop(context, CatalogConflictChoice.cancel),
+                ),
+                Expanded(
+                  child: Text(
+                    localizations.catalogConflictTitle,
+                    style: theme.textTheme.titleLarge,
+                  ),
                 ),
               ],
             ),
