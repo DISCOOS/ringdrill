@@ -75,15 +75,16 @@ Future<void> renameActivePlan(BuildContext context) async {
 /// before this even starts — so by the time the network fetch and local
 /// content-hash comparison are running, there is nothing on screen showing
 /// anything happened. Shows an optimistic "Refreshing…" snackbar up front
-/// and clears it right before the outcome snackbar, same pattern as
-/// MapView._locateMe's "Locating…" hint.
+/// (non-dismissible — see [_showLoadingSnackBar]) and clears it right
+/// before the outcome snackbar, same pattern as MapView._locateMe's
+/// "Locating…" hint.
 Future<void> refreshPlanFromCatalog(
   BuildContext context,
   Program program,
 ) async {
   final localizations = AppLocalizations.of(context)!;
   final client = _buildPublishClient();
-  _showSnackBar(context, localizations.catalogRefreshing);
+  _showLoadingSnackBar(context, localizations.catalogRefreshing);
   try {
     final outcome = await ProgramService().refreshCatalogItem(
       program.uuid,
@@ -714,6 +715,38 @@ void _showSnackBar(BuildContext context, String message) {
       showCloseIcon: true,
       dismissDirection: DismissDirection.endToStart,
       content: Text(message),
+    ),
+  );
+}
+
+/// Optimistic "in progress" snackbar for an operation the user cannot
+/// meaningfully cancel or dismiss early (e.g. [refreshPlanFromCatalog]):
+/// no close icon and no swipe-to-dismiss, since hiding it before the
+/// operation finishes would just be misleading. A spinner sits where the
+/// close icon normally would, signalling "still working" rather than
+/// offering a dismiss action. The long duration is a fallback only — the
+/// caller clears this with `ScaffoldMessenger.hideCurrentSnackBar()` as
+/// soon as the operation finishes.
+void _showLoadingSnackBar(BuildContext context, String message) {
+  final onInverseSurface = Theme.of(context).colorScheme.onInverseSurface;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      duration: const Duration(seconds: 30),
+      dismissDirection: DismissDirection.none,
+      content: Row(
+        children: [
+          Expanded(child: Text(message)),
+          const SizedBox(width: 12),
+          SizedBox(
+            height: 16,
+            width: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: onInverseSurface,
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
