@@ -35,22 +35,32 @@ void main() {
 
   CatalogConflictChoice? result;
 
-  Future<void> openDialog(WidgetTester tester) async {
+  Future<void> openDialog(
+    WidgetTester tester, {
+    bool withSnackBar = false,
+  }) async {
     result = null;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () async {
-              result = await showCatalogConflictDialog(
-                context,
-                diff: diff,
-                ownedSlug: true,
-              );
-            },
-            child: const Text('Open'),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                if (withSnackBar) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Refreshing…')),
+                  );
+                }
+                result = await showCatalogConflictDialog(
+                  context,
+                  diff: diff,
+                  ownedSlug: true,
+                );
+              },
+              child: const Text('Open'),
+            ),
           ),
         ),
       ),
@@ -103,5 +113,92 @@ void main() {
     await tester.tap(find.text(l10n.catalogConflictCancel));
     await tester.pumpAndSettle();
     expect(result, CatalogConflictChoice.cancel);
+  });
+
+  testWidgets(
+    'wide dialog only dismisses via action buttons (not barrier/back)',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+      expect(find.byType(Dialog), findsOneWidget);
+
+      // Barrier tap must not dismiss.
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(result, isNull);
+
+      // System back must not dismiss.
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      await navigator.maybePop();
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(result, isNull);
+
+      // An explicit action still closes it.
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.tap(find.text(l10n.catalogConflictCancel));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsNothing);
+      expect(result, CatalogConflictChoice.cancel);
+    },
+  );
+
+  testWidgets(
+    'narrow sheet only dismisses via action buttons (no drag, no back)',
+    (tester) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.catalogConflictTitle), findsOneWidget);
+
+      // Non-draggable, so the drag-handle affordance is hidden.
+      expect(
+        find.byKey(const Key('ringdrill-sheet-drag-handle')),
+        findsNothing,
+      );
+
+      // Dragging down must not dismiss.
+      await tester.drag(
+        find.text(l10n.catalogConflictTitle),
+        const Offset(0, 400),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.catalogConflictTitle), findsOneWidget);
+      expect(result, isNull);
+
+      // System back must not dismiss.
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      await navigator.maybePop();
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.catalogConflictTitle), findsOneWidget);
+      expect(result, isNull);
+
+      // An explicit action still closes it.
+      await tester.tap(find.text(l10n.catalogConflictPublish));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.catalogConflictTitle), findsNothing);
+      expect(result, CatalogConflictChoice.publishMyChanges);
+    },
+  );
+
+  testWidgets('hides a visible snackbar when first shown', (tester) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await openDialog(tester, withSnackBar: true);
+
+    // The "Refreshing…" snackbar shown just before the conflict surfaced
+    // must be gone once the sheet is up.
+    expect(find.byType(SnackBar), findsNothing);
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.catalogConflictTitle), findsOneWidget);
   });
 }

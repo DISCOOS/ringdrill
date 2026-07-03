@@ -38,32 +38,45 @@ Future<T?> showRingdrillViewerSheet<T>({
   );
 }
 
+/// [isDismissible] false blocks every implicit way out — barrier tap, drag
+/// down, system back — so only the sheet's own action buttons can close it
+/// (used by the catalog conflict sheet). The drag handle is hidden too,
+/// since it would advertise a gesture that no longer works.
 Future<T?> showRingdrillActionSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
+  bool isDismissible = true,
 }) {
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Colors.transparent,
     useSafeArea: true,
     isScrollControlled: true,
+    isDismissible: isDismissible,
+    enableDrag: isDismissible,
     shape: null,
     constraints: const BoxConstraints(maxWidth: double.infinity),
     builder: (context) {
-      return _RingdrillSheetSurface(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _DragHandle(),
-            // Flexible (not Expanded) so a short sheet still wraps its
-            // content, but a tall one is bounded to the available height
-            // instead of overflowing. Builders that size themselves to a
-            // fraction of the full screen (e.g. the open-plan picker at
-            // 0.88×height) would otherwise overflow once the drag handle
-            // and the bottom safe-area inset are added on top. Their own
-            // scroll areas absorb the clamp.
-            Flexible(child: SafeArea(top: false, child: builder(context))),
-          ],
+      return PopScope(
+        canPop: isDismissible,
+        child: _RingdrillSheetSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isDismissible)
+                const _DragHandle()
+              else
+                const SizedBox(height: 16),
+              // Flexible (not Expanded) so a short sheet still wraps its
+              // content, but a tall one is bounded to the available height
+              // instead of overflowing. Builders that size themselves to a
+              // fraction of the full screen (e.g. the open-plan picker at
+              // 0.88×height) would otherwise overflow once the drag handle
+              // and the bottom safe-area inset are added on top. Their own
+              // scroll areas absorb the clamp.
+              Flexible(child: SafeArea(top: false, child: builder(context))),
+            ],
+          ),
         ),
       );
     },

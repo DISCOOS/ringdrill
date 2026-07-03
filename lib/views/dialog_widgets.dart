@@ -44,10 +44,15 @@ Future<bool> confirmDestructive(
 /// `Expanded`/scrollable list that needs a bounded parent; leave it `false`
 /// for compact dialogs (e.g. file-name + buttons) so the surface shrinks to
 /// its content.
+///
+/// [isDismissible] false blocks barrier tap, drag-down and system back on
+/// both presentations, so only the body's own action buttons can pop the
+/// route (used by the catalog conflict flow).
 Future<T?> showResponsiveSheetOrDialog<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   bool maximizeHeight = false,
+  bool isDismissible = true,
   double widthBreakpoint = 600.0,
   double dialogMaxWidth = 560.0,
   double dialogMinWidth = 460.0,
@@ -58,19 +63,23 @@ Future<T?> showResponsiveSheetOrDialog<T>(
   if (mediaSize.width > widthBreakpoint) {
     return showDialog<T>(
       context: context,
+      barrierDismissible: isDismissible,
       builder: (context) {
         final body = builder(context);
-        return Dialog(
-          clipBehavior: Clip.antiAlias,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: dialogMaxWidth,
-              maxHeight: dialogMaxHeight,
-              minWidth: dialogMinWidth,
+        return PopScope(
+          canPop: isDismissible,
+          child: Dialog(
+            clipBehavior: Clip.antiAlias,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: dialogMaxWidth,
+                maxHeight: dialogMaxHeight,
+                minWidth: dialogMinWidth,
+              ),
+              child: maximizeHeight
+                  ? SizedBox(height: dialogMaxHeight, child: body)
+                  : body,
             ),
-            child: maximizeHeight
-                ? SizedBox(height: dialogMaxHeight, child: body)
-                : body,
           ),
         );
       },
@@ -79,6 +88,7 @@ Future<T?> showResponsiveSheetOrDialog<T>(
 
   return showRingdrillActionSheet<T>(
     context: context,
+    isDismissible: isDismissible,
     builder: (context) {
       final body = builder(context);
       if (maximizeHeight) {

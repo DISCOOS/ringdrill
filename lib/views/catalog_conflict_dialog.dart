@@ -9,15 +9,24 @@ import 'package:ringdrill/views/program_diff_widgets.dart';
 /// showSelectPlansDialog/name_step_sheet. The diff itself can be long once
 /// modified items show their field-level changes (not just names), so both
 /// presentations get a bounded, scrollable body via [maximizeHeight].
+///
+/// Non-dismissable: a conflict needs an explicit decision, so barrier tap,
+/// drag-down and system back are all blocked and the action buttons are the
+/// only way out. Cancel is one of them, so nothing is lost — the user just
+/// has to choose consciously instead of swiping the sheet away.
 Future<CatalogConflictChoice> showCatalogConflictDialog(
   BuildContext context, {
   required ProgramDiff diff,
   required bool ownedSlug,
   bool remoteUnchanged = false,
 }) async {
+  // The refresh flow may still be showing its "Refreshing…" snackbar; it
+  // would sit on top of the sheet's action buttons, so clear it first.
+  ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
   final choice = await showResponsiveSheetOrDialog<CatalogConflictChoice>(
     context,
     maximizeHeight: true,
+    isDismissible: false,
     dialogMaxWidth: 640,
     dialogMaxHeight: 680,
     builder: (context) => _CatalogConflictContent(
@@ -25,6 +34,8 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
       remoteUnchanged: remoteUnchanged,
     ),
   );
+  // The buttons are the only user-facing way to pop, but a programmatic pop
+  // (e.g. the whole route stack being torn down) still lands here.
   return choice ?? CatalogConflictChoice.cancel;
 }
 
