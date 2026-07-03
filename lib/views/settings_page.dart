@@ -320,6 +320,17 @@ class _NotificationSettingsWidgetState
 
     if (enabled != null) {
       await prefs.setBool(AppConfig.keyIsNotificationsEnabled, enabled);
+      if (enabled) {
+        // Turning the toggle on is itself an explicit opt-in, so it must
+        // be allowed to fire the OS permission dialog even when the user
+        // never went through the first-launch consent stage (upgraders,
+        // and any device that has had a previous build installed, where
+        // `isFirstLaunch` is already false so `NotificationConsentStage`
+        // never showed). Without this the toggle looked "on" in-app while
+        // iOS was never asked, so RingDrill never registered and never
+        // appeared under Settings > Notifications. See ADR-0038.
+        await prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
+      }
       await NotificationService().initFromPrefs(prefs);
       setState(() {
         isNotificationsEnabled = enabled;

@@ -71,6 +71,14 @@
   "@notificationsDeniedBanner": {
     "description": "Snackbar/banner shown when the user has declined notification permission and exercises will not produce alerts"
   },
+  "notificationsDeniedTitle": "Notifications are off",
+  "@notificationsDeniedTitle": {
+    "description": "Title of the dialog shown when the user taps the notification bell but the OS permission has been denied and cannot be re-requested programmatically"
+  },
+  "notificationsDeniedHelp": "RingDrill can’t turn notifications back on for you — iOS only allows the permission dialog once. Open Settings, find RingDrill, and allow Notifications to get rotation, round, and completion alerts, even when the app runs in the background.",
+  "@notificationsDeniedHelp": {
+    "description": "Body of the notification permission help dialog, explaining how to enable notifications from the OS Settings app"
+  },
   "appAnalyticsConsentCollectedData": "This includes information about your device (e.g., device model, OS version) and crash reports in case of failures. This data is sent to and processed by Sentry.io.",
   "@appAnalyticsConsentCollectedData": {
     "description": "Message"

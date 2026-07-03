@@ -206,6 +206,18 @@ abstract class AppLocalizations {
   /// **'Notifications are off. Enable them in Settings to get rotation and station alerts.'**
   String get notificationsDeniedBanner;
 
+  /// Title of the dialog shown when the user taps the notification bell but the OS permission has been denied and cannot be re-requested programmatically
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off'**
+  String get notificationsDeniedTitle;
+
+  /// Body of the notification permission help dialog, explaining how to enable notifications from the OS Settings app
+  ///
+  /// In en, this message translates to:
+  /// **'RingDrill can’t turn notifications back on for you — iOS only allows the permission dialog once. Open Settings, find RingDrill, and allow Notifications to get rotation, round, and completion alerts, even when the app runs in the background.'**
+  String get notificationsDeniedHelp;
+
   /// Message
   ///
   /// In en, this message translates to:

@@ -70,6 +70,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notifications are off. Enable them in Settings to get rotation and station alerts.';
 
   @override
+  String get notificationsDeniedTitle => 'Notifications are off';
+
+  @override
+  String get notificationsDeniedHelp =>
+      'RingDrill can’t turn notifications back on for you — iOS only allows the permission dialog once. Open Settings, find RingDrill, and allow Notifications to get rotation, round, and completion alerts, even when the app runs in the background.';
+
+  @override
   String get appAnalyticsConsentCollectedData =>
       'This includes information about your device (e.g., device model, OS version) and crash reports in case of failures. This data is sent to and processed by Sentry.io.';
 

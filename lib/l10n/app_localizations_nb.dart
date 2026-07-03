@@ -70,6 +70,13 @@ class AppLocalizationsNb extends AppLocalizations {
       'Varsler er av. Slå dem på i innstillingene for å få rotasjons- og post-varsler.';
 
   @override
+  String get notificationsDeniedTitle => 'Varsler er av';
+
+  @override
+  String get notificationsDeniedHelp =>
+      'RingDrill kan ikke slå på varsler for deg — iOS tillater varselsdialogen bare én gang. Åpne Innstillinger, finn RingDrill og tillat Varsler for å få varsler om rotasjon, runder og fullført øvelse, også når appen kjører i bakgrunnen.';
+
+  @override
   String get appAnalyticsConsentCollectedData =>
       'Dette inkluderer informasjon om enheten din (f.eks. enhetsmodell, OS-versjon) og krasjrapporter i tilfelle feil. Disse dataene sendes til og behandles av Sentry.io.';
 

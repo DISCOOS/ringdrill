@@ -10,6 +10,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
+import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -30,11 +31,13 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
+import 'package:ringdrill/views/widgets/notification_permission_help.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
 
@@ -181,6 +184,50 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     super.didChangeDependencies();
   }
 
+  /// Handles the notification bell in the running-exercise app bar.
+  ///
+  /// The bell has two jobs. Normally it re-posts the ongoing notification
+  /// after iOS/Android has silently dropped it (the watchdog raises
+  /// `promptReshow`). But it is also the coordinator's escape hatch when
+  /// notifications simply are not coming through: if the OS permission has
+  /// been denied — or the user never granted it — re-requesting is a no-op
+  /// on iOS, so we send them to the Settings app with instructions instead.
+  /// See ADR-0038.
+  Future<void> _onShowNotificationPressed() async {
+    final service = NotificationService();
+
+    // Already hard-denied (or the plugin failed to initialise): iOS will
+    // not show the system dialog again, so guide the user to Settings.
+    if (service.permissionState == NotificationPermissionState.denied ||
+        service.permissionState == NotificationPermissionState.pluginFailed) {
+      if (!mounted) return;
+      await showNotificationPermissionHelp(context);
+      return;
+    }
+
+    // Otherwise (re)attach the plugin and re-post the notification. Tapping
+    // the bell is an explicit opt-in, so record consent first — that lets
+    // the OS permission prompt fire on first use even for devices that
+    // never saw the first-launch consent stage.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppConfig.keyNotificationConsentAsked, true);
+    await service.initFromPrefs(prefs);
+    if (!mounted) return;
+
+    // If the prompt was just declined (or the OS refused silently), fall
+    // back to the Settings guidance rather than leaving the bell looking
+    // like it did nothing.
+    if (service.permissionState == NotificationPermissionState.denied ||
+        service.permissionState == NotificationPermissionState.pluginFailed) {
+      await showNotificationPermissionHelp(context);
+      return;
+    }
+
+    setState(() {
+      _promptShowNotification = false;
+    });
+  }
+
   /// Function to handle editing the exercise
   void _deleteExercise(BuildContext context) async {
     final localizations = context.l10n;
@@ -282,12 +329,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   icon: const Icon(Icons.notifications_on),
                   padding: const EdgeInsets.all(8.0),
                   onPressed: _promptShowNotification
-                      ? () {
-                          unawaited(NotificationService().initFromPrefs());
-                          setState(() {
-                            _promptShowNotification = false;
-                          });
-                        }
+                      ? () => unawaited(_onShowNotificationPressed())
                       : null,
                   tooltip: localizations.showNotification,
                 ),

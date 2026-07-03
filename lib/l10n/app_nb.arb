@@ -106,6 +106,8 @@
   "onboardingWelcomeBody": "Planlegg og gjennomfør postbaserte øvelser.",
   "openSettings": "Åpne innstillinger",
   "notificationsDeniedBanner": "Varsler er av. Slå dem på i innstillingene for å få rotasjons- og post-varsler.",
+  "notificationsDeniedTitle": "Varsler er av",
+  "notificationsDeniedHelp": "RingDrill kan ikke slå på varsler for deg — iOS tillater varselsdialogen bare én gang. Åpne Innstillinger, finn RingDrill og tillat Varsler for å få varsler om rotasjon, runder og fullført øvelse, også når appen kjører i bakgrunnen.",
   "appAnalyticsConsentCollectedData": "Dette inkluderer informasjon om enheten din (f.eks. enhetsmodell, OS-versjon) og krasjrapporter i tilfelle feil. Disse dataene sendes til og behandles av Sentry.io.",
   "learnMoreAboutDataCollected": "Lær mer om innsamlede data",
   "allowAppAnalytics": "Tillat appanalyse",
