@@ -3140,16 +3140,10 @@ abstract class AppLocalizations {
   /// **'1a, 1b'**
   String get stationNumberFormatAlpha;
 
-  /// Helper text under the station number format picker showing a live preview of the selected format.
+  /// Label for the plan-content language picker in ProgramFormScreen. Kept short since the picker sits beside the plan-name field. Distinct from the app's own UI language.
   ///
   /// In en, this message translates to:
-  /// **'Example: {example}'**
-  String stationNumberFormatPreview(String example);
-
-  /// Label for the plan-content language picker in ProgramFormScreen. Distinct from the app's own UI language.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan language'**
+  /// **'Lang'**
   String get planLanguageLabel;
 
   /// Hint text shown in the plan-language picker before a language is chosen. Not itself a selectable option — selecting a language is required to save the form.

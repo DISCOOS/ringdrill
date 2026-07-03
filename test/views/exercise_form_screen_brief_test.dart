@@ -120,4 +120,41 @@ void main() {
     expect(captured, isNotNull);
     expect(captured!.methodMd, isNull);
   });
+
+  testWidgets(
+    'hides the divider below the optional fields once all are added',
+    (tester) async {
+      final exercise = _exerciseWithMethod().copyWith(
+        learningGoalsMd: 'mål',
+        trainingFocusMd: 'fokus',
+        orderFormatMd: 'ordreform',
+        executionTipsMd: 'tips',
+        commsMd: 'kom',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () => Navigator.push<Exercise>(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) => ExerciseFormScreen(exercise: exercise),
+                ),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // No add-buttons left, so the divider above the (now absent)
+      // add-buttons row is hidden.
+      expect(find.byType(Divider), findsNothing);
+    },
+  );
 }

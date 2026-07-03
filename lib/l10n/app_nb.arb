@@ -923,13 +923,6 @@
   "@stationNumberFormatAlpha": {
     "description": "Alternativetikett for StationNumberFormat.alpha i postnummerformat-velgeren."
   },
-  "stationNumberFormatPreview": "Eksempel: {example}",
-  "@stationNumberFormatPreview": {
-    "description": "Hjelpetekst under postnummerformat-velgeren som viser en forhåndsvisning av valgt format.",
-    "placeholders": {
-      "example": { "type": "String" }
-    }
-  },
 
   "planLanguageLabel": "Språk",
   "planLanguageChooseHint": "Velg",

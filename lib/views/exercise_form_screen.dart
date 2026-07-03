@@ -303,8 +303,6 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                   ),
                   ?_buildStationsRoundNote(localizations),
 
-                  const Divider(height: 32),
-
                   OptionalFieldSections<_ExerciseSection>(
                     sections: [
                       for (final section in _ExerciseSection.values)
@@ -319,6 +317,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                     onAdd: _addSection,
                     onRemove: _removeSection,
                   ),
+                  // Hidden once every optional section has been added: with
+                  // no add-buttons left to show, the divider would sit right
+                  // below the last text field with nothing to separate.
+                  if (_activeSections.length < _ExerciseSection.values.length)
+                    const Divider(height: 32),
                 ],
               ),
             ),

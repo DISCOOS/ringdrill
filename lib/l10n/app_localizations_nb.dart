@@ -1842,12 +1842,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get stationNumberFormatAlpha => '1a, 1b';
 
   @override
-  String stationNumberFormatPreview(String example) {
-    return 'Eksempel: $example';
-  }
-
-  @override
-  String get planLanguageLabel => 'Planens språk';
+  String get planLanguageLabel => 'Språk';
 
   @override
   String get planLanguageChooseHint => 'Velg';

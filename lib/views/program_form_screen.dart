@@ -4,7 +4,6 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
-import 'package:ringdrill/views/widgets/station_number_badge.dart';
 
 const _kTagMaxLength = 40;
 
@@ -183,28 +182,16 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          autofocus: true,
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: localizations.programName,
-                          ),
-                          validator: (value) =>
-                              value != null && value.trim().isNotEmpty
-                              ? null
-                              : localizations.pleaseEnterAName,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      _LanguagePicker(
-                        value: _languageCode,
-                        onChanged: (v) => setState(() => _languageCode = v),
-                      ),
-                    ],
+                  TextFormField(
+                    autofocus: true,
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: localizations.programName,
+                    ),
+                    validator: (value) =>
+                        value != null && value.trim().isNotEmpty
+                        ? null
+                        : localizations.pleaseEnterAName,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -231,9 +218,22 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                   // with nothing distinct to separate.
                   if (_activeSections.length < _Section.values.length)
                     const Divider(height: 32),
-                  _StationNumberFormatPicker(
-                    value: _stationNumberFormat,
-                    onChanged: (f) => setState(() => _stationNumberFormat = f),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: _StationNumberFormatPicker(
+                          value: _stationNumberFormat,
+                          onChanged: (f) =>
+                              setState(() => _stationNumberFormat = f),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      _LanguagePicker(
+                        value: _languageCode,
+                        onChanged: (v) => setState(() => _languageCode = v),
+                      ),
+                    ],
                   ),
                   const Divider(height: 32),
                   _TagsEditor(
@@ -353,10 +353,10 @@ class _TagsEditor extends StatelessWidget {
   }
 }
 
-/// Segmented picker for [StationNumberFormat]. Shows a live example next
-/// to the segmented control — as real [StationNumberBadge]s, the same
-/// widget the Stations list renders — so the format choice is immediately
-/// legible rather than described in plain text.
+/// Segmented picker for [StationNumberFormat]. Each segment's own label
+/// ("1.1, 1.2" / "1a, 1b") already shows the format's example, so no
+/// separate preview is rendered here — this sits beside [_LanguagePicker]
+/// in a two-column row to use less vertical space.
 class _StationNumberFormatPicker extends StatelessWidget {
   const _StationNumberFormatPicker({
     required this.value,
@@ -372,10 +372,6 @@ class _StationNumberFormatPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final example = switch (value) {
-      StationNumberFormat.dotted => '1.1, 1.2',
-      StationNumberFormat.alpha => '1a, 1b',
-    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -386,58 +382,21 @@ class _StationNumberFormatPicker extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: SegmentedButton<StationNumberFormat>(
-                expandedInsets: EdgeInsets.zero,
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment(
-                    value: StationNumberFormat.dotted,
-                    label: Text(l10n.stationNumberFormatDotted),
-                  ),
-                  ButtonSegment(
-                    value: StationNumberFormat.alpha,
-                    label: Text(l10n.stationNumberFormatAlpha),
-                  ),
-                ],
-                selected: {value},
-                onSelectionChanged: (selected) => onChanged(selected.single),
-              ),
+        SegmentedButton<StationNumberFormat>(
+          expandedInsets: EdgeInsets.zero,
+          showSelectedIcon: false,
+          segments: [
+            ButtonSegment(
+              value: StationNumberFormat.dotted,
+              label: Text(l10n.stationNumberFormatDotted),
             ),
-            const SizedBox(width: 12),
-            // Semantics carries the plain-text description for screen
-            // readers; sighted users get the same badge the Stations list
-            // renders for a station numbered with this format, rather than
-            // a second copy of the segment's own "1.1, 1.2" label text.
-            Semantics(
-              label: l10n.stationNumberFormatPreview(example),
-              child: ExcludeSemantics(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    StationNumberBadge(
-                      label: Numbering.station(
-                        value,
-                        exerciseNumber: 1,
-                        stationIndex: 0,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    StationNumberBadge(
-                      label: Numbering.station(
-                        value,
-                        exerciseNumber: 1,
-                        stationIndex: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            ButtonSegment(
+              value: StationNumberFormat.alpha,
+              label: Text(l10n.stationNumberFormatAlpha),
             ),
           ],
+          selected: {value},
+          onSelectionChanged: (selected) => onChanged(selected.single),
         ),
       ],
     );

@@ -1851,13 +1851,6 @@
   "@stationNumberFormatAlpha": {
     "description": "Option label for StationNumberFormat.alpha in the station number format picker."
   },
-  "stationNumberFormatPreview": "Example: {example}",
-  "@stationNumberFormatPreview": {
-    "description": "Helper text under the station number format picker showing a live preview of the selected format.",
-    "placeholders": {
-      "example": { "type": "String" }
-    }
-  },
 
   "planLanguageLabel": "Lang",
   "@planLanguageLabel": {
