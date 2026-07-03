@@ -1273,7 +1273,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogConflictCancel => 'Cancel';
 
   @override
-  String get catalogConflictOverwrite => 'Discard changes';
+  String get catalogConflictOverwrite => 'Discard mine';
 
   @override
   String get catalogConflictPublish => 'Publish';

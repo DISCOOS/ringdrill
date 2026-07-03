@@ -357,7 +357,7 @@
   "catalogConflictBody": "Denne katalogplanen har lokale endringer. Se gjennom forskjellene før du velger hvordan du vil fortsette.",
   "catalogConflictBodyLocalOnly": "Denne katalogplanen har lokale endringer. Onlineversjonen er uendret. Se gjennom dine lokale endringer før du velger hvordan du vil fortsette.",
   "catalogConflictCancel": "Avbryt",
-  "catalogConflictOverwrite": "Forkast endringer",
+  "catalogConflictOverwrite": "Forkast mine",
   "catalogConflictPublish": "Publiser",
   "catalogConflictFork": "Lag kopi",
   "catalogRefreshUpToDate": "{name} er allerede oppdatert",

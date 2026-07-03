@@ -2117,7 +2117,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogConflictOverwrite.
   ///
   /// In en, this message translates to:
-  /// **'Discard changes'**
+  /// **'Discard mine'**
   String get catalogConflictOverwrite;
 
   /// No description provided for @catalogConflictPublish.

@@ -1195,7 +1195,7 @@
   "catalogConflictBody": "This catalog plan has local changes. Review the differences before choosing how to continue.",
   "catalogConflictBodyLocalOnly": "This catalog plan has local changes. The online version is unchanged. Review your local changes before choosing how to continue.",
   "catalogConflictCancel": "Cancel",
-  "catalogConflictOverwrite": "Discard changes",
+  "catalogConflictOverwrite": "Discard mine",
   "catalogConflictPublish": "Publish",
   "catalogConflictFork": "Make a copy",
   "catalogRefreshUpToDate": "{name} is already up to date",

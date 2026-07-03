@@ -1269,7 +1269,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogConflictCancel => 'Avbryt';
 
   @override
-  String get catalogConflictOverwrite => 'Forkast endringer';
+  String get catalogConflictOverwrite => 'Forkast mine';
 
   @override
   String get catalogConflictPublish => 'Publiser';
