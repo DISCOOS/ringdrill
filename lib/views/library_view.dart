@@ -73,15 +73,6 @@ class _LibraryBodyState extends State<_LibraryBody>
   final _programService = ProgramService();
   late final TabController _tabController;
 
-  /// uuid of the "Mine planer" row whose catalog refresh is currently in
-  /// flight (a network fetch plus a local content-hash comparison, which
-  /// together can take a moment), or null when nothing is busy. Drives a
-  /// spinner in that row's leading position — same reasoning as
-  /// [CatalogBrowser]'s own `_busySlug`: without it, tapping "Oppdater fra
-  /// katalog" gives no indication anything happened until the outcome
-  /// snackbar appears.
-  String? _refreshingProgramUuid;
-
   /// Last error message produced by the From-File tab's picker flow.
   /// Rendered as an inline banner above the pick-file button so the
   /// user can read and dismiss it without leaving the dialog — a
@@ -210,7 +201,6 @@ class _LibraryBodyState extends State<_LibraryBody>
             ? _programService.activeProgram
             : program;
         final isActive = _programService.activeProgramUuid == program.uuid;
-        final isRefreshing = _refreshingProgramUuid == program.uuid;
         // No catalog badge here: the source is already spelled out as text
         // in the subtitle ("Fra katalog · slug" via programSubtitle), so a
         // second cloud icon next to "Aktiv" was redundant.
@@ -231,30 +221,16 @@ class _LibraryBodyState extends State<_LibraryBody>
           child: ExpandableTile(
             // Radio icon, not the picker's Switch: this list is
             // single-select (which plan is active), not multi-select.
-            // Swapped for a spinner while a catalog refresh triggered from
-            // this row's long-press menu is in flight — same reasoning as
-            // CatalogBrowser's own busy-row spinner: a refresh starts a
-            // network fetch plus a local hash comparison with no other
-            // indication anything happened.
-            leading: isRefreshing
-                ? const Padding(
-                    padding: EdgeInsets.all(2),
-                    child: SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : Icon(
-                    isActive
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                    // ExpandableTile does not clamp a bare leading Icon to
-                    // the standard ListTile leading size the way ListTile
-                    // does internally — size explicitly so the row height
-                    // is driven by the text block, not an oversized icon.
-                    size: 24,
-                  ),
+            leading: Icon(
+              isActive
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              // ExpandableTile does not clamp a bare leading Icon to the
+              // standard ListTile leading size the way ListTile does
+              // internally — size explicitly so the row height is driven
+              // by the text block, not an oversized icon.
+              size: 24,
+            ),
             title: Text(program.name),
             subtitle: Text(programSubtitle(localizations, loaded ?? program)),
             // ExpandableTile only wraps trailing in 4px of padding, unlike
@@ -271,9 +247,7 @@ class _LibraryBodyState extends State<_LibraryBody>
                   ),
             onOpen: () =>
                 _activate(context, program.uuid, closeOnSuccess: true),
-            onLongPress: isRefreshing
-                ? null
-                : () => _showPlanActions(context, program),
+            onLongPress: () => _showPlanActions(context, program),
           ),
         );
       },
@@ -583,7 +557,6 @@ class _LibraryBodyState extends State<_LibraryBody>
   Future<void> _refreshProgram(BuildContext context, Program program) async {
     final localizations = AppLocalizations.of(context)!;
     final client = _buildCatalogClient();
-    setState(() => _refreshingProgramUuid = program.uuid);
     try {
       final outcome = await _programService.refreshCatalogItem(
         program.uuid,
@@ -597,17 +570,13 @@ class _LibraryBodyState extends State<_LibraryBody>
           );
         },
       );
+      if (mounted) setState(() {});
       if (!context.mounted) return;
       final message = _refreshOutcomeMessage(localizations, outcome, program);
       if (message != null) _showSnackBar(context, message);
     } catch (_) {
       if (!context.mounted) return;
       _showSnackBar(context, localizations.catalogServiceUnavailable);
-    } finally {
-      // Also picks up whatever refreshCatalogItem changed on the program
-      // list, so this replaces the old post-success setState instead of
-      // needing both.
-      if (mounted) setState(() => _refreshingProgramUuid = null);
     }
   }
 
