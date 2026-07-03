@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -35,6 +36,9 @@ sealed class Program with _$Program {
     // @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
     // an empty list rather than failing (ADR-0043; same pattern as ADR-0018).
     @Default(<String>[]) List<String> tags,
+    // @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
+    // an empty registry (ADR-0046, additive field, no schema bump).
+    @Default(<DrillVariable>[]) List<DrillVariable> variables,
     // Markdown brief fields — stored as program/<field>.md, not in JSON.
     @JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,
     @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,
@@ -197,6 +201,8 @@ extension ProgramX on Program {
   /// - `exercises`/`teams`/`sessions`/`rolePlays` — `toJson()` gives raw,
   ///   unsorted versions with markdown fields missing; the sorted,
   ///   markdown-complete versions built below replace them.
+  /// - `variables` — `toJson()` gives a raw, unsorted list; the version
+  ///   sorted by name (ADR-0046) built below replaces it.
   ///
   /// If you add a new bookkeeping-only field to [Program] or [ProgramMetadata]
   /// (something that changes without the plan's content changing), add it
@@ -231,6 +237,7 @@ extension ProgramX on Program {
       ..remove('teams')
       ..remove('sessions')
       ..remove('rolePlays')
+      ..remove('variables')
       ..['languageCode'] = metadata.languageCode
       ..['briefIntroMd'] = briefIntroMd
       ..['commsMd'] = commsMd
@@ -242,6 +249,9 @@ extension ProgramX on Program {
       'teams': _sortedCanonical(teams, (e) => e.uuid),
       'sessions': _sortedCanonical(sessions, (e) => e.uuid),
       'rolePlays': rolePlaysMaps,
+      // Sorted by name (not uuid — DrillVariable has no uuid) so archive
+      // order never affects the hash (ADR-0046).
+      'variables': _sortedCanonical(variables, (v) => v.name),
     };
     return sha256
         .convert(utf8.encode(jsonEncode(_canonicalize(canonical))))
