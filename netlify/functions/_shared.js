@@ -5,9 +5,20 @@ export const NS = { DRILLS: "drills", SLUG_INDEX: "slug-index" };
 export const MIME_DRILL = "application/vnd.ringdrill+zip";
 export const DRILL_EXT = ".drill";
 
-let _drillsStore, _slugIndexStore;
-export function getDrillsStore() { _drillsStore ||= getStore(NS.DRILLS); return _drillsStore; }
-export function getSlugIndexStore() { _slugIndexStore ||= getStore(NS.SLUG_INDEX); return _slugIndexStore; }
+// Deliberately NOT cached at module scope. @netlify/blobs's Store bakes its
+// access token in at construction time (see InternalClientOptions/Store in
+// node_modules/@netlify/blobs/dist/main.d.ts), read from a per-invocation
+// environment context that Netlify's runtime refreshes on every request
+// (connectLambda -> setEnvironmentContext in the same package). Caching the
+// Store instance here means a warm function container keeps reusing
+// whichever token was current on its *first* invocation — once that token
+// expires, every request through that same warm container fails with
+// "Netlify Blobs has generated an internal error (Failed to decode token:
+// Token expired)" until it's recycled, while a different (or freshly
+// cold-started) container keeps working. getStore() itself is a cheap,
+// synchronous client construction — no reason to cache it.
+export function getDrillsStore() { return getStore(NS.DRILLS); }
+export function getSlugIndexStore() { return getStore(NS.SLUG_INDEX); }
 
 /* ---------- Read/Write helpers ---------- */
 
