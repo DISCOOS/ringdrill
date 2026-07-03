@@ -1329,6 +1329,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogDiffModified => 'Modified';
 
   @override
+  String get catalogDiffShowDeletions => 'Show deletions';
+
+  @override
   String catalogDiffReorderedFromTo(String from, String to) {
     return 'Moved $from → $to';
   }

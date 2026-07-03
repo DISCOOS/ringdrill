@@ -200,6 +200,65 @@ void main() {
   );
 
   testWidgets(
+    'the "show deletions" switch starts on, and toggling it off hides '
+    'struck-through removed text while keeping the surviving text',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      expect(_spanStyle(tester, 'Old'), isNotNull);
+      expect(_spanStyle(tester, 'New'), isNotNull);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+      // The struck-through old half of the "Old" → "New" substitution span
+      // is gone entirely; the surviving new half stays.
+      expect(_spanStyle(tester, 'Old'), isNull);
+      expect(_spanStyle(tester, 'New'), isNotNull);
+
+      // A structural (non-scalar) change has no old/new text to hide, so it
+      // is unaffected by the toggle either way.
+      expect(find.textContaining('Stations'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    '"Make a copy" is tucked into a context menu (not a third primary '
+    'button) and still resolves to forkAsLocal when chosen',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // Not a standalone button anymore.
+      expect(
+        find.widgetWithText(TextButton, l10n.catalogConflictFork),
+        findsNothing,
+      );
+      // Not visible until the menu is opened.
+      expect(find.text(l10n.catalogConflictFork), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.catalogConflictFork), findsOneWidget);
+
+      await tester.tap(find.text(l10n.catalogConflictFork));
+      await tester.pumpAndSettle();
+
+      expect(result, CatalogConflictChoice.forkAsLocal);
+    },
+  );
+
+  testWidgets(
     'action buttons are right-aligned against the dialog edge, not just '
     'grouped within their own bounding box',
     (tester) async {

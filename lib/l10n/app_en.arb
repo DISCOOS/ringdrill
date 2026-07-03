@@ -1232,6 +1232,7 @@
   "catalogDiffAdded": "Added",
   "catalogDiffRemoved": "Removed",
   "catalogDiffModified": "Modified",
+  "catalogDiffShowDeletions": "Show deletions",
   "catalogDiffReorderedFromTo": "Moved {from} → {to}",
   "@catalogDiffReorderedFromTo": {
     "placeholders": {

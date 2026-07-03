@@ -43,7 +43,7 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
   return choice ?? CatalogConflictChoice.cancel;
 }
 
-class _CatalogConflictContent extends StatelessWidget {
+class _CatalogConflictContent extends StatefulWidget {
   const _CatalogConflictContent({
     required this.diff,
     required this.remoteUnchanged,
@@ -57,7 +57,23 @@ class _CatalogConflictContent extends StatelessWidget {
   final String? catalogVersion;
 
   @override
+  State<_CatalogConflictContent> createState() =>
+      _CatalogConflictContentState();
+}
+
+class _CatalogConflictContentState extends State<_CatalogConflictContent> {
+  // Defaults to showing the full diff (struck-through deletions and all) —
+  // matches the dialog's original always-on behavior; the switch below is an
+  // opt-in for readers who find the surviving text easier to scan without
+  // the removed half of a substitution alongside it.
+  bool _showDeletions = true;
+
+  @override
   Widget build(BuildContext context) {
+    final diff = widget.diff;
+    final remoteUnchanged = widget.remoteUnchanged;
+    final localVersion = widget.localVersion;
+    final catalogVersion = widget.catalogVersion;
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return SafeArea(
@@ -117,58 +133,109 @@ class _CatalogConflictContent extends StatelessWidget {
                       catalogVersion: catalogVersion,
                     ),
                     const SizedBox(height: 16),
-                    ProgramDiffView(diff: diff),
+                    ProgramDiffView(diff: diff, showDeletions: _showDeletions),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            // Cancel lives only in the header's close "x" now — the legal
-            // actions here are the only way to dismiss, so they share a
-            // single row instead of splitting into a secondary/primary pair.
-            // OverflowBar — the same widget AlertDialog uses for its
-            // `actions` row — right-aligns the group and, unlike a bare
-            // Wrap inside this Column (which only sizes to its own content
-            // under CrossAxisAlignment.start, leaving "end" alignment with
-            // nothing to align against), actually stretches to the full
-            // row width first. Falls back to a vertical stack, end-aligned,
-            // if the labels ever don't fit a narrow screen on one line.
-            OverflowBar(
-              alignment: MainAxisAlignment.end,
-              overflowAlignment: OverflowBarAlignment.end,
-              spacing: 8,
-              overflowSpacing: 8,
+            // The "show deletions" switch sits in this fixed row rather than
+            // above the scrollable diff, so it stays reachable no matter how
+            // far the user has scrolled into a long diff. Leading, not
+            // trailing, so it doesn't compete with the OverflowBar's own
+            // end-alignment for the buttons — Expanded gives the bar the
+            // rest of the row's width to right-align within, exactly as it
+            // did when it owned the whole row.
+            Row(
               children: [
-                // Discard is destructive (throws away local edits), so it
-                // gets the error color even though it sits alongside Fork
-                // as an otherwise equal-weight borderless pair.
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
+                Tooltip(
+                  message: localizations.catalogDiffShowDeletions,
+                  child: Switch.adaptive(
+                    value: _showDeletions,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    // Same error/red used by "Discard mine" below — this
+                    // dialog's existing color for a destructive/removal
+                    // concept — applied to the track when on, so the bin
+                    // icon's red reads as a matching accent, not a stray
+                    // color. The thumb itself is left at its default light
+                    // color so the red icon on top of it keeps contrast.
+                    activeTrackColor: theme.colorScheme.error,
+                    // A bin — deletions are "thrown away" from view when the
+                    // switch is off — baked into the thumb itself rather
+                    // than a separate leading icon, so the control stays a
+                    // single compact element next to three buttons.
+                    thumbIcon: WidgetStateProperty.all(
+                      Icon(
+                        Icons.delete_outline,
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                    onChanged: (value) =>
+                        setState(() => _showDeletions = value),
                   ),
-                  onPressed: () => Navigator.pop(
-                    context,
-                    CatalogConflictChoice.overwriteLocal,
-                  ),
-                  child: Text(localizations.catalogConflictOverwrite),
                 ),
-                TextButton(
-                  onPressed: () => Navigator.pop(
-                    context,
-                    CatalogConflictChoice.forkAsLocal,
+                Expanded(
+                  // Cancel lives only in the header's close "x" now. The
+                  // fork option is tucked into a context menu here (grouped
+                  // with the two primary buttons in the same OverflowBar,
+                  // so it shares their spacing and their wrap-to-column
+                  // fallback) rather than sitting as an equal-weight third
+                  // button — most conflicts resolve to discarding local
+                  // edits or publishing them, so the common two-choice
+                  // decision reads faster without losing the fork path for
+                  // whoever does need it. OverflowBar — the same widget
+                  // AlertDialog uses for its `actions` row — right-aligns
+                  // the group and, unlike a bare Wrap inside a Column with
+                  // CrossAxisAlignment.start (which only sizes to its own
+                  // content, leaving "end" alignment with nothing to align
+                  // against), actually stretches to fill this Expanded's
+                  // width first, so the whole group (menu + buttons) sits
+                  // flush against the dialog's trailing edge with an
+                  // expandable gap after the switch. Falls back to a
+                  // vertical stack, end-aligned, if the labels ever don't
+                  // fit a narrow screen on one line.
+                  child: OverflowBar(
+                    alignment: MainAxisAlignment.end,
+                    overflowAlignment: OverflowBarAlignment.end,
+                    spacing: 8,
+                    overflowSpacing: 8,
+                    children: [
+                      PopupMenuButton<CatalogConflictChoice>(
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (choice) => Navigator.pop(context, choice),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: CatalogConflictChoice.forkAsLocal,
+                            child: Text(localizations.catalogConflictFork),
+                          ),
+                        ],
+                      ),
+                      // Discard is destructive (throws away local edits), so
+                      // it gets the error color to stand apart from Publish.
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme.colorScheme.error,
+                        ),
+                        onPressed: () => Navigator.pop(
+                          context,
+                          CatalogConflictChoice.overwriteLocal,
+                        ),
+                        child: Text(localizations.catalogConflictOverwrite),
+                      ),
+                      // Wiki model: anyone can publish updates. We previously
+                      // hid this option behind ownsCatalogSlug, which broke
+                      // the flow for users who had installed a plan and
+                      // wanted to contribute back without ever having
+                      // published it first.
+                      FilledButton(
+                        onPressed: () => Navigator.pop(
+                          context,
+                          CatalogConflictChoice.publishMyChanges,
+                        ),
+                        child: Text(localizations.catalogConflictPublish),
+                      ),
+                    ],
                   ),
-                  child: Text(localizations.catalogConflictFork),
-                ),
-                // Wiki model: anyone can publish updates. We previously hid
-                // this option behind ownsCatalogSlug, which broke the flow
-                // for users who had installed a plan and wanted to
-                // contribute back without ever having published it first.
-                FilledButton(
-                  onPressed: () => Navigator.pop(
-                    context,
-                    CatalogConflictChoice.publishMyChanges,
-                  ),
-                  child: Text(localizations.catalogConflictPublish),
                 ),
               ],
             ),

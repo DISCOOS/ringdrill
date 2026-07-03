@@ -1325,6 +1325,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogDiffModified => 'Endret';
 
   @override
+  String get catalogDiffShowDeletions => 'Vis slettinger';
+
+  @override
   String catalogDiffReorderedFromTo(String from, String to) {
     return 'Flyttet $from → $to';
   }

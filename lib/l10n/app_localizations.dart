@@ -2210,6 +2210,12 @@ abstract class AppLocalizations {
   /// **'Modified'**
   String get catalogDiffModified;
 
+  /// No description provided for @catalogDiffShowDeletions.
+  ///
+  /// In en, this message translates to:
+  /// **'Show deletions'**
+  String get catalogDiffShowDeletions;
+
   /// No description provided for @catalogDiffReorderedFromTo.
   ///
   /// In en, this message translates to:

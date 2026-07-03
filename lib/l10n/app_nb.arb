@@ -394,6 +394,7 @@
   "catalogDiffAdded": "Lagt til",
   "catalogDiffRemoved": "Fjernet",
   "catalogDiffModified": "Endret",
+  "catalogDiffShowDeletions": "Vis slettinger",
   "catalogDiffReorderedFromTo": "Flyttet {from} → {to}",
   "@catalogDiffReorderedFromTo": {
     "placeholders": {

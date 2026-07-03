@@ -163,10 +163,20 @@ String _present(String? value) {
 /// exercise that both moved and had a field edited shows one card with both
 /// facts, rather than being split across a "reorder" section and a
 /// "modified" section (see [ItemDiff]).
+///
+/// [showDeletions] is owned by the dialog around this view (not by this
+/// widget itself) — its own toggle lives in the dialog's fixed bottom row so
+/// it stays reachable even when this view's content scrolls, rather than
+/// scrolling away with it.
 class ProgramDiffView extends StatelessWidget {
-  const ProgramDiffView({super.key, required this.diff});
+  const ProgramDiffView({
+    super.key,
+    required this.diff,
+    required this.showDeletions,
+  });
 
   final ProgramDiff diff;
+  final bool showDeletions;
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +198,7 @@ class ProgramDiffView extends StatelessWidget {
                   label: localizations.catalogDiffName,
                   local: diff.nameLocal,
                   remote: diff.nameRemote,
+                  showDeletions: showDeletions,
                 ),
               ),
               Padding(
@@ -196,12 +207,14 @@ class ProgramDiffView extends StatelessWidget {
                   label: localizations.catalogDiffDescription,
                   local: diff.descriptionLocal,
                   remote: diff.descriptionRemote,
+                  showDeletions: showDeletions,
                 ),
               ),
               _DiffValueLine(
                 label: localizations.catalogDiffTags,
                 local: diff.tagsLocal,
                 remote: diff.tagsRemote,
+                showDeletions: showDeletions,
               ),
             ],
           ),
@@ -210,18 +223,21 @@ class ProgramDiffView extends StatelessWidget {
           added: diff.addedExercises,
           removed: diff.removedExercises,
           modified: diff.modifiedExercises,
+          showDeletions: showDeletions,
         ),
         _EntitySection(
           title: localizations.catalogDiffTeams,
           added: diff.addedTeams,
           removed: diff.removedTeams,
           modified: diff.modifiedTeams,
+          showDeletions: showDeletions,
         ),
         _EntitySection(
           title: localizations.catalogDiffSessions,
           added: diff.addedSessions,
           removed: diff.removedSessions,
           modified: diff.modifiedSessions,
+          showDeletions: showDeletions,
         ),
         // "Script" is this app's own name for the role-play feature (see
         // ProgramSegment.script) — reused here rather than coining a
@@ -231,6 +247,7 @@ class ProgramDiffView extends StatelessWidget {
           added: diff.addedRolePlays,
           removed: diff.removedRolePlays,
           modified: diff.modifiedRolePlays,
+          showDeletions: showDeletions,
         ),
       ],
     );
@@ -302,12 +319,14 @@ class _EntitySection extends StatelessWidget {
     required this.added,
     required this.removed,
     required this.modified,
+    required this.showDeletions,
   });
 
   final String title;
   final List<String> added;
   final List<String> removed;
   final List<ItemDiff> modified;
+  final bool showDeletions;
 
   @override
   Widget build(BuildContext context) {
@@ -332,7 +351,8 @@ class _EntitySection extends StatelessWidget {
               '${localizations.catalogDiffRemoved}: ${removed.join(', ')}',
             ),
           ),
-        for (final item in modified) _ConflictItemTile(item: item),
+        for (final item in modified)
+          _ConflictItemTile(item: item, showDeletions: showDeletions),
       ],
     );
   }
@@ -353,9 +373,10 @@ class _EntitySection extends StatelessWidget {
 /// identical at every nesting depth without threading a depth counter
 /// through.
 class _ConflictItemTile extends StatelessWidget {
-  const _ConflictItemTile({required this.item});
+  const _ConflictItemTile({required this.item, required this.showDeletions});
 
   final ItemDiff item;
+  final bool showDeletions;
 
   @override
   Widget build(BuildContext context) {
@@ -390,7 +411,10 @@ class _ConflictItemTile extends StatelessWidget {
                 left: number != null ? _kChangeIndent : 0,
                 top: 4,
               ),
-              child: _FieldChangeLine(change: change),
+              child: _FieldChangeLine(
+                change: change,
+                showDeletions: showDeletions,
+              ),
             ),
           if (item.nestedChanges.isNotEmpty ||
               item.addedNested.isNotEmpty ||
@@ -432,7 +456,7 @@ class _ConflictItemTile extends StatelessWidget {
                 ),
               ),
             for (final nested in item.nestedChanges)
-              _ConflictItemTile(item: nested),
+              _ConflictItemTile(item: nested, showDeletions: showDeletions),
           ],
         ],
       ),
@@ -449,9 +473,10 @@ class _ConflictItemTile extends StatelessWidget {
 /// substituted word's old half red+struck-through immediately followed by
 /// its new half in blue.
 class _FieldChangeLine extends StatelessWidget {
-  const _FieldChangeLine({required this.change});
+  const _FieldChangeLine({required this.change, required this.showDeletions});
 
   final FieldChange change;
+  final bool showDeletions;
 
   @override
   Widget build(BuildContext context) {
@@ -484,7 +509,12 @@ class _FieldChangeLine extends StatelessWidget {
 
     // "old" is the catalog's (remote) value, "new" is the local plan's —
     // same remote-then-local framing as the 'order' branch above.
-    return _DiffValueLine(label: label, local: change.local, remote: change.remote);
+    return _DiffValueLine(
+      label: label,
+      local: change.local,
+      remote: change.remote,
+      showDeletions: showDeletions,
+    );
   }
 }
 
@@ -499,11 +529,13 @@ class _DiffValueLine extends StatelessWidget {
     required this.label,
     required this.local,
     required this.remote,
+    required this.showDeletions,
   });
 
   final String label;
   final String? local;
   final String? remote;
+  final bool showDeletions;
 
   @override
   Widget build(BuildContext context) {
@@ -518,7 +550,7 @@ class _DiffValueLine extends StatelessWidget {
       TextSpan(
         children: [
           TextSpan(text: '$label: ', style: mutedStyle),
-          ..._diffSpans(segments, baseStyle, theme),
+          ..._diffSpans(segments, baseStyle, theme, showDeletions: showDeletions),
         ],
       ),
     );
@@ -528,11 +560,19 @@ class _DiffValueLine extends StatelessWidget {
 /// Maps [WordDiffSegment]s to colored [InlineSpan]s, joining consecutive
 /// segments with a single space (word-diff tokenization already discards
 /// the original spacing, so this is the only spacing the render needs).
+///
+/// When [showDeletions] is false, a pure [WordDiffOp.delete] segment is
+/// omitted entirely (there is nothing "new" to show for it) and a
+/// [WordDiffOp.replace] segment shows only its new half — the struck-through
+/// old text some users find harder to read alongside the surviving text is
+/// dropped, while insertions and substitutions still keep their color as the
+/// signal that something changed there.
 List<InlineSpan> _diffSpans(
   List<WordDiffSegment> segments,
   TextStyle? baseStyle,
-  ThemeData theme,
-) {
+  ThemeData theme, {
+  required bool showDeletions,
+}) {
   final dark = theme.brightness == Brightness.dark;
   // Brighter tones on a dark surface, deeper tones on a light one — same
   // "pop against the background" convention already used for the AppBar's
@@ -542,46 +582,41 @@ List<InlineSpan> _diffSpans(
   final replaceColor = dark ? Colors.blue.shade300 : Colors.blue.shade700;
 
   final spans = <InlineSpan>[];
-  for (var i = 0; i < segments.length; i++) {
-    if (i > 0) spans.add(TextSpan(text: ' ', style: baseStyle));
-    final segment = segments[i];
+  var needsSpace = false;
+  void addSpan(String? text, TextStyle? style) {
+    if (text == null) return;
+    if (needsSpace) spans.add(TextSpan(text: ' ', style: baseStyle));
+    spans.add(TextSpan(text: text, style: style));
+    needsSpace = true;
+  }
+
+  for (final segment in segments) {
     switch (segment.op) {
       case WordDiffOp.equal:
-        spans.add(TextSpan(text: segment.newText, style: baseStyle));
+        addSpan(segment.newText, baseStyle);
       case WordDiffOp.insert:
-        spans.add(
-          TextSpan(
-            text: segment.newText,
-            style: baseStyle?.copyWith(color: insertColor),
-          ),
-        );
+        addSpan(segment.newText, baseStyle?.copyWith(color: insertColor));
       case WordDiffOp.delete:
-        spans.add(
-          TextSpan(
-            text: segment.oldText,
-            style: baseStyle?.copyWith(
+        if (showDeletions) {
+          addSpan(
+            segment.oldText,
+            baseStyle?.copyWith(
               color: deleteColor,
               decoration: TextDecoration.lineThrough,
             ),
-          ),
-        );
+          );
+        }
       case WordDiffOp.replace:
-        spans.add(
-          TextSpan(
-            text: segment.oldText,
-            style: baseStyle?.copyWith(
+        if (showDeletions) {
+          addSpan(
+            segment.oldText,
+            baseStyle?.copyWith(
               color: deleteColor,
               decoration: TextDecoration.lineThrough,
             ),
-          ),
-        );
-        spans.add(TextSpan(text: ' ', style: baseStyle));
-        spans.add(
-          TextSpan(
-            text: segment.newText,
-            style: baseStyle?.copyWith(color: replaceColor),
-          ),
-        );
+          );
+        }
+        addSpan(segment.newText, baseStyle?.copyWith(color: replaceColor));
     }
   }
   return spans;
