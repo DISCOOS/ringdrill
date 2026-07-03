@@ -1263,11 +1263,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogConflictBody =>
-      'This catalog plan has local changes. Review the differences before choosing how to continue.';
+      'Your local changes differ from the catalog.';
 
   @override
   String get catalogConflictBodyLocalOnly =>
-      'This catalog plan has local changes. The online version is unchanged. Review your local changes before choosing how to continue.';
+      'The catalog plan is unchanged. You have local changes.';
 
   @override
   String get catalogConflictCancel => 'Cancel';

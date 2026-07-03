@@ -2099,13 +2099,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogConflictBody.
   ///
   /// In en, this message translates to:
-  /// **'This catalog plan has local changes. Review the differences before choosing how to continue.'**
+  /// **'Your local changes differ from the catalog.'**
   String get catalogConflictBody;
 
   /// No description provided for @catalogConflictBodyLocalOnly.
   ///
   /// In en, this message translates to:
-  /// **'This catalog plan has local changes. The online version is unchanged. Review your local changes before choosing how to continue.'**
+  /// **'The catalog plan is unchanged. You have local changes.'**
   String get catalogConflictBodyLocalOnly;
 
   /// No description provided for @catalogConflictCancel.

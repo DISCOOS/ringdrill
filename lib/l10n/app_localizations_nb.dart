@@ -1259,11 +1259,11 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get catalogConflictBody =>
-      'Denne katalogplanen har lokale endringer. Se gjennom forskjellene før du velger hvordan du vil fortsette.';
+      'Dine lokale endringer skiller seg fra katalogen.';
 
   @override
   String get catalogConflictBodyLocalOnly =>
-      'Denne katalogplanen har lokale endringer. Onlineversjonen er uendret. Se gjennom dine lokale endringer før du velger hvordan du vil fortsette.';
+      'Planen i katalogen er uendret. Du har lokale endringer.';
 
   @override
   String get catalogConflictCancel => 'Avbryt';
