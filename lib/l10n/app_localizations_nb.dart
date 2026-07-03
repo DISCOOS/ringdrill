@@ -1293,9 +1293,6 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get catalogRefreshing => 'Oppdaterer fra katalog…';
-
-  @override
   String get catalogRefreshCancelled => 'Katalogoppdatering avbrutt';
 
   @override
@@ -1324,8 +1321,8 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String catalogDiffFieldChanged(String field, String local, String remote) {
-    return '$field endret: $local → $remote';
+  String catalogDiffFieldChanged(String field, String from, String to) {
+    return '$field endret: $from → $to';
   }
 
   @override

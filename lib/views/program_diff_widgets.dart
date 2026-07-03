@@ -382,10 +382,15 @@ class _ConflictItemTile extends StatelessWidget {
     if (change.local == null && change.remote == null) {
       return l.catalogDiffFieldChangedGeneric(label);
     }
+    // "from" is the catalog's (old) value and "to" is the local plan's
+    // (new) value — same remote-then-local framing as the 'order' branch
+    // above. This was previously local-then-remote, which read backwards:
+    // it showed "your version → the catalog's version" under a "changed
+    // to" phrasing that implies the opposite direction.
     return l.catalogDiffFieldChanged(
       label,
-      _present(change.local),
       _present(change.remote),
+      _present(change.local),
     );
   }
 }

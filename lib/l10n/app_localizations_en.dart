@@ -1297,9 +1297,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get catalogRefreshing => 'Refreshing from catalog…';
-
-  @override
   String get catalogRefreshCancelled => 'Catalog update cancelled';
 
   @override
@@ -1328,8 +1325,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String catalogDiffFieldChanged(String field, String local, String remote) {
-    return '$field changed: $local → $remote';
+  String catalogDiffFieldChanged(String field, String from, String to) {
+    return '$field changed: $from → $to';
   }
 
   @override

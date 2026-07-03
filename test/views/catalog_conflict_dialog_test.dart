@@ -12,6 +12,10 @@ import 'package:ringdrill/views/catalog_conflict_dialog.dart';
 /// added to the catalog conflict diff, so a modified exercise/rolePlay shows
 /// which fields changed and their before/after values, not just its name.
 void main() {
+  // `local` is the user's current/new value, `remote` the catalog's
+  // old/stored value — the dialog reads old → new (remote → local), so the
+  // strings below are deliberately named to catch a regression if that
+  // order ever flips back (see the "field change direction" test below).
   final diff = ProgramDiff(
     modifiedExercises: [
       ItemDiff(
@@ -19,8 +23,8 @@ void main() {
         changes: [
           FieldChange(
             field: 'methodMd',
-            local: 'Old method',
-            remote: 'New method',
+            local: 'New method',
+            remote: 'Old method',
           ),
           const FieldChange(field: 'stations'),
         ],
@@ -30,7 +34,7 @@ void main() {
     modifiedRolePlays: [
       ItemDiff(
         name: 'Anna',
-        changes: [FieldChange(field: 'age', local: '30', remote: '31')],
+        changes: [FieldChange(field: 'age', local: '31', remote: '30')],
       ),
     ],
   );
@@ -96,6 +100,32 @@ void main() {
       await tester.tap(find.text(l10n.catalogConflictOverwrite));
       await tester.pumpAndSettle();
       expect(result, CatalogConflictChoice.overwriteLocal);
+    },
+  );
+
+  testWidgets(
+    'a field change reads old (catalog) to new (local), not the reverse',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+
+      // Regression: this previously rendered "New method → Old method" —
+      // backwards, since `local` (the user's current edit) is the new
+      // value and `remote` (the catalog's stored value) is the old one.
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.text(
+          l10n.catalogDiffFieldChanged(
+            l10n.briefSectionExerciseMethod,
+            'Old method',
+            'New method',
+          ),
+        ),
+        findsOneWidget,
+      );
     },
   );
 

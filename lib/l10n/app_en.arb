@@ -1216,10 +1216,6 @@
       "name": {"type": "String"}
     }
   },
-  "catalogRefreshing": "Refreshing from catalog…",
-  "@catalogRefreshing": {
-    "description": "Optimistic hint shown immediately when a catalog refresh starts (a network fetch plus a local content-hash comparison, which together can take a moment) — the drawer entry that triggers this has already closed by then, so without this there is no visible sign anything happened until the outcome snackbar. Cleared right before that outcome is shown."
-  },
   "catalogRefreshCancelled": "Catalog update cancelled",
   "catalogRefreshForked": "Saved a local copy",
   "catalogRefreshPublished": "Published your changes",
@@ -1240,12 +1236,12 @@
       "to": {"type": "String"}
     }
   },
-  "catalogDiffFieldChanged": "{field} changed: {local} → {remote}",
+  "catalogDiffFieldChanged": "{field} changed: {from} → {to}",
   "@catalogDiffFieldChanged": {
     "placeholders": {
       "field": {"type": "String"},
-      "local": {"type": "String"},
-      "remote": {"type": "String"}
+      "from": {"type": "String"},
+      "to": {"type": "String"}
     }
   },
   "catalogDiffFieldChangedGeneric": "{field} changed",
