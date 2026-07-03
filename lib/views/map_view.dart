@@ -1504,11 +1504,23 @@ class _CurrentLocationDot extends StatelessWidget {
 
 /// Zoom-gated label slot rendered above each marker icon.
 ///
-/// Returns [SizedBox.shrink] when [showLabels] is false or when the camera
-/// zoom is below the layout-class threshold ([MapConfig.labelMinZoomFor]) - 1.
-/// Between that threshold and the threshold itself the label fades in via
-/// [AnimatedOpacity], so wider windows reveal labels at a more zoomed-out
-/// overview than compact phones.
+/// Returns [SizedBox.shrink] only when [showLabels] is false (a persistent
+/// filter toggle, not something that changes mid-gesture). Otherwise it
+/// always reserves [FeatureLabel]'s full footprint and only fades its
+/// *opacity* in/out via [AnimatedOpacity] as the camera zoom crosses the
+/// layout-class threshold ([MapConfig.labelMinZoomFor]), so wider windows
+/// reveal labels at a more zoomed-out overview than compact phones.
+///
+/// Deliberately does NOT collapse to zero size below the zoom threshold
+/// (an earlier version did, via a second `SizedBox.shrink()` branch). The
+/// marker's [Marker.height] is a fixed constant independent of the label —
+/// flutter_map anchors the whole box to the geographic point using that
+/// fixed height and `Alignment.topCenter` — so if this label's own layout
+/// size changed with zoom, [_buildMarker]'s icon would shift within the
+/// (unchanged) box exactly at the zoom threshold, i.e. visibly drift
+/// relative to the map underneath as the label fades in/out. Reserving a
+/// constant size and only animating opacity keeps the icon's on-screen
+/// offset from the anchor point fixed at every zoom level.
 ///
 /// Reads the current zoom via [MapCamera.of] so it rebuilds automatically
 /// when the camera moves. Must be used inside a [FlutterMap] subtree.
@@ -1523,7 +1535,6 @@ class _ZoomGatedLabel extends StatelessWidget {
     if (!showLabels) return const SizedBox.shrink();
     final zoom = MapCamera.of(context).zoom;
     final minZoom = MapConfig.labelMinZoomFor(WindowSizeClass.of(context));
-    if (zoom < minZoom - 1) return const SizedBox.shrink();
     final opacity = zoom >= minZoom
         ? 1.0
         : (zoom - (minZoom - 1)).clamp(0.0, 1.0);
