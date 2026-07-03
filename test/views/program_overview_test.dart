@@ -113,8 +113,16 @@ class _HarnessControllers {
   }
 }
 
-Widget _harness(_HarnessControllers controllers, {bool chrome = false}) {
-  return _ProgramOverviewHarness(controllers: controllers, chrome: chrome);
+Widget _harness(
+  _HarnessControllers controllers, {
+  bool chrome = false,
+  ThemeData? theme,
+}) {
+  return _ProgramOverviewHarness(
+    controllers: controllers,
+    chrome: chrome,
+    theme: theme,
+  );
 }
 
 /// Stateful wrapper that owns the in-test [GoRouter] so its `dispose()` is
@@ -130,10 +138,12 @@ class _ProgramOverviewHarness extends StatefulWidget {
   const _ProgramOverviewHarness({
     required this.controllers,
     required this.chrome,
+    this.theme,
   });
 
   final _HarnessControllers controllers;
   final bool chrome;
+  final ThemeData? theme;
 
   @override
   State<_ProgramOverviewHarness> createState() =>
@@ -211,6 +221,7 @@ class _ProgramOverviewHarnessState extends State<_ProgramOverviewHarness> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      theme: widget.theme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: _router,
@@ -374,4 +385,44 @@ void main() {
     },
   );
 
+  testWidgets(
+    'pinned switcher keeps the segmented button at its natural height under '
+    'desktop/web defaults (compact density, shrink-wrapped tap targets)',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controllers = _HarnessControllers();
+      addTearDown(controllers.dispose);
+      // Web in a desktop browser gets Flutter's desktop defaults: compact
+      // visual density and shrink-wrapped tap targets, which make the
+      // SegmentedButton naturally shorter than the pinned header's fixed
+      // 56px extent. The header must give the switcher loose constraints —
+      // force-stretching the button to fill the extent distorts the segment
+      // outlines (the "mangled switcher" web regression).
+      await tester.pumpWidget(
+        _harness(
+          controllers,
+          theme: ThemeData(
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final box = tester.renderObject<RenderBox>(
+        find.byType(SegmentedButton<ProgramSegment>),
+      );
+      expect(
+        box.size.height,
+        box.getMaxIntrinsicHeight(box.size.width),
+        reason:
+            'The pinned header must not stretch the segmented button beyond '
+            'its natural (intrinsic) height.',
+      );
+    },
+  );
 }

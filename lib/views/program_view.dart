@@ -499,13 +499,17 @@ class _SwitcherHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   final ProgramPageControllerBase controller;
 
-  // Measured natural height of `_ProgramSegmentSwitcher` (its 8px top padding
-  // plus the SegmentedButton's ~48px row). A SliverPersistentHeaderDelegate
-  // must report a fixed extent since it cannot measure its child, and the
-  // rendered content must actually fill that extent exactly — a mismatch
-  // (e.g. an unconstrained child rendering shorter than the declared extent)
-  // fails a sliver-geometry assertion (paintExtent < layoutExtent). The
-  // SizedBox below is what makes the child really occupy `_extent`.
+  // Tallest natural height of `_ProgramSegmentSwitcher` across platforms
+  // (its 8px top padding plus the SegmentedButton's 48px row on mobile,
+  // where standard visual density and padded tap targets apply). A
+  // SliverPersistentHeaderDelegate must report a fixed extent since it
+  // cannot measure its child, and the rendered content must fill that
+  // extent exactly — a shorter child fails a sliver-geometry assertion
+  // (paintExtent < layoutExtent). The SizedBox.expand below is what fills
+  // `_extent`; the switcher itself must NOT be height-forced to it, because
+  // on desktop/web (compact density, shrink-wrapped tap targets) the
+  // SegmentedButton is naturally shorter and stretching it distorts the
+  // segment outlines. Align gives it loose constraints instead.
   static const double _extent = 56;
 
   @override
@@ -516,11 +520,13 @@ class _SwitcherHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return SizedBox(
-      height: _extent,
+    return SizedBox.expand(
       child: ColoredBox(
         color: Theme.of(context).scaffoldBackgroundColor,
-        child: _ProgramSegmentSwitcher(controller: controller),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: _ProgramSegmentSwitcher(controller: controller),
+        ),
       ),
     );
   }
