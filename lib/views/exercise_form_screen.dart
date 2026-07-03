@@ -509,6 +509,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         rotationTime: rotationTime,
         stations: widget.exercise?.stations ?? [],
         localizations: localizations,
+        variableOverrides: widget.exercise?.variableOverrides ?? const {},
       );
 
       // generateSchedule rebuilds the Exercise from its scalar inputs, so any

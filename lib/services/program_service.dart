@@ -1120,6 +1120,7 @@ class ProgramService {
     required AppLocalizations localizations,
     bool calcFromTimes = true,
     List<Station> stations = const [],
+    Map<String, String> variableOverrides = const {},
   }) {
     assert(
       numberOfTeams <= numberOfStations,
@@ -1169,6 +1170,7 @@ class ProgramService {
         schedule.map((e) => e.map((e) => e.toSimple()).toList()),
       ),
       endTime: endTime.toSimple(),
+      variableOverrides: variableOverrides,
     );
   }
 
