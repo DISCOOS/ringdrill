@@ -1282,6 +1282,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogConflictFork => 'Make a copy';
 
   @override
+  String get catalogConflictVersionLocalLabel => 'Local';
+
+  @override
+  String get catalogConflictVersionCatalogLabel => 'Catalog';
+
+  @override
+  String get catalogConflictVersionUnknown => 'None';
+
+  @override
   String catalogRefreshUpToDate(String name) {
     return '$name is already up to date';
   }

@@ -87,17 +87,26 @@ Future<void> refreshPlanFromCatalog(
     final outcome = await ProgramService().refreshCatalogItem(
       program.uuid,
       client,
-      onConflict: (diff, {required ownedSlug, required remoteUnchanged}) {
-        return showCatalogConflictDialog(
-          context,
-          diff: diff,
-          ownedSlug: ownedSlug,
-          remoteUnchanged: remoteUnchanged,
-        );
-      },
+      onConflict:
+          (
+            diff, {
+            required ownedSlug,
+            required remoteUnchanged,
+            required localVersion,
+            required catalogVersion,
+          }) {
+            return showCatalogConflictDialog(
+              context,
+              diff: diff,
+              ownedSlug: ownedSlug,
+              remoteUnchanged: remoteUnchanged,
+              localVersion: localVersion,
+              catalogVersion: catalogVersion,
+            );
+          },
     );
     debugPrint(
-      '[refreshPlanFromCatalog] slug=${program.source.whenOrNull(catalog: (slug, latestEtag, installedAt) => slug)} '
+      '[refreshPlanFromCatalog] slug=${program.source.whenOrNull(catalog: (slug, latestEtag, installedAt, latestVersion) => slug)} '
       'outcome=${outcome.kind}',
     );
     final message = _catalogRefreshMessage(localizations, outcome, program);
@@ -355,7 +364,7 @@ Future<void> shareActivePlan(BuildContext context) async {
     return;
   }
   final slug = program.source.whenOrNull(
-    catalog: (slug, latestEtag, installedAt) => slug,
+    catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
   );
   if (slug == null) {
     _showSnackBar(context, localizations.planStatusLocalTooltip);
@@ -414,7 +423,7 @@ Future<void> publishActivePlan(BuildContext context) async {
     return;
   }
   final currentSlug = program.source.whenOrNull(
-    catalog: (slug, latestEtag, installedAt) => slug,
+    catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
   );
   if (currentSlug != null) {
     // Already published — silent update.

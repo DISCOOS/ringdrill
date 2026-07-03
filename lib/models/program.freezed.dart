@@ -543,12 +543,12 @@ return catalog(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  local,TResult Function( String fileName)?  imported,TResult Function( String slug,  String latestEtag,  DateTime? installedAt)?  catalog,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  local,TResult Function( String fileName)?  imported,TResult Function( String slug,  String latestEtag,  DateTime? installedAt,  String? latestVersion)?  catalog,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Local() when local != null:
 return local();case _Imported() when imported != null:
 return imported(_that.fileName);case _Catalog() when catalog != null:
-return catalog(_that.slug,_that.latestEtag,_that.installedAt);case _:
+return catalog(_that.slug,_that.latestEtag,_that.installedAt,_that.latestVersion);case _:
   return orElse();
 
 }
@@ -566,12 +566,12 @@ return catalog(_that.slug,_that.latestEtag,_that.installedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  local,required TResult Function( String fileName)  imported,required TResult Function( String slug,  String latestEtag,  DateTime? installedAt)  catalog,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  local,required TResult Function( String fileName)  imported,required TResult Function( String slug,  String latestEtag,  DateTime? installedAt,  String? latestVersion)  catalog,}) {final _that = this;
 switch (_that) {
 case _Local():
 return local();case _Imported():
 return imported(_that.fileName);case _Catalog():
-return catalog(_that.slug,_that.latestEtag,_that.installedAt);}
+return catalog(_that.slug,_that.latestEtag,_that.installedAt,_that.latestVersion);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -585,12 +585,12 @@ return catalog(_that.slug,_that.latestEtag,_that.installedAt);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  local,TResult? Function( String fileName)?  imported,TResult? Function( String slug,  String latestEtag,  DateTime? installedAt)?  catalog,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  local,TResult? Function( String fileName)?  imported,TResult? Function( String slug,  String latestEtag,  DateTime? installedAt,  String? latestVersion)?  catalog,}) {final _that = this;
 switch (_that) {
 case _Local() when local != null:
 return local();case _Imported() when imported != null:
 return imported(_that.fileName);case _Catalog() when catalog != null:
-return catalog(_that.slug,_that.latestEtag,_that.installedAt);case _:
+return catalog(_that.slug,_that.latestEtag,_that.installedAt,_that.latestVersion);case _:
   return null;
 
 }
@@ -714,12 +714,16 @@ as String,
 @JsonSerializable()
 
 class _Catalog implements ProgramSource {
-  const _Catalog({required this.slug, required this.latestEtag, this.installedAt, final  String? $type}): $type = $type ?? 'catalog';
+  const _Catalog({required this.slug, required this.latestEtag, this.installedAt, this.latestVersion, final  String? $type}): $type = $type ?? 'catalog';
   factory _Catalog.fromJson(Map<String, dynamic> json) => _$CatalogFromJson(json);
 
  final  String slug;
  final  String latestEtag;
  final  DateTime? installedAt;
+/// The catalog's publish version as of the last install/refresh/publish
+/// (e.g. "5"). Null for programs installed before this field existed;
+/// repopulated on the next successful refresh or publish.
+ final  String? latestVersion;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -738,16 +742,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Catalog&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.latestEtag, latestEtag) || other.latestEtag == latestEtag)&&(identical(other.installedAt, installedAt) || other.installedAt == installedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Catalog&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.latestEtag, latestEtag) || other.latestEtag == latestEtag)&&(identical(other.installedAt, installedAt) || other.installedAt == installedAt)&&(identical(other.latestVersion, latestVersion) || other.latestVersion == latestVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,slug,latestEtag,installedAt);
+int get hashCode => Object.hash(runtimeType,slug,latestEtag,installedAt,latestVersion);
 
 @override
 String toString() {
-  return 'ProgramSource.catalog(slug: $slug, latestEtag: $latestEtag, installedAt: $installedAt)';
+  return 'ProgramSource.catalog(slug: $slug, latestEtag: $latestEtag, installedAt: $installedAt, latestVersion: $latestVersion)';
 }
 
 
@@ -758,7 +762,7 @@ abstract mixin class _$CatalogCopyWith<$Res> implements $ProgramSourceCopyWith<$
   factory _$CatalogCopyWith(_Catalog value, $Res Function(_Catalog) _then) = __$CatalogCopyWithImpl;
 @useResult
 $Res call({
- String slug, String latestEtag, DateTime? installedAt
+ String slug, String latestEtag, DateTime? installedAt, String? latestVersion
 });
 
 
@@ -775,12 +779,13 @@ class __$CatalogCopyWithImpl<$Res>
 
 /// Create a copy of ProgramSource
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? latestEtag = null,Object? installedAt = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? latestEtag = null,Object? installedAt = freezed,Object? latestVersion = freezed,}) {
   return _then(_Catalog(
 slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,latestEtag: null == latestEtag ? _self.latestEtag : latestEtag // ignore: cast_nullable_to_non_nullable
 as String,installedAt: freezed == installedAt ? _self.installedAt : installedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,latestVersion: freezed == latestVersion ? _self.latestVersion : latestVersion // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

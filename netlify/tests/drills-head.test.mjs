@@ -85,6 +85,20 @@ test("hyphenated alias with @version resolves that specific version, not latest"
     assert.ok(res.headers.get("cache-control")?.includes("immutable"), "pinned version is cacheable forever");
 });
 
+test("a 200 response for the unpinned latest exposes x-version", async () => {
+    const handler = makeHandler();
+    const res = await handler(req("/api/drills-head/lsor-eidene-2026"));
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("x-version"), "2");
+});
+
+test("a 200 response for a pinned @version exposes that version, not latest", async () => {
+    const handler = makeHandler();
+    const res = await handler(req("/api/drills-head/lsor-eidene-2026@1"));
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("x-version"), "1");
+});
+
 // ---------- If-None-Match / 304 ----------
 
 test("If-None-Match matching the latest etag returns 304 with no body", async () => {
@@ -94,6 +108,15 @@ test("If-None-Match matching the latest etag returns 304 with no body", async ()
     }));
     assert.equal(res.status, 304);
     assert.equal(res.headers.get("etag"), "\"etag-v2\"");
+});
+
+test("a 304 response also exposes x-version, matching drills-upload's precedent", async () => {
+    const handler = makeHandler();
+    const res = await handler(req("/api/drills-head/lsor-eidene-2026", {
+        headers: { "if-none-match": "\"etag-v2\"" },
+    }));
+    assert.equal(res.status, 304);
+    assert.equal(res.headers.get("x-version"), "2");
 });
 
 test("If-None-Match with a stale etag returns 200, not 304", async () => {

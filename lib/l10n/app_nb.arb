@@ -360,6 +360,9 @@
   "catalogConflictOverwrite": "Forkast mine",
   "catalogConflictPublish": "Publiser",
   "catalogConflictFork": "Lag kopi",
+  "catalogConflictVersionLocalLabel": "Lokal",
+  "catalogConflictVersionCatalogLabel": "Katalog",
+  "catalogConflictVersionUnknown": "Ingen",
   "catalogRefreshUpToDate": "{name} er allerede oppdatert",
   "@catalogRefreshUpToDate": {
     "placeholders": {

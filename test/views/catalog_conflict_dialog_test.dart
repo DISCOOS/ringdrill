@@ -44,6 +44,8 @@ void main() {
   Future<void> openDialog(
     WidgetTester tester, {
     bool withSnackBar = false,
+    String? localVersion,
+    String? catalogVersion,
   }) async {
     result = null;
     await tester.pumpWidget(
@@ -63,6 +65,8 @@ void main() {
                   context,
                   diff: diff,
                   ownedSlug: true,
+                  localVersion: localVersion,
+                  catalogVersion: catalogVersion,
                 );
               },
               child: const Text('Open'),
@@ -104,6 +108,68 @@ void main() {
       await tester.tap(find.text(l10n.catalogConflictOverwrite));
       await tester.pumpAndSettle();
       expect(result, CatalogConflictChoice.overwriteLocal);
+    },
+  );
+
+  testWidgets(
+    'shows the version comparison line with both versions when known',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester, localVersion: '3', catalogVersion: '5');
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // The line reads "Local v3  →  Catalog v5" — old (local) on the left,
+      // catalog on the right, the same direction the diff reads.
+      expect(
+        _versionLineText(tester),
+        '${l10n.catalogConflictVersionLocalLabel} v3  →  '
+        '${l10n.catalogConflictVersionCatalogLabel} v5',
+      );
+    },
+  );
+
+  testWidgets(
+    'shows "None" on the local side (catalog still shown) when the local '
+    'version is unknown — e.g. a plan installed before version tracking '
+    'existed',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester, catalogVersion: '5');
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        _versionLineText(tester),
+        '${l10n.catalogConflictVersionLocalLabel} '
+        '${l10n.catalogConflictVersionUnknown}  →  '
+        '${l10n.catalogConflictVersionCatalogLabel} v5',
+      );
+    },
+  );
+
+  testWidgets(
+    'shows "None" on both sides when neither version is known — the '
+    'version info is always shown, never hidden entirely',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        _versionLineText(tester),
+        '${l10n.catalogConflictVersionLocalLabel} '
+        '${l10n.catalogConflictVersionUnknown}  →  '
+        '${l10n.catalogConflictVersionCatalogLabel} '
+        '${l10n.catalogConflictVersionUnknown}',
+      );
     },
   );
 
@@ -730,4 +796,17 @@ TextStyle? _spanStyle(WidgetTester tester, String text) {
     if (found != null) break;
   }
   return found;
+}
+
+/// The full plain text of the version comparison line (the `_VersionComparison`
+/// row). Identified as the only rendered rich text containing the "→"
+/// separator — none of the diff fixtures used in these version tests have a
+/// reordered item (the other place that arrow appears). Fails if no such line
+/// is present.
+String _versionLineText(WidgetTester tester) {
+  for (final richText in tester.widgetList<RichText>(find.byType(RichText))) {
+    final plain = richText.text.toPlainText();
+    if (plain.contains('→')) return plain;
+  }
+  fail('No version comparison line (containing "→") was rendered');
 }

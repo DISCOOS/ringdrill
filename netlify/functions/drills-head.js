@@ -3,6 +3,7 @@ import {
     getSlugRecord as _getSlugRecord,
     keysFor,
     readJson as _readJson,
+    latestVersionEntry,
     corsPreflight,
     withCors,
 } from "./_shared.js";
@@ -41,8 +42,7 @@ export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _read
             if (verMaybe) {
                 vinfo = (m.versions || []).find(v => v.v === verMaybe) || null;
             } else {
-                const sorted = (m.versions || []).slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true}));
-                vinfo = sorted.pop() || null;
+                vinfo = latestVersionEntry(m.versions);
             }
             if (!vinfo) return withCors(request, new Response("No version", { status: 404 }));
 
@@ -56,6 +56,7 @@ export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _read
                         : "public, max-age=0, must-revalidate",
                 });
                 if (vinfo.updatedAt) h304.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
+                if (vinfo.v != null) h304.set("x-version", String(vinfo.v));
                 // For HEAD/GET, 304 must not include a body
                 return withCors(request, new Response(null, { status: 304, headers: h304 }));
             }
@@ -71,6 +72,7 @@ export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _read
                 verMaybe ? "public, max-age=31536000, immutable" : "public, max-age=0, must-revalidate"
             );
             if (vinfo.updatedAt) headers.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
+            if (vinfo.v != null) headers.set("x-version", String(vinfo.v));
 
             return withCors(request, new Response("", { status: 200, headers }));
         } catch (e) {

@@ -56,6 +56,11 @@ sealed class ProgramSource with _$ProgramSource {
     required String slug,
     required String latestEtag,
     DateTime? installedAt,
+
+    /// The catalog's publish version as of the last install/refresh/publish
+    /// (e.g. "5"). Null for programs installed before this field existed;
+    /// repopulated on the next successful refresh or publish.
+    String? latestVersion,
   }) = _Catalog;
 
   factory ProgramSource.fromJson(Map<String, dynamic> json) =>

@@ -133,14 +133,21 @@ void main() {
       final outcome = await service.refreshCatalogItem(
         baseline.uuid,
         client,
-        onConflict: (diff, {required ownedSlug, required remoteUnchanged}) async {
-          conflictCallbackInvoked = true;
-          seenRemoteUnchanged = remoteUnchanged;
-          seenDiff = diff;
-          // Choose revert (overwriteLocal). This used to be silently skipped
-          // because the dialog never opened in this branch.
-          return CatalogConflictChoice.overwriteLocal;
-        },
+        onConflict:
+            (
+              diff, {
+              required ownedSlug,
+              required remoteUnchanged,
+              required localVersion,
+              required catalogVersion,
+            }) async {
+              conflictCallbackInvoked = true;
+              seenRemoteUnchanged = remoteUnchanged;
+              seenDiff = diff;
+              // Choose revert (overwriteLocal). This used to be silently
+              // skipped because the dialog never opened in this branch.
+              return CatalogConflictChoice.overwriteLocal;
+            },
       );
 
       expect(conflictCallbackInvoked, isTrue,
@@ -178,10 +185,17 @@ void main() {
       final outcome = await service.refreshCatalogItem(
         baseline.uuid,
         client,
-        onConflict: (diff, {required ownedSlug, required remoteUnchanged}) async {
-          conflictCalled = true;
-          return CatalogConflictChoice.cancel;
-        },
+        onConflict:
+            (
+              diff, {
+              required ownedSlug,
+              required remoteUnchanged,
+              required localVersion,
+              required catalogVersion,
+            }) async {
+              conflictCalled = true;
+              return CatalogConflictChoice.cancel;
+            },
       );
 
       expect(conflictCalled, isFalse);
@@ -214,10 +228,17 @@ void main() {
       final outcome = await service.refreshCatalogItem(
         baseline.uuid,
         client,
-        onConflict: (diff, {required ownedSlug, required remoteUnchanged}) async {
-          conflictCalled = true;
-          return CatalogConflictChoice.cancel;
-        },
+        onConflict:
+            (
+              diff, {
+              required ownedSlug,
+              required remoteUnchanged,
+              required localVersion,
+              required catalogVersion,
+            }) async {
+              conflictCalled = true;
+              return CatalogConflictChoice.cancel;
+            },
       );
 
       expect(conflictCalled, isFalse);

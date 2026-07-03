@@ -79,6 +79,11 @@ class DrillHeadResponse {
   final int? contentLength;
   final DateTime? lastModified;
   final String? cacheControl;
+
+  /// The catalog's current publish version (`x-version` response header),
+  /// e.g. "5". Null if the server did not send it (older deployments, or
+  /// a 404/exists-false response).
+  final String? version;
   const DrillHeadResponse({
     required this.exists,
     required this.notModified,
@@ -86,6 +91,7 @@ class DrillHeadResponse {
     this.contentLength,
     this.lastModified,
     this.cacheControl,
+    this.version,
   });
 }
 
@@ -100,6 +106,10 @@ class DrillDownloadResponse {
   final DateTime? lastModified;
   final bool notModified;
 
+  /// The catalog's current publish version (`x-version` response header),
+  /// e.g. "5". Null if the server did not send it, or on a 304.
+  final String? version;
+
   const DrillDownloadResponse({
     required this.slug,
     required this.bytes,
@@ -108,6 +118,7 @@ class DrillDownloadResponse {
     this.contentDisposition,
     this.lastModified,
     this.notModified = false,
+    this.version,
   });
 
   factory DrillDownloadResponse.notModified(String slug) {
@@ -459,6 +470,7 @@ class DrillClient {
       contentLength: int.tryParse(res.headers['content-length'] ?? ''),
       lastModified: _parseHttpDate(res.headers['last-modified']),
       cacheControl: res.headers['cache-control'],
+      version: res.headers['x-version'],
     );
   }
 
@@ -500,6 +512,7 @@ class DrillClient {
       contentType: res.headers['content-type'],
       contentDisposition: res.headers['content-disposition'],
       lastModified: _parseHttpDate(res.headers['last-modified']),
+      version: res.headers['x-version'],
     );
   }
 

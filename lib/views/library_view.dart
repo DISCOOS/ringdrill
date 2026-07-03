@@ -265,7 +265,7 @@ class _LibraryBodyState extends State<_LibraryBody>
       // since installed status is already shown via trailingBuilder's chip.
       showActiveRadio: true,
       activeSlug: _programService.activeProgram?.source.whenOrNull(
-        catalog: (slug, latestEtag, installedAt) => slug,
+        catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
       ),
       trailingBuilder: (context, item, installed, busy, onTap) {
         if (installed) {
@@ -562,14 +562,23 @@ class _LibraryBodyState extends State<_LibraryBody>
       final outcome = await _programService.refreshCatalogItem(
         program.uuid,
         client,
-        onConflict: (diff, {required ownedSlug, required remoteUnchanged}) {
-          return showCatalogConflictDialog(
-            context,
-            diff: diff,
-            ownedSlug: ownedSlug,
-            remoteUnchanged: remoteUnchanged,
-          );
-        },
+        onConflict:
+            (
+              diff, {
+              required ownedSlug,
+              required remoteUnchanged,
+              required localVersion,
+              required catalogVersion,
+            }) {
+              return showCatalogConflictDialog(
+                context,
+                diff: diff,
+                ownedSlug: ownedSlug,
+                remoteUnchanged: remoteUnchanged,
+                localVersion: localVersion,
+                catalogVersion: catalogVersion,
+              );
+            },
       );
       if (mounted) setState(() {});
       if (!context.mounted) return;
@@ -635,7 +644,7 @@ class _LibraryBodyState extends State<_LibraryBody>
     final loaded = _programService.loadProgram(program.uuid);
     if (loaded == null) return;
     final currentSlug = loaded.source.whenOrNull(
-      catalog: (slug, latestEtag, installedAt) => slug,
+      catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
     );
     if (currentSlug != null) {
       // Already published — push a new version silently without a dialog.

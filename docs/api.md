@@ -29,9 +29,9 @@ change. The tables below are the human-readable summary.
 | Method | Path | Returns |
 |--------|------|---------|
 | `GET` | `/api/market-feed?limit=50&cursor=` | Published catalog feed. `{ items: [...], nextCursor? }` |
-| `GET`, `HEAD` | `/api/drills-head/{slug}` | Latest version metadata in headers (`ETag`, `Content-Length`, `Content-Type`). Empty body |
+| `GET`, `HEAD` | `/api/drills-head/{slug}` | Latest version metadata in headers (`ETag`, `Content-Length`, `Content-Type`, `x-version`). Empty body |
 | `GET`, `HEAD` | `/api/drills-head/{slug}@{version}` | Metadata for a specific version |
-| `GET` | `/d/{slug}` | Downloads the latest `.drill` (`application/vnd.ringdrill+zip`, `Content-Disposition: attachment`) |
+| `GET` | `/d/{slug}` | Downloads the latest `.drill` (`application/vnd.ringdrill+zip`, `Content-Disposition: attachment`, `x-version` header) |
 | `GET` | `/d/{slug}@{version}` | Downloads a specific version |
 | `GET` | `/i/{slug}` | HTML install/preview page for a shared drill |
 | `GET` | `/brief/{uuid}` | `302` to `web.ringdrill.app/brief/{uuid}` (interim, ADR-0041) |

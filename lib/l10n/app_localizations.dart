@@ -2132,6 +2132,24 @@ abstract class AppLocalizations {
   /// **'Make a copy'**
   String get catalogConflictFork;
 
+  /// No description provided for @catalogConflictVersionLocalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get catalogConflictVersionLocalLabel;
+
+  /// No description provided for @catalogConflictVersionCatalogLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog'**
+  String get catalogConflictVersionCatalogLabel;
+
+  /// No description provided for @catalogConflictVersionUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get catalogConflictVersionUnknown;
+
   /// No description provided for @catalogRefreshUpToDate.
   ///
   /// In en, this message translates to:

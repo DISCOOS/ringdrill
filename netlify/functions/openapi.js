@@ -72,14 +72,24 @@ const SPEC = {
             get: {
                 tags: ["catalog"],
                 summary: "Latest version metadata (headers only)",
-                description: "Supports `{slug}@{version}`. Returns ETag/Content-Length in headers with an empty body. Sends 304 when If-None-Match matches.",
+                description: "Supports `{slug}@{version}`. Returns ETag/Content-Length/x-version in headers with an empty body. Sends 304 when If-None-Match matches.",
                 parameters: [
                     { name: "slug", in: "path", required: true, schema: { type: "string" } },
                     { name: "If-None-Match", in: "header", schema: { type: "string" } },
                 ],
                 responses: {
-                    200: { description: "Metadata in headers" },
-                    304: { description: "Not modified" },
+                    200: {
+                        description: "Metadata in headers",
+                        headers: {
+                            "x-version": { description: "The catalog publish version (e.g. \"5\")", schema: { type: "string" } },
+                        },
+                    },
+                    304: {
+                        description: "Not modified",
+                        headers: {
+                            "x-version": { description: "The catalog publish version (e.g. \"5\")", schema: { type: "string" } },
+                        },
+                    },
                     404: { description: "Unknown slug or version" },
                 },
             },
@@ -93,7 +103,16 @@ const SPEC = {
                 responses: {
                     200: {
                         description: "The drill archive",
+                        headers: {
+                            "x-version": { description: "The catalog publish version (e.g. \"5\")", schema: { type: "string" } },
+                        },
                         content: { "application/vnd.ringdrill+zip": { schema: { type: "string", format: "binary" } } },
+                    },
+                    304: {
+                        description: "Not modified",
+                        headers: {
+                            "x-version": { description: "The catalog publish version (e.g. \"5\")", schema: { type: "string" } },
+                        },
                     },
                     404: { description: "Unknown slug or version" },
                 },

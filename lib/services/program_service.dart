@@ -683,6 +683,7 @@ class ProgramService {
         slug: item.slug,
         latestEtag: download.etag ?? '',
         installedAt: DateTime.now(),
+        latestVersion: download.version,
       ),
       contentHash: _repo.loadProgram(installed.uuid)?.computeContentHash(),
     );
@@ -700,14 +701,20 @@ class ProgramService {
       ProgramDiff diff, {
       required bool ownedSlug,
       required bool remoteUnchanged,
+      required String? localVersion,
+      required String? catalogVersion,
     })
     onConflict,
   }) async {
     final local = _repo.loadProgram(programUuid);
     final source = local?.source;
     final catalogSource = source?.whenOrNull(
-      catalog: (slug, latestEtag, installedAt) =>
-          (slug: slug, storedEtag: latestEtag, installedAt: installedAt),
+      catalog: (slug, latestEtag, installedAt, latestVersion) => (
+        slug: slug,
+        storedEtag: latestEtag,
+        installedAt: installedAt,
+        storedVersion: latestVersion,
+      ),
     );
     if (local == null || catalogSource == null) {
       return CatalogRefreshOutcome(
@@ -715,7 +722,7 @@ class ProgramService {
         programUuid: programUuid,
       );
     }
-    final (:slug, :storedEtag, :installedAt) = catalogSource;
+    final (:slug, :storedEtag, :installedAt, :storedVersion) = catalogSource;
 
     // Detect local divergence from the installed snapshot up front so that a
     // 304 from the server does not silently mask local edits (e.g. the user
@@ -745,6 +752,7 @@ class ProgramService {
     final remote = download.file.program();
     final diff = diffPrograms(local, remote);
     final latestEtag = download.etag ?? head.etag ?? storedEtag;
+    final catalogVersion = download.version ?? head.version ?? storedVersion;
     final remoteUnchanged = head.notModified;
     debugPrint(
       '[refreshCatalogItem] slug=$slug '
@@ -756,7 +764,13 @@ class ProgramService {
 
     if (!hasLocalChanges) {
       debugPrint('[refreshCatalogItem] no local changes → overwriting local');
-      await _overwriteCatalogProgram(local, remote, slug, latestEtag);
+      await _overwriteCatalogProgram(
+        local,
+        remote,
+        slug,
+        latestEtag,
+        catalogVersion,
+      );
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.updatedSilently,
         programUuid: programUuid,
@@ -770,6 +784,8 @@ class ProgramService {
       diff,
       ownedSlug: ownedSlug,
       remoteUnchanged: remoteUnchanged,
+      localVersion: storedVersion,
+      catalogVersion: catalogVersion,
     );
     switch (choice) {
       case CatalogConflictChoice.cancel:
@@ -780,7 +796,13 @@ class ProgramService {
           remoteUnchanged: remoteUnchanged,
         );
       case CatalogConflictChoice.overwriteLocal:
-        await _overwriteCatalogProgram(local, remote, slug, latestEtag);
+        await _overwriteCatalogProgram(
+          local,
+          remote,
+          slug,
+          latestEtag,
+          catalogVersion,
+        );
         return CatalogRefreshOutcome(
           kind: CatalogRefreshKind.updatedAfterPrompt,
           programUuid: programUuid,
@@ -803,6 +825,7 @@ class ProgramService {
             slug: slug,
             latestEtag: upload.etag,
             installedAt: installedAt,
+            latestVersion: upload.version,
           ),
           contentHash: local.computeContentHash(),
         );
@@ -858,7 +881,7 @@ class ProgramService {
     }
 
     final catalogSource = local.source.whenOrNull(
-      catalog: (existingSlug, latestEtag, installedAt) =>
+      catalog: (existingSlug, latestEtag, installedAt, latestVersion) =>
           (slug: existingSlug, etag: latestEtag, installedAt: installedAt),
     );
     final String effectiveSlug;
@@ -899,6 +922,7 @@ class ProgramService {
         slug: effectiveSlug,
         latestEtag: upload.etag,
         installedAt: existingInstalledAt ?? DateTime.now(),
+        latestVersion: upload.version,
       ),
       contentHash: local.computeContentHash(),
     );
@@ -943,7 +967,8 @@ class ProgramService {
     }
 
     final currentSlug = local.source.whenOrNull(
-      catalog: (existingSlug, latestEtag, installedAt) => existingSlug,
+      catalog: (existingSlug, latestEtag, installedAt, latestVersion) =>
+          existingSlug,
     );
     if (currentSlug == null || currentSlug == cleanSlug) {
       // First-time publish, or update in place under the same slug. No fork.
@@ -1040,6 +1065,7 @@ class ProgramService {
     Program remote,
     String slug,
     String latestEtag,
+    String? latestVersion,
   ) async {
     final merged = remote.copyWith(
       uuid: local.uuid,
@@ -1048,6 +1074,7 @@ class ProgramService {
         slug: slug,
         latestEtag: latestEtag,
         installedAt: DateTime.now(),
+        latestVersion: latestVersion,
       ),
       contentHash: remote.computeContentHash(),
       // The remote copy never carries actors (stripped server-side per

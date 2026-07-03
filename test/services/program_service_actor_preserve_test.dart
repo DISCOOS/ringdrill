@@ -144,10 +144,17 @@ void main() {
     final outcome = await service.refreshCatalogItem(
       programUuid,
       client,
-      onConflict: (diff, {required ownedSlug, required remoteUnchanged}) async {
-        conflictCalled = true;
-        return CatalogConflictChoice.cancel;
-      },
+      onConflict:
+          (
+            diff, {
+            required ownedSlug,
+            required remoteUnchanged,
+            required localVersion,
+            required catalogVersion,
+          }) async {
+            conflictCalled = true;
+            return CatalogConflictChoice.cancel;
+          },
     );
 
     expect(

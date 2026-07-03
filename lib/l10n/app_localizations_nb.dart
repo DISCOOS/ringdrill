@@ -1278,6 +1278,15 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogConflictFork => 'Lag kopi';
 
   @override
+  String get catalogConflictVersionLocalLabel => 'Lokal';
+
+  @override
+  String get catalogConflictVersionCatalogLabel => 'Katalog';
+
+  @override
+  String get catalogConflictVersionUnknown => 'Ingen';
+
+  @override
   String catalogRefreshUpToDate(String name) {
     return '$name er allerede oppdatert';
   }

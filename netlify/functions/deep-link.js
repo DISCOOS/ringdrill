@@ -4,6 +4,7 @@ import {
     readBinary, readJson,
     getSlugRecord, keysFor,
     sha256Hex, toStrongEtag,
+    latestVersionEntry,
     corsPreflight, withCors
 } from "./_shared.js";
 
@@ -89,10 +90,7 @@ export default async function (request) {
             if (version) {
                 vinfo = metaDoc.versions.find(v => v.v === version) || null;
             } else {
-                vinfo = metaDoc.versions
-                    .slice()
-                    .sort((a, b) => a.v.localeCompare(b.v, undefined, { numeric: true }))
-                    .pop() || null;
+                vinfo = latestVersionEntry(metaDoc.versions);
             }
         }
 
@@ -108,6 +106,7 @@ export default async function (request) {
                 "Cache-Control": cacheHeader,
             });
             if (vinfo?.updatedAt) h304.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
+            if (vinfo?.v != null) h304.set("x-version", String(vinfo.v));
             return withCors(request, new Response(null, { status: 304, headers: h304 }));
         }
 
@@ -126,6 +125,7 @@ export default async function (request) {
             "Cache-Control": cacheHeader,
         });
         if (lastMod) headers.set("Last-Modified", lastMod);
+        if (vinfo?.v != null) headers.set("x-version", String(vinfo.v));
 
         if (request.method === "HEAD") {
             return withCors(request, new Response(null, { status: 200, headers }));

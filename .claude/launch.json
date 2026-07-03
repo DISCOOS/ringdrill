@@ -20,6 +20,12 @@
       "runtimeExecutable": "/opt/homebrew/bin/flutter",
       "runtimeArgs": ["run", "-d", "web-server", "--web-port", "4323", "--web-hostname", "localhost"],
       "port": 4323
+    },
+    {
+      "name": "netlify-functions",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/Users/kengu/.nvm/versions/node/v22.18.0/bin:$PATH && ADMIN_TOKEN=dev-token npx netlify functions:serve --port 8888"],
+      "port": 8888
     }
   ]
 }

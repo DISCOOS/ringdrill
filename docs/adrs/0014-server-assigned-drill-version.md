@@ -226,3 +226,62 @@ mechanical consequences of taking the OCC contract seriously.
   `lib/data/drill_client.dart` (`_uploadOnce` only sends `version` when
   `DrillFile.version > 0`; `upload()` retry handles real 412s),
   `lib/services/program_service.dart` (`publishProgram`, `publishProgramAs`)
+
+## Addendum (2026-07-03): `latestVersion` added to `ProgramSource.catalog` after all — for display, not for OCC
+
+The "Consequences" section above states "the catalog source still stores
+only `slug`, `latestEtag`, `installedAt`," and Option B (client tracks
+`latestVersion`) was rejected specifically to avoid that field. Both are now
+stale: `ProgramSource.catalog` gained a nullable `latestVersion` field, so
+this addendum exists to keep this ADR from misleading a future reader into
+thinking that decision still holds, and to be explicit that it does not
+reopen or reverse the OCC decision above.
+
+**Why this isn't Option B.** Option B was about using a client-tracked
+version to drive the *upload* flow — sending `version: n + 1` to sidestep
+version-collision 409s. That responsibility still belongs entirely to the
+server (Option A, unchanged): the client never chooses or predicts a version
+number for publishing, and the OCC gate in `drills-upload.js` is still pure
+ETag `If-Match` comparison, exactly as this ADR decided. `latestVersion` is
+not consulted anywhere in the publish/upload path.
+
+**What it's actually for.** Two unrelated, narrow purposes, neither of which
+is coordination:
+1. **Addressing a specific historical version** via the existing
+   `slug@version` URL convention (already supported by `drills-head`,
+   `deep-link`, and the CLI) — `version` was always the human-readable
+   pointer for this, `latestVersion` just lets the client remember which one
+   it last saw without another round-trip.
+2. **Human-readable display.** The catalog conflict dialog
+   (`catalog_conflict_dialog.dart`) shows a single comparison line —
+   "Local vN → Catalog vN" (the `_VersionComparison` widget) — so a user
+   resolving a conflict can see which published revision their install last
+   tracked versus what the catalog currently has, read in the same
+   old-to-new direction as the diff below it. This is presentational only;
+   the conflict itself (and the choice of overwrite/fork/publish) is entirely
+   driven by `ProgramDiff` and the `hasLocalChanges` content-hash check, not
+   by whether the two version numbers differ. Both sides are always shown —
+   an unknown version (e.g. a plan installed before this field existed)
+   renders as a muted italic "None"/"Ingen" rather than being hidden, so the
+   absence of data is visible instead of silently blank.
+
+**How it's kept fresh.** `latestVersion` is populated the same way
+`latestEtag` already was: from the `x-version` response header, added this
+session to `drills-head.js` and `deep-link.js` (mirroring the header
+`drills-upload.js`'s 304 path already sent), and from the `version` field
+already present in the upload response body. It is best-effort and
+advisory — if it's ever stale or absent, at worst a chip shows an outdated
+number or "None." Nothing downstream re-derives correctness from it, so
+drift here cannot cause the silent-overwrite failure mode Option D was
+designed to prevent.
+
+**Consequences.** The "no new persistent state" consequence above no longer
+holds — there is one more optional field on `ProgramSource.catalog`, nullable
+and additive (old serialized programs decode it as `null`). The concurrency
+contract itself — ETag-based `If-Match`, server-assigned version numbers —
+is unchanged.
+
+Related code: `lib/models/program.dart` (`ProgramSource.catalog.latestVersion`),
+`lib/data/drill_client.dart` (`DrillHeadResponse.version`,
+`DrillDownloadResponse.version`), `lib/services/program_service.dart`
+(`refreshCatalogItem`), `lib/views/catalog_conflict_dialog.dart`.

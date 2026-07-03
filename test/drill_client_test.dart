@@ -38,6 +38,46 @@ void main() {
     expect(feed.items, isEmpty);
   });
 
+  group('x-version header parsing', () {
+    test('head() parses x-version from a 200 response', () async {
+      final client = DrillClient(
+        baseUrl: 'https://example.test',
+        httpClient: MockClient(
+          (_) async => http.Response('', 200, headers: {'x-version': '5'}),
+        ),
+      );
+
+      final head = await client.head('sprint-1');
+
+      expect(head.version, '5');
+    });
+
+    test('head() leaves version null when the header is absent', () async {
+      final client = DrillClient(
+        baseUrl: 'https://example.test',
+        httpClient: MockClient((_) async => http.Response('', 200)),
+      );
+
+      final head = await client.head('sprint-1');
+
+      expect(head.version, isNull);
+    });
+
+    test('download() parses x-version from a 200 response', () async {
+      final client = DrillClient(
+        baseUrl: 'https://example.test',
+        httpClient: MockClient(
+          (_) async =>
+              http.Response('bytes', 200, headers: {'x-version': '7'}),
+        ),
+      );
+
+      final download = await client.download('sprint-1');
+
+      expect(download.version, '7');
+    });
+  });
+
   group('MarketFeedItem.fromJson (ADR-0040)', () {
     test('parses the widened shape', () {
       final item = MarketFeedItem.fromJson({

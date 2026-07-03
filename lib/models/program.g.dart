@@ -100,6 +100,7 @@ _Catalog _$CatalogFromJson(Map<String, dynamic> json) => _Catalog(
   installedAt: json['installedAt'] == null
       ? null
       : DateTime.parse(json['installedAt'] as String),
+  latestVersion: json['latestVersion'] as String?,
   $type: json['runtimeType'] as String?,
 );
 
@@ -107,6 +108,7 @@ Map<String, dynamic> _$CatalogToJson(_Catalog instance) => <String, dynamic>{
   'slug': instance.slug,
   'latestEtag': instance.latestEtag,
   'installedAt': instance.installedAt?.toIso8601String(),
+  'latestVersion': instance.latestVersion,
   'runtimeType': instance.$type,
 };
 

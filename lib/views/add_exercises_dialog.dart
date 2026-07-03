@@ -263,7 +263,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
 
   String? _activeCatalogSlug() {
     return _programService.activeProgram?.source.whenOrNull(
-      catalog: (slug, latestEtag, installedAt) => slug,
+      catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
     );
   }
 
@@ -272,7 +272,7 @@ class _AddExercisesBodyState extends State<_AddExercisesBody>
         .listPrograms()
         .map(
           (program) => program.source.whenOrNull(
-            catalog: (slug, latestEtag, installedAt) => slug,
+            catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
           ),
         )
         .whereType<String>()

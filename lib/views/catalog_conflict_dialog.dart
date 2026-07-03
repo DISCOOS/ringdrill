@@ -19,6 +19,8 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
   required ProgramDiff diff,
   required bool ownedSlug,
   bool remoteUnchanged = false,
+  String? localVersion,
+  String? catalogVersion,
 }) async {
   // The refresh flow may still be showing its "Refreshing…" snackbar; it
   // would sit on top of the sheet's action buttons, so clear it first.
@@ -32,6 +34,8 @@ Future<CatalogConflictChoice> showCatalogConflictDialog(
     builder: (context) => _CatalogConflictContent(
       diff: diff,
       remoteUnchanged: remoteUnchanged,
+      localVersion: localVersion,
+      catalogVersion: catalogVersion,
     ),
   );
   // The buttons are the only user-facing way to pop, but a programmatic pop
@@ -43,10 +47,14 @@ class _CatalogConflictContent extends StatelessWidget {
   const _CatalogConflictContent({
     required this.diff,
     required this.remoteUnchanged,
+    this.localVersion,
+    this.catalogVersion,
   });
 
   final ProgramDiff diff;
   final bool remoteUnchanged;
+  final String? localVersion;
+  final String? catalogVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +110,11 @@ class _CatalogConflictContent extends StatelessWidget {
                       remoteUnchanged
                           ? localizations.catalogConflictBodyLocalOnly
                           : localizations.catalogConflictBody,
+                    ),
+                    const SizedBox(height: 10),
+                    _VersionComparison(
+                      localVersion: localVersion,
+                      catalogVersion: catalogVersion,
                     ),
                     const SizedBox(height: 16),
                     ProgramDiffView(diff: diff),
@@ -162,6 +175,82 @@ class _CatalogConflictContent extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The version comparison line shown below the informational text: which
+/// published version the local copy last tracked, versus what the catalog
+/// currently has (e.g. "Local v3 → Catalog v5"). A single lightweight row
+/// rather than boxed chips so it stays subordinate to the colored word-diff
+/// below it. A version that is not known — a plan installed before version
+/// tracking existed, or a header the server did not send — renders as a muted
+/// italic "None"/"Ingen" instead of being hidden, so the gap is visible.
+class _VersionComparison extends StatelessWidget {
+  const _VersionComparison({this.localVersion, this.catalogVersion});
+
+  final String? localVersion;
+  final String? catalogVersion;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l = AppLocalizations.of(context)!;
+    final labelStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
+    TextSpan valueSpan(String? version) {
+      if (version != null) {
+        return TextSpan(
+          text: 'v$version',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        );
+      }
+      return TextSpan(
+        text: l.catalogConflictVersionUnknown,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(
+            Icons.difference_outlined,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '${l.catalogConflictVersionLocalLabel} ',
+                  style: labelStyle,
+                ),
+                valueSpan(localVersion),
+                TextSpan(text: '  →  ', style: labelStyle),
+                TextSpan(
+                  text: '${l.catalogConflictVersionCatalogLabel} ',
+                  style: labelStyle,
+                ),
+                valueSpan(catalogVersion),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

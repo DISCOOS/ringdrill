@@ -39,7 +39,7 @@ Future<PublishPlanInput?> showPublishPlanDialog(
 }) {
   final initialSlug =
       program.source.whenOrNull(
-        catalog: (slug, latestEtag, installedAt) => slug,
+        catalog: (slug, latestEtag, installedAt, latestVersion) => slug,
       ) ??
       sanitizeSlug(program.name);
 
@@ -268,12 +268,20 @@ Future<Program?> _resolvePublishConflict(
     final outcome = await ProgramService().refreshCatalogItem(
       programUuid,
       client,
-      onConflict: (diff, {required ownedSlug, required remoteUnchanged}) =>
-          showCatalogConflictDialog(
+      onConflict:
+          (
+            diff, {
+            required ownedSlug,
+            required remoteUnchanged,
+            required localVersion,
+            required catalogVersion,
+          }) => showCatalogConflictDialog(
             context,
             diff: diff,
             ownedSlug: ownedSlug,
             remoteUnchanged: remoteUnchanged,
+            localVersion: localVersion,
+            catalogVersion: catalogVersion,
           ),
     );
     if (outcome.kind == CatalogRefreshKind.published) {

@@ -1198,6 +1198,9 @@
   "catalogConflictOverwrite": "Discard mine",
   "catalogConflictPublish": "Publish",
   "catalogConflictFork": "Make a copy",
+  "catalogConflictVersionLocalLabel": "Local",
+  "catalogConflictVersionCatalogLabel": "Catalog",
+  "catalogConflictVersionUnknown": "None",
   "catalogRefreshUpToDate": "{name} is already up to date",
   "@catalogRefreshUpToDate": {
     "placeholders": {
