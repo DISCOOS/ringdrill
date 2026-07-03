@@ -31,15 +31,26 @@ class PositionFormField<K> extends FormField<LatLng> {
                  crossAxisAlignment: CrossAxisAlignment.center,
                  children: [
                    Text(AppLocalizations.of(state.context)!.position),
-                   Spacer(),
-                   if (position == null) ...[
-                     Text(AppLocalizations.of(state.context)!.pickALocation),
-                   ] else ...[
-                     PositionWidget(
-                       position: position,
-                       format: PositionFormat.utm,
+                   // Expanded (not Spacer) so the value below is forced to
+                   // fit the remaining width instead of pushing the
+                   // IconButton past the panel's edge — a fixed-width
+                   // parent (e.g. station_form_screen.dart's 230px box)
+                   // has no slack to absorb an over-wide label/value pair.
+                   Expanded(
+                     child: Align(
+                       alignment: Alignment.centerRight,
+                       child: position == null
+                           ? Text(
+                               AppLocalizations.of(state.context)!.pickALocation,
+                               overflow: TextOverflow.ellipsis,
+                               maxLines: 1,
+                             )
+                           : PositionWidget(
+                               position: position,
+                               format: PositionFormat.utm,
+                             ),
                      ),
-                   ],
+                   ),
                    SizedBox(width: 8),
                    IconButton(
                      icon: Icon(Icons.map),

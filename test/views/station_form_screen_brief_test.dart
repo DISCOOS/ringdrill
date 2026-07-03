@@ -11,22 +11,6 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
   }
 
-  /// Pre-existing layout: StationFormScreen renders its 230 px position panel
-  /// next to an Expanded name field. The PositionFormField inside that panel
-  /// wraps a fixed Row whose English labels (`Position` + `Pick a location`)
-  /// outgrow the panel and trigger a RenderFlex overflow. The overflow is
-  /// orthogonal to the optional-section behaviour we are testing here; clear
-  /// it so the round-trip assertion runs.
-  void drainPositionPanelOverflow(WidgetTester tester) {
-    final exception = tester.takeException();
-    if (exception != null) {
-      final message = exception.toString();
-      if (!message.contains('overflowed')) {
-        throw exception;
-      }
-    }
-  }
-
   testWidgets('seeded equipment section survives a save round-trip', (
     tester,
   ) async {
@@ -62,7 +46,6 @@ void main() {
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
-    drainPositionPanelOverflow(tester);
 
     // The seeded value is shown and the Equipment add-button is absent.
     expect(find.text('Stort hus'), findsOneWidget);
@@ -118,7 +101,6 @@ void main() {
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
-    drainPositionPanelOverflow(tester);
 
     // The AppBar leading also uses Icons.close, so scope to the Form subtree
     // to hit the optional-section suffix close button instead.
@@ -170,7 +152,6 @@ void main() {
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
-      drainPositionPanelOverflow(tester);
 
       // No add-buttons left, so the divider above the (now absent)
       // add-buttons row is hidden.

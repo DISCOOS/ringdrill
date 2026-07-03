@@ -14,13 +14,8 @@ import 'package:ringdrill/views/position_form_field.dart';
 /// hand, so a regression in the picker's own pop-with-value plumbing would
 /// also be caught here.
 ///
-/// Hosted directly (no 230px-wide side panel) because
-/// lib/views/station_form_screen.dart's fixed-width position panel is too
-/// narrow for a UTM position string and overflows badly enough to push the
-/// map IconButton off-screen — a separate, pre-existing layout bug
-/// (station_form_screen_brief_test.dart already works around the cosmetic
-/// side of it). That bug is orthogonal to what this test checks, so it is
-/// avoided here rather than worked around.
+/// Hosted directly (no surrounding side panel) since this test is about
+/// onChanged wiring, not layout.
 void main() {
   testWidgets(
     'picking a new position fires onChanged before the form is saved',
