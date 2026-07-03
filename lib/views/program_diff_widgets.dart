@@ -206,7 +206,12 @@ class ProgramDiffView extends StatelessWidget {
 }
 
 /// Titled, lightly-shaded container used to visually group a set of related
-/// diff rows (the plan-level fields, or one entity category).
+/// diff rows (the plan-level fields, or one entity category). The title
+/// sits in its own full-width, one-tonal-step-darker header bar rather than
+/// as plain text inside the body — same convention as `PhaseHeaders` — so
+/// it reads as a section divider. That visual separation is also what a
+/// future tap-to-collapse affordance on the header would need, once a
+/// conflict has enough sections to make collapsing worthwhile.
 class _DiffSection extends StatelessWidget {
   const _DiffSection({required this.title, required this.children});
 
@@ -216,21 +221,33 @@ class _DiffSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final headerColor = scheme.brightness == Brightness.light
+        ? scheme.surfaceContainerHigh
+        : scheme.surfaceContainer;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.4,
-        ),
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          ...children,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            color: headerColor,
+            child: Text(title, style: theme.textTheme.titleMedium),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
         ],
       ),
     );
