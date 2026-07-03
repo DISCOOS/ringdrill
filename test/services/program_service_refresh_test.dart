@@ -188,4 +188,40 @@ void main() {
       expect(outcome.kind, CatalogRefreshKind.upToDate);
     },
   );
+
+  // Regression test: a plan whose catalog slug has been removed server-side
+  // used to make refreshCatalogItem call download() anyway, which throws an
+  // uncaught 404 DrillApiException. Every UI call site's generic catch-all
+  // then showed "catalog service unavailable" — misleading, since the
+  // service itself is fine and retrying can never help. HEAD's `exists`
+  // flag is now checked before download() is ever called.
+  test(
+    'a 404 on HEAD (slug removed from the catalog) reports removedFromCatalog '
+    'instead of throwing',
+    () async {
+      final service = ProgramService();
+      final baseline = buildBaselineProgram('program-removed');
+      await service.replaceProgram(baseline);
+
+      final client = DrillClient(
+        baseUrl: 'https://example.test',
+        httpClient: MockClient((request) async {
+          return http.Response('', 404);
+        }),
+      );
+
+      var conflictCalled = false;
+      final outcome = await service.refreshCatalogItem(
+        baseline.uuid,
+        client,
+        onConflict: (diff, {required ownedSlug, required remoteUnchanged}) async {
+          conflictCalled = true;
+          return CatalogConflictChoice.cancel;
+        },
+      );
+
+      expect(conflictCalled, isFalse);
+      expect(outcome.kind, CatalogRefreshKind.removedFromCatalog);
+    },
+  );
 }

@@ -1298,6 +1298,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogRefreshPublished => 'Publiserte endringene dine';
 
   @override
+  String catalogRefreshRemoved(String name) {
+    return '$name finnes ikke lenger i katalogen';
+  }
+
+  @override
   String get catalogDiffAdded => 'Lagt til';
 
   @override

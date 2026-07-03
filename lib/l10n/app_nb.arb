@@ -383,6 +383,13 @@
   "catalogRefreshCancelled": "Katalogoppdatering avbrutt",
   "catalogRefreshForked": "Lagret en lokal kopi",
   "catalogRefreshPublished": "Publiserte endringene dine",
+  "catalogRefreshRemoved": "{name} finnes ikke lenger i katalogen",
+  "@catalogRefreshRemoved": {
+    "description": "Vist når en katalogoppdatering finner at planens slug ikke lenger finnes på serveren (HTTP 404) — forskjellig fra catalogServiceUnavailable, som betyr at selve katalogtjenesten ikke kunne nås.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "catalogDiffAdded": "Lagt til",
   "catalogDiffRemoved": "Fjernet",
   "catalogDiffModified": "Endret",

@@ -21,6 +21,7 @@ import 'package:ringdrill/views/widgets/catalog_browser.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/picker_error_banner.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Which tab [showOpenPlanDialog] should land on when it opens. Order
@@ -574,9 +575,15 @@ class _LibraryBodyState extends State<_LibraryBody>
       if (!context.mounted) return;
       final message = _refreshOutcomeMessage(localizations, outcome, program);
       if (message != null) _showSnackBar(context, message);
-    } catch (_) {
-      if (!context.mounted) return;
-      _showSnackBar(context, localizations.catalogServiceUnavailable);
+    } catch (e, stackTrace) {
+      if (context.mounted) {
+        _showSnackBar(context, localizations.catalogServiceUnavailable);
+      }
+      // The 404 "plan removed from catalog" case is handled as a normal
+      // outcome above, not an exception, so anything landing here is
+      // genuinely unexpected — worth having in Sentry rather than silently
+      // swallowed.
+      unawaited(Sentry.captureException(e, stackTrace: stackTrace));
     }
   }
 
@@ -602,6 +609,8 @@ class _LibraryBodyState extends State<_LibraryBody>
         return localizations.catalogRefreshPublished;
       case CatalogRefreshKind.failed:
         return null;
+      case CatalogRefreshKind.removedFromCatalog:
+        return localizations.catalogRefreshRemoved(program.name);
     }
   }
 

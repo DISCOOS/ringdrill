@@ -68,6 +68,14 @@ enum CatalogRefreshKind {
   published,
   forked,
   failed,
+  // The catalog slug this plan was installed from no longer exists on the
+  // server (HEAD returned 404) — distinct from [failed], which is "this
+  // isn't a catalog plan at all". Checked explicitly before calling
+  // download() so that request doesn't throw an uncaught 404
+  // DrillApiException that a generic catch-all would otherwise report as
+  // "catalog service unavailable", which is misleading: the service is
+  // fine, this specific plan is just gone.
+  removedFromCatalog,
 }
 
 class CatalogRefreshOutcome {
@@ -720,6 +728,12 @@ class ProgramService {
         local.contentHash != null && localHash != local.contentHash;
 
     final head = await client.head(slug, ifNoneMatch: storedEtag);
+    if (!head.exists) {
+      return CatalogRefreshOutcome(
+        kind: CatalogRefreshKind.removedFromCatalog,
+        programUuid: programUuid,
+      );
+    }
     if (head.notModified && !hasLocalChanges) {
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.upToDate,

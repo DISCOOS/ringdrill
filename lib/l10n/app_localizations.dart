@@ -2162,6 +2162,12 @@ abstract class AppLocalizations {
   /// **'Published your changes'**
   String get catalogRefreshPublished;
 
+  /// Shown when a catalog refresh finds the plan's slug no longer exists on the server (HTTP 404) — distinct from catalogServiceUnavailable, which means the catalog service itself could not be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is no longer available in the catalog'**
+  String catalogRefreshRemoved(String name);
+
   /// No description provided for @catalogDiffAdded.
   ///
   /// In en, this message translates to:

@@ -1215,6 +1215,13 @@
   "catalogRefreshCancelled": "Catalog update cancelled",
   "catalogRefreshForked": "Saved a local copy",
   "catalogRefreshPublished": "Published your changes",
+  "catalogRefreshRemoved": "{name} is no longer available in the catalog",
+  "@catalogRefreshRemoved": {
+    "description": "Shown when a catalog refresh finds the plan's slug no longer exists on the server (HTTP 404) — distinct from catalogServiceUnavailable, which means the catalog service itself could not be reached.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "catalogDiffAdded": "Added",
   "catalogDiffRemoved": "Removed",
   "catalogDiffModified": "Modified",

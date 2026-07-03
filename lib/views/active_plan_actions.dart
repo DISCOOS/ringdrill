@@ -102,10 +102,17 @@ Future<void> refreshPlanFromCatalog(
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     final message = _catalogRefreshMessage(localizations, outcome, program);
     if (message != null) _showSnackBar(context, message);
-  } catch (_) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    _showSnackBar(context, localizations.catalogServiceUnavailable);
+  } catch (e, stackTrace) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _showSnackBar(context, localizations.catalogServiceUnavailable);
+    }
+    // Genuinely unexpected at this point — the 404 "plan removed from
+    // catalog" case is handled as a normal outcome above, not an
+    // exception — so anything landing here (network failure, a server
+    // error status, a parse failure) is worth having in Sentry instead of
+    // silently swallowed, matching the other catch blocks in this file.
+    unawaited(Sentry.captureException(e, stackTrace: stackTrace));
   }
 }
 
@@ -135,6 +142,8 @@ String? _catalogRefreshMessage(
       return localizations.catalogRefreshPublished;
     case CatalogRefreshKind.failed:
       return null;
+    case CatalogRefreshKind.removedFromCatalog:
+      return localizations.catalogRefreshRemoved(program.name);
   }
 }
 

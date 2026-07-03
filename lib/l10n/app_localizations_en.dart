@@ -1302,6 +1302,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogRefreshPublished => 'Published your changes';
 
   @override
+  String catalogRefreshRemoved(String name) {
+    return '$name is no longer available in the catalog';
+  }
+
+  @override
   String get catalogDiffAdded => 'Added';
 
   @override
