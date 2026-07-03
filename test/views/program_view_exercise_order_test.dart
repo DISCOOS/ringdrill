@@ -260,9 +260,11 @@ void main() {
       await tester.tap(find.text(l10n.exerciseReorderMode));
       await tester.pumpAndSettle();
 
-      // Locate the ReorderableListView (exercises segment body in reorder mode).
-      final listView = tester.widget<ReorderableListView>(
-        find.byType(ReorderableListView).first,
+      // Locate the SliverReorderableList (exercises segment body in reorder
+      // mode — a sliver embedded in program_view.dart's per-segment
+      // CustomScrollView, not a standalone ReorderableListView).
+      final listView = tester.widget<SliverReorderableList>(
+        find.byType(SliverReorderableList).first,
       );
 
       // Simulate dragging item at index 0 (Gamma) to position 2 (after Beta).

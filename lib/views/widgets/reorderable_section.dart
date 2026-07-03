@@ -50,6 +50,7 @@ class ReorderableSection<T> extends StatefulWidget {
     this.enabled = true,
     this.reorderMode,
     this.shrinkWrap = false,
+    this.sliver = false,
   });
 
   /// The ordered list of items to display.
@@ -71,8 +72,7 @@ class ReorderableSection<T> extends StatefulWidget {
     int position,
     bool reordering,
     Widget dragHandle,
-  )
-  itemBuilder;
+  ) itemBuilder;
 
   /// Called exactly once, when the user leaves reorder mode ("Done"), with the
   /// new ordering. Not called on every individual drop.
@@ -101,8 +101,17 @@ class ReorderableSection<T> extends StatefulWidget {
   /// inside a [SingleChildScrollView]). Lists use `shrinkWrap: true` and
   /// `NeverScrollableScrollPhysics`. When false (default), the widget fills
   /// its parent using [Expanded] (requires a bounded height constraint from
-  /// an ancestor [Column] or [Flexible]).
+  /// an ancestor [Column] or [Flexible]). Ignored when [sliver] is true.
   final bool shrinkWrap;
+
+  /// When true, [build] returns a sliver (a [SliverMainAxisGroup] combining
+  /// the header and the list) instead of a box widget, for embedding directly
+  /// in a [CustomScrollView.slivers] list — e.g. program_view.dart's
+  /// per-segment scroll view, where the header and list need to share one
+  /// real scroll position so a pinned switcher and a wrapping
+  /// [RefreshIndicator] both work normally. Mutually exclusive with
+  /// [shrinkWrap] (irrelevant once this widget no longer sizes a box).
+  final bool sliver;
 
   @override
   State<ReorderableSection<T>> createState() => _ReorderableSectionState<T>();
@@ -186,6 +195,16 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
         final items = reordering ? (_draft ?? widget.items) : widget.items;
 
         final header = _buildHeader(context, l10n, reordering, items.length);
+
+        if (widget.sliver) {
+          final listSliver = reordering
+              ? _buildReorderListSliver(context, items)
+              : _buildDefaultListSliver(context, items);
+          return SliverMainAxisGroup(
+            slivers: [SliverToBoxAdapter(child: header), listSliver],
+          );
+        }
+
         final list = reordering
             ? _buildReorderList(context, items)
             : _buildDefaultList(context, items);
@@ -303,7 +322,14 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
     const placeholder = SizedBox.shrink();
     return ListView.builder(
       shrinkWrap: widget.shrinkWrap,
-      physics: widget.shrinkWrap ? const NeverScrollableScrollPhysics() : null,
+      // AlwaysScrollableScrollPhysics (rather than the platform default) lets
+      // a list shorter than the viewport still generate the overscroll a
+      // wrapping RefreshIndicator needs to trigger (program_view.dart's
+      // catalog-refresh pull-to-refresh) — otherwise ClampingScrollPhysics on
+      // Android refuses to move at all once content already fits.
+      physics: widget.shrinkWrap
+          ? const NeverScrollableScrollPhysics()
+          : const AlwaysScrollableScrollPhysics(),
       itemCount: items.length,
       itemBuilder: (context, index) {
         return widget.itemBuilder(
@@ -321,7 +347,55 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
       shrinkWrap: widget.shrinkWrap,
-      physics: widget.shrinkWrap ? const NeverScrollableScrollPhysics() : null,
+      physics: widget.shrinkWrap
+          ? const NeverScrollableScrollPhysics()
+          : const AlwaysScrollableScrollPhysics(),
+      itemCount: items.length,
+      onReorderItem: (oldIndex, newIndex) {
+        // onReorderItem already adjusts newIndex for the removed item.
+        setState(() {
+          final draft = _draft ??= [...widget.items];
+          final moved = draft.removeAt(oldIndex);
+          draft.insert(newIndex, moved);
+        });
+      },
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final dragHandle = ReorderableDragStartListener(
+          index: index,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Icon(Icons.drag_handle),
+          ),
+        );
+        return KeyedSubtree(
+          key: widget.keyOf(item),
+          child: widget.itemBuilder(context, item, index, true, dragHandle),
+        );
+      },
+    );
+  }
+
+  // ── Slivers (widget.sliver == true) ─────────────────────────────────────
+
+  Widget _buildDefaultListSliver(BuildContext context, List<T> items) {
+    const placeholder = SizedBox.shrink();
+    return SliverList.builder(
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return widget.itemBuilder(
+          context,
+          items[index],
+          index,
+          false,
+          placeholder,
+        );
+      },
+    );
+  }
+
+  Widget _buildReorderListSliver(BuildContext context, List<T> items) {
+    return SliverReorderableList(
       itemCount: items.length,
       onReorderItem: (oldIndex, newIndex) {
         // onReorderItem already adjusts newIndex for the removed item.

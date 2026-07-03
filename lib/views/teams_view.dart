@@ -49,6 +49,8 @@ class _TeamsViewState extends State<TeamsView> {
     super.dispose();
   }
 
+  /// Returns the sliver content for the team rows, meant to be embedded
+  /// directly in program_view.dart's per-segment `CustomScrollView`.
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -57,103 +59,105 @@ class _TeamsViewState extends State<TeamsView> {
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
 
     if (teams.isEmpty) {
-      return TeachingEmptyState(
-        icon: Icons.group,
-        title: localizations.emptyTeamsTitle,
-        body: localizations.emptyTeamsBody,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: TeachingEmptyState(
+          icon: Icons.group,
+          title: localizations.emptyTeamsTitle,
+          body: localizations.emptyTeamsBody,
+        ),
       );
     }
 
     Widget buildList(ContextSheetTarget? selectedTarget) {
-      return ListView(
-        children: teams.map((t) {
-          final teamExercises = exercises
-              .where((e) => e.numberOfTeams > t.index)
-              .toList();
-          final exerciseCount = teamExercises.length;
-          final parts = <String>[
-            if ((t.numberOfMembers ?? 0) > 0)
-              '${t.numberOfMembers} '
-                  '${localizations.member(t.numberOfMembers!).toLowerCase()}',
-            '$exerciseCount '
-                '${localizations.exercise(exerciseCount).toLowerCase()}',
-          ];
-          final isSelected =
-              selectedTarget is TeamOverviewSheetTarget &&
-              selectedTarget.teamIndex == t.index;
-          final colorScheme = Theme.of(context).colorScheme;
-          return Dismissible(
-            key: ValueKey('team-row-${t.uuid}'),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              color: colorScheme.secondaryContainer,
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    localizations.editTeam,
-                    style: TextStyle(color: colorScheme.onSecondaryContainer),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
-                ],
-              ),
-            ),
-            confirmDismiss: (_) async {
-              await _openTeamForm(t);
-              return false;
-            },
-            // Parity with Øvelser/Poster/Spill (DESIGN-006): the same
-            // ExpandableTile shell instead of a taller Card+ListTile, so
-            // height, padding and subtitle size match across all four
-            // segments. Expands to a rotation peek; tap opens the overview.
-            child: ExpandableTile(
-              selected: isSelected,
-              title: Text(
-                t.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(parts.join(' · ')),
-              onLongPress: () => _openTeamForm(t),
-              // Expand shows a static rotation peek (which post per round, per
-              // exercise). No body/chevron when the team is in no exercises.
-              expanded: _expandedTeamIndex == t.index,
-              onToggle: teamExercises.isEmpty
-                  ? null
-                  : () => setState(() {
-                      _expandedTeamIndex = _expandedTeamIndex == t.index
-                          ? null
-                          : t.index;
-                    }),
-              body: teamExercises.isEmpty
-                  ? null
-                  : _buildTeamRotation(
-                      context,
-                      t,
-                      teamExercises,
-                      localizations,
+      return SliverList(
+        delegate: SliverChildListDelegate(
+          teams.map((t) {
+            final teamExercises =
+                exercises.where((e) => e.numberOfTeams > t.index).toList();
+            final exerciseCount = teamExercises.length;
+            final parts = <String>[
+              if ((t.numberOfMembers ?? 0) > 0)
+                '${t.numberOfMembers} '
+                    '${localizations.member(t.numberOfMembers!).toLowerCase()}',
+              '$exerciseCount '
+                  '${localizations.exercise(exerciseCount).toLowerCase()}',
+            ];
+            final isSelected = selectedTarget is TeamOverviewSheetTarget &&
+                selectedTarget.teamIndex == t.index;
+            final colorScheme = Theme.of(context).colorScheme;
+            return Dismissible(
+              key: ValueKey('team-row-${t.uuid}'),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: colorScheme.secondaryContainer,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      localizations.editTeam,
+                      style: TextStyle(color: colorScheme.onSecondaryContainer),
                     ),
-              // Tap opens the cross-exercise team overview (TeamScreen). The
-              // rotation is a per-exercise/player concept, so planning context
-              // does not guess an exercise; TeamScreen highlights the live one
-              // itself when an exercise is running.
-              onOpen: () => ContextSheet.of(
-                context,
-              ).show(context, TeamOverviewSheetTarget(teamIndex: t.index)),
-            ),
-          );
-        }).toList(),
+                    const SizedBox(width: 8),
+                    Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
+                  ],
+                ),
+              ),
+              confirmDismiss: (_) async {
+                await _openTeamForm(t);
+                return false;
+              },
+              // Parity with Øvelser/Poster/Spill (DESIGN-006): the same
+              // ExpandableTile shell instead of a taller Card+ListTile, so
+              // height, padding and subtitle size match across all four
+              // segments. Expands to a rotation peek; tap opens the overview.
+              child: ExpandableTile(
+                selected: isSelected,
+                title: Text(
+                  t.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(parts.join(' · ')),
+                onLongPress: () => _openTeamForm(t),
+                // Expand shows a static rotation peek (which post per round, per
+                // exercise). No body/chevron when the team is in no exercises.
+                expanded: _expandedTeamIndex == t.index,
+                onToggle: teamExercises.isEmpty
+                    ? null
+                    : () => setState(() {
+                          _expandedTeamIndex =
+                              _expandedTeamIndex == t.index ? null : t.index;
+                        }),
+                body: teamExercises.isEmpty
+                    ? null
+                    : _buildTeamRotation(
+                        context,
+                        t,
+                        teamExercises,
+                        localizations,
+                      ),
+                // Tap opens the cross-exercise team overview (TeamScreen). The
+                // rotation is a per-exercise/player concept, so planning context
+                // does not guess an exercise; TeamScreen highlights the live one
+                // itself when an exercise is running.
+                onOpen: () => ContextSheet.of(
+                  context,
+                ).show(context, TeamOverviewSheetTarget(teamIndex: t.index)),
+              ),
+            );
+          }).toList(),
+        ),
       );
     }
 
-    return Padding(
+    return SliverPadding(
       // top: 11 + ExpandableTile.margin.top (5) = 16, matching the detail
       // body's `EdgeInsets.all(16)` so the first row of master and detail
       // align in the wide layout. Side/bottom padding stays at 8.
       padding: const EdgeInsets.fromLTRB(8, 11, 8, 8),
-      child: targetNotifier == null
+      sliver: targetNotifier == null
           ? buildList(null)
           : ValueListenableBuilder<ContextSheetTarget?>(
               valueListenable: targetNotifier,

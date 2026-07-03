@@ -41,8 +41,8 @@ Exercise _makeExercise(int i) => Exercise(
   endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
 );
 
-// 20 exercises so the list is tall enough to drive the NestedScrollView header
-// collapse in the scroll test.
+// 20 exercises so the list is tall enough to make the overview sliver scroll
+// out of view in the scroll test.
 final _exercises = List.generate(20, _makeExercise);
 final _team0 = Team(uuid: 'team-ov-0', index: 0, name: 'Overview Team A');
 final _team1 = Team(uuid: 'team-ov-1', index: 1, name: 'Overview Team B');
@@ -261,7 +261,8 @@ void main() {
 
 
   testWidgets(
-    'scrolling the segment list collapses the overview; switcher stays pinned',
+    'scrolling the segment list scrolls the overview away while the switcher '
+    'stays pinned; scrolling back to the top brings the overview back',
     (tester) async {
       tester.view.physicalSize = const Size(400, 600);
       tester.view.devicePixelRatio = 1;
@@ -281,17 +282,17 @@ void main() {
         findsOneWidget,
       );
 
-      // Drag the active segment list upward to trigger the scroll-collapse of
-      // the overview. In default mode the exercises segment uses a ListView;
-      // the NotificationListener catches the positive scroll delta and collapses
-      // the overview via AnimatedSize (manual collapse, not a sliver).
+      // The overview and switcher are real slivers ahead of the active
+      // segment's rows in one CustomScrollView (see program_view.dart's
+      // `buildSegmentScrollView`): the switcher is a pinned
+      // SliverPersistentHeader, so it stays put while the overview — an
+      // ordinary sliver above it — scrolls away once the rows need the room.
       await tester.drag(
-        find.byType(ListView).first,
-        const Offset(0, -300),
+        find.byType(CustomScrollView).first,
+        const Offset(0, -1000),
       );
       await tester.pumpAndSettle();
 
-      // Overview scrolled off — description no longer hit-testable.
       expect(find.text('Program description text').hitTestable(), findsNothing);
       // Pinned switcher remains visible and usable.
       expect(
@@ -323,11 +324,10 @@ void main() {
     'scrolling the segment list back to the top reveals the overview again '
     'without a segment switch',
     (tester) async {
-      // Regression for the iOS case where the overview, once hidden by
-      // scrolling down, stayed hidden until the user switched segments because
-      // the reveal hung on a negative scrollDelta that the bounce never
-      // produced. The reveal is now anchored to the top scroll position, so
-      // returning to the top must bring it back on the same segment.
+      // The overview is an ordinary sliver ahead of the pinned switcher now,
+      // so this is just confirming normal scroll behaviour: returning to the
+      // top of the CustomScrollView brings it back into view on the same
+      // segment, with no separate "collapsed" flag to get stuck.
       tester.view.physicalSize = const Size(400, 600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -343,14 +343,19 @@ void main() {
         findsOneWidget,
       );
 
-      // Scroll down: the overview collapses.
-      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+      // Scroll down: the overview scrolls out of view.
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -300),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Program description text').hitTestable(), findsNothing);
 
-      // Scroll back to the top WITHOUT switching segments. A generous downward
-      // drag returns the list to its top, where the reveal safety net fires.
-      await tester.drag(find.byType(ListView).first, const Offset(0, 600));
+      // Scroll back to the top WITHOUT switching segments.
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, 600),
+      );
       await tester.pumpAndSettle();
 
       // Still on the exercises segment, and the overview is back.
@@ -369,34 +374,4 @@ void main() {
     },
   );
 
-  testWidgets(
-    'overview stays collapsed on an upward scroll that does not reach the top',
-    (tester) async {
-      // Regression: the reveal must be anchored to the top position, not to
-      // scroll direction. A partial scroll back up (still well below the top,
-      // like the iOS settle/bounce after a downward drag) must NOT re-extend
-      // the overview.
-      tester.view.physicalSize = const Size(400, 600);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controllers = _HarnessControllers();
-      addTearDown(controllers.dispose);
-      await tester.pumpWidget(_harness(controllers));
-      await tester.pumpAndSettle();
-
-      // Scroll well down so there is plenty of room above the top: the overview
-      // collapses.
-      await tester.drag(find.byType(ListView).first, const Offset(0, -600));
-      await tester.pumpAndSettle();
-      expect(find.text('Program description text').hitTestable(), findsNothing);
-
-      // Scroll partway back up — not enough to reach the top. The overview must
-      // remain collapsed.
-      await tester.drag(find.byType(ListView).first, const Offset(0, 150));
-      await tester.pumpAndSettle();
-      expect(find.text('Program description text').hitTestable(), findsNothing);
-    },
-  );
 }

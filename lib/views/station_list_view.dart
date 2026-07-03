@@ -156,6 +156,12 @@ class _StationListViewState extends State<StationListView> {
     return _programService.getExercise(uuid);
   }
 
+  /// Returns the sliver content for the station rows, meant to be embedded
+  /// directly in program_view.dart's per-segment `CustomScrollView` (see
+  /// [ReorderableSection.sliver]). The exercise filter banner is a separate
+  /// widget ([StationFilterBanner]) rendered by the host outside the scroll
+  /// view — it needs to stay pinned to the bottom of the segment's viewport
+  /// rather than scroll with the rows, which a sliver can't do on its own.
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -171,24 +177,31 @@ class _StationListViewState extends State<StationListView> {
 
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
 
-    final Widget body;
     if (!hasAnyStation) {
-      body = TeachingEmptyState(
-        icon: Icons.place,
-        title: localizations.emptyStationsTitle,
-        body: localizations.emptyStationsBody,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: TeachingEmptyState(
+          icon: Icons.place,
+          title: localizations.emptyStationsTitle,
+          body: localizations.emptyStationsBody,
+        ),
       );
-    } else if (rows.isEmpty) {
-      body = Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            localizations.noStationsInExercise,
-            textAlign: TextAlign.center,
+    }
+    if (rows.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              localizations.noStationsInExercise,
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       );
-    } else {
+    }
+    {
       final isSingleExercise = filterExercise != null;
 
       Widget buildStationRow(
@@ -204,8 +217,7 @@ class _StationListViewState extends State<StationListView> {
           station.index,
         ));
         final selectedTarget = targetNotifier?.value;
-        final isSelected =
-            selectedTarget is StationSheetTarget &&
+        final isSelected = selectedTarget is StationSheetTarget &&
             selectedTarget.exerciseUuid == exercise.uuid &&
             selectedTarget.stationIndex == station.index;
         // The badge sub-index must restart at the first station of each
@@ -218,9 +230,8 @@ class _StationListViewState extends State<StationListView> {
         final exerciseStart = rows.indexWhere(
           (r) => r.$2.uuid == exercise.uuid,
         );
-        final localIndex = exerciseStart < 0
-            ? position
-            : position - exerciseStart;
+        final localIndex =
+            exerciseStart < 0 ? position : position - exerciseStart;
         return _buildRow(
           context,
           localizations,
@@ -240,7 +251,8 @@ class _StationListViewState extends State<StationListView> {
       // order header is irrelevant, so skip ReorderableSection entirely and
       // use a plain list — no header, no toggle.
       if (isSingleExercise) {
-        body = ReorderableSection<(int, Exercise, Station)>(
+        return ReorderableSection<(int, Exercise, Station)>(
+          sliver: true,
           items: rows,
           keyOf: (row) =>
               ValueKey('station-row-${row.$2.uuid}-${row.$3.index}'),
@@ -253,9 +265,10 @@ class _StationListViewState extends State<StationListView> {
           },
           itemBuilder: buildStationRow,
         );
-      } else {
-        body = ListView.builder(
-          padding: const EdgeInsets.only(top: 11),
+      }
+      return SliverPadding(
+        padding: const EdgeInsets.only(top: 11),
+        sliver: SliverList.builder(
           itemCount: rows.length,
           itemBuilder: (context, index) => buildStationRow(
             context,
@@ -264,20 +277,9 @@ class _StationListViewState extends State<StationListView> {
             false,
             const SizedBox.shrink(),
           ),
-        );
-      }
+        ),
+      );
     }
-
-    // Filtering is an AppBar action (see [StationListController.buildActions]),
-    // matching the Markører segment, so the FAB slot is free and the filter
-    // banner at the bottom is never covered by a floating button.
-    return Column(
-      children: [
-        Expanded(child: body),
-        if (filterExercise != null)
-          _buildFilterBanner(context, localizations, filterExercise),
-      ],
-    );
   }
 
   Widget _buildRow(
@@ -409,47 +411,6 @@ class _StationListViewState extends State<StationListView> {
     );
   }
 
-  Widget _buildFilterBanner(
-    BuildContext context,
-    AppLocalizations localizations,
-    Exercise exercise,
-  ) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.secondaryContainer,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
-            children: [
-              Icon(
-                Icons.filter_alt,
-                size: 18,
-                color: theme.colorScheme.onSecondaryContainer,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  localizations.showingStationsIn(exercise.name),
-                  style: TextStyle(
-                    color: theme.colorScheme.onSecondaryContainer,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              TextButton(
-                onPressed: () => _controller.filterExerciseUuid.value = null,
-                child: Text(localizations.showAll),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _openStation(Exercise exercise, Station station) async {
     await ContextSheet.of(context).show(
       context,
@@ -495,6 +456,65 @@ class _StationListViewState extends State<StationListView> {
     await _programService.saveExercise(
       localizations,
       current.copyWith(stations: stations),
+    );
+  }
+}
+
+/// Fixed banner shown below the Stations tab's scroll view while filtered to
+/// one exercise. Rendered by program_view.dart as a sibling of the segment's
+/// `CustomScrollView` (not inside it) so it stays pinned to the bottom of the
+/// viewport instead of scrolling with the rows — mirrors the pre-sliver
+/// `Column(Expanded(list), banner)` layout. Renders nothing when no filter is
+/// active, or if the filtered exercise has since been deleted.
+class StationFilterBanner extends StatelessWidget {
+  const StationFilterBanner({super.key, required this.controller});
+
+  final StationListController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String?>(
+      valueListenable: controller.filterExerciseUuid,
+      builder: (context, uuid, _) {
+        final exercise =
+            uuid == null ? null : ProgramService().getExercise(uuid);
+        if (exercise == null) return const SizedBox.shrink();
+        final localizations = AppLocalizations.of(context)!;
+        final theme = Theme.of(context);
+        return Material(
+          color: theme.colorScheme.secondaryContainer,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.filter_alt,
+                    size: 18,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      localizations.showingStationsIn(exercise.name),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => controller.filterExerciseUuid.value = null,
+                    child: Text(localizations.showAll),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -92,9 +92,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       final exercise = exercises[i];
       if (filterUuid != null && exercise.uuid != filterUuid) continue;
       final exerciseNumber = i + 1;
-      final roles =
-          rolePlays.where((rp) => rp.exerciseUuid == exercise.uuid).toList()
-            ..sort((a, b) => a.index.compareTo(b.index));
+      final roles = rolePlays
+          .where((rp) => rp.exerciseUuid == exercise.uuid)
+          .toList()
+        ..sort((a, b) => a.index.compareTo(b.index));
       for (final rp in roles) {
         rows.add((exerciseNumber, exercise, rp));
       }
@@ -102,14 +103,14 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     return rows;
   }
 
-  Exercise? _filterExercise() {
-    final uuid = _controller.filterExerciseUuid.value;
-    if (uuid == null) return null;
-    return _service.getExercise(uuid);
-  }
-
   bool get _hasAnyRole => _service.loadRolePlays().isNotEmpty;
 
+  /// Returns the sliver content for the role rows, meant to be embedded
+  /// directly in program_view.dart's per-segment `CustomScrollView`. The
+  /// exercise filter banner and the "Ny rolle" FAB are separate widgets
+  /// ([RolePlaysFilterBanner], [RolePlaysCreateFab]) rendered by the host
+  /// outside the scroll view — they need to stay pinned to the bottom of the
+  /// segment's viewport rather than scroll with the rows.
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -121,39 +122,44 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     // filter FAB is disabled in the controller's buildActions.
 
     final rows = _collectRows();
-    final filterExercise = _filterExercise();
-    final canCreateRole = _service.loadExercises().isNotEmpty;
 
-    final Widget body;
     if (!_hasAnyRole) {
-      body = TeachingEmptyState(
-        icon: Icons.theater_comedy,
-        title: localizations.emptyRolesTitle,
-        body: localizations.emptyRolesBody,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: TeachingEmptyState(
+          icon: Icons.theater_comedy,
+          title: localizations.emptyRolesTitle,
+          body: localizations.emptyRolesBody,
+        ),
       );
-    } else if (rows.isEmpty) {
-      body = Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            localizations.noRolesInExercise,
-            textAlign: TextAlign.center,
+    }
+    if (rows.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              localizations.noRolesInExercise,
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       );
-    } else {
-      final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
-      Widget buildList(ContextSheetTarget? selectedTarget) {
-        return ListView.builder(
-          // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
-          // detail body's `EdgeInsets.all(16)` so the first row of master
-          // and detail align in the wide layout.
-          padding: const EdgeInsets.only(top: 11, bottom: 96),
+    }
+
+    final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
+    Widget buildList(ContextSheetTarget? selectedTarget) {
+      return SliverPadding(
+        // top: 11 + ExpandableTile.margin.top (5) = 16, matching the
+        // detail body's `EdgeInsets.all(16)` so the first row of master
+        // and detail align in the wide layout.
+        padding: const EdgeInsets.only(top: 11, bottom: 96),
+        sliver: SliverList.builder(
           itemCount: rows.length,
           itemBuilder: (context, index) {
             final (exerciseNumber, exercise, rolePlay) = rows[index];
-            final isSelected =
-                selectedTarget is RoleSheetTarget &&
+            final isSelected = selectedTarget is RoleSheetTarget &&
                 selectedTarget.rolePlayUuid == rolePlay.uuid;
             return _buildRow(
               context,
@@ -165,61 +171,23 @@ class _RolePlaysViewState extends State<RolePlaysView> {
               selected: isSelected,
             );
           },
-        );
-      }
-
-      body = targetNotifier == null
-          ? buildList(null)
-          : ValueListenableBuilder<ContextSheetTarget?>(
-              valueListenable: targetNotifier,
-              builder: (context, target, _) => buildList(target),
-            );
+        ),
+      );
     }
 
-    // The "Ny rolle" FAB lives inside the body Stack (not the Scaffold) so
-    // the filter banner rendered below pushes it up instead of sitting on
-    // top of it. Mirrors the retired station filter-FAB layout.
-    return Column(
-      children: [
-        Expanded(
-          child: Stack(
-            children: [
-              Positioned.fill(child: body),
-              if (ProgramService().activeProgramUuid != null && canCreateRole)
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: WindowSizeClass.of(context) == WindowSizeClass.compact
-                      ? FloatingActionButton(
-                          heroTag: null,
-                          tooltip: localizations.newPlay,
-                          onPressed: () =>
-                              _controller.openCreateRolePlay(context),
-                          child: const Icon(Icons.add),
-                        )
-                      : FloatingActionButton.extended(
-                          heroTag: null,
-                          onPressed: () =>
-                              _controller.openCreateRolePlay(context),
-                          icon: const Icon(Icons.add),
-                          label: Text(localizations.newPlay),
-                        ),
-                ),
-            ],
-          ),
-        ),
-        if (filterExercise != null)
-          _buildFilterBanner(context, localizations, filterExercise),
-      ],
-    );
+    return targetNotifier == null
+        ? buildList(null)
+        : ValueListenableBuilder<ContextSheetTarget?>(
+            valueListenable: targetNotifier,
+            builder: (context, target, _) => buildList(target),
+          );
   }
 
   /// Composite badge label for a markør: the station code plus the role's
   /// 1-based number at that station (e.g. `1.1-1`, `1a-2`). When no post is
   /// assigned yet (legacy data) the post/markør parts show as `?`.
   String _roleBadgeLabel(RolePlay rolePlay, int exerciseNumber) {
-    final format =
-        _service.activeProgram?.stationNumberFormat ??
+    final format = _service.activeProgram?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final stationIndex = rolePlay.stationIndex;
     if (stationIndex == null) {
@@ -453,47 +421,6 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     );
   }
 
-  Widget _buildFilterBanner(
-    BuildContext context,
-    AppLocalizations localizations,
-    Exercise exercise,
-  ) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.secondaryContainer,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
-            children: [
-              Icon(
-                Icons.filter_alt,
-                size: 18,
-                color: theme.colorScheme.onSecondaryContainer,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  localizations.showingRolesIn(exercise.name),
-                  style: TextStyle(
-                    color: theme.colorScheme.onSecondaryContainer,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              TextButton(
-                onPressed: () => _controller.filterExerciseUuid.value = null,
-                child: Text(localizations.showAllRoles),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _openRolePlay(RolePlay rolePlay) async {
     await ContextSheet.of(
       context,
@@ -535,10 +462,9 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     );
     if (result == null || !mounted) return;
     final updated = switch (result) {
-      CastPickerSelect(:final actorUuid) =>
-        actorUuid == rolePlay.actorUuid
-            ? null
-            : rolePlay.copyWith(actorUuid: actorUuid),
+      CastPickerSelect(:final actorUuid) => actorUuid == rolePlay.actorUuid
+          ? null
+          : rolePlay.copyWith(actorUuid: actorUuid),
       CastPickerClear() =>
         rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
     };
@@ -568,8 +494,8 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         await _service.saveActor(localizations, actor);
       case ActorFormDelete(:final actor):
         final roles = _service.loadRolePlays().where(
-          (rolePlay) => rolePlay.actorUuid == actor.uuid,
-        );
+              (rolePlay) => rolePlay.actorUuid == actor.uuid,
+            );
         if (roles.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -581,6 +507,105 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         await _service.deleteActor(actor.uuid);
     }
     if (mounted) setState(() {});
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Fixed banner and FAB — rendered by program_view.dart as siblings of the
+// Script segment's `CustomScrollView` (not inside it) so they stay pinned to
+// the viewport instead of scrolling with the rows. Mirrors StationFilterBanner
+// / the retired station filter-FAB layout.
+// ---------------------------------------------------------------------------
+
+/// Fixed banner shown below the Script tab's scroll view while filtered to
+/// one exercise. Renders nothing when no filter is active, or if the
+/// filtered exercise has since been deleted.
+class RolePlaysFilterBanner extends StatelessWidget {
+  const RolePlaysFilterBanner({super.key, required this.controller});
+
+  final RolePlaysController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String?>(
+      valueListenable: controller.filterExerciseUuid,
+      builder: (context, uuid, _) {
+        final exercise =
+            uuid == null ? null : ProgramService().getExercise(uuid);
+        if (exercise == null) return const SizedBox.shrink();
+        final localizations = AppLocalizations.of(context)!;
+        final theme = Theme.of(context);
+        return Material(
+          color: theme.colorScheme.secondaryContainer,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.filter_alt,
+                    size: 18,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      localizations.showingRolesIn(exercise.name),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => controller.filterExerciseUuid.value = null,
+                    child: Text(localizations.showAllRoles),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// "Ny rolle" FAB for the Script tab, floating above whatever is rendered
+/// below it in program_view.dart's layout (the filter banner, when present).
+/// Hidden when there is no active program or no exercises to attach a role
+/// to, matching the previous `canCreateRole` gate.
+class RolePlaysCreateFab extends StatelessWidget {
+  const RolePlaysCreateFab({super.key, required this.controller});
+
+  final RolePlaysController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final canCreateRole = ProgramService().loadExercises().isNotEmpty;
+    if (ProgramService().activeProgramUuid == null || !canCreateRole) {
+      return const SizedBox.shrink();
+    }
+    final localizations = AppLocalizations.of(context)!;
+    return Positioned(
+      right: 16,
+      bottom: 16,
+      child: WindowSizeClass.of(context) == WindowSizeClass.compact
+          ? FloatingActionButton(
+              heroTag: null,
+              tooltip: localizations.newPlay,
+              onPressed: () => controller.openCreateRolePlay(context),
+              child: const Icon(Icons.add),
+            )
+          : FloatingActionButton.extended(
+              heroTag: null,
+              onPressed: () => controller.openCreateRolePlay(context),
+              icon: const Icon(Icons.add),
+              label: Text(localizations.newPlay),
+            ),
+    );
   }
 }
 
@@ -603,8 +628,8 @@ class _ExpandedFieldBlock extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
         const SizedBox(height: 2),
         Text(text),
@@ -685,7 +710,7 @@ class RolePlaysController extends ScreenController {
   ) {
     final exerciseFormat =
         ProgramService().activeProgram?.exerciseNumberFormat ??
-        ExerciseNumberFormat.hash;
+            ExerciseNumberFormat.hash;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,

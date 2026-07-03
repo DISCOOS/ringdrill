@@ -122,9 +122,21 @@ Widget _buildView() {
               ) ??
               [],
         ),
-        body: RolePlaysView(controller: controller),
-        // "Ny rolle" now renders inside RolePlaysView's body (above the filter
-        // banner), not as a Scaffold FAB, so there is nothing to wire here.
+        // RolePlaysView now returns sliver content for embedding in a
+        // CustomScrollView (see program_view.dart's per-segment scroll
+        // view); the "Ny rolle" FAB is a separate overlay widget
+        // (RolePlaysCreateFab) that program_view.dart renders alongside it,
+        // mirrored here so the FAB-presence tests below still apply.
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: CustomScrollView(
+                slivers: [RolePlaysView(controller: controller)],
+              ),
+            ),
+            RolePlaysCreateFab(controller: controller),
+          ],
+        ),
       ),
     ),
   );

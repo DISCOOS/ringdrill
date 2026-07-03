@@ -13,6 +13,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
@@ -92,26 +93,9 @@ class _ProgramViewState extends State<ProgramView> {
   List<Exercise> _exercises = [];
   ExerciseEvent? _liveEvent;
   String? _expandedExerciseUuid;
-  // The collapsing overview hides while the active segment list scrolls down
-  // and reappears on scroll up. The switcher stays pinned as a normal row.
-  bool _overviewVisible = true;
 
-  // Distance from the top (in logical pixels) within which the overview is
-  // force-revealed. A small slack absorbs sub-pixel rest positions and the
-  // iOS bounce so "back at the top" reliably brings the overview back.
-  static const double _kOverviewRevealSlack = 8.0;
-
-  // Measured rendered height of the overview while it is shown. Collapsing the
-  // overview hands this height back to the list viewport, so we only collapse
-  // when the active list can scroll *more* than this much. Otherwise hiding it
-  // makes the whole list fit, the scroll position snaps back to the top, and
-  // the reveal-at-top rule immediately re-extends it — the short-list "falls
-  // back down on release" flicker. The threshold is therefore the overview's
-  // own height (plus the reveal slack), not an arbitrary drag distance.
-  double _overviewExtent = 0;
-  final GlobalKey _overviewKey = GlobalKey();
   // Whether the overview prose is expanded ("show more"). Held here so it
-  // survives the overview being hidden/shown by the scroll collapse.
+  // survives the overview scrolling out of view and back.
   bool _overviewExpanded = false;
 
   @override
@@ -147,11 +131,6 @@ class _ProgramViewState extends State<ProgramView> {
       }),
     );
 
-    // Reveal the overview again on every segment switch. `_overviewVisible` is
-    // a single flag, so once it is hidden by scrolling one segment down it
-    // would otherwise stay hidden on a freshly-selected segment (which has no
-    // scroll-up event to bring it back). Each new lens starts with the
-    // overview shown; scrolling that lens down hides it again.
     widget.controller.activeSegment.addListener(_onSegmentChanged);
   }
 
@@ -159,9 +138,6 @@ class _ProgramViewState extends State<ProgramView> {
     // Exit reorder mode whenever the user switches to another segment so the
     // exercises list always starts in the clean default view on re-entry.
     widget.controller.exerciseReorderMode.value = false;
-    if (mounted && !_overviewVisible) {
-      setState(() => _overviewVisible = true);
-    }
   }
 
   @override
@@ -292,12 +268,16 @@ class _ProgramViewState extends State<ProgramView> {
     }
 
     final exerciseSegment = _exercises.isEmpty
-        ? TeachingEmptyState(
-            icon: Icons.update,
-            title: localizations.emptyExercisesTitle,
-            body: localizations.emptyExercisesBody,
+        ? SliverFillRemaining(
+            hasScrollBody: false,
+            child: TeachingEmptyState(
+              icon: Icons.update,
+              title: localizations.emptyExercisesTitle,
+              body: localizations.emptyExercisesBody,
+            ),
           )
         : ReorderableSection<Exercise>(
+            sliver: true,
             items: _exercises,
             keyOf: (e) => ValueKey(e.uuid),
             orderLabel: localizations.exerciseSortBy,
@@ -326,116 +306,102 @@ class _ProgramViewState extends State<ProgramView> {
     final exerciseBody = kIsWeb
         ? exerciseSegment
         : SharedFileWidget(child: exerciseSegment);
-    // Manual collapse instead of a pinned SliverPersistentHeader. The switcher
-    // is an always-visible row, so it inherits the master pane background and
-    // keeps its natural M3 size rather than being forced to fill a fixed sliver
-    // extent. The overview hides when the active list scrolls down and returns
-    // on scroll up. The body stays an IndexedStack so each segment keeps its
-    // own expansion/scroll state across switches.
-    // Keep _overviewExtent in sync with the overview's rendered height while it
-    // is shown. Measured after layout so it reflects the current description /
-    // "show more" state; the cached value is reused while the overview is
-    // hidden (when there is nothing to measure).
-    if (_overviewVisible) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _measureOverview();
-      });
-    }
 
-    return NotificationListener<ScrollUpdateNotification>(
-      onNotification: (notification) {
-        final metrics = notification.metrics;
-        // Only the active segment's vertical list drives the collapse.
-        // Horizontal scrollables (e.g. the inline station mini-maps) must not
-        // toggle the overview.
-        if (metrics.axis != Axis.vertical) return false;
-        final delta = notification.scrollDelta ?? 0;
-        // Reveal is anchored to the top position, not to scroll direction.
-        // Whenever the list is back at — or bounced past — the top, force the
-        // overview visible; otherwise hide it once the user scrolls down.
-        //
-        // A directional "reveal on any scroll-up" was tried first but proved
-        // too eager: on iOS the settle/bounce after a downward drag produces a
-        // small negative scrollDelta, which re-extended the overview mid-list
-        // instead of letting it stay collapsed. Keying the reveal off the top
-        // position keeps it collapsed while scrolled and brings it back only
-        // when the user actually returns to the top.
-        if (metrics.pixels <= metrics.minScrollExtent + _kOverviewRevealSlack) {
-          if (!_overviewVisible) setState(() => _overviewVisible = true);
-        } else if (delta > 0 &&
-            _overviewVisible &&
-            // Only collapse when the list can stay scrolled after it reclaims
-            // the overview's height. `maxScrollExtent` here is measured with
-            // the overview shown; subtracting its extent leaves the room the
-            // list keeps once it is hidden, which must clear the reveal slack
-            // or the list snaps back to the top and the overview re-extends.
-            metrics.maxScrollExtent - _overviewExtent >
-                metrics.minScrollExtent + _kOverviewRevealSlack) {
-          setState(() => _overviewVisible = false);
-        }
-        return false;
-      },
-      child: Column(
-        // Stretch so every child fills the available width. Without
-        // this the default cross-axis center alignment was sizing
-        // the `AnimatedSize` to its child's intrinsic width and
-        // centering it within the parent — which made the
-        // description and brief-intro snippets render visually
-        // centered instead of left-aligned.
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            alignment: Alignment.topCenter,
-            child: _overviewVisible
-                ? KeyedSubtree(
-                    key: _overviewKey,
-                    child: _ProgramOverview(
-                      expanded: _overviewExpanded,
-                      onToggleExpanded: () => setState(
-                        () => _overviewExpanded = !_overviewExpanded,
-                      ),
-                      onEdit: () => _openProgramForm(context, localizations),
-                    ),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-          _ProgramSegmentSwitcher(controller: widget.controller),
-          Expanded(
-            child: ValueListenableBuilder<ProgramSegment>(
-              valueListenable: widget.controller.activeSegment,
-              builder: (context, activeSegment, _) {
-                return IndexedStack(
-                  index: activeSegment.index,
-                  children: [
-                    exerciseBody,
-                    StationListView(controller: widget.stationListController),
-                    RolePlaysView(controller: widget.rolePlaysController),
-                    const TeamsView(),
-                  ],
-                );
-              },
+    // The overview and segmented switcher are real slivers ahead of the
+    // segment's own row slivers in ONE CustomScrollView per segment — not
+    // siblings above a separately-scrolling body, and not a second
+    // NestedScrollView-coordinated scrollable. A single scroll view is what
+    // makes both requirements hold at once:
+    //  - the switcher is pinned (SliverPersistentHeader) so it stays visible
+    //    while the rows scroll beneath it, and the overview above it scrolls
+    //    away only when the rows are long enough to need the room — ordinary
+    //    sliver layout, no manual collapse logic;
+    //  - a wrapping RefreshIndicator sees one real Scrollable, so a pull
+    //    started anywhere in the segment (over the overview, the switcher,
+    //    or the rows) reaches the same scroll position and triggers
+    //    correctly, with no NestedScrollView inner/outer ambiguity.
+    // Each segment gets its own CustomScrollView instance (IndexedStack keeps
+    // all four mounted so each keeps its own scroll/expansion state across
+    // switches, same as before this change).
+    Widget buildSegmentScrollView(
+      List<Widget> contentSlivers, {
+      Widget? footer,
+      Widget? overlay,
+    }) {
+      Widget scrollView = CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _ProgramOverview(
+              expanded: _overviewExpanded,
+              onToggleExpanded: () =>
+                  setState(() => _overviewExpanded = !_overviewExpanded),
+              onEdit: () => _openProgramForm(context, localizations),
             ),
           ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SwitcherHeaderDelegate(controller: widget.controller),
+          ),
+          ...contentSlivers,
         ],
-      ),
+      );
+      if (overlay != null) {
+        scrollView = Stack(
+          children: [Positioned.fill(child: scrollView), overlay],
+        );
+      }
+      if (footer == null) return scrollView;
+      return Column(children: [Expanded(child: scrollView), footer]);
+    }
+
+    final program = _programService.activeProgram;
+    final isCatalogPlan =
+        program != null && active_actions.isCatalogProgram(program);
+
+    final segmentedBody = ValueListenableBuilder<ProgramSegment>(
+      valueListenable: widget.controller.activeSegment,
+      builder: (context, activeSegment, _) {
+        return IndexedStack(
+          index: activeSegment.index,
+          children: [
+            buildSegmentScrollView([exerciseBody]),
+            buildSegmentScrollView(
+              [StationListView(controller: widget.stationListController)],
+              footer: StationFilterBanner(
+                controller: widget.stationListController,
+              ),
+            ),
+            buildSegmentScrollView(
+              [RolePlaysView(controller: widget.rolePlaysController)],
+              footer: RolePlaysFilterBanner(
+                controller: widget.rolePlaysController,
+              ),
+              overlay: RolePlaysCreateFab(
+                controller: widget.rolePlaysController,
+              ),
+            ),
+            buildSegmentScrollView([const TeamsView()]),
+          ],
+        );
+      },
+    );
+
+    // Drag-to-update is only meaningful for a plan installed from the online
+    // catalog — local plans have nothing to refresh against. Reusing
+    // `refreshActivePlanFromCatalog` (the same flow as the drawer's "Oppdater
+    // fra katalog" entry) means an unreachable catalog is already handled:
+    // it shows the existing "unavailable" snackbar rather than failing
+    // silently, so there is no need to pre-check online status here.
+    if (!isCatalogPlan) return segmentedBody;
+    return RefreshIndicator(
+      onRefresh: () => active_actions.refreshActivePlanFromCatalog(context),
+      child: segmentedBody,
     );
   }
 
   void _initExercises() {
     _exercises = _programService.loadExercises();
-  }
-
-  /// Caches the overview's current rendered height into [_overviewExtent].
-  /// Read by the scroll handler to decide whether collapsing the overview
-  /// would leave the list scrollable (and thus stay collapsed) or make it fit
-  /// and snap back to the top.
-  void _measureOverview() {
-    final renderObject = _overviewKey.currentContext?.findRenderObject();
-    if (renderObject is RenderBox && renderObject.hasSize) {
-      final height = renderObject.size.height;
-      if (height > 0) _overviewExtent = height;
-    }
   }
 
   Future<void> _openProgramForm(
@@ -506,6 +472,53 @@ class _ProgramViewState extends State<ProgramView> {
   ExerciseEvent? _filterLive(ExerciseEvent? event) {
     if (event == null || event.isDone) return null;
     return event;
+  }
+}
+
+/// Pins [_ProgramSegmentSwitcher] to the top of a segment's `CustomScrollView`
+/// (below the collapsing [_ProgramOverview]) so it stays visible while the
+/// rows scroll beneath it, matching the pre-sliver layout where the switcher
+/// was an always-visible row above an `Expanded` list.
+///
+/// [SliverPersistentHeaderDelegate] requires a fixed extent — it cannot
+/// measure the switcher's natural size — so [_extent] is a constant sized to
+/// fit the segmented button row plus its padding. An opaque background is
+/// required because the rows scroll underneath a pinned header; without one
+/// they would show through.
+class _SwitcherHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _SwitcherHeaderDelegate({required this.controller});
+
+  final ProgramPageControllerBase controller;
+
+  // Measured natural height of `_ProgramSegmentSwitcher` (its 8px top padding
+  // plus the SegmentedButton's ~48px row). A SliverPersistentHeaderDelegate
+  // must report a fixed extent since it cannot measure its child, and the
+  // rendered content must actually fill that extent exactly — a mismatch
+  // (e.g. an unconstrained child rendering shorter than the declared extent)
+  // fails a sliver-geometry assertion (paintExtent < layoutExtent). The
+  // SizedBox below is what makes the child really occupy `_extent`.
+  static const double _extent = 56;
+
+  @override
+  double get minExtent => _extent;
+
+  @override
+  double get maxExtent => _extent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox(
+      height: _extent,
+      child: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: _ProgramSegmentSwitcher(controller: controller),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SwitcherHeaderDelegate oldDelegate) {
+    return oldDelegate.controller != controller;
   }
 }
 
