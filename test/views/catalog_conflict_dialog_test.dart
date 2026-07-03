@@ -86,9 +86,13 @@ void main() {
 
       expect(find.byType(Dialog), findsOneWidget);
       // Modified exercise shows its name plus which fields changed and
-      // their before/after values — not just "Ladder" in a bare list.
-      expect(find.textContaining('Old method'), findsOneWidget);
-      expect(find.textContaining('New method'), findsOneWidget);
+      // their before/after values — not just "Ladder" in a bare list. "Old"
+      // and "New" render as separate colored spans (not one contiguous
+      // "Old method"/"New method" phrase) since the shared word "method"
+      // only appears once in the word-diff — see the dedicated direction
+      // test below for the actual old/new color assertion.
+      expect(find.textContaining('Old'), findsOneWidget);
+      expect(find.textContaining('New'), findsOneWidget);
       // A structural (non-scalar) change renders the field label alone.
       expect(find.textContaining('Stations'), findsOneWidget);
       // RolePlays now get their own diff group (previously missing).
@@ -104,7 +108,8 @@ void main() {
   );
 
   testWidgets(
-    'a field change reads old (catalog) to new (local), not the reverse',
+    'a field change reads old (catalog) to new (local), not the reverse, '
+    'and drops the changed/endret verb from the label',
     (tester) async {
       tester.view.physicalSize = const Size(1000, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -112,20 +117,19 @@ void main() {
 
       await openDialog(tester);
 
-      // Regression: this previously rendered "New method → Old method" —
+      // The label is just "Method: " now — the colored diff itself is the
+      // signal something changed, so the verb is redundant.
+      expect(find.textContaining('Method:'), findsOneWidget);
+      expect(find.textContaining('Method changed'), findsNothing);
+
+      // Regression: this previously rendered "New" as the struck-through
+      // (deleted/old) word and "Old" as the kept (inserted/new) one —
       // backwards, since `local` (the user's current edit) is the new
       // value and `remote` (the catalog's stored value) is the old one.
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(
-        find.text(
-          l10n.catalogDiffFieldChanged(
-            l10n.briefSectionExerciseMethod,
-            'Old method',
-            'New method',
-          ),
-        ),
-        findsOneWidget,
-      );
+      // "Old" and "New" don't share any words, so the word-diff renders
+      // them as a single replace: "Old" struck through, "New" kept plain.
+      expect(_spanStyle(tester, 'Old')?.decoration, TextDecoration.lineThrough);
+      expect(_spanStyle(tester, 'New')?.decoration, isNot(TextDecoration.lineThrough));
     },
   );
 
@@ -190,7 +194,7 @@ void main() {
     await openDialog(tester);
 
     expect(find.byType(Dialog), findsNothing);
-    expect(find.textContaining('Old method'), findsOneWidget);
+    expect(find.textContaining('Old'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
@@ -496,4 +500,82 @@ void main() {
       expect(find.textContaining('New method'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'a station edit renders nested under its exercise, indented like any '
+    'other field change',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final local = Program(
+        uuid: 'p1',
+        name: 'Test',
+        description: '',
+        metadata: ProgramMetadata(
+          created: DateTime(2026),
+          updated: DateTime(2026),
+          version: '1.0',
+        ),
+        teams: const [],
+        sessions: const [],
+        exercises: [buildExercise('ex-1', 'Søk og redning', index: 0)],
+      );
+      final remote = local.copyWith(
+        exercises: [
+          local.exercises.single.copyWith(
+            stations: [
+              local.exercises.single.stations.single.copyWith(
+                name: 'Gammelt navn',
+              ),
+            ],
+          ),
+        ],
+      );
+      final realDiff = diffPrograms(local, remote);
+
+      await openRealDiffDialog(tester, realDiff);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // "Poster" (stationsTab) sub-header, dotted station label "1.1" (the
+      // only station of exercise #1), and its own field label without the
+      // dropped verb.
+      expect(find.text(l10n.stationsTab), findsOneWidget);
+      expect(find.text('1.1'), findsOneWidget);
+      expect(find.textContaining('Name:'), findsOneWidget);
+      expect(find.textContaining('Name changed'), findsNothing);
+
+      // The exercise row and the station row sit at the same left edge —
+      // the "Poster" block moves as one unit, not just its header — since
+      // both rows lead with their own number badge at that same indent.
+      final exerciseBadgeLeft = tester.getTopLeft(find.text('#1')).dx;
+      final stationBadgeLeft = tester.getTopLeft(find.text('1.1')).dx;
+      expect(stationBadgeLeft, closeTo(exerciseBadgeLeft, 1));
+    },
+  );
+}
+
+/// Returns the resolved [TextStyle] of the first [TextSpan] found anywhere
+/// in the widget tree whose exact text matches [text], or null if none is
+/// found. Used to assert on word-diff coloring/decoration without needing
+/// to match an entire interpolated string.
+///
+/// [InlineSpan.visitChildren] already recursively visits a span and every
+/// descendant, calling the visitor once per span — it must NOT be combined
+/// with a second layer of manual recursion (calling visitChildren again
+/// inside the visitor for the same span re-visits it and never terminates).
+TextStyle? _spanStyle(WidgetTester tester, String text) {
+  TextStyle? found;
+  for (final richText in tester.widgetList<RichText>(find.byType(RichText))) {
+    richText.text.visitChildren((span) {
+      if (span is TextSpan && span.text == text) {
+        found = span.style;
+        return false;
+      }
+      return true;
+    });
+    if (found != null) break;
+  }
+  return found;
 }

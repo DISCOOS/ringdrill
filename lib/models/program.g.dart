@@ -222,12 +222,18 @@ _ItemDiff _$ItemDiffFromJson(Map<String, dynamic> json) => _ItemDiff(
           ?.map((e) => FieldChange.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  nestedChanges:
+      (json['nestedChanges'] as List<dynamic>?)
+          ?.map((e) => ItemDiff.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ItemDiffToJson(_ItemDiff instance) => <String, dynamic>{
   'name': instance.name,
   'number': instance.number,
   'changes': instance.changes,
+  'nestedChanges': instance.nestedChanges,
 };
 
 _Session _$SessionFromJson(Map<String, dynamic> json) => _Session(

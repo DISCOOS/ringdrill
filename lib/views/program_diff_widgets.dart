@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/utils/word_diff.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
+
+/// Left inset for a change row relative to the entity row it belongs to —
+/// reused at every nesting depth (an exercise's own field changes, and a
+/// nested station's own field changes, both indent by exactly this much
+/// from their entity row) so the indentation rhythm stays consistent no
+/// matter how deep the nesting goes. Matches the existing 24px badge + 8px
+/// gap the entity row itself uses.
+const double _kChangeIndent = 32;
 
 class DiffGroup extends StatelessWidget {
   const DiffGroup({
@@ -126,6 +135,16 @@ String fieldChangeLabel(AppLocalizations l, String field) => switch (field) {
   'orderFormatMd' => l.briefSectionExerciseOrderFormat,
   'executionTipsMd' => l.briefSectionExerciseExecutionTips,
   'commsMd' => l.briefSectionExerciseComms,
+  // Station fields — 'name'/'position' above already cover the station's
+  // own name/position changes (same field keys, same meaning).
+  'description' => l.stationDescription,
+  'equipmentMd' => l.briefSectionStationEquipment,
+  'situationMd' => l.briefSectionStationSituation,
+  'missionMd' => l.briefSectionStationMission,
+  'logisticsMd' => l.briefSectionStationLogistics,
+  'criticalQuestionsMd' => l.briefSectionStationCriticalQuestions,
+  'leaderAnswersMd' => l.briefSectionStationLeaderAnswers,
+  'directorNotesMd' => l.briefSectionStationDirectorNotes,
   'other' => l.catalogDiffFieldOther,
   _ => field,
 };
@@ -319,6 +338,14 @@ class _EntitySection extends StatelessWidget {
 /// repeated per team) followed by every fact about what changed on it,
 /// reorder and field edits alike, as a single per-item group instead of
 /// being split across separate by-change-type sections.
+///
+/// Recurses for [ItemDiff.nestedChanges] (currently only an exercise's
+/// modified stations): a "Poster"/"Stations" divider at the *same* indent
+/// as this item's own row, then one more `_ConflictItemTile` per station —
+/// each one lays out its own row + changes exactly like this one does, so
+/// the indentation rhythm (entity row, then its changes one step in) is
+/// identical at every nesting depth without threading a depth counter
+/// through.
 class _ConflictItemTile extends StatelessWidget {
   const _ConflictItemTile({required this.item});
 
@@ -353,46 +380,159 @@ class _ConflictItemTile extends StatelessWidget {
           ),
           for (final change in item.changes)
             Padding(
-              padding: EdgeInsets.only(left: number != null ? 32 : 0, top: 4),
-              child: Text(
-                _describeChange(localizations, change),
-                style: theme.textTheme.bodySmall,
+              padding: EdgeInsets.only(
+                left: number != null ? _kChangeIndent : 0,
+                top: 4,
+              ),
+              child: _FieldChangeLine(change: change),
+            ),
+          if (item.nestedChanges.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 6),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: theme.dividerColor),
+                  ),
+                ),
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  localizations.stationsTab,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
+            for (final nested in item.nestedChanges)
+              _ConflictItemTile(item: nested),
+          ],
         ],
       ),
     );
   }
+}
 
-  String _describeChange(AppLocalizations l, FieldChange change) {
+/// One field-change line: `order`/`other`/no-value changes render as plain
+/// muted text same as before, but a change with both values renders as a
+/// muted `"{field}: "` label (no "changed"/"endret" verb — the colored diff
+/// itself is the signal something changed) followed by the word-diff
+/// itself: unchanged words in the normal value color, inserted words green,
+/// deleted words red+struck-through (shown inline, not hidden), and a
+/// substituted word's old half red+struck-through immediately followed by
+/// its new half in blue.
+class _FieldChangeLine extends StatelessWidget {
+  const _FieldChangeLine({required this.change});
+
+  final FieldChange change;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final baseStyle = theme.textTheme.bodySmall;
+
     if (change.field == 'order') {
       // 'order' stores the catalog's (old) position as `remote` and the
       // local plan's (new) position as `local` — see _diffItems in
       // program.dart — so "from" is remote and "to" is local, matching the
       // rest of this dialog's local-vs-catalog framing.
-      return l.catalogDiffReorderedFromTo(change.remote ?? '', change.local ?? '');
+      return Text(
+        l.catalogDiffReorderedFromTo(change.remote ?? '', change.local ?? ''),
+        style: baseStyle,
+      );
     }
     final label = fieldChangeLabel(l, change.field);
     // 'other' already reads as a complete sentence on its own ("Other
     // changes") — running it through the generic "{field} changed"
     // template would double up on "changed".
     if (change.field == 'other') {
-      return label;
+      return Text(label, style: baseStyle);
     }
     if (change.local == null && change.remote == null) {
-      return l.catalogDiffFieldChangedGeneric(label);
+      // No values to diff — "changed"/"endret" is the only signal here that
+      // something happened, so (unlike the labelled case below) it stays.
+      return Text(l.catalogDiffFieldChangedGeneric(label), style: baseStyle);
     }
-    // "from" is the catalog's (old) value and "to" is the local plan's
-    // (new) value — same remote-then-local framing as the 'order' branch
-    // above. This was previously local-then-remote, which read backwards:
-    // it showed "your version → the catalog's version" under a "changed
-    // to" phrasing that implies the opposite direction.
-    return l.catalogDiffFieldChanged(
-      label,
-      _present(change.remote),
-      _present(change.local),
+
+    final mutedStyle = baseStyle?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    // "old" is the catalog's (remote) value, "new" is the local plan's —
+    // same remote-then-local framing as the 'order' branch above.
+    final segments = diffWords(_present(change.remote), _present(change.local));
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$label: ', style: mutedStyle),
+          ..._diffSpans(segments, baseStyle, theme),
+        ],
+      ),
     );
   }
+}
+
+/// Maps [WordDiffSegment]s to colored [InlineSpan]s, joining consecutive
+/// segments with a single space (word-diff tokenization already discards
+/// the original spacing, so this is the only spacing the render needs).
+List<InlineSpan> _diffSpans(
+  List<WordDiffSegment> segments,
+  TextStyle? baseStyle,
+  ThemeData theme,
+) {
+  final dark = theme.brightness == Brightness.dark;
+  // Brighter tones on a dark surface, deeper tones on a light one — same
+  // "pop against the background" convention already used for the AppBar's
+  // catalog-status badge and this dialog's own section header/body tones.
+  final insertColor = dark ? Colors.green.shade300 : Colors.green.shade700;
+  final deleteColor = dark ? Colors.red.shade300 : Colors.red.shade700;
+  final replaceColor = dark ? Colors.blue.shade300 : Colors.blue.shade700;
+
+  final spans = <InlineSpan>[];
+  for (var i = 0; i < segments.length; i++) {
+    if (i > 0) spans.add(TextSpan(text: ' ', style: baseStyle));
+    final segment = segments[i];
+    switch (segment.op) {
+      case WordDiffOp.equal:
+        spans.add(TextSpan(text: segment.newText, style: baseStyle));
+      case WordDiffOp.insert:
+        spans.add(
+          TextSpan(
+            text: segment.newText,
+            style: baseStyle?.copyWith(color: insertColor),
+          ),
+        );
+      case WordDiffOp.delete:
+        spans.add(
+          TextSpan(
+            text: segment.oldText,
+            style: baseStyle?.copyWith(
+              color: deleteColor,
+              decoration: TextDecoration.lineThrough,
+            ),
+          ),
+        );
+      case WordDiffOp.replace:
+        spans.add(
+          TextSpan(
+            text: segment.oldText,
+            style: baseStyle?.copyWith(
+              color: deleteColor,
+              decoration: TextDecoration.lineThrough,
+            ),
+          ),
+        );
+        spans.add(TextSpan(text: ' ', style: baseStyle));
+        spans.add(
+          TextSpan(
+            text: segment.newText,
+            style: baseStyle?.copyWith(color: replaceColor),
+          ),
+        );
+    }
+  }
+  return spans;
 }
 
 /// Renders a single before/after field change (e.g. plan name, description).

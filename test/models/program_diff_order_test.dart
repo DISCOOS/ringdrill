@@ -168,6 +168,99 @@ void main() {
     expect(diff.modifiedExercises, isEmpty);
   });
 
+  test(
+    'editing a station reports it as a nested change on the exercise, '
+    'not a blanket stations marker',
+    () {
+      final local = base(
+        exercises: [exercise('ex-1', 'Søk og redning', index: 0)],
+      );
+      final remote = base(
+        exercises: [
+          local.exercises.single.copyWith(
+            stations: [
+              local.exercises.single.stations.single.copyWith(
+                name: 'Gammelt navn',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final diff = diffPrograms(local, remote);
+
+      expect(diff.modifiedExercises, hasLength(1));
+      final exerciseDiff = diff.modifiedExercises.single;
+      // The old blanket `field: 'stations'` marker is gone — no top-level
+      // field change at all, just the nested station detail.
+      expect(exerciseDiff.changes, isEmpty);
+      expect(exerciseDiff.nestedChanges, hasLength(1));
+      final stationDiff = exerciseDiff.nestedChanges.single;
+      expect(stationDiff.name, 'Station 1');
+      // Exercise #1's first (only) station, dotted format.
+      expect(stationDiff.number, '1.1');
+      expect(stationDiff.changes, hasLength(1));
+      expect(stationDiff.changes.single.field, 'name');
+      expect(stationDiff.changes.single.local, 'Station 1');
+      expect(stationDiff.changes.single.remote, 'Gammelt navn');
+    },
+  );
+
+  test('editing a station brief field reports that specific field', () {
+    final local = base(
+      exercises: [exercise('ex-1', 'Søk og redning', index: 0)],
+    );
+    final remote = base(
+      exercises: [
+        local.exercises.single.copyWith(
+          stations: [
+            local.exercises.single.stations.single.copyWith(
+              equipmentMd: 'Tau og karabinkroker',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    final diff = diffPrograms(local, remote);
+
+    final stationDiff = diff.modifiedExercises.single.nestedChanges.single;
+    expect(stationDiff.changes.single.field, 'equipmentMd');
+    expect(stationDiff.changes.single.local, isNull);
+    expect(stationDiff.changes.single.remote, 'Tau og karabinkroker');
+  });
+
+  test(
+    'a station present on only one side falls back to the generic other '
+    'marker rather than being silently dropped',
+    () {
+      final local = base(
+        exercises: [exercise('ex-1', 'Søk og redning', index: 0)],
+      );
+      final remote = base(
+        exercises: [
+          local.exercises.single.copyWith(
+            stations: [
+              ...local.exercises.single.stations,
+              const Station(index: 1, name: 'Station 2'),
+            ],
+          ),
+        ],
+      );
+
+      final diff = diffPrograms(local, remote);
+
+      // Added/removed stations are out of scope for per-station detail —
+      // there is nothing common to diff — but the exercise-level 'other'
+      // safety net still surfaces that *something* changed rather than
+      // silently ignoring it.
+      expect(diff.modifiedExercises, hasLength(1));
+      final exerciseDiff = diff.modifiedExercises.single;
+      expect(exerciseDiff.nestedChanges, isEmpty);
+      expect(exerciseDiff.changes.map((c) => c.field), ['other']);
+    },
+  );
+
   test('swapping two teams is not reported — teams have no numbering scheme', () {
     final local = base(
       teams: const [
