@@ -129,7 +129,7 @@ _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
       const [],
   modifiedExercises:
       (json['modifiedExercises'] as List<dynamic>?)
-          ?.map((e) => e as String)
+          ?.map((e) => ItemDiff.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   addedTeams:
@@ -144,7 +144,7 @@ _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
       const [],
   modifiedTeams:
       (json['modifiedTeams'] as List<dynamic>?)
-          ?.map((e) => e as String)
+          ?.map((e) => ItemDiff.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   addedSessions:
@@ -159,7 +159,7 @@ _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
       const [],
   modifiedSessions:
       (json['modifiedSessions'] as List<dynamic>?)
-          ?.map((e) => e as String)
+          ?.map((e) => ItemDiff.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   addedRolePlays:
@@ -174,7 +174,7 @@ _ProgramDiff _$ProgramDiffFromJson(Map<String, dynamic> json) => _ProgramDiff(
       const [],
   modifiedRolePlays:
       (json['modifiedRolePlays'] as List<dynamic>?)
-          ?.map((e) => e as String)
+          ?.map((e) => ItemDiff.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
 );
@@ -200,6 +200,33 @@ Map<String, dynamic> _$ProgramDiffToJson(_ProgramDiff instance) =>
       'removedRolePlays': instance.removedRolePlays,
       'modifiedRolePlays': instance.modifiedRolePlays,
     };
+
+_FieldChange _$FieldChangeFromJson(Map<String, dynamic> json) => _FieldChange(
+  field: json['field'] as String,
+  local: json['local'] as String?,
+  remote: json['remote'] as String?,
+);
+
+Map<String, dynamic> _$FieldChangeToJson(_FieldChange instance) =>
+    <String, dynamic>{
+      'field': instance.field,
+      'local': instance.local,
+      'remote': instance.remote,
+    };
+
+_ItemDiff _$ItemDiffFromJson(Map<String, dynamic> json) => _ItemDiff(
+  name: json['name'] as String,
+  changes:
+      (json['changes'] as List<dynamic>?)
+          ?.map((e) => FieldChange.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
+
+Map<String, dynamic> _$ItemDiffToJson(_ItemDiff instance) => <String, dynamic>{
+  'name': instance.name,
+  'changes': instance.changes,
+};
 
 _Session _$SessionFromJson(Map<String, dynamic> json) => _Session(
   uuid: json['uuid'] as String,

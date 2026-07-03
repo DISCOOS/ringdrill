@@ -37,9 +37,9 @@ void main() {
     final projected = projectMergedProgram(active, incoming, selected);
     final diff = diffPrograms(active, projected);
 
-    expect(diff.modifiedExercises, ['Ladder changed']);
+    expect(diff.modifiedExercises.map((i) => i.name), ['Ladder changed']);
     expect(diff.addedExercises, ['Recovery', 'Sprint']);
-    expect(diff.modifiedTeams, ['Blue changed']);
+    expect(diff.modifiedTeams.map((i) => i.name), ['Blue changed']);
     expect(diff.addedTeams, ['Green']);
 
     final applied = applyProjectedMerge(active, incoming, selected);

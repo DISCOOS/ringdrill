@@ -133,7 +133,7 @@ void main() {
       ],
     );
     final diff = diffPrograms(local, remote);
-    expect(diff.modifiedRolePlays, ['Anna Renamed']);
+    expect(diff.modifiedRolePlays.map((i) => i.name), ['Anna Renamed']);
     expect(diff.addedRolePlays, ['Ola Nordmann']);
     expect(diff.removedRolePlays, isEmpty);
   });

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -86,21 +87,55 @@ sealed class ProgramDiff with _$ProgramDiff {
     String? tagsRemote,
     @Default([]) List<String> addedExercises,
     @Default([]) List<String> removedExercises,
-    @Default([]) List<String> modifiedExercises,
+    @Default([]) List<ItemDiff> modifiedExercises,
     @Default([]) List<String> addedTeams,
     @Default([]) List<String> removedTeams,
-    @Default([]) List<String> modifiedTeams,
+    @Default([]) List<ItemDiff> modifiedTeams,
     @Default([]) List<String> addedSessions,
     @Default([]) List<String> removedSessions,
-    @Default([]) List<String> modifiedSessions,
+    @Default([]) List<ItemDiff> modifiedSessions,
     // rolePlays are included in the content hash; actors are not.
     @Default([]) List<String> addedRolePlays,
     @Default([]) List<String> removedRolePlays,
-    @Default([]) List<String> modifiedRolePlays,
+    @Default([]) List<ItemDiff> modifiedRolePlays,
   }) = _ProgramDiff;
 
   factory ProgramDiff.fromJson(Map<String, dynamic> json) =>
       _$ProgramDiffFromJson(json);
+}
+
+/// A single field that differs between the local and remote copy of a
+/// modified [ProgramDiff] item. [field] is a stable, non-localized key (e.g.
+/// `"name"`, `"methodMd"`) — the view layer maps it to a display label.
+/// [local]/[remote] are pre-formatted for display; both null means the
+/// field's presence/absence toggled (e.g. a nested list changed) rather than
+/// a scalar value, so the view shows the label alone.
+@freezed
+sealed class FieldChange with _$FieldChange {
+  const factory FieldChange({
+    required String field,
+    String? local,
+    String? remote,
+  }) = _FieldChange;
+
+  factory FieldChange.fromJson(Map<String, dynamic> json) =>
+      _$FieldChangeFromJson(json);
+}
+
+/// A modified item (exercise/team/session/rolePlay) in a [ProgramDiff],
+/// naming which of its fields changed. [changes] is best-effort: it covers
+/// the fields users actually edit, not every JSON key, so it can be empty
+/// even though the item as a whole compares unequal (see the "other changes"
+/// fallback in `_diffItems`).
+@freezed
+sealed class ItemDiff with _$ItemDiff {
+  const factory ItemDiff({
+    required String name,
+    @Default([]) List<FieldChange> changes,
+  }) = _ItemDiff;
+
+  factory ItemDiff.fromJson(Map<String, dynamic> json) =>
+      _$ItemDiffFromJson(json);
 }
 
 extension ProgramX on Program {
@@ -143,47 +178,17 @@ extension ProgramX on Program {
   /// are sorted by index for determinism. Exercises and RolePlays are
   /// sorted by uuid.
   String computeContentHash() {
-    // Build canonical exercise maps with markdown fields injected.
+    // Build canonical exercise/rolePlay maps with markdown fields injected.
+    // Shared with diffPrograms() below so both stay exhaustive over the same
+    // set of fields.
     final sortedExercises = exercises.toList()
       ..sort((a, b) => a.uuid.compareTo(b.uuid));
-    final exerciseMaps = sortedExercises.map((ex) {
-      final map = Map<String, dynamic>.from(ex.toJson());
-      map['methodMd'] = ex.methodMd;
-      map['learningGoalsMd'] = ex.learningGoalsMd;
-      map['trainingFocusMd'] = ex.trainingFocusMd;
-      map['orderFormatMd'] = ex.orderFormatMd;
-      map['executionTipsMd'] = ex.executionTipsMd;
-      map['commsMd'] = ex.commsMd;
-      // Patch station maps in place with their markdown fields.
-      // Stations are sorted by index for determinism.
-      final sortedStations = ex.stations.toList()
-        ..sort((a, b) => a.index.compareTo(b.index));
-      map['stations'] = sortedStations.map((s) {
-        final sMap = Map<String, dynamic>.from(s.toJson());
-        sMap['equipmentMd'] = s.equipmentMd;
-        sMap['situationMd'] = s.situationMd;
-        sMap['missionMd'] = s.missionMd;
-        sMap['logisticsMd'] = s.logisticsMd;
-        sMap['criticalQuestionsMd'] = s.criticalQuestionsMd;
-        sMap['leaderAnswersMd'] = s.leaderAnswersMd;
-        sMap['directorNotesMd'] = s.directorNotesMd;
-        return _canonicalize(sMap);
-      }).toList();
-      return _canonicalize(map) as Map<String, dynamic>;
-    }).toList();
+    final exerciseMaps = sortedExercises.map(_canonicalExerciseMap).toList();
 
     // rolePlays are publishable; actors are local PII and excluded per ADR-0018.
-    // behavior, background, and propsMd are excluded from toJson (ADR-0022) so
-    // we inject them back into the canonical map before hashing.
     final sortedRolePlays = rolePlays.toList()
       ..sort((a, b) => a.uuid.compareTo(b.uuid));
-    final rolePlaysMaps = sortedRolePlays.map((rp) {
-      final map = Map<String, dynamic>.from(rp.toJson());
-      map['behavior'] = rp.behavior;
-      map['background'] = rp.background;
-      map['propsMd'] = rp.propsMd;
-      return _canonicalize(map) as Map<String, dynamic>;
-    }).toList();
+    final rolePlaysMaps = sortedRolePlays.map(_canonicalRolePlayMap).toList();
 
     // Denylist, not allowlist — see the class-level doc comment above.
     final programMap = Map<String, dynamic>.from(toJson())
@@ -214,30 +219,80 @@ extension ProgramX on Program {
   }
 }
 
+/// Canonical JSON map for an [Exercise], with its own and its stations'
+/// markdown fields (excluded from `toJson()` per ADR-0022) injected back in.
+/// Shared by [ProgramX.computeContentHash] and [diffPrograms] so both stay
+/// exhaustive over the same fields — see the denylist doc comment above for
+/// why a separate, hand-rolled comparison used to silently miss
+/// markdown-only edits.
+Map<String, dynamic> _canonicalExerciseMap(Exercise ex) {
+  final map = Map<String, dynamic>.from(ex.toJson());
+  map['methodMd'] = ex.methodMd;
+  map['learningGoalsMd'] = ex.learningGoalsMd;
+  map['trainingFocusMd'] = ex.trainingFocusMd;
+  map['orderFormatMd'] = ex.orderFormatMd;
+  map['executionTipsMd'] = ex.executionTipsMd;
+  map['commsMd'] = ex.commsMd;
+  // Patch station maps in place with their markdown fields.
+  // Stations are sorted by index for determinism.
+  final sortedStations = ex.stations.toList()
+    ..sort((a, b) => a.index.compareTo(b.index));
+  map['stations'] = sortedStations.map((s) {
+    final sMap = Map<String, dynamic>.from(s.toJson());
+    sMap['equipmentMd'] = s.equipmentMd;
+    sMap['situationMd'] = s.situationMd;
+    sMap['missionMd'] = s.missionMd;
+    sMap['logisticsMd'] = s.logisticsMd;
+    sMap['criticalQuestionsMd'] = s.criticalQuestionsMd;
+    sMap['leaderAnswersMd'] = s.leaderAnswersMd;
+    sMap['directorNotesMd'] = s.directorNotesMd;
+    return _canonicalize(sMap);
+  }).toList();
+  return _canonicalize(map) as Map<String, dynamic>;
+}
+
+/// Canonical JSON map for a [RolePlay], with `behavior`/`background`/
+/// `propsMd` (excluded from `toJson()` per ADR-0022) injected back in.
+Map<String, dynamic> _canonicalRolePlayMap(RolePlay rp) {
+  final map = Map<String, dynamic>.from(rp.toJson());
+  map['behavior'] = rp.behavior;
+  map['background'] = rp.background;
+  map['propsMd'] = rp.propsMd;
+  return _canonicalize(map) as Map<String, dynamic>;
+}
+
 ProgramDiff diffPrograms(Program local, Program remote) {
-  final exerciseDiff = _diffNamed(
+  final exerciseDiff = _diffItems<Exercise>(
     local.exercises,
     remote.exercises,
-    (e) => e.uuid,
-    (e) => e.name,
+    uuid: (e) => e.uuid,
+    name: (e) => e.name,
+    canonicalize: _canonicalExerciseMap,
+    fieldChanges: _exerciseFieldChanges,
   );
-  final teamDiff = _diffNamed(
+  final teamDiff = _diffItems<Team>(
     local.teams,
     remote.teams,
-    (e) => e.uuid,
-    (e) => e.name,
+    uuid: (e) => e.uuid,
+    name: (e) => e.name,
+    canonicalize: (t) => _canonicalize(t.toJson()) as Map<String, dynamic>,
+    fieldChanges: _teamFieldChanges,
   );
-  final sessionDiff = _diffNamed(
+  final sessionDiff = _diffItems<Session>(
     local.sessions,
     remote.sessions,
-    (e) => e.uuid,
-    (e) => e.uuid,
+    uuid: (e) => e.uuid,
+    name: (e) => e.uuid,
+    canonicalize: (s) => _canonicalize(s.toJson()) as Map<String, dynamic>,
+    fieldChanges: _sessionFieldChanges,
   );
-  final rolePlayDiff = _diffNamed(
+  final rolePlayDiff = _diffItems<RolePlay>(
     local.rolePlays,
     remote.rolePlays,
-    (r) => r.uuid,
-    (r) => r.name,
+    uuid: (r) => r.uuid,
+    name: (r) => r.name,
+    canonicalize: _canonicalRolePlayMap,
+    fieldChanges: _rolePlayFieldChanges,
   );
 
   final nameChanged = local.name != remote.name;
@@ -293,26 +348,136 @@ Object? _canonicalize(Object? value) {
   return value;
 }
 
-({List<String> added, List<String> removed, List<String> modified})
-_diffNamed<T>(
+/// Best-effort field-level changes between two [Exercise]s, for display in
+/// the catalog-conflict diff. Not exhaustive — `index`/`schedule`/
+/// `metadata`/`templateId` are bookkeeping/derived and skipped, same
+/// rationale as [ProgramX.computeContentHash]'s denylist. Nested station
+/// edits are reported as a single `"stations"` entry rather than broken
+/// down per station/field — `_diffItems`'s exhaustive canonical-map
+/// comparison is what actually decides whether the exercise is "modified"
+/// at all; this only explains it.
+List<FieldChange> _exerciseFieldChanges(Exercise local, Exercise remote) {
+  final changes = <FieldChange>[];
+  void add(String field, String? l, String? r) {
+    if (l != r) changes.add(FieldChange(field: field, local: l, remote: r));
+  }
+
+  add('name', local.name, remote.name);
+  add('startTime', local.startTime.toString(), remote.startTime.toString());
+  add('endTime', local.endTime.toString(), remote.endTime.toString());
+  add('numberOfTeams', '${local.numberOfTeams}', '${remote.numberOfTeams}');
+  add('numberOfRounds', '${local.numberOfRounds}', '${remote.numberOfRounds}');
+  add('executionTime', '${local.executionTime}', '${remote.executionTime}');
+  add('evaluationTime', '${local.evaluationTime}', '${remote.evaluationTime}');
+  add('rotationTime', '${local.rotationTime}', '${remote.rotationTime}');
+  add('methodMd', local.methodMd, remote.methodMd);
+  add('learningGoalsMd', local.learningGoalsMd, remote.learningGoalsMd);
+  add('trainingFocusMd', local.trainingFocusMd, remote.trainingFocusMd);
+  add('orderFormatMd', local.orderFormatMd, remote.orderFormatMd);
+  add('executionTipsMd', local.executionTipsMd, remote.executionTipsMd);
+  add('commsMd', local.commsMd, remote.commsMd);
+
+  final localStations = _canonicalExerciseMap(local)['stations'];
+  final remoteStations = _canonicalExerciseMap(remote)['stations'];
+  if (jsonEncode(localStations) != jsonEncode(remoteStations)) {
+    changes.add(const FieldChange(field: 'stations'));
+  }
+  return changes;
+}
+
+List<FieldChange> _teamFieldChanges(Team local, Team remote) {
+  final changes = <FieldChange>[];
+  void add(String field, String? l, String? r) {
+    if (l != r) changes.add(FieldChange(field: field, local: l, remote: r));
+  }
+
+  add('name', local.name, remote.name);
+  add(
+    'numberOfMembers',
+    local.numberOfMembers?.toString(),
+    remote.numberOfMembers?.toString(),
+  );
+  add(
+    'position',
+    _latLngLabel(local.position),
+    _latLngLabel(remote.position),
+  );
+  return changes;
+}
+
+List<FieldChange> _sessionFieldChanges(Session local, Session remote) {
+  final changes = <FieldChange>[];
+  void add(String field, String? l, String? r) {
+    if (l != r) changes.add(FieldChange(field: field, local: l, remote: r));
+  }
+
+  add(
+    'startedAt',
+    local.startedAt?.toIso8601String(),
+    remote.startedAt?.toIso8601String(),
+  );
+  add(
+    'endedAt',
+    local.endedAt?.toIso8601String(),
+    remote.endedAt?.toIso8601String(),
+  );
+  add('startTime', local.startTime.toString(), remote.startTime.toString());
+  return changes;
+}
+
+List<FieldChange> _rolePlayFieldChanges(RolePlay local, RolePlay remote) {
+  final changes = <FieldChange>[];
+  void add(String field, String? l, String? r) {
+    if (l != r) changes.add(FieldChange(field: field, local: l, remote: r));
+  }
+
+  add('name', local.name, remote.name);
+  add('age', local.age?.toString(), remote.age?.toString());
+  add('signalement', local.signalement, remote.signalement);
+  add('background', local.background, remote.background);
+  add('behavior', local.behavior, remote.behavior);
+  add('propsMd', local.propsMd, remote.propsMd);
+  add(
+    'position',
+    _latLngLabel(local.position),
+    _latLngLabel(remote.position),
+  );
+  return changes;
+}
+
+String? _latLngLabel(LatLng? position) =>
+    position == null ? null : '${position.latitude}, ${position.longitude}';
+
+({List<String> added, List<String> removed, List<ItemDiff> modified})
+_diffItems<T>(
   List<T> local,
-  List<T> remote,
-  String Function(T item) uuid,
-  String Function(T item) name,
-) {
+  List<T> remote, {
+  required String Function(T item) uuid,
+  required String Function(T item) name,
+  required Map<String, dynamic> Function(T item) canonicalize,
+  required List<FieldChange> Function(T local, T remote) fieldChanges,
+}) {
   final localById = {for (final item in local) uuid(item): item};
   final remoteById = {for (final item in remote) uuid(item): item};
   final added = <String>[];
   final removed = <String>[];
-  final modified = <String>[];
+  final modified = <ItemDiff>[];
 
   for (final entry in remoteById.entries) {
     final localItem = localById[entry.key];
     if (localItem == null) {
       added.add(name(entry.value));
-    } else if (jsonEncode(_canonicalize((localItem as dynamic).toJson())) !=
-        jsonEncode(_canonicalize((entry.value as dynamic).toJson()))) {
-      modified.add(name(entry.value));
+    } else if (jsonEncode(canonicalize(localItem)) !=
+        jsonEncode(canonicalize(entry.value))) {
+      var changes = fieldChanges(localItem, entry.value);
+      // The curated field list above doesn't cover every JSON key — fall
+      // back to a generic marker rather than silently showing "modified"
+      // with no explanation when the actual diff lives in an uncurated
+      // field.
+      if (changes.isEmpty) {
+        changes = const [FieldChange(field: 'other')];
+      }
+      modified.add(ItemDiff(name: name(entry.value), changes: changes));
     }
   }
   for (final entry in localById.entries) {
@@ -323,7 +488,7 @@ _diffNamed<T>(
 
   added.sort();
   removed.sort();
-  modified.sort();
+  modified.sort((a, b) => a.name.compareTo(b.name));
   return (added: added, removed: removed, modified: modified);
 }
 

@@ -150,7 +150,7 @@ void main() {
               'right wording (Revert vs. Update).');
       expect(seenDiff, isNotNull);
       // Local edit showed up as a modified exercise in the diff.
-      expect(seenDiff!.modifiedExercises, contains('Run'));
+      expect(seenDiff!.modifiedExercises.map((i) => i.name), contains('Run'));
 
       expect(outcome.kind, CatalogRefreshKind.updatedAfterPrompt);
       expect(outcome.remoteUnchanged, isTrue);

@@ -1336,6 +1336,21 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogDiffSessions => 'Økter';
 
   @override
+  String get catalogDiffFieldEndTime => 'Sluttid';
+
+  @override
+  String get catalogDiffFieldStartedAt => 'Startet';
+
+  @override
+  String get catalogDiffFieldEndedAt => 'Avsluttet';
+
+  @override
+  String get catalogDiffFieldProps => 'Rekvisitter';
+
+  @override
+  String get catalogDiffFieldOther => 'Andre endringer';
+
+  @override
   String get catalogServiceChecking => 'Sjekker';
 
   @override

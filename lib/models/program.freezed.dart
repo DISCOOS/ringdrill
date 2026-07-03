@@ -801,8 +801,8 @@ mixin _$ProgramDiff {
 /// remote. Null when tag lists match.
  String? get tagsLocal;/// Remote tags joined as a comma-separated string when they differ from
 /// local. Null when tag lists match.
- String? get tagsRemote; List<String> get addedExercises; List<String> get removedExercises; List<String> get modifiedExercises; List<String> get addedTeams; List<String> get removedTeams; List<String> get modifiedTeams; List<String> get addedSessions; List<String> get removedSessions; List<String> get modifiedSessions;// rolePlays are included in the content hash; actors are not.
- List<String> get addedRolePlays; List<String> get removedRolePlays; List<String> get modifiedRolePlays;
+ String? get tagsRemote; List<String> get addedExercises; List<String> get removedExercises; List<ItemDiff> get modifiedExercises; List<String> get addedTeams; List<String> get removedTeams; List<ItemDiff> get modifiedTeams; List<String> get addedSessions; List<String> get removedSessions; List<ItemDiff> get modifiedSessions;// rolePlays are included in the content hash; actors are not.
+ List<String> get addedRolePlays; List<String> get removedRolePlays; List<ItemDiff> get modifiedRolePlays;
 /// Create a copy of ProgramDiff
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -835,7 +835,7 @@ abstract mixin class $ProgramDiffCopyWith<$Res>  {
   factory $ProgramDiffCopyWith(ProgramDiff value, $Res Function(ProgramDiff) _then) = _$ProgramDiffCopyWithImpl;
 @useResult
 $Res call({
- String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, String? tagsLocal, String? tagsRemote, List<String> addedExercises, List<String> removedExercises, List<String> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<String> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<String> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<String> modifiedRolePlays
+ String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, String? tagsLocal, String? tagsRemote, List<String> addedExercises, List<String> removedExercises, List<ItemDiff> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<ItemDiff> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<ItemDiff> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<ItemDiff> modifiedRolePlays
 });
 
 
@@ -863,16 +863,16 @@ as String?,tagsRemote: freezed == tagsRemote ? _self.tagsRemote : tagsRemote // 
 as String?,addedExercises: null == addedExercises ? _self.addedExercises : addedExercises // ignore: cast_nullable_to_non_nullable
 as List<String>,removedExercises: null == removedExercises ? _self.removedExercises : removedExercises // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedExercises: null == modifiedExercises ? _self.modifiedExercises : modifiedExercises // ignore: cast_nullable_to_non_nullable
-as List<String>,addedTeams: null == addedTeams ? _self.addedTeams : addedTeams // ignore: cast_nullable_to_non_nullable
+as List<ItemDiff>,addedTeams: null == addedTeams ? _self.addedTeams : addedTeams // ignore: cast_nullable_to_non_nullable
 as List<String>,removedTeams: null == removedTeams ? _self.removedTeams : removedTeams // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedTeams: null == modifiedTeams ? _self.modifiedTeams : modifiedTeams // ignore: cast_nullable_to_non_nullable
-as List<String>,addedSessions: null == addedSessions ? _self.addedSessions : addedSessions // ignore: cast_nullable_to_non_nullable
+as List<ItemDiff>,addedSessions: null == addedSessions ? _self.addedSessions : addedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,removedSessions: null == removedSessions ? _self.removedSessions : removedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedSessions: null == modifiedSessions ? _self.modifiedSessions : modifiedSessions // ignore: cast_nullable_to_non_nullable
-as List<String>,addedRolePlays: null == addedRolePlays ? _self.addedRolePlays : addedRolePlays // ignore: cast_nullable_to_non_nullable
+as List<ItemDiff>,addedRolePlays: null == addedRolePlays ? _self.addedRolePlays : addedRolePlays // ignore: cast_nullable_to_non_nullable
 as List<String>,removedRolePlays: null == removedRolePlays ? _self.removedRolePlays : removedRolePlays // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedRolePlays: null == modifiedRolePlays ? _self.modifiedRolePlays : modifiedRolePlays // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<ItemDiff>,
   ));
 }
 
@@ -954,7 +954,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<String> modifiedRolePlays)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<ItemDiff> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<ItemDiff> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<ItemDiff> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<ItemDiff> modifiedRolePlays)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProgramDiff() when $default != null:
 return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.tagsLocal,_that.tagsRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);case _:
@@ -975,7 +975,7 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<String> modifiedRolePlays)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<ItemDiff> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<ItemDiff> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<ItemDiff> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<ItemDiff> modifiedRolePlays)  $default,) {final _that = this;
 switch (_that) {
 case _ProgramDiff():
 return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.tagsLocal,_that.tagsRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);}
@@ -992,7 +992,7 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<String> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<String> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<String> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<String> modifiedRolePlays)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? nameLocal,  String? nameRemote,  String? descriptionLocal,  String? descriptionRemote,  String? tagsLocal,  String? tagsRemote,  List<String> addedExercises,  List<String> removedExercises,  List<ItemDiff> modifiedExercises,  List<String> addedTeams,  List<String> removedTeams,  List<ItemDiff> modifiedTeams,  List<String> addedSessions,  List<String> removedSessions,  List<ItemDiff> modifiedSessions,  List<String> addedRolePlays,  List<String> removedRolePlays,  List<ItemDiff> modifiedRolePlays)?  $default,) {final _that = this;
 switch (_that) {
 case _ProgramDiff() when $default != null:
 return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.descriptionRemote,_that.tagsLocal,_that.tagsRemote,_that.addedExercises,_that.removedExercises,_that.modifiedExercises,_that.addedTeams,_that.removedTeams,_that.modifiedTeams,_that.addedSessions,_that.removedSessions,_that.modifiedSessions,_that.addedRolePlays,_that.removedRolePlays,_that.modifiedRolePlays);case _:
@@ -1007,7 +1007,7 @@ return $default(_that.nameLocal,_that.nameRemote,_that.descriptionLocal,_that.de
 @JsonSerializable()
 
 class _ProgramDiff implements ProgramDiff {
-  const _ProgramDiff({this.nameLocal, this.nameRemote, this.descriptionLocal, this.descriptionRemote, this.tagsLocal, this.tagsRemote, final  List<String> addedExercises = const [], final  List<String> removedExercises = const [], final  List<String> modifiedExercises = const [], final  List<String> addedTeams = const [], final  List<String> removedTeams = const [], final  List<String> modifiedTeams = const [], final  List<String> addedSessions = const [], final  List<String> removedSessions = const [], final  List<String> modifiedSessions = const [], final  List<String> addedRolePlays = const [], final  List<String> removedRolePlays = const [], final  List<String> modifiedRolePlays = const []}): _addedExercises = addedExercises,_removedExercises = removedExercises,_modifiedExercises = modifiedExercises,_addedTeams = addedTeams,_removedTeams = removedTeams,_modifiedTeams = modifiedTeams,_addedSessions = addedSessions,_removedSessions = removedSessions,_modifiedSessions = modifiedSessions,_addedRolePlays = addedRolePlays,_removedRolePlays = removedRolePlays,_modifiedRolePlays = modifiedRolePlays;
+  const _ProgramDiff({this.nameLocal, this.nameRemote, this.descriptionLocal, this.descriptionRemote, this.tagsLocal, this.tagsRemote, final  List<String> addedExercises = const [], final  List<String> removedExercises = const [], final  List<ItemDiff> modifiedExercises = const [], final  List<String> addedTeams = const [], final  List<String> removedTeams = const [], final  List<ItemDiff> modifiedTeams = const [], final  List<String> addedSessions = const [], final  List<String> removedSessions = const [], final  List<ItemDiff> modifiedSessions = const [], final  List<String> addedRolePlays = const [], final  List<String> removedRolePlays = const [], final  List<ItemDiff> modifiedRolePlays = const []}): _addedExercises = addedExercises,_removedExercises = removedExercises,_modifiedExercises = modifiedExercises,_addedTeams = addedTeams,_removedTeams = removedTeams,_modifiedTeams = modifiedTeams,_addedSessions = addedSessions,_removedSessions = removedSessions,_modifiedSessions = modifiedSessions,_addedRolePlays = addedRolePlays,_removedRolePlays = removedRolePlays,_modifiedRolePlays = modifiedRolePlays;
   factory _ProgramDiff.fromJson(Map<String, dynamic> json) => _$ProgramDiffFromJson(json);
 
 /// Local name when it differs from remote. Null when names match.
@@ -1040,8 +1040,8 @@ class _ProgramDiff implements ProgramDiff {
   return EqualUnmodifiableListView(_removedExercises);
 }
 
- final  List<String> _modifiedExercises;
-@override@JsonKey() List<String> get modifiedExercises {
+ final  List<ItemDiff> _modifiedExercises;
+@override@JsonKey() List<ItemDiff> get modifiedExercises {
   if (_modifiedExercises is EqualUnmodifiableListView) return _modifiedExercises;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_modifiedExercises);
@@ -1061,8 +1061,8 @@ class _ProgramDiff implements ProgramDiff {
   return EqualUnmodifiableListView(_removedTeams);
 }
 
- final  List<String> _modifiedTeams;
-@override@JsonKey() List<String> get modifiedTeams {
+ final  List<ItemDiff> _modifiedTeams;
+@override@JsonKey() List<ItemDiff> get modifiedTeams {
   if (_modifiedTeams is EqualUnmodifiableListView) return _modifiedTeams;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_modifiedTeams);
@@ -1082,8 +1082,8 @@ class _ProgramDiff implements ProgramDiff {
   return EqualUnmodifiableListView(_removedSessions);
 }
 
- final  List<String> _modifiedSessions;
-@override@JsonKey() List<String> get modifiedSessions {
+ final  List<ItemDiff> _modifiedSessions;
+@override@JsonKey() List<ItemDiff> get modifiedSessions {
   if (_modifiedSessions is EqualUnmodifiableListView) return _modifiedSessions;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_modifiedSessions);
@@ -1105,8 +1105,8 @@ class _ProgramDiff implements ProgramDiff {
   return EqualUnmodifiableListView(_removedRolePlays);
 }
 
- final  List<String> _modifiedRolePlays;
-@override@JsonKey() List<String> get modifiedRolePlays {
+ final  List<ItemDiff> _modifiedRolePlays;
+@override@JsonKey() List<ItemDiff> get modifiedRolePlays {
   if (_modifiedRolePlays is EqualUnmodifiableListView) return _modifiedRolePlays;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_modifiedRolePlays);
@@ -1146,7 +1146,7 @@ abstract mixin class _$ProgramDiffCopyWith<$Res> implements $ProgramDiffCopyWith
   factory _$ProgramDiffCopyWith(_ProgramDiff value, $Res Function(_ProgramDiff) _then) = __$ProgramDiffCopyWithImpl;
 @override @useResult
 $Res call({
- String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, String? tagsLocal, String? tagsRemote, List<String> addedExercises, List<String> removedExercises, List<String> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<String> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<String> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<String> modifiedRolePlays
+ String? nameLocal, String? nameRemote, String? descriptionLocal, String? descriptionRemote, String? tagsLocal, String? tagsRemote, List<String> addedExercises, List<String> removedExercises, List<ItemDiff> modifiedExercises, List<String> addedTeams, List<String> removedTeams, List<ItemDiff> modifiedTeams, List<String> addedSessions, List<String> removedSessions, List<ItemDiff> modifiedSessions, List<String> addedRolePlays, List<String> removedRolePlays, List<ItemDiff> modifiedRolePlays
 });
 
 
@@ -1174,16 +1174,545 @@ as String?,tagsRemote: freezed == tagsRemote ? _self.tagsRemote : tagsRemote // 
 as String?,addedExercises: null == addedExercises ? _self._addedExercises : addedExercises // ignore: cast_nullable_to_non_nullable
 as List<String>,removedExercises: null == removedExercises ? _self._removedExercises : removedExercises // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedExercises: null == modifiedExercises ? _self._modifiedExercises : modifiedExercises // ignore: cast_nullable_to_non_nullable
-as List<String>,addedTeams: null == addedTeams ? _self._addedTeams : addedTeams // ignore: cast_nullable_to_non_nullable
+as List<ItemDiff>,addedTeams: null == addedTeams ? _self._addedTeams : addedTeams // ignore: cast_nullable_to_non_nullable
 as List<String>,removedTeams: null == removedTeams ? _self._removedTeams : removedTeams // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedTeams: null == modifiedTeams ? _self._modifiedTeams : modifiedTeams // ignore: cast_nullable_to_non_nullable
-as List<String>,addedSessions: null == addedSessions ? _self._addedSessions : addedSessions // ignore: cast_nullable_to_non_nullable
+as List<ItemDiff>,addedSessions: null == addedSessions ? _self._addedSessions : addedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,removedSessions: null == removedSessions ? _self._removedSessions : removedSessions // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedSessions: null == modifiedSessions ? _self._modifiedSessions : modifiedSessions // ignore: cast_nullable_to_non_nullable
-as List<String>,addedRolePlays: null == addedRolePlays ? _self._addedRolePlays : addedRolePlays // ignore: cast_nullable_to_non_nullable
+as List<ItemDiff>,addedRolePlays: null == addedRolePlays ? _self._addedRolePlays : addedRolePlays // ignore: cast_nullable_to_non_nullable
 as List<String>,removedRolePlays: null == removedRolePlays ? _self._removedRolePlays : removedRolePlays // ignore: cast_nullable_to_non_nullable
 as List<String>,modifiedRolePlays: null == modifiedRolePlays ? _self._modifiedRolePlays : modifiedRolePlays // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<ItemDiff>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FieldChange {
+
+ String get field; String? get local; String? get remote;
+/// Create a copy of FieldChange
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FieldChangeCopyWith<FieldChange> get copyWith => _$FieldChangeCopyWithImpl<FieldChange>(this as FieldChange, _$identity);
+
+  /// Serializes this FieldChange to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FieldChange&&(identical(other.field, field) || other.field == field)&&(identical(other.local, local) || other.local == local)&&(identical(other.remote, remote) || other.remote == remote));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,field,local,remote);
+
+@override
+String toString() {
+  return 'FieldChange(field: $field, local: $local, remote: $remote)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FieldChangeCopyWith<$Res>  {
+  factory $FieldChangeCopyWith(FieldChange value, $Res Function(FieldChange) _then) = _$FieldChangeCopyWithImpl;
+@useResult
+$Res call({
+ String field, String? local, String? remote
+});
+
+
+
+
+}
+/// @nodoc
+class _$FieldChangeCopyWithImpl<$Res>
+    implements $FieldChangeCopyWith<$Res> {
+  _$FieldChangeCopyWithImpl(this._self, this._then);
+
+  final FieldChange _self;
+  final $Res Function(FieldChange) _then;
+
+/// Create a copy of FieldChange
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? field = null,Object? local = freezed,Object? remote = freezed,}) {
+  return _then(_self.copyWith(
+field: null == field ? _self.field : field // ignore: cast_nullable_to_non_nullable
+as String,local: freezed == local ? _self.local : local // ignore: cast_nullable_to_non_nullable
+as String?,remote: freezed == remote ? _self.remote : remote // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FieldChange].
+extension FieldChangePatterns on FieldChange {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FieldChange value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FieldChange() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FieldChange value)  $default,){
+final _that = this;
+switch (_that) {
+case _FieldChange():
+return $default(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FieldChange value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FieldChange() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String field,  String? local,  String? remote)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FieldChange() when $default != null:
+return $default(_that.field,_that.local,_that.remote);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String field,  String? local,  String? remote)  $default,) {final _that = this;
+switch (_that) {
+case _FieldChange():
+return $default(_that.field,_that.local,_that.remote);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String field,  String? local,  String? remote)?  $default,) {final _that = this;
+switch (_that) {
+case _FieldChange() when $default != null:
+return $default(_that.field,_that.local,_that.remote);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FieldChange implements FieldChange {
+  const _FieldChange({required this.field, this.local, this.remote});
+  factory _FieldChange.fromJson(Map<String, dynamic> json) => _$FieldChangeFromJson(json);
+
+@override final  String field;
+@override final  String? local;
+@override final  String? remote;
+
+/// Create a copy of FieldChange
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FieldChangeCopyWith<_FieldChange> get copyWith => __$FieldChangeCopyWithImpl<_FieldChange>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FieldChangeToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FieldChange&&(identical(other.field, field) || other.field == field)&&(identical(other.local, local) || other.local == local)&&(identical(other.remote, remote) || other.remote == remote));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,field,local,remote);
+
+@override
+String toString() {
+  return 'FieldChange(field: $field, local: $local, remote: $remote)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FieldChangeCopyWith<$Res> implements $FieldChangeCopyWith<$Res> {
+  factory _$FieldChangeCopyWith(_FieldChange value, $Res Function(_FieldChange) _then) = __$FieldChangeCopyWithImpl;
+@override @useResult
+$Res call({
+ String field, String? local, String? remote
+});
+
+
+
+
+}
+/// @nodoc
+class __$FieldChangeCopyWithImpl<$Res>
+    implements _$FieldChangeCopyWith<$Res> {
+  __$FieldChangeCopyWithImpl(this._self, this._then);
+
+  final _FieldChange _self;
+  final $Res Function(_FieldChange) _then;
+
+/// Create a copy of FieldChange
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? field = null,Object? local = freezed,Object? remote = freezed,}) {
+  return _then(_FieldChange(
+field: null == field ? _self.field : field // ignore: cast_nullable_to_non_nullable
+as String,local: freezed == local ? _self.local : local // ignore: cast_nullable_to_non_nullable
+as String?,remote: freezed == remote ? _self.remote : remote // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ItemDiff {
+
+ String get name; List<FieldChange> get changes;
+/// Create a copy of ItemDiff
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ItemDiffCopyWith<ItemDiff> get copyWith => _$ItemDiffCopyWithImpl<ItemDiff>(this as ItemDiff, _$identity);
+
+  /// Serializes this ItemDiff to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemDiff&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.changes, changes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name,const DeepCollectionEquality().hash(changes));
+
+@override
+String toString() {
+  return 'ItemDiff(name: $name, changes: $changes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ItemDiffCopyWith<$Res>  {
+  factory $ItemDiffCopyWith(ItemDiff value, $Res Function(ItemDiff) _then) = _$ItemDiffCopyWithImpl;
+@useResult
+$Res call({
+ String name, List<FieldChange> changes
+});
+
+
+
+
+}
+/// @nodoc
+class _$ItemDiffCopyWithImpl<$Res>
+    implements $ItemDiffCopyWith<$Res> {
+  _$ItemDiffCopyWithImpl(this._self, this._then);
+
+  final ItemDiff _self;
+  final $Res Function(ItemDiff) _then;
+
+/// Create a copy of ItemDiff
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? changes = null,}) {
+  return _then(_self.copyWith(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,changes: null == changes ? _self.changes : changes // ignore: cast_nullable_to_non_nullable
+as List<FieldChange>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ItemDiff].
+extension ItemDiffPatterns on ItemDiff {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ItemDiff value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ItemDiff() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ItemDiff value)  $default,){
+final _that = this;
+switch (_that) {
+case _ItemDiff():
+return $default(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ItemDiff value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ItemDiff() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  List<FieldChange> changes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ItemDiff() when $default != null:
+return $default(_that.name,_that.changes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  List<FieldChange> changes)  $default,) {final _that = this;
+switch (_that) {
+case _ItemDiff():
+return $default(_that.name,_that.changes);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  List<FieldChange> changes)?  $default,) {final _that = this;
+switch (_that) {
+case _ItemDiff() when $default != null:
+return $default(_that.name,_that.changes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ItemDiff implements ItemDiff {
+  const _ItemDiff({required this.name, final  List<FieldChange> changes = const []}): _changes = changes;
+  factory _ItemDiff.fromJson(Map<String, dynamic> json) => _$ItemDiffFromJson(json);
+
+@override final  String name;
+ final  List<FieldChange> _changes;
+@override@JsonKey() List<FieldChange> get changes {
+  if (_changes is EqualUnmodifiableListView) return _changes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_changes);
+}
+
+
+/// Create a copy of ItemDiff
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ItemDiffCopyWith<_ItemDiff> get copyWith => __$ItemDiffCopyWithImpl<_ItemDiff>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ItemDiffToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemDiff&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._changes, _changes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name,const DeepCollectionEquality().hash(_changes));
+
+@override
+String toString() {
+  return 'ItemDiff(name: $name, changes: $changes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ItemDiffCopyWith<$Res> implements $ItemDiffCopyWith<$Res> {
+  factory _$ItemDiffCopyWith(_ItemDiff value, $Res Function(_ItemDiff) _then) = __$ItemDiffCopyWithImpl;
+@override @useResult
+$Res call({
+ String name, List<FieldChange> changes
+});
+
+
+
+
+}
+/// @nodoc
+class __$ItemDiffCopyWithImpl<$Res>
+    implements _$ItemDiffCopyWith<$Res> {
+  __$ItemDiffCopyWithImpl(this._self, this._then);
+
+  final _ItemDiff _self;
+  final $Res Function(_ItemDiff) _then;
+
+/// Create a copy of ItemDiff
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? changes = null,}) {
+  return _then(_ItemDiff(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,changes: null == changes ? _self._changes : changes // ignore: cast_nullable_to_non_nullable
+as List<FieldChange>,
   ));
 }
 

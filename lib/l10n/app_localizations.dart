@@ -2234,6 +2234,36 @@ abstract class AppLocalizations {
   /// **'Sessions'**
   String get catalogDiffSessions;
 
+  /// No description provided for @catalogDiffFieldEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get catalogDiffFieldEndTime;
+
+  /// No description provided for @catalogDiffFieldStartedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get catalogDiffFieldStartedAt;
+
+  /// No description provided for @catalogDiffFieldEndedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get catalogDiffFieldEndedAt;
+
+  /// No description provided for @catalogDiffFieldProps.
+  ///
+  /// In en, this message translates to:
+  /// **'Props'**
+  String get catalogDiffFieldProps;
+
+  /// No description provided for @catalogDiffFieldOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other changes'**
+  String get catalogDiffFieldOther;
+
   /// No description provided for @catalogServiceChecking.
   ///
   /// In en, this message translates to:
