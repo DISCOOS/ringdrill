@@ -1,11 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
 
 void main() {
   final now = DateTime(2026);
+  const startTime = SimpleTimeOfDay(hour: 9, minute: 0);
+  const endTime = SimpleTimeOfDay(hour: 9, minute: 30);
+
+  Exercise exercise({
+    List<Station> stations = const [],
+    String? methodMd,
+  }) => Exercise(
+    uuid: 'ex-1',
+    name: 'Exercise 1',
+    startTime: startTime,
+    endTime: endTime,
+    numberOfTeams: 1,
+    numberOfRounds: 1,
+    executionTime: 10,
+    evaluationTime: 5,
+    rotationTime: 2,
+    stations: stations,
+    schedule: const [],
+    methodMd: methodMd,
+  );
 
   Program base() => Program(
         uuid: 'prog-1',
@@ -136,6 +158,70 @@ void main() {
     expect(diff.modifiedRolePlays.map((i) => i.name), ['Anna Renamed']);
     expect(diff.addedRolePlays, ['Ola Nordmann']);
     expect(diff.removedRolePlays, isEmpty);
+  });
+
+  // Regression coverage: diffPrograms's per-item comparison must re-inject
+  // the markdown fields that are excluded from toJson() (ADR-0022),
+  // mirroring computeContentHash(), so a markdown-only edit is flagged as
+  // "modified" instead of being invisible to the diff.
+  test('diffPrograms flags an exercise as modified when only methodMd changes', () {
+    final local = base().copyWith(exercises: [exercise(methodMd: 'Old method')]);
+    final remote = base().copyWith(exercises: [exercise(methodMd: 'New method')]);
+    final diff = diffPrograms(local, remote);
+    expect(diff.modifiedExercises.map((i) => i.name), ['Exercise 1']);
+    expect(
+      diff.modifiedExercises.single.changes,
+      contains(
+        const FieldChange(
+          field: 'methodMd',
+          local: 'Old method',
+          remote: 'New method',
+        ),
+      ),
+    );
+  });
+
+  test(
+    'diffPrograms flags an exercise as modified when only a station equipmentMd changes',
+    () {
+      final local = base().copyWith(
+        exercises: [
+          exercise(
+            stations: [
+              const Station(index: 0, name: 'Station 1', equipmentMd: 'Old kit'),
+            ],
+          ),
+        ],
+      );
+      final remote = base().copyWith(
+        exercises: [
+          exercise(
+            stations: [
+              const Station(index: 0, name: 'Station 1', equipmentMd: 'New kit'),
+            ],
+          ),
+        ],
+      );
+      final diff = diffPrograms(local, remote);
+      expect(diff.modifiedExercises.map((i) => i.name), ['Exercise 1']);
+      expect(
+        diff.modifiedExercises.single.changes,
+        contains(const FieldChange(field: 'stations')),
+      );
+    },
+  );
+
+  test('diffPrograms flags a rolePlay as modified when only behavior changes', () {
+    final local = base().copyWith(rolePlays: [rp1.copyWith(behavior: 'Calm')]);
+    final remote = base().copyWith(rolePlays: [rp1.copyWith(behavior: 'Agitated')]);
+    final diff = diffPrograms(local, remote);
+    expect(diff.modifiedRolePlays.map((i) => i.name), ['Anna Hansen']);
+    expect(
+      diff.modifiedRolePlays.single.changes,
+      contains(
+        const FieldChange(field: 'behavior', local: 'Calm', remote: 'Agitated'),
+      ),
+    );
   });
 
   test('content hash changes when tags change', () {
