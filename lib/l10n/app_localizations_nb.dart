@@ -1850,7 +1850,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get planLanguageLabel => 'Planens språk';
 
   @override
-  String get planLanguageNotSet => 'Ikke angitt';
+  String get planLanguageChooseHint => 'Velg';
+
+  @override
+  String get pleaseSelectALanguage => 'Velg et språk';
 
   @override
   String get exerciseReorderMode => 'Ordne';

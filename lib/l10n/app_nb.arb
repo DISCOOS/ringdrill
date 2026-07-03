@@ -931,8 +931,15 @@
     }
   },
 
-  "planLanguageLabel": "Planens språk",
-  "planLanguageNotSet": "Ikke angitt",
+  "planLanguageLabel": "Språk",
+  "planLanguageChooseHint": "Velg",
+  "@planLanguageChooseHint": {
+    "description": "Hint-tekst vist i språkvelgeren før et språk er valgt. Ikke et valgbart alternativ selv — å velge et språk er obligatorisk for å lagre skjemaet."
+  },
+  "pleaseSelectALanguage": "Velg et språk",
+  "@pleaseSelectALanguage": {
+    "description": "Valideringsmelding vist når språkvelgeren sendes inn uten at et språk er valgt."
+  },
 
   "exerciseReorderMode": "Ordne",
   "@exerciseReorderMode": {

@@ -4,6 +4,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
+import 'package:ringdrill/views/widgets/station_number_badge.dart';
 
 const _kTagMaxLength = 40;
 
@@ -32,6 +33,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _tagInputController = TextEditingController();
+  final _tagInputFocus = FocusNode();
   final _briefIntroController = TextEditingController();
   final _commsController = TextEditingController();
   final _beforeRoundController = TextEditingController();
@@ -70,6 +72,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _tagInputController.dispose();
+    _tagInputFocus.dispose();
     _briefIntroController.dispose();
     _commsController.dispose();
     _beforeRoundController.dispose();
@@ -89,6 +92,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     }
     if (_tags.contains(tag)) {
       _tagInputController.clear();
+      _tagInputFocus.requestFocus();
       return;
     }
     setState(() {
@@ -96,6 +100,10 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       _tagError = null;
     });
     _tagInputController.clear();
+    // Submitting (Enter or the add button) drops focus on some platforms
+    // since the field's textInputAction is "done". Re-request it so users
+    // can add several tags back-to-back without tapping the field again.
+    _tagInputFocus.requestFocus();
   }
 
   void _removeTag(String tag) {
@@ -211,27 +219,32 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  OptionalFieldSections<_Section>(
+                    sections: sectionSpecs,
+                    activeIds: _activeSections,
+                    onAdd: _addSection,
+                    onRemove: _removeSection,
+                  ),
+                  // sectionSpecs is built from the fixed _Section enum, so it
+                  // is never actually empty for this screen today — but the
+                  // check keeps the divider from floating above nothing if a
+                  // future variant of this screen passes an empty list.
+                  if (sectionSpecs.isNotEmpty) const Divider(height: 32),
+                  _StationNumberFormatPicker(
+                    value: _stationNumberFormat,
+                    onChanged: (f) => setState(() => _stationNumberFormat = f),
+                  ),
+                  const Divider(height: 32),
                   _TagsEditor(
                     tags: _tags,
                     controller: _tagInputController,
+                    focusNode: _tagInputFocus,
                     errorText: _tagError,
                     onSubmit: () => _submitTag(localizations),
                     onRemove: _removeTag,
                     label: localizations.programEditorTagsLabel,
                     hint: localizations.programEditorTagsHint,
                     removeTooltip: localizations.programEditorTagRemoveTooltip,
-                  ),
-                  const SizedBox(height: 24),
-                  _StationNumberFormatPicker(
-                    value: _stationNumberFormat,
-                    onChanged: (f) => setState(() => _stationNumberFormat = f),
-                  ),
-                  const Divider(height: 32),
-                  OptionalFieldSections<_Section>(
-                    sections: sectionSpecs,
-                    activeIds: _activeSections,
-                    onAdd: _addSection,
-                    onRemove: _removeSection,
                   ),
                   const SizedBox(height: 4),
                 ],
@@ -269,6 +282,7 @@ class _TagsEditor extends StatelessWidget {
   const _TagsEditor({
     required this.tags,
     required this.controller,
+    required this.focusNode,
     required this.onSubmit,
     required this.onRemove,
     required this.label,
@@ -279,6 +293,7 @@ class _TagsEditor extends StatelessWidget {
 
   final List<String> tags;
   final TextEditingController controller;
+  final FocusNode focusNode;
   final VoidCallback onSubmit;
   final ValueChanged<String> onRemove;
   final String label;
@@ -317,6 +332,7 @@ class _TagsEditor extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          focusNode: focusNode,
           decoration: InputDecoration(
             hintText: hint,
             errorText: errorText,
@@ -337,7 +353,9 @@ class _TagsEditor extends StatelessWidget {
 }
 
 /// Segmented picker for [StationNumberFormat]. Shows a live example next
-/// to the label so the format choice is immediately legible.
+/// to the segmented control — as real [StationNumberBadge]s, the same
+/// widget the Stations list renders — so the format choice is immediately
+/// legible rather than described in plain text.
 class _StationNumberFormatPicker extends StatelessWidget {
   const _StationNumberFormatPicker({
     required this.value,
@@ -367,31 +385,58 @@ class _StationNumberFormatPicker extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: SegmentedButton<StationNumberFormat>(
-            expandedInsets: EdgeInsets.zero,
-            showSelectedIcon: false,
-            segments: [
-              ButtonSegment(
-                value: StationNumberFormat.dotted,
-                label: Text(l10n.stationNumberFormatDotted),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: SegmentedButton<StationNumberFormat>(
+                expandedInsets: EdgeInsets.zero,
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: StationNumberFormat.dotted,
+                    label: Text(l10n.stationNumberFormatDotted),
+                  ),
+                  ButtonSegment(
+                    value: StationNumberFormat.alpha,
+                    label: Text(l10n.stationNumberFormatAlpha),
+                  ),
+                ],
+                selected: {value},
+                onSelectionChanged: (selected) => onChanged(selected.single),
               ),
-              ButtonSegment(
-                value: StationNumberFormat.alpha,
-                label: Text(l10n.stationNumberFormatAlpha),
+            ),
+            const SizedBox(width: 12),
+            // Semantics carries the plain-text description for screen
+            // readers; sighted users get the same badge the Stations list
+            // renders for a station numbered with this format, rather than
+            // a second copy of the segment's own "1.1, 1.2" label text.
+            Semantics(
+              label: l10n.stationNumberFormatPreview(example),
+              child: ExcludeSemantics(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    StationNumberBadge(
+                      label: Numbering.station(
+                        value,
+                        exerciseNumber: 1,
+                        stationIndex: 0,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    StationNumberBadge(
+                      label: Numbering.station(
+                        value,
+                        exerciseNumber: 1,
+                        stationIndex: 1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-            selected: {value},
-            onSelectionChanged: (selected) => onChanged(selected.single),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.stationNumberFormatPreview(example),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -413,11 +458,16 @@ const kPlanLanguageNames = <String, String>{'nb': 'Norsk', 'en': 'English'};
 /// Sits beside the plan-name field, so it is sized to its content rather
 /// than stretched full-width: `isExpanded: false` lets the closed-state
 /// button size itself to the widest item's text (the underlying
-/// [DropdownButton] lays out every item to pick that width), instead of
-/// jumping in width as the selection changes. Wrapped in [IntrinsicWidth]
-/// because a non-expanded [DropdownButtonFormField] placed directly in a
-/// [Row] would otherwise receive an unbounded main-axis constraint, which
-/// [InputDecorator] asserts against.
+/// [DropdownButton] lays out every item — plus [hint] — to pick that
+/// width), instead of jumping in width as the selection changes. Wrapped
+/// in [IntrinsicWidth] because a non-expanded [DropdownButtonFormField]
+/// placed directly in a [Row] would otherwise receive an unbounded
+/// main-axis constraint, which [InputDecorator] asserts against.
+///
+/// Selecting a language is required: [value] starts `null` only for a
+/// plan that predates this field, and [hint] (rather than a selectable
+/// "not set" item) prompts the user to choose one before the form can be
+/// saved.
 class _LanguagePicker extends StatelessWidget {
   const _LanguagePicker({required this.value, required this.onChanged});
 
@@ -431,11 +481,8 @@ class _LanguagePicker extends StatelessWidget {
       child: DropdownButtonFormField<String?>(
         initialValue: value,
         decoration: InputDecoration(labelText: l10n.planLanguageLabel),
+        hint: Text(l10n.planLanguageChooseHint),
         items: [
-          DropdownMenuItem<String?>(
-            value: null,
-            child: Text(l10n.planLanguageNotSet),
-          ),
           for (final locale in AppLocalizations.supportedLocales)
             DropdownMenuItem<String?>(
               value: locale.languageCode,
@@ -445,6 +492,7 @@ class _LanguagePicker extends StatelessWidget {
             ),
         ],
         onChanged: onChanged,
+        validator: (v) => v == null ? l10n.pleaseSelectALanguage : null,
       ),
     );
   }

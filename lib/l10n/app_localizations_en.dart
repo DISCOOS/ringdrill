@@ -1853,7 +1853,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planLanguageLabel => 'Plan language';
 
   @override
-  String get planLanguageNotSet => 'Not set';
+  String get planLanguageChooseHint => 'Choose';
+
+  @override
+  String get pleaseSelectALanguage => 'Please select a language';
 
   @override
   String get exerciseReorderMode => 'Reorder';

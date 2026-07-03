@@ -3152,11 +3152,17 @@ abstract class AppLocalizations {
   /// **'Plan language'**
   String get planLanguageLabel;
 
-  /// Option in the plan-language picker meaning no content language has been chosen yet.
+  /// Hint text shown in the plan-language picker before a language is chosen. Not itself a selectable option — selecting a language is required to save the form.
   ///
   /// In en, this message translates to:
-  /// **'Not set'**
-  String get planLanguageNotSet;
+  /// **'Choose'**
+  String get planLanguageChooseHint;
+
+  /// Validation message shown when the plan-language picker is submitted without a language chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a language'**
+  String get pleaseSelectALanguage;
 
   /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///

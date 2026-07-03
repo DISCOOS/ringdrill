@@ -1859,13 +1859,17 @@
     }
   },
 
-  "planLanguageLabel": "Plan language",
+  "planLanguageLabel": "Lang",
   "@planLanguageLabel": {
-    "description": "Label for the plan-content language picker in ProgramFormScreen. Distinct from the app's own UI language."
+    "description": "Label for the plan-content language picker in ProgramFormScreen. Kept short since the picker sits beside the plan-name field. Distinct from the app's own UI language."
   },
-  "planLanguageNotSet": "Not set",
-  "@planLanguageNotSet": {
-    "description": "Option in the plan-language picker meaning no content language has been chosen yet."
+  "planLanguageChooseHint": "Choose",
+  "@planLanguageChooseHint": {
+    "description": "Hint text shown in the plan-language picker before a language is chosen. Not itself a selectable option — selecting a language is required to save the form."
+  },
+  "pleaseSelectALanguage": "Please select a language",
+  "@pleaseSelectALanguage": {
+    "description": "Validation message shown when the plan-language picker is submitted without a language chosen."
   },
 
   "exerciseReorderMode": "Reorder",

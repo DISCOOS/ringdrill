@@ -8,13 +8,19 @@ Program _baseProgram({
   String name = 'Vinterøvelse',
   String description = '',
   String? briefIntroMd,
+  String? languageCode,
 }) {
   final now = DateTime.utc(2026, 1, 1);
   return Program(
     uuid: 'pgm-1',
     name: name,
     description: description,
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: ProgramMetadata(
+      created: now,
+      updated: now,
+      version: '1.0',
+      languageCode: languageCode,
+    ),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -85,8 +91,9 @@ void main() {
               captured = await Navigator.push<Program>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      ProgramFormScreen(program: _baseProgram()),
+                  builder: (_) => ProgramFormScreen(
+                    program: _baseProgram(languageCode: 'nb'),
+                  ),
                 ),
               );
             },
@@ -148,7 +155,10 @@ void main() {
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => ProgramFormScreen(
-                    program: _baseProgram(briefIntroMd: 'gammel intro'),
+                    program: _baseProgram(
+                      briefIntroMd: 'gammel intro',
+                      languageCode: 'nb',
+                    ),
                   ),
                 ),
               );
@@ -196,7 +206,10 @@ void main() {
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => ProgramFormScreen(
-                    program: _baseProgram(briefIntroMd: 'noe innhold'),
+                    program: _baseProgram(
+                      briefIntroMd: 'noe innhold',
+                      languageCode: 'nb',
+                    ),
                   ),
                 ),
               );
@@ -261,7 +274,9 @@ void main() {
     expect(captured!.metadata.languageCode, 'nb');
   });
 
-  testWidgets('plan language stays null when left untouched', (tester) async {
+  testWidgets('blocks save and shows an error when no language is chosen', (
+    tester,
+  ) async {
     Program? captured;
     await tester.pumpWidget(
       MaterialApp(
@@ -290,6 +305,8 @@ void main() {
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
 
-    expect(captured!.metadata.languageCode, isNull);
+    // The form does not pop — save is blocked until a language is chosen.
+    expect(captured, isNull);
+    expect(find.text(l10n.pleaseSelectALanguage), findsOneWidget);
   });
 }
