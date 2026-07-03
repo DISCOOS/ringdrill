@@ -103,15 +103,18 @@ class _CatalogConflictContent extends StatelessWidget {
             // Cancel lives only in the header's close "x" now — the legal
             // actions here are the only way to dismiss, so they share a
             // single row instead of splitting into a secondary/primary pair.
-            // Wrap (not Row + Expanded) so the buttons sit grouped at the
-            // trailing edge at their natural width instead of being
-            // stretched apart across the full row; it also wraps to a
-            // second line instead of overflowing if the labels ever don't
-            // fit a narrow screen.
-            Wrap(
-              alignment: WrapAlignment.end,
+            // OverflowBar — the same widget AlertDialog uses for its
+            // `actions` row — right-aligns the group and, unlike a bare
+            // Wrap inside this Column (which only sizes to its own content
+            // under CrossAxisAlignment.start, leaving "end" alignment with
+            // nothing to align against), actually stretches to the full
+            // row width first. Falls back to a vertical stack, end-aligned,
+            // if the labels ever don't fit a narrow screen on one line.
+            OverflowBar(
+              alignment: MainAxisAlignment.end,
+              overflowAlignment: OverflowBarAlignment.end,
               spacing: 8,
-              runSpacing: 8,
+              overflowSpacing: 8,
               children: [
                 // Discard is destructive (throws away local edits), so it
                 // gets the error color even though it sits alongside Fork

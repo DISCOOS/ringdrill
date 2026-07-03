@@ -99,6 +99,57 @@ void main() {
     },
   );
 
+  testWidgets(
+    'action buttons are right-aligned against the dialog edge, not just '
+    'grouped within their own bounding box',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await openDialog(tester);
+
+      // Regression: a bare Wrap inside this Column (CrossAxisAlignment.start)
+      // sizes itself to its own content, so WrapAlignment.end had nothing to
+      // align against — the whole group sat flush left instead of right.
+      // OverflowBar stretches to the full row width first, so its trailing
+      // child's right edge must land on the same x as the close icon's
+      // mirrored left inset.
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final publishBox =
+          tester.renderObject(
+                find.widgetWithText(
+                  FilledButton,
+                  l10n.catalogConflictPublish,
+                ),
+              )
+              as RenderBox;
+      final publishRight =
+          publishBox.localToGlobal(Offset.zero).dx + publishBox.size.width;
+
+      // The content Padding (EdgeInsets.fromLTRB(20, 16, 20, 12) in
+      // catalog_conflict_dialog.dart) sets the dialog's content bounds —
+      // found by its exact padding value rather than find.byType(Padding)
+      // .first, since ancestor traversal order among several Padding
+      // widgets is not something this test should depend on.
+      final contentPadding = find.byWidgetPredicate(
+        (w) =>
+            w is Padding &&
+            w.padding == const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      );
+      final contentBox = tester.renderObject(contentPadding) as RenderBox;
+      // The Padding's own RenderBox reports its outer bound, before the
+      // inset is subtracted — knock off the 20px right inset to get the
+      // actual content edge the buttons should align against.
+      final contentRight =
+          contentBox.localToGlobal(Offset.zero).dx +
+          contentBox.size.width -
+          20;
+
+      expect(publishRight, closeTo(contentRight, 1));
+    },
+  );
+
   testWidgets('shows a bottom sheet (no Dialog) on narrow surfaces', (
     tester,
   ) async {
