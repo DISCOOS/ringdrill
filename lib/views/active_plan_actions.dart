@@ -74,17 +74,19 @@ Future<void> renameActivePlan(BuildContext context) async {
 /// Used by the drawer's "Oppdater fra katalog" entry, which pops the drawer
 /// before this even starts — so by the time the network fetch and local
 /// content-hash comparison are running, there is nothing on screen showing
-/// anything happened. Shows an optimistic "Refreshing…" snackbar up front
-/// (non-dismissible — see [_showLoadingSnackBar]) and clears it right
-/// before the outcome snackbar, same pattern as MapView._locateMe's
-/// "Locating…" hint.
+/// anything happened. Shows one snackbar for the whole operation via
+/// [_RefreshSnackBar] — starting in a non-dismissible "in progress" state
+/// and updating its content and trailing icon in place once the outcome is
+/// known, rather than hiding a "loading" snackbar and showing a separate
+/// "result" one (which reads as two different things happening, and
+/// flickers as one closes and another opens).
 Future<void> refreshPlanFromCatalog(
   BuildContext context,
   Program program,
 ) async {
   final localizations = AppLocalizations.of(context)!;
   final client = _buildPublishClient();
-  _showLoadingSnackBar(context, localizations.catalogRefreshing);
+  final snackBar = _RefreshSnackBar(context, localizations.catalogRefreshing);
   try {
     final outcome = await ProgramService().refreshCatalogItem(
       program.uuid,
@@ -98,20 +100,27 @@ Future<void> refreshPlanFromCatalog(
         );
       },
     );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    debugPrint(
+      '[refreshPlanFromCatalog] slug=${program.source.whenOrNull(catalog: (slug, latestEtag, installedAt) => slug)} '
+      'outcome=${outcome.kind}',
+    );
     final message = _catalogRefreshMessage(localizations, outcome, program);
-    if (message != null) _showSnackBar(context, message);
-  } catch (e, stackTrace) {
-    if (context.mounted) {
+    if (message != null) {
+      snackBar.showResult(message);
+    } else if (context.mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      _showSnackBar(context, localizations.catalogServiceUnavailable);
     }
+  } catch (e, stackTrace) {
     // Genuinely unexpected at this point — the 404 "plan removed from
     // catalog" case is handled as a normal outcome above, not an
     // exception — so anything landing here (network failure, a server
     // error status, a parse failure) is worth having in Sentry instead of
     // silently swallowed, matching the other catch blocks in this file.
+    // debugPrint too: Sentry only reports with analytics consent, and this
+    // is exactly the failure someone would want to see locally while
+    // debugging why a refresh keeps failing.
+    debugPrint('[refreshPlanFromCatalog] failed: $e');
+    snackBar.showResult(localizations.catalogServiceUnavailable);
     unawaited(Sentry.captureException(e, stackTrace: stackTrace));
   }
 }
@@ -728,34 +737,85 @@ void _showSnackBar(BuildContext context, String message) {
   );
 }
 
-/// Optimistic "in progress" snackbar for an operation the user cannot
-/// meaningfully cancel or dismiss early (e.g. [refreshPlanFromCatalog]):
-/// no close icon and no swipe-to-dismiss, since hiding it before the
-/// operation finishes would just be misleading. A spinner sits where the
-/// close icon normally would, signalling "still working" rather than
-/// offering a dismiss action. The long duration is a fallback only — the
-/// caller clears this with `ScaffoldMessenger.hideCurrentSnackBar()` as
-/// soon as the operation finishes.
-void _showLoadingSnackBar(BuildContext context, String message) {
-  final onInverseSurface = Theme.of(context).colorScheme.onInverseSurface;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      duration: const Duration(seconds: 30),
-      dismissDirection: DismissDirection.none,
-      content: Row(
-        children: [
-          Expanded(child: Text(message)),
-          const SizedBox(width: 12),
-          SizedBox(
-            height: 16,
-            width: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: onInverseSurface,
-            ),
-          ),
-        ],
+/// One snackbar covering an entire operation the user cannot meaningfully
+/// cancel (e.g. [refreshPlanFromCatalog]), from an "in progress" state
+/// through to its outcome — via [showResult] updating the *same* snackbar's
+/// content in place, instead of hiding a loading snackbar and showing a
+/// separate result one (two visibly different things happening, with a
+/// flicker as one closes and another opens).
+///
+/// While loading: no close icon, no swipe-to-dismiss (`DismissDirection`
+/// can only be set when the [SnackBar] is created, so it stays fixed at
+/// `none` for the snackbar's whole lifetime) — a spinner sits where a
+/// dismiss control would be, since dismissing before the operation
+/// finishes would be misleading. Once [showResult] is called, that spinner
+/// is replaced with a manual close (✕) button so the user can dismiss the
+/// outcome whenever they're done reading it; the constructor's `duration`
+/// is only a fallback for whichever comes first.
+class _RefreshSnackBar {
+  _RefreshSnackBar(BuildContext context, String loadingMessage)
+    : _state = ValueNotifier(
+        _RefreshSnackBarState(message: loadingMessage, isLoading: true),
+      ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 30),
+        dismissDirection: DismissDirection.none,
+        content: _RefreshSnackBarContent(state: _state),
       ),
-    ),
-  );
+    );
+  }
+
+  final ValueNotifier<_RefreshSnackBarState> _state;
+
+  void showResult(String message) {
+    _state.value = _RefreshSnackBarState(message: message, isLoading: false);
+  }
+}
+
+class _RefreshSnackBarState {
+  const _RefreshSnackBarState({required this.message, required this.isLoading});
+
+  final String message;
+  final bool isLoading;
+}
+
+class _RefreshSnackBarContent extends StatelessWidget {
+  const _RefreshSnackBarContent({required this.state});
+
+  final ValueNotifier<_RefreshSnackBarState> state;
+
+  @override
+  Widget build(BuildContext context) {
+    final onInverseSurface = Theme.of(context).colorScheme.onInverseSurface;
+    return ValueListenableBuilder<_RefreshSnackBarState>(
+      valueListenable: state,
+      builder: (context, value, _) {
+        return Row(
+          children: [
+            Expanded(child: Text(value.message)),
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 20,
+              width: 20,
+              child: value.isLoading
+                  ? CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: onInverseSurface,
+                    )
+                  : InkWell(
+                      onTap: () =>
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                      child: Icon(
+                        Icons.close,
+                        size: 18,
+                        color: onInverseSurface,
+                      ),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
