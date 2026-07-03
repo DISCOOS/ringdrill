@@ -230,19 +230,79 @@ void main() {
     expect(stationDiff.changes.single.remote, 'Tau og karabinkroker');
   });
 
+  test('a station present only on the remote side is reported as added', () {
+    final local = base(
+      exercises: [exercise('ex-1', 'Søk og redning', index: 0)],
+    );
+    final remote = base(
+      exercises: [
+        local.exercises.single.copyWith(
+          stations: [
+            ...local.exercises.single.stations,
+            const Station(index: 1, name: 'Station 2'),
+          ],
+        ),
+      ],
+    );
+
+    final diff = diffPrograms(local, remote);
+
+    expect(diff.modifiedExercises, hasLength(1));
+    final exerciseDiff = diff.modifiedExercises.single;
+    expect(exerciseDiff.changes, isEmpty);
+    expect(exerciseDiff.nestedChanges, isEmpty);
+    expect(exerciseDiff.addedNested, ['Station 2']);
+    expect(exerciseDiff.removedNested, isEmpty);
+  });
+
+  test('a station present only on the local side is reported as removed', () {
+    final local = base(
+      exercises: [
+        exercise('ex-1', 'Søk og redning', index: 0).copyWith(
+          stations: const [
+            Station(index: 0, name: 'Station 1'),
+            Station(index: 1, name: 'Station 2'),
+          ],
+        ),
+      ],
+    );
+    final remote = base(
+      exercises: [
+        local.exercises.single.copyWith(
+          stations: const [Station(index: 0, name: 'Station 1')],
+        ),
+      ],
+    );
+
+    final diff = diffPrograms(local, remote);
+
+    final exerciseDiff = diff.modifiedExercises.single;
+    expect(exerciseDiff.nestedChanges, isEmpty);
+    expect(exerciseDiff.addedNested, isEmpty);
+    expect(exerciseDiff.removedNested, ['Station 2']);
+  });
+
   test(
-    'a station present on only one side falls back to the generic other '
-    'marker rather than being silently dropped',
+    'reordering two stations with unchanged names reports zero diff — '
+    'the whole point of matching by name instead of index',
     () {
       final local = base(
-        exercises: [exercise('ex-1', 'Søk og redning', index: 0)],
+        exercises: [
+          exercise('ex-1', 'Søk og redning', index: 0).copyWith(
+            stations: const [
+              Station(index: 0, name: 'Fremrykning'),
+              Station(index: 1, name: 'Søk i rasmasse'),
+            ],
+          ),
+        ],
       );
       final remote = base(
         exercises: [
           local.exercises.single.copyWith(
-            stations: [
-              ...local.exercises.single.stations,
-              const Station(index: 1, name: 'Station 2'),
+            // Same two stations, swapped positions, nothing else changed.
+            stations: const [
+              Station(index: 0, name: 'Søk i rasmasse'),
+              Station(index: 1, name: 'Fremrykning'),
             ],
           ),
         ],
@@ -250,14 +310,52 @@ void main() {
 
       final diff = diffPrograms(local, remote);
 
-      // Added/removed stations are out of scope for per-station detail —
-      // there is nothing common to diff — but the exercise-level 'other'
-      // safety net still surfaces that *something* changed rather than
-      // silently ignoring it.
-      expect(diff.modifiedExercises, hasLength(1));
+      // Before matching by name, this pure reorder looked like every field
+      // of both stations changed (each index now points at a different
+      // physical station). Name-based matching pairs each station with
+      // itself regardless of position, and _stationFieldChanges already
+      // excludes index, so nothing is actually reported as different.
+      expect(diff.modifiedExercises, isEmpty);
+    },
+  );
+
+  test(
+    'reordering two stations that ALSO had a field edited reports only '
+    'that edit, not a full rewrite',
+    () {
+      final local = base(
+        exercises: [
+          exercise('ex-1', 'Søk og redning', index: 0).copyWith(
+            stations: const [
+              Station(index: 0, name: 'Fremrykning'),
+              Station(index: 1, name: 'Søk i rasmasse'),
+            ],
+          ),
+        ],
+      );
+      final remote = base(
+        exercises: [
+          local.exercises.single.copyWith(
+            stations: [
+              const Station(index: 0, name: 'Søk i rasmasse'),
+              const Station(
+                index: 1,
+                name: 'Fremrykning',
+              ).copyWith(description: 'Ny beskrivelse'),
+            ],
+          ),
+        ],
+      );
+
+      final diff = diffPrograms(local, remote);
+
       final exerciseDiff = diff.modifiedExercises.single;
-      expect(exerciseDiff.nestedChanges, isEmpty);
-      expect(exerciseDiff.changes.map((c) => c.field), ['other']);
+      expect(exerciseDiff.addedNested, isEmpty);
+      expect(exerciseDiff.removedNested, isEmpty);
+      expect(exerciseDiff.nestedChanges, hasLength(1));
+      final stationDiff = exerciseDiff.nestedChanges.single;
+      expect(stationDiff.name, 'Fremrykning');
+      expect(stationDiff.changes.single.field, 'description');
     },
   );
 

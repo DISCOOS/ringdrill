@@ -1457,7 +1457,7 @@ as String?,
 /// @nodoc
 mixin _$ItemDiff {
 
- String get name; String? get number; List<FieldChange> get changes; List<ItemDiff> get nestedChanges;
+ String get name; String? get number; List<FieldChange> get changes; List<ItemDiff> get nestedChanges; List<String> get addedNested; List<String> get removedNested;
 /// Create a copy of ItemDiff
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1470,16 +1470,16 @@ $ItemDiffCopyWith<ItemDiff> get copyWith => _$ItemDiffCopyWithImpl<ItemDiff>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemDiff&&(identical(other.name, name) || other.name == name)&&(identical(other.number, number) || other.number == number)&&const DeepCollectionEquality().equals(other.changes, changes)&&const DeepCollectionEquality().equals(other.nestedChanges, nestedChanges));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemDiff&&(identical(other.name, name) || other.name == name)&&(identical(other.number, number) || other.number == number)&&const DeepCollectionEquality().equals(other.changes, changes)&&const DeepCollectionEquality().equals(other.nestedChanges, nestedChanges)&&const DeepCollectionEquality().equals(other.addedNested, addedNested)&&const DeepCollectionEquality().equals(other.removedNested, removedNested));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,number,const DeepCollectionEquality().hash(changes),const DeepCollectionEquality().hash(nestedChanges));
+int get hashCode => Object.hash(runtimeType,name,number,const DeepCollectionEquality().hash(changes),const DeepCollectionEquality().hash(nestedChanges),const DeepCollectionEquality().hash(addedNested),const DeepCollectionEquality().hash(removedNested));
 
 @override
 String toString() {
-  return 'ItemDiff(name: $name, number: $number, changes: $changes, nestedChanges: $nestedChanges)';
+  return 'ItemDiff(name: $name, number: $number, changes: $changes, nestedChanges: $nestedChanges, addedNested: $addedNested, removedNested: $removedNested)';
 }
 
 
@@ -1490,7 +1490,7 @@ abstract mixin class $ItemDiffCopyWith<$Res>  {
   factory $ItemDiffCopyWith(ItemDiff value, $Res Function(ItemDiff) _then) = _$ItemDiffCopyWithImpl;
 @useResult
 $Res call({
- String name, String? number, List<FieldChange> changes, List<ItemDiff> nestedChanges
+ String name, String? number, List<FieldChange> changes, List<ItemDiff> nestedChanges, List<String> addedNested, List<String> removedNested
 });
 
 
@@ -1507,13 +1507,15 @@ class _$ItemDiffCopyWithImpl<$Res>
 
 /// Create a copy of ItemDiff
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? number = freezed,Object? changes = null,Object? nestedChanges = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? number = freezed,Object? changes = null,Object? nestedChanges = null,Object? addedNested = null,Object? removedNested = null,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,number: freezed == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
 as String?,changes: null == changes ? _self.changes : changes // ignore: cast_nullable_to_non_nullable
 as List<FieldChange>,nestedChanges: null == nestedChanges ? _self.nestedChanges : nestedChanges // ignore: cast_nullable_to_non_nullable
-as List<ItemDiff>,
+as List<ItemDiff>,addedNested: null == addedNested ? _self.addedNested : addedNested // ignore: cast_nullable_to_non_nullable
+as List<String>,removedNested: null == removedNested ? _self.removedNested : removedNested // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 
@@ -1595,10 +1597,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? number,  List<FieldChange> changes,  List<ItemDiff> nestedChanges)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? number,  List<FieldChange> changes,  List<ItemDiff> nestedChanges,  List<String> addedNested,  List<String> removedNested)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ItemDiff() when $default != null:
-return $default(_that.name,_that.number,_that.changes,_that.nestedChanges);case _:
+return $default(_that.name,_that.number,_that.changes,_that.nestedChanges,_that.addedNested,_that.removedNested);case _:
   return orElse();
 
 }
@@ -1616,10 +1618,10 @@ return $default(_that.name,_that.number,_that.changes,_that.nestedChanges);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? number,  List<FieldChange> changes,  List<ItemDiff> nestedChanges)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? number,  List<FieldChange> changes,  List<ItemDiff> nestedChanges,  List<String> addedNested,  List<String> removedNested)  $default,) {final _that = this;
 switch (_that) {
 case _ItemDiff():
-return $default(_that.name,_that.number,_that.changes,_that.nestedChanges);}
+return $default(_that.name,_that.number,_that.changes,_that.nestedChanges,_that.addedNested,_that.removedNested);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1633,10 +1635,10 @@ return $default(_that.name,_that.number,_that.changes,_that.nestedChanges);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? number,  List<FieldChange> changes,  List<ItemDiff> nestedChanges)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? number,  List<FieldChange> changes,  List<ItemDiff> nestedChanges,  List<String> addedNested,  List<String> removedNested)?  $default,) {final _that = this;
 switch (_that) {
 case _ItemDiff() when $default != null:
-return $default(_that.name,_that.number,_that.changes,_that.nestedChanges);case _:
+return $default(_that.name,_that.number,_that.changes,_that.nestedChanges,_that.addedNested,_that.removedNested);case _:
   return null;
 
 }
@@ -1648,7 +1650,7 @@ return $default(_that.name,_that.number,_that.changes,_that.nestedChanges);case 
 @JsonSerializable()
 
 class _ItemDiff implements ItemDiff {
-  const _ItemDiff({required this.name, this.number, final  List<FieldChange> changes = const [], final  List<ItemDiff> nestedChanges = const []}): _changes = changes,_nestedChanges = nestedChanges;
+  const _ItemDiff({required this.name, this.number, final  List<FieldChange> changes = const [], final  List<ItemDiff> nestedChanges = const [], final  List<String> addedNested = const [], final  List<String> removedNested = const []}): _changes = changes,_nestedChanges = nestedChanges,_addedNested = addedNested,_removedNested = removedNested;
   factory _ItemDiff.fromJson(Map<String, dynamic> json) => _$ItemDiffFromJson(json);
 
 @override final  String name;
@@ -1667,6 +1669,20 @@ class _ItemDiff implements ItemDiff {
   return EqualUnmodifiableListView(_nestedChanges);
 }
 
+ final  List<String> _addedNested;
+@override@JsonKey() List<String> get addedNested {
+  if (_addedNested is EqualUnmodifiableListView) return _addedNested;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_addedNested);
+}
+
+ final  List<String> _removedNested;
+@override@JsonKey() List<String> get removedNested {
+  if (_removedNested is EqualUnmodifiableListView) return _removedNested;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_removedNested);
+}
+
 
 /// Create a copy of ItemDiff
 /// with the given fields replaced by the non-null parameter values.
@@ -1681,16 +1697,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemDiff&&(identical(other.name, name) || other.name == name)&&(identical(other.number, number) || other.number == number)&&const DeepCollectionEquality().equals(other._changes, _changes)&&const DeepCollectionEquality().equals(other._nestedChanges, _nestedChanges));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemDiff&&(identical(other.name, name) || other.name == name)&&(identical(other.number, number) || other.number == number)&&const DeepCollectionEquality().equals(other._changes, _changes)&&const DeepCollectionEquality().equals(other._nestedChanges, _nestedChanges)&&const DeepCollectionEquality().equals(other._addedNested, _addedNested)&&const DeepCollectionEquality().equals(other._removedNested, _removedNested));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,number,const DeepCollectionEquality().hash(_changes),const DeepCollectionEquality().hash(_nestedChanges));
+int get hashCode => Object.hash(runtimeType,name,number,const DeepCollectionEquality().hash(_changes),const DeepCollectionEquality().hash(_nestedChanges),const DeepCollectionEquality().hash(_addedNested),const DeepCollectionEquality().hash(_removedNested));
 
 @override
 String toString() {
-  return 'ItemDiff(name: $name, number: $number, changes: $changes, nestedChanges: $nestedChanges)';
+  return 'ItemDiff(name: $name, number: $number, changes: $changes, nestedChanges: $nestedChanges, addedNested: $addedNested, removedNested: $removedNested)';
 }
 
 
@@ -1701,7 +1717,7 @@ abstract mixin class _$ItemDiffCopyWith<$Res> implements $ItemDiffCopyWith<$Res>
   factory _$ItemDiffCopyWith(_ItemDiff value, $Res Function(_ItemDiff) _then) = __$ItemDiffCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String? number, List<FieldChange> changes, List<ItemDiff> nestedChanges
+ String name, String? number, List<FieldChange> changes, List<ItemDiff> nestedChanges, List<String> addedNested, List<String> removedNested
 });
 
 
@@ -1718,13 +1734,15 @@ class __$ItemDiffCopyWithImpl<$Res>
 
 /// Create a copy of ItemDiff
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? number = freezed,Object? changes = null,Object? nestedChanges = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? number = freezed,Object? changes = null,Object? nestedChanges = null,Object? addedNested = null,Object? removedNested = null,}) {
   return _then(_ItemDiff(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,number: freezed == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
 as String?,changes: null == changes ? _self._changes : changes // ignore: cast_nullable_to_non_nullable
 as List<FieldChange>,nestedChanges: null == nestedChanges ? _self._nestedChanges : nestedChanges // ignore: cast_nullable_to_non_nullable
-as List<ItemDiff>,
+as List<ItemDiff>,addedNested: null == addedNested ? _self._addedNested : addedNested // ignore: cast_nullable_to_non_nullable
+as List<String>,removedNested: null == removedNested ? _self._removedNested : removedNested // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 

@@ -138,12 +138,16 @@ sealed class FieldChange with _$FieldChange {
 /// scheme (teams, sessions, role plays).
 ///
 /// [nestedChanges] holds sub-entity diffs — currently only an exercise's
-/// modified stations, one [ItemDiff] per station (see `_stationDiffs`).
+/// modified stations, one [ItemDiff] per station (see `_diffStations`).
 /// Reuses this same shape (name + number + changes) rather than a bespoke
 /// station-diff type since a station's own [number] is a
 /// [Numbering.station] label ("1.2") and its changes are ordinary
 /// [FieldChange]s — there is nothing station-specific about the shape
-/// itself. Empty for every entity type except exercises today.
+/// itself. [addedNested]/[removedNested] are the sub-entity equivalent of
+/// [ProgramDiff]'s own `added*`/`removed*` lists, one level down — plain
+/// names, no per-item detail, same as how the top-level added/removed
+/// lists render. All three are empty for every entity type except
+/// exercises today.
 @freezed
 sealed class ItemDiff with _$ItemDiff {
   const factory ItemDiff({
@@ -151,6 +155,8 @@ sealed class ItemDiff with _$ItemDiff {
     String? number,
     @Default([]) List<FieldChange> changes,
     @Default([]) List<ItemDiff> nestedChanges,
+    @Default([]) List<String> addedNested,
+    @Default([]) List<String> removedNested,
   }) = _ItemDiff;
 
   factory ItemDiff.fromJson(Map<String, dynamic> json) =>
@@ -270,6 +276,36 @@ Map<String, dynamic> _canonicalExerciseMap(Exercise ex) {
   return _canonicalize(map) as Map<String, dynamic>;
 }
 
+/// [_canonicalExerciseMap] with each station's own `index` stripped and the
+/// stations list re-sorted by name instead — used ONLY by the diff engine's
+/// "is this exercise modified" check (see `diffPrograms`), never by
+/// [ProgramX.computeContentHash] (which deliberately keeps station order as
+/// real content, since a reorder IS an unpublished change worth flagging
+/// via the "Unpublished" badge).
+///
+/// Stripping the `index` *field* alone is not enough: `_canonicalExerciseMap`
+/// sorts stations by index before returning, so the resulting JSON *array*
+/// still encodes the order positionally even with the field gone — a pure
+/// swap would still compare unequal purely because element order differs.
+/// Re-sorting by name instead makes the comparison genuinely order-blind,
+/// so it agrees with `_diffStations`'s own name-based matching (which
+/// already reports zero diff for a pure reorder) instead of contradicting
+/// it via a stray `'other'` fallback.
+Map<String, dynamic> _canonicalExerciseMapForDiff(Exercise ex) {
+  final map = Map<String, dynamic>.from(_canonicalExerciseMap(ex));
+  final stations =
+      (map['stations'] as List)
+          .map(
+            (s) =>
+                Map<String, dynamic>.from(s as Map<String, dynamic>)
+                  ..remove('index'),
+          )
+          .toList()
+        ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+  map['stations'] = stations;
+  return map;
+}
+
 /// Canonical JSON map for a [RolePlay], with `behavior`/`background`/
 /// `propsMd` (excluded from `toJson()` per ADR-0022) injected back in.
 Map<String, dynamic> _canonicalRolePlayMap(RolePlay rp) {
@@ -287,7 +323,13 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     remote.exercises,
     uuid: (e) => e.uuid,
     name: (e) => e.name,
-    canonicalize: _canonicalExerciseMap,
+    // NOT _canonicalExerciseMap (that one is for computeContentHash, which
+    // correctly treats station order as real content) — this variant is
+    // order-blind for stations so a pure station reorder, already resolved
+    // cleanly by _diffStations's name-based matching below, doesn't ALSO
+    // make the raw canonical-map comparison disagree and fall through to a
+    // spurious "Other changes".
+    canonicalize: _canonicalExerciseMapForDiff,
     fieldChanges: _exerciseFieldChanges,
     // Only exercises have a numbering scheme (Numbering.exercise) — passing
     // these also turns on per-item reorder detection in _diffItems, so a
@@ -299,7 +341,7 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     // format, matching how the exercise's own displayed number is always
     // the local one — a station label nested under it should use the same
     // exercise-number context, not the remote's.
-    nestedChanges: (localEx, remoteEx) => _stationDiffs(
+    nestedChanges: (localEx, remoteEx) => _diffStations(
       localEx,
       remoteEx,
       local.stationNumberFormat,
@@ -413,7 +455,7 @@ Object? _canonicalize(Object? value) {
 /// `metadata`/`templateId` are bookkeeping/derived and skipped, same
 /// rationale as [ProgramX.computeContentHash]'s denylist. Station edits are
 /// NOT covered here — they are reported separately, per station, via
-/// `_stationDiffs` and attached to the exercise's [ItemDiff.nestedChanges]
+/// `_diffStations` and attached to the exercise's [ItemDiff.nestedChanges]
 /// (see `diffPrograms`) — `_diffItems`'s exhaustive canonical-map comparison
 /// is what actually decides whether the exercise is "modified" at all; this
 /// only explains its own top-level fields.
@@ -440,48 +482,110 @@ List<FieldChange> _exerciseFieldChanges(Exercise local, Exercise remote) {
   return changes;
 }
 
-/// Per-station field changes for a modified exercise, one [ItemDiff] per
-/// station whose fields differ. Stations are matched by [Station.index] —
-/// their only identity, there is no uuid — so a station being *reordered*
-/// (not edited) shows up as content changes on the affected indices rather
-/// than a clean "moved" message; there is no [Numbering]-based reorder
-/// concept for stations the way [Numbering.exercise] gives exercises one.
-/// A station present on only one side (added/removed) is not reported here
-/// — out of scope for now.
+/// Station-level diff for a modified exercise: which stations were added,
+/// removed, or edited, matched between local and remote — deliberately NOT
+/// by [Station.index] alone, since [Station] has no uuid and matching
+/// purely by position makes a plain *reorder* look like every field of
+/// every affected station changed (each index now points at a different
+/// physical station).
+///
+/// Matching is name-first: a station whose name appears exactly once on
+/// each side is paired by name, which resolves a pure reorder cleanly
+/// (the name didn't move, only the index did, and [_stationFieldChanges]
+/// already excludes index from content comparison — a name-matched pair
+/// with nothing else different simply isn't reported as changed at all).
+/// Whatever's left over (duplicate/ambiguous names, or a name that only
+/// exists on one side) falls back to matching by index, the same
+/// best-effort behavior stations have always had. This is diff-only —
+/// no persisted identity, no migration, computed fresh from whichever
+/// local/remote pair is being compared (which is always the catalog's
+/// current published state for `remote`), so there is nothing to keep in
+/// sync across sessions or devices.
+///
+/// A station that's genuinely renamed *and* reordered in the same edit is
+/// unrecoverable from content alone (ambiguous even to a human comparing
+/// the two lists) and may show as removed+added instead of modified —
+/// accepted as a rare edge case, and never worse than the old behavior of
+/// showing every field of every station as changed on every reorder.
 ///
 /// [exerciseNumber] is the parent exercise's own 1-based local position;
 /// combined with [format] via [Numbering.station] it labels each station
 /// the same way the rest of the app does (e.g. "1.2").
-List<ItemDiff> _stationDiffs(
+({List<String> added, List<String> removed, List<ItemDiff> modified})
+_diffStations(
   Exercise local,
   Exercise remote,
   StationNumberFormat format,
   int exerciseNumber,
 ) {
-  final localByIndex = {for (final s in local.stations) s.index: s};
-  final remoteByIndex = {for (final s in remote.stations) s.index: s};
-  final commonIndices = localByIndex.keys.where(remoteByIndex.containsKey).toList()
-    ..sort();
+  final consumedLocal = <int>{};
+  final consumedRemote = <int>{};
+  final pairs = <(Station, Station)>[];
 
-  final diffs = <ItemDiff>[];
-  for (final index in commonIndices) {
-    final localStation = localByIndex[index]!;
-    final remoteStation = remoteByIndex[index]!;
+  final localByName = <String, List<Station>>{};
+  for (final s in local.stations) {
+    localByName.putIfAbsent(s.name, () => []).add(s);
+  }
+  final remoteByName = <String, List<Station>>{};
+  for (final s in remote.stations) {
+    remoteByName.putIfAbsent(s.name, () => []).add(s);
+  }
+  for (final entry in localByName.entries) {
+    final localGroup = entry.value;
+    final remoteGroup = remoteByName[entry.key];
+    if (localGroup.length == 1 && remoteGroup?.length == 1) {
+      pairs.add((localGroup.single, remoteGroup!.single));
+      consumedLocal.add(localGroup.single.index);
+      consumedRemote.add(remoteGroup.single.index);
+    }
+  }
+
+  final leftoverRemoteByIndex = {
+    for (final s in remote.stations)
+      if (!consumedRemote.contains(s.index)) s.index: s,
+  };
+  for (final s in local.stations) {
+    if (consumedLocal.contains(s.index)) continue;
+    final match = leftoverRemoteByIndex[s.index];
+    if (match == null) continue;
+    pairs.add((s, match));
+    consumedLocal.add(s.index);
+    consumedRemote.add(match.index);
+  }
+
+  final added =
+      remote.stations
+          .where((s) => !consumedRemote.contains(s.index))
+          .map((s) => s.name)
+          .toList()
+        ..sort();
+  final removed =
+      local.stations
+          .where((s) => !consumedLocal.contains(s.index))
+          .map((s) => s.name)
+          .toList()
+        ..sort();
+
+  final modified = <(ItemDiff, int)>[];
+  for (final (localStation, remoteStation) in pairs) {
     final changes = _stationFieldChanges(localStation, remoteStation);
     if (changes.isEmpty) continue;
-    diffs.add(
+    modified.add((
       ItemDiff(
         name: localStation.name,
         number: Numbering.station(
           format,
           exerciseNumber: exerciseNumber,
-          stationIndex: index,
+          stationIndex: localStation.index,
         ),
         changes: changes,
       ),
-    );
+      localStation.index,
+    ));
   }
-  return diffs;
+  modified.sort((a, b) => a.$2.compareTo(b.$2));
+
+  return (added: added, removed: removed, modified: modified.map((m) => m.$1).toList());
 }
 
 /// Best-effort field-level changes between two [Station]s, mirroring
@@ -594,10 +698,14 @@ _diffItems<T>(
   // tell the user beyond the vague "something moved".
   Map<String, String>? localNumbersByUuid,
   Map<String, String>? remoteNumbersByUuid,
-  // Sub-entity diffs (currently only an exercise's modified stations) —
-  // see [ItemDiff.nestedChanges]. Only called when the top-level canonical
-  // comparison finds the pair unequal, same gating as [fieldChanges].
-  List<ItemDiff> Function(T local, T remote)? nestedChanges,
+  // Sub-entity diffs (currently only an exercise's stations) — same shape
+  // as this function's own return record, one level down. See
+  // [ItemDiff.nestedChanges]/[ItemDiff.addedNested]/[ItemDiff.removedNested].
+  // Only called when the top-level canonical comparison finds the pair
+  // unequal, same gating as [fieldChanges].
+  ({List<String> added, List<String> removed, List<ItemDiff> modified})
+  Function(T local, T remote)?
+  nestedChanges,
 }) {
   final localById = {for (final item in local) uuid(item): item};
   final remoteById = {for (final item in remote) uuid(item): item};
@@ -669,15 +777,23 @@ _diffItems<T>(
         : <FieldChange>[];
     // Only computed when the pair actually differs, same gating as
     // `changes` — in the common unchanged case there is nothing to nest.
-    final nested = contentDiffers
-        ? (nestedChanges?.call(localItem, entry.value) ?? const <ItemDiff>[])
-        : const <ItemDiff>[];
+    final nestedResult = contentDiffers
+        ? nestedChanges?.call(localItem, entry.value)
+        : null;
+    final nested = nestedResult?.modified ?? const <ItemDiff>[];
+    final addedNested = nestedResult?.added ?? const <String>[];
+    final removedNested = nestedResult?.removed ?? const <String>[];
     // The curated field list above doesn't cover every JSON key — fall back
     // to a generic marker rather than silently showing "modified" with no
     // explanation when the actual diff lives in an uncurated field. Skipped
-    // when `nested` already explains the difference (e.g. a station-only
-    // edit), so that case doesn't also show a spurious "Other changes".
-    if (contentDiffers && changes.isEmpty && nested.isEmpty) {
+    // when the nested result already explains the difference (e.g. a
+    // station-only edit), so that case doesn't also show a spurious "Other
+    // changes".
+    if (contentDiffers &&
+        changes.isEmpty &&
+        nested.isEmpty &&
+        addedNested.isEmpty &&
+        removedNested.isEmpty) {
       changes = const [FieldChange(field: 'other')];
     }
     final newPosition = localNumbersByUuid?[entry.key];
@@ -690,13 +806,18 @@ _diffItems<T>(
         ...changes,
       ];
     }
-    if (changes.isNotEmpty || nested.isNotEmpty) {
+    if (changes.isNotEmpty ||
+        nested.isNotEmpty ||
+        addedNested.isNotEmpty ||
+        removedNested.isNotEmpty) {
       modified.add((
         ItemDiff(
           name: name(entry.value),
           number: newPosition,
           changes: changes,
           nestedChanges: nested,
+          addedNested: addedNested,
+          removedNested: removedNested,
         ),
         rawIndex(localItem) ?? 0,
       ));

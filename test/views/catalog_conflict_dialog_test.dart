@@ -554,6 +554,106 @@ void main() {
       expect(stationBadgeLeft, closeTo(exerciseBadgeLeft, 1));
     },
   );
+
+  testWidgets(
+    'reordering two stations with unchanged names shows no changes at all '
+    'for that exercise',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final local = Program(
+        uuid: 'p1',
+        name: 'Test',
+        description: '',
+        metadata: ProgramMetadata(
+          created: DateTime(2026),
+          updated: DateTime(2026),
+          version: '1.0',
+        ),
+        teams: const [],
+        sessions: const [],
+        exercises: [
+          buildExercise('ex-1', 'Søk og redning', index: 0).copyWith(
+            stations: const [
+              Station(index: 0, name: 'Fremrykning'),
+              Station(index: 1, name: 'Søk i rasmasse'),
+            ],
+          ),
+        ],
+      );
+      final remote = local.copyWith(
+        exercises: [
+          local.exercises.single.copyWith(
+            stations: const [
+              Station(index: 0, name: 'Søk i rasmasse'),
+              Station(index: 1, name: 'Fremrykning'),
+            ],
+          ),
+        ],
+      );
+      final realDiff = diffPrograms(local, remote);
+
+      // Nothing meaningfully differs (before name-based matching, this
+      // looked like both stations fully changed), so the exercise never
+      // shows up as modified at all — matching against a diff with nothing
+      // in it, we can only assert the dialog opens without any exercise
+      // section rendering.
+      expect(realDiff.modifiedExercises, isEmpty);
+
+      await openRealDiffDialog(tester, realDiff);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.catalogDiffExercises), findsNothing);
+      expect(find.text(l10n.stationsTab), findsNothing);
+      expect(find.textContaining(l10n.catalogDiffFieldOther), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a station added only in the catalog shows under Added, not as a full '
+    'card',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final local = Program(
+        uuid: 'p1',
+        name: 'Test',
+        description: '',
+        metadata: ProgramMetadata(
+          created: DateTime(2026),
+          updated: DateTime(2026),
+          version: '1.0',
+        ),
+        teams: const [],
+        sessions: const [],
+        exercises: [buildExercise('ex-1', 'Søk og redning', index: 0)],
+      );
+      final remote = local.copyWith(
+        exercises: [
+          local.exercises.single.copyWith(
+            stations: [
+              ...local.exercises.single.stations,
+              const Station(index: 1, name: 'Ny post'),
+            ],
+          ),
+        ],
+      );
+      final realDiff = diffPrograms(local, remote);
+
+      await openRealDiffDialog(tester, realDiff);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.stationsTab), findsOneWidget);
+      expect(
+        find.text('${l10n.catalogDiffAdded}: Ny post'),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 /// Returns the resolved [TextStyle] of the first [TextSpan] found anywhere

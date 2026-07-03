@@ -386,7 +386,9 @@ class _ConflictItemTile extends StatelessWidget {
               ),
               child: _FieldChangeLine(change: change),
             ),
-          if (item.nestedChanges.isNotEmpty) ...[
+          if (item.nestedChanges.isNotEmpty ||
+              item.addedNested.isNotEmpty ||
+              item.removedNested.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.only(top: 6, bottom: 6),
               child: Container(
@@ -405,6 +407,24 @@ class _ConflictItemTile extends StatelessWidget {
                 ),
               ),
             ),
+            // Plain name-list lines, same convention as _EntitySection's own
+            // added/removed rows — no per-item card, just names.
+            if (item.addedNested.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '${localizations.catalogDiffAdded}: ${item.addedNested.join(', ')}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            if (item.removedNested.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '${localizations.catalogDiffRemoved}: ${item.removedNested.join(', ')}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
             for (final nested in item.nestedChanges)
               _ConflictItemTile(item: nested),
           ],
