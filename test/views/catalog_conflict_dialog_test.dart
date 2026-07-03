@@ -322,14 +322,66 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    final planGroupTop = tester
-        .getTopLeft(find.text(l10n.catalogDiffPlan))
-        .dy;
+    final planGroupTop = tester.getTopLeft(find.text(l10n.catalogDiffPlan)).dy;
     final exercisesGroupTop = tester
         .getTopLeft(find.text(l10n.catalogDiffExercises))
         .dy;
     expect(planGroupTop, lessThan(exercisesGroupTop));
   });
+
+  testWidgets(
+    'a plan-level rename uses the same colored word-diff rendering as '
+    'every other field change, not the old two-line Your version/Catalog '
+    'version layout',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final planRenameDiff = ProgramDiff(
+        nameLocal: 'My plan',
+        nameRemote: 'My plan (catalog)',
+      );
+      result = null;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  result = await showCatalogConflictDialog(
+                    context,
+                    diff: planRenameDiff,
+                    ownedSlug: true,
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // The old rendering ("Your version: X" / "Catalog version: Y" on two
+      // separate lines, no coloring) must be gone entirely.
+      expect(find.textContaining(l10n.catalogDiffLocal), findsNothing);
+      expect(find.textContaining(l10n.catalogDiffRemote), findsNothing);
+      // Same muted-label-without-verb convention as every other field.
+      expect(find.textContaining('${l10n.catalogDiffName}:'), findsOneWidget);
+      expect(find.textContaining('Name changed'), findsNothing);
+      // "(catalog)" only exists on the remote/old side and was deleted —
+      // proves this goes through the real word-diff, not plain text.
+      expect(
+        _spanStyle(tester, '(catalog)')?.decoration,
+        TextDecoration.lineThrough,
+      );
+    },
+  );
 
   testWidgets(
     'header close icon pops with the cancel choice, same as the Cancel button',

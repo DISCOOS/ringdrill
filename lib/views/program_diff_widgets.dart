@@ -182,17 +182,23 @@ class ProgramDiffView extends StatelessWidget {
           _DiffSection(
             title: localizations.catalogDiffPlan,
             children: [
-              DiffField(
-                label: localizations.catalogDiffName,
-                local: diff.nameLocal,
-                remote: diff.nameRemote,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _DiffValueLine(
+                  label: localizations.catalogDiffName,
+                  local: diff.nameLocal,
+                  remote: diff.nameRemote,
+                ),
               ),
-              DiffField(
-                label: localizations.catalogDiffDescription,
-                local: diff.descriptionLocal,
-                remote: diff.descriptionRemote,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _DiffValueLine(
+                  label: localizations.catalogDiffDescription,
+                  local: diff.descriptionLocal,
+                  remote: diff.descriptionRemote,
+                ),
               ),
-              DiffField(
+              _DiffValueLine(
                 label: localizations.catalogDiffTags,
                 local: diff.tagsLocal,
                 remote: diff.tagsRemote,
@@ -476,12 +482,38 @@ class _FieldChangeLine extends StatelessWidget {
       return Text(l.catalogDiffFieldChangedGeneric(label), style: baseStyle);
     }
 
+    // "old" is the catalog's (remote) value, "new" is the local plan's —
+    // same remote-then-local framing as the 'order' branch above.
+    return _DiffValueLine(label: label, local: change.local, remote: change.remote);
+  }
+}
+
+/// Muted `"{label}: "` prefix followed by the colored word-diff of [remote]
+/// (old) against [local] (new) — the shared rendering for every scalar
+/// field-change line in this dialog, so a plan-level rename and an
+/// exercise's own name change read identically instead of the plan section
+/// using a separate, older two-line "Your version:"/"Catalog version:"
+/// layout with no coloring at all. Renders nothing when both sides are null.
+class _DiffValueLine extends StatelessWidget {
+  const _DiffValueLine({
+    required this.label,
+    required this.local,
+    required this.remote,
+  });
+
+  final String label;
+  final String? local;
+  final String? remote;
+
+  @override
+  Widget build(BuildContext context) {
+    if (local == null && remote == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final baseStyle = theme.textTheme.bodySmall;
     final mutedStyle = baseStyle?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    // "old" is the catalog's (remote) value, "new" is the local plan's —
-    // same remote-then-local framing as the 'order' branch above.
-    final segments = diffWords(_present(change.remote), _present(change.local));
+    final segments = diffWords(_present(remote), _present(local));
     return Text.rich(
       TextSpan(
         children: [
@@ -553,42 +585,4 @@ List<InlineSpan> _diffSpans(
     }
   }
   return spans;
-}
-
-/// Renders a single before/after field change (e.g. plan name, description).
-/// Renders nothing when both sides are null or equal.
-class DiffField extends StatelessWidget {
-  const DiffField({
-    super.key,
-    required this.label,
-    required this.local,
-    required this.remote,
-  });
-
-  final String label;
-  final String? local;
-  final String? remote;
-
-  @override
-  Widget build(BuildContext context) {
-    if (local == null && remote == null) return const SizedBox.shrink();
-    final localizations = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(
-            '${localizations.catalogDiffLocal}: ${_present(local)}',
-          ),
-          Text(
-            '${localizations.catalogDiffRemote}: ${_present(remote)}',
-          ),
-        ],
-      ),
-    );
-  }
 }
