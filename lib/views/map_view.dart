@@ -1016,17 +1016,31 @@ class _MapViewState<K> extends State<MapView<K>> {
       height: 64 * scale,
       width: math.max(80.0, painter.width) * scale,
       point: spec.point,
+      // `Alignment.topCenter` here means flutter_map pins the *bottom* edge
+      // of this box to the geographic point and lets the box hang upward
+      // from there (verified against flutter_map's MarkerLayer offset
+      // maths) — i.e. the box's bottom edge is the true anchor, not its
+      // top. `spec.child` is conventionally a pin-style icon (e.g.
+      // Icons.place) whose visual tip sits at the bottom of its own
+      // bounds, and it is the LAST child of the Column below, so it must
+      // be flush with that bottom edge — not left dangling above it by
+      // whatever the label slot's height happens to be.
       alignment: Alignment.topCenter,
       child: GestureDetector(
         behavior: HitTestBehavior.deferToChild,
         onTap: spec.onTap,
-        // Scale around the top centre so the marker still hangs from its
-        // geographic point while the icon and label grow on wider layouts.
+        // Scale around the bottom — where the anchor and the icon both
+        // live — not the top, so scaling never shifts the icon relative
+        // to the geographic point; only the label above it grows/shrinks.
         child: Transform.scale(
           scale: scale,
-          alignment: Alignment.topCenter,
+          alignment: Alignment.bottomCenter,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            // Pack children against the bottom of the box (the anchor),
+            // not the top, so the icon (last child) sits flush with the
+            // geographic point regardless of the label slot's height.
+            mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _ZoomGatedLabel(label: spec.label, showLabels: widget.showLabels),
