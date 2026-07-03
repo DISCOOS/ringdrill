@@ -9,6 +9,7 @@ import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 // ---------------------------------------------------------------------------
 // Controller
@@ -174,17 +175,14 @@ class _RosterViewState extends State<RosterView> {
     final localizations = AppLocalizations.of(context)!;
 
     if (_actors.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            localizations.noActorsInRoster,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
+      // Same teaching affordance as the empty Program segments so the
+      // Roster tab reads with the same visual language (icon disc +
+      // title + body) instead of a bare centered string. The cast
+      // roster sheet keeps the compact noActorsInRoster one-liner.
+      return TeachingEmptyState(
+        icon: Icons.face,
+        title: localizations.emptyRosterTitle,
+        body: localizations.emptyRosterBody,
       );
     }
 

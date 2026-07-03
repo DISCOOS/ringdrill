@@ -1385,6 +1385,14 @@
   "@noActorsInRoster": {
     "description": "Empty state shown in the cast roster sheet when no Actor records exist in the program."
   },
+  "emptyRosterTitle": "No actors yet",
+  "@emptyRosterTitle": {
+    "description": "Teaching empty-state title shown on the Roster tab when the active plan has no Actor records."
+  },
+  "emptyRosterBody": "Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.",
+  "@emptyRosterBody": {
+    "description": "Teaching empty-state body shown on the Roster tab when the active plan has no Actor records."
+  },
   "noActiveProgramHint": "No active program. Open or create one in the Exercises tab.",
   "@noActiveProgramHint": {
     "description": "Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activeProgramUuid is null."

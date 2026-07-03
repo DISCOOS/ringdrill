@@ -1496,6 +1496,13 @@ class AppLocalizationsNb extends AppLocalizations {
       'Ingen markører ennå. Trykk + Ny markør for å legge til.';
 
   @override
+  String get emptyRosterTitle => 'Ingen markører ennå';
+
+  @override
+  String get emptyRosterBody =>
+      'Markører er personene som spiller ut roller i øvelsene dine. Legg til din første markør her, så kan du besette roller i Spill-fanen i øvingsplanen.';
+
+  @override
   String get noActiveProgramHint =>
       'Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen.';
 

@@ -531,6 +531,14 @@
   "@noActorsInRoster": {
     "description": "Tom tilstand vist i rollebesetting-arket når det ikke finnes noen Actor-poster i programmet."
   },
+  "emptyRosterTitle": "Ingen markører ennå",
+  "@emptyRosterTitle": {
+    "description": "Lærende tom-tilstand-tittel vist i Bemanning-fanen når den aktive planen ikke har noen markører."
+  },
+  "emptyRosterBody": "Markører er personene som spiller ut roller i øvelsene dine. Legg til din første markør her, så kan du besette roller i Spill-fanen i øvingsplanen.",
+  "@emptyRosterBody": {
+    "description": "Lærende tom-tilstand-tekst vist i Bemanning-fanen når den aktive planen ikke har noen markører."
+  },
   "noActiveProgramHint": "Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen.",
   "@noActiveProgramHint": {
     "description": "Vist som faneinnhold og tooltip på deaktivert rollebesetting-knapp i AppBar når activeProgramUuid er null."

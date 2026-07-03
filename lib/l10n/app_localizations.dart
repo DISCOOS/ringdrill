@@ -2492,6 +2492,18 @@ abstract class AppLocalizations {
   /// **'No actors yet. Tap + New actor to add one.'**
   String get noActorsInRoster;
 
+  /// Teaching empty-state title shown on the Roster tab when the active plan has no Actor records.
+  ///
+  /// In en, this message translates to:
+  /// **'No actors yet'**
+  String get emptyRosterTitle;
+
+  /// Teaching empty-state body shown on the Roster tab when the active plan has no Actor records.
+  ///
+  /// In en, this message translates to:
+  /// **'Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.'**
+  String get emptyRosterBody;
+
   /// Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activeProgramUuid is null.
   ///
   /// In en, this message translates to:

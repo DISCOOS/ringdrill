@@ -1499,6 +1499,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noActorsInRoster => 'No actors yet. Tap + New actor to add one.';
 
   @override
+  String get emptyRosterTitle => 'No actors yet';
+
+  @override
+  String get emptyRosterBody =>
+      'Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.';
+
+  @override
   String get noActiveProgramHint =>
       'No active program. Open or create one in the Exercises tab.';
 
