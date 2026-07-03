@@ -1319,8 +1319,8 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogDiffModified => 'Endret';
 
   @override
-  String catalogDiffReorderedTo(String number) {
-    return 'Flyttet til $number';
+  String catalogDiffReorderedFromTo(String from, String to) {
+    return 'Flyttet $from → $to';
   }
 
   @override

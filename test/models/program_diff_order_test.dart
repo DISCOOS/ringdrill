@@ -8,11 +8,12 @@ import 'package:ringdrill/models/team.dart';
 /// swapping two exercises' positions flagged both as "modified" with an
 /// empty change list, which the view rendered as an unexplained "Other
 /// changes". Now a pure reorder surfaces as a `field: 'order'` entry on that
-/// specific exercise's [ItemDiff], labelled with its new formatted position
-/// (e.g. "#2") — the same number the rest of the app shows — so identically
-/// named exercises (a drill program routinely repeats a name across rounds)
-/// stay distinguishable. Teams have no numbering scheme, so a pure team
-/// reorder is simply not reported as a change at all (see the last test).
+/// specific exercise's [ItemDiff], carrying both its old (remote/catalog)
+/// and new (local) formatted position (e.g. "#1" → "#2") — the same number
+/// the rest of the app shows — so identically named exercises (a drill
+/// program routinely repeats a name across rounds) stay distinguishable.
+/// Teams have no numbering scheme, so a pure team reorder is simply not
+/// reported as a change at all (see the last test).
 void main() {
   final now = DateTime(2026);
 
@@ -77,17 +78,19 @@ void main() {
       // Both instances share a name (a routine occurrence — the same
       // exercise repeated per round/team) but are distinguished by their
       // local formatted number, and each carries exactly one change: its
-      // own reorder, labelled with where it now sits locally.
-      final ex1 = diff.modifiedExercises.firstWhere(
-        (i) => i.number == '#1',
-      ); // ex-2 is now first locally
+      // own reorder, from its old (remote/catalog) to its new (local)
+      // position. ex-1 is now first locally (was second in the catalog);
+      // ex-2 is the reverse.
+      final ex1 = diff.modifiedExercises.firstWhere((i) => i.number == '#1');
       final ex2 = diff.modifiedExercises.firstWhere((i) => i.number == '#2');
       expect(ex1.changes, hasLength(1));
       expect(ex1.changes.single.field, 'order');
       expect(ex1.changes.single.local, '#1');
+      expect(ex1.changes.single.remote, '#2');
       expect(ex2.changes, hasLength(1));
       expect(ex2.changes.single.field, 'order');
       expect(ex2.changes.single.local, '#2');
+      expect(ex2.changes.single.remote, '#1');
     },
   );
 

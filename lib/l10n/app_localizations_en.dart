@@ -1323,8 +1323,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogDiffModified => 'Modified';
 
   @override
-  String catalogDiffReorderedTo(String number) {
-    return 'Reordered to $number';
+  String catalogDiffReorderedFromTo(String from, String to) {
+    return 'Moved $from → $to';
   }
 
   @override

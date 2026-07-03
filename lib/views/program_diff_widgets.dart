@@ -366,7 +366,11 @@ class _ConflictItemTile extends StatelessWidget {
 
   String _describeChange(AppLocalizations l, FieldChange change) {
     if (change.field == 'order') {
-      return l.catalogDiffReorderedTo(change.local ?? '');
+      // 'order' stores the catalog's (old) position as `remote` and the
+      // local plan's (new) position as `local` — see _diffItems in
+      // program.dart — so "from" is remote and "to" is local, matching the
+      // rest of this dialog's local-vs-catalog framing.
+      return l.catalogDiffReorderedFromTo(change.remote ?? '', change.local ?? '');
     }
     final label = fieldChangeLabel(l, change.field);
     // 'other' already reads as a complete sentence on its own ("Other

@@ -279,9 +279,11 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     canonicalize: _canonicalExerciseMap,
     fieldChanges: _exerciseFieldChanges,
     // Only exercises have a numbering scheme (Numbering.exercise) — passing
-    // this also turns on per-item reorder detection in _diffItems, keyed by
-    // the local side's formatted position.
-    numbersByUuid: _exerciseNumbersByUuid(local),
+    // these also turns on per-item reorder detection in _diffItems, so a
+    // moved exercise can be labelled "moved from #x to #y" using each
+    // side's own formatted position.
+    localNumbersByUuid: _exerciseNumbersByUuid(local),
+    remoteNumbersByUuid: _exerciseNumbersByUuid(remote),
   );
   final teamDiff = _diffItems<Team>(
     local.teams,
@@ -485,12 +487,13 @@ _diffItems<T>(
   required String Function(T item) name,
   required Map<String, dynamic> Function(T item) canonicalize,
   required List<FieldChange> Function(T local, T remote) fieldChanges,
-  // Local-side formatted position (e.g. "#2"), keyed by uuid. Only
+  // Formatted position (e.g. "#2") on each side, keyed by uuid. Only
   // exercises have a numbering scheme (see [Numbering.exercise]) — passing
-  // this also turns on per-item reorder detection below, since without a
-  // way to *label* the new position there is nothing useful to tell the
-  // user beyond the vague "something moved".
-  Map<String, String>? numbersByUuid,
+  // these also turns on per-item reorder detection below, since without a
+  // way to *label* the old and new position there is nothing useful to
+  // tell the user beyond the vague "something moved".
+  Map<String, String>? localNumbersByUuid,
+  Map<String, String>? remoteNumbersByUuid,
 }) {
   final localById = {for (final item in local) uuid(item): item};
   final remoteById = {for (final item in remote) uuid(item): item};
@@ -518,7 +521,7 @@ _diffItems<T>(
   // relative order changed; only a genuine swap changes an item's rank
   // relative to its peers.
   var reorderedUuids = const <String>{};
-  if (numbersByUuid != null) {
+  if (localNumbersByUuid != null) {
     final commonUuids = localById.keys.where(remoteById.containsKey).toList();
     final localRanked = [...commonUuids]..sort(
       (a, b) =>
@@ -567,9 +570,15 @@ _diffItems<T>(
     if (contentDiffers && changes.isEmpty) {
       changes = const [FieldChange(field: 'other')];
     }
-    final newPosition = numbersByUuid?[entry.key];
-    if (reorderedUuids.contains(entry.key) && newPosition != null) {
-      changes = [FieldChange(field: 'order', local: newPosition), ...changes];
+    final newPosition = localNumbersByUuid?[entry.key];
+    final oldPosition = remoteNumbersByUuid?[entry.key];
+    if (reorderedUuids.contains(entry.key) &&
+        newPosition != null &&
+        oldPosition != null) {
+      changes = [
+        FieldChange(field: 'order', local: newPosition, remote: oldPosition),
+        ...changes,
+      ];
     }
     if (changes.isNotEmpty) {
       modified.add((
@@ -587,7 +596,7 @@ _diffItems<T>(
   added.sort();
   removed.sort();
   modified.sort(
-    numbersByUuid != null
+    localNumbersByUuid != null
         ? (a, b) => a.$2.compareTo(b.$2)
         : (a, b) => a.$1.name.compareTo(b.$1.name),
   );

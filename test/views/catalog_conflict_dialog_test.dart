@@ -401,8 +401,15 @@ void main() {
       await openRealDiffDialog(tester, realDiff);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.catalogDiffReorderedTo('#1')), findsOneWidget);
-      expect(find.text(l10n.catalogDiffReorderedTo('#2')), findsOneWidget);
+      // ex-1 was #2 in the catalog and is now #1 locally; ex-2 the reverse.
+      expect(
+        find.text(l10n.catalogDiffReorderedFromTo('#2', '#1')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.catalogDiffReorderedFromTo('#1', '#2')),
+        findsOneWidget,
+      );
       expect(find.textContaining(l10n.catalogDiffFieldOther), findsNothing);
       // Two distinct cards for the two identically-named exercises — the
       // number badges are what tells them apart.
@@ -449,9 +456,13 @@ void main() {
       await openRealDiffDialog(tester, realDiff);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      // 'Ladder' both moved (to #1) and had its method edited — one card,
-      // both facts, not split across two sections.
-      expect(find.text(l10n.catalogDiffReorderedTo('#1')), findsOneWidget);
+      // 'Ladder' was #1 in the catalog and is now #2 locally, and also had
+      // its method edited — one card, both facts, not split across two
+      // sections.
+      expect(
+        find.text(l10n.catalogDiffReorderedFromTo('#1', '#2')),
+        findsOneWidget,
+      );
       expect(find.textContaining('New method'), findsOneWidget);
     },
   );

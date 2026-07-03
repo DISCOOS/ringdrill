@@ -395,10 +395,11 @@
   "catalogDiffAdded": "Lagt til",
   "catalogDiffRemoved": "Fjernet",
   "catalogDiffModified": "Endret",
-  "catalogDiffReorderedTo": "Flyttet til {number}",
-  "@catalogDiffReorderedTo": {
+  "catalogDiffReorderedFromTo": "Flyttet {from} → {to}",
+  "@catalogDiffReorderedFromTo": {
     "placeholders": {
-      "number": {"type": "String"}
+      "from": {"type": "String"},
+      "to": {"type": "String"}
     }
   },
   "catalogDiffFieldChanged": "{field} endret: {local} → {remote}",

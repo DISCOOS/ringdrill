@@ -2198,11 +2198,11 @@ abstract class AppLocalizations {
   /// **'Modified'**
   String get catalogDiffModified;
 
-  /// No description provided for @catalogDiffReorderedTo.
+  /// No description provided for @catalogDiffReorderedFromTo.
   ///
   /// In en, this message translates to:
-  /// **'Reordered to {number}'**
-  String catalogDiffReorderedTo(String number);
+  /// **'Moved {from} → {to}'**
+  String catalogDiffReorderedFromTo(String from, String to);
 
   /// No description provided for @catalogDiffFieldChanged.
   ///

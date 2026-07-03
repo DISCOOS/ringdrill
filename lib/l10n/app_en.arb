@@ -1233,10 +1233,11 @@
   "catalogDiffAdded": "Added",
   "catalogDiffRemoved": "Removed",
   "catalogDiffModified": "Modified",
-  "catalogDiffReorderedTo": "Reordered to {number}",
-  "@catalogDiffReorderedTo": {
+  "catalogDiffReorderedFromTo": "Moved {from} → {to}",
+  "@catalogDiffReorderedFromTo": {
     "placeholders": {
-      "number": {"type": "String"}
+      "from": {"type": "String"},
+      "to": {"type": "String"}
     }
   },
   "catalogDiffFieldChanged": "{field} changed: {local} → {remote}",
