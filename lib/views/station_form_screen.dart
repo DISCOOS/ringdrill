@@ -177,6 +177,13 @@ class _StationFormScreenState extends State<StationFormScreen> {
                               initialValue: _position,
                               markers: markers,
                               onSaved: (position) => _position = position,
+                              // Without this, `_position` (and therefore the
+                              // `markers` filter above, and the map picker's
+                              // recentring on reopen) stayed frozen at the
+                              // old value until Save — a pick would visibly
+                              // "not take" until the form was saved.
+                              onChanged: (position) =>
+                                  setState(() => _position = position),
                             ),
                           ),
                         ),
