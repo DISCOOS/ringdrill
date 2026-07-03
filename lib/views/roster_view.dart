@@ -85,9 +85,20 @@ class RosterController extends ScreenController {
 /// [ProgramService.deleteActor]) — no actor data is pushed to any
 /// publish / wire path.
 class RosterView extends StatefulWidget {
-  const RosterView({super.key, required this.controller});
+  const RosterView({
+    super.key,
+    required this.controller,
+    this.refreshIndicatorKey,
+  });
 
   final RosterController controller;
+
+  /// Lets the host (`MainScreen`) reuse this view's pull-to-refresh
+  /// [RefreshIndicator] from elsewhere — the drawer's "Oppdater fra
+  /// katalog" entry triggers it via `CatalogRefreshIndicatorRegistry`
+  /// instead of running the refresh with no visible progress. Null in
+  /// contexts that don't need that (e.g. most tests).
+  final GlobalKey<RefreshIndicatorState>? refreshIndicatorKey;
 
   @override
   State<RosterView> createState() => _RosterViewState();
@@ -267,6 +278,7 @@ class _RosterViewState extends State<RosterView> {
         program != null && active_actions.isCatalogProgram(program);
     if (!isCatalogPlan) return content;
     return RefreshIndicator(
+      key: widget.refreshIndicatorKey,
       onRefresh: () => active_actions.refreshActivePlanFromCatalog(context),
       child: content,
     );

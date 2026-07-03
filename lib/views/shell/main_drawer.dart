@@ -194,7 +194,9 @@ class MainDrawer extends StatelessWidget {
               rootNavigator: true,
             ).context;
             Navigator.pop(context);
-            await active_actions.refreshActivePlanFromCatalog(actionContext);
+            await active_actions.refreshActivePlanFromCatalogViaIndicator(
+              actionContext,
+            );
           },
         ),
         const Divider(),

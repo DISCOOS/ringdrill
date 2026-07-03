@@ -10,6 +10,7 @@ import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/services/catalog_refresh_indicator_registry.dart';
 import 'package:ringdrill/services/catalog_status_service.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -68,25 +69,20 @@ Future<void> renameActivePlan(BuildContext context) async {
 
 /// Pulls the latest version of a catalog-sourced [program] and merges it
 /// into the local copy via [ProgramService.refreshCatalogItem], using the
-/// shared catalog-conflict dialog to resolve any divergence. Shows a
-/// snackbar when the catalog service is unreachable.
+/// shared catalog-conflict dialog to resolve any divergence.
 ///
-/// Used by the drawer's "Oppdater fra katalog" entry, which pops the drawer
-/// before this even starts — so by the time the network fetch and local
-/// content-hash comparison are running, there is nothing on screen showing
-/// anything happened. Shows one snackbar for the whole operation via
-/// [_RefreshSnackBar] — starting in a non-dismissible "in progress" state
-/// and updating its content and trailing icon in place once the outcome is
-/// known, rather than hiding a "loading" snackbar and showing a separate
-/// "result" one (which reads as two different things happening, and
-/// flickers as one closes and another opens).
+/// No dedicated "in progress" UI here — callers are expected to already be
+/// showing one: the Program/Roster tabs' pull-to-refresh `RefreshIndicator`
+/// (see program_view.dart / roster_view.dart) covers the drag-gesture case,
+/// and [refreshActivePlanFromCatalogViaIndicator] reuses that same indicator
+/// for the drawer's "Oppdater fra katalog" entry. Only the eventual outcome
+/// is surfaced, via a single plain result snackbar.
 Future<void> refreshPlanFromCatalog(
   BuildContext context,
   Program program,
 ) async {
   final localizations = AppLocalizations.of(context)!;
   final client = _buildPublishClient();
-  final snackBar = _RefreshSnackBar(context, localizations.catalogRefreshing);
   try {
     final outcome = await ProgramService().refreshCatalogItem(
       program.uuid,
@@ -105,10 +101,8 @@ Future<void> refreshPlanFromCatalog(
       'outcome=${outcome.kind}',
     );
     final message = _catalogRefreshMessage(localizations, outcome, program);
-    if (message != null) {
-      snackBar.showResult(message);
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (message != null && context.mounted) {
+      _showSnackBar(context, message);
     }
   } catch (e, stackTrace) {
     // Genuinely unexpected at this point — the 404 "plan removed from
@@ -120,7 +114,9 @@ Future<void> refreshPlanFromCatalog(
     // is exactly the failure someone would want to see locally while
     // debugging why a refresh keeps failing.
     debugPrint('[refreshPlanFromCatalog] failed: $e');
-    snackBar.showResult(localizations.catalogServiceUnavailable);
+    if (context.mounted) {
+      _showSnackBar(context, localizations.catalogServiceUnavailable);
+    }
     unawaited(Sentry.captureException(e, stackTrace: stackTrace));
   }
 }
@@ -157,8 +153,15 @@ String? _catalogRefreshMessage(
 }
 
 /// Convenience wrapper that refreshes the currently active plan from the
-/// catalog. Used by the drawer's refresh entry; shows a snackbar when
-/// there is no active plan, or when the active plan isn't catalog-sourced.
+/// catalog; shows a snackbar when there is no active plan, or when the
+/// active plan isn't catalog-sourced.
+///
+/// Used directly as the Program/Roster tabs' `RefreshIndicator.onRefresh` —
+/// the pull gesture itself is already the "in progress" UI, so this does
+/// nothing extra to show one. For entry points with no such gesture (the
+/// drawer's "Oppdater fra katalog"), use
+/// [refreshActivePlanFromCatalogViaIndicator] instead, which reuses that
+/// same indicator programmatically rather than calling this directly.
 Future<void> refreshActivePlanFromCatalog(BuildContext context) async {
   final localizations = AppLocalizations.of(context)!;
   final program = ProgramService().activeProgram;
@@ -170,6 +173,35 @@ Future<void> refreshActivePlanFromCatalog(BuildContext context) async {
     _showSnackBar(context, localizations.catalogServiceUnavailable);
     return;
   }
+  await refreshPlanFromCatalog(context, program);
+}
+
+/// Same guard as [refreshActivePlanFromCatalog], but for entry points with
+/// no pull gesture of their own — the drawer's "Oppdater fra katalog" entry,
+/// which pops the drawer before this even starts, so by the time the network
+/// fetch is running there is nothing else on screen showing anything
+/// happened. Reuses whichever tab's pull-to-refresh `RefreshIndicator` is
+/// currently visible (via [CatalogRefreshIndicatorRegistry]) instead of a
+/// bespoke progress snackbar, so both entry points look identical.
+///
+/// Falls back to running the refresh directly — no visible progress, just
+/// the eventual result snackbar — when the current tab has no such indicator
+/// (e.g. the Kart/Stations tab).
+Future<void> refreshActivePlanFromCatalogViaIndicator(
+  BuildContext context,
+) async {
+  final localizations = AppLocalizations.of(context)!;
+  final program = ProgramService().activeProgram;
+  if (program == null) {
+    _showSnackBar(context, localizations.requiresActivePlan);
+    return;
+  }
+  if (!isCatalogProgram(program)) {
+    _showSnackBar(context, localizations.catalogServiceUnavailable);
+    return;
+  }
+  final triggered = await CatalogRefreshIndicatorRegistry().trigger();
+  if (triggered || !context.mounted) return;
   await refreshPlanFromCatalog(context, program);
 }
 
@@ -737,98 +769,3 @@ void _showSnackBar(BuildContext context, String message) {
   );
 }
 
-/// One snackbar covering an entire operation the user cannot meaningfully
-/// cancel (e.g. [refreshPlanFromCatalog]), from an "in progress" state
-/// through to its outcome — via [showResult] updating the *same* snackbar's
-/// content in place, instead of hiding a loading snackbar and showing a
-/// separate result one (two visibly different things happening, with a
-/// flicker as one closes and another opens).
-///
-/// While loading: no close icon, no swipe-to-dismiss (`DismissDirection`
-/// can only be set when the [SnackBar] is created, so it stays fixed at
-/// `none` for the snackbar's whole lifetime) — a spinner sits where a
-/// dismiss control would be, since dismissing before the operation
-/// finishes would be misleading. The constructor's `duration` is a long
-/// fallback sized for the loading phase (a slow network call), not a
-/// normal auto-dismiss — [SnackBar.duration] is fixed at creation time and
-/// this snackbar's content is updated in place afterwards rather than
-/// re-shown, so it does not reset when [showResult] swaps in the outcome.
-/// [showResult] instead schedules its own short auto-dismiss so the result
-/// does not just sit there for the remainder of the original 30s window.
-class _RefreshSnackBar {
-  _RefreshSnackBar(BuildContext context, String loadingMessage)
-    : _state = ValueNotifier(
-        _RefreshSnackBarState(message: loadingMessage, isLoading: true),
-      ) {
-    _controller = ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 30),
-        dismissDirection: DismissDirection.none,
-        content: _RefreshSnackBarContent(state: _state, onClose: () => _controller.close()),
-      ),
-    );
-  }
-
-  final ValueNotifier<_RefreshSnackBarState> _state;
-  late final ScaffoldFeatureController<SnackBar, SnackBarClosedReason> _controller;
-
-  void showResult(String message) {
-    _state.value = _RefreshSnackBarState(message: message, isLoading: false);
-    // Same length as Flutter's own default SnackBar.duration — reads as an
-    // ordinary transient toast once the result is showing, rather than
-    // inheriting the loading phase's much longer fallback window. Uses
-    // this specific snackbar's own controller (not
-    // ScaffoldMessenger.hideCurrentSnackBar(), which acts on whatever
-    // snackbar happens to be current) so a second refresh started in the
-    // meantime — with its own new snackbar — can't be closed early by this
-    // timer instead.
-    Future.delayed(const Duration(seconds: 4), _controller.close);
-  }
-}
-
-class _RefreshSnackBarState {
-  const _RefreshSnackBarState({required this.message, required this.isLoading});
-
-  final String message;
-  final bool isLoading;
-}
-
-class _RefreshSnackBarContent extends StatelessWidget {
-  const _RefreshSnackBarContent({required this.state, required this.onClose});
-
-  final ValueNotifier<_RefreshSnackBarState> state;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final onInverseSurface = Theme.of(context).colorScheme.onInverseSurface;
-    return ValueListenableBuilder<_RefreshSnackBarState>(
-      valueListenable: state,
-      builder: (context, value, _) {
-        return Row(
-          children: [
-            Expanded(child: Text(value.message)),
-            const SizedBox(width: 12),
-            SizedBox(
-              height: 20,
-              width: 20,
-              child: value.isLoading
-                  ? CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: onInverseSurface,
-                    )
-                  : InkWell(
-                      onTap: onClose,
-                      child: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: onInverseSurface,
-                      ),
-                    ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}

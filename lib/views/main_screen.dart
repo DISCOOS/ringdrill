@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/services/catalog_refresh_indicator_registry.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -94,6 +95,13 @@ class _MainScreenState extends State<MainScreen>
   late final ContextSheetController _contextSheetController =
       ContextSheetController();
 
+  // Let the drawer's "Oppdater fra katalog" entry reuse whichever tab's
+  // pull-to-refresh RefreshIndicator is currently visible instead of running
+  // the refresh with no visible progress at all — see
+  // CatalogRefreshIndicatorRegistry and _activeRefreshIndicatorKey below.
+  final _programRefreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  final _rosterRefreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+
   /// Order matches [routeProgram, routeMap, routeRoster]. Station, roleplay
   /// and team views remain reachable as Program segments rather than
   /// standalone shell tabs.
@@ -104,12 +112,16 @@ class _MainScreenState extends State<MainScreen>
         controller: _programPageController,
         stationListController: _stationListController,
         rolePlaysController: _rolePlaysController,
+        refreshIndicatorKey: _programRefreshIndicatorKey,
       ),
     ),
     PageWidget(controller: StationsPageController(), child: StationsView()),
     PageWidget(
       controller: _rosterController,
-      child: RosterView(controller: _rosterController),
+      child: RosterView(
+        controller: _rosterController,
+        refreshIndicatorKey: _rosterRefreshIndicatorKey,
+      ),
     ),
   ];
 
@@ -121,6 +133,11 @@ class _MainScreenState extends State<MainScreen>
   void initState() {
     super.initState();
     _initTab();
+    // Registered once — the closure reads `_currentTab` at call time, so
+    // there is nothing to re-register when the user switches tabs.
+    CatalogRefreshIndicatorRegistry().registerProvider(
+      _activeRefreshIndicatorKey,
+    );
     _programPageController.activeSegment.addListener(_onProgramSegmentChanged);
     // Rebuild when reorder mode toggles so the FAB (which is suppressed in
     // reorder mode) appears/disappears without waiting for another rebuild.
@@ -228,8 +245,23 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 
+  /// The pull-to-refresh key for whichever tab is current, or null on tabs
+  /// with no catalog refresh (e.g. Kart/Stations). Read the field at call
+  /// time rather than closing over a snapshot, since this same closure stays
+  /// registered across every tab switch for the life of [MainScreen].
+  GlobalKey<RefreshIndicatorState>? _activeRefreshIndicatorKey() {
+    return switch (_currentTab) {
+      0 => _programRefreshIndicatorKey,
+      2 => _rosterRefreshIndicatorKey,
+      _ => null,
+    };
+  }
+
   @override
   void dispose() {
+    CatalogRefreshIndicatorRegistry().unregisterProvider(
+      _activeRefreshIndicatorKey,
+    );
     _contextSheetController.dispose();
     _programPageController.activeSegment.removeListener(
       _onProgramSegmentChanged,

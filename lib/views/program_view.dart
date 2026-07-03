@@ -77,11 +77,19 @@ class ProgramView extends StatefulWidget {
     required this.controller,
     required this.stationListController,
     required this.rolePlaysController,
+    this.refreshIndicatorKey,
   });
 
   final ProgramPageControllerBase controller;
   final StationListController stationListController;
   final RolePlaysController rolePlaysController;
+
+  /// Lets the host (`MainScreen`) reuse this view's pull-to-refresh
+  /// [RefreshIndicator] from elsewhere — the drawer's "Oppdater fra
+  /// katalog" entry triggers it via [CatalogRefreshIndicatorRegistry]
+  /// instead of running the refresh with no visible progress. Null in
+  /// contexts that don't need that (e.g. most tests).
+  final GlobalKey<RefreshIndicatorState>? refreshIndicatorKey;
 
   @override
   State<ProgramView> createState() => _ProgramViewState();
@@ -395,6 +403,7 @@ class _ProgramViewState extends State<ProgramView> {
     // silently, so there is no need to pre-check online status here.
     if (!isCatalogPlan) return segmentedBody;
     return RefreshIndicator(
+      key: widget.refreshIndicatorKey,
       onRefresh: () => active_actions.refreshActivePlanFromCatalog(context),
       child: segmentedBody,
     );
