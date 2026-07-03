@@ -1286,6 +1286,9 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get catalogRefreshing => 'Oppdaterer fra katalog…';
+
+  @override
   String get catalogRefreshCancelled => 'Katalogoppdatering avbrutt';
 
   @override

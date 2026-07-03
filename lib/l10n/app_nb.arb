@@ -376,6 +376,10 @@
       "name": {"type": "String"}
     }
   },
+  "catalogRefreshing": "Oppdaterer fra katalog…",
+  "@catalogRefreshing": {
+    "description": "Optimistisk hint vist umiddelbart når en katalogoppdatering starter (et nettverkskall pluss en lokal innholds-hash-sammenligning, som samlet kan ta litt tid) — menyvalget som utløser dette er allerede lukket da, så uten dette hintet er det ingen synlig tegn på at noe skjedde før resultat-snackbaren vises. Fjernes rett før den vises."
+  },
   "catalogRefreshCancelled": "Katalogoppdatering avbrutt",
   "catalogRefreshForked": "Lagret en lokal kopi",
   "catalogRefreshPublished": "Publiserte endringene dine",

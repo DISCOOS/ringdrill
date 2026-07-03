@@ -1290,6 +1290,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get catalogRefreshing => 'Refreshing from catalog…';
+
+  @override
   String get catalogRefreshCancelled => 'Catalog update cancelled';
 
   @override

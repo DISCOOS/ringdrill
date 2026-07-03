@@ -2138,6 +2138,12 @@ abstract class AppLocalizations {
   /// **'Discarded local changes to {name}'**
   String catalogRefreshReverted(String name);
 
+  /// Optimistic hint shown immediately when a catalog refresh starts (a network fetch plus a local content-hash comparison, which together can take a moment) — the drawer entry that triggers this has already closed by then, so without this there is no visible sign anything happened until the outcome snackbar. Cleared right before that outcome is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing from catalog…'**
+  String get catalogRefreshing;
+
   /// No description provided for @catalogRefreshCancelled.
   ///
   /// In en, this message translates to:

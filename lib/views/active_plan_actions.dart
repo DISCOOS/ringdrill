@@ -70,12 +70,20 @@ Future<void> renameActivePlan(BuildContext context) async {
 /// into the local copy via [ProgramService.refreshCatalogItem], using the
 /// shared catalog-conflict dialog to resolve any divergence. Shows a
 /// snackbar when the catalog service is unreachable.
+///
+/// Used by the drawer's "Oppdater fra katalog" entry, which pops the drawer
+/// before this even starts — so by the time the network fetch and local
+/// content-hash comparison are running, there is nothing on screen showing
+/// anything happened. Shows an optimistic "Refreshing…" snackbar up front
+/// and clears it right before the outcome snackbar, same pattern as
+/// MapView._locateMe's "Locating…" hint.
 Future<void> refreshPlanFromCatalog(
   BuildContext context,
   Program program,
 ) async {
   final localizations = AppLocalizations.of(context)!;
   final client = _buildPublishClient();
+  _showSnackBar(context, localizations.catalogRefreshing);
   try {
     final outcome = await ProgramService().refreshCatalogItem(
       program.uuid,
@@ -90,10 +98,12 @@ Future<void> refreshPlanFromCatalog(
       },
     );
     if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     final message = _catalogRefreshMessage(localizations, outcome, program);
     if (message != null) _showSnackBar(context, message);
   } catch (_) {
     if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     _showSnackBar(context, localizations.catalogServiceUnavailable);
   }
 }
