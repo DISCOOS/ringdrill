@@ -1365,6 +1365,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogDiffSessions => 'Sessions';
 
   @override
+  String get catalogDiffFieldName => 'Name';
+
+  @override
   String get catalogDiffFieldEndTime => 'End time';
 
   @override

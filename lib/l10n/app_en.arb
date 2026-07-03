@@ -1262,6 +1262,7 @@
   "catalogDiffExercises": "Exercises",
   "catalogDiffTeams": "Teams",
   "catalogDiffSessions": "Sessions",
+  "catalogDiffFieldName": "Name",
   "catalogDiffFieldEndTime": "End time",
   "catalogDiffFieldStartedAt": "Started",
   "catalogDiffFieldEndedAt": "Ended",

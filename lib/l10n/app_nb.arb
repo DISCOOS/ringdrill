@@ -424,6 +424,7 @@
   "catalogDiffExercises": "Øvelser",
   "catalogDiffTeams": "Lag",
   "catalogDiffSessions": "Økter",
+  "catalogDiffFieldName": "Navn",
   "catalogDiffFieldEndTime": "Sluttid",
   "catalogDiffFieldStartedAt": "Startet",
   "catalogDiffFieldEndedAt": "Avsluttet",

@@ -94,8 +94,15 @@ class DiffItemTile extends StatelessWidget {
 /// `"name"`, `"methodMd"`) — this is the single place that turns them into
 /// user-facing text, reusing existing field labels from elsewhere in the app
 /// so the same field reads the same way wherever it appears.
+///
+/// `'name'` is shared by exercises, teams and role plays alike (each has its
+/// own `add('name', ...)` in program.dart), so it stays a plain "Name"
+/// rather than "Exercise name" — the item's own card already names its
+/// type via context (the section title above it), so a role play's name
+/// change showing "Exercise name changed" would be actively wrong, not
+/// just redundant.
 String fieldChangeLabel(AppLocalizations l, String field) => switch (field) {
-  'name' => l.exerciseName,
+  'name' => l.catalogDiffFieldName,
   'startTime' => l.startTime,
   'endTime' => l.catalogDiffFieldEndTime,
   'numberOfTeams' => l.numberOfTeams,

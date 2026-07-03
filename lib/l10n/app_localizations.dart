@@ -2270,6 +2270,12 @@ abstract class AppLocalizations {
   /// **'Sessions'**
   String get catalogDiffSessions;
 
+  /// No description provided for @catalogDiffFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get catalogDiffFieldName;
+
   /// No description provided for @catalogDiffFieldEndTime.
   ///
   /// In en, this message translates to:

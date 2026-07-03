@@ -1361,6 +1361,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get catalogDiffSessions => 'Økter';
 
   @override
+  String get catalogDiffFieldName => 'Navn';
+
+  @override
   String get catalogDiffFieldEndTime => 'Sluttid';
 
   @override
