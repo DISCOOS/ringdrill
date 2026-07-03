@@ -94,6 +94,13 @@ class _TeamFormScreenState extends State<TeamFormScreen> {
                     onSaved: (position) {
                       _team = _team.copyWith(position: position);
                     },
+                    // Without this, `_team.position` stayed frozen at the
+                    // old value until Save — a pick would visibly "not
+                    // take" until the form was saved (same bug fixed in
+                    // station_form_screen.dart).
+                    onChanged: (position) {
+                      setState(() => _team = _team.copyWith(position: position));
+                    },
                   ),
                 ],
               ),
