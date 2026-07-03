@@ -1,67 +1,85 @@
-import { MIME_DRILL, getSlugRecord, keysFor, readJson, corsPreflight, withCors } from "./_shared.js";
+import {
+    MIME_DRILL,
+    getSlugRecord as _getSlugRecord,
+    keysFor,
+    readJson as _readJson,
+    corsPreflight,
+    withCors,
+} from "./_shared.js";
 
-export default async function (request) {
-    const preflight = corsPreflight(request);
-    if (preflight) return preflight;
+export function createHandler({ getSlugRecord = _getSlugRecord, readJson = _readJson } = {}) {
+    return async function (request) {
+        const preflight = corsPreflight(request);
+        if (preflight) return preflight;
 
-    try {
-        const { pathname } = new URL(request.url);
-        // Support both direct function path and /api redirect
-        const tail = pathname
-            .replace(/^.*\/\.netlify\/functions\/drills-head\//, "")
-            .replace(/^.*\/api\/drills\/head\//, "");
+        try {
+            const { pathname } = new URL(request.url);
+            // Support the direct function path and both netlify.toml aliases:
+            // the hyphenated form (/api/drills-head/*, mirroring this file's own
+            // name — what DrillClient.head() actually calls) and the slashed
+            // form (/api/drills/head/*). Missing the hyphenated strip here used
+            // to leave the whole "/api/drills-head/<slug>" prefix stuck to the
+            // front of `tail`, so every lookup used a bogus slug and reported
+            // "Unknown slug" regardless of whether the real slug existed.
+            const tail = pathname
+                .replace(/^.*\/\.netlify\/functions\/drills-head\//, "")
+                .replace(/^.*\/api\/drills-head\//, "")
+                .replace(/^.*\/api\/drills\/head\//, "");
 
-        if (!tail) return withCors(request, new Response("Missing slug", { status: 404 }));
-        const [slug, verMaybe] = tail.split("@");
+            if (!tail) return withCors(request, new Response("Missing slug", { status: 404 }));
+            const [slug, verMaybe] = tail.split("@");
 
-        const rec = await getSlugRecord(slug);
-        if (!rec) return withCors(request, new Response("Unknown slug", { status: 404 }));
+            const rec = await getSlugRecord(slug);
+            if (!rec) return withCors(request, new Response("Unknown slug", { status: 404 }));
 
-        const { meta } = keysFor({ ownerId: rec.ownerId, programId: rec.programId, version: "latest" });
-        const m = await readJson(meta, null);
-        if (!m) return withCors(request, new Response("Not found", { status: 404 }));
+            const { meta } = keysFor({ ownerId: rec.ownerId, programId: rec.programId, version: "latest" });
+            const m = await readJson(meta, null);
+            if (!m) return withCors(request, new Response("Not found", { status: 404 }));
 
-        // Pick version info
-        let vinfo = null;
-        if (verMaybe) {
-            vinfo = (m.versions || []).find(v => v.v === verMaybe) || null;
-        } else {
-            const sorted = (m.versions || []).slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true}));
-            vinfo = sorted.pop() || null;
-        }
-        if (!vinfo) return withCors(request, new Response("No version", { status: 404 }));
+            // Pick version info
+            let vinfo = null;
+            if (verMaybe) {
+                vinfo = (m.versions || []).find(v => v.v === verMaybe) || null;
+            } else {
+                const sorted = (m.versions || []).slice().sort((a,b)=>a.v.localeCompare(b.v, undefined, {numeric:true}));
+                vinfo = sorted.pop() || null;
+            }
+            if (!vinfo) return withCors(request, new Response("No version", { status: 404 }));
 
-        // --- NEW: If-None-Match support -> 304 Not Modified
-        const inm = request.headers.get("if-none-match");
-        if (inm && etagMatches(inm, vinfo.etag)) {
-            const h304 = new Headers({
+            // --- NEW: If-None-Match support -> 304 Not Modified
+            const inm = request.headers.get("if-none-match");
+            if (inm && etagMatches(inm, vinfo.etag)) {
+                const h304 = new Headers({
+                    "ETag": vinfo.etag,
+                    "Cache-Control": verMaybe
+                        ? "public, max-age=31536000, immutable"
+                        : "public, max-age=0, must-revalidate",
+                });
+                if (vinfo.updatedAt) h304.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
+                // For HEAD/GET, 304 must not include a body
+                return withCors(request, new Response(null, { status: 304, headers: h304 }));
+            }
+
+            // Normal 200 response for HEAD (empty body)
+            const headers = new Headers({
+                "Content-Type": MIME_DRILL,
                 "ETag": vinfo.etag,
-                "Cache-Control": verMaybe
-                    ? "public, max-age=31536000, immutable"
-                    : "public, max-age=0, must-revalidate",
+                "Content-Length": String(vinfo.size || 0),
             });
-            if (vinfo.updatedAt) h304.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
-            // For HEAD/GET, 304 must not include a body
-            return withCors(request, new Response(null, { status: 304, headers: h304 }));
+            headers.set(
+                "Cache-Control",
+                verMaybe ? "public, max-age=31536000, immutable" : "public, max-age=0, must-revalidate"
+            );
+            if (vinfo.updatedAt) headers.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
+
+            return withCors(request, new Response("", { status: 200, headers }));
+        } catch (e) {
+            return withCors(request, new Response(`HEAD error: ${e.message || e}`, { status: 500 }));
         }
-
-        // Normal 200 response for HEAD (empty body)
-        const headers = new Headers({
-            "Content-Type": MIME_DRILL,
-            "ETag": vinfo.etag,
-            "Content-Length": String(vinfo.size || 0),
-        });
-        headers.set(
-            "Cache-Control",
-            verMaybe ? "public, max-age=31536000, immutable" : "public, max-age=0, must-revalidate"
-        );
-        if (vinfo.updatedAt) headers.set("Last-Modified", new Date(vinfo.updatedAt).toUTCString());
-
-        return withCors(request, new Response("", { status: 200, headers }));
-    } catch (e) {
-        return withCors(request, new Response(`HEAD error: ${e.message || e}`, { status: 500 }));
-    }
+    };
 }
+
+export default createHandler();
 
 // Accepts one or many ETags per RFC 7232 (comma-separated list)
 // We generate strong ETags like:  "abcdef1234..."
