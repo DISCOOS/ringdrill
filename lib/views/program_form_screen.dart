@@ -225,11 +225,12 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                     onAdd: _addSection,
                     onRemove: _removeSection,
                   ),
-                  // sectionSpecs is built from the fixed _Section enum, so it
-                  // is never actually empty for this screen today — but the
-                  // check keeps the divider from floating above nothing if a
-                  // future variant of this screen passes an empty list.
-                  if (sectionSpecs.isNotEmpty) const Divider(height: 32),
+                  // Hidden once every optional section has been added: with
+                  // no add-buttons left to show, the divider would otherwise
+                  // sit directly between two blocks of plain text fields
+                  // with nothing distinct to separate.
+                  if (_activeSections.length < _Section.values.length)
+                    const Divider(height: 32),
                   _StationNumberFormatPicker(
                     value: _stationNumberFormat,
                     onChanged: (f) => setState(() => _stationNumberFormat = f),

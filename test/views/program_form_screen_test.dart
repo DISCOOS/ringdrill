@@ -8,6 +8,8 @@ Program _baseProgram({
   String name = 'Vinterøvelse',
   String description = '',
   String? briefIntroMd,
+  String? commsMd,
+  String? beforeRoundMd,
   String? languageCode,
 }) {
   final now = DateTime.utc(2026, 1, 1);
@@ -25,6 +27,8 @@ Program _baseProgram({
     sessions: const [],
     exercises: const [],
     briefIntroMd: briefIntroMd,
+    commsMd: commsMd,
+    beforeRoundMd: beforeRoundMd,
   );
 }
 
@@ -77,7 +81,32 @@ void main() {
     expect(find.text(l10n.briefSectionProgramIntro), findsOneWidget);
     expect(find.text(l10n.briefSectionProgramComms), findsOneWidget);
     expect(find.text(l10n.briefSectionProgramBeforeRound), findsOneWidget);
+    // A section is still missing, so the divider below the add-buttons is
+    // shown (plus the always-present one below station numbering).
+    expect(find.byType(Divider), findsNWidgets(2));
   });
+
+  testWidgets(
+    'hides the divider below the optional fields once all are added',
+    (tester) async {
+      await _openForm(
+        tester,
+        _baseProgram(
+          briefIntroMd: 'intro',
+          commsMd: 'komms',
+          beforeRoundMd: 'før runden',
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      expect(find.text(l10n.briefSectionProgramIntro), findsOneWidget);
+      expect(find.text(l10n.briefSectionProgramComms), findsOneWidget);
+      expect(find.text(l10n.briefSectionProgramBeforeRound), findsOneWidget);
+      // No add-buttons left, so only the divider below station numbering
+      // remains.
+      expect(find.byType(Divider), findsOneWidget);
+    },
+  );
 
   testWidgets('save edits name, description and a brief field', (tester) async {
     Program? captured;
