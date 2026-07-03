@@ -173,26 +173,37 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
               key: _formKey,
               child: ListView(
                 children: [
-                  // Exercise Name
-                  TextFormField(
-                    autofocus: true,
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: localizations.exerciseName,
-                    ),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? localizations.pleaseEnterAName
-                        : null,
+                  // Exercise Name, with the start-time picker beside it —
+                  // sized to its own content (IntrinsicWidth) rather than
+                  // stretched, so the name field keeps most of the row.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          autofocus: true,
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: localizations.exerciseName,
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? localizations.pleaseEnterAName
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16.0),
+                      IntrinsicWidth(
+                        child: _buildStartTimeField(context, localizations),
+                      ),
+                    ],
                   ),
 
                   SizedBox(height: 16.0),
 
-                  // Time fields. The three duration fields (execution,
-                  // evaluation, rotation) always share one row — they are
-                  // short minute values, mirroring the teams/stations/rounds
-                  // row below. On wide layouts the start-time picker joins
-                  // them on the same row; on narrow it sits on its own row
-                  // above so the duration labels keep enough width to read.
+                  // The three duration fields (execution, evaluation,
+                  // rotation) share one row — short minute values, mirroring
+                  // the teams/stations/rounds row below.
                   _buildTimeSection(context, localizations),
 
                   SizedBox(height: 16.0),
@@ -333,75 +344,48 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     );
   }
 
-  /// Lays out the start-time picker and the three duration fields. Above
-  /// [_kTimeRowThreshold] of available width all four share a single row;
-  /// below it the start-time picker moves to its own row above the three
-  /// duration fields so the floating labels keep enough width to render.
-  static const double _kTimeRowThreshold = 560.0;
-
+  /// The three duration fields (execution, evaluation, rotation) always
+  /// share one row — short minute values, mirroring the teams/stations/
+  /// rounds row below. The start-time picker sits beside the exercise name
+  /// instead of in this row.
   Widget _buildTimeSection(
     BuildContext context,
     AppLocalizations localizations,
   ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final startField = _buildStartTimeField(context, localizations);
-        final durations = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _buildDurationField(
-                controller: _executionTimeController,
-                label: localizations.executionTime,
-                localizations: localizations,
-              ),
-            ),
-            const SizedBox(width: 16.0),
-            Expanded(
-              child: _buildDurationField(
-                controller: _evaluationTimeController,
-                label: localizations.evaluationTime,
-                localizations: localizations,
-              ),
-            ),
-            const SizedBox(width: 16.0),
-            Expanded(
-              child: _buildDurationField(
-                controller: _rotationTimeController,
-                label: localizations.rotationTime,
-                localizations: localizations,
-              ),
-            ),
-          ],
-        );
-
-        if (constraints.maxWidth >= _kTimeRowThreshold) {
-          // Four equal columns: start picker (flex 1) + the three-field
-          // duration row (flex 3, each child 1/3 of that → all four equal).
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: startField),
-              const SizedBox(width: 16.0),
-              Expanded(flex: 3, child: durations),
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            startField,
-            const SizedBox(height: 16.0),
-            durations,
-          ],
-        );
-      },
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _buildDurationField(
+            controller: _executionTimeController,
+            label: localizations.executionTime,
+            localizations: localizations,
+          ),
+        ),
+        const SizedBox(width: 16.0),
+        Expanded(
+          child: _buildDurationField(
+            controller: _evaluationTimeController,
+            label: localizations.evaluationTime,
+            localizations: localizations,
+          ),
+        ),
+        const SizedBox(width: 16.0),
+        Expanded(
+          child: _buildDurationField(
+            controller: _rotationTimeController,
+            label: localizations.rotationTime,
+            localizations: localizations,
+          ),
+        ),
+      ],
     );
   }
 
-  /// Start-time picker styled as a tappable field so it aligns with the
-  /// sibling duration [TextFormField]s on the shared row.
+  /// Start-time picker styled as a tappable [InputDecorator] so it reads
+  /// like the sibling [TextFormField]s. Sits beside the exercise-name field,
+  /// wrapped in [IntrinsicWidth] by the caller so it sizes to its own
+  /// content instead of stretching.
   Widget _buildStartTimeField(
     BuildContext context,
     AppLocalizations localizations,
