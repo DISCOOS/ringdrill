@@ -733,8 +733,8 @@ void main() {
   );
 
   testWidgets(
-    'reordering two stations with unchanged names shows no changes at all '
-    'for that exercise',
+    'reordering two stations reports one order change per station, and no '
+    'stray divider when the exercise has no changes of its own',
     (tester) async {
       tester.view.physicalSize = const Size(1000, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -772,19 +772,83 @@ void main() {
       );
       final realDiff = diffPrograms(local, remote);
 
-      // Nothing meaningfully differs (before name-based matching, this
-      // looked like both stations fully changed), so the exercise never
-      // shows up as modified at all — matching against a diff with nothing
-      // in it, we can only assert the dialog opens without any exercise
-      // section rendering.
-      expect(realDiff.modifiedExercises, isEmpty);
+      // Name-based matching pairs each station with itself regardless of
+      // position, so the swap is not mistaken for a rewrite of every
+      // field — but the reorder itself is real and now shows, one order
+      // entry per station, same as an exercise-level swap already does.
+      final exerciseDiff = realDiff.modifiedExercises.single;
+      expect(exerciseDiff.changes, isEmpty);
+      expect(exerciseDiff.nestedChanges, hasLength(2));
 
       await openRealDiffDialog(tester, realDiff);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.catalogDiffExercises), findsNothing);
-      expect(find.text(l10n.stationsTab), findsNothing);
+      expect(find.text(l10n.stationsTab), findsOneWidget);
       expect(find.textContaining(l10n.catalogDiffFieldOther), findsNothing);
+      expect(find.text('1.1'), findsOneWidget);
+      expect(find.text('1.2'), findsOneWidget);
+
+      // The exercise itself has nothing of its own to show — no divider is
+      // rendered separating an empty change list from the "Poster" section
+      // below it, since there is nothing on the "above" side to separate
+      // from. See the sibling test below for the case where a divider is
+      // warranted.
+      expect(_dividerContainers(), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a divider separates an exercise\'s own changes from its stations '
+    'only when the exercise actually has its own changes to separate from',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final local = Program(
+        uuid: 'p1',
+        name: 'Test',
+        description: '',
+        metadata: ProgramMetadata(
+          created: DateTime(2026),
+          updated: DateTime(2026),
+          version: '1.0',
+        ),
+        teams: const [],
+        sessions: const [],
+        exercises: [
+          buildExercise('ex-1', 'Nested only', index: 0),
+          buildExercise('ex-2', 'Own and nested', index: 1),
+        ],
+      );
+      final remote = local.copyWith(
+        exercises: [
+          // Only its station changes — no divider expected.
+          local.exercises[0].copyWith(
+            stations: [
+              local.exercises[0].stations.single.copyWith(name: 'Old name'),
+            ],
+          ),
+          // Both its own field and its station change — divider expected.
+          local.exercises[1]
+              .copyWith(
+                stations: [
+                  local.exercises[1].stations.single.copyWith(
+                    name: 'Old name',
+                  ),
+                ],
+              )
+              .copyWith(methodMd: 'Old method'),
+        ],
+      );
+      final realDiff = diffPrograms(local, remote);
+      expect(realDiff.modifiedExercises, hasLength(2));
+
+      await openRealDiffDialog(tester, realDiff);
+
+      // Exactly one divider — the one exercise with both its own and a
+      // nested change gets it; the nested-only exercise does not.
+      expect(_dividerContainers(), findsOneWidget);
     },
   );
 
@@ -869,3 +933,13 @@ String _versionLineText(WidgetTester tester) {
   }
   fail('No version comparison line (containing "→") was rendered');
 }
+
+/// Finds the divider `Container`s rendered above a "Poster"/"Stations"
+/// sub-header — identified by their top-only bordered [BoxDecoration],
+/// which is unique to that divider (`_DiffSection`'s own outer container
+/// only sets `color`/`borderRadius`, never a `border`).
+Finder _dividerContainers() => find.byWidgetPredicate((widget) {
+  if (widget is! Container) return false;
+  final decoration = widget.decoration;
+  return decoration is BoxDecoration && decoration.border != null;
+});

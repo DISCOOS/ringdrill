@@ -281,36 +281,6 @@ Map<String, dynamic> _canonicalExerciseMap(Exercise ex) {
   return _canonicalize(map) as Map<String, dynamic>;
 }
 
-/// [_canonicalExerciseMap] with each station's own `index` stripped and the
-/// stations list re-sorted by name instead — used ONLY by the diff engine's
-/// "is this exercise modified" check (see `diffPrograms`), never by
-/// [ProgramX.computeContentHash] (which deliberately keeps station order as
-/// real content, since a reorder IS an unpublished change worth flagging
-/// via the "Unpublished" badge).
-///
-/// Stripping the `index` *field* alone is not enough: `_canonicalExerciseMap`
-/// sorts stations by index before returning, so the resulting JSON *array*
-/// still encodes the order positionally even with the field gone — a pure
-/// swap would still compare unequal purely because element order differs.
-/// Re-sorting by name instead makes the comparison genuinely order-blind,
-/// so it agrees with `_diffStations`'s own name-based matching (which
-/// already reports zero diff for a pure reorder) instead of contradicting
-/// it via a stray `'other'` fallback.
-Map<String, dynamic> _canonicalExerciseMapForDiff(Exercise ex) {
-  final map = Map<String, dynamic>.from(_canonicalExerciseMap(ex));
-  final stations =
-      (map['stations'] as List)
-          .map(
-            (s) =>
-                Map<String, dynamic>.from(s as Map<String, dynamic>)
-                  ..remove('index'),
-          )
-          .toList()
-        ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
-  map['stations'] = stations;
-  return map;
-}
-
 /// Canonical JSON map for a [RolePlay], with `behavior`/`background`/
 /// `propsMd` (excluded from `toJson()` per ADR-0022) injected back in.
 Map<String, dynamic> _canonicalRolePlayMap(RolePlay rp) {
@@ -328,13 +298,12 @@ ProgramDiff diffPrograms(Program local, Program remote) {
     remote.exercises,
     uuid: (e) => e.uuid,
     name: (e) => e.name,
-    // NOT _canonicalExerciseMap (that one is for computeContentHash, which
-    // correctly treats station order as real content) — this variant is
-    // order-blind for stations so a pure station reorder, already resolved
-    // cleanly by _diffStations's name-based matching below, doesn't ALSO
-    // make the raw canonical-map comparison disagree and fall through to a
-    // spurious "Other changes".
-    canonicalize: _canonicalExerciseMapForDiff,
+    // Same canonical map computeContentHash uses — deliberately order-
+    // sensitive for stations, so a pure station reorder trips this "is the
+    // exercise modified" check and _diffStations below gets the chance to
+    // explain *what* moved via its own `field: 'order'` change, the same
+    // way an exercise reorder is explained.
+    canonicalize: _canonicalExerciseMap,
     fieldChanges: _exerciseFieldChanges,
     // Only exercises have a numbering scheme (Numbering.exercise) — passing
     // these also turns on per-item reorder detection in _diffItems, so a
@@ -513,6 +482,13 @@ List<FieldChange> _exerciseFieldChanges(Exercise local, Exercise remote) {
 /// accepted as a rare edge case, and never worse than the old behavior of
 /// showing every field of every station as changed on every reorder.
 ///
+/// Once paired, a station's relative rank among the *other paired stations*
+/// (not its raw index, which an insertion/removal elsewhere would shift even
+/// with nothing about relative order changed) is compared local-vs-remote,
+/// the same rank-based approach `_diffItems` uses for exercises — a genuine
+/// swap surfaces as its own `field: 'order'` change, combined on one card
+/// with any real field edit the same station also picked up.
+///
 /// [exerciseNumber] is the parent exercise's own 1-based local position;
 /// combined with [format] via [Numbering.station] it labels each station
 /// the same way the rest of the app does (e.g. "1.2").
@@ -571,9 +547,45 @@ _diffStations(
           .toList()
         ..sort();
 
+  // Rank each paired station among the *other paired* stations, local order
+  // vs. remote order — mirrors _diffItems's exercise-level reorder check.
+  // Keyed by local index (unique within `local.stations`, and every pair
+  // has exactly one), since Station has no uuid to key by.
+  final localRankByLocalIndex = {
+    for (final (rank, pair) in (List.of(pairs)..sort(
+      (a, b) => a.$1.index.compareTo(b.$1.index),
+    )).indexed)
+      pair.$1.index: rank,
+  };
+  final remoteRankByLocalIndex = {
+    for (final (rank, pair) in (List.of(pairs)..sort(
+      (a, b) => a.$2.index.compareTo(b.$2.index),
+    )).indexed)
+      pair.$1.index: rank,
+  };
+
   final modified = <(ItemDiff, int)>[];
   for (final (localStation, remoteStation) in pairs) {
-    final changes = _stationFieldChanges(localStation, remoteStation);
+    var changes = _stationFieldChanges(localStation, remoteStation);
+    if (localRankByLocalIndex[localStation.index] !=
+        remoteRankByLocalIndex[localStation.index]) {
+      changes = [
+        FieldChange(
+          field: 'order',
+          local: Numbering.station(
+            format,
+            exerciseNumber: exerciseNumber,
+            stationIndex: localStation.index,
+          ),
+          remote: Numbering.station(
+            format,
+            exerciseNumber: exerciseNumber,
+            stationIndex: remoteStation.index,
+          ),
+        ),
+        ...changes,
+      ];
+    }
     if (changes.isEmpty) continue;
     modified.add((
       ItemDiff(

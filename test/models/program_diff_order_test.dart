@@ -283,8 +283,8 @@ void main() {
   });
 
   test(
-    'reordering two stations with unchanged names reports zero diff — '
-    'the whole point of matching by name instead of index',
+    'swapping two stations reports one order change per station, labelled '
+    'with its new dotted number — mirrors how an exercise swap is reported',
     () {
       final local = base(
         exercises: [
@@ -310,18 +310,37 @@ void main() {
 
       final diff = diffPrograms(local, remote);
 
-      // Before matching by name, this pure reorder looked like every field
-      // of both stations changed (each index now points at a different
-      // physical station). Name-based matching pairs each station with
-      // itself regardless of position, and _stationFieldChanges already
-      // excludes index, so nothing is actually reported as different.
-      expect(diff.modifiedExercises, isEmpty);
+      // Name-based matching pairs each station with itself regardless of
+      // position, so the swap is recognized as a pure reorder rather than a
+      // rewrite of every field — but unlike a no-op, the reorder itself is
+      // now surfaced, exactly as an exercise-level swap already is.
+      final exerciseDiff = diff.modifiedExercises.single;
+      expect(exerciseDiff.changes, isEmpty);
+      expect(exerciseDiff.nestedChanges, hasLength(2));
+
+      final fremrykning = exerciseDiff.nestedChanges.firstWhere(
+        (i) => i.name == 'Fremrykning',
+      );
+      expect(fremrykning.number, '1.1');
+      expect(fremrykning.changes, hasLength(1));
+      expect(fremrykning.changes.single.field, 'order');
+      expect(fremrykning.changes.single.local, '1.1');
+      expect(fremrykning.changes.single.remote, '1.2');
+
+      final rasmasse = exerciseDiff.nestedChanges.firstWhere(
+        (i) => i.name == 'Søk i rasmasse',
+      );
+      expect(rasmasse.number, '1.2');
+      expect(rasmasse.changes, hasLength(1));
+      expect(rasmasse.changes.single.field, 'order');
+      expect(rasmasse.changes.single.local, '1.2');
+      expect(rasmasse.changes.single.remote, '1.1');
     },
   );
 
   test(
-    'reordering two stations that ALSO had a field edited reports only '
-    'that edit, not a full rewrite',
+    'swapping two stations where one also had a field edited reports both '
+    'facts on that station, without turning the swap into a full rewrite',
     () {
       final local = base(
         exercises: [
@@ -352,10 +371,22 @@ void main() {
       final exerciseDiff = diff.modifiedExercises.single;
       expect(exerciseDiff.addedNested, isEmpty);
       expect(exerciseDiff.removedNested, isEmpty);
-      expect(exerciseDiff.nestedChanges, hasLength(1));
-      final stationDiff = exerciseDiff.nestedChanges.single;
-      expect(stationDiff.name, 'Fremrykning');
-      expect(stationDiff.changes.single.field, 'description');
+      expect(exerciseDiff.nestedChanges, hasLength(2));
+
+      // Moved AND edited — both facts on one card, order listed first.
+      final fremrykning = exerciseDiff.nestedChanges.firstWhere(
+        (i) => i.name == 'Fremrykning',
+      );
+      expect(fremrykning.changes.map((c) => c.field), [
+        'order',
+        'description',
+      ]);
+
+      // Moved only — no spurious field rewrite for the other station.
+      final rasmasse = exerciseDiff.nestedChanges.firstWhere(
+        (i) => i.name == 'Søk i rasmasse',
+      );
+      expect(rasmasse.changes.map((c) => c.field), ['order']);
     },
   );
 

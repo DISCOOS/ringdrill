@@ -383,6 +383,13 @@ class _ConflictItemTile extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final number = item.number;
+    final stationsHeader = Text(
+      localizations.stationsTab,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -420,22 +427,27 @@ class _ConflictItemTile extends StatelessWidget {
               item.addedNested.isNotEmpty ||
               item.removedNested.isNotEmpty) ...[
             Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 6),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: theme.dividerColor),
-                  ),
-                ),
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  localizations.stationsTab,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              // The divider line only earns its keep when it's actually
+              // separating this item's own change lines (above) from the
+              // nested section (below) — with no own changes, a line
+              // directly under the title/badge row separates nothing and
+              // just reads as a stray rule, so it's dropped and the header
+              // gets a smaller top gap instead.
+              padding: EdgeInsets.only(
+                top: item.changes.isNotEmpty ? 12 : 8,
+                bottom: 6,
               ),
+              child: item.changes.isNotEmpty
+                  ? Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: theme.dividerColor),
+                        ),
+                      ),
+                      padding: const EdgeInsets.only(top: 8),
+                      child: stationsHeader,
+                    )
+                  : stationsHeader,
             ),
             // Plain name-list lines, same convention as _EntitySection's own
             // added/removed rows — no per-item card, just names.
