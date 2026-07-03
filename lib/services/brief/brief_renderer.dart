@@ -101,6 +101,8 @@ class BriefRenderer {
       rolePlaysByExercise.putIfAbsent(rp.exerciseUuid, () => []).add(rp);
     }
 
+    final programVars = _programVariables(program);
+
     final exerciseContexts = exercises.map((ex) {
       return _buildExerciseContext(
         program: program,
@@ -116,8 +118,12 @@ class BriefRenderer {
       'program': {
         'name': program.name,
         'description': program.description.isEmpty ? null : program.description,
-        'briefIntroMd': program.briefIntroMd,
-        'commsMd': program.commsMd,
+        'briefIntroMd': _resolveField(
+          program.briefIntroMd,
+          vars: programVars,
+          l10n: l10n,
+        ),
+        'commsMd': _resolveField(program.commsMd, vars: programVars, l10n: l10n),
       },
       'exercises': exerciseContexts,
       'if_director': audience.includesActorPii,
@@ -142,7 +148,12 @@ class BriefRenderer {
     required AppLocalizations l10n,
   }) {
     final exNum = _exerciseNumber(program, exercise);
-    final effectiveComms = _effectiveCommsMd(program, exercise);
+    final exerciseVars = _effectiveVariables(program, exercise: exercise);
+    final effectiveComms = _resolveField(
+      _effectiveCommsMd(program, exercise),
+      vars: exerciseVars,
+      l10n: l10n,
+    );
 
     final stationContexts = exercise.stations.map((station) {
       return _buildStationContext(
@@ -169,11 +180,27 @@ class BriefRenderer {
       'exerciseAnchor': exerciseAnchor,
       'exerciseTimeLabel': _exerciseTimeLabel(exercise),
       'exerciseDurationLabel': _exerciseDurationLabel(exercise, l10n),
-      'methodMd': exercise.methodMd,
-      'learningGoalsMd': exercise.learningGoalsMd,
-      'trainingFocusMd': exercise.trainingFocusMd,
-      'orderFormatMd': exercise.orderFormatMd,
-      'executionTipsMd': exercise.executionTipsMd,
+      'methodMd': _resolveField(exercise.methodMd, vars: exerciseVars, l10n: l10n),
+      'learningGoalsMd': _resolveField(
+        exercise.learningGoalsMd,
+        vars: exerciseVars,
+        l10n: l10n,
+      ),
+      'trainingFocusMd': _resolveField(
+        exercise.trainingFocusMd,
+        vars: exerciseVars,
+        l10n: l10n,
+      ),
+      'orderFormatMd': _resolveField(
+        exercise.orderFormatMd,
+        vars: exerciseVars,
+        l10n: l10n,
+      ),
+      'executionTipsMd': _resolveField(
+        exercise.executionTipsMd,
+        vars: exerciseVars,
+        l10n: l10n,
+      ),
       'effectiveCommsMd': effectiveComms,
       'organisationBlock': _organisationBlock(program, exercise, l10n),
       'stations': stationContexts,
@@ -216,17 +243,18 @@ class BriefRenderer {
       },
     };
 
-    String? resolveField(String? content) {
-      if (content == null) return null;
-      try {
-        return Template(
-          content,
-          htmlEscapeValues: false,
-        ).renderString(stationRefContext);
-      } catch (_) {
-        return content;
-      }
-    }
+    final stationVars = _effectiveVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    );
+
+    String? resolveField(String? content) => _resolveField(
+      content,
+      vars: stationVars,
+      l10n: l10n,
+      refContext: stationRefContext,
+    );
 
     final roleplayContexts = rolePlays.map((rp) {
       Map<String, dynamic>? actorContext;
@@ -411,9 +439,14 @@ String _organisationBlock(
       '_(${l10n.rotationShareLegendPhases})_',
     )
     ..writeln();
-  if (program.beforeRoundMd != null && program.beforeRoundMd!.isNotEmpty) {
+  final beforeRound = _resolveField(
+    program.beforeRoundMd,
+    vars: _programVariables(program),
+    l10n: l10n,
+  );
+  if (beforeRound != null && beforeRound.isNotEmpty) {
     buf
-      ..writeln(program.beforeRoundMd)
+      ..writeln(beforeRound)
       ..writeln();
   }
   buf
@@ -496,6 +529,27 @@ String _substituteVariables(
     final name = match.group(1)!;
     return vars[name] ?? l10n.briefUnknownVariable(name);
   });
+}
+
+/// Resolves a markdown field for rendering: substitutes `{{var.<name>}}`
+/// tokens against [vars] first, then feeds the result through the existing
+/// mustache cross-reference pass against [refContext] (e.g.
+/// `{{station.position.utm}}`). Falls back to the variable-substituted (but
+/// not mustache-rendered) content if that pass throws — the same fallback
+/// behaviour the renderer had before variable substitution was introduced.
+String? _resolveField(
+  String? content, {
+  required Map<String, String> vars,
+  required AppLocalizations l10n,
+  Map<String, dynamic> refContext = const {},
+}) {
+  if (content == null) return null;
+  final withVars = _substituteVariables(content, vars, l10n);
+  try {
+    return Template(withVars, htmlEscapeValues: false).renderString(refContext);
+  } catch (_) {
+    return withVars;
+  }
 }
 
 /// Converts a heading string to a GitHub-flavored markdown anchor id:
