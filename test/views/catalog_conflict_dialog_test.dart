@@ -127,7 +127,7 @@ void main() {
       final publishRight =
           publishBox.localToGlobal(Offset.zero).dx + publishBox.size.width;
 
-      // The content Padding (EdgeInsets.fromLTRB(20, 16, 20, 12) in
+      // The content Padding (EdgeInsets.fromLTRB(16, 8, 16, 12) in
       // catalog_conflict_dialog.dart) sets the dialog's content bounds —
       // found by its exact padding value rather than find.byType(Padding)
       // .first, since ancestor traversal order among several Padding
@@ -135,16 +135,16 @@ void main() {
       final contentPadding = find.byWidgetPredicate(
         (w) =>
             w is Padding &&
-            w.padding == const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            w.padding == const EdgeInsets.fromLTRB(16, 8, 16, 12),
       );
       final contentBox = tester.renderObject(contentPadding) as RenderBox;
       // The Padding's own RenderBox reports its outer bound, before the
-      // inset is subtracted — knock off the 20px right inset to get the
+      // inset is subtracted — knock off the 16px right inset to get the
       // actual content edge the buttons should align against.
       final contentRight =
           contentBox.localToGlobal(Offset.zero).dx +
           contentBox.size.width -
-          20;
+          16;
 
       expect(publishRight, closeTo(contentRight, 1));
     },

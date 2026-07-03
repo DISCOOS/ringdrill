@@ -54,7 +54,12 @@ class _CatalogConflictContent extends StatelessWidget {
     final theme = Theme.of(context);
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+        // Horizontal 16 (not 20) and top 8 (not 16) to match the other
+        // sheets' content padding (e.g. feedback.dart's fromLTRB(16, 8, 16,
+        // 16)) — the sheet chrome already accounts for the drag-handle-sized
+        // gap above this, so stacking a full 16px on top of that read as
+        // noticeably more top/left inset than the "x" gets elsewhere.
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,14 +71,19 @@ class _CatalogConflictContent extends StatelessWidget {
                 // leading close icon). Needed here specifically because
                 // this sheet is non-dismissable — no drag-down, no barrier
                 // tap — so without it there would be no visible way out
-                // other than reading the bottom action row.
+                // other than reading the bottom action row. Zero padding
+                // (rather than the IconButton default) so the glyph sits at
+                // the same inset as the rest of the content, matching an
+                // AppBar leading icon instead of adding its own extra gap.
                 IconButton(
                   icon: const Icon(Icons.close),
                   tooltip: localizations.catalogConflictCancel,
+                  padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                   onPressed: () =>
                       Navigator.pop(context, CatalogConflictChoice.cancel),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     localizations.catalogConflictTitle,
