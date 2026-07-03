@@ -748,28 +748,41 @@ void _showSnackBar(BuildContext context, String message) {
 /// can only be set when the [SnackBar] is created, so it stays fixed at
 /// `none` for the snackbar's whole lifetime) — a spinner sits where a
 /// dismiss control would be, since dismissing before the operation
-/// finishes would be misleading. Once [showResult] is called, that spinner
-/// is replaced with a manual close (✕) button so the user can dismiss the
-/// outcome whenever they're done reading it; the constructor's `duration`
-/// is only a fallback for whichever comes first.
+/// finishes would be misleading. The constructor's `duration` is a long
+/// fallback sized for the loading phase (a slow network call), not a
+/// normal auto-dismiss — [SnackBar.duration] is fixed at creation time and
+/// this snackbar's content is updated in place afterwards rather than
+/// re-shown, so it does not reset when [showResult] swaps in the outcome.
+/// [showResult] instead schedules its own short auto-dismiss so the result
+/// does not just sit there for the remainder of the original 30s window.
 class _RefreshSnackBar {
   _RefreshSnackBar(BuildContext context, String loadingMessage)
     : _state = ValueNotifier(
         _RefreshSnackBarState(message: loadingMessage, isLoading: true),
       ) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    _controller = ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 30),
         dismissDirection: DismissDirection.none,
-        content: _RefreshSnackBarContent(state: _state),
+        content: _RefreshSnackBarContent(state: _state, onClose: () => _controller.close()),
       ),
     );
   }
 
   final ValueNotifier<_RefreshSnackBarState> _state;
+  late final ScaffoldFeatureController<SnackBar, SnackBarClosedReason> _controller;
 
   void showResult(String message) {
     _state.value = _RefreshSnackBarState(message: message, isLoading: false);
+    // Same length as Flutter's own default SnackBar.duration — reads as an
+    // ordinary transient toast once the result is showing, rather than
+    // inheriting the loading phase's much longer fallback window. Uses
+    // this specific snackbar's own controller (not
+    // ScaffoldMessenger.hideCurrentSnackBar(), which acts on whatever
+    // snackbar happens to be current) so a second refresh started in the
+    // meantime — with its own new snackbar — can't be closed early by this
+    // timer instead.
+    Future.delayed(const Duration(seconds: 4), _controller.close);
   }
 }
 
@@ -781,9 +794,10 @@ class _RefreshSnackBarState {
 }
 
 class _RefreshSnackBarContent extends StatelessWidget {
-  const _RefreshSnackBarContent({required this.state});
+  const _RefreshSnackBarContent({required this.state, required this.onClose});
 
   final ValueNotifier<_RefreshSnackBarState> state;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -804,8 +818,7 @@ class _RefreshSnackBarContent extends StatelessWidget {
                       color: onInverseSurface,
                     )
                   : InkWell(
-                      onTap: () =>
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                      onTap: onClose,
                       child: Icon(
                         Icons.close,
                         size: 18,
