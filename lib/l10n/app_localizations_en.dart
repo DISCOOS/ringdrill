@@ -1758,6 +1758,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get briefStationNoPosition => 'no position';
 
   @override
+  String briefUnknownVariable(String name) {
+    return '‹missing variable: $name›';
+  }
+
+  @override
   String get briefCopyMarkdown => 'Copy as markdown';
 
   @override

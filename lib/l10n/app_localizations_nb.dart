@@ -1755,6 +1755,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get briefStationNoPosition => 'ingen posisjon';
 
   @override
+  String briefUnknownVariable(String name) {
+    return '‹mangler variabel: $name›';
+  }
+
+  @override
   String get briefCopyMarkdown => 'Kopier som markdown';
 
   @override

@@ -1698,6 +1698,13 @@
   "@briefStationNoPosition": {
     "description": "Italic placeholder shown in the brief next to 'Post Nx plassering:' when a station has no UTM position set."
   },
+  "briefUnknownVariable": "‹missing variable: {name}›",
+  "@briefUnknownVariable": {
+    "description": "Rendered in place of {{var.<name>}} in a brief when <name> is not a declared plan variable (DESIGN-008/ADR-0046).",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "briefCopyMarkdown": "Copy as markdown",
   "@briefCopyMarkdown": {
     "description": "Tooltip on the floating copy-markdown button at the top-right of the brief reading column."

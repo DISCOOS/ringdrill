@@ -2960,6 +2960,12 @@ abstract class AppLocalizations {
   /// **'no position'**
   String get briefStationNoPosition;
 
+  /// Rendered in place of {{var.<name>}} in a brief when <name> is not a declared plan variable (DESIGN-008/ADR-0046).
+  ///
+  /// In en, this message translates to:
+  /// **'‹missing variable: {name}›'**
+  String briefUnknownVariable(String name);
+
   /// Tooltip on the floating copy-markdown button at the top-right of the brief reading column.
   ///
   /// In en, this message translates to:
