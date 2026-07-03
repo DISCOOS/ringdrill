@@ -3,14 +3,15 @@ import 'package:ringdrill/utils/app_flags.dart';
 
 void main() {
   group('AppFlags', () {
-    test('all has exactly three entries with expected names', () {
-      expect(AppFlags.all.length, 3);
+    test('all has exactly four entries with expected names', () {
+      expect(AppFlags.all.length, 4);
       expect(
         AppFlags.all.map((f) => f.name),
         containsAll([
           'MIGRATION_DISABLED',
           'RINGDRILL_FORCE_LEGACY_HOST',
           'RINGDRILL_LOCAL_BASE_URL',
+          'RINGDRILL_PLAN_VARIABLES',
         ]),
       );
     });
