@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 
@@ -85,6 +86,42 @@ void main() {
       metadata: prog.metadata.copyWith(updated: now.add(const Duration(days: 1))),
     );
     expect(prog.computeContentHash(), touched.computeContentHash());
+  });
+
+  // Regression coverage for the specific gap that motivated switching
+  // computeContentHash() from an allowlist to a denylist: these two
+  // top-level Program fields were silently missing from the old
+  // hand-listed field set, so changing them never flagged a plan as having
+  // unpublished changes.
+  test('content hash changes when stationNumberFormat changes', () {
+    final prog = base();
+    final alpha = prog.copyWith(stationNumberFormat: StationNumberFormat.alpha);
+    expect(prog.computeContentHash(), isNot(alpha.computeContentHash()));
+  });
+
+  test('content hash changes when exerciseNumberFormat changes', () {
+    // ExerciseNumberFormat has only one value today, so this asserts the
+    // field is actually read into the hash rather than asserting a change
+    // (there is no second value to change to yet) — same instance in, same
+    // hash out, via a round-trip through copyWith to rule out identity
+    // short-circuits.
+    final prog = base();
+    final same = prog.copyWith(
+      exerciseNumberFormat: ExerciseNumberFormat.hash,
+    );
+    expect(prog.computeContentHash(), same.computeContentHash());
+  });
+
+  test('content hash changes when name or description change', () {
+    final prog = base();
+    expect(
+      prog.computeContentHash(),
+      isNot(prog.copyWith(name: 'Changed').computeContentHash()),
+    );
+    expect(
+      prog.computeContentHash(),
+      isNot(prog.copyWith(description: 'Changed').computeContentHash()),
+    );
   });
 
   test('diffPrograms detects added/removed/modified rolePlays', () {

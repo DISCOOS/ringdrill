@@ -106,17 +106,42 @@ sealed class ProgramDiff with _$ProgramDiff {
 extension ProgramX on Program {
   /// Stable fingerprint of the user-visible content. Used to detect whether
   /// the local copy has unpublished edits when refreshing from the catalog.
-  /// Includes name and description so renames (the most common "small" edit)
-  /// are detected as local changes. Excludes uuid, source, contentHash and
-  /// metadata timestamps because those drift without being content changes.
-  /// `metadata.languageCode` is the one metadata field that IS included —
-  /// unlike the timestamps, it is user-chosen content (ADR-0007 addendum),
-  /// so changing it must register as a local change.
+  ///
+  /// This is a DENYLIST, not an allowlist: [programMap] below starts from
+  /// this program's own [Program.toJson] — which already carries every
+  /// current field, and every field added to [Program] in the future,
+  /// automatically — and then only *removes* the handful of keys that must
+  /// be excluded. The previous version hand-listed the fields to include
+  /// (just `name`/`description`/`tags`/the brief markdown fields) and
+  /// silently missed `exerciseNumberFormat` and `stationNumberFormat` as a
+  /// result; a denylist can't have that failure mode for a *new* top-level
+  /// field — at worst a genuinely inert bookkeeping field gets included by
+  /// mistake (a spurious "unpublished" flag that self-corrects on the next
+  /// publish), which is far cheaper than silently failing to detect a real
+  /// edit. The exercise/station/team/session/rolePlay levels already follow
+  /// this same "start from toJson, patch in what's excluded" shape below —
+  /// only the program level was still hand-listed.
+  ///
+  /// Removed on purpose:
+  /// - `uuid`, `contentHash`, `source` — identity/bookkeeping, not content.
+  /// - `actors` — local PII, excluded entirely per ADR-0018.
+  /// - `metadata` — carries `languageCode` (user-chosen content, ADR-0007
+  ///   addendum) alongside `created`/`updated`/`version`/`schema`, which
+  ///   drift without the plan's content changing. Only `languageCode` is
+  ///   re-added below.
+  /// - `exercises`/`teams`/`sessions`/`rolePlays` — `toJson()` gives raw,
+  ///   unsorted versions with markdown fields missing; the sorted,
+  ///   markdown-complete versions built below replace them.
+  ///
+  /// If you add a new bookkeeping-only field to [Program] or [ProgramMetadata]
+  /// (something that changes without the plan's content changing), add it
+  /// to the removal list above. If you're unsure whether a new field
+  /// belongs here, leave it included — that is the safe default.
   ///
   /// All *Md fields are excluded from toJson (ADR-0022) so they are injected
-  /// back into the canonical maps before hashing. Actor fields are excluded
-  /// entirely per ADR-0018. Stations inside exercises are sorted by index for
-  /// determinism. Exercises and RolePlays are sorted by uuid.
+  /// back into the canonical maps before hashing. Stations inside exercises
+  /// are sorted by index for determinism. Exercises and RolePlays are
+  /// sorted by uuid.
   String computeContentHash() {
     // Build canonical exercise maps with markdown fields injected.
     final sortedExercises = exercises.toList()
@@ -160,17 +185,21 @@ extension ProgramX on Program {
       return _canonicalize(map) as Map<String, dynamic>;
     }).toList();
 
-    // Program-level markdown fields injected after program.toJson (which omits
-    // them because of @JsonKey suppression).
-    final programMap = Map<String, dynamic>.from({
-      'name': name,
-      'description': description,
-      'tags': tags,
-      'briefIntroMd': briefIntroMd,
-      'commsMd': commsMd,
-      'beforeRoundMd': beforeRoundMd,
-      'languageCode': metadata.languageCode,
-    });
+    // Denylist, not allowlist — see the class-level doc comment above.
+    final programMap = Map<String, dynamic>.from(toJson())
+      ..remove('uuid')
+      ..remove('contentHash')
+      ..remove('source')
+      ..remove('actors')
+      ..remove('metadata')
+      ..remove('exercises')
+      ..remove('teams')
+      ..remove('sessions')
+      ..remove('rolePlays')
+      ..['languageCode'] = metadata.languageCode
+      ..['briefIntroMd'] = briefIntroMd
+      ..['commsMd'] = commsMd
+      ..['beforeRoundMd'] = beforeRoundMd;
 
     final canonical = {
       ...programMap,
