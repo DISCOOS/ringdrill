@@ -111,8 +111,7 @@ void main() {
     expect(find.byType(Dialog), findsNothing);
     expect(find.textContaining('Old method'), findsOneWidget);
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    await tester.tap(find.text(l10n.catalogConflictCancel));
+    await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
     expect(result, CatalogConflictChoice.cancel);
   });
@@ -141,8 +140,7 @@ void main() {
       expect(result, isNull);
 
       // An explicit action still closes it.
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l10n.catalogConflictCancel));
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
       expect(find.byType(Dialog), findsNothing);
       expect(result, CatalogConflictChoice.cancel);

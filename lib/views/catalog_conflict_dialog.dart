@@ -100,11 +100,14 @@ class _CatalogConflictContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            // Cancel lives only in the header's close "x" now — the legal
+            // actions here are the only way to dismiss, so they share a
+            // single row instead of splitting into a secondary/primary pair.
             Row(
               children: [
                 // Discard is destructive (throws away local edits), so it
-                // gets the error color even though it sits alongside Fork in
-                // an otherwise equal-weight outlined pair.
+                // gets the error color even though it sits alongside Fork
+                // in an otherwise equal-weight outlined pair.
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
@@ -128,37 +131,18 @@ class _CatalogConflictContent extends StatelessWidget {
                     child: Text(localizations.catalogConflictFork),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () =>
-                      Navigator.pop(context, CatalogConflictChoice.cancel),
-                  child: Text(localizations.catalogConflictCancel),
-                ),
                 const SizedBox(width: 8),
-                // Flexible (not Spacer + bare button) so "Publish my
-                // changes" is capped to the remaining width on narrow
-                // screens — its text wraps instead of overflowing the row —
-                // while still hugging the right edge when it fits on one
-                // line.
-                Flexible(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    // Wiki model: anyone can publish updates. We previously
-                    // hid this option behind ownsCatalogSlug, which broke
-                    // the flow for users who had installed a plan and
-                    // wanted to contribute back without ever having
-                    // published it first.
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(
-                        context,
-                        CatalogConflictChoice.publishMyChanges,
-                      ),
-                      child: Text(localizations.catalogConflictPublish),
+                // Wiki model: anyone can publish updates. We previously hid
+                // this option behind ownsCatalogSlug, which broke the flow
+                // for users who had installed a plan and wanted to
+                // contribute back without ever having published it first.
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(
+                      context,
+                      CatalogConflictChoice.publishMyChanges,
                     ),
+                    child: Text(localizations.catalogConflictPublish),
                   ),
                 ),
               ],
