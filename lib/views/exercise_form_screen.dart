@@ -303,6 +303,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                   ),
                   ?_buildStationsRoundNote(localizations),
 
+                  SizedBox(height: 16.0),
+
                   OptionalFieldSections<_ExerciseSection>(
                     sections: [
                       for (final section in _ExerciseSection.values)
