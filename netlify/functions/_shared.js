@@ -5,18 +5,29 @@ export const NS = { DRILLS: "drills", SLUG_INDEX: "slug-index" };
 export const MIME_DRILL = "application/vnd.ringdrill+zip";
 export const DRILL_EXT = ".drill";
 
-// Deliberately NOT cached at module scope. @netlify/blobs's Store bakes its
-// access token in at construction time (see InternalClientOptions/Store in
-// node_modules/@netlify/blobs/dist/main.d.ts), read from a per-invocation
-// environment context that Netlify's runtime refreshes on every request
-// (connectLambda -> setEnvironmentContext in the same package). Caching the
-// Store instance here means a warm function container keeps reusing
-// whichever token was current on its *first* invocation — once that token
-// expires, every request through that same warm container fails with
-// "Netlify Blobs has generated an internal error (Failed to decode token:
-// Token expired)" until it's recycled, while a different (or freshly
-// cold-started) container keeps working. getStore() itself is a cheap,
-// synchronous client construction — no reason to cache it.
+// DO NOT memoize the return value of getStore() across invocations (no
+// `let x; x ||= getStore(...)` here) — that pattern shipped in the very
+// first getStore()-based version of this file (2025-08-15) and stayed
+// broken for ~11 months before being diagnosed. It looks like ordinary,
+// harmless lazy-init memoization, which is exactly why it's easy to
+// reintroduce during a future refactor. It is NOT harmless for this
+// specific dependency:
+//
+// @netlify/blobs's Store bakes its access token in at construction time
+// (InternalClientOptions/Store in node_modules/@netlify/blobs/dist/main.d.ts),
+// read from a per-invocation environment context that Netlify's runtime
+// refreshes on every request (connectLambda -> setEnvironmentContext in the
+// same package). Caching the Store instance means a warm function container
+// keeps reusing whichever token was current on its *first* invocation —
+// once that token expires, every request through that same warm container
+// fails with "Netlify Blobs has generated an internal error (Failed to
+// decode token: Token expired)" until the container is recycled, while a
+// different (or freshly cold-started) container keeps working. That's what
+// makes the failure look intermittent/random rather than a plain bug.
+//
+// getStore() itself is a cheap, synchronous client construction with no
+// network I/O — there is no performance reason to cache it. Full writeup:
+// docs/notes/netlify-blobs-store-caching-token-expiry.md
 export function getDrillsStore() { return getStore(NS.DRILLS); }
 export function getSlugIndexStore() { return getStore(NS.SLUG_INDEX); }
 
