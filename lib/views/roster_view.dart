@@ -5,6 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -174,67 +175,100 @@ class _RosterViewState extends State<RosterView> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
+    final Widget content;
     if (_actors.isEmpty) {
       // Same teaching affordance as the empty Program segments so the
       // Roster tab reads with the same visual language (icon disc +
       // title + body) instead of a bare centered string. The cast
       // roster sheet keeps the compact noActorsInRoster one-liner.
-      return TeachingEmptyState(
-        icon: Icons.face,
-        title: localizations.emptyRosterTitle,
-        body: localizations.emptyRosterBody,
+      //
+      // Wrapped in a CustomScrollView (rather than returned directly) so a
+      // wrapping RefreshIndicator below still has a real Scrollable to
+      // attach to even with zero actors — SliverFillRemaining keeps the
+      // centered look TeachingEmptyState's own `Center` expects, which a
+      // plain ListView([TeachingEmptyState(...)]) would collapse to the
+      // widget's intrinsic height instead of the full viewport.
+      content = CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: TeachingEmptyState(
+              icon: Icons.face,
+              title: localizations.emptyRosterTitle,
+              body: localizations.emptyRosterBody,
+            ),
+          ),
+        ],
+      );
+    } else {
+      content = ListView.builder(
+        // AlwaysScrollableScrollPhysics: lets a short list still overscroll
+        // enough for the pull-to-refresh RefreshIndicator below to trigger.
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: _actors.length,
+        itemBuilder: (context, index) {
+          final actor = _actors[index];
+          final roles = _rolesFor(actor.uuid);
+          return Dismissible(
+            key: ValueKey(actor.uuid),
+            direction: DismissDirection.endToStart,
+            confirmDismiss: (_) async {
+              if (_rolesFor(actor.uuid).isNotEmpty) {
+                await _tryDelete(actor);
+                return false;
+              }
+              return true;
+            },
+            onDismissed: (_) async {
+              await _service.deleteActor(actor.uuid);
+              _reload();
+            },
+            background: Container(
+              color: Theme.of(context).colorScheme.error,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 16),
+              child: Icon(
+                Icons.delete,
+                color: Theme.of(context).colorScheme.onError,
+              ),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.face),
+              title: Text(actor.realName),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (actor.phone != null) Text(actor.phone!),
+                  if (roles.isNotEmpty)
+                    Text(
+                      localizations.castedAs(roles.join(', ')),
+                      // ADR-0037: themed bodySmall instead of a hardcoded 12.
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                ],
+              ),
+              onTap: () => _openEdit(actor),
+            ),
+          );
+        },
       );
     }
 
-    return ListView.builder(
-      itemCount: _actors.length,
-      itemBuilder: (context, index) {
-        final actor = _actors[index];
-        final roles = _rolesFor(actor.uuid);
-        return Dismissible(
-          key: ValueKey(actor.uuid),
-          direction: DismissDirection.endToStart,
-          confirmDismiss: (_) async {
-            if (_rolesFor(actor.uuid).isNotEmpty) {
-              await _tryDelete(actor);
-              return false;
-            }
-            return true;
-          },
-          onDismissed: (_) async {
-            await _service.deleteActor(actor.uuid);
-            _reload();
-          },
-          background: Container(
-            color: Theme.of(context).colorScheme.error,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            child: Icon(
-              Icons.delete,
-              color: Theme.of(context).colorScheme.onError,
-            ),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.face),
-            title: Text(actor.realName),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (actor.phone != null) Text(actor.phone!),
-                if (roles.isNotEmpty)
-                  Text(
-                    localizations.castedAs(roles.join(', ')),
-                    // ADR-0037: themed bodySmall instead of a hardcoded 12.
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-            onTap: () => _openEdit(actor),
-          ),
-        );
-      },
+    // Drag-to-update is only meaningful for a plan installed from the online
+    // catalog — local plans have nothing to refresh against. Reuses the same
+    // `refreshActivePlanFromCatalog` flow as the Program tab's segments and
+    // the drawer's "Oppdater fra katalog" entry.
+    final program = _service.activeProgram;
+    final isCatalogPlan =
+        program != null && active_actions.isCatalogProgram(program);
+    if (!isCatalogPlan) return content;
+    return RefreshIndicator(
+      onRefresh: () => active_actions.refreshActivePlanFromCatalog(context),
+      child: content,
     );
   }
 }
