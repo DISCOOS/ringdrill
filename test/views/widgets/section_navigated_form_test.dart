@@ -189,4 +189,147 @@ void main() {
       isNotNull,
     );
   });
+
+  testWidgets(
+    'compact: the top AppBar shows only the entity title and Save '
+    '(follow-up 04)',
+    (tester) async {
+      final l = await _pump(tester, sections: _sections());
+
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text(l.save)),
+        findsOneWidget,
+      );
+
+      // The switcher, prev/next and overflow all moved out of the AppBar.
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Section A'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.chevron_left),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.more_vert),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'compact: the selector and prev/next live in the bottom bar, not the AppBar',
+    (tester) async {
+      final l = await _pump(tester, sections: _sections());
+
+      expect(
+        find.descendant(
+          of: find.byType(BottomAppBar),
+          matching: find.text('Section A'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(BottomAppBar),
+          matching: find.byTooltip(l.formSectionPrevious),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(BottomAppBar),
+          matching: find.byTooltip(l.formSectionNext),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'compact: tapping the bottom bar selector opens the switcher sheet',
+    (tester) async {
+      await _pump(tester, sections: _sections());
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomAppBar),
+          matching: find.text('Section A'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Section B'), findsOneWidget);
+      expect(find.text('Section C'), findsOneWidget);
+
+      await tester.tap(find.text('Section B'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Body B'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'compact: the bottom bar overflow is disabled unless the current '
+    'section is removable, and removing falls back to the first section',
+    (tester) async {
+      final l = await _pump(
+        tester,
+        sections: [
+          FormSection(
+            id: 'a',
+            label: 'A',
+            icon: Icons.description_outlined,
+            builder: (_) => const Text('Body A'),
+          ),
+          FormSection(
+            id: 'b',
+            label: 'B',
+            icon: Icons.description_outlined,
+            removable: true,
+            builder: (_) => const Text('Body B'),
+          ),
+        ],
+      );
+
+      PopupMenuButton<String> overflow() => tester.widget<PopupMenuButton<String>>(
+        find.descendant(
+          of: find.byType(BottomAppBar),
+          matching: find.byType(PopupMenuButton<String>),
+        ),
+      );
+
+      // "A" is not removable: the overflow is present (so prev/next never
+      // shift, per the earlier fix) but disabled.
+      expect(overflow().enabled, isFalse);
+
+      await tester.tap(find.byTooltip(l.formSectionNext));
+      await tester.pumpAndSettle();
+
+      // "B" is removable: enabled, and removing it falls back to "A".
+      expect(overflow().enabled, isTrue);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      expect(find.text(l.formSectionRemoveAction), findsOneWidget);
+
+      await tester.tap(find.text(l.formSectionRemoveAction));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Body A'), findsOneWidget);
+    },
+  );
 }
