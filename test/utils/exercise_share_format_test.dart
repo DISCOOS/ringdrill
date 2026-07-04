@@ -93,6 +93,36 @@ void main() {
       expect(actual, isNot(contains('LatLng')));
     });
 
+    test(
+      'resolves {{var.<name>}} tokens in the exercise name and station names',
+      () {
+        final exercise = _exerciseTwo().copyWith(
+          name: 'Øvelse {{var.frekvens}}',
+          stations: const [
+            Station(index: 0, name: 'Post {{var.frekvens}}'),
+            Station(index: 1, name: 'Stasjon B'),
+            Station(index: 2, name: 'Stasjon C'),
+          ],
+        );
+        final actual = formatExerciseForShare(
+          exercise,
+          AppLocalizationsNb(),
+          variables: const {'frekvens': 'Kanal 8'},
+        );
+
+        expect(actual.startsWith('Øvelse Kanal 8\n'), isTrue);
+        expect(actual, contains('1. Post Kanal 8\n'));
+        expect(actual, isNot(contains('{{var.frekvens}}')));
+      },
+    );
+
+    test('leaves a token as-is when no variables map is given', () {
+      final exercise = _exerciseTwo().copyWith(name: 'Øvelse {{var.frekvens}}');
+      final actual = formatExerciseForShare(exercise, AppLocalizationsNb());
+
+      expect(actual.startsWith('Øvelse {{var.frekvens}}\n'), isTrue);
+    });
+
     test('annotates under-coverage without changing rotation block', () {
       final exercise = _exerciseTwo().copyWith(
         stations: const [
