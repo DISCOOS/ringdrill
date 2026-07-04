@@ -7,7 +7,6 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
-import 'package:ringdrill/views/widgets/role_number_badge.dart';
 
 RolePlay _baseRole() => const RolePlay(
       uuid: 'role-1',
@@ -153,7 +152,11 @@ void main() {
     await tester.pumpWidget(_buildForm());
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
+    // signalement is always visible in the base "Rolle" section; background
+    // and behavior are addable sections, listed once revealed.
     expect(find.text(l10n.roleSignalement), findsOneWidget);
+    await tester.tap(find.text(l10n.formSectionAddAction));
+    await tester.pumpAndSettle();
     expect(find.text(l10n.roleBackground), findsOneWidget);
     expect(find.text(l10n.roleBehavior), findsOneWidget);
   });
@@ -230,13 +233,6 @@ void main() {
       expect(find.text(l10n.pickALocation), findsOneWidget);
     },
   );
-
-  testWidgets('AppBar contains a RoleNumberBadge', (tester) async {
-    await tester.pumpWidget(_buildForm());
-    await tester.pump();
-    // ProgramService not initialized → exerciseIndex = -1 → code = '?.1'
-    expect(find.byType(RoleNumberBadge), findsOneWidget);
-  });
 
   testWidgets('AppBar subtitle is not shown', (tester) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));

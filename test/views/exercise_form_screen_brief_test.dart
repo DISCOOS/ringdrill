@@ -55,12 +55,11 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    // The Method section is seeded as active and shows the existing value.
+    // The Method section is seeded as active; switch to it via the rail
+    // (default 800x600 surface lands in the wide/medium window class).
+    await tester.tap(find.text(l10n.briefSectionExerciseMethod));
+    await tester.pumpAndSettle();
     expect(find.text('Gruppevis øving utendørs'), findsOneWidget);
-    expect(
-      find.widgetWithText(OutlinedButton, l10n.briefSectionExerciseMethod),
-      findsNothing,
-    );
 
     // Replace the method content and save.
     await tester.enterText(
@@ -107,11 +106,13 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    // Remove the seeded Method section via its suffix close button. The
-    // AppBar leading also uses Icons.close, so scope to the Form subtree.
-    await tester.tap(
-      find.descendant(of: find.byType(Form), matching: find.byIcon(Icons.close)),
-    );
+    // Switch to the seeded Method section, then remove it via its overflow
+    // menu's "Remove section" action.
+    await tester.tap(find.text(l10n.briefSectionExerciseMethod));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.formSectionRemoveAction));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text(l10n.save));

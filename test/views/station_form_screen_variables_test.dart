@@ -7,15 +7,11 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 
-/// DESIGN-008 follow-up 07 — the section-navigated `StationFormScreen`
-/// behind `RINGDRILL_PLAN_VARIABLES`: the override table
-/// (`VariableOverridesSection`) at station scope, token-aware markdown
-/// fields resolving through the full program→exercise→station cascade, and
-/// save-time undeclared-token validation. `RINGDRILL_PLAN_VARIABLES` is a
-/// compile-time `bool.fromEnvironment`, so every flag-on test pumps
-/// `StationFormScreen` with `debugPlanVariablesOverride: true` (a
-/// `@visibleForTesting`-only constructor param — see `ExerciseFormScreen`'s
-/// identical pattern). No explicit surface size is set: the default
+/// DESIGN-008 follow-up 07 — the section-navigated `StationFormScreen`:
+/// the override table (`VariableOverridesSection`) at station scope,
+/// token-aware markdown fields resolving through the full
+/// program→exercise→station cascade, and save-time undeclared-token
+/// validation. No explicit surface size is set: the default
 /// `flutter_test` surface (800x600) already lands in the wide/medium
 /// window class, so these tests exercise the master/detail rail directly
 /// (tapping a section label needs no switcher-sheet step first).
@@ -73,7 +69,6 @@ Future<void> _openForm(
                   station: station,
                   parentExercise: parentExercise,
                   variables: variables,
-                  debugPlanVariablesOverride: true,
                 ),
               ),
             );
@@ -93,41 +88,6 @@ void main() {
   setUpAll(() async {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
-
-  testWidgets(
-    'flag-off: the legacy single-scroll OptionalFieldSections form renders',
-    (tester) async {
-      final captured = _Captured();
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (ctx) => TextButton(
-              onPressed: () async {
-                captured.value = await Navigator.push<Station>(
-                  ctx,
-                  MaterialPageRoute(
-                    builder: (_) => StationFormScreen(station: _station()),
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.widgetWithText(OutlinedButton, l.briefSectionStationSituation),
-        findsOneWidget,
-      );
-      expect(find.text(l.variablesSectionTitle), findsNothing);
-      expect(captured.value, isNull);
-    },
-  );
 
   testWidgets('the override table shows the inherited value at station scope '
       '(program overlaid by the enclosing exercise)', (tester) async {

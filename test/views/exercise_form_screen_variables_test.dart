@@ -6,14 +6,10 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/exercise_form_screen.dart';
 
-/// DESIGN-008 follow-up 06 — the section-navigated `ExerciseFormScreen`
-/// behind `RINGDRILL_PLAN_VARIABLES`: the override-only Variabler section
-/// (`VariableOverridesSection`), token-aware markdown fields resolving at
-/// exercise scope, and save-time undeclared-token validation.
-/// `RINGDRILL_PLAN_VARIABLES` is a compile-time `bool.fromEnvironment`, so
-/// every flag-on test pumps `ExerciseFormScreen` with
-/// `debugPlanVariablesOverride: true` (a `@visibleForTesting`-only
-/// constructor param — see `ProgramFormScreen`'s identical pattern).
+/// DESIGN-008 follow-up 06 — the section-navigated `ExerciseFormScreen`:
+/// the override-only Variabler section (`VariableOverridesSection`),
+/// token-aware markdown fields resolving at exercise scope, and save-time
+/// undeclared-token validation.
 
 Exercise _exercise({
   String name = 'Original name',
@@ -66,11 +62,8 @@ Future<void> _openForm(
             captured.value = await Navigator.push<Exercise>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => ExerciseFormScreen(
-                  exercise: exercise,
-                  variables: variables,
-                  debugPlanVariablesOverride: true,
-                ),
+                builder: (_) =>
+                    ExerciseFormScreen(exercise: exercise, variables: variables),
               ),
             );
           },
@@ -101,48 +94,6 @@ void main() {
   setUpAll(() async {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
-
-  testWidgets(
-    'flag-off: the legacy single-scroll OptionalFieldSections form renders',
-    (tester) async {
-      final captured = _Captured();
-      tester.view.physicalSize = const Size(400, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (ctx) => TextButton(
-              onPressed: () async {
-                captured.value = await Navigator.push<Exercise>(
-                  ctx,
-                  MaterialPageRoute(
-                    builder: (_) => ExerciseFormScreen(exercise: _exercise()),
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-
-      // A marker unique to the legacy single-scroll body: an inactive
-      // optional section shows as an add-button, a widget type the
-      // section-navigated body never renders.
-      expect(
-        find.widgetWithText(OutlinedButton, l.briefSectionExerciseMethod),
-        findsOneWidget,
-      );
-      expect(find.text(l.variablesSectionTitle), findsNothing);
-      expect(captured.value, isNull);
-    },
-  );
 
   testWidgets(
     'override table lists declared variables with their inherited value',

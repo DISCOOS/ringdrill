@@ -72,42 +72,6 @@ void main() {
     expect(find.text('En kjent rute'), findsOneWidget);
   });
 
-  testWidgets('shows add buttons for missing optional sections', (
-    tester,
-  ) async {
-    await _openForm(tester, _baseProgram());
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-
-    expect(find.text(l10n.briefSectionProgramIntro), findsOneWidget);
-    expect(find.text(l10n.briefSectionProgramComms), findsOneWidget);
-    expect(find.text(l10n.briefSectionProgramBeforeRound), findsOneWidget);
-    // A section is still missing, so the divider below the add-buttons is
-    // shown (plus the always-present one below station numbering).
-    expect(find.byType(Divider), findsNWidgets(2));
-  });
-
-  testWidgets(
-    'hides the divider below the optional fields once all are added',
-    (tester) async {
-      await _openForm(
-        tester,
-        _baseProgram(
-          briefIntroMd: 'intro',
-          commsMd: 'komms',
-          beforeRoundMd: 'før runden',
-        ),
-      );
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-
-      expect(find.text(l10n.briefSectionProgramIntro), findsOneWidget);
-      expect(find.text(l10n.briefSectionProgramComms), findsOneWidget);
-      expect(find.text(l10n.briefSectionProgramBeforeRound), findsOneWidget);
-      // No add-buttons left, so only the divider below station numbering
-      // remains.
-      expect(find.byType(Divider), findsOneWidget);
-    },
-  );
-
   testWidgets('save edits name, description and a brief field', (tester) async {
     Program? captured;
     await tester.pumpWidget(
@@ -136,7 +100,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    // Edit name + description.
+    // Edit name + description in the default "Plan" section.
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Vinterøvelse'),
       'Vårøvelse',
@@ -146,10 +110,12 @@ void main() {
       'Ny undertittel',
     );
 
-    // Add the intro brief section and type into it.
-    await tester.tap(
-      find.widgetWithText(OutlinedButton, l10n.briefSectionProgramIntro),
-    );
+    // Add the intro brief section and type into it. The default 800x600
+    // test surface lands in the wide/medium window class, so the rail
+    // lists the addable section directly — no switcher sheet needed.
+    await tester.tap(find.text(l10n.formSectionAddAction));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.briefSectionProgramIntro));
     await tester.pumpAndSettle();
     final introField = find.widgetWithText(
       TextFormField,
@@ -202,11 +168,11 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    // The intro section is already active; no add-button for it.
-    expect(
-      find.widgetWithText(OutlinedButton, l10n.briefSectionProgramIntro),
-      findsNothing,
-    );
+    // The intro section is already active — switch to it directly via the
+    // rail (default surface is wide/medium; no add-button for it since it
+    // is not addable).
+    await tester.tap(find.text(l10n.briefSectionProgramIntro));
+    await tester.pumpAndSettle();
     expect(find.text('gammel intro'), findsOneWidget);
 
     // Replace the content and save.
@@ -220,7 +186,7 @@ void main() {
     expect(captured!.briefIntroMd, 'ny intro');
   });
 
-  testWidgets('removing an optional section clears its value on save', (
+  testWidgets('removing an active section clears its value on save', (
     tester,
   ) async {
     Program? captured;
@@ -253,11 +219,13 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    // Remove the seeded intro section via its suffix close button. The
-    // AppBar leading also uses Icons.close, so scope the finder to the Form.
-    await tester.tap(
-      find.descendant(of: find.byType(Form), matching: find.byIcon(Icons.close)),
-    );
+    await tester.tap(find.text(l10n.briefSectionProgramIntro));
+    await tester.pumpAndSettle();
+
+    // Remove the active intro section via its overflow menu.
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.formSectionRemoveAction));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text(l10n.save));

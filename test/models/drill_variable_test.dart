@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/models/drill_variable.dart';
-import 'package:ringdrill/utils/app_flags.dart';
 
 void main() {
   test('DrillVariable round-trips unchanged', () {
@@ -18,13 +17,5 @@ void main() {
     expect(decoded.name, 'frekvens');
     expect(decoded.value, '');
     expect(decoded.hint, isNull);
-  });
-
-  test('RINGDRILL_PLAN_VARIABLES defaults off and is registered', () {
-    expect(AppFlags.planVariables, isFalse);
-    expect(
-      AppFlags.all.any((f) => f.name == 'RINGDRILL_PLAN_VARIABLES'),
-      isTrue,
-    );
   });
 }

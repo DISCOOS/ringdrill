@@ -47,15 +47,10 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    // The seeded value is shown and the Equipment add-button is absent.
+    // The Equipment section is seeded as active; switch to it via the rail.
+    await tester.tap(find.text(l10n.briefSectionStationEquipment));
+    await tester.pumpAndSettle();
     expect(find.text('Stort hus'), findsOneWidget);
-    expect(
-      find.widgetWithText(
-        OutlinedButton,
-        l10n.briefSectionStationEquipment,
-      ),
-      findsNothing,
-    );
 
     // Save without further edits — the value should round-trip.
     await tester.tap(find.text(l10n.save));
@@ -102,11 +97,13 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    // The AppBar leading also uses Icons.close, so scope to the Form subtree
-    // to hit the optional-section suffix close button instead.
-    await tester.tap(
-      find.descendant(of: find.byType(Form), matching: find.byIcon(Icons.close)),
-    );
+    // Switch to the seeded Equipment section, then remove it via its
+    // overflow menu's "Remove section" action.
+    await tester.tap(find.text(l10n.briefSectionStationEquipment));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.formSectionRemoveAction));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text(l10n.save));

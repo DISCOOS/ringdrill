@@ -7,15 +7,12 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 
-/// DESIGN-008 follow-up 07 — the section-navigated `RolePlayFormScreen`
-/// behind `RINGDRILL_PLAN_VARIABLES`: token-aware markdown fields resolving
-/// at the roleplay's station scope, no Variabler section, and save-time
-/// undeclared-token validation. Every flag-on test pumps
-/// `RolePlayFormScreen` with `debugPlanVariablesOverride: true` (a
-/// `@visibleForTesting`-only constructor param — see `ExerciseFormScreen`'s
-/// identical pattern). No explicit surface size is set: the default
-/// `flutter_test` surface (800x600) already lands in the wide/medium
-/// window class, so these tests exercise the master/detail rail directly.
+/// DESIGN-008 follow-up 07 — the section-navigated `RolePlayFormScreen`:
+/// token-aware markdown fields resolving at the roleplay's station scope,
+/// no Variabler section, and save-time undeclared-token validation. No
+/// explicit surface size is set: the default `flutter_test` surface
+/// (800x600) already lands in the wide/medium window class, so these tests
+/// exercise the master/detail rail directly.
 
 RolePlay _rolePlay({
   String name = 'Anna Hansen',
@@ -73,7 +70,6 @@ Future<void> _openForm(
                   rolePlay: rolePlay,
                   exercise: exercise,
                   variables: variables,
-                  debugPlanVariablesOverride: true,
                 ),
               ),
             );
@@ -93,41 +89,6 @@ void main() {
   setUpAll(() async {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
-
-  testWidgets(
-    'flag-off: the legacy single-scroll OptionalFieldSections form renders',
-    (tester) async {
-      final captured = _Captured();
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (ctx) => TextButton(
-              onPressed: () async {
-                captured.value = await Navigator.push<RolePlay>(
-                  ctx,
-                  MaterialPageRoute(
-                    builder: (_) => RolePlayFormScreen(rolePlay: _rolePlay()),
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.widgetWithText(OutlinedButton, l.roleBackground),
-        findsOneWidget,
-      );
-      expect(find.text(l.roleplaySectionRole), findsNothing);
-      expect(captured.value, isNull);
-    },
-  );
 
   testWidgets('there is no Variabler section', (tester) async {
     await _openForm(tester, _rolePlay(), _exercise(), const [

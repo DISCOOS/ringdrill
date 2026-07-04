@@ -7,13 +7,9 @@ import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
 /// DESIGN-008 Stage 5 (+ follow-up 01) — the Variabler declaration section
-/// end-to-end inside the flag-on Program editor: declare, create-inline,
-/// rename (plan-wide rewrite), delete (reference-guarded), edit-value and
+/// end-to-end inside the Program editor: declare, create-inline, rename
+/// (plan-wide rewrite), delete (reference-guarded), edit-value and
 /// save-time validation.
-///
-/// `RINGDRILL_PLAN_VARIABLES` is a compile-time `bool.fromEnvironment`, so
-/// every test here pumps `ProgramFormScreen` with `debugPlanVariablesOverride:
-/// true` (a `@visibleForTesting`-only constructor param — see Stage 3).
 
 Program _program({
   String? briefIntroMd,
@@ -68,10 +64,7 @@ Future<void> _openForm(
             captured.value = await Navigator.push<Program>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => ProgramFormScreen(
-                  program: program,
-                  debugPlanVariablesOverride: true,
-                ),
+                builder: (_) => ProgramFormScreen(program: program),
               ),
             );
           },
@@ -576,46 +569,6 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
       expect(captured.value?.variables.single.value, 'Kanal 6');
-    },
-  );
-
-  testWidgets(
-    'flag-off: no Variabler section, no undeclared-token save-blocking',
-    (tester) async {
-      Program? captured;
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (ctx) => TextButton(
-              onPressed: () async {
-                captured = await Navigator.push<Program>(
-                  ctx,
-                  MaterialPageRoute(
-                    builder: (_) => ProgramFormScreen(
-                      program: _program(briefIntroMd: 'Kanal {{var.mangler}}'),
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l.variablesSectionTitle), findsNothing);
-
-      // No save-blocking in the legacy path — an undeclared {{var.x}}
-      // token in briefIntroMd is just literal text to it.
-      await tester.tap(find.text(l.save));
-      await tester.pumpAndSettle();
-
-      expect(captured, isNotNull);
-      expect(captured!.briefIntroMd, 'Kanal {{var.mangler}}');
     },
   );
 }

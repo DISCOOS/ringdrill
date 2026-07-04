@@ -4,15 +4,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
 
-/// DESIGN-008 Stage 3 — the section-navigated `ProgramFormScreen` behind
-/// `RINGDRILL_PLAN_VARIABLES`. `RINGDRILL_PLAN_VARIABLES` is a compile-time
-/// `bool.fromEnvironment`, so a widget test cannot flip it with a
-/// `--dart-define`; every flag-on test below pumps `ProgramFormScreen` with
-/// `debugPlanVariablesOverride: true` (a `@visibleForTesting`-only
-/// constructor param) instead. The flag-off path is exercised without the
-/// override, and is covered exhaustively by the pre-existing
-/// `program_form_screen_test.dart`, which passes unmodified — this file
-/// only adds one legacy-marker check for completeness.
+/// DESIGN-008 Stage 3 — the section-navigated `ProgramFormScreen`.
 
 Program _baseProgram({
   String? briefIntroMd = 'gammel intro',
@@ -61,10 +53,7 @@ Future<Program?> _openForm(
             result = await Navigator.push<Program>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => ProgramFormScreen(
-                  program: program,
-                  debugPlanVariablesOverride: true,
-                ),
+                builder: (_) => ProgramFormScreen(program: program),
               ),
             );
           },
@@ -91,7 +80,7 @@ Future<void> _tapSwitcher(WidgetTester tester, String label) async {
 }
 
 void main() {
-  group('ProgramFormScreen — section-navigated (RINGDRILL_PLAN_VARIABLES)', () {
+  group('ProgramFormScreen — section-navigated', () {
     testWidgets(
       'compact: switcher lists active sections and switches between them',
       (tester) async {
@@ -233,45 +222,6 @@ void main() {
     );
 
     testWidgets(
-      'flag-off: the legacy single-scroll OptionalFieldSections form renders',
-      (tester) async {
-        Program? result;
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (ctx) => TextButton(
-                onPressed: () async {
-                  result = await Navigator.push<Program>(
-                    ctx,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProgramFormScreen(program: _baseProgram()),
-                    ),
-                  );
-                },
-                child: const Text('Open'),
-              ),
-            ),
-          ),
-        );
-        await tester.tap(find.text('Open'));
-        await tester.pumpAndSettle();
-        final l = await AppLocalizations.delegate.load(const Locale('en'));
-
-        // A marker unique to the legacy single-scroll body: an inactive
-        // optional section shows as an add-button, a widget type the
-        // section-navigated body never renders.
-        expect(
-          find.widgetWithText(OutlinedButton, l.briefSectionProgramComms),
-          findsOneWidget,
-        );
-        expect(result, isNull);
-      },
-    );
-
-    testWidgets(
       'save round-trips a name edit in "Plan" and a markdown section edit',
       (tester) async {
         tester.view.physicalSize = const Size(400, 800);
@@ -292,7 +242,6 @@ void main() {
                     MaterialPageRoute(
                       builder: (_) => ProgramFormScreen(
                         program: _baseProgram(),
-                        debugPlanVariablesOverride: true,
                       ),
                     ),
                   );
