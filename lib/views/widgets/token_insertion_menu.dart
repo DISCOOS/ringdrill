@@ -39,11 +39,19 @@ class _Trigger {
 /// directly. Both are detected by looking backward from the caret, so
 /// typing continues to work as ordinary text until one of these patterns
 /// appears right before the caret.
+///
+/// The `{{` filter allows a `.` (in addition to word characters) so that
+/// manually typing the actual token syntax — `{{var.` or `{{exercise.` —
+/// keeps the menu open and filtering instead of closing the instant the
+/// dot is typed; it only closes once the token itself closes (typing `}`
+/// is not a filter character, so a completed `{{var.frekvens}}` no longer
+/// matches). The `/` trigger deliberately does not allow `.`: variable
+/// names are plain slugs (ADR-0046) with no dotted path to type out.
 _Trigger? _detectTrigger(String text, int caret) {
   if (caret < 0 || caret > text.length) return null;
   final before = text.substring(0, caret);
 
-  final brace = RegExp(r'\{\{(\w*)$').firstMatch(before);
+  final brace = RegExp(r'\{\{([\w.]*)$').firstMatch(before);
   if (brace != null) {
     return _Trigger(start: brace.start, filter: brace.group(1)!);
   }
@@ -55,6 +63,14 @@ _Trigger? _detectTrigger(String text, int caret) {
 
   return null;
 }
+
+/// A `{{var.` prefix on the filter names the registry namespace explicitly
+/// (ADR-0046) rather than being part of any entry's own name — matching it
+/// literally against variable names would never succeed. Stripped so
+/// `{{var.frek` filters variables by `frek`, the same as typing `/frek`
+/// would, instead of showing "no matches" for as long as the prefix is
+/// present.
+final _varPrefixPattern = RegExp(r'^var\.(.*)$', caseSensitive: false);
 
 /// Wraps a token-aware field with the DESIGN-008 `/`/`{{` insertion menu: an
 /// [OverlayEntry] anchored at the caret (via [RenderEditable] found through
@@ -205,17 +221,24 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     _caretRect = null;
   }
 
-  List<TokenMenuEntry> _filteredEntries(String filter) {
+  List<TokenMenuEntry> _filteredEntries(String rawFilter) {
+    // "var." names the registry namespace, not part of any variable's own
+    // name — once typed, narrow to variables only and match the remainder
+    // against their names, the same as the bare `/` picker would.
+    final varMatch = _varPrefixPattern.firstMatch(rawFilter);
+    final filter = varMatch?.group(1) ?? rawFilter;
     final lower = filter.toLowerCase();
+
     final entries = <TokenMenuEntry>[
       for (final v in widget.variables)
         if (filter.isEmpty || v.name.toLowerCase().contains(lower))
           VariableMenuEntry(v),
-      for (final f in widget.planFields)
-        if (filter.isEmpty ||
-            f.name.toLowerCase().contains(lower) ||
-            f.label.toLowerCase().contains(lower))
-          PlanFieldMenuEntry(f),
+      if (varMatch == null)
+        for (final f in widget.planFields)
+          if (filter.isEmpty ||
+              f.name.toLowerCase().contains(lower) ||
+              f.label.toLowerCase().contains(lower))
+            PlanFieldMenuEntry(f),
     ];
     if (widget.onCreateVariable != null &&
         filter.trim().isNotEmpty &&

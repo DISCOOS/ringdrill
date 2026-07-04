@@ -102,6 +102,55 @@ void main() {
     });
 
     testWidgets(
+      'typing "{{var." keeps the menu open across the dot and narrows to '
+      'variables, filtering by the name after the prefix '
+      '(regression: the dot used to fall outside the trigger filter and '
+      'close the menu immediately)',
+      (tester) async {
+        await _pump(tester);
+
+        await _typeAndOpen(tester, '{{var');
+        expect(
+          tester
+              .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+              .isMenuOpen,
+          isTrue,
+        );
+
+        // The dot must not close the menu.
+        await _typeAndOpen(tester, '{{var.');
+        expect(
+          tester
+              .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+              .isMenuOpen,
+          isTrue,
+        );
+        // "var." is the namespace prefix, not a name to match — narrows to
+        // variables (no plan fields) rather than showing "no matches".
+        expect(find.text('frekvens'), findsOneWidget);
+        expect(find.text('Øvelsesnavn'), findsNothing);
+
+        // Filters the variable list by what comes after the prefix.
+        await _typeAndOpen(tester, '{{var.frek');
+        expect(find.text('frekvens'), findsOneWidget);
+
+        await _typeAndOpen(tester, '{{var.zzz');
+        expect(find.text('frekvens'), findsNothing);
+
+        // Closing the token (typing "}") ends the trigger.
+        await tester.enterText(find.byType(TextField), '{{var.frekvens}}');
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester
+              .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+              .isMenuOpen,
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
       'the "Opprett variabel" entry is hidden when onCreateVariable is null, '
       'even with a no-match filter',
       (tester) async {
@@ -126,6 +175,30 @@ void main() {
         );
 
         await _typeAndOpen(tester, '/zzz');
+
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        final createLabel = l10n.tokenMenuCreateVariable('zzz');
+        expect(find.text(createLabel), findsOneWidget);
+
+        await tester.tap(find.text(createLabel));
+        await tester.pump();
+
+        expect(created, 'zzz');
+        expect(controller.text, '{{var.zzz}}');
+      },
+    );
+
+    testWidgets(
+      'typing "{{var.zzz" offers "Opprett variabel «zzz»", using the name '
+      'after the prefix rather than the literal "var.zzz"',
+      (tester) async {
+        String? created;
+        final controller = await _pump(
+          tester,
+          onCreateVariable: (name) => created = name,
+        );
+
+        await _typeAndOpen(tester, '{{var.zzz');
 
         final l10n = await AppLocalizations.delegate.load(const Locale('en'));
         final createLabel = l10n.tokenMenuCreateVariable('zzz');
