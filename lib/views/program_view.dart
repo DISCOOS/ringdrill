@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
@@ -674,13 +675,15 @@ class _ProgramOverview extends StatelessWidget {
     final description = program?.description.trim() ?? '';
     final briefIntro = program == null
         ? null
-        : _firstParagraphText(program.briefIntroMd);
+        : _firstParagraphText(_resolveProgramText(program, program.briefIntroMd, l10n));
     final comms = program == null
         ? null
-        : _firstParagraphText(program.commsMd);
+        : _firstParagraphText(_resolveProgramText(program, program.commsMd, l10n));
     final beforeRound = program == null
         ? null
-        : _firstParagraphText(program.beforeRoundMd);
+        : _firstParagraphText(
+            _resolveProgramText(program, program.beforeRoundMd, l10n),
+          );
     final hasContent =
         description.isNotEmpty ||
         briefIntro != null ||
@@ -867,6 +870,17 @@ class _ProgramOverview extends StatelessWidget {
       textScaler: MediaQuery.textScalerOf(context),
     )..layout(maxWidth: maxWidth);
     return painter.didExceedMaxLines;
+  }
+
+  /// Resolves `{{var.<name>}}` tokens and program-scope cross-references
+  /// (`{{program.name}}`, `{{program.description}}`) before this preview
+  /// truncates to the first paragraph, so a plan variable or cross-
+  /// reference used in `briefIntroMd`/`commsMd`/`beforeRoundMd` shows its
+  /// resolved value here too, not the literal `{{...}}` token — matching
+  /// what the actual brief (`BriefRenderer.render`) would show.
+  String? _resolveProgramText(Program program, String? md, AppLocalizations l10n) {
+    if (md == null) return null;
+    return BriefRenderer.resolveProgramScopeText(program, md, l10n);
   }
 
   /// Returns the first paragraph of a markdown string stripped of leading

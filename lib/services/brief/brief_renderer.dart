@@ -361,6 +361,25 @@ class BriefRenderer {
   /// duplicating the slug logic.
   static String toAnchor(String heading) => _toAnchor(heading);
 
+  /// Resolves `{{var.<name>}}` tokens and program-scope cross-references
+  /// (`{{program.name}}`, `{{program.description}}`) in [content] against
+  /// [program]. For lightweight previews of a program-scope markdown field
+  /// — e.g. the Program view's collapsed overview card — that show a
+  /// snippet of `briefIntroMd`/`commsMd`/`beforeRoundMd` without running
+  /// the full brief template through [render].
+  static String resolveProgramScopeText(
+    Program program,
+    String content,
+    AppLocalizations l10n,
+  ) =>
+      _resolveField(
+        content,
+        vars: _programVariables(program),
+        l10n: l10n,
+        refContext: _programRefContext(program),
+      ) ??
+      content;
+
   /// Declared plan variables, keyed by name, at the program scope.
   @visibleForTesting
   static Map<String, String> programVariables(Program program) =>
