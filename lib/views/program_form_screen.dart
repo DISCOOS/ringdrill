@@ -241,6 +241,21 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     setState(() => _variables = _variables.where((v) => v.name != name).toList());
   }
 
+  /// Replaces the matching entry's value/hint in place (name unchanged, no
+  /// plan-wide rewrite needed — `{{var.<name>}}` tokens stay valid). The
+  /// `setState` rebuild recomputes the `VariableToken` list passed to every
+  /// `MarkdownSectionField`, so a now-non-empty variable's chips re-resolve
+  /// from amber to blue without losing focus, the same refresh path
+  /// `_addVariable`/`_renameVariablePlanWide` already rely on.
+  void _editVariableValue(DrillVariable updated) {
+    setState(() {
+      _variables = [
+        for (final v in _variables)
+          if (v.name == updated.name) updated else v,
+      ];
+    });
+  }
+
   /// Wired to the token-aware fields' dormant `onCreateVariable` hook
   /// (DESIGN-008 Stage 4): the insertion menu already inserted
   /// `{{var.<name>}}` before calling this, so all that's left is declaring
@@ -408,6 +423,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
               onAdd: _addVariable,
               onRename: _renameVariablePlanWide,
               onDelete: _deleteVariable,
+              onEditValue: _editVariableValue,
               referenceCount: (name) =>
                   variableReferenceCount(_workingProgram(), name),
               referenceDescriptions: (name) => [
