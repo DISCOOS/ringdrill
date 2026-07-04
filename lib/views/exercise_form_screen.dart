@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
+import 'package:ringdrill/views/widgets/section_navigated_form.dart';
+import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
+import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
 
 /// Optional addable markdown sections on [Exercise] (DESIGN-004).
 enum _ExerciseSection {
@@ -21,10 +29,32 @@ enum _ExerciseSection {
 }
 
 class ExerciseFormScreen extends StatefulWidget {
-  const ExerciseFormScreen({super.key, this.exercise, this.numberOfTeams});
+  const ExerciseFormScreen({
+    super.key,
+    this.exercise,
+    this.numberOfTeams,
+    this.variables = const <DrillVariable>[],
+    @visibleForTesting this.debugPlanVariablesOverride,
+  });
 
   final Exercise? exercise;
   final int? numberOfTeams;
+
+  /// The plan's declared variables (ADR-0046), read-only here — this editor
+  /// edits an `Exercise`, not the `Program`, so it cannot create, rename,
+  /// delete or default-edit them (DESIGN-008 follow-up 06's settled scope).
+  /// The caller opens this form from a program context that has the active
+  /// `Program`; every call site passes `program.variables`. Only consulted
+  /// in the flag-on section-navigated body.
+  final List<DrillVariable> variables;
+
+  /// Overrides [AppFlags.planVariables] for a test. `bool.fromEnvironment`
+  /// is a compile-time const, so a widget test cannot flip it at runtime —
+  /// this lets a test render the flag-on section-navigated body without a
+  /// `--dart-define`. Production code never sets this; the real flag is
+  /// read when it is null.
+  @visibleForTesting
+  final bool? debugPlanVariablesOverride;
 
   @override
   State<ExerciseFormScreen> createState() => _ExerciseFormScreenState();
@@ -68,16 +98,38 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   bool _stationsTracksTeams = true;
   bool _legacyOversizedCounters = false;
 
-  final Map<_ExerciseSection, TextEditingController> _sectionControllers = {
-    for (final s in _ExerciseSection.values) s: TextEditingController(),
-  };
+  /// A [TokenTextEditingController] in the flag-on path, so
+  /// `RingDrillTextArea(tokenAware: true)` can drive its chips from
+  /// [PlanScope]; a plain controller in the legacy path. `_planVariablesOn`
+  /// is constant for the screen's lifetime, so exactly one of
+  /// `_buildSectionNavigated`/`_buildLegacy` ever actually renders these
+  /// (same reasoning as `ProgramFormScreen`'s markdown controllers).
+  late final Map<_ExerciseSection, TextEditingController> _sectionControllers =
+      {
+        for (final s in _ExerciseSection.values)
+          s: _planVariablesOn
+              ? TokenTextEditingController()
+              : TextEditingController(),
+      };
   final Map<_ExerciseSection, FocusNode> _sectionFocusNodes = {
     for (final s in _ExerciseSection.values) s: FocusNode(),
   };
   final Set<_ExerciseSection> _activeSections = {};
 
+  /// Working copy of `exercise.variableOverrides` (DESIGN-008 follow-up 06),
+  /// edited by [VariableOverridesSection] and read by [_saveExercise]. Only
+  /// mutated in the flag-on path — the legacy body never mounts the override
+  /// table — so it round-trips unchanged in the flag-off path.
+  late Map<String, String> _workingOverrides;
+
+  bool get _planVariablesOn =>
+      widget.debugPlanVariablesOverride ?? AppFlags.planVariables;
+
   @override
   void initState() {
+    _workingOverrides = Map<String, String>.of(
+      widget.exercise?.variableOverrides ?? const {},
+    );
     final e = widget.exercise;
     if (e != null) {
       _startTime = e.startTime.toMaterial();
@@ -144,6 +196,246 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_planVariablesOn) {
+      return _buildSectionNavigated(context);
+    }
+    return _buildLegacy(context);
+  }
+
+  /// DESIGN-008 follow-up 06, behind `RINGDRILL_PLAN_VARIABLES`. Same
+  /// controllers, [_activeSections] and save path as the legacy body below
+  /// — only their presentation moves into sections, plus the override table
+  /// on the Variabler section.
+  Widget _buildSectionNavigated(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
+    final activeMdSections = [
+      for (final section in _ExerciseSection.values)
+        if (_activeSections.contains(section))
+          FormSection(
+            id: section.name,
+            label: _labelFor(section, l),
+            icon: Icons.description_outlined,
+            removable: true,
+            // Keyed by section so switching sections always mounts a fresh
+            // field — see ProgramFormScreen's identical reasoning.
+            builder: (_) => Padding(
+              key: ValueKey(section.name),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: RingDrillTextArea(
+                      controller: _sectionControllers[section]!,
+                      focusNode: _sectionFocusNodes[section],
+                      label: _labelFor(section, l),
+                      expands: true,
+                      tokenAware: true,
+                      overrides: _workingOverrides,
+                      // No onCreateVariable: Exercise cannot create plan
+                      // variables (DESIGN-008 follow-up 06's settled
+                      // scope) — an unknown {{var.x}} typed here stays a
+                      // red, save-blocking token until it is declared in
+                      // the Program editor or removed.
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    ];
+    final addableSections = [
+      for (final section in _ExerciseSection.values)
+        if (!_activeSections.contains(section))
+          FormSection(
+            id: section.name,
+            label: _labelFor(section, l),
+            icon: Icons.description_outlined,
+            removable: true,
+            // Never rendered: a section only appears in `addable`, whose
+            // builder is never invoked by SectionNavigatedForm.
+            builder: (_) => const SizedBox.shrink(),
+          ),
+    ];
+
+    // The program-declared default is this scope's inherited baseline: an
+    // Exercise sits directly under Program in ADR-0046's chain, with no
+    // intermediate scope, so "no local override" always falls back to
+    // exactly the declared value.
+    final inherited = {for (final v in widget.variables) v.name: v.value};
+
+    return PlanScope(
+      variables: widget.variables,
+      child: Form(
+        key: _formKey,
+        child: SectionNavigatedForm(
+          title: widget.exercise == null ? l.createExercise : l.editExercise,
+          initialSectionId: 'exercise',
+          sections: [
+            FormSection(
+              id: 'exercise',
+              label: l.exercise(1),
+              icon: Icons.update,
+              builder: (ctx) => _buildExerciseSectionBody(ctx, l),
+            ),
+            ...activeMdSections,
+            // Last, matching ProgramFormScreen: Variabler reads better as
+            // the section you land on after the fields you reference
+            // {{var.<name>}} from, not before.
+            FormSection(
+              id: 'variables',
+              label: l.variablesSectionTitle,
+              icon: Icons.data_object,
+              builder: (_) => VariableOverridesSection(
+                variables: widget.variables,
+                inherited: inherited,
+                overrides: _workingOverrides,
+                onChanged: (updated) =>
+                    setState(() => _workingOverrides = updated),
+              ),
+            ),
+          ],
+          addable: addableSections,
+          onAdd: (id) => _addSection(_ExerciseSection.values.byName(id)),
+          onRemove: (id) => _removeSection(_ExerciseSection.values.byName(id)),
+          onSave: _saveExercise,
+          onClose: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+
+  /// The DESIGN-008 default section for [Exercise]: the short structural
+  /// fields that never become their own section (name, start time, the
+  /// scheduling counters).
+  Widget _buildExerciseSectionBody(BuildContext context, AppLocalizations l) {
+    return SafeArea(
+      child: DismissKeyboard(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      autofocus: true,
+                      controller: _nameController,
+                      decoration: InputDecoration(labelText: l.exerciseName),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? l.pleaseEnterAName
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16.0),
+                  IntrinsicWidth(child: _buildStartTimeField(context, l)),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              _buildTimeSection(context, l),
+              const SizedBox(height: 16.0),
+              if (_legacyOversizedCounters) ...[
+                MaterialBanner(
+                  content: Text(l.legacyOversizedExerciseNotice),
+                  actions: const [SizedBox.shrink()],
+                  padding: const EdgeInsetsDirectional.only(start: 16, end: 8),
+                  leading: const Icon(Icons.info_outline),
+                ),
+                const SizedBox(height: 16.0),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _numberOfTeamsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: l.numberOfTeams),
+                      onChanged: (value) {
+                        if (_stationsTracksTeams) {
+                          _numberOfStationsController.text = value;
+                        }
+                        setState(() {});
+                      },
+                      validator: (value) {
+                        final counterError = _validateCounter(value, l);
+                        if (counterError != null) return counterError;
+                        if (_isValidNumber(_numberOfStationsController.text) &&
+                            int.parse(value!) >
+                                int.parse(_numberOfStationsController.text)) {
+                          return l.mustBeEqualToOrLessThanNumberOf(
+                            l.station(2).toLowerCase(),
+                          );
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16.0),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _numberOfStationsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: l.numberOfStations,
+                      ),
+                      onChanged: (_) {
+                        _stationsTracksTeams = false;
+                        setState(() {});
+                      },
+                      validator: (value) {
+                        final counterError = _validateCounter(value, l);
+                        if (counterError != null) return counterError;
+                        if (_isValidNumber(_numberOfTeamsController.text) &&
+                            int.parse(value!) <
+                                int.parse(_numberOfTeamsController.text)) {
+                          return l.mustBeEqualToOrGreaterThanNumberOf(
+                            l.team(2).toLowerCase(),
+                          );
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16.0),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _numberOfRoundsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: l.numberOfRounds),
+                      onChanged: (_) => setState(() {}),
+                      validator: (value) => _validateCounter(value, l),
+                    ),
+                  ),
+                ],
+              ),
+              ?_buildStationsRoundNote(l),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// [_ExerciseSection]s whose text contains an undeclared `{{var.x}}` —
+  /// mirrors `ProgramFormScreen._sectionsWithUndeclaredTokens`, scoped to
+  /// only the fields this editor edits. Declared-but-empty never blocks;
+  /// only an undeclared name does, matching the Program editor's rule.
+  List<_ExerciseSection> _sectionsWithUndeclaredTokens() {
+    final declared = widget.variables.map((v) => v.name).toSet();
+    return [
+      for (final section in _ExerciseSection.values)
+        if (_activeSections.contains(section) &&
+            planVariableTokenPattern
+                .allMatches(_sectionControllers[section]!.text)
+                .any((m) => !declared.contains(m.group(1))))
+          section,
+    ];
+  }
+
+  Widget _buildLegacy(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
@@ -457,6 +749,24 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     }
 
     if (_formKey.currentState?.validate() ?? false) {
+      // Flag off has no Variabler section and no way to reference an
+      // undeclared token in the first place (RingDrillTextArea's chip
+      // rendering, and therefore the red/unknown state, only mounts in the
+      // flag-on path) — only the flag-on path can produce one to block on.
+      if (_planVariablesOn) {
+        final offending = _sectionsWithUndeclaredTokens();
+        if (offending.isNotEmpty) {
+          final l = AppLocalizations.of(context)!;
+          final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+            ),
+          );
+          return;
+        }
+      }
+
       final name = _nameController.text.trim();
       final numberOfTeams = int.parse(_numberOfTeamsController.text);
       final numberOfStations = int.parse(_numberOfStationsController.text);
@@ -509,7 +819,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         rotationTime: rotationTime,
         stations: widget.exercise?.stations ?? [],
         localizations: localizations,
-        variableOverrides: widget.exercise?.variableOverrides ?? const {},
+        // The working copy, not widget.exercise?.variableOverrides directly:
+        // in the flag-off path it is never mutated so this round-trips the
+        // original unchanged; in the flag-on path it carries whatever
+        // VariableOverridesSection's author edits produced.
+        variableOverrides: _workingOverrides,
       );
 
       // generateSchedule rebuilds the Exercise from its scalar inputs, so any
