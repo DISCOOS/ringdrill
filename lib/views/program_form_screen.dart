@@ -14,6 +14,12 @@ import 'package:ringdrill/views/widgets/variables_section.dart';
 
 const _kTagMaxLength = 40;
 
+/// ADR-0046 variable-name slug rule, enforced by [VariablesSection] itself
+/// on create/rename — re-checked here for [_ProgramFormScreenState]'s
+/// `_createVariableInline`, whose candidate name comes from the insertion
+/// menu's looser `\w*` filter capture, not user-typed dialog input.
+final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
+
 /// Turns a [PlanVariableReference] — deliberately unlocalized, since
 /// `plan_variable_refs.dart` stays Flutter-free — into a display string for
 /// [VariablesSection]'s delete-blocked usage list, e.g. "Øvelse 3 › Metode"
@@ -230,6 +236,22 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     setState(() => _variables = _variables.where((v) => v.name != name).toList());
   }
 
+  /// Wired to the token-aware fields' dormant `onCreateVariable` hook
+  /// (DESIGN-008 Stage 4): the insertion menu already inserted
+  /// `{{var.<name>}}` before calling this, so all that's left is declaring
+  /// it, empty, in the registry — an amber (declared-but-empty) chip is the
+  /// intended nudge to fill in a value, not an error. `name` came from the
+  /// menu's `\w*` filter capture, which is looser than the ADR-0046 slug
+  /// rule (it also allows a leading digit or uppercase) — validate before
+  /// declaring; an invalid name is left as an undeclared (red) token for
+  /// save-time validation to catch, rather than silently declaring
+  /// something that cannot be typed by hand elsewhere.
+  void _createVariableInline(String name) {
+    if (!_slugPattern.hasMatch(name)) return;
+    if (_variables.any((v) => v.name == name)) return;
+    _addVariable(DrillVariable(name: name, value: ''));
+  }
+
   FocusNode _focusFor(_Section section) => switch (section) {
     _Section.briefIntro => _briefIntroFocus,
     _Section.comms => _commsFocus,
@@ -318,6 +340,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                       tokenAware: true,
                       variables: variables,
                       planFields: planFields,
+                      onCreateVariable: _createVariableInline,
                     ),
                   ),
                 ],
