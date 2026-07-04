@@ -1935,6 +1935,14 @@
   "@formSectionSwitcherTooltip": {
     "description": "Tooltip on the compact AppBar title switcher in DESIGN-008 SectionNavigatedForm."
   },
+  "formSectionPrevious": "Previous section",
+  "@formSectionPrevious": {
+    "description": "Tooltip on DESIGN-008 SectionNavigatedForm's previous-section arrow. Disabled on the first active section."
+  },
+  "formSectionNext": "Next section",
+  "@formSectionNext": {
+    "description": "Tooltip on DESIGN-008 SectionNavigatedForm's next-section arrow. Disabled on the last active section."
+  },
 
   "tokenMenuEmpty": "No matches",
   "@tokenMenuEmpty": {

@@ -998,6 +998,14 @@
   "@formSectionSwitcherTooltip": {
     "description": "Verktøytips på den kompakte AppBar-tittelbytteren i DESIGN-008 SectionNavigatedForm."
   },
+  "formSectionPrevious": "Forrige seksjon",
+  "@formSectionPrevious": {
+    "description": "Verktøytips på DESIGN-008 SectionNavigatedForm sin forrige-seksjon-pil. Deaktivert på den første aktive seksjonen."
+  },
+  "formSectionNext": "Neste seksjon",
+  "@formSectionNext": {
+    "description": "Verktøytips på DESIGN-008 SectionNavigatedForm sin neste-seksjon-pil. Deaktivert på den siste aktive seksjonen."
+  },
 
   "tokenMenuEmpty": "Ingen treff",
   "@tokenMenuEmpty": {

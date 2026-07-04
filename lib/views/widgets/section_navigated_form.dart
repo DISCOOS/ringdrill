@@ -110,6 +110,18 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
     setState(() => _selectedId = widget.sections.first.id);
   }
 
+  /// Steps [current] by [delta] within [widget.sections] — never the
+  /// addable ones. Clamped: a step past either end is a no-op rather than
+  /// wrapping, so the boundary controls can just be disabled instead of
+  /// needing their own guard.
+  void _step(FormSection current, int delta) {
+    final index = widget.sections.indexOf(current);
+    if (index < 0) return;
+    final next = index + delta;
+    if (next < 0 || next >= widget.sections.length) return;
+    setState(() => _selectedId = widget.sections[next].id);
+  }
+
   Future<void> _openSwitcher(AppLocalizations l10n) async {
     final selected = await showRingdrillActionSheet<String>(
       context: context,
@@ -127,6 +139,10 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
     final l10n = AppLocalizations.of(context)!;
     final current = _sectionOrFirst(_selectedId);
     final wide = WindowSizeClass.of(context).hasMasterDetail;
+    final currentIndex = widget.sections.indexOf(current);
+    final hasPrevious = currentIndex > 0;
+    final hasNext =
+        currentIndex >= 0 && currentIndex < widget.sections.length - 1;
 
     return Scaffold(
       appBar: AppBar(
@@ -151,6 +167,18 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
                 ),
               ),
         actions: [
+          if (!wide) ...[
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              tooltip: l10n.formSectionPrevious,
+              onPressed: hasPrevious ? () => _step(current, -1) : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              tooltip: l10n.formSectionNext,
+              onPressed: hasNext ? () => _step(current, 1) : null,
+            ),
+          ],
           if (!wide && current.removable)
             PopupMenuButton<String>(
               onSelected: (_) => _removeCurrent(current),
@@ -178,6 +206,10 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
               l10n: l10n,
               onSelect: _selectOrAdd,
               onRemove: () => _removeCurrent(current),
+              hasPrevious: hasPrevious,
+              hasNext: hasNext,
+              onPrevious: () => _step(current, -1),
+              onNext: () => _step(current, 1),
             )
           : SafeArea(child: current.builder(context)),
     );
@@ -253,6 +285,10 @@ class _WideBody extends StatelessWidget {
     required this.l10n,
     required this.onSelect,
     required this.onRemove,
+    required this.hasPrevious,
+    required this.hasNext,
+    required this.onPrevious,
+    required this.onNext,
   });
 
   final List<FormSection> sections;
@@ -261,6 +297,13 @@ class _WideBody extends StatelessWidget {
   final AppLocalizations l10n;
   final ValueChanged<String> onSelect;
   final VoidCallback onRemove;
+
+  /// The rail already shows every section, so these are secondary here —
+  /// included for consistency with the compact AppBar controls.
+  final bool hasPrevious;
+  final bool hasNext;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
@@ -293,6 +336,16 @@ class _WideBody extends StatelessWidget {
                         current.label,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      tooltip: l10n.formSectionPrevious,
+                      onPressed: hasPrevious ? onPrevious : null,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      tooltip: l10n.formSectionNext,
+                      onPressed: hasNext ? onNext : null,
                     ),
                     if (current.removable)
                       PopupMenuButton<String>(

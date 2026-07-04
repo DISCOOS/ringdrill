@@ -3290,6 +3290,18 @@ abstract class AppLocalizations {
   /// **'Switch section'**
   String get formSectionSwitcherTooltip;
 
+  /// Tooltip on DESIGN-008 SectionNavigatedForm's previous-section arrow. Disabled on the first active section.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous section'**
+  String get formSectionPrevious;
+
+  /// Tooltip on DESIGN-008 SectionNavigatedForm's next-section arrow. Disabled on the last active section.
+  ///
+  /// In en, this message translates to:
+  /// **'Next section'**
+  String get formSectionNext;
+
   /// Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter.
   ///
   /// In en, this message translates to:

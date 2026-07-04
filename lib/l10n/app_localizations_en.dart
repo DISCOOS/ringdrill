@@ -1931,6 +1931,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get formSectionSwitcherTooltip => 'Switch section';
 
   @override
+  String get formSectionPrevious => 'Previous section';
+
+  @override
+  String get formSectionNext => 'Next section';
+
+  @override
   String get tokenMenuEmpty => 'No matches';
 
   @override
