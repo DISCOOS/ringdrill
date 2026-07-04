@@ -294,6 +294,34 @@ void main() {
       expect(result, contains(expectedUtm));
       expect(result, isNot(contains('{{station.position.utm}}')));
     });
+
+    test(
+      '{{program.name}} and {{program.description}} resolve inside program-scope '
+      'markdown fields (briefIntroMd, commsMd, beforeRoundMd)',
+      () async {
+        final exercise = _designExercise();
+        final program = _emptyProgram().copyWith(
+          name: 'Vinterøvelse Nordland',
+          description: 'Samvirkeøvelse',
+          exercises: [exercise],
+          briefIntroMd: 'Velkommen til {{program.name}}.',
+          commsMd: '{{program.description}} — se innledningen.',
+          beforeRoundMd: 'Plan: {{program.name}}.',
+        );
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        expect(result, contains('Velkommen til Vinterøvelse Nordland.'));
+        expect(result, contains('Samvirkeøvelse — se innledningen.'));
+        expect(result, contains('Plan: Vinterøvelse Nordland.'));
+        expect(result, isNot(contains('{{program.name}}')));
+        expect(result, isNot(contains('{{program.description}}')));
+      },
+    );
   });
 
   group('BriefRenderer — null field omission', () {

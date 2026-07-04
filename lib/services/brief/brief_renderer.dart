@@ -102,6 +102,7 @@ class BriefRenderer {
     }
 
     final programVars = _programVariables(program);
+    final programRefContext = _programRefContext(program);
 
     final exerciseContexts = exercises.map((ex) {
       return _buildExerciseContext(
@@ -122,8 +123,14 @@ class BriefRenderer {
           program.briefIntroMd,
           vars: programVars,
           l10n: l10n,
+          refContext: programRefContext,
         ),
-        'commsMd': _resolveField(program.commsMd, vars: programVars, l10n: l10n),
+        'commsMd': _resolveField(
+          program.commsMd,
+          vars: programVars,
+          l10n: l10n,
+          refContext: programRefContext,
+        ),
       },
       'exercises': exerciseContexts,
       'if_director': audience.includesActorPii,
@@ -443,6 +450,7 @@ String _organisationBlock(
     program.beforeRoundMd,
     vars: _programVariables(program),
     l10n: l10n,
+    refContext: _programRefContext(program),
   );
   if (beforeRound != null && beforeRound.isNotEmpty) {
     buf
@@ -474,6 +482,20 @@ String _formatUtm(LatLng? latLng) {
 String? _effectiveCommsMd(Program program, Exercise exercise) {
   return exercise.commsMd ?? program.commsMd;
 }
+
+/// Partial program context for cross-reference resolution inside
+/// program-scope markdown fields (e.g. `{{program.name}}` inside
+/// `briefIntroMd`), mirroring `_buildStationContext`'s `stationRefContext`.
+///
+/// Without this, `{{program.name}}` has no key to resolve against —
+/// `mustache_template` throws "Value was missing for variable tag" for an
+/// absent key (not a silent empty string), which `_resolveField`'s
+/// catch-all then turns into "leave the field's mustache pass unrendered",
+/// so the literal `{{program.name}}` stayed in the output instead of being
+/// substituted.
+Map<String, dynamic> _programRefContext(Program program) => {
+  'program': {'name': program.name, 'description': program.description},
+};
 
 // Matches `{{var.<name>}}`, tolerating inner whitespace around the name.
 // Only `var.*` tokens are handled here — every other `{{...}}` expression is
