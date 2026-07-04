@@ -161,7 +161,7 @@ void main() {
 
     testWidgets(
       'compact: removing the current section falls back to "Plan"; '
-      '"Plan" itself offers no remove action',
+      '"Plan" itself offers a disabled remove action',
       (tester) async {
         await _openForm(
           tester,
@@ -170,8 +170,14 @@ void main() {
         );
         final l = await AppLocalizations.delegate.load(const Locale('en'));
 
-        // No overflow "remove" action while the default section is shown.
-        expect(find.byIcon(Icons.more_vert), findsNothing);
+        // The overflow is always rendered now (DESIGN-008 follow-up 02, so
+        // the prev/next controls next to it never shift), but disabled on
+        // the non-removable default "Plan" section — tapping it opens
+        // nothing.
+        expect(find.byIcon(Icons.more_vert), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+        expect(find.text(l.formSectionRemoveAction), findsNothing);
 
         await tester.tap(find.text(l.programSectionPlan));
         await tester.pumpAndSettle();
@@ -184,9 +190,13 @@ void main() {
         await tester.tap(find.text(l.formSectionRemoveAction));
         await tester.pumpAndSettle();
 
-        // Falls back to the default section.
+        // Falls back to the default section, where the overflow is
+        // disabled again.
         expect(find.text(l.programSectionPlan), findsOneWidget);
-        expect(find.byIcon(Icons.more_vert), findsNothing);
+        expect(find.byIcon(Icons.more_vert), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+        expect(find.text(l.formSectionRemoveAction), findsNothing);
 
         await tester.tap(find.text(l.save));
         await tester.pumpAndSettle();

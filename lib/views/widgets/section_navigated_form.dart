@@ -168,6 +168,21 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
               ),
         actions: [
           if (!wide) ...[
+            // Always rendered (just disabled when the current section isn't
+            // removable), so its presence never changes the actions row's
+            // width — otherwise the prev/next controls to its right would
+            // visibly jump sideways every time the current section changed.
+            PopupMenuButton<String>(
+              enabled: current.removable,
+              icon: const Icon(Icons.more_vert),
+              onSelected: (_) => _removeCurrent(current),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'remove',
+                  child: Text(l10n.formSectionRemoveAction),
+                ),
+              ],
+            ),
             IconButton(
               icon: const Icon(Icons.chevron_left),
               tooltip: l10n.formSectionPrevious,
@@ -179,16 +194,6 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
               onPressed: hasNext ? () => _step(current, 1) : null,
             ),
           ],
-          if (!wide && current.removable)
-            PopupMenuButton<String>(
-              onSelected: (_) => _removeCurrent(current),
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'remove',
-                  child: Text(l10n.formSectionRemoveAction),
-                ),
-              ],
-            ),
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 16),
             child: ElevatedButton(
@@ -337,6 +342,21 @@ class _WideBody extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
+                    // Always rendered (just disabled when not removable),
+                    // matching the compact AppBar: otherwise the prev/next
+                    // controls to its right would jump sideways whenever the
+                    // current section's removability changed.
+                    PopupMenuButton<String>(
+                      enabled: current.removable,
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (_) => onRemove(),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'remove',
+                          child: Text(l10n.formSectionRemoveAction),
+                        ),
+                      ],
+                    ),
                     IconButton(
                       icon: const Icon(Icons.chevron_left),
                       tooltip: l10n.formSectionPrevious,
@@ -347,16 +367,6 @@ class _WideBody extends StatelessWidget {
                       tooltip: l10n.formSectionNext,
                       onPressed: hasNext ? onNext : null,
                     ),
-                    if (current.removable)
-                      PopupMenuButton<String>(
-                        onSelected: (_) => onRemove(),
-                        itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: 'remove',
-                            child: Text(l10n.formSectionRemoveAction),
-                          ),
-                        ],
-                      ),
                   ],
                 ),
                 const SizedBox(height: 12),

@@ -117,6 +117,15 @@ Color? _tokenChipColor(WidgetTester tester, String token) {
   return found;
 }
 
+/// The `⋮` row-action menu for the variable named [name]. Scoped to that
+/// row rather than a bare `find.byIcon(Icons.more_vert)`, since
+/// `SectionNavigatedForm`'s own overflow control (DESIGN-008 follow-up 02)
+/// now always renders one too — just disabled outside a removable section.
+Finder _variableRowMenu(String name) {
+  final row = find.ancestor(of: find.text(name), matching: find.byType(Row));
+  return find.descendant(of: row, matching: find.byIcon(Icons.more_vert)).first;
+}
+
 Future<void> _editVariableValue(
   WidgetTester tester,
   AppLocalizations l,
@@ -124,12 +133,7 @@ Future<void> _editVariableValue(
   String? value,
   String? hint,
 }) async {
-  final menus = find.byIcon(Icons.more_vert);
-  final row = find.ancestor(
-    of: find.text(name),
-    matching: find.byType(Row),
-  );
-  await tester.tap(find.descendant(of: row, matching: menus).first);
+  await tester.tap(_variableRowMenu(name));
   await tester.pumpAndSettle();
   await tester.tap(find.text(l.variablesSectionEditValueAction));
   await tester.pumpAndSettle();
@@ -253,7 +257,7 @@ void main() {
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.tap(_variableRowMenu('frekvens'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.variablesSectionRenameAction));
     await tester.pumpAndSettle();
@@ -306,8 +310,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Referenced: blocked.
-      final menus = find.byIcon(Icons.more_vert);
-      await tester.tap(menus.first);
+      await tester.tap(_variableRowMenu('frekvens'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
       await tester.pumpAndSettle();
@@ -318,7 +321,7 @@ void main() {
       expect(find.text('frekvens'), findsOneWidget);
 
       // Unreferenced: removes immediately.
-      await tester.tap(find.byIcon(Icons.more_vert).last);
+      await tester.tap(_variableRowMenu('ubrukt'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
       await tester.pumpAndSettle();
