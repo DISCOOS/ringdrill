@@ -4,10 +4,12 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
+import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
-/// DESIGN-008 Stage 5 — the Variabler declaration section end-to-end inside
-/// the flag-on Program editor: declare, create-inline, rename (plan-wide
-/// rewrite), delete (reference-guarded) and save-time validation.
+/// DESIGN-008 Stage 5 (+ follow-up 01) — the Variabler declaration section
+/// end-to-end inside the flag-on Program editor: declare, create-inline,
+/// rename (plan-wide rewrite), delete (reference-guarded), edit-value and
+/// save-time validation.
 ///
 /// `RINGDRILL_PLAN_VARIABLES` is a compile-time `bool.fromEnvironment`, so
 /// every test here pumps `ProgramFormScreen` with `debugPlanVariablesOverride:
@@ -85,6 +87,67 @@ Future<void> _openForm(
 Future<void> _openSwitcherFrom(WidgetTester tester, String currentLabel) async {
   await tester.tap(
     find.descendant(of: find.byType(AppBar), matching: find.text(currentLabel)),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// The chip color `TokenTextEditingController` assigned to [token] (the
+/// full `{{var.<name>}}` text) in the currently visible token-aware field —
+/// blue (known), amber (declared-but-empty) or red (undeclared). Reads the
+/// live [EditableText]'s controller directly rather than a screenshot, so
+/// it survives whatever the actual pixel color happens to be.
+Color? _tokenChipColor(WidgetTester tester, String token) {
+  final editableFinder = find.byType(EditableText);
+  final controller =
+      tester.widget<EditableText>(editableFinder).controller
+          as TokenTextEditingController;
+  final span = controller.buildTextSpan(
+    context: tester.element(editableFinder),
+    style: const TextStyle(),
+    withComposing: false,
+  );
+  Color? found;
+  span.visitChildren((child) {
+    if (child is TextSpan && child.text == token) {
+      found = child.style?.color;
+      return false;
+    }
+    return true;
+  });
+  return found;
+}
+
+Future<void> _editVariableValue(
+  WidgetTester tester,
+  AppLocalizations l,
+  String name, {
+  String? value,
+  String? hint,
+}) async {
+  final menus = find.byIcon(Icons.more_vert);
+  final row = find.ancestor(
+    of: find.text(name),
+    matching: find.byType(Row),
+  );
+  await tester.tap(find.descendant(of: row, matching: menus).first);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(l.variablesSectionEditValueAction));
+  await tester.pumpAndSettle();
+
+  if (value != null) {
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.variablesSectionValueLabel),
+      value,
+    );
+  }
+  if (hint != null) {
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.variablesSectionHintLabel),
+      hint,
+    );
+  }
+  await tester.tap(
+    find.widgetWithText(FilledButton, l.variablesSectionEditValueAction),
   );
   await tester.pumpAndSettle();
 }
@@ -358,6 +421,154 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(l.variablesSectionDuplicateNameError), findsOneWidget);
   });
+
+  testWidgets(
+    'editing a declared-but-empty variable\'s value re-resolves its chip '
+    'from amber to blue and saves the new value',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _program(
+          briefIntroMd: 'Kanal {{var.frekvens}}',
+          variables: const [DrillVariable(name: 'frekvens')],
+        ),
+        captured,
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+      expect(
+        _tokenChipColor(tester, '{{var.frekvens}}'),
+        Colors.amber.shade900,
+      );
+
+      await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      await _editVariableValue(tester, l, 'frekvens', value: 'Kanal 6');
+      expect(find.text('Kanal 6'), findsOneWidget);
+      expect(find.text('—'), findsNothing);
+
+      await _openSwitcherFrom(tester, l.variablesSectionTitle);
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+      expect(_tokenChipColor(tester, '{{var.frekvens}}'), Colors.blue.shade800);
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      final saved = captured.value;
+      expect(saved, isNotNull);
+      expect(saved!.variables.single.value, 'Kanal 6');
+    },
+  );
+
+  testWidgets(
+    'editing a variable\'s value leaves its name and references untouched',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _program(
+          briefIntroMd: 'Kanal {{var.frekvens}}',
+          variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+        ),
+        captured,
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      await _editVariableValue(tester, l, 'frekvens', value: 'Kanal 8');
+      expect(find.text('frekvens'), findsOneWidget);
+      expect(find.text('Kanal 8'), findsOneWidget);
+
+      await _openSwitcherFrom(tester, l.variablesSectionTitle);
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+      // The reference is unchanged — {{var.frekvens}}, not rewritten to
+      // some other name.
+      expect(find.text('Kanal {{var.frekvens}}'), findsOneWidget);
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      final saved = captured.value;
+      expect(saved, isNotNull);
+      expect(saved!.variables.single.name, 'frekvens');
+      expect(saved.briefIntroMd, 'Kanal {{var.frekvens}}');
+    },
+  );
+
+  testWidgets('editing a variable\'s hint persists it on save', (
+    tester,
+  ) async {
+    final captured = _Captured();
+    await _openForm(
+      tester,
+      _program(variables: const [DrillVariable(name: 'frekvens', value: 'X')]),
+      captured,
+    );
+
+    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
+
+    await _editVariableValue(tester, l, 'frekvens', hint: 'Radiokanal');
+
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
+
+    final saved = captured.value;
+    expect(saved, isNotNull);
+    expect(saved!.variables.single.hint, 'Radiokanal');
+    expect(saved.variables.single.value, 'X');
+  });
+
+  testWidgets(
+    'create-inline then edit-value closes the loop without ever deleting',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(tester, _program(briefIntroMd: 'Intro'), captured);
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'Intro /freken');
+      await tester.pump();
+      await tester.pump();
+
+      final createLabel = l.tokenMenuCreateVariable('freken');
+      await tester.tap(find.text(createLabel));
+      await tester.pump();
+      expect(_tokenChipColor(tester, '{{var.freken}}'), Colors.amber.shade900);
+
+      await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      // Never blocked or deleted despite being referenced — edit-value
+      // just works.
+      await _editVariableValue(tester, l, 'freken', value: 'Kanal 6');
+      expect(find.text('freken'), findsOneWidget);
+      expect(find.text('Kanal 6'), findsOneWidget);
+
+      await _openSwitcherFrom(tester, l.variablesSectionTitle);
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+      expect(_tokenChipColor(tester, '{{var.freken}}'), Colors.blue.shade800);
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+      expect(captured.value?.variables.single.value, 'Kanal 6');
+    },
+  );
 
   testWidgets(
     'flag-off: no Variabler section, no undeclared-token save-blocking',
