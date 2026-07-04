@@ -401,20 +401,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   // inset so the home-indicator strip matches the bar instead
                   // of reading as a dark band below it.
                   applyBottomInset: true,
-                  // The tile row owns the phase/countdown, so the trailing
-                  // cluster collapses to just the stop button here.
-                  showInlineStatus: false,
-                  // We are already inside the player; tapping the bar
-                  // should not try to re-open it.
-                  onOpen: () {},
-                  onPlay: () {
-                    unawaited(HapticFeedback.mediumImpact());
-                    _exerciseService.start(_exercise!);
-                  },
-                  onPickExercise: (picked) => ContextSheet.of(
-                    context,
-                  ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
-                  bodyBuilder: _buildMiniPlayerBody,
+                    // The tile row owns the phase/countdown, so the trailing
+                    // cluster collapses to just the stop button here.
+                    showInlineStatus: false,
+                    // We are already inside the player; tapping the bar
+                    // should not try to re-open it.
+                    onOpen: () {},
+                    onPlay: () {
+                      unawaited(HapticFeedback.mediumImpact());
+                      _exerciseService.start(_exercise!);
+                    },
+                    onPickExercise: (picked) => ContextSheet.of(
+                      context,
+                    ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+                    bodyBuilder: _buildMiniPlayerBody,
                 )
               : _buildExerciseStatus(event),
         );
@@ -1346,10 +1346,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             padding: const EdgeInsets.only(right: 4),
             child: Text(
               localizations.team(1),
-              style: TextStyle(
-                fontSize: kDrillAccentFontSize,
-                color: accent.foreground,
-              ),
+              style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
             ),
           ),
           ...List<Widget>.generate(exercise.schedule.length, (roundIndex) {
@@ -1386,10 +1383,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           leading: badge,
           title: Text(
             station.name,
-            style: TextStyle(
-              fontSize: kDrillAccentFontSize,
-              color: accent.foreground,
-            ),
+            style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1433,10 +1427,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           leading: badge,
           title: Text(
             station.name,
-            style: TextStyle(
-              fontSize: kDrillAccentFontSize,
-              color: accent.foreground,
-            ),
+            style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1610,10 +1601,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             leading: accent.indicator,
             title: Text(
               teamName,
-              style: TextStyle(
-                fontSize: kDrillAccentFontSize,
-                color: accent.foreground,
-              ),
+              style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1639,10 +1627,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   padding: const EdgeInsets.only(right: 4),
                   child: Text(
                     localizations.station(1),
-                    style: TextStyle(
-                      fontSize: kDrillAccentFontSize,
-                      color: accent.foreground,
-                    ),
+                    style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
                   ),
                 ),
                 ...List<Widget>.generate(_exercise!.schedule.length, (
@@ -1666,7 +1651,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             // holds across Poster/Øvelser/Markører/Lag/Spill.
             onOpen: () => ContextSheet.of(context).show(
               context,
-              TeamSheetTarget(exerciseUuid: widget.uuid, teamIndex: teamIndex),
+              TeamSheetTarget(
+                exerciseUuid: widget.uuid,
+                teamIndex: teamIndex,
+              ),
             ),
             onToggle: () => _toggleTeam(teamIndex),
             body: _buildTeamDetail(teamIndex, event),
