@@ -20,6 +20,11 @@ const _kTagMaxLength = 40;
 /// menu's looser `\w*` filter capture, not user-typed dialog input.
 final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
+/// Matches `{{var.<name>}}`, tolerating inner whitespace — the same shape
+/// duplicated in `token_text_editing_controller.dart`, `brief_renderer.dart`
+/// and `plan_variable_refs.dart`; keep this in sync if that shape changes.
+final _varTokenPattern = RegExp(r'\{\{\s*var\.([a-z][a-z0-9_]*)\s*\}\}');
+
 /// Turns a [PlanVariableReference] — deliberately unlocalized, since
 /// `plan_variable_refs.dart` stays Flutter-free — into a display string for
 /// [VariablesSection]'s delete-blocked usage list, e.g. "Øvelse 3 › Metode"
@@ -250,6 +255,26 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     if (!_slugPattern.hasMatch(name)) return;
     if (_variables.any((v) => v.name == name)) return;
     _addVariable(DrillVariable(name: name, value: ''));
+  }
+
+  /// Program-scope markdown sections' `{{var.<name>}}` tokens where `name`
+  /// is not declared in [_variables] — Stage 5's save-blocking scope is
+  /// deliberately just the fields *this* editor edits, not the whole plan
+  /// (blocking save over an undeclared token in a station field the user
+  /// cannot see or fix here would be a dead end). Rename/delete integrity
+  /// (ADR-0046) still walks the whole plan; only this check is scoped down.
+  /// Declared-but-empty (amber) never blocks — only undeclared (red) does,
+  /// matching the Stage 4 chip-state semantics.
+  List<_Section> _sectionsWithUndeclaredTokens() {
+    final declared = _variables.map((v) => v.name).toSet();
+    return [
+      for (final section in _Section.values)
+        if (_activeSections.contains(section) &&
+            _varTokenPattern
+                .allMatches(_controllerFor(section).text)
+                .any((m) => !declared.contains(m.group(1))))
+          section,
+    ];
   }
 
   FocusNode _focusFor(_Section section) => switch (section) {
@@ -580,6 +605,20 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
 
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Flag-off has no Variabler section and no way to declare a variable,
+    // so there is nothing to validate there — only the flag-on path can
+    // produce an undeclared {{var.x}} token in the first place.
+    if (_planVariablesOn) {
+      final offending = _sectionsWithUndeclaredTokens();
+      if (offending.isNotEmpty) {
+        final l = AppLocalizations.of(context)!;
+        final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l.programSaveBlockedUndeclaredVariable(sections))),
+        );
+        return;
+      }
+    }
     final updated = widget.program.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
