@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/markdown_section_field.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
+import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 
 const _kTagMaxLength = 40;
 
@@ -18,9 +21,21 @@ enum _Section { briefIntro, comms, beforeRound }
 /// caller is responsible for persisting the result through the program
 /// save path (e.g. `ProgramService.replaceProgram`).
 class ProgramFormScreen extends StatefulWidget {
-  const ProgramFormScreen({super.key, required this.program});
+  const ProgramFormScreen({
+    super.key,
+    required this.program,
+    @visibleForTesting this.debugPlanVariablesOverride,
+  });
 
   final Program program;
+
+  /// Overrides [AppFlags.planVariables] for a test. `bool.fromEnvironment`
+  /// is a compile-time const, so a widget test cannot flip it at runtime —
+  /// this lets a test render the flag-on section-navigated body without a
+  /// `--dart-define`. Production code never sets this; the real flag is
+  /// read when it is null.
+  @visibleForTesting
+  final bool? debugPlanVariablesOverride;
 
   @override
   State<ProgramFormScreen> createState() => _ProgramFormScreenState();
@@ -147,9 +162,157 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     return value.isEmpty ? null : value;
   }
 
+  bool get _planVariablesOn =>
+      widget.debugPlanVariablesOverride ?? AppFlags.planVariables;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    if (_planVariablesOn) {
+      return _buildSectionNavigated(context, localizations);
+    }
+    return _buildLegacy(context, localizations);
+  }
+
+  /// DESIGN-008 Stage 3, behind `RINGDRILL_PLAN_VARIABLES`. Same controllers,
+  /// [_activeSections] and [_save] as the legacy body below — only their
+  /// presentation moves into sections. On compact the section switcher
+  /// occupies the AppBar title (see [SectionNavigatedForm]), so the
+  /// DESIGN-006 quick-rename-from-the-AppBar affordance is not available in
+  /// this mode; renaming the plan happens through the name field in the
+  /// "Plan" section instead, one tap away.
+  Widget _buildSectionNavigated(BuildContext context, AppLocalizations l) {
+    final activeMdSections = [
+      for (final section in _Section.values)
+        if (_activeSections.contains(section))
+          FormSection(
+            id: section.name,
+            label: _labelFor(section, l),
+            icon: Icons.description_outlined,
+            removable: true,
+            builder: (_) => Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: MarkdownSectionField(
+                      controller: _controllerFor(section),
+                      focusNode: _focusFor(section),
+                      label: _labelFor(section, l),
+                      expands: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    ];
+    final addableSections = [
+      for (final section in _Section.values)
+        if (!_activeSections.contains(section))
+          FormSection(
+            id: section.name,
+            label: _labelFor(section, l),
+            icon: Icons.description_outlined,
+            removable: true,
+            // Never rendered: a section only appears in `addable`, whose
+            // builder is never invoked by SectionNavigatedForm.
+            builder: (_) => const SizedBox.shrink(),
+          ),
+    ];
+
+    return Form(
+      key: _formKey,
+      child: SectionNavigatedForm(
+        title: l.editProgram,
+        initialSectionId: 'plan',
+        sections: [
+          FormSection(
+            id: 'plan',
+            label: l.programSectionPlan,
+            icon: Icons.assignment_outlined,
+            builder: (ctx) => _buildPlanSectionBody(ctx, l),
+          ),
+          ...activeMdSections,
+        ],
+        addable: addableSections,
+        onAdd: (id) => _addSection(_Section.values.byName(id)),
+        onRemove: (id) => _removeSection(_Section.values.byName(id)),
+        onSave: _save,
+        onClose: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  /// The DESIGN-008 default section for [Program]: the short structural
+  /// fields that never become their own section (name, description,
+  /// station-number-format, language, tags).
+  Widget _buildPlanSectionBody(BuildContext context, AppLocalizations l) {
+    return SafeArea(
+      child: DismissKeyboard(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                autofocus: true,
+                controller: _nameController,
+                decoration: InputDecoration(labelText: l.programName),
+                validator: (value) => value != null && value.trim().isNotEmpty
+                    ? null
+                    : l.pleaseEnterAName,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                keyboardType: TextInputType.multiline,
+                minLines: 1,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: l.programDescription,
+                  hintText: l.programDescriptionHint,
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const Divider(height: 32),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: _StationNumberFormatPicker(
+                      value: _stationNumberFormat,
+                      onChanged: (f) => setState(() => _stationNumberFormat = f),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  _LanguagePicker(
+                    value: _languageCode,
+                    onChanged: (v) => setState(() => _languageCode = v),
+                  ),
+                ],
+              ),
+              const Divider(height: 32),
+              _TagsEditor(
+                tags: _tags,
+                controller: _tagInputController,
+                focusNode: _tagInputFocus,
+                errorText: _tagError,
+                onSubmit: () => _submitTag(l),
+                onRemove: _removeTag,
+                label: l.programEditorTagsLabel,
+                hint: l.programEditorTagsHint,
+                removeTooltip: l.programEditorTagRemoveTooltip,
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegacy(BuildContext context, AppLocalizations localizations) {
     final sectionSpecs = [
       for (final section in _Section.values)
         OptionalFieldSection<_Section>(
