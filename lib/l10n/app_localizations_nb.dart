@@ -2005,6 +2005,18 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String variableOverridesSectionInheritedValueLabel(String value) {
+    return 'Arvet: $value';
+  }
+
+  @override
+  String get variableOverridesSectionLocalValueLabel => 'Lokal verdi';
+
+  @override
+  String get variableOverridesSectionEmptyState =>
+      'Ingen variabler i planen ennå';
+
+  @override
   String programSaveBlockedUndeclaredVariable(String sections) {
     return 'Kan ikke lagre: $sections inneholder en ukjent variabel';
   }

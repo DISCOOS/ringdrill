@@ -3410,6 +3410,24 @@ abstract class AppLocalizations {
   /// **'“{name}” is still used here:'**
   String variablesSectionDeleteBlockedMessage(String name);
 
+  /// Dimmed text shown beside a declared variable's name in the VariableOverridesSection override table (Exercise/Station Variabler section) — the parent-scope effective value a row falls back to when its local override field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited: {value}'**
+  String variableOverridesSectionInheritedValueLabel(String value);
+
+  /// Label of the per-row local-value text field in VariableOverridesSection. An empty field means inherit the parent scope's value.
+  ///
+  /// In en, this message translates to:
+  /// **'Local value'**
+  String get variableOverridesSectionLocalValueLabel;
+
+  /// Shown in VariableOverridesSection instead of the row list when the plan has no declared variables to override.
+  ///
+  /// In en, this message translates to:
+  /// **'No variables in the plan yet'**
+  String get variableOverridesSectionEmptyState;
+
   /// Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.
   ///
   /// In en, this message translates to:

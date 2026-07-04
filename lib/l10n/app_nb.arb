@@ -1089,6 +1089,21 @@
       "name": { "type": "String" }
     }
   },
+  "variableOverridesSectionInheritedValueLabel": "Arvet: {value}",
+  "@variableOverridesSectionInheritedValueLabel": {
+    "description": "Nedtonet tekst vist ved siden av en deklarert variabels navn i VariableOverridesSection-overstyringstabellen (Øvelse/Post sin Variabler-seksjon) — verdien raden faller tilbake til når det lokale overstyringsfeltet er tomt.",
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "variableOverridesSectionLocalValueLabel": "Lokal verdi",
+  "@variableOverridesSectionLocalValueLabel": {
+    "description": "Etikett på det radvise lokal-verdi-tekstfeltet i VariableOverridesSection. Et tomt felt betyr at overordnet omfangs verdi arves."
+  },
+  "variableOverridesSectionEmptyState": "Ingen variabler i planen ennå",
+  "@variableOverridesSectionEmptyState": {
+    "description": "Vist i VariableOverridesSection i stedet for radlisten når planen ikke har noen deklarerte variabler å overstyre."
+  },
   "programSaveBlockedUndeclaredVariable": "Kan ikke lagre: {sections} inneholder en ukjent variabel",
   "@programSaveBlockedUndeclaredVariable": {
     "description": "Snackbar vist når Lagre blokkeres fordi en Program-scopet markdown-seksjon inneholder {{var.<navn>}} for et udeklarert navn. {sections} er en kommaseparert liste over de aktuelle seksjonsetikettene.",

@@ -2026,6 +2026,21 @@
       "name": { "type": "String" }
     }
   },
+  "variableOverridesSectionInheritedValueLabel": "Inherited: {value}",
+  "@variableOverridesSectionInheritedValueLabel": {
+    "description": "Dimmed text shown beside a declared variable's name in the VariableOverridesSection override table (Exercise/Station Variabler section) — the parent-scope effective value a row falls back to when its local override field is empty.",
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "variableOverridesSectionLocalValueLabel": "Local value",
+  "@variableOverridesSectionLocalValueLabel": {
+    "description": "Label of the per-row local-value text field in VariableOverridesSection. An empty field means inherit the parent scope's value."
+  },
+  "variableOverridesSectionEmptyState": "No variables in the plan yet",
+  "@variableOverridesSectionEmptyState": {
+    "description": "Shown in VariableOverridesSection instead of the row list when the plan has no declared variables to override."
+  },
   "programSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",
   "@programSaveBlockedUndeclaredVariable": {
     "description": "Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.",

@@ -2007,6 +2007,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String variableOverridesSectionInheritedValueLabel(String value) {
+    return 'Inherited: $value';
+  }
+
+  @override
+  String get variableOverridesSectionLocalValueLabel => 'Local value';
+
+  @override
+  String get variableOverridesSectionEmptyState =>
+      'No variables in the plan yet';
+
+  @override
   String programSaveBlockedUndeclaredVariable(String sections) {
     return 'Can’t save: $sections contains an unknown variable';
   }
