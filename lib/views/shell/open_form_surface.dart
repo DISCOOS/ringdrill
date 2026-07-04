@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
 Future<T?> openFormSurface<T>(
@@ -36,7 +38,15 @@ Future<T?> openFormSurface<T>(
   // overlay still attached to the shell navigator.
   final rootNavigator = Navigator.of(context, rootNavigator: true);
   final result = await rootNavigator.push<T>(
-    MaterialPageRoute(builder: (ctx) => builder(ctx)),
+    MaterialPageRoute(
+      // This route sits on the root Navigator's Overlay, a sibling of
+      // MainScreen (DESIGN-008 follow-up 11) — the PlanScope wrapping
+      // MainScreen never reaches it without a scope of its own.
+      builder: (ctx) => PlanScope(
+        variables: ProgramService().activeProgram?.variables ?? const [],
+        child: builder(ctx),
+      ),
+    ),
   );
 
   // Re-open the sheet (modal mode) to the saved target so the user is
@@ -51,9 +61,7 @@ Future<T?> openFormSurface<T>(
   // `ProgramService.save*` call never runs — the edit silently vanishes
   // (the editor save-loss regression). The re-open is cosmetic; fire it and
   // hand the result back immediately.
-  if (savedTarget != null &&
-      sheetController != null &&
-      rootNavigator.mounted) {
+  if (savedTarget != null && sheetController != null && rootNavigator.mounted) {
     unawaited(sheetController.show(rootNavigator.context, savedTarget));
   }
 

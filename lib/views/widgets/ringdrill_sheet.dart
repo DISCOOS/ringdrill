@@ -1,4 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
+
+/// Seeds a [PlanScope] from the active plan for a sheet/dialog choke point
+/// (DESIGN-008 follow-up 11): `showModalBottomSheet`/`showDialog` push onto
+/// the Navigator's `Overlay`, a sibling of — not a descendant of —
+/// `MainScreen`, so the `PlanScope` wrapping `MainScreen` never reaches
+/// anything opened this way without this. Harmless for a cross-program
+/// picker: it simply never reads the scope (follow-up 09).
+Widget _withDefaultPlanScope(Widget child) => PlanScope(
+  variables: ProgramService().activeProgram?.variables ?? const [],
+  child: child,
+);
 
 /// Opens a draggable viewer sheet with the standard Ringdrill chrome (drag
 /// handle, rounded top corners, surface background).
@@ -31,7 +44,7 @@ Future<T?> showRingdrillViewerSheet<T>({
             builder: builder,
             maxBodyWidth: maxBodyWidth,
           );
-          return _RingdrillSheetSurface(child: body);
+          return _withDefaultPlanScope(_RingdrillSheetSurface(child: body));
         },
       );
     },
@@ -59,23 +72,25 @@ Future<T?> showRingdrillActionSheet<T>({
     builder: (context) {
       return PopScope(
         canPop: isDismissible,
-        child: _RingdrillSheetSurface(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isDismissible)
-                const _DragHandle()
-              else
-                const SizedBox(height: 16),
-              // Flexible (not Expanded) so a short sheet still wraps its
-              // content, but a tall one is bounded to the available height
-              // instead of overflowing. Builders that size themselves to a
-              // fraction of the full screen (e.g. the open-plan picker at
-              // 0.88×height) would otherwise overflow once the drag handle
-              // and the bottom safe-area inset are added on top. Their own
-              // scroll areas absorb the clamp.
-              Flexible(child: SafeArea(top: false, child: builder(context))),
-            ],
+        child: _withDefaultPlanScope(
+          _RingdrillSheetSurface(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isDismissible)
+                  const _DragHandle()
+                else
+                  const SizedBox(height: 16),
+                // Flexible (not Expanded) so a short sheet still wraps its
+                // content, but a tall one is bounded to the available height
+                // instead of overflowing. Builders that size themselves to a
+                // fraction of the full screen (e.g. the open-plan picker at
+                // 0.88×height) would otherwise overflow once the drag handle
+                // and the bottom safe-area inset are added on top. Their own
+                // scroll areas absorb the clamp.
+                Flexible(child: SafeArea(top: false, child: builder(context))),
+              ],
+            ),
           ),
         ),
       );
@@ -101,7 +116,7 @@ Future<T?> showRingdrillFormDialog<T>({
             maxWidth: 720,
             maxHeight: viewport.height * 0.88,
           ),
-          child: builder(context),
+          child: _withDefaultPlanScope(builder(context)),
         ),
       );
     },
