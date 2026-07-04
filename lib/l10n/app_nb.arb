@@ -1015,6 +1015,76 @@
     }
   },
 
+  "variablesSectionTitle": "Variabler",
+  "@variablesSectionTitle": {
+    "description": "DESIGN-008 Stage 5 seksjonsetikett for variabel-deklareringsseksjonen (Program-editoren, seksjonsnavigert skall)."
+  },
+  "variablesSectionPublishNote": "Publiseres med planen. Ikke legg inn reelle persondata.",
+  "@variablesSectionPublishNote": {
+    "description": "Gult varselnotat øverst i Variabler-seksjonen — variabelverdier lagres i .drill-arkivet og publiseres med det."
+  },
+  "variablesSectionAddAction": "Ny variabel",
+  "@variablesSectionAddAction": {
+    "description": "«+ Ny variabel»-handlingens etikett i Variabler-seksjonen, og tittelen på dialogen den åpner."
+  },
+  "variablesSectionNameLabel": "Navn",
+  "@variablesSectionNameLabel": {
+    "description": "Feltetikett for en variabels navn (slugen referert som {{var.<navn>}}) i ny-variabel-dialogen."
+  },
+  "variablesSectionValueLabel": "Verdi",
+  "@variablesSectionValueLabel": {
+    "description": "Feltetikett for en variabels standardverdi i ny-variabel-dialogen."
+  },
+  "variablesSectionHintLabel": "Hint (valgfritt)",
+  "@variablesSectionHintLabel": {
+    "description": "Feltetikett for en variabels valgfrie hint, vist i innsettingsmenyen."
+  },
+  "variablesSectionRenameAction": "Gi nytt navn",
+  "@variablesSectionRenameAction": {
+    "description": "Radens overflytmeny-handling (ADR-0031) som gir en variabel nytt navn, og tittel/bekreft-knapptekst på dialogene den åpner."
+  },
+  "variablesSectionDeleteAction": "Slett",
+  "@variablesSectionDeleteAction": {
+    "description": "Radens overflytmeny-handling (ADR-0031) som sletter en ubrukt variabel."
+  },
+  "variablesSectionInvalidSlugError": "Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek",
+  "@variablesSectionInvalidSlugError": {
+    "description": "Valideringsmelding når et variabelnavn ikke matcher ADR-0046-slugregelen ^[a-z][a-z0-9_]*$."
+  },
+  "variablesSectionDuplicateNameError": "Dette navnet er allerede i bruk",
+  "@variablesSectionDuplicateNameError": {
+    "description": "Valideringsmelding når et variabelnavn allerede er deklarert et annet sted i planen."
+  },
+  "variablesSectionOverrideFieldLabel": "Variabeloverstyring",
+  "@variablesSectionOverrideFieldLabel": {
+    "description": "Feltetikett brukt i et variabel-referansested (f.eks. slett-blokkert-bruksliste) når referansen er en variableOverrides-nøkkel, ikke et markdown-felt."
+  },
+  "variablesSectionRenameConfirmMessage": "{count, plural, =0{Brukes ikke ennå.} =1{Dette oppdaterer 1 referanse i planen.} other{Dette oppdaterer {count} referanser i planen.}}",
+  "@variablesSectionRenameConfirmMessage": {
+    "description": "Bekreftelsesdialog-tekst før en planomfattende gi-nytt-navn-omskriving (ADR-0046).",
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "variablesSectionDeleteBlockedTitle": "Kan ikke slette denne variabelen",
+  "@variablesSectionDeleteBlockedTitle": {
+    "description": "Tittel på dialogen vist når sletting av en fortsatt referert variabel blokkeres."
+  },
+  "variablesSectionDeleteBlockedMessage": "«{name}» brukes fortsatt her:",
+  "@variablesSectionDeleteBlockedMessage": {
+    "description": "Brødtekst som introduserer bruksstedslisten i slett-blokkert-dialogen.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "programSaveBlockedUndeclaredVariable": "Kan ikke lagre: {sections} inneholder en ukjent variabel",
+  "@programSaveBlockedUndeclaredVariable": {
+    "description": "Snackbar vist når Lagre blokkeres fordi en Program-scopet markdown-seksjon inneholder {{var.<navn>}} for et udeklarert navn. {sections} er en kommaseparert liste over de aktuelle seksjonsetikettene.",
+    "placeholders": {
+      "sections": { "type": "String" }
+    }
+  },
+
   "exerciseReorderMode": "Ordne",
   "@exerciseReorderMode": {
     "description": "Listehodet-veksler som aktiverer omsorteringsmodus (dragepunkter vises, dra-for-å-sortere blir tilgjengelig)."

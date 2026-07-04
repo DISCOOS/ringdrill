@@ -1952,6 +1952,76 @@
     }
   },
 
+  "variablesSectionTitle": "Variables",
+  "@variablesSectionTitle": {
+    "description": "DESIGN-008 Stage 5 section label for the plan-variable declaration section (Program editor, section-navigated shell)."
+  },
+  "variablesSectionPublishNote": "Published with the plan. Do not enter real personal data.",
+  "@variablesSectionPublishNote": {
+    "description": "Amber warning note at the top of the Variabler section — variable values are stored in the .drill archive and published with it."
+  },
+  "variablesSectionAddAction": "New variable",
+  "@variablesSectionAddAction": {
+    "description": "\"+ Ny variabel\" action label in the Variabler section, and the title of the dialog it opens."
+  },
+  "variablesSectionNameLabel": "Name",
+  "@variablesSectionNameLabel": {
+    "description": "Field label for a variable's name (the slug referenced as {{var.<name>}}) in the add-variable dialog."
+  },
+  "variablesSectionValueLabel": "Value",
+  "@variablesSectionValueLabel": {
+    "description": "Field label for a variable's default value in the add-variable dialog."
+  },
+  "variablesSectionHintLabel": "Hint (optional)",
+  "@variablesSectionHintLabel": {
+    "description": "Field label for a variable's optional hint, shown in the insertion picker."
+  },
+  "variablesSectionRenameAction": "Rename",
+  "@variablesSectionRenameAction": {
+    "description": "Row overflow-menu action (ADR-0031) that renames a variable, and the title/confirm-button text of the dialogs it opens."
+  },
+  "variablesSectionDeleteAction": "Delete",
+  "@variablesSectionDeleteAction": {
+    "description": "Row overflow-menu action (ADR-0031) that deletes an unreferenced variable."
+  },
+  "variablesSectionInvalidSlugError": "Must start with a lowercase letter and contain only lowercase letters, numbers and underscores",
+  "@variablesSectionInvalidSlugError": {
+    "description": "Validation message when a variable name does not match the ADR-0046 slug rule ^[a-z][a-z0-9_]*$."
+  },
+  "variablesSectionDuplicateNameError": "This name is already in use",
+  "@variablesSectionDuplicateNameError": {
+    "description": "Validation message when a variable name is already declared elsewhere in the plan."
+  },
+  "variablesSectionOverrideFieldLabel": "Variable override",
+  "@variablesSectionOverrideFieldLabel": {
+    "description": "Field label used in a variable-reference location (e.g. delete-blocked usage list) when the reference is a variableOverrides map key, not a markdown field."
+  },
+  "variablesSectionRenameConfirmMessage": "{count, plural, =0{Not referenced yet.} =1{This updates 1 reference across the plan.} other{This updates {count} references across the plan.}}",
+  "@variablesSectionRenameConfirmMessage": {
+    "description": "Confirmation dialog body before a plan-wide rename rewrite (ADR-0046).",
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "variablesSectionDeleteBlockedTitle": "Can’t delete this variable",
+  "@variablesSectionDeleteBlockedTitle": {
+    "description": "Title of the dialog shown when deleting a still-referenced variable is blocked."
+  },
+  "variablesSectionDeleteBlockedMessage": "“{name}” is still used here:",
+  "@variablesSectionDeleteBlockedMessage": {
+    "description": "Body text introducing the usage list in the delete-blocked dialog.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "programSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",
+  "@programSaveBlockedUndeclaredVariable": {
+    "description": "Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.",
+    "placeholders": {
+      "sections": { "type": "String" }
+    }
+  },
+
   "exerciseReorderMode": "Reorder",
   "@exerciseReorderMode": {
     "description": "List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active)."

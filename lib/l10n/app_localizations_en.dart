@@ -1942,6 +1942,67 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get variablesSectionTitle => 'Variables';
+
+  @override
+  String get variablesSectionPublishNote =>
+      'Published with the plan. Do not enter real personal data.';
+
+  @override
+  String get variablesSectionAddAction => 'New variable';
+
+  @override
+  String get variablesSectionNameLabel => 'Name';
+
+  @override
+  String get variablesSectionValueLabel => 'Value';
+
+  @override
+  String get variablesSectionHintLabel => 'Hint (optional)';
+
+  @override
+  String get variablesSectionRenameAction => 'Rename';
+
+  @override
+  String get variablesSectionDeleteAction => 'Delete';
+
+  @override
+  String get variablesSectionInvalidSlugError =>
+      'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores';
+
+  @override
+  String get variablesSectionDuplicateNameError =>
+      'This name is already in use';
+
+  @override
+  String get variablesSectionOverrideFieldLabel => 'Variable override';
+
+  @override
+  String variablesSectionRenameConfirmMessage(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'This updates $count references across the plan.',
+      one: 'This updates 1 reference across the plan.',
+      zero: 'Not referenced yet.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get variablesSectionDeleteBlockedTitle => 'Can’t delete this variable';
+
+  @override
+  String variablesSectionDeleteBlockedMessage(String name) {
+    return '“$name” is still used here:';
+  }
+
+  @override
+  String programSaveBlockedUndeclaredVariable(String sections) {
+    return 'Can’t save: $sections contains an unknown variable';
+  }
+
+  @override
   String get exerciseReorderMode => 'Reorder';
 
   @override

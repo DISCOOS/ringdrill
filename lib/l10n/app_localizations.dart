@@ -3308,6 +3308,96 @@ abstract class AppLocalizations {
   /// **'Create variable “{name}”'**
   String tokenMenuCreateVariable(String name);
 
+  /// DESIGN-008 Stage 5 section label for the plan-variable declaration section (Program editor, section-navigated shell).
+  ///
+  /// In en, this message translates to:
+  /// **'Variables'**
+  String get variablesSectionTitle;
+
+  /// Amber warning note at the top of the Variabler section — variable values are stored in the .drill archive and published with it.
+  ///
+  /// In en, this message translates to:
+  /// **'Published with the plan. Do not enter real personal data.'**
+  String get variablesSectionPublishNote;
+
+  /// "+ Ny variabel" action label in the Variabler section, and the title of the dialog it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'New variable'**
+  String get variablesSectionAddAction;
+
+  /// Field label for a variable's name (the slug referenced as {{var.<name>}}) in the add-variable dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get variablesSectionNameLabel;
+
+  /// Field label for a variable's default value in the add-variable dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get variablesSectionValueLabel;
+
+  /// Field label for a variable's optional hint, shown in the insertion picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Hint (optional)'**
+  String get variablesSectionHintLabel;
+
+  /// Row overflow-menu action (ADR-0031) that renames a variable, and the title/confirm-button text of the dialogs it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get variablesSectionRenameAction;
+
+  /// Row overflow-menu action (ADR-0031) that deletes an unreferenced variable.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get variablesSectionDeleteAction;
+
+  /// Validation message when a variable name does not match the ADR-0046 slug rule ^[a-z][a-z0-9_]*$.
+  ///
+  /// In en, this message translates to:
+  /// **'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores'**
+  String get variablesSectionInvalidSlugError;
+
+  /// Validation message when a variable name is already declared elsewhere in the plan.
+  ///
+  /// In en, this message translates to:
+  /// **'This name is already in use'**
+  String get variablesSectionDuplicateNameError;
+
+  /// Field label used in a variable-reference location (e.g. delete-blocked usage list) when the reference is a variableOverrides map key, not a markdown field.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable override'**
+  String get variablesSectionOverrideFieldLabel;
+
+  /// Confirmation dialog body before a plan-wide rename rewrite (ADR-0046).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Not referenced yet.} =1{This updates 1 reference across the plan.} other{This updates {count} references across the plan.}}'**
+  String variablesSectionRenameConfirmMessage(num count);
+
+  /// Title of the dialog shown when deleting a still-referenced variable is blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t delete this variable'**
+  String get variablesSectionDeleteBlockedTitle;
+
+  /// Body text introducing the usage list in the delete-blocked dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is still used here:'**
+  String variablesSectionDeleteBlockedMessage(String name);
+
+  /// Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t save: {sections} contains an unknown variable'**
+  String programSaveBlockedUndeclaredVariable(String sections);
+
   /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///
   /// In en, this message translates to:

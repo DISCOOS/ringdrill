@@ -1939,6 +1939,68 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get variablesSectionTitle => 'Variabler';
+
+  @override
+  String get variablesSectionPublishNote =>
+      'Publiseres med planen. Ikke legg inn reelle persondata.';
+
+  @override
+  String get variablesSectionAddAction => 'Ny variabel';
+
+  @override
+  String get variablesSectionNameLabel => 'Navn';
+
+  @override
+  String get variablesSectionValueLabel => 'Verdi';
+
+  @override
+  String get variablesSectionHintLabel => 'Hint (valgfritt)';
+
+  @override
+  String get variablesSectionRenameAction => 'Gi nytt navn';
+
+  @override
+  String get variablesSectionDeleteAction => 'Slett';
+
+  @override
+  String get variablesSectionInvalidSlugError =>
+      'Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek';
+
+  @override
+  String get variablesSectionDuplicateNameError =>
+      'Dette navnet er allerede i bruk';
+
+  @override
+  String get variablesSectionOverrideFieldLabel => 'Variabeloverstyring';
+
+  @override
+  String variablesSectionRenameConfirmMessage(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Dette oppdaterer $count referanser i planen.',
+      one: 'Dette oppdaterer 1 referanse i planen.',
+      zero: 'Brukes ikke ennå.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get variablesSectionDeleteBlockedTitle =>
+      'Kan ikke slette denne variabelen';
+
+  @override
+  String variablesSectionDeleteBlockedMessage(String name) {
+    return '«$name» brukes fortsatt her:';
+  }
+
+  @override
+  String programSaveBlockedUndeclaredVariable(String sections) {
+    return 'Kan ikke lagre: $sections inneholder en ukjent variabel';
+  }
+
+  @override
   String get exerciseReorderMode => 'Ordne';
 
   @override
