@@ -214,7 +214,7 @@ void main() {
 
     testWidgets(
       'anchors near the caret, not at the bottom of a full-screen field '
-      '(regression: MarkdownSectionField sections use expands: true, so the '
+      '(regression: RingDrillTextArea sections use expands: true, so the '
       'field itself can be the height of the whole screen)',
       (tester) async {
         final controller = TextEditingController(text: '\n\n\n/');
@@ -231,7 +231,7 @@ void main() {
                   VariableToken(name: 'frekvens', effectiveValue: 'Kanal 6'),
                 ],
                 // Fills the whole Scaffold body, like a section-navigated
-                // markdown field does (MarkdownSectionField's `expands`).
+                // markdown field does (RingDrillTextArea's `expands`).
                 child: TextField(
                   controller: controller,
                   focusNode: focusNode,

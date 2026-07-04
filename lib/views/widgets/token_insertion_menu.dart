@@ -79,7 +79,7 @@ final _varPrefixPattern = RegExp(r'^var\.(.*)$', caseSensitive: false);
 /// on Escape, on a tap outside, or once the caret moves away from the
 /// trigger.
 ///
-/// A markdown section body fills the whole screen ([MarkdownSectionField]'s
+/// A markdown section body fills the whole screen ([RingDrillTextArea]'s
 /// `expands: true`), so anchoring at the *field's* bounding box (an earlier
 /// version of this widget did, via [CompositedTransformFollower]) puts the
 /// menu at the bottom of the screen for a caret near the top of a long
