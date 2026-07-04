@@ -322,6 +322,144 @@ void main() {
         expect(result, isNot(contains('{{program.description}}')));
       },
     );
+
+    test(
+      'exercise-scope cross-references resolve inside exercise-scope markdown fields',
+      () async {
+        final exercise = Exercise(
+          uuid: 'ex-1',
+          name: 'Skogsøvelse',
+          startTime: _start,
+          endTime: _end,
+          numberOfTeams: 3,
+          numberOfRounds: 2,
+          executionTime: 15,
+          evaluationTime: 10,
+          rotationTime: 5,
+          stations: const [Station(index: 0, name: 'Post')],
+          schedule: const [],
+          methodMd:
+              'Øvelse {{exercise.name}} har {{exercise.numberOfTeams}} lag '
+              'og går {{exercise.numberOfRounds}} runder, {{exercise.timeLabel}}.',
+        );
+        final program = _emptyProgram().copyWith(exercises: [exercise]);
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        expect(
+          result,
+          contains(
+            'Øvelse Skogsøvelse har 3 lag og går 2 runder, 08:30–10:30.',
+          ),
+        );
+        expect(result, isNot(contains('{{exercise.')));
+      },
+    );
+
+    test(
+      'station-scope cross-references resolve station, exercise AND program data '
+      '(cascade)',
+      () async {
+        final exercise = Exercise(
+          uuid: 'ex-1',
+          name: 'Skogsøvelse',
+          startTime: _start,
+          endTime: _end,
+          numberOfTeams: 1,
+          numberOfRounds: 1,
+          executionTime: 10,
+          evaluationTime: 5,
+          rotationTime: 5,
+          stations: const [
+            Station(
+              index: 0,
+              name: 'Post',
+              variantSuffix: 'Vinter',
+              description: 'Skogsholt ved myra',
+              situationMd:
+                  '{{program.name}} / {{exercise.name}} — post {{station.stationCode}} '
+                  '({{station.variantSuffix}}): {{station.description}}.',
+            ),
+          ],
+          schedule: const [],
+        );
+        final program = _emptyProgram().copyWith(
+          name: 'Vinterøvelse',
+          exercises: [exercise],
+        );
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        expect(
+          result,
+          contains(
+            'Vinterøvelse / Skogsøvelse — post 1.1 (Vinter): Skogsholt ved myra.',
+          ),
+        );
+        expect(result, isNot(contains('{{station.')));
+        expect(result, isNot(contains('{{exercise.')));
+        expect(result, isNot(contains('{{program.')));
+      },
+    );
+
+    test(
+      'roleplay-scope cross-references resolve roleplay, station, exercise AND '
+      'program data (cascade)',
+      () async {
+        const rolePosition = LatLng(59.1, 10.5);
+        final expectedUtm = BriefRenderer.formatUtm(rolePosition);
+        final rolePlay = RolePlay(
+          uuid: 'rp-1',
+          index: 0,
+          exerciseUuid: 'ex-1',
+          name: 'Turgåer',
+          stationIndex: 0,
+          position: rolePosition,
+          behavior:
+              '{{roleplay.name}} venter ved {{roleplay.position.utm}}, '
+              'post {{station.name}}, øvelse {{exercise.name}}.',
+        );
+        final exercise = Exercise(
+          uuid: 'ex-1',
+          name: 'Skogsøvelse',
+          startTime: _start,
+          endTime: _end,
+          numberOfTeams: 1,
+          numberOfRounds: 1,
+          executionTime: 10,
+          evaluationTime: 5,
+          rotationTime: 5,
+          stations: const [Station(index: 0, name: 'Post')],
+          schedule: const [],
+        );
+        final program = _emptyProgram().copyWith(
+          exercises: [exercise],
+          rolePlays: [rolePlay],
+        );
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.director,
+          l10n: _l10n,
+        );
+
+        expect(
+          result,
+          contains(
+            'Turgåer venter ved $expectedUtm, post Post, øvelse Skogsøvelse.',
+          ),
+        );
+        expect(result, isNot(contains('{{roleplay.')));
+      },
+    );
   });
 
   group('BriefRenderer — null field omission', () {

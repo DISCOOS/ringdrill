@@ -112,6 +112,7 @@ class BriefRenderer {
         actorMap: actorMap,
         rolePlays: rolePlaysByExercise[ex.uuid] ?? [],
         l10n: l10n,
+        programRefContext: programRefContext,
       );
     }).toList();
 
@@ -153,13 +154,22 @@ class BriefRenderer {
     required Map<String, Actor> actorMap,
     required List<RolePlay> rolePlays,
     required AppLocalizations l10n,
+    required Map<String, dynamic> programRefContext,
   }) {
     final exNum = _exerciseNumber(program, exercise);
     final exerciseVars = _effectiveVariables(program, exercise: exercise);
+    // Cascades program cross-references (e.g. {{program.name}}) into
+    // exercise-scope fields too, on top of this exercise's own {{exercise.*}}
+    // — mirrors the ADR-0046 variable cascade applied to cross-references.
+    final exerciseRefContext = {
+      ...programRefContext,
+      ..._exerciseRefContext(exercise, l10n),
+    };
     final effectiveComms = _resolveField(
       _effectiveCommsMd(program, exercise),
       vars: exerciseVars,
       l10n: l10n,
+      refContext: exerciseRefContext,
     );
 
     final stationContexts = exercise.stations.map((station) {
@@ -175,6 +185,7 @@ class BriefRenderer {
             .toList(),
         effectiveCommsMd: effectiveComms,
         l10n: l10n,
+        exerciseRefContext: exerciseRefContext,
       );
     }).toList();
 
@@ -187,26 +198,35 @@ class BriefRenderer {
       'exerciseAnchor': exerciseAnchor,
       'exerciseTimeLabel': _exerciseTimeLabel(exercise),
       'exerciseDurationLabel': _exerciseDurationLabel(exercise, l10n),
-      'methodMd': _resolveField(exercise.methodMd, vars: exerciseVars, l10n: l10n),
+      'methodMd': _resolveField(
+        exercise.methodMd,
+        vars: exerciseVars,
+        l10n: l10n,
+        refContext: exerciseRefContext,
+      ),
       'learningGoalsMd': _resolveField(
         exercise.learningGoalsMd,
         vars: exerciseVars,
         l10n: l10n,
+        refContext: exerciseRefContext,
       ),
       'trainingFocusMd': _resolveField(
         exercise.trainingFocusMd,
         vars: exerciseVars,
         l10n: l10n,
+        refContext: exerciseRefContext,
       ),
       'orderFormatMd': _resolveField(
         exercise.orderFormatMd,
         vars: exerciseVars,
         l10n: l10n,
+        refContext: exerciseRefContext,
       ),
       'executionTipsMd': _resolveField(
         exercise.executionTipsMd,
         vars: exerciseVars,
         l10n: l10n,
+        refContext: exerciseRefContext,
       ),
       'effectiveCommsMd': effectiveComms,
       'organisationBlock': _organisationBlock(program, exercise, l10n),
@@ -224,6 +244,7 @@ class BriefRenderer {
     required List<RolePlay> rolePlays,
     required String? effectiveCommsMd,
     required AppLocalizations l10n,
+    required Map<String, dynamic> exerciseRefContext,
   }) {
     final stationCode = Numbering.station(
       program.stationNumberFormat,
@@ -241,11 +262,16 @@ class BriefRenderer {
     // The underlying Station.name is left unchanged.
     final cleanName = station.name.replaceFirst(_kStationNamePrefix, '');
 
-    // Build a partial station context for cross-reference resolution inside
-    // markdown fields (e.g. {{station.position.utm}} inside situationMd).
+    // Cascades program + exercise cross-references on top of this station's
+    // own {{station.*}} — a station field can reference e.g.
+    // {{exercise.name}} or {{program.name}} as well as {{station.name}}.
     final stationRefContext = {
+      ...exerciseRefContext,
       'station': {
         'name': cleanName,
+        'stationCode': stationCode,
+        'description': station.description,
+        'variantSuffix': station.variantSuffix,
         'position': {'utm': utmStr},
       },
     };
@@ -271,13 +297,32 @@ class BriefRenderer {
           actorContext = {'realName': actor.realName, 'phone': actor.phone};
         }
       }
+      // Cascades station (+ exercise + program) on top of this roleplay's
+      // own {{roleplay.*}} — roleplay fields resolve through the station's
+      // effective variables too, per DESIGN-008 ("a roleplay reads through
+      // its station's overrides at render time").
+      final roleplayRefContext = {
+        ...stationRefContext,
+        'roleplay': {
+          'name': rp.name,
+          'age': rp.age,
+          'signalement': rp.signalement,
+          'position': {'utm': _formatUtm(rp.position)},
+        },
+      };
+      String? resolveRoleplayField(String? content) => _resolveField(
+        content,
+        vars: stationVars,
+        l10n: l10n,
+        refContext: roleplayRefContext,
+      );
       return {
         'name': rp.name,
         'age': rp.age,
         'signalement': rp.signalement,
-        'behavior': resolveField(rp.behavior),
-        'background': resolveField(rp.background),
-        'propsMd': resolveField(rp.propsMd),
+        'behavior': resolveRoleplayField(rp.behavior),
+        'background': resolveRoleplayField(rp.background),
+        'propsMd': resolveRoleplayField(rp.propsMd),
         'actor': actorContext,
         'if_director': audience.includesActorPii,
       };
@@ -514,6 +559,32 @@ String? _effectiveCommsMd(Program program, Exercise exercise) {
 /// substituted.
 Map<String, dynamic> _programRefContext(Program program) => {
   'program': {'name': program.name, 'description': program.description},
+};
+
+/// Partial exercise context for cross-reference resolution inside
+/// exercise-scope markdown fields (`methodMd`, `learningGoalsMd`,
+/// `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `commsMd`) —
+/// same rationale as [_programRefContext]. Cascaded into station and
+/// roleplay refContexts too (see `_buildStationContext`), so
+/// `{{exercise.name}}` also resolves from inside a station or roleplay
+/// field, not just the exercise's own.
+Map<String, dynamic> _exerciseRefContext(
+  Exercise exercise,
+  AppLocalizations l10n,
+) => {
+  'exercise': {
+    'name': exercise.name,
+    'numberOfTeams': exercise.numberOfTeams,
+    'numberOfRounds': exercise.numberOfRounds,
+    'startTime': exercise.startTime.toString(),
+    'endTime': exercise.endTime.toString(),
+    'timeLabel': _exerciseTimeLabel(exercise),
+    'durationLabel': _exerciseDurationLabel(exercise, l10n),
+    'executionTime': exercise.executionTime,
+    'evaluationTime': exercise.evaluationTime,
+    'rotationTime': exercise.rotationTime,
+    'phaseBreakdown': rotationPhaseBreakdown(exercise),
+  },
 };
 
 // Matches `{{var.<name>}}`, tolerating inner whitespace around the name.
