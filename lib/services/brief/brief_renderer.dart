@@ -104,6 +104,12 @@ class BriefRenderer {
 
     final programVars = _programVariables(program);
     final programRefContext = _programRefContext(program);
+    final programName = _substituteVariables(program.name, programVars, l10n);
+    final programDescription = _substituteVariables(
+      program.description,
+      programVars,
+      l10n,
+    );
 
     final exerciseContexts = exercises.map((ex) {
       return _buildExerciseContext(
@@ -119,8 +125,8 @@ class BriefRenderer {
 
     final context = {
       'program': {
-        'name': program.name,
-        'description': program.description.isEmpty ? null : program.description,
+        'name': programName,
+        'description': programDescription.isEmpty ? null : programDescription,
         'briefIntroMd': _resolveField(
           program.briefIntroMd,
           vars: programVars,
@@ -190,11 +196,18 @@ class BriefRenderer {
       );
     }).toList();
 
-    // Anchor id for table of contents: lowercase, spaces to hyphens.
-    final exerciseAnchor = _toAnchor(exercise.name);
+    final exerciseName = _substituteVariables(
+      exercise.name,
+      exerciseVars,
+      l10n,
+    );
+    // Anchor id for table of contents: lowercase, spaces to hyphens. Derived
+    // from the resolved name so the in-doc contents link matches the heading
+    // the template actually renders.
+    final exerciseAnchor = _toAnchor(exerciseName);
 
     return {
-      'name': exercise.name,
+      'name': exerciseName,
       'exerciseNumber': exNum,
       'exerciseAnchor': exerciseAnchor,
       'exerciseTimeLabel': _exerciseTimeLabel(exercise),
@@ -282,6 +295,11 @@ class BriefRenderer {
       exercise: exercise,
       station: station,
     );
+    final resolvedStationName = _substituteVariables(
+      cleanName,
+      stationVars,
+      l10n,
+    );
 
     String? resolveField(String? content) => _resolveField(
       content,
@@ -298,6 +316,7 @@ class BriefRenderer {
           actorContext = {'realName': actor.realName, 'phone': actor.phone};
         }
       }
+      final resolvedRpName = _substituteVariables(rp.name, stationVars, l10n);
       // Cascades station (+ exercise + program) on top of this roleplay's
       // own {{roleplay.*}} — roleplay fields resolve through the station's
       // effective variables too, per DESIGN-008 ("a roleplay reads through
@@ -318,7 +337,7 @@ class BriefRenderer {
         refContext: roleplayRefContext,
       );
       return {
-        'name': rp.name,
+        'name': resolvedRpName,
         'age': rp.age,
         'signalement': rp.signalement,
         'behavior': resolveRoleplayField(rp.behavior),
@@ -330,12 +349,12 @@ class BriefRenderer {
     }).toList();
 
     final stationAnchor = _toAnchor(
-      '$stationCode – $cleanName'
+      '$stationCode – $resolvedStationName'
       '${station.variantSuffix != null ? ' – ${station.variantSuffix}' : ''}',
     );
 
     return {
-      'name': cleanName,
+      'name': resolvedStationName,
       'variantSuffix': station.variantSuffix,
       'stationCode': stationCode,
       'stationAnchor': stationAnchor,
