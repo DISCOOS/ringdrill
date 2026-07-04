@@ -4,6 +4,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/markdown_section_field.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -182,6 +183,21 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   /// this mode; renaming the plan happens through the name field in the
   /// "Plan" section instead, one tap away.
   Widget _buildSectionNavigated(BuildContext context, AppLocalizations l) {
+    // Program scope has no overrides (ADR-0046): a variable's effective
+    // value here is always its declared default.
+    final variables = [
+      for (final v in widget.program.variables)
+        VariableToken(name: v.name, effectiveValue: v.value),
+    ];
+    // Small and explicit, per the Stage 4 prompt: only fields the renderer
+    // already resolves at program scope (brief_renderer.dart's `program`
+    // context — `name`, `description`), so a token inserted here always
+    // resolves to something rather than a silently-empty mustache miss.
+    final planFields = [
+      PlanFieldToken(name: 'program.name', label: l.programName),
+      PlanFieldToken(name: 'program.description', label: l.programDescription),
+    ];
+
     final activeMdSections = [
       for (final section in _Section.values)
         if (_activeSections.contains(section))
@@ -190,7 +206,13 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
             label: _labelFor(section, l),
             icon: Icons.description_outlined,
             removable: true,
+            // Keyed by section so switching sections always mounts a fresh
+            // MarkdownSectionField: without a distinguishing key, two
+            // sections with the same widget shape at the same tree slot
+            // can make Flutter reuse the previous section's State (and its
+            // internal TokenTextEditingController) instead of remounting.
             builder: (_) => Padding(
+              key: ValueKey(section.name),
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
@@ -200,6 +222,9 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                       focusNode: _focusFor(section),
                       label: _labelFor(section, l),
                       expands: true,
+                      tokenAware: true,
+                      variables: variables,
+                      planFields: planFields,
                     ),
                   ),
                 ],
