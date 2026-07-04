@@ -3,11 +3,9 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
-import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/utils/plan_variable_refs.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
-import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -86,21 +84,9 @@ enum _Section { briefIntro, comms, beforeRound }
 /// caller is responsible for persisting the result through the program
 /// save path (e.g. `ProgramService.replaceProgram`).
 class ProgramFormScreen extends StatefulWidget {
-  const ProgramFormScreen({
-    super.key,
-    required this.program,
-    @visibleForTesting this.debugPlanVariablesOverride,
-  });
+  const ProgramFormScreen({super.key, required this.program});
 
   final Program program;
-
-  /// Overrides [AppFlags.planVariables] for a test. `bool.fromEnvironment`
-  /// is a compile-time const, so a widget test cannot flip it at runtime —
-  /// this lets a test render the flag-on section-navigated body without a
-  /// `--dart-define`. Production code never sets this; the real flag is
-  /// read when it is null.
-  @visibleForTesting
-  final bool? debugPlanVariablesOverride;
 
   @override
   State<ProgramFormScreen> createState() => _ProgramFormScreenState();
@@ -114,22 +100,13 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   final _tagInputController = TextEditingController();
   final _tagInputFocus = FocusNode();
 
-  /// A [TokenTextEditingController] in the flag-on path, so
-  /// `RingDrillTextArea(tokenAware: true)` can drive its chips from
-  /// [PlanScope]; a plain controller in the legacy path, which never opts a
-  /// field into token-awareness. `_planVariablesOn` is constant for the
-  /// screen's lifetime (it comes from a compile-time flag plus an
-  /// immutable constructor param), so exactly one of
-  /// `_buildSectionNavigated`/`_buildLegacy` ever actually renders these.
-  late final TextEditingController _briefIntroController = _planVariablesOn
-      ? TokenTextEditingController()
-      : TextEditingController();
-  late final TextEditingController _commsController = _planVariablesOn
-      ? TokenTextEditingController()
-      : TextEditingController();
-  late final TextEditingController _beforeRoundController = _planVariablesOn
-      ? TokenTextEditingController()
-      : TextEditingController();
+  /// Token-aware so `RingDrillTextArea(tokenAware: true)` can drive its
+  /// chips from [PlanScope].
+  final TextEditingController _briefIntroController =
+      TokenTextEditingController();
+  final TextEditingController _commsController = TokenTextEditingController();
+  final TextEditingController _beforeRoundController =
+      TokenTextEditingController();
 
   final _briefIntroFocus = FocusNode();
   final _commsFocus = FocusNode();
@@ -142,8 +119,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   String? _tagError;
 
   /// Working plan-variable registry (DESIGN-008 Stage 5), edited by
-  /// [VariablesSection] and read by [_save]. Only meaningful in the flag-on
-  /// path; the legacy body never touches it.
+  /// [VariablesSection] and read by [_save].
   late List<DrillVariable> _variables;
 
   @override
@@ -340,25 +316,17 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     return value.isEmpty ? null : value;
   }
 
-  bool get _planVariablesOn =>
-      widget.debugPlanVariablesOverride ?? AppFlags.planVariables;
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    if (_planVariablesOn) {
-      return _buildSectionNavigated(context, localizations);
-    }
-    return _buildLegacy(context, localizations);
+    return _buildSectionNavigated(context, localizations);
   }
 
-  /// DESIGN-008 Stage 3, behind `RINGDRILL_PLAN_VARIABLES`. Same controllers,
-  /// [_activeSections] and [_save] as the legacy body below — only their
-  /// presentation moves into sections. On compact the section switcher
-  /// occupies the AppBar title (see [SectionNavigatedForm]), so the
-  /// DESIGN-006 quick-rename-from-the-AppBar affordance is not available in
-  /// this mode; renaming the plan happens through the name field in the
-  /// "Plan" section instead, one tap away.
+  /// DESIGN-008 Stage 3. On compact the section switcher occupies the
+  /// AppBar title (see [SectionNavigatedForm]), so the DESIGN-006
+  /// quick-rename-from-the-AppBar affordance is not available in this mode;
+  /// renaming the plan happens through the name field in the "Plan" section
+  /// instead, one tap away.
   Widget _buildSectionNavigated(BuildContext context, AppLocalizations l) {
     // Small and explicit, per the Stage 4 prompt: only fields the renderer
     // already resolves at program scope (brief_renderer.dart's `program`
@@ -540,131 +508,18 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     );
   }
 
-  Widget _buildLegacy(BuildContext context, AppLocalizations localizations) {
-    final sectionSpecs = [
-      for (final section in _Section.values)
-        OptionalFieldSection<_Section>(
-          id: section,
-          label: _labelFor(section, localizations),
-          controller: _controllerFor(section),
-          focusNode: _focusFor(section),
-        ),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: localizations.cancel,
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(localizations.editProgram),
-        actions: [
-          ElevatedButton(onPressed: _save, child: Text(localizations.save)),
-        ],
-        actionsPadding: const EdgeInsets.only(right: 16),
-      ),
-      body: DismissKeyboard(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    autofocus: true,
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: localizations.programName,
-                    ),
-                    validator: (value) =>
-                        value != null && value.trim().isNotEmpty
-                        ? null
-                        : localizations.pleaseEnterAName,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    keyboardType: TextInputType.multiline,
-                    minLines: 1,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: localizations.programDescription,
-                      hintText: localizations.programDescriptionHint,
-                      alignLabelWithHint: true,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  OptionalFieldSections<_Section>(
-                    sections: sectionSpecs,
-                    activeIds: _activeSections,
-                    onAdd: _addSection,
-                    onRemove: _removeSection,
-                  ),
-                  // Hidden once every optional section has been added: with
-                  // no add-buttons left to show, the divider would otherwise
-                  // sit directly between two blocks of plain text fields
-                  // with nothing distinct to separate.
-                  if (_activeSections.length < _Section.values.length)
-                    const Divider(height: 32),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: _StationNumberFormatPicker(
-                          value: _stationNumberFormat,
-                          onChanged: (f) =>
-                              setState(() => _stationNumberFormat = f),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      _LanguagePicker(
-                        value: _languageCode,
-                        onChanged: (v) => setState(() => _languageCode = v),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 32),
-                  _TagsEditor(
-                    tags: _tags,
-                    controller: _tagInputController,
-                    focusNode: _tagInputFocus,
-                    errorText: _tagError,
-                    onSubmit: () => _submitTag(localizations),
-                    onRemove: _removeTag,
-                    label: localizations.programEditorTagsLabel,
-                    hint: localizations.programEditorTagsHint,
-                    removeTooltip: localizations.programEditorTagRemoveTooltip,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    // Flag-off has no Variabler section and no way to declare a variable,
-    // so there is nothing to validate there — only the flag-on path can
-    // produce an undeclared {{var.x}} token in the first place.
-    if (_planVariablesOn) {
-      final offending = _sectionsWithUndeclaredTokens();
-      if (offending.isNotEmpty) {
-        final l = AppLocalizations.of(context)!;
-        final sections = offending.map((s) => _labelFor(s, l)).join(', ');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
-          ),
-        );
-        return;
-      }
+    final offending = _sectionsWithUndeclaredTokens();
+    if (offending.isNotEmpty) {
+      final l = AppLocalizations.of(context)!;
+      final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+        ),
+      );
+      return;
     }
     final updated = widget.program.copyWith(
       name: _nameController.text.trim(),
@@ -674,9 +529,6 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       briefIntroMd: _readSection(_Section.briefIntro),
       commsMd: _readSection(_Section.comms),
       beforeRoundMd: _readSection(_Section.beforeRound),
-      // Unconditional: in the flag-off path _variables is never mutated
-      // (VariablesSection only mounts in the flag-on section-navigated
-      // body), so this just round-trips widget.program.variables unchanged.
       variables: List<DrillVariable>.unmodifiable(_variables),
       metadata: widget.program.metadata.copyWith(
         updated: DateTime.now(),
