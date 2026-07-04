@@ -34,9 +34,12 @@ final _varTokenPattern = RegExp(r'\{\{\s*var\.([a-z][a-z0-9_]*)\s*\}\}');
 /// "Post" prefix.
 String _describeReference(PlanVariableReference ref, AppLocalizations l) {
   final fieldLabel = switch (ref.field) {
+    PlanVariableField.programName => l.programName,
+    PlanVariableField.programDescription => l.programDescription,
     PlanVariableField.programBriefIntro => l.briefSectionProgramIntro,
     PlanVariableField.programComms => l.briefSectionProgramComms,
     PlanVariableField.programBeforeRound => l.briefSectionProgramBeforeRound,
+    PlanVariableField.exerciseName => l.exerciseName,
     PlanVariableField.exerciseMethod => l.briefSectionExerciseMethod,
     PlanVariableField.exerciseLearningGoals =>
       l.briefSectionExerciseLearningGoals,
@@ -47,6 +50,8 @@ String _describeReference(PlanVariableReference ref, AppLocalizations l) {
       l.briefSectionExerciseExecutionTips,
     PlanVariableField.exerciseComms => l.briefSectionExerciseComms,
     PlanVariableField.exerciseOverride => l.variablesSectionOverrideFieldLabel,
+    PlanVariableField.stationName => l.stationName,
+    PlanVariableField.stationDescription => l.stationDescription,
     PlanVariableField.stationEquipment => l.briefSectionStationEquipment,
     PlanVariableField.stationSituation => l.briefSectionStationSituation,
     PlanVariableField.stationMission => l.briefSectionStationMission,
@@ -58,6 +63,7 @@ String _describeReference(PlanVariableReference ref, AppLocalizations l) {
     PlanVariableField.stationDirectorNotes =>
       l.briefSectionStationDirectorNotes,
     PlanVariableField.stationOverride => l.variablesSectionOverrideFieldLabel,
+    PlanVariableField.roleplayNameField => l.roleName,
     PlanVariableField.roleplayBehavior => l.roleBehavior,
     PlanVariableField.roleplayBackground => l.roleBackground,
     PlanVariableField.roleplayProps => l.catalogDiffFieldProps,

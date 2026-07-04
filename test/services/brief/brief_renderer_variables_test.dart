@@ -96,6 +96,61 @@ void main() {
       },
     );
 
+    test('the cascade resolves identically for all three audiences '
+        '(DESIGN-008 follow-up 10 — audience gates section visibility, '
+        'never variable substitution)', () async {
+      final stationOverride = Station(
+        index: 0,
+        name: 'Post A',
+        situationMd: 'PostA kanal {{var.frekvens}}',
+        variableOverrides: const {'frekvens': 'Kanal 9'},
+      );
+      final exercise = Exercise(
+        uuid: 'ex-1',
+        name: 'Exercise',
+        startTime: _start,
+        endTime: _end,
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 10,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: [stationOverride],
+        schedule: const [],
+        methodMd: 'Metode kanal {{var.frekvens}}',
+        variableOverrides: const {'frekvens': 'Kanal 8'},
+      );
+      final program = _emptyProgram().copyWith(
+        exercises: [exercise],
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+        briefIntroMd: 'Program kanal {{var.frekvens}}',
+      );
+
+      for (final audience in BriefAudience.values) {
+        final result = await renderer.render(
+          program: program,
+          audience: audience,
+          l10n: _l10n,
+        );
+
+        expect(
+          result,
+          contains('Program kanal Kanal 6'),
+          reason: 'program default, audience: $audience',
+        );
+        expect(
+          result,
+          contains('Metode kanal Kanal 8'),
+          reason: 'exercise override, audience: $audience',
+        );
+        expect(
+          result,
+          contains('PostA kanal Kanal 9'),
+          reason: 'station override, audience: $audience',
+        );
+      }
+    });
+
     test('renders a visible placeholder for an undeclared variable', () async {
       final exercise = Exercise(
         uuid: 'ex-1',

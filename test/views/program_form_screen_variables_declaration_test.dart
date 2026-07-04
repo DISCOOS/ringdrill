@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
@@ -330,6 +331,44 @@ void main() {
     },
   );
 
+  testWidgets('delete is blocked when the only reference is an exercise name '
+      '(DESIGN-008 follow-up 10 regression)', (tester) async {
+    final exercise = Exercise(
+      uuid: 'ex-1',
+      name: 'Øvelse {{var.frekvens}}',
+      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+      endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+      numberOfTeams: 1,
+      numberOfRounds: 1,
+      executionTime: 10,
+      evaluationTime: 5,
+      rotationTime: 5,
+      stations: const [],
+      schedule: const [],
+    );
+    await _openForm(
+      tester,
+      _program(
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      ).copyWith(exercises: [exercise]),
+      _Captured(),
+    );
+
+    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_variableRowMenu('frekvens'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l.variablesSectionDeleteAction));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l.variablesSectionDeleteBlockedTitle), findsOneWidget);
+    await tester.tap(find.text(l.ok));
+    await tester.pumpAndSettle();
+    expect(find.text('frekvens'), findsOneWidget);
+  });
+
   testWidgets(
     'save is blocked on an undeclared token, and declaring it unblocks save',
     (tester) async {
@@ -367,33 +406,36 @@ void main() {
     },
   );
 
-  testWidgets('a declared-but-empty variable referenced in a field saves fine', (
-    tester,
-  ) async {
-    final captured = _Captured();
-    await _openForm(
-      tester,
-      _program(
-        briefIntroMd: 'Verdi:[{{var.tom}}]',
-        variables: const [DrillVariable(name: 'tom')],
-      ),
-      captured,
-    );
+  testWidgets(
+    'a declared-but-empty variable referenced in a field saves fine',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _program(
+          briefIntroMd: 'Verdi:[{{var.tom}}]',
+          variables: const [DrillVariable(name: 'tom')],
+        ),
+        captured,
+      );
 
-    await tester.tap(find.text(l.save));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
 
-    final saved = captured.value;
-    expect(saved, isNotNull);
-    expect(saved!.briefIntroMd, 'Verdi:[{{var.tom}}]');
-  });
+      final saved = captured.value;
+      expect(saved, isNotNull);
+      expect(saved!.briefIntroMd, 'Verdi:[{{var.tom}}]');
+    },
+  );
 
   testWidgets('creating an invalid slug or a duplicate name is rejected', (
     tester,
   ) async {
     await _openForm(
       tester,
-      _program(variables: const [DrillVariable(name: 'frekvens', value: 'X')]),
+      _program(
+        variables: const [DrillVariable(name: 'frekvens', value: 'X')],
+      ),
       _Captured(),
     );
 
@@ -506,13 +548,13 @@ void main() {
     },
   );
 
-  testWidgets('editing a variable\'s hint persists it on save', (
-    tester,
-  ) async {
+  testWidgets('editing a variable\'s hint persists it on save', (tester) async {
     final captured = _Captured();
     await _openForm(
       tester,
-      _program(variables: const [DrillVariable(name: 'frekvens', value: 'X')]),
+      _program(
+        variables: const [DrillVariable(name: 'frekvens', value: 'X')],
+      ),
       captured,
     );
 

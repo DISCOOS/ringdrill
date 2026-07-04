@@ -1,7 +1,8 @@
 /// Plan-wide `{{var.<name>}}` reference bookkeeping (ADR-0046): counting,
-/// locating and rewriting references across every markdown field and every
-/// `variableOverrides` map in a [Program]. Pure and Flutter-free — safe for
-/// the CLI (`bin/ringdrill.dart`) to import transitively.
+/// locating and rewriting references across every markdown field, every
+/// name/description field, and every `variableOverrides` map in a
+/// [Program]. Pure and Flutter-free — safe for the CLI
+/// (`bin/ringdrill.dart`) to import transitively.
 ///
 /// Deliberately does not depend on `AppLocalizations` (a Flutter type), so
 /// [variableReferences] returns structured [PlanVariableReference]s rather
@@ -19,12 +20,17 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 
-/// One markdown field (or `variableOverrides` map) a `{{var.<name>}}`
-/// reference — or an override key naming it — can occur in.
+/// One markdown field (or `variableOverrides` map, or a name/description
+/// field — DESIGN-008 follow-up 10, added alongside follow-ups 05/09's
+/// resolution of `{{var.<name>}}` in names/descriptions) a reference — or an
+/// override key naming it — can occur in.
 enum PlanVariableField {
+  programName,
+  programDescription,
   programBriefIntro,
   programComms,
   programBeforeRound,
+  exerciseName,
   exerciseMethod,
   exerciseLearningGoals,
   exerciseTrainingFocus,
@@ -32,6 +38,8 @@ enum PlanVariableField {
   exerciseExecutionTips,
   exerciseComms,
   exerciseOverride,
+  stationName,
+  stationDescription,
   stationEquipment,
   stationSituation,
   stationMission,
@@ -40,6 +48,7 @@ enum PlanVariableField {
   stationLeaderAnswers,
   stationDirectorNotes,
   stationOverride,
+  roleplayNameField,
   roleplayBehavior,
   roleplayBackground,
   roleplayProps,
@@ -95,6 +104,14 @@ Iterable<_FieldHit> _hits(Program program, String name) sync* {
   int matches(String? content) =>
       content == null ? 0 : pattern.allMatches(content).length;
 
+  final programName = matches(program.name);
+  if (programName > 0) {
+    yield _FieldHit(PlanVariableField.programName, programName);
+  }
+  final programDescription = matches(program.description);
+  if (programDescription > 0) {
+    yield _FieldHit(PlanVariableField.programDescription, programDescription);
+  }
   final programBriefIntro = matches(program.briefIntroMd);
   if (programBriefIntro > 0) {
     yield _FieldHit(PlanVariableField.programBriefIntro, programBriefIntro);
@@ -112,6 +129,14 @@ Iterable<_FieldHit> _hits(Program program, String name) sync* {
     final exercise = program.exercises[i];
     final exerciseNumber = i + 1;
 
+    final exerciseName = matches(exercise.name);
+    if (exerciseName > 0) {
+      yield _FieldHit(
+        PlanVariableField.exerciseName,
+        exerciseName,
+        exerciseNumber: exerciseNumber,
+      );
+    }
     final method = matches(exercise.methodMd);
     if (method > 0) {
       yield _FieldHit(
@@ -175,6 +200,22 @@ Iterable<_FieldHit> _hits(Program program, String name) sync* {
         stationIndex: station.index,
       );
 
+      final stationName = matches(station.name);
+      if (stationName > 0) {
+        yield _FieldHit(
+          PlanVariableField.stationName,
+          stationName,
+          stationCode: stationCode,
+        );
+      }
+      final stationDescription = matches(station.description);
+      if (stationDescription > 0) {
+        yield _FieldHit(
+          PlanVariableField.stationDescription,
+          stationDescription,
+          stationCode: stationCode,
+        );
+      }
       final equipment = matches(station.equipmentMd);
       if (equipment > 0) {
         yield _FieldHit(
@@ -242,6 +283,14 @@ Iterable<_FieldHit> _hits(Program program, String name) sync* {
   }
 
   for (final rolePlay in program.rolePlays) {
+    final roleplayNameField = matches(rolePlay.name);
+    if (roleplayNameField > 0) {
+      yield _FieldHit(
+        PlanVariableField.roleplayNameField,
+        roleplayNameField,
+        roleplayName: rolePlay.name,
+      );
+    }
     final behavior = matches(rolePlay.behavior);
     if (behavior > 0) {
       yield _FieldHit(
@@ -296,6 +345,14 @@ String? _rewrite(String? content, RegExp pattern, String replacement) {
   return content.replaceAll(pattern, replacement);
 }
 
+/// Same as [_rewrite], for the non-nullable name/description fields
+/// (`Program.name`/`description`, `Exercise.name`, `Station.name`,
+/// `RolePlay.name` — DESIGN-008 follow-up 10).
+String _rewriteRequired(String content, RegExp pattern, String replacement) =>
+    pattern.hasMatch(content)
+    ? content.replaceAll(pattern, replacement)
+    : content;
+
 Map<String, String> _renameOverrideKey(
   Map<String, String> overrides,
   String oldName,
@@ -311,16 +368,21 @@ Map<String, String> _renameOverrideKey(
 }
 
 /// Returns a copy of [program] with every `{{var.<oldName>}}` reference
-/// rewritten to `{{var.<newName>}}` (every markdown field: program, every
-/// exercise, every station, every roleplay), every `variableOverrides` key
-/// named [oldName] renamed to [newName], and the [oldName] entry in
-/// `program.variables` itself renamed. Does not mutate [program]; uses
-/// `copyWith` throughout, per ADR-0046's plan-wide rename requirement.
+/// rewritten to `{{var.<newName>}}` (every markdown field and every
+/// name/description field: program, every exercise, every station, every
+/// roleplay — DESIGN-008 follow-up 10 extends this to the same
+/// name/description surface follow-ups 05/09 taught the renderer and the
+/// live UI to resolve), every `variableOverrides` key named [oldName]
+/// renamed to [newName], and the [oldName] entry in `program.variables`
+/// itself renamed. Does not mutate [program]; uses `copyWith` throughout,
+/// per ADR-0046's plan-wide rename requirement.
 Program renameVariable(Program program, String oldName, String newName) {
   final pattern = planVariableTokenPatternFor(oldName);
   final token = '{{var.$newName}}';
 
   Station rewriteStation(Station station) => station.copyWith(
+    name: _rewriteRequired(station.name, pattern, token),
+    description: _rewrite(station.description, pattern, token),
     equipmentMd: _rewrite(station.equipmentMd, pattern, token),
     situationMd: _rewrite(station.situationMd, pattern, token),
     missionMd: _rewrite(station.missionMd, pattern, token),
@@ -336,6 +398,7 @@ Program renameVariable(Program program, String oldName, String newName) {
   );
 
   Exercise rewriteExercise(Exercise exercise) => exercise.copyWith(
+    name: _rewriteRequired(exercise.name, pattern, token),
     methodMd: _rewrite(exercise.methodMd, pattern, token),
     learningGoalsMd: _rewrite(exercise.learningGoalsMd, pattern, token),
     trainingFocusMd: _rewrite(exercise.trainingFocusMd, pattern, token),
@@ -351,12 +414,15 @@ Program renameVariable(Program program, String oldName, String newName) {
   );
 
   RolePlay rewriteRolePlay(RolePlay rolePlay) => rolePlay.copyWith(
+    name: _rewriteRequired(rolePlay.name, pattern, token),
     behavior: _rewrite(rolePlay.behavior, pattern, token),
     background: _rewrite(rolePlay.background, pattern, token),
     propsMd: _rewrite(rolePlay.propsMd, pattern, token),
   );
 
   return program.copyWith(
+    name: _rewriteRequired(program.name, pattern, token),
+    description: _rewriteRequired(program.description, pattern, token),
     briefIntroMd: _rewrite(program.briefIntroMd, pattern, token),
     commsMd: _rewrite(program.commsMd, pattern, token),
     beforeRoundMd: _rewrite(program.beforeRoundMd, pattern, token),
