@@ -40,6 +40,15 @@ sealed class Program with _$Program {
     // an empty registry (ADR-0046, additive field, no schema bump).
     @Default(<DrillVariable>[]) List<DrillVariable> variables,
     // Markdown brief fields — stored as program/<field>.md, not in JSON.
+    // May contain unresolved {{var.<name>}} tokens and {{program.name}}/
+    // {{program.description}} cross-references (ADR-0046, DESIGN-004/008).
+    // Never render one of these directly in a Text widget — resolve it
+    // first via ResolvedMarkdownText (lib/views/widgets/) or
+    // BriefRenderer.resolveProgramScopeText, the same way BriefRenderer.render
+    // resolves it in the full brief. Reading the raw field straight into a
+    // Text widget is the bug the Program overview card had before
+    // ResolvedMarkdownText existed: a declared variable renders as a
+    // literal `{{...}}` token instead of its value.
     @JsonKey(includeFromJson: false, includeToJson: false) String? briefIntroMd,
     @JsonKey(includeFromJson: false, includeToJson: false) String? commsMd,
     @JsonKey(includeFromJson: false, includeToJson: false)

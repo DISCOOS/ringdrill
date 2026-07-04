@@ -8,7 +8,6 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
@@ -35,6 +34,7 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
+import 'package:ringdrill/views/widgets/resolved_markdown_text.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
@@ -873,14 +873,14 @@ class _ProgramOverview extends StatelessWidget {
   }
 
   /// Resolves `{{var.<name>}}` tokens and program-scope cross-references
-  /// (`{{program.name}}`, `{{program.description}}`) before this preview
-  /// truncates to the first paragraph, so a plan variable or cross-
-  /// reference used in `briefIntroMd`/`commsMd`/`beforeRoundMd` shows its
-  /// resolved value here too, not the literal `{{...}}` token — matching
-  /// what the actual brief (`BriefRenderer.render`) would show.
+  /// before this preview truncates to the first paragraph, via the same
+  /// [ResolvedMarkdownText.resolve] entry point used everywhere a
+  /// plan-scope markdown field is shown outside the full brief — see that
+  /// widget's doc comment for why the raw model field must never be read
+  /// directly.
   String? _resolveProgramText(Program program, String? md, AppLocalizations l10n) {
     if (md == null) return null;
-    return BriefRenderer.resolveProgramScopeText(program, md, l10n);
+    return ResolvedMarkdownText.resolve(program, md, l10n);
   }
 
   /// Returns the first paragraph of a markdown string stripped of leading

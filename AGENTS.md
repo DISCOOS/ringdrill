@@ -69,3 +69,4 @@ Read these before your first commit.
 * `sentry.properties` is gitignored. The Sentry plugin block in `pubspec.yaml` references it for source upload during release builds. Local builds work without it. Do not commit it.
 * `untranslated-messages.json` regenerates on every build. If it shows up in `git status`, ignore it.
 * The Shorebird `app_id` in `shorebird.yaml` is public and safe to commit.
+* `Program.briefIntroMd`/`commsMd`/`beforeRoundMd` (and the equivalent Exercise/Station/RolePlay markdown fields) can contain unresolved `{{var.<name>}}` and `{{program.name}}`-style tokens (ADR-0046). Never read one straight into a `Text` widget — resolve it first via `ResolvedMarkdownText` (`lib/views/widgets/resolved_markdown_text.dart`) or `BriefRenderer.resolveProgramScopeText`. This was missed once already (the Program view's overview card).
