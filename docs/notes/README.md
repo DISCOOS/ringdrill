@@ -17,3 +17,4 @@ Notes are additive. Do not rewrite older notes when new information arrives — 
 * [Netlify Functions v2 `path` config replaces the default URL](./netlify-functions-v2-path-config.md) — 2026-07-01
 * [Pull-to-refresh: which lists need it, and which do not](./pull-to-refresh-list-audit.md) — 2026-07-01
 * [Don't cache `getStore()` results across invocations](./netlify-blobs-store-caching-token-expiry.md) — 2026-07-03
+* [DESIGN-008 Stage 4 prototype gate: editable `WidgetSpan` chip — no-go](./design-008-token-field-spike.md) — 2026-07-04
