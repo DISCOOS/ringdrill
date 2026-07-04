@@ -78,12 +78,14 @@ Future<Program?> _openForm(
   return result;
 }
 
-/// Taps the compact AppBar title switcher. Scoped to [AppBar] because the
-/// current section's own label often repeats elsewhere on screen — e.g. as
-/// a [TextFormField]'s floating label once that section is selected.
+/// Taps the compact bottom bar's section selector (DESIGN-008 follow-up 04
+/// moved it out of the AppBar title into `_CompactBottomBar`). Scoped to
+/// [BottomAppBar] because the current section's own label often repeats
+/// elsewhere on screen — e.g. as a [TextFormField]'s floating label once
+/// that section is selected.
 Future<void> _tapSwitcher(WidgetTester tester, String label) async {
   await tester.tap(
-    find.descendant(of: find.byType(AppBar), matching: find.text(label)),
+    find.descendant(of: find.byType(BottomAppBar), matching: find.text(label)),
   );
   await tester.pumpAndSettle();
 }

@@ -84,9 +84,15 @@ Future<void> _openForm(
   await tester.pumpAndSettle();
 }
 
+/// Opens the section switcher sheet by tapping the current section's label
+/// in the compact bottom bar (DESIGN-008 follow-up 04 — the switcher moved
+/// out of the AppBar title into `_CompactBottomBar`).
 Future<void> _openSwitcherFrom(WidgetTester tester, String currentLabel) async {
   await tester.tap(
-    find.descendant(of: find.byType(AppBar), matching: find.text(currentLabel)),
+    find.descendant(
+      of: find.byType(BottomAppBar),
+      matching: find.text(currentLabel),
+    ),
   );
   await tester.pumpAndSettle();
 }

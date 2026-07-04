@@ -151,49 +151,13 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
           tooltip: l10n.cancel,
           onPressed: widget.onClose,
         ),
-        title: wide
-            ? Text(widget.title)
-            : Tooltip(
-                message: l10n.formSectionSwitcherTooltip,
-                child: InkWell(
-                  onTap: () => _openSwitcher(l10n),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(child: Text(current.label)),
-                      const Icon(Icons.arrow_drop_down),
-                    ],
-                  ),
-                ),
-              ),
+        // Compact used to put the section switcher here, but that left one
+        // row hosting close + switcher + overflow + prev/next + Save, so
+        // the section name truncated. The whole navigation cluster now
+        // lives in the bottom bar below; the top bar is just the entity
+        // title and Save on every window size.
+        title: Text(widget.title),
         actions: [
-          if (!wide) ...[
-            // Always rendered (just disabled when the current section isn't
-            // removable), so its presence never changes the actions row's
-            // width — otherwise the prev/next controls to its right would
-            // visibly jump sideways every time the current section changed.
-            PopupMenuButton<String>(
-              enabled: current.removable,
-              icon: const Icon(Icons.more_vert),
-              onSelected: (_) => _removeCurrent(current),
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'remove',
-                  child: Text(l10n.formSectionRemoveAction),
-                ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              tooltip: l10n.formSectionPrevious,
-              onPressed: hasPrevious ? () => _step(current, -1) : null,
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              tooltip: l10n.formSectionNext,
-              onPressed: hasNext ? () => _step(current, 1) : null,
-            ),
-          ],
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 16),
             child: ElevatedButton(
@@ -203,6 +167,18 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
           ),
         ],
       ),
+      bottomNavigationBar: wide
+          ? null
+          : _CompactBottomBar(
+              l10n: l10n,
+              current: current,
+              hasPrevious: hasPrevious,
+              hasNext: hasNext,
+              onOpenSwitcher: () => _openSwitcher(l10n),
+              onPrevious: () => _step(current, -1),
+              onNext: () => _step(current, 1),
+              onRemove: () => _removeCurrent(current),
+            ),
       body: wide
           ? _WideBody(
               sections: widget.sections,
@@ -217,6 +193,95 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
               onNext: () => _step(current, 1),
             )
           : SafeArea(child: current.builder(context)),
+    );
+  }
+}
+
+/// Compact's whole section-navigation cluster, relocated out of the
+/// crowded top `AppBar` (DESIGN-008 follow-up 04, superseding follow-up
+/// 02's top-bar prev/next placement): the section selector — full label,
+/// untruncated — prev/next, and the overflow "remove" action.
+///
+/// The overflow is always rendered (just disabled via `enabled:` when
+/// [current] isn't removable) rather than conditionally mounted, for the
+/// same reason follow-up 02's fix applied to the top bar and the wide
+/// header: a `Row` with one flexible child (the selector, `Expanded`) and
+/// fixed-width trailing children redistributes the leftover space into
+/// the flexible child whenever a fixed-width sibling appears or
+/// disappears — so a conditionally-mounted overflow would still make
+/// prev/next visibly jump sideways when the current section's
+/// removability changes, even outside an `AppBar.actions` row.
+class _CompactBottomBar extends StatelessWidget {
+  const _CompactBottomBar({
+    required this.l10n,
+    required this.current,
+    required this.hasPrevious,
+    required this.hasNext,
+    required this.onOpenSwitcher,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onRemove,
+  });
+
+  final AppLocalizations l10n;
+  final FormSection current;
+  final bool hasPrevious;
+  final bool hasNext;
+  final VoidCallback onOpenSwitcher;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      child: Row(
+        children: [
+          Expanded(
+            child: Tooltip(
+              message: l10n.formSectionSwitcherTooltip,
+              child: InkWell(
+                onTap: onOpenSwitcher,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(current.icon),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        current.label,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            tooltip: l10n.formSectionPrevious,
+            onPressed: hasPrevious ? onPrevious : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            tooltip: l10n.formSectionNext,
+            onPressed: hasNext ? onNext : null,
+          ),
+          PopupMenuButton<String>(
+            enabled: current.removable,
+            icon: const Icon(Icons.more_vert),
+            onSelected: (_) => onRemove(),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'remove',
+                child: Text(l10n.formSectionRemoveAction),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
