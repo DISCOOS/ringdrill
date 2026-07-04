@@ -1928,6 +1928,17 @@ class AppLocalizationsNb extends AppLocalizations {
   String get formSectionSwitcherTooltip => 'Bytt seksjon';
 
   @override
+  String get tokenMenuEmpty => 'Ingen treff';
+
+  @override
+  String get tokenMenuPlanFieldHint => 'planfelt';
+
+  @override
+  String tokenMenuCreateVariable(String name) {
+    return 'Opprett variabel «$name»';
+  }
+
+  @override
   String get exerciseReorderMode => 'Ordne';
 
   @override

@@ -999,6 +999,22 @@
     "description": "Verktøytips på den kompakte AppBar-tittelbytteren i DESIGN-008 SectionNavigatedForm."
   },
 
+  "tokenMenuEmpty": "Ingen treff",
+  "@tokenMenuEmpty": {
+    "description": "Tom-tilstand-tekst i DESIGN-008 Stage 4 sin token-innsettingsmeny (/-kommandomenyen og {{-autofullføringen) når ingen variabel eller planfelt matcher det innskrevne filteret."
+  },
+  "tokenMenuPlanFieldHint": "planfelt",
+  "@tokenMenuPlanFieldHint": {
+    "description": "Dempet hint vist i stedet for en verdi ved siden av en avledet planfelt-oppføring i token-innsettingsmenyen (f.eks. exercise.name), som skiller den fra en variabeloppføring som viser sin effektive verdi. DESIGN-008 nevner dette begrepet eksplisitt for begge språk."
+  },
+  "tokenMenuCreateVariable": "Opprett variabel «{name}»",
+  "@tokenMenuCreateVariable": {
+    "description": "Oppføring i token-innsettingsmenyen som vises når det innskrevne filteret ikke matcher noen deklarert variabel, koblet til en onCreateVariable-callback (sovende til DESIGN-008 Stage 5 tilfører den).",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
   "exerciseReorderMode": "Ordne",
   "@exerciseReorderMode": {
     "description": "Listehodet-veksler som aktiverer omsorteringsmodus (dragepunkter vises, dra-for-å-sortere blir tilgjengelig)."

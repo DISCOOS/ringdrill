@@ -1936,6 +1936,22 @@
     "description": "Tooltip on the compact AppBar title switcher in DESIGN-008 SectionNavigatedForm."
   },
 
+  "tokenMenuEmpty": "No matches",
+  "@tokenMenuEmpty": {
+    "description": "Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter."
+  },
+  "tokenMenuPlanFieldHint": "planfelt",
+  "@tokenMenuPlanFieldHint": {
+    "description": "Muted hint shown instead of a value next to a derived plan-field entry in the token insertion menu (e.g. exercise.name), distinguishing it from a variable entry which shows its effective value. DESIGN-008 calls this term out explicitly for both languages."
+  },
+  "tokenMenuCreateVariable": "Create variable “{name}”",
+  "@tokenMenuCreateVariable": {
+    "description": "Entry in the token insertion menu offered when the typed filter matches no declared variable, wired to an onCreateVariable callback (dormant until DESIGN-008 Stage 5 supplies it).",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
   "exerciseReorderMode": "Reorder",
   "@exerciseReorderMode": {
     "description": "List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active)."

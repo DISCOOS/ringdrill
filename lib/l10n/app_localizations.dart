@@ -3290,6 +3290,24 @@ abstract class AppLocalizations {
   /// **'Switch section'**
   String get formSectionSwitcherTooltip;
 
+  /// Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get tokenMenuEmpty;
+
+  /// Muted hint shown instead of a value next to a derived plan-field entry in the token insertion menu (e.g. exercise.name), distinguishing it from a variable entry which shows its effective value. DESIGN-008 calls this term out explicitly for both languages.
+  ///
+  /// In en, this message translates to:
+  /// **'planfelt'**
+  String get tokenMenuPlanFieldHint;
+
+  /// Entry in the token insertion menu offered when the typed filter matches no declared variable, wired to an onCreateVariable callback (dormant until DESIGN-008 Stage 5 supplies it).
+  ///
+  /// In en, this message translates to:
+  /// **'Create variable “{name}”'**
+  String tokenMenuCreateVariable(String name);
+
   /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///
   /// In en, this message translates to:
