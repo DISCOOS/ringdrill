@@ -1,8 +1,9 @@
 ---
 id: DESIGN-008
 title: Plan variables and the section-navigated editor
-status: Proposed
+status: Accepted
 started: 2026-07-03
+accepted: 2026-07-04
 owners: ["kengu"]
 related_code:
   - lib/models/program.dart
@@ -176,6 +177,10 @@ Each stage is a separate PR.
 **Follow-up 03 — `PlanScope` and the `RingDrillText*` widget family.** `TokenAwareField` is concretely `lib/views/widgets/ringdrill_text_field.dart`'s `RingDrillTextField` (single-line) / `RingDrillTextArea` (multi-line, subsuming the Stage 3/4 `MarkdownSectionField`), driven by `lib/views/widgets/plan_scope.dart`'s `PlanScope` — an `InheritedWidget` carrying the active plan's declared variables — instead of a `variables:` list a caller rebuilds and passes down by hand. `ProgramFormScreen` provides the scope; `ExerciseFormScreen`/`StationFormScreen`/`RolePlayFormScreen` will when they migrate onto the section-navigated shell. See ADR-0046's follow-up 03 addendum for the resolution-surface scope note (this also lays groundwork for variables in names/descriptions, not yet wired to a live display surface).
 
 All user-facing strings go in `app_en.arb` and `app_nb.arb`; run `make i18n`.
+
+**Follow-up 09 — live-UI resolution and token-aware names.** `PlanScope` now wraps the program-scoped live-app routes (`MainScreen`), so the read-only `RingDrillText` (mirroring `Text`) can resolve `{{var.<name>}}` in list tiles, the coordinator, the drill player, map labels and share text — the piece follow-up 03 deliberately left unbuilt. `RingDrillTextField` gets its first call sites: every editor's name field is `tokenAware`, plus `Program`'s and `Station`'s description fields.
+
+**Follow-up 10 (2026-07-04) — shipped, status Accepted.** The whole feature above is implemented on `design-008` and end-to-end QA'd (`docs/notes/design-008-e2e-qa.md`), including a fix to `plan_variable_refs.dart`'s rename/delete-reference tracking, which had not been extended to the names/descriptions surface follow-ups 05/09 added. Deferred, intentionally: **variable creation from sub-editors** (the `VariablesSection` spec's `Exercise`/`Station` override-surface "+ Ny variabel" with its own record-based result contract — only `Program`'s declaration surface and the slash-menu inline create shipped) and **local-only variables** (ADR-0046 option B). The branch is ready to merge; merging makes the feature live, since there is no flag.
 
 ## References
 

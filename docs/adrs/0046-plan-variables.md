@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-07-03
 deciders: ["@kengu"]
 consulted: []
@@ -137,3 +137,11 @@ DESIGN-008 follow-up 03 lays the groundwork for resolving `{{var.<name>}}` in **
 **Still deferred.** `RingDrillTextField` has no call site yet — actually wiring a name/description field to `tokenAware: true` (and updating `BriefRenderer` to substitute variables in `Exercise.name`/`Program.description`/etc., which it does not do today) is a later follow-up, as is the read-only display counterpart (`RingDrillText`, mirroring `Text`), deliberately not built until a live surface needs it. Migrating `Exercise`/`Station`/`RolePlay` editors onto the section-navigated shell (with override tables) is also still open.
 
 ADR-0046's status remains `Proposed`.
+
+## Addendum (2026-07-04): shipped on `design-008`, status Accepted
+
+DESIGN-008 is fully implemented on `design-008`: the model above, `BriefRenderer` resolution for both markdown fields and names/descriptions, section-navigated editors for `Program`/`Exercise`/`Station`/`RolePlay` with override tables on `Exercise`/`Station`, token-aware fields including names/descriptions, live-app resolution via `PlanScope`/`RingDrillText`, and the `RINGDRILL_PLAN_VARIABLES` build flag removed. An end-to-end QA pass (`docs/notes/design-008-e2e-qa.md`) confirms the whole feature on one fixture plan, including a fix to `plan_variable_refs.dart`'s rename/delete-reference tracking, which the QA pass found had never been extended to the names/description surface the first addendum above added.
+
+Deferred, intentionally, both revisit-if-needed rather than committed to: **local-only variables** (option B, if the plan-level list grows noisy with single-use variables) and **variable creation from sub-editors** (DESIGN-008's `VariablesSection` spec gives `Exercise`/`Station`'s override surface its own "+ Ny variabel" action with a record-based result contract; that surface-level create action was not built — the only create paths shipped are `Program`'s declaration surface and the slash-menu's inline "Opprett variabel «x»", both available everywhere including `Exercise`/`Station`/`RolePlay` fields).
+
+This ADR's status is now `Accepted`.
