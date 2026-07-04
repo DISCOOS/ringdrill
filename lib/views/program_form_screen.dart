@@ -1,15 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/utils/app_flags.dart';
+import 'package:ringdrill/utils/plan_variable_refs.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/markdown_section_field.dart';
 import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
+import 'package:ringdrill/views/widgets/variables_section.dart';
 
 const _kTagMaxLength = 40;
+
+/// Turns a [PlanVariableReference] — deliberately unlocalized, since
+/// `plan_variable_refs.dart` stays Flutter-free — into a display string for
+/// [VariablesSection]'s delete-blocked usage list, e.g. "Øvelse 3 › Metode"
+/// or "Post 1.1 › Situasjon". Reuses the field labels already declared for
+/// the brief template sections rather than adding a parallel set, plus
+/// `l10n.exercise(1)`/`l10n.station(1)` for the bare singular "Øvelse"/
+/// "Post" prefix.
+String _describeReference(PlanVariableReference ref, AppLocalizations l) {
+  final fieldLabel = switch (ref.field) {
+    PlanVariableField.programBriefIntro => l.briefSectionProgramIntro,
+    PlanVariableField.programComms => l.briefSectionProgramComms,
+    PlanVariableField.programBeforeRound => l.briefSectionProgramBeforeRound,
+    PlanVariableField.exerciseMethod => l.briefSectionExerciseMethod,
+    PlanVariableField.exerciseLearningGoals => l.briefSectionExerciseLearningGoals,
+    PlanVariableField.exerciseTrainingFocus => l.briefSectionExerciseTrainingFocus,
+    PlanVariableField.exerciseOrderFormat => l.briefSectionExerciseOrderFormat,
+    PlanVariableField.exerciseExecutionTips => l.briefSectionExerciseExecutionTips,
+    PlanVariableField.exerciseComms => l.briefSectionExerciseComms,
+    PlanVariableField.exerciseOverride => l.variablesSectionOverrideFieldLabel,
+    PlanVariableField.stationEquipment => l.briefSectionStationEquipment,
+    PlanVariableField.stationSituation => l.briefSectionStationSituation,
+    PlanVariableField.stationMission => l.briefSectionStationMission,
+    PlanVariableField.stationLogistics => l.briefSectionStationLogistics,
+    PlanVariableField.stationCriticalQuestions =>
+      l.briefSectionStationCriticalQuestions,
+    PlanVariableField.stationLeaderAnswers => l.briefSectionStationLeaderAnswers,
+    PlanVariableField.stationDirectorNotes => l.briefSectionStationDirectorNotes,
+    PlanVariableField.stationOverride => l.variablesSectionOverrideFieldLabel,
+    PlanVariableField.roleplayBehavior => l.roleBehavior,
+    PlanVariableField.roleplayBackground => l.roleBackground,
+    PlanVariableField.roleplayProps => l.catalogDiffFieldProps,
+  };
+
+  if (ref.roleplayName != null) return '${ref.roleplayName} › $fieldLabel';
+  if (ref.stationCode != null) {
+    return '${l.station(1)} ${ref.stationCode} › $fieldLabel';
+  }
+  if (ref.exerciseNumber != null) {
+    return '${l.exercise(1)} ${ref.exerciseNumber} › $fieldLabel';
+  }
+  return fieldLabel;
+}
 
 /// Optional addable sections on [Program] beyond name + description.
 enum _Section { briefIntro, comms, beforeRound }
@@ -63,6 +109,11 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   String? _languageCode;
   String? _tagError;
 
+  /// Working plan-variable registry (DESIGN-008 Stage 5), edited by
+  /// [VariablesSection] and read by [_save]. Only meaningful in the flag-on
+  /// path; the legacy body never touches it.
+  late List<DrillVariable> _variables;
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +126,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     _beforeRoundController.text = p.beforeRoundMd ?? '';
     _stationNumberFormat = p.stationNumberFormat;
     _languageCode = p.metadata.languageCode;
+    _variables = List<DrillVariable>.from(p.variables);
     _activeSections = {
       if (p.briefIntroMd != null) _Section.briefIntro,
       if (p.commsMd != null) _Section.comms,
@@ -139,6 +191,45 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     });
   }
 
+  /// The in-memory [Program] as the editor currently stands — every
+  /// controller's live text plus [_variables] — not [widget.program], which
+  /// is the value the editor was *opened* with. `plan_variable_refs.dart`'s
+  /// rename/reference-count helpers need this live snapshot: a variable
+  /// just typed into a section, or a rename not yet saved, must still be
+  /// accounted for correctly while the editor is open.
+  Program _workingProgram() => widget.program.copyWith(
+    briefIntroMd: _readSection(_Section.briefIntro),
+    commsMd: _readSection(_Section.comms),
+    beforeRoundMd: _readSection(_Section.beforeRound),
+    variables: _variables,
+  );
+
+  void _addVariable(DrillVariable variable) {
+    setState(() => _variables = [..._variables, variable]);
+  }
+
+  /// Runs the ADR-0046 plan-wide rewrite over the live working program (not
+  /// just [_variables]): every markdown field's `{{var.<oldName>}}` becomes
+  /// `{{var.<newName>}}`, every `variableOverrides` key is renamed, and the
+  /// registry entry itself is renamed. The rewritten markdown then has to
+  /// flow back into this editor's own controllers — `renameVariable`
+  /// returns a whole new `Program`, but `_briefIntroController` etc. are
+  /// what the section fields (and their live `TokenTextEditingController`s,
+  /// via the `variables` list rebuilt below) actually read.
+  void _renameVariablePlanWide(String oldName, String newName) {
+    final renamed = renameVariable(_workingProgram(), oldName, newName);
+    setState(() {
+      _briefIntroController.text = renamed.briefIntroMd ?? '';
+      _commsController.text = renamed.commsMd ?? '';
+      _beforeRoundController.text = renamed.beforeRoundMd ?? '';
+      _variables = renamed.variables;
+    });
+  }
+
+  void _deleteVariable(String name) {
+    setState(() => _variables = _variables.where((v) => v.name != name).toList());
+  }
+
   FocusNode _focusFor(_Section section) => switch (section) {
     _Section.briefIntro => _briefIntroFocus,
     _Section.comms => _commsFocus,
@@ -184,10 +275,12 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   /// "Plan" section instead, one tap away.
   Widget _buildSectionNavigated(BuildContext context, AppLocalizations l) {
     // Program scope has no overrides (ADR-0046): a variable's effective
-    // value here is always its declared default.
+    // value here is always its declared default. Rebuilt from _variables
+    // (not widget.program.variables) on every build, so add/rename/delete
+    // and inline-create all flow straight into the live token controllers
+    // via MarkdownSectionField's variables setter (Stage 4).
     final variables = [
-      for (final v in widget.program.variables)
-        VariableToken(name: v.name, effectiveValue: v.value),
+      for (final v in _variables) VariableToken(name: v.name, effectiveValue: v.value),
     ];
     // Small and explicit, per the Stage 4 prompt: only fields the renderer
     // already resolves at program scope (brief_renderer.dart's `program`
@@ -257,6 +350,23 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
             label: l.programSectionPlan,
             icon: Icons.assignment_outlined,
             builder: (ctx) => _buildPlanSectionBody(ctx, l),
+          ),
+          FormSection(
+            id: 'variables',
+            label: l.variablesSectionTitle,
+            icon: Icons.data_object,
+            builder: (_) => VariablesSection(
+              variables: _variables,
+              onAdd: _addVariable,
+              onRename: _renameVariablePlanWide,
+              onDelete: _deleteVariable,
+              referenceCount: (name) =>
+                  variableReferenceCount(_workingProgram(), name),
+              referenceDescriptions: (name) => [
+                for (final ref in variableReferences(_workingProgram(), name))
+                  _describeReference(ref, l),
+              ],
+            ),
           ),
           ...activeMdSections,
         ],
@@ -455,6 +565,10 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       briefIntroMd: _readSection(_Section.briefIntro),
       commsMd: _readSection(_Section.comms),
       beforeRoundMd: _readSection(_Section.beforeRound),
+      // Unconditional: in the flag-off path _variables is never mutated
+      // (VariablesSection only mounts in the flag-on section-navigated
+      // body), so this just round-trips widget.program.variables unchanged.
+      variables: List<DrillVariable>.unmodifiable(_variables),
       metadata: widget.program.metadata.copyWith(
         updated: DateTime.now(),
         languageCode: _languageCode,
