@@ -1828,6 +1828,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get editProgram => 'Endre plan';
 
   @override
+  String get programSectionPlan => 'Plan';
+
+  @override
   String get programName => 'Plannavn';
 
   @override
@@ -1914,6 +1917,15 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get pleaseSelectALanguage => 'Velg et språk';
+
+  @override
+  String get formSectionAddAction => 'Legg til seksjon';
+
+  @override
+  String get formSectionRemoveAction => 'Fjern seksjon';
+
+  @override
+  String get formSectionSwitcherTooltip => 'Bytt seksjon';
 
   @override
   String get exerciseReorderMode => 'Ordne';

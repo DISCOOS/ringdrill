@@ -3092,6 +3092,12 @@ abstract class AppLocalizations {
   /// **'Edit plan'**
   String get editProgram;
 
+  /// DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor (RINGDRILL_PLAN_VARIABLES). Carries Program's short structural fields (name, description, tags, formats, language).
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get programSectionPlan;
+
   /// Field label for Program.name in ProgramFormScreen.
   ///
   /// In en, this message translates to:
@@ -3265,6 +3271,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please select a language'**
   String get pleaseSelectALanguage;
+
+  /// DESIGN-008 SectionNavigatedForm entry that reveals the unused optional sections, in the compact switcher and the wide rail.
+  ///
+  /// In en, this message translates to:
+  /// **'Add section'**
+  String get formSectionAddAction;
+
+  /// DESIGN-008 SectionNavigatedForm overflow-menu action that removes the current (removable) section. Never offered for the default section.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove section'**
+  String get formSectionRemoveAction;
+
+  /// Tooltip on the compact AppBar title switcher in DESIGN-008 SectionNavigatedForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch section'**
+  String get formSectionSwitcherTooltip;
 
   /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///

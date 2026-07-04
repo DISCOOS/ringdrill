@@ -1800,6 +1800,10 @@
   "@editProgram": {
     "description": "AppBar title for ProgramFormScreen when editing the active plan."
   },
+  "programSectionPlan": "Plan",
+  "@programSectionPlan": {
+    "description": "DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor (RINGDRILL_PLAN_VARIABLES). Carries Program's short structural fields (name, description, tags, formats, language)."
+  },
   "programName": "Plan name",
   "@programName": {
     "description": "Field label for Program.name in ProgramFormScreen."
@@ -1917,6 +1921,19 @@
   "pleaseSelectALanguage": "Please select a language",
   "@pleaseSelectALanguage": {
     "description": "Validation message shown when the plan-language picker is submitted without a language chosen."
+  },
+
+  "formSectionAddAction": "Add section",
+  "@formSectionAddAction": {
+    "description": "DESIGN-008 SectionNavigatedForm entry that reveals the unused optional sections, in the compact switcher and the wide rail."
+  },
+  "formSectionRemoveAction": "Remove section",
+  "@formSectionRemoveAction": {
+    "description": "DESIGN-008 SectionNavigatedForm overflow-menu action that removes the current (removable) section. Never offered for the default section."
+  },
+  "formSectionSwitcherTooltip": "Switch section",
+  "@formSectionSwitcherTooltip": {
+    "description": "Tooltip on the compact AppBar title switcher in DESIGN-008 SectionNavigatedForm."
   },
 
   "exerciseReorderMode": "Reorder",

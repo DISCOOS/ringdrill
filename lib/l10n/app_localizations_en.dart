@@ -1831,6 +1831,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editProgram => 'Edit plan';
 
   @override
+  String get programSectionPlan => 'Plan';
+
+  @override
   String get programName => 'Plan name';
 
   @override
@@ -1917,6 +1920,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pleaseSelectALanguage => 'Please select a language';
+
+  @override
+  String get formSectionAddAction => 'Add section';
+
+  @override
+  String get formSectionRemoveAction => 'Remove section';
+
+  @override
+  String get formSectionSwitcherTooltip => 'Switch section';
 
   @override
   String get exerciseReorderMode => 'Reorder';

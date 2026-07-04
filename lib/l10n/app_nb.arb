@@ -866,6 +866,10 @@
   "@editProgram": {
     "description": "AppBar-tittel i ProgramFormScreen ved redigering av aktiv plan."
   },
+  "programSectionPlan": "Plan",
+  "@programSectionPlan": {
+    "description": "DESIGN-008 standardseksjon-etikett for ProgramFormScreens seksjonsnavigerte editor (RINGDRILL_PLAN_VARIABLES). Bærer Program sine korte strukturfelt (navn, beskrivelse, tagger, formater, språk)."
+  },
   "programName": "Plannavn",
   "@programName": {
     "description": "Feltetikett for Program.name i ProgramFormScreen."
@@ -980,6 +984,19 @@
   "pleaseSelectALanguage": "Velg et språk",
   "@pleaseSelectALanguage": {
     "description": "Valideringsmelding vist når språkvelgeren sendes inn uten at et språk er valgt."
+  },
+
+  "formSectionAddAction": "Legg til seksjon",
+  "@formSectionAddAction": {
+    "description": "DESIGN-008 SectionNavigatedForm-oppføring som viser de ubrukte valgfrie seksjonene, i den kompakte seksjonsbytteren og i bred-rail."
+  },
+  "formSectionRemoveAction": "Fjern seksjon",
+  "@formSectionRemoveAction": {
+    "description": "DESIGN-008 SectionNavigatedForm-overflytmenyhandling som fjerner den valgte (fjernbare) seksjonen. Vises aldri for standardseksjonen."
+  },
+  "formSectionSwitcherTooltip": "Bytt seksjon",
+  "@formSectionSwitcherTooltip": {
+    "description": "Verktøytips på den kompakte AppBar-tittelbytteren i DESIGN-008 SectionNavigatedForm."
   },
 
   "exerciseReorderMode": "Ordne",
