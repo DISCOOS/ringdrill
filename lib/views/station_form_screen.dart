@@ -4,12 +4,10 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
-import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -34,7 +32,6 @@ class StationFormScreen extends StatefulWidget {
     this.markers = const <MapMarkerSpec<(String, int)>>[],
     this.variables = const <DrillVariable>[],
     this.parentExercise,
-    @visibleForTesting this.debugPlanVariablesOverride,
   });
 
   final Station station;
@@ -43,24 +40,14 @@ class StationFormScreen extends StatefulWidget {
   /// The plan's declared variables (ADR-0046), read-only here — this editor
   /// edits a `Station`, not the `Program` (DESIGN-008 follow-up 07's
   /// settled scope, same as `ExerciseFormScreen`). Every call site passes
-  /// `program.variables`. Only consulted in the flag-on section-navigated
-  /// body.
+  /// `program.variables`.
   final List<DrillVariable> variables;
 
   /// The enclosing `Exercise`, needed to compute this station's inherited
   /// baseline (ADR-0046): the plan's declared defaults overlaid by this
-  /// exercise's overrides. Optional so existing callers that only care
-  /// about the legacy flag-off body keep compiling unchanged — the
-  /// flag-on body degrades to a program-only baseline when omitted.
+  /// exercise's overrides. Optional — a station opened without its parent
+  /// exercise in context degrades to a program-only baseline.
   final Exercise? parentExercise;
-
-  /// Overrides [AppFlags.planVariables] for a test. `bool.fromEnvironment`
-  /// is a compile-time const, so a widget test cannot flip it at runtime —
-  /// this lets a test render the flag-on section-navigated body without a
-  /// `--dart-define`. Production code never sets this; the real flag is
-  /// read when it is null.
-  @visibleForTesting
-  final bool? debugPlanVariablesOverride;
 
   @override
   State<StationFormScreen> createState() => _StationFormScreenState();
@@ -79,14 +66,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
     text: "",
   );
 
-  /// A [TokenTextEditingController] in the flag-on path, a plain controller
-  /// in the legacy path — same reasoning as `ExerciseFormScreen`'s
-  /// controllers.
-  late final Map<_StationSection, TextEditingController> _sectionControllers = {
-    for (final s in _StationSection.values)
-      s: _planVariablesOn
-          ? TokenTextEditingController()
-          : TextEditingController(),
+  /// Token-aware so `RingDrillTextArea(tokenAware: true)` can drive its
+  /// chips from [PlanScope].
+  final Map<_StationSection, TextEditingController> _sectionControllers = {
+    for (final s in _StationSection.values) s: TokenTextEditingController(),
   };
   final Map<_StationSection, FocusNode> _sectionFocusNodes = {
     for (final s in _StationSection.values) s: FocusNode(),
@@ -94,12 +77,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
   final Set<_StationSection> _activeSections = {};
 
   /// Working copy of `station.variableOverrides` (DESIGN-008 follow-up 07),
-  /// edited by [VariableOverridesSection] and read by [_saveStation]. Only
-  /// mutated in the flag-on path, so it round-trips unchanged in flag-off.
+  /// edited by [VariableOverridesSection] and read by [_saveStation].
   late Map<String, String> _workingOverrides;
-
-  bool get _planVariablesOn =>
-      widget.debugPlanVariablesOverride ?? AppFlags.planVariables;
 
   /// This station's inherited baseline (ADR-0046): the plan's declared
   /// defaults overlaid by [StationFormScreen.parentExercise]'s overrides —
@@ -205,16 +184,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_planVariablesOn) {
-      return _buildSectionNavigated(context);
-    }
-    return _buildLegacy(context);
+    return _buildSectionNavigated(context);
   }
 
-  /// DESIGN-008 follow-up 07, behind `RINGDRILL_PLAN_VARIABLES`. Same
-  /// controllers, [_activeSections] and save path as the legacy body below
-  /// — only their presentation moves into sections, plus the override
-  /// table on the Variabler section.
+  /// DESIGN-008 follow-up 07.
   Widget _buildSectionNavigated(BuildContext context) {
     final l = AppLocalizations.of(context)!;
 
@@ -373,135 +346,6 @@ class _StationFormScreenState extends State<StationFormScreen> {
     );
   }
 
-  Widget _buildLegacy(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    // With a position, show only this station's own pin (unchanged). Without
-    // one (new station), pass the sibling stations so the picker frames them
-    // and the user places the new pin near the others.
-    final markers = _position == null
-        ? widget.markers
-        : widget.markers.where((e) => e.point == _position).toList();
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: localizations.cancel,
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(localizations.editStation),
-        actions: [
-          ElevatedButton(
-            onPressed: _saveStation,
-            child: Text(localizations.save),
-          ),
-        ],
-        actionsPadding: EdgeInsets.only(right: 16.0),
-      ),
-      body: DismissKeyboard(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      // Exercise Name
-                      Expanded(
-                        child: TextFormField(
-                          autofocus: true,
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: localizations.stationName,
-                            hintText: localizations.stationNameHint,
-                          ),
-                          validator: (value) =>
-                              value != null && value.trim().isNotEmpty
-                              ? null
-                              : localizations.pleaseEnterAName,
-                        ),
-                      ),
-
-                      SizedBox(width: 8),
-
-                      // Position
-                      SizedBox(
-                        width: 230,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: BoxBorder.all(color: Colors.grey.shade700),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(
-                              4.0,
-                            ).copyWith(left: 8.0),
-                            child: PositionFormField(
-                              initialValue: _position,
-                              markers: markers,
-                              onSaved: (position) => _position = position,
-                              // Without this, `_position` (and therefore the
-                              // `markers` filter above, and the map picker's
-                              // recentring on reopen) stayed frozen at the
-                              // old value until Save — a pick would visibly
-                              // "not take" until the form was saved.
-                              onChanged: (position) =>
-                                  setState(() => _position = position),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 16),
-
-                  // Description
-                  TextFormField(
-                    controller: _descriptionController,
-                    keyboardType: TextInputType.multiline,
-                    minLines: 1,
-                    maxLines: 15,
-                    decoration: InputDecoration(
-                      labelText: localizations.stationDescription,
-                      hintText: localizations.stationDescriptionHint,
-                      hintMaxLines: 10,
-                      alignLabelWithHint: true,
-                    ),
-                  ),
-
-                  SizedBox(height: 16),
-
-                  OptionalFieldSections<_StationSection>(
-                    sections: [
-                      for (final section in _StationSection.values)
-                        OptionalFieldSection<_StationSection>(
-                          id: section,
-                          label: _labelFor(section, localizations),
-                          controller: _sectionControllers[section]!,
-                          focusNode: _sectionFocusNodes[section],
-                        ),
-                    ],
-                    activeIds: _activeSections,
-                    onAdd: _addSection,
-                    onRemove: _removeSection,
-                  ),
-                  // Hidden once every optional section has been added: with
-                  // no add-buttons left to show, the divider would sit right
-                  // below the last text field with nothing to separate.
-                  if (_activeSections.length < _StationSection.values.length)
-                    const Divider(height: 32),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -517,21 +361,16 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   void _saveStation() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Flag off has no Variabler section and no way to reference an
-      // undeclared token in the first place — only the flag-on path can
-      // produce one to block on (matches ExerciseFormScreen's rule).
-      if (_planVariablesOn) {
-        final offending = _sectionsWithUndeclaredTokens();
-        if (offending.isNotEmpty) {
-          final l = AppLocalizations.of(context)!;
-          final sections = offending.map((s) => _labelFor(s, l)).join(', ');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
-            ),
-          );
-          return;
-        }
+      final offending = _sectionsWithUndeclaredTokens();
+      if (offending.isNotEmpty) {
+        final l = AppLocalizations.of(context)!;
+        final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+          ),
+        );
+        return;
       }
 
       _formKey.currentState!.save();
@@ -549,9 +388,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
         criticalQuestionsMd: _readSection(_StationSection.criticalQuestions),
         leaderAnswersMd: _readSection(_StationSection.leaderAnswers),
         directorNotesMd: _readSection(_StationSection.directorNotes),
-        // The working copy: never mutated in the flag-off path (no
-        // VariableOverridesSection mounts there), so this round-trips the
-        // original unchanged; in flag-on it carries the author's edits.
+        // The working copy: carries VariableOverridesSection's edits.
         variableOverrides: _workingOverrides,
       );
 
