@@ -2768,7 +2768,7 @@ abstract class AppLocalizations {
   /// **'Edit role'**
   String get editRolePlayTitle;
 
-  /// DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor (RINGDRILL_PLAN_VARIABLES). Carries RolePlay's short structural fields (name, age, signalement, station, position).
+  /// DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor. Carries RolePlay's short structural fields (name, age, signalement, station, position).
   ///
   /// In en, this message translates to:
   /// **'Role'**
@@ -3098,7 +3098,7 @@ abstract class AppLocalizations {
   /// **'Edit plan'**
   String get editProgram;
 
-  /// DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor (RINGDRILL_PLAN_VARIABLES). Carries Program's short structural fields (name, description, tags, formats, language).
+  /// DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor. Carries Program's short structural fields (name, description, tags, formats, language).
   ///
   /// In en, this message translates to:
   /// **'Plan'**

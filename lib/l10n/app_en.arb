@@ -1560,7 +1560,7 @@
   },
   "roleplaySectionRole": "Role",
   "@roleplaySectionRole": {
-    "description": "DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor (RINGDRILL_PLAN_VARIABLES). Carries RolePlay's short structural fields (name, age, signalement, station, position)."
+    "description": "DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor. Carries RolePlay's short structural fields (name, age, signalement, station, position)."
   },
   "stationRolesSection": "Roles",
   "@stationRolesSection": {
@@ -1806,7 +1806,7 @@
   },
   "programSectionPlan": "Plan",
   "@programSectionPlan": {
-    "description": "DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor (RINGDRILL_PLAN_VARIABLES). Carries Program's short structural fields (name, description, tags, formats, language)."
+    "description": "DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor. Carries Program's short structural fields (name, description, tags, formats, language)."
   },
   "programName": "Plan name",
   "@programName": {

@@ -694,7 +694,7 @@
   },
   "roleplaySectionRole": "Rolle",
   "@roleplaySectionRole": {
-    "description": "DESIGN-008 standardseksjon-etikett for RolePlayFormScreens seksjonsnavigerte redigering (RINGDRILL_PLAN_VARIABLES). Inneholder RolePlays korte strukturfelt (navn, alder, signalement, post, posisjon)."
+    "description": "DESIGN-008 standardseksjon-etikett for RolePlayFormScreens seksjonsnavigerte redigering. Inneholder RolePlays korte strukturfelt (navn, alder, signalement, post, posisjon)."
   },
   "stationRolesSection": "Markører",
   "@stationRolesSection": {
@@ -872,7 +872,7 @@
   },
   "programSectionPlan": "Plan",
   "@programSectionPlan": {
-    "description": "DESIGN-008 standardseksjon-etikett for ProgramFormScreens seksjonsnavigerte editor (RINGDRILL_PLAN_VARIABLES). Bærer Program sine korte strukturfelt (navn, beskrivelse, tagger, formater, språk)."
+    "description": "DESIGN-008 standardseksjon-etikett for ProgramFormScreens seksjonsnavigerte editor. Bærer Program sine korte strukturfelt (navn, beskrivelse, tagger, formater, språk)."
   },
   "programName": "Plannavn",
   "@programName": {
