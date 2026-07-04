@@ -14,8 +14,10 @@ import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
@@ -85,6 +87,19 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Exercise? _exercise;
   bool _promptShowNotification = false;
   _CoordinatorView _view = _CoordinatorView.stations;
+
+  /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
+  /// optionally narrowed to [station]'s — mirrors `StationExerciseScreen`.
+  /// Empty when there is no active plan.
+  Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
+    final program = _programService.activeProgram;
+    if (program == null) return const {};
+    return effectivePlanVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    );
+  }
 
   /// The map view only exists in the single-column (mobile) body. When the
   /// wide two-column body is shown it has no map segment, so a `map`
@@ -304,7 +319,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               },
               tooltip: localizations.briefClose,
             ),
-            title: SheetTitle(primary: _exercise!.name),
+            title: SheetTitle(
+              primary: _exercise!.name,
+              primaryOverrides: _overridesFor(_exercise!),
+            ),
             actions: rdAppBarActions(context, [
               // Open Brief — scoped to this exercise. Always visible
               // because the brief is the coordinator's reading material
@@ -401,20 +419,20 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   // inset so the home-indicator strip matches the bar instead
                   // of reading as a dark band below it.
                   applyBottomInset: true,
-                    // The tile row owns the phase/countdown, so the trailing
-                    // cluster collapses to just the stop button here.
-                    showInlineStatus: false,
-                    // We are already inside the player; tapping the bar
-                    // should not try to re-open it.
-                    onOpen: () {},
-                    onPlay: () {
-                      unawaited(HapticFeedback.mediumImpact());
-                      _exerciseService.start(_exercise!);
-                    },
-                    onPickExercise: (picked) => ContextSheet.of(
-                      context,
-                    ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
-                    bodyBuilder: _buildMiniPlayerBody,
+                  // The tile row owns the phase/countdown, so the trailing
+                  // cluster collapses to just the stop button here.
+                  showInlineStatus: false,
+                  // We are already inside the player; tapping the bar
+                  // should not try to re-open it.
+                  onOpen: () {},
+                  onPlay: () {
+                    unawaited(HapticFeedback.mediumImpact());
+                    _exerciseService.start(_exercise!);
+                  },
+                  onPickExercise: (picked) => ContextSheet.of(
+                    context,
+                  ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+                  bodyBuilder: _buildMiniPlayerBody,
                 )
               : _buildExerciseStatus(event),
         );
@@ -695,7 +713,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       markers.add(
         MapMarkerSpec<int>(
           id: station.index,
-          label: station.name,
+          label: substitutePlanVariables(
+            station.name,
+            _overridesFor(_exercise!, station: station),
+          ),
           point: station.position!,
           highlighted: isLive,
           child: Icon(
@@ -1272,7 +1293,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Future<void> _copyExerciseToClipboard(AppLocalizations localizations) async {
     final exercise = _exercise;
     if (exercise == null) return;
-    final text = formatExerciseForShare(exercise, localizations);
+    final text = formatExerciseForShare(
+      exercise,
+      localizations,
+      variables: _overridesFor(exercise),
+    );
     await Clipboard.setData(ClipboardData(text: text));
     // Light haptic so the user knows the gesture or tap registered
     // even when the SnackBar is hidden behind a soft keyboard or a
@@ -1346,7 +1371,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             padding: const EdgeInsets.only(right: 4),
             child: Text(
               localizations.team(1),
-              style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
+              style: TextStyle(
+                fontSize: kDrillAccentFontSize,
+                color: accent.foreground,
+              ),
             ),
           ),
           ...List<Widget>.generate(exercise.schedule.length, (roundIndex) {
@@ -1381,9 +1409,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
           accent: accent,
           leading: badge,
-          title: Text(
+          title: RingDrillText(
             station.name,
-            style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
+            overrides: _overridesFor(exercise, station: station),
+            style: TextStyle(
+              fontSize: kDrillAccentFontSize,
+              color: accent.foreground,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1425,9 +1457,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
           accent: accent,
           leading: badge,
-          title: Text(
+          title: RingDrillText(
             station.name,
-            style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
+            overrides: _overridesFor(exercise, station: station),
+            style: TextStyle(
+              fontSize: kDrillAccentFontSize,
+              color: accent.foreground,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1528,7 +1564,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                child: Text(description),
+                child: RingDrillText(
+                  description,
+                  overrides: _overridesFor(_exercise!, station: station),
+                ),
               ),
             ),
           // Shared panel handles both the "Posisjon ... pin coords"
@@ -1603,7 +1642,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             leading: accent.indicator,
             title: Text(
               teamName,
-              style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
+              style: TextStyle(
+                fontSize: kDrillAccentFontSize,
+                color: accent.foreground,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1629,7 +1671,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   padding: const EdgeInsets.only(right: 4),
                   child: Text(
                     localizations.station(1),
-                    style: TextStyle(fontSize: kDrillAccentFontSize, color: accent.foreground),
+                    style: TextStyle(
+                      fontSize: kDrillAccentFontSize,
+                      color: accent.foreground,
+                    ),
                   ),
                 ),
                 ...List<Widget>.generate(_exercise!.schedule.length, (
@@ -1653,10 +1698,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             // holds across Poster/Øvelser/Markører/Lag/Spill.
             onOpen: () => ContextSheet.of(context).show(
               context,
-              TeamSheetTarget(
-                exerciseUuid: widget.uuid,
-                teamIndex: teamIndex,
-              ),
+              TeamSheetTarget(exerciseUuid: widget.uuid, teamIndex: teamIndex),
             ),
             onToggle: () => _toggleTeam(teamIndex),
             body: _buildTeamDetail(teamIndex, event),

@@ -1,5 +1,6 @@
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 
 /// Formats [t] as a four-digit clock string without a colon ("0930").
 /// Used in rotation blocks and the phase breakdown for share/brief output.
@@ -89,11 +90,22 @@ String rotationPhaseBreakdown(Exercise exercise) =>
 /// Kept as a pure top-level function (no Flutter widget imports) so it
 /// can be unit-tested against a golden string without spinning up a
 /// widget tree.
-String formatExerciseForShare(Exercise exercise, AppLocalizations l10n) {
+///
+/// [variables] resolves `{{var.name}}` tokens (ADR-0046) in the exercise
+/// name and the station names — the caller's `effectivePlanVariables` at
+/// the exercise's scope. Omit where there is no active plan or the
+/// exercise declares no overrides; a station's own override (rather than
+/// the exercise's) is not applied here, since a share-text station list
+/// carries names only, not per-station scope.
+String formatExerciseForShare(
+  Exercise exercise,
+  AppLocalizations l10n, {
+  Map<String, String> variables = const {},
+}) {
   final buf = StringBuffer();
 
   // 1. Header
-  buf.writeln(exercise.name);
+  buf.writeln(substitutePlanVariables(exercise.name, variables));
 
   // 2. Meta line
   final meta = [
@@ -125,7 +137,9 @@ String formatExerciseForShare(Exercise exercise, AppLocalizations l10n) {
   // section title rather than a count.
   buf.writeln(l10n.station(2));
   for (var i = 0; i < exercise.stations.length; i++) {
-    buf.writeln('${i + 1}. ${exercise.stations[i].name}');
+    buf.writeln(
+      '${i + 1}. ${substitutePlanVariables(exercise.stations[i].name, variables)}',
+    );
   }
   buf.writeln();
 

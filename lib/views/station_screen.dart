@@ -9,6 +9,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/phase_headers.dart';
@@ -45,6 +46,17 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   final _exerciseService = ExerciseService();
   final _subscribers = <StreamSubscription>[];
 
+  /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
+  /// optionally narrowed to [station]'s — the active plan's declared
+  /// values overlaid by [exercise]'s overrides, then [station]'s. Empty
+  /// when there is no active plan (defense-in-depth; this screen only
+  /// ever renders inside one).
+  Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
+    final program = _programService.activeProgram;
+    if (program == null) return const {};
+    return effectivePlanVariables(program, exercise: exercise, station: station);
+  }
+
   @override
   void initState() {
     _exercise = _programService.getExercise(widget.uuid)!;
@@ -67,7 +79,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                   showCloseIcon: true,
                   dismissDirection: DismissDirection.endToStart,
                   content: Text(
-                    '${_exercise.name} ${event.isRunning
+                    '${substitutePlanVariables(_exercise.name, _overridesFor(_exercise))} ${event.isRunning
                         ? AppLocalizations.of(context)!.isRunning
                         : event.isPending
                         ? AppLocalizations.of(context)!.isPending
@@ -115,7 +127,12 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,
-        title: SheetTitle(primary: station.name, secondary: _exercise.name),
+        title: SheetTitle(
+          primary: station.name,
+          secondary: _exercise.name,
+          primaryOverrides: _overridesFor(_exercise, station: station),
+          secondaryOverrides: _overridesFor(_exercise),
+        ),
         actions: [
           // Edit Exercise Button
           IconButton(
@@ -123,7 +140,12 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
             padding: const EdgeInsets.all(8.0),
             onPressed: _isStarted ? null : () => _editStation(context),
             tooltip: _isStarted
-                ? localizations.stopExerciseFirst(_exercise.name)
+                ? localizations.stopExerciseFirst(
+                    substitutePlanVariables(
+                      _exercise.name,
+                      _overridesFor(_exercise),
+                    ),
+                  )
                 : localizations.editExercise,
           ),
         ],
@@ -289,7 +311,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                   child: SelectableText(
                     station.description == null
                         ? localizations.noDescription
-                        : station.description!,
+                        : substitutePlanVariables(
+                            station.description!,
+                            _overridesFor(_exercise, station: station),
+                          ),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),

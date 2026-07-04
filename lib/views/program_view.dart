@@ -12,6 +12,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/active_plan_actions.dart' as active_actions;
 import 'package:ringdrill/views/app_routes.dart';
@@ -35,6 +36,7 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/resolved_markdown_text.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
@@ -357,11 +359,19 @@ class _ProgramViewState extends State<ProgramView> {
       );
       if (overlay != null) {
         scrollView = Stack(
-          children: [Positioned.fill(child: scrollView), overlay],
+          children: [
+            Positioned.fill(child: scrollView),
+            overlay,
+          ],
         );
       }
       if (footer == null) return scrollView;
-      return Column(children: [Expanded(child: scrollView), footer]);
+      return Column(
+        children: [
+          Expanded(child: scrollView),
+          footer,
+        ],
+      );
     }
 
     final program = _programService.activeProgram;
@@ -521,7 +531,11 @@ class _SwitcherHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _extent;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return SizedBox.expand(
       child: ColoredBox(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -676,10 +690,14 @@ class _ProgramOverview extends StatelessWidget {
     final description = program?.description.trim() ?? '';
     final briefIntro = program == null
         ? null
-        : _firstParagraphText(_resolveProgramText(program, program.briefIntroMd, l10n));
+        : _firstParagraphText(
+            _resolveProgramText(program, program.briefIntroMd, l10n),
+          );
     final comms = program == null
         ? null
-        : _firstParagraphText(_resolveProgramText(program, program.commsMd, l10n));
+        : _firstParagraphText(
+            _resolveProgramText(program, program.commsMd, l10n),
+          );
     final beforeRound = program == null
         ? null
         : _firstParagraphText(
@@ -707,10 +725,7 @@ class _ProgramOverview extends StatelessWidget {
             onTap: onEdit,
             borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   Icon(
@@ -756,8 +771,7 @@ class _ProgramOverview extends StatelessWidget {
     final briefSections = <({String label, String text})>[
       if (briefIntro != null)
         (label: l10n.briefSectionProgramIntro, text: briefIntro),
-      if (comms != null)
-        (label: l10n.briefSectionProgramComms, text: comms),
+      if (comms != null) (label: l10n.briefSectionProgramComms, text: comms),
       if (beforeRound != null)
         (label: l10n.briefSectionProgramBeforeRound, text: beforeRound),
     ];
@@ -808,7 +822,7 @@ class _ProgramOverview extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (hasDescription)
-                      Text(
+                      RingDrillText(
                         description,
                         style: textTheme.bodyMedium,
                         maxLines: maxLines,
@@ -841,9 +855,7 @@ class _ProgramOverview extends StatelessWidget {
                             minimumSize: const Size(0, 32),
                           ),
                           onPressed: onToggleExpanded,
-                          child: Text(
-                            expanded ? l10n.showLess : l10n.showMore,
-                          ),
+                          child: Text(expanded ? l10n.showLess : l10n.showMore),
                         ),
                       ),
                   ],
@@ -879,7 +891,11 @@ class _ProgramOverview extends StatelessWidget {
   /// plan-scope markdown field is shown outside the full brief — see that
   /// widget's doc comment for why the raw model field must never be read
   /// directly.
-  String? _resolveProgramText(Program program, String? md, AppLocalizations l10n) {
+  String? _resolveProgramText(
+    Program program,
+    String? md,
+    AppLocalizations l10n,
+  ) {
     if (md == null) return null;
     return ResolvedMarkdownText.resolve(program, md, l10n);
   }
@@ -1053,7 +1069,12 @@ class _ExerciseCardState extends State<ExerciseCard> {
       selected: widget.selected,
       leading: leading,
       title: Text(
-        exercise.name,
+        widget.program == null
+            ? exercise.name
+            : substitutePlanVariables(
+                exercise.name,
+                effectivePlanVariables(widget.program!, exercise: exercise),
+              ),
         style: TextStyle(fontWeight: FontWeight.bold, color: accent.foreground),
       ),
       subtitle: Text(subtitleParts.join(' | '), style: accent.textStyle),
@@ -1151,7 +1172,16 @@ class _ExerciseCardState extends State<ExerciseCard> {
           accent: accent,
           leading: leading,
           title: Text(
-            station.name,
+            program == null
+                ? station.name
+                : substitutePlanVariables(
+                    station.name,
+                    effectivePlanVariables(
+                      program,
+                      exercise: exercise,
+                      station: station,
+                    ),
+                  ),
             // ADR-0037 drillAccent: centralised size instead of hardcoded 18.
             style: TextStyle(
               fontSize: kDrillAccentFontSize,
@@ -1279,12 +1309,25 @@ class _ExerciseCardState extends State<ExerciseCard> {
   Widget _buildStationDetail(Exercise exercise, Station station) {
     final description = station.description;
     final theme = Theme.of(context);
+    final program = widget.program;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (description != null && description.trim().isNotEmpty) ...[
-          Text(description, style: theme.textTheme.bodyMedium),
+          Text(
+            program == null
+                ? description
+                : substitutePlanVariables(
+                    description,
+                    effectivePlanVariables(
+                      program,
+                      exercise: exercise,
+                      station: station,
+                    ),
+                  ),
+            style: theme.textTheme.bodyMedium,
+          ),
           const SizedBox(height: 12),
         ],
         StationPositionPanel(
@@ -1529,141 +1572,145 @@ abstract class ProgramPageControllerBase extends ScreenController {
                   top: 8.0,
                   bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
                 ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    if (showSelectAllControls) ...[
-                      const SizedBox(height: 8.0),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              localizations.selectedOfTotal(
-                                selected.length,
-                                exercises.length,
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      if (showSelectAllControls) ...[
+                        const SizedBox(height: 8.0),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                localizations.selectedOfTotal(
+                                  selected.length,
+                                  exercises.length,
+                                ),
+                                style: headerLabelStyle,
                               ),
-                              style: headerLabelStyle,
                             ),
-                          ),
-                          TextButton(
-                            onPressed: selected.length == exercises.length
-                                ? null
-                                : () {
-                                    setState(() {
-                                      selected
-                                        ..clear()
-                                        ..addAll(allUuids);
-                                    });
-                                  },
-                            child: Text(localizations.selectAll),
-                          ),
-                          TextButton(
-                            onPressed: selected.isEmpty
-                                ? null
-                                : () {
-                                    setState(() => selected.clear());
-                                  },
-                            child: Text(localizations.selectNone),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 16.0),
-                    ] else
-                      const SizedBox(height: 16.0),
-                    Expanded(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: exercises.length,
-                        itemBuilder: (context, index) {
-                          final exercise = exercises[index];
-                          final uuid = exercise.uuid;
-                          final markers = exercise.getLocations(false);
-                          return ExerciseCard(
-                            exercise: exercise,
-                            // Reuse the exercises-tab rendering: passing the
-                            // program + 1-based number gives the same #N badge
-                            // and dark-mode card styling. When [program] is
-                            // null (import/add without numbering) no badge is
-                            // shown, same as before.
-                            program: program,
-                            exerciseNumber: program == null ? null : index + 1,
-                            localizations: localizations,
-                            markers: markers,
-                            allowStationActions: false,
-                            expanded: expandedExerciseUuid == uuid,
-                            // House rule (ExpandableTile): a row with an
-                            // expandable body + chevron must supply onOpen.
-                            // The picker has no context sheet to open, so a
-                            // row tap toggles this exercise's selection —
-                            // matching the switch. The chevron still expands
-                            // the map preview.
-                            onOpen: () {
-                              setState(() {
-                                if (selected.contains(uuid)) {
-                                  selected.remove(uuid);
-                                } else {
-                                  selected.add(uuid);
-                                }
-                              });
-                            },
-                            onToggle: () {
-                              setState(() {
-                                expandedExerciseUuid =
-                                    expandedExerciseUuid == uuid ? null : uuid;
-                              });
-                            },
-                            // Selection toggle on the left (leading), before
-                            // the number badge.
-                            selectionControl: Switch.adaptive(
-                              value: selected.contains(uuid),
-                              onChanged: (bool? value) {
+                            TextButton(
+                              onPressed: selected.length == exercises.length
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        selected
+                                          ..clear()
+                                          ..addAll(allUuids);
+                                      });
+                                    },
+                              child: Text(localizations.selectAll),
+                            ),
+                            TextButton(
+                              onPressed: selected.isEmpty
+                                  ? null
+                                  : () {
+                                      setState(() => selected.clear());
+                                    },
+                              child: Text(localizations.selectNone),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 16.0),
+                      ] else
+                        const SizedBox(height: 16.0),
+                      Expanded(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: exercises.length,
+                          itemBuilder: (context, index) {
+                            final exercise = exercises[index];
+                            final uuid = exercise.uuid;
+                            final markers = exercise.getLocations(false);
+                            return ExerciseCard(
+                              exercise: exercise,
+                              // Reuse the exercises-tab rendering: passing the
+                              // program + 1-based number gives the same #N badge
+                              // and dark-mode card styling. When [program] is
+                              // null (import/add without numbering) no badge is
+                              // shown, same as before.
+                              program: program,
+                              exerciseNumber: program == null
+                                  ? null
+                                  : index + 1,
+                              localizations: localizations,
+                              markers: markers,
+                              allowStationActions: false,
+                              expanded: expandedExerciseUuid == uuid,
+                              // House rule (ExpandableTile): a row with an
+                              // expandable body + chevron must supply onOpen.
+                              // The picker has no context sheet to open, so a
+                              // row tap toggles this exercise's selection —
+                              // matching the switch. The chevron still expands
+                              // the map preview.
+                              onOpen: () {
                                 setState(() {
-                                  if (value == true) {
-                                    selected.add(uuid);
-                                  } else {
+                                  if (selected.contains(uuid)) {
                                     selected.remove(uuid);
+                                  } else {
+                                    selected.add(uuid);
                                   }
                                 });
                               },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 20.0),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: headerLabelStyle,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        const SizedBox(width: 12.0),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context, null);
-                          },
-                          child: Text(localizations.cancel),
-                        ),
-                        const SizedBox(width: 8.0),
-                        FilledButton(
-                          onPressed: selected.isEmpty
-                              ? null
-                              : () {
-                                  Navigator.pop(context, selected);
+                              onToggle: () {
+                                setState(() {
+                                  expandedExerciseUuid =
+                                      expandedExerciseUuid == uuid
+                                      ? null
+                                      : uuid;
+                                });
+                              },
+                              // Selection toggle on the left (leading), before
+                              // the number badge.
+                              selectionControl: Switch.adaptive(
+                                value: selected.contains(uuid),
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      selected.add(uuid);
+                                    } else {
+                                      selected.remove(uuid);
+                                    }
+                                  });
                                 },
-                          child: Text(confirmLabel ?? localizations.confirm),
+                              ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8.0),
-                  ],
+                      ),
+                      const SizedBox(height: 20.0),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: headerLabelStyle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          const SizedBox(width: 12.0),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context, null);
+                            },
+                            child: Text(localizations.cancel),
+                          ),
+                          const SizedBox(width: 8.0),
+                          FilledButton(
+                            onPressed: selected.isEmpty
+                                ? null
+                                : () {
+                                    Navigator.pop(context, selected);
+                                  },
+                            child: Text(confirmLabel ?? localizations.confirm),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8.0),
+                    ],
+                  ),
                 ),
-              ),
               ),
             );
           },

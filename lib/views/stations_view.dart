@@ -6,6 +6,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
@@ -56,6 +57,24 @@ class _StationsViewState extends State<StationsView>
   final _mapController = MapController();
   final _programService = ProgramService();
   final _exerciseService = ExerciseService();
+
+  /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
+  /// optionally narrowed to [stationIndex]'s station. Empty when there is
+  /// no active plan.
+  Map<String, String> _overridesFor(Exercise exercise, {int? stationIndex}) {
+    final program = _programService.activeProgram;
+    if (program == null) return const {};
+    final stations = exercise.stations;
+    final station = (stationIndex != null && stationIndex < stations.length)
+        ? stations[stationIndex]
+        : null;
+    return effectivePlanVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    );
+  }
+
   final _mapKey = GlobalKey<_StationsViewState>();
   final _detailTarget = ValueNotifier<ContextSheetTarget?>(null);
   // Context captured from inside MasterDetailScope so that tap handlers
@@ -193,7 +212,15 @@ class _StationsViewState extends State<StationsView>
         ? roleplays.map(
             (rp) => MapMarkerSpec<(String, int)>(
               id: (rp.exerciseUuid, rp.index),
-              label: rp.name,
+              label: () {
+                final exercise = _programService.getExercise(rp.exerciseUuid);
+                return exercise == null
+                    ? rp.name
+                    : substitutePlanVariables(
+                        rp.name,
+                        _overridesFor(exercise, stationIndex: rp.stationIndex),
+                      );
+              }(),
               point: rp.position!,
               child: const RoleMarker(),
               clusterGroup: 'markers',
@@ -499,7 +526,9 @@ class _StationsViewState extends State<StationsView>
                             ),
                             size: 32,
                           ),
-                          title: Text(ex.name),
+                          title: Text(
+                            substitutePlanVariables(ex.name, _overridesFor(ex)),
+                          ),
                           onChanged: (value) {
                             setSheetState(() {
                               if (value) {
@@ -747,9 +776,10 @@ class _StationsViewState extends State<StationsView>
           .where((s) => s.position != null)
           .map((s) => s.position!)
           .toList(growable: false);
+      final exerciseOverrides = _overridesFor(exercise);
       targets.add(
         SearchResult.points(
-          exercise.name,
+          substitutePlanVariables(exercise.name, exerciseOverrides),
           exercisePoints,
           kind: SearchResultKind.exercise,
         ),
@@ -769,7 +799,13 @@ class _StationsViewState extends State<StationsView>
             : const <LatLng>[];
         final exerciseUuid = exercise.uuid;
         final stationIndex = station.index;
-        final label = '${exercise.name} | ${station.name}';
+        final stationOverrides = _overridesFor(
+          exercise,
+          stationIndex: stationIndex,
+        );
+        final label =
+            '${substitutePlanVariables(exercise.name, stationOverrides)} '
+            '| ${substitutePlanVariables(station.name, stationOverrides)}';
         targets.add(
           SearchResult.points(
             label,

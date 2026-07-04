@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 
 /// Shows a passive notice that the auto-stop fired. The persistent
 /// notification from `NotificationService` is what the user actually
@@ -15,6 +16,13 @@ import 'package:ringdrill/services/program_service.dart';
 void showAutoStoppedSnackBar(BuildContext context, ExerciseEvent event) {
   final localizations = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
+  final program = ProgramService().activeProgram;
+  final exerciseName = program == null
+      ? event.exercise.name
+      : substitutePlanVariables(
+          event.exercise.name,
+          effectivePlanVariables(program, exercise: event.exercise),
+        );
   messenger
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -24,9 +32,7 @@ void showAutoStoppedSnackBar(BuildContext context, ExerciseEvent event) {
         // the swipe gesture the notification supports, so the
         // dismissal idiom is consistent.
         dismissDirection: DismissDirection.endToStart,
-        content: Text(
-          localizations.exerciseAutoStoppedSnack(event.exercise.name),
-        ),
+        content: Text(localizations.exerciseAutoStoppedSnack(exerciseName)),
       ),
     );
 }

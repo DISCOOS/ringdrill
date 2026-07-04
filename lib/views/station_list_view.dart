@@ -8,6 +8,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -18,6 +19,7 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
@@ -41,6 +43,18 @@ class _StationListViewState extends State<StationListView> {
   final _programService = ProgramService();
   StreamSubscription? _subscription;
   StreamSubscription<ExerciseEvent>? _exerciseSubscription;
+
+  /// The effective plan-variable map (ADR-0046) at [station]'s scope. Empty
+  /// when there is no active plan.
+  Map<String, String> _overridesFor(Exercise exercise, Station station) {
+    final program = _programService.activeProgram;
+    if (program == null) return const {};
+    return effectivePlanVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    );
+  }
 
   // Identifies the open row by its owning exercise + station, not by the
   // per-exercise rowIndex. rowIndex restarts at 0 for every exercise's first
@@ -217,7 +231,8 @@ class _StationListViewState extends State<StationListView> {
           station.index,
         ));
         final selectedTarget = targetNotifier?.value;
-        final isSelected = selectedTarget is StationSheetTarget &&
+        final isSelected =
+            selectedTarget is StationSheetTarget &&
             selectedTarget.exerciseUuid == exercise.uuid &&
             selectedTarget.stationIndex == station.index;
         // The badge sub-index must restart at the first station of each
@@ -230,8 +245,9 @@ class _StationListViewState extends State<StationListView> {
         final exerciseStart = rows.indexWhere(
           (r) => r.$2.uuid == exercise.uuid,
         );
-        final localIndex =
-            exerciseStart < 0 ? position : position - exerciseStart;
+        final localIndex = exerciseStart < 0
+            ? position
+            : position - exerciseStart;
         return _buildRow(
           context,
           localizations,
@@ -319,9 +335,13 @@ class _StationListViewState extends State<StationListView> {
     if (reordering) {
       return ExpandableTile(
         leading: badge,
-        title: Text(station.name, style: accent.textStyle),
+        title: RingDrillText(
+          station.name,
+          overrides: _overridesFor(exercise, station),
+          style: accent.textStyle,
+        ),
         subtitle: Text(
-          '${localizations.exercise(1)}: ${exercise.name}',
+          '${localizations.exercise(1)}: ${substitutePlanVariables(exercise.name, _overridesFor(exercise, station))}',
           style: accent.textStyle,
         ),
         accent: accent,
@@ -357,9 +377,13 @@ class _StationListViewState extends State<StationListView> {
       child: ExpandableTile(
         onLongPress: () => _openStationForm(exercise, station),
         leading: badge,
-        title: Text(station.name, style: accent.textStyle),
+        title: RingDrillText(
+          station.name,
+          overrides: _overridesFor(exercise, station),
+          style: accent.textStyle,
+        ),
         subtitle: Text(
-          '${localizations.exercise(1)}: ${exercise.name}',
+          '${localizations.exercise(1)}: ${substitutePlanVariables(exercise.name, _overridesFor(exercise, station))}',
           style: accent.textStyle,
         ),
         accent: accent,
@@ -390,7 +414,11 @@ class _StationListViewState extends State<StationListView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (hasDescription) ...[
-          Text(station.description!, style: theme.textTheme.bodyMedium),
+          RingDrillText(
+            station.description!,
+            overrides: _overridesFor(exercise, station),
+            style: theme.textTheme.bodyMedium,
+          ),
           const SizedBox(height: 12),
         ],
         // Shared "Posisjon" label + pin/coords row + tappable mini-map
@@ -478,8 +506,9 @@ class StationFilterBanner extends StatelessWidget {
     return ValueListenableBuilder<String?>(
       valueListenable: controller.filterExerciseUuid,
       builder: (context, uuid, _) {
-        final exercise =
-            uuid == null ? null : ProgramService().getExercise(uuid);
+        final exercise = uuid == null
+            ? null
+            : ProgramService().getExercise(uuid);
         if (exercise == null) return const SizedBox.shrink();
         final localizations = AppLocalizations.of(context)!;
         final theme = Theme.of(context);
@@ -499,7 +528,17 @@ class StationFilterBanner extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      localizations.showingStationsIn(exercise.name),
+                      localizations.showingStationsIn(
+                        substitutePlanVariables(
+                          exercise.name,
+                          ProgramService().activeProgram == null
+                              ? const {}
+                              : effectivePlanVariables(
+                                  ProgramService().activeProgram!,
+                                  exercise: exercise,
+                                ),
+                        ),
+                      ),
                       style: TextStyle(
                         color: theme.colorScheme.onSecondaryContainer,
                       ),

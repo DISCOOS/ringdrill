@@ -3,14 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 
@@ -51,6 +55,22 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     });
   }
 
+  /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
+  /// optionally narrowed to [station]'s. Empty when there is no active
+  /// plan.
+  Map<String, String> _effectiveVariables(
+    Exercise? exercise, {
+    Station? station,
+  }) {
+    final program = _programService.activeProgram;
+    if (program == null) return const {};
+    return effectivePlanVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -70,6 +90,19 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     }
 
     final exercise = _programService.getExercise(rolePlay.exerciseUuid);
+    // RolePlay resolves at its station scope (ADR-0046, DESIGN-008
+    // follow-up 07): the station it's assigned to, or just the exercise
+    // when unassigned/out of range.
+    final stations = exercise?.stations;
+    final stationIndex = rolePlay.stationIndex;
+    final station =
+        (stations != null &&
+            stationIndex != null &&
+            stationIndex >= 0 &&
+            stationIndex < stations.length)
+        ? stations[stationIndex]
+        : null;
+    final roleOverrides = _effectiveVariables(exercise, station: station);
 
     return Scaffold(
       appBar: AppBar(
@@ -85,7 +118,11 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
           tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,
-        title: SheetTitle(primary: rolePlay.name, secondary: exercise?.name),
+        title: SheetTitle(
+          primary: rolePlay.name,
+          secondary: exercise?.name,
+          secondaryOverrides: _effectiveVariables(exercise),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -149,6 +186,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                           _FieldBlock(
                             label: localizations.roleSignalement,
                             text: rolePlay.signalement!,
+                            overrides: roleOverrides,
                           ),
                           const SizedBox(height: 8),
                         ],
@@ -156,6 +194,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                           _FieldBlock(
                             label: localizations.roleBackground,
                             text: rolePlay.background!,
+                            overrides: roleOverrides,
                           ),
                           const SizedBox(height: 8),
                         ],
@@ -163,6 +202,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                           _FieldBlock(
                             label: localizations.roleBehavior,
                             text: rolePlay.behavior!,
+                            overrides: roleOverrides,
                           ),
                       ],
                     ),
@@ -179,6 +219,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                     stationIndex: rolePlay.stationIndex,
                     exercise: exercise,
                     noStation: localizations.noStationAssigned,
+                    overrides: roleOverrides,
                   ),
                 ),
               ),
@@ -193,7 +234,10 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                     padding: const EdgeInsets.all(16),
                     child: RolePositionPanel(
                       position: rolePlay.position!,
-                      label: rolePlay.name,
+                      label: substitutePlanVariables(
+                        rolePlay.name,
+                        roleOverrides,
+                      ),
                     ),
                   ),
                 ),
@@ -228,10 +272,15 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
 }
 
 class _FieldBlock extends StatelessWidget {
-  const _FieldBlock({required this.label, required this.text});
+  const _FieldBlock({
+    required this.label,
+    required this.text,
+    this.overrides = const {},
+  });
 
   final String label;
   final String text;
+  final Map<String, String> overrides;
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +294,7 @@ class _FieldBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(text),
+        RingDrillText(text, overrides: overrides),
       ],
     );
   }
@@ -256,11 +305,13 @@ class _StationRow extends StatelessWidget {
     required this.stationIndex,
     required this.noStation,
     this.exercise,
+    this.overrides = const {},
   });
 
   final int? stationIndex;
   final dynamic exercise;
   final String noStation;
+  final Map<String, String> overrides;
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +338,10 @@ class _StationRow extends StatelessWidget {
         children: [
           const Icon(Icons.place, size: 18),
           const SizedBox(width: 8),
-          Text('Post: ${station.name}'),
+          RingDrillText(
+            'Post: ${station.name as String}',
+            overrides: overrides,
+          ),
         ],
       ),
     );

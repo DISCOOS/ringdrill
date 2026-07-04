@@ -7,6 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/phase_headers.dart';
@@ -43,6 +44,14 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     super.initState();
   }
 
+  /// The effective plan-variable map (ADR-0046) at [widget.exercise]'s
+  /// scope. Empty when there is no active plan.
+  Map<String, String> get _exerciseOverrides {
+    final program = _programService.activeProgram;
+    if (program == null) return const {};
+    return effectivePlanVariables(program, exercise: widget.exercise);
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -63,14 +72,23 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
           tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,
-        title: SheetTitle(primary: teamLabel, secondary: widget.exercise.name),
+        title: SheetTitle(
+          primary: teamLabel,
+          secondary: widget.exercise.name,
+          secondaryOverrides: _exerciseOverrides,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             padding: const EdgeInsets.all(8),
             onPressed: _exerciseService.isStarted ? null : _editTeam,
             tooltip: _exerciseService.isStarted
-                ? localizations.stopExerciseFirst(widget.exercise.name)
+                ? localizations.stopExerciseFirst(
+                    substitutePlanVariables(
+                      widget.exercise.name,
+                      _exerciseOverrides,
+                    ),
+                  )
                 : localizations.editTeam,
           ),
         ],
@@ -162,22 +180,29 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   }
 
   ListView _buildStationList(ExerciseEvent event) {
+    final program = _programService.activeProgram;
     return ListView.builder(
       itemCount: widget.exercise.schedule.length,
       itemBuilder: (context, index) {
+        final station = widget
+            .exercise
+            .stations[widget.exercise.stationIndex(widget.teamIndex, index)];
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: GestureDetector(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: PhaseTile(
-                title: widget
-                    .exercise
-                    .stations[widget.exercise.stationIndex(
-                      widget.teamIndex,
-                      index,
-                    )]
-                    .name,
+                title: program == null
+                    ? station.name
+                    : substitutePlanVariables(
+                        station.name,
+                        effectivePlanVariables(
+                          program,
+                          exercise: widget.exercise,
+                          station: station,
+                        ),
+                      ),
                 event: event,
                 roundIndex: index,
                 exercise: widget.exercise,

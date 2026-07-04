@@ -3,10 +3,20 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+
+/// The effective plan-variable map (ADR-0046) at [station]'s scope: the
+/// active plan's declared values overlaid by [exercise]'s overrides, then
+/// [station]'s. Empty when there is no active plan.
+Map<String, String> _stationOverrides(Exercise exercise, Station station) {
+  final program = ProgramService().activeProgram;
+  if (program == null) return const {};
+  return effectivePlanVariables(program, exercise: exercise, station: station);
+}
 
 /// Static preview of a single station's position. Tapping the preview
 /// opens a modal bottom sheet with the interactive variant centred on
@@ -55,7 +65,10 @@ class StationMiniMap extends StatelessWidget {
               markers: [
                 MapMarkerSpec(
                   id: 0,
-                  label: station.name,
+                  label: substitutePlanVariables(
+                    station.name,
+                    _stationOverrides(exercise, station),
+                  ),
                   point: position,
                   child: const Icon(Icons.place, color: Colors.green, size: 32),
                 ),
@@ -105,7 +118,10 @@ Future<void> openStationMapSheet(
                 markers: [
                   MapMarkerSpec(
                     id: 0,
-                    label: station.name,
+                    label: substitutePlanVariables(
+                      station.name,
+                      _stationOverrides(exercise, station),
+                    ),
                     point: position,
                     child: const Icon(
                       Icons.place,
@@ -171,7 +187,14 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
           child: StationNumberBadge(label: label, hasRoles: hasRoles),
         ),
       ),
-      title: SheetTitle(primary: station.name, secondary: exercise.name),
+      title: SheetTitle(
+        primary: station.name,
+        secondary: exercise.name,
+        primaryOverrides: _stationOverrides(exercise, station),
+        secondaryOverrides: program == null
+            ? const {}
+            : effectivePlanVariables(program, exercise: exercise),
+      ),
     );
   }
 }

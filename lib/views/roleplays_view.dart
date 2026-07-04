@@ -9,6 +9,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
@@ -19,6 +20,7 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
@@ -46,6 +48,25 @@ class _RolePlaysViewState extends State<RolePlaysView> {
   StreamSubscription? _subscription;
 
   int? _expandedRowIndex;
+
+  /// The effective plan-variable map (ADR-0046) at [rolePlay]'s station
+  /// scope (DESIGN-008 follow-up 07): the active plan's declared values
+  /// overlaid by [exercise]'s overrides, then the assigned station's, if
+  /// any. Empty when there is no active plan.
+  Map<String, String> _overridesFor(Exercise exercise, RolePlay rolePlay) {
+    final program = _service.activeProgram;
+    if (program == null) return const {};
+    final stationIndex = rolePlay.stationIndex;
+    final stations = exercise.stations;
+    final station = (stationIndex != null && stationIndex < stations.length)
+        ? stations[stationIndex]
+        : null;
+    return effectivePlanVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    );
+  }
 
   RolePlaysController get _controller => widget.controller;
 
@@ -92,10 +113,9 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       final exercise = exercises[i];
       if (filterUuid != null && exercise.uuid != filterUuid) continue;
       final exerciseNumber = i + 1;
-      final roles = rolePlays
-          .where((rp) => rp.exerciseUuid == exercise.uuid)
-          .toList()
-        ..sort((a, b) => a.index.compareTo(b.index));
+      final roles =
+          rolePlays.where((rp) => rp.exerciseUuid == exercise.uuid).toList()
+            ..sort((a, b) => a.index.compareTo(b.index));
       for (final rp in roles) {
         rows.add((exerciseNumber, exercise, rp));
       }
@@ -159,7 +179,8 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           itemCount: rows.length,
           itemBuilder: (context, index) {
             final (exerciseNumber, exercise, rolePlay) = rows[index];
-            final isSelected = selectedTarget is RoleSheetTarget &&
+            final isSelected =
+                selectedTarget is RoleSheetTarget &&
                 selectedTarget.rolePlayUuid == rolePlay.uuid;
             return _buildRow(
               context,
@@ -187,7 +208,8 @@ class _RolePlaysViewState extends State<RolePlaysView> {
   /// 1-based number at that station (e.g. `1.1-1`, `1a-2`). When no post is
   /// assigned yet (legacy data) the post/markør parts show as `?`.
   String _roleBadgeLabel(RolePlay rolePlay, int exerciseNumber) {
-    final format = _service.activeProgram?.stationNumberFormat ??
+    final format =
+        _service.activeProgram?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final stationIndex = rolePlay.stationIndex;
     if (stationIndex == null) {
@@ -248,13 +270,14 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           label: _roleBadgeLabel(rolePlay, exerciseNumber),
           highlight: actor != null,
         ),
-        title: Text(
+        title: RingDrillText(
           () {
             final tb = StringBuffer(rolePlay.name);
             if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
             if (actor != null) tb.write(' (${actor.realName})');
             return tb.toString();
           }(),
+          overrides: _overridesFor(exercise, rolePlay),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -262,9 +285,17 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           (rolePlay.stationIndex != null &&
                   rolePlay.stationIndex! < exercise.stations.length)
               ? localizations.roleSubtitleStation(
-                  exercise.stations[rolePlay.stationIndex!].name,
+                  substitutePlanVariables(
+                    exercise.stations[rolePlay.stationIndex!].name,
+                    _overridesFor(exercise, rolePlay),
+                  ),
                 )
-              : localizations.roleSubtitleExercise(exercise.name),
+              : localizations.roleSubtitleExercise(
+                  substitutePlanVariables(
+                    exercise.name,
+                    _overridesFor(exercise, rolePlay),
+                  ),
+                ),
         ),
         trailing: _buildCastChip(context, localizations, rolePlay, actor),
         expanded: expanded,
@@ -322,6 +353,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           _ExpandedFieldBlock(
             label: localizations.roleSignalement,
             text: rolePlay.signalement!,
+            overrides: _overridesFor(exercise, rolePlay),
           ),
           const SizedBox(height: 8),
         ],
@@ -329,6 +361,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           _ExpandedFieldBlock(
             label: localizations.roleBackground,
             text: rolePlay.background!,
+            overrides: _overridesFor(exercise, rolePlay),
           ),
           const SizedBox(height: 8),
         ],
@@ -336,6 +369,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           _ExpandedFieldBlock(
             label: localizations.roleBehavior,
             text: rolePlay.behavior!,
+            overrides: _overridesFor(exercise, rolePlay),
           ),
           const SizedBox(height: 8),
         ],
@@ -346,7 +380,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           RolePositionPanel(
             key: ValueKey('role-map-${rolePlay.uuid}'),
             position: rolePlay.position!,
-            label: rolePlay.name,
+            label: substitutePlanVariables(
+              rolePlay.name,
+              _overridesFor(exercise, rolePlay),
+            ),
             mapHeight: 140,
           ),
         ],
@@ -465,9 +502,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     );
     if (result == null || !mounted) return;
     final updated = switch (result) {
-      CastPickerSelect(:final actorUuid) => actorUuid == rolePlay.actorUuid
-          ? null
-          : rolePlay.copyWith(actorUuid: actorUuid),
+      CastPickerSelect(:final actorUuid) =>
+        actorUuid == rolePlay.actorUuid
+            ? null
+            : rolePlay.copyWith(actorUuid: actorUuid),
       CastPickerClear() =>
         rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
     };
@@ -497,8 +535,8 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         await _service.saveActor(localizations, actor);
       case ActorFormDelete(:final actor):
         final roles = _service.loadRolePlays().where(
-              (rolePlay) => rolePlay.actorUuid == actor.uuid,
-            );
+          (rolePlay) => rolePlay.actorUuid == actor.uuid,
+        );
         if (roles.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -533,8 +571,9 @@ class RolePlaysFilterBanner extends StatelessWidget {
     return ValueListenableBuilder<String?>(
       valueListenable: controller.filterExerciseUuid,
       builder: (context, uuid, _) {
-        final exercise =
-            uuid == null ? null : ProgramService().getExercise(uuid);
+        final exercise = uuid == null
+            ? null
+            : ProgramService().getExercise(uuid);
         if (exercise == null) return const SizedBox.shrink();
         final localizations = AppLocalizations.of(context)!;
         final theme = Theme.of(context);
@@ -554,7 +593,17 @@ class RolePlaysFilterBanner extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      localizations.showingRolesIn(exercise.name),
+                      localizations.showingRolesIn(
+                        ProgramService().activeProgram == null
+                            ? exercise.name
+                            : substitutePlanVariables(
+                                exercise.name,
+                                effectivePlanVariables(
+                                  ProgramService().activeProgram!,
+                                  exercise: exercise,
+                                ),
+                              ),
+                      ),
                       style: TextStyle(
                         color: theme.colorScheme.onSecondaryContainer,
                       ),
@@ -617,10 +666,15 @@ class RolePlaysCreateFab extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ExpandedFieldBlock extends StatelessWidget {
-  const _ExpandedFieldBlock({required this.label, required this.text});
+  const _ExpandedFieldBlock({
+    required this.label,
+    required this.text,
+    this.overrides = const {},
+  });
 
   final String label;
   final String text;
+  final Map<String, String> overrides;
 
   @override
   Widget build(BuildContext context) {
@@ -631,11 +685,11 @@ class _ExpandedFieldBlock extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 2),
-        Text(text),
+        RingDrillText(text, overrides: overrides),
       ],
     );
   }
@@ -717,7 +771,7 @@ class RolePlaysController extends ScreenController {
   ) {
     final exerciseFormat =
         ProgramService().activeProgram?.exerciseNumberFormat ??
-            ExerciseNumberFormat.hash;
+        ExerciseNumberFormat.hash;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,6 +3,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
@@ -68,11 +69,14 @@ class _ExercisePickerBody extends StatelessWidget {
                   highlight: isCurrent,
                 ),
                 title: Text(
-                  exercise.name,
+                  program == null
+                      ? exercise.name
+                      : substitutePlanVariables(
+                          exercise.name,
+                          effectivePlanVariables(program, exercise: exercise),
+                        ),
                   style: TextStyle(
-                    fontWeight: isCurrent
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 subtitle: Text('${st.formal()} – ${et.formal()}'),

@@ -4,6 +4,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/theme.dart'
     show kDrillAccentFontSize, RingDrillColors;
 import 'package:ringdrill/views/phase_headers.dart';
@@ -192,7 +193,15 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
       accent: accent,
       leading: accent.indicator,
       title: Text(
-        exercise.name,
+        () {
+          final program = ProgramService().activeProgram;
+          return program == null
+              ? exercise.name
+              : substitutePlanVariables(
+                  exercise.name,
+                  effectivePlanVariables(program, exercise: exercise),
+                );
+        }(),
         // ADR-0037 drillAccent: match the player's accent tiles instead of 18.
         style: TextStyle(
           fontSize: kDrillAccentFontSize,
