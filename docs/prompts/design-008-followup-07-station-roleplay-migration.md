@@ -2,6 +2,10 @@
 
 You are working in the RingDrill repository. Follow-up to DESIGN-008, the second of two editor-migration prompts. Read [ADR-0046](../adrs/0046-plan-variables.md), `docs/design/008-plan-variables-and-section-navigated-editor.md`, and follow-up 06 (`docs/prompts/design-008-followup-06-exercise-migration-override-table.md`) first. Follow-up 06 migrated `ExerciseFormScreen` onto the shell, added `VariableOverridesSection` and the shared `effectivePlanVariables` helper. This prompt migrates the remaining two editors on the same pattern.
 
+## Superseding note — no feature flag
+
+The `RINGDRILL_PLAN_VARIABLES` flag is removed in follow-up 08 (run before the migrations). Ignore all flag-gating below: do **not** branch on `AppFlags.planVariables` and do **not** keep legacy bodies. Render the section-navigated forms **unconditionally** and delete the old `StationFormScreen` / `RolePlayFormScreen` bodies. `PlanScope` is always provided. Everything else stands.
+
 ## What each editor gets
 
 * **`StationFormScreen`** — the same treatment as Exercise: section-navigated behind the flag; base **Post** section (name, position, and today's station fields); a **Variabler** override section (`VariableOverridesSection`, no creation) writing to `station.variableOverrides`; and one token-aware `RingDrillTextArea` section per active markdown field (`equipmentMd`, `situationMd`, `missionMd`, `logisticsMd`, `criticalQuestionsMd`, `leaderAnswersMd`, `directorNotesMd`). The station's inherited baseline for the override table and the token fields' effective values are computed at **station scope**: `effectivePlanVariables(program, exercise: parentExercise)` for the inherited baseline (program overlaid by the enclosing exercise), and the working station overrides on top for the fields.

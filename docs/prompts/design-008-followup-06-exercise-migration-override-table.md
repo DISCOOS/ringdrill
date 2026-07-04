@@ -2,7 +2,11 @@
 
 You are working in the RingDrill repository. Follow-up to DESIGN-008. Read [ADR-0046](../adrs/0046-plan-variables.md) and `docs/design/008-plan-variables-and-section-navigated-editor.md` first. Stages 1–5 and follow-ups 01–05 shipped: the model carries `variableOverrides` on `Exercise`/`Station`, `BriefRenderer` resolves variables (including in names/descriptions), and the flag-on **Program** editor is section-navigated with `PlanScope`, `RingDrillTextArea` (token-aware) and a `VariablesSection` (declaration).
 
-This is the first of two editor-migration prompts. It migrates **`ExerciseFormScreen`** onto the section-navigated shell behind the flag, introduces the reusable **override table** (a `VariableOverridesSection`), and adds a shared **effective-variables** helper. Follow-up 07 then does Station (reusing the override table) and RolePlay.
+This is the first of two editor-migration prompts. It migrates **`ExerciseFormScreen`** onto the section-navigated shell, introduces the reusable **override table** (a `VariableOverridesSection`), and adds a shared **effective-variables** helper. Follow-up 07 then does Station (reusing the override table) and RolePlay.
+
+## Superseding note — no feature flag
+
+The `RINGDRILL_PLAN_VARIABLES` flag is removed in follow-up 08, which runs **before** this prompt. Ignore every flag-gating instruction below: do **not** branch on `AppFlags.planVariables` and do **not** keep a legacy body. Wherever this prompt says "flag off = legacy / flag on = section-navigated", render the section-navigated form **unconditionally** and delete the old `ExerciseFormScreen` body. `PlanScope` is always provided. Everything else in the prompt stands.
 
 ## Settled scope (from the design dialogue)
 
