@@ -93,8 +93,12 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             onPressed: () async {
               final updated = await openFormSurface<RolePlay>(
                 context,
-                builder: (_) =>
-                    RolePlayFormScreen(rolePlay: rolePlay, exercise: exercise),
+                builder: (_) => RolePlayFormScreen(
+                  rolePlay: rolePlay,
+                  exercise: exercise,
+                  variables:
+                      _programService.activeProgram?.variables ?? const [],
+                ),
               );
               if (updated != null) {
                 await _programService.saveRolePlay(localizations, updated);

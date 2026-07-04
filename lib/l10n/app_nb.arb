@@ -692,6 +692,10 @@
   "@editRolePlayTitle": {
     "description": "AppBar-tittel i RolePlayFormScreen ved redigering av eksisterende rolle."
   },
+  "roleplaySectionRole": "Rolle",
+  "@roleplaySectionRole": {
+    "description": "DESIGN-008 standardseksjon-etikett for RolePlayFormScreens seksjonsnavigerte redigering (RINGDRILL_PLAN_VARIABLES). Inneholder RolePlays korte strukturfelt (navn, alder, signalement, post, posisjon)."
+  },
   "stationRolesSection": "Markører",
   "@stationRolesSection": {
     "description": "Seksjonstittel for markørordrelisten i StationExerciseScreen."

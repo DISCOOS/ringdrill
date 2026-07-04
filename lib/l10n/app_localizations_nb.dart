@@ -1652,6 +1652,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get editRolePlayTitle => 'Rediger markørordre';
 
   @override
+  String get roleplaySectionRole => 'Rolle';
+
+  @override
   String get stationRolesSection => 'Markører';
 
   @override

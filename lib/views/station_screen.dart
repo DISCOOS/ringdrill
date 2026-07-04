@@ -583,7 +583,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         final localizations = AppLocalizations.of(context)!;
         final updated = await openFormSurface<RolePlay>(
           context,
-          builder: (_) => RolePlayFormScreen(rolePlay: r, exercise: _exercise),
+          builder: (_) => RolePlayFormScreen(
+            rolePlay: r,
+            exercise: _exercise,
+            variables: _programService.activeProgram?.variables ?? const [],
+          ),
         );
         if (updated != null) {
           await _programService.saveRolePlay(localizations, updated);
@@ -659,7 +663,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     );
     final saved = await openFormSurface<RolePlay>(
       context,
-      builder: (_) => RolePlayFormScreen(rolePlay: draft, exercise: _exercise),
+      builder: (_) => RolePlayFormScreen(
+        rolePlay: draft,
+        exercise: _exercise,
+        variables: _programService.activeProgram?.variables ?? const [],
+      ),
     );
     if (saved != null) {
       await _programService.saveRolePlay(localizations, saved);

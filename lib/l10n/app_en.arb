@@ -1558,6 +1558,10 @@
   "@editRolePlayTitle": {
     "description": "AppBar title in RolePlayFormScreen when editing an existing role (unused fallback — title shows role name)."
   },
+  "roleplaySectionRole": "Role",
+  "@roleplaySectionRole": {
+    "description": "DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor (RINGDRILL_PLAN_VARIABLES). Carries RolePlay's short structural fields (name, age, signalement, station, position)."
+  },
   "stationRolesSection": "Roles",
   "@stationRolesSection": {
     "description": "Section header for the Markørordre list inside StationExerciseScreen."

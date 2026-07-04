@@ -1655,6 +1655,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editRolePlayTitle => 'Edit role';
 
   @override
+  String get roleplaySectionRole => 'Role';
+
+  @override
   String get stationRolesSection => 'Roles';
 
   @override

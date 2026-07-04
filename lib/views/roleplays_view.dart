@@ -446,8 +446,11 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     }
     final updated = await openFormSurface<RolePlay>(
       context,
-      builder: (_) =>
-          RolePlayFormScreen(rolePlay: rolePlay, exercise: exercise),
+      builder: (_) => RolePlayFormScreen(
+        rolePlay: rolePlay,
+        exercise: exercise,
+        variables: _service.activeProgram?.variables ?? const [],
+      ),
     );
     if (updated == null || !mounted) return;
     await _service.saveRolePlay(localizations, updated);
@@ -697,7 +700,11 @@ class RolePlaysController extends ScreenController {
 
     final saved = await openFormSurface<RolePlay>(
       context,
-      builder: (_) => RolePlayFormScreen(rolePlay: draft, exercise: exercise),
+      builder: (_) => RolePlayFormScreen(
+        rolePlay: draft,
+        exercise: exercise,
+        variables: service.activeProgram?.variables ?? const [],
+      ),
     );
     if (saved == null || !context.mounted) return;
     await service.saveRolePlay(localizations, saved);
