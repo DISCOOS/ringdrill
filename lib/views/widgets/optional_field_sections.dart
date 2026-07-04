@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/views/widgets/markdown_section_field.dart';
 
 /// Describes one optional, addable text section in an entity form.
 ///
@@ -57,20 +58,13 @@ class OptionalFieldSections<T> extends StatelessWidget {
       children: [
         for (final section in sections)
           if (activeIds.contains(section.id)) ...[
-            TextFormField(
-              focusNode: section.focusNode,
+            MarkdownSectionField(
               controller: section.controller,
-              keyboardType: TextInputType.multiline,
+              focusNode: section.focusNode,
+              label: section.label,
               minLines: minLines,
               maxLines: maxLines,
-              decoration: InputDecoration(
-                labelText: section.label,
-                alignLabelWithHint: true,
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => onRemove(section.id),
-                ),
-              ),
+              onRemove: () => onRemove(section.id),
             ),
             SizedBox(height: spacing),
           ],
