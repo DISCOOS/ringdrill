@@ -56,18 +56,18 @@ _Trigger? _detectTrigger(String text, int caret) {
   return null;
 }
 
-/// Wraps a token-aware field with the DESIGN-008 `/`/`{{` insertion menu:
-/// an [OverlayEntry] anchored just below the field (via
-/// [CompositedTransformTarget]/[CompositedTransformFollower], per the "no
-/// `position: fixed` hacks" ground rule), shown while the caret sits right
-/// after an unclosed `{{` or a `/` command, and dismissed on Escape, on a
-/// tap outside, or once the caret moves away from the trigger.
+/// Wraps a token-aware field with the DESIGN-008 `/`/`{{` insertion menu: an
+/// [OverlayEntry] anchored at the caret (via [RenderEditable] found through
+/// [FocusNode.context], not a `position: fixed` hack), shown while the
+/// caret sits right after an unclosed `{{` or a `/` command, and dismissed
+/// on Escape, on a tap outside, or once the caret moves away from the
+/// trigger.
 ///
-/// This does not track the exact caret pixel inside a (possibly multi-line)
-/// field — it anchors at the field's own bounding box, a deliberate
-/// simplification given the cost of reaching into `RenderEditable` through
-/// an opaque child. The menu still opens/closes/filters/inserts correctly;
-/// only its exact on-screen position is approximate.
+/// A markdown section body fills the whole screen ([MarkdownSectionField]'s
+/// `expands: true`), so anchoring at the *field's* bounding box (an earlier
+/// version of this widget did, via [CompositedTransformFollower]) puts the
+/// menu at the bottom of the screen for a caret near the top of a long
+/// field — anchoring at the caret itself is not optional here.
 class TokenInsertionMenu extends StatefulWidget {
   const TokenInsertionMenu({
     super.key,
@@ -96,9 +96,13 @@ class TokenInsertionMenu extends StatefulWidget {
 /// Public (not the usual `_State` convention) so a widget test can inspect
 /// [isMenuOpen] via `tester.state<TokenInsertionMenuState>(...)`.
 class TokenInsertionMenuState extends State<TokenInsertionMenu> {
-  final _link = LayerLink();
+  static const _menuWidth = 280.0;
+  static const _menuMaxHeight = 240.0;
+  static const _gap = 4.0;
+
   OverlayEntry? _entry;
   _Trigger? _trigger;
+  Rect? _caretRect;
 
   @visibleForTesting
   bool get isMenuOpen => _entry != null;
@@ -140,11 +144,51 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       return;
     }
     _trigger = trigger;
+    // The controller notifies listeners synchronously as soon as its value
+    // changes, before EditableText's own listener (registered later, since
+    // this widget wraps it) has relaid-out RenderEditable for that change —
+    // reading the caret rect right now would be one keystroke stale. Defer
+    // to a post-frame callback, once layout has caught up.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshMenuPosition());
+  }
+
+  void _refreshMenuPosition() {
+    if (!mounted || _trigger == null) return;
+    final rect = _caretGlobalRect();
+    if (rect == null) {
+      _hideMenu();
+      return;
+    }
+    _caretRect = rect;
     if (_entry == null) {
       _showMenu();
     } else {
       _entry!.markNeedsBuild();
     }
+  }
+
+  /// Finds the wrapped field's [RenderEditable] through its own
+  /// [FocusNode]: [FocusNode.context] is the `Focus` widget `EditableText`
+  /// builds around itself, which is a descendant of [EditableTextState] —
+  /// reachable by an ancestor search from there, even though
+  /// [TokenInsertionMenu]'s own `context` is on the *other* side (an
+  /// ancestor of the field, not a descendant of it).
+  Rect? _caretGlobalRect() {
+    final focusContext = widget.focusNode.context;
+    final editableState = focusContext
+        ?.findAncestorStateOfType<EditableTextState>();
+    final renderEditable = editableState?.renderEditable;
+    if (renderEditable == null || !renderEditable.attached) return null;
+    final selection = widget.controller.selection;
+    if (!selection.isValid) return null;
+
+    final local = renderEditable.getLocalRectForCaret(
+      TextPosition(offset: selection.baseOffset),
+    );
+    return Rect.fromPoints(
+      renderEditable.localToGlobal(local.topLeft),
+      renderEditable.localToGlobal(local.bottomLeft),
+    );
   }
 
   void _showMenu() {
@@ -158,6 +202,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     _entry!.remove();
     _entry = null;
     _trigger = null;
+    _caretRect = null;
   }
 
   List<TokenMenuEntry> _filteredEntries(String filter) {
@@ -204,6 +249,25 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   Widget _buildOverlay(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final entries = _filteredEntries(_trigger?.filter ?? '');
+    final screenSize = MediaQuery.sizeOf(context);
+    final caretRect = _caretRect ?? Rect.zero;
+    final estimatedHeight = entries.isEmpty ? 48.0 : _menuMaxHeight;
+
+    var left = caretRect.left;
+    if (left + _menuWidth > screenSize.width) {
+      left = screenSize.width - _menuWidth;
+    }
+    left = left.clamp(0.0, screenSize.width);
+
+    // Prefer just below the caret line; flip above it if there is not
+    // enough room below (e.g. typing on the last visible line of a
+    // full-screen markdown section).
+    var top = caretRect.bottom + _gap;
+    if (top + estimatedHeight > screenSize.height) {
+      top = caretRect.top - estimatedHeight - _gap;
+    }
+    top = top.clamp(0.0, screenSize.height);
+
     return Stack(
       children: [
         Positioned.fill(
@@ -212,12 +276,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
             onTap: _hideMenu,
           ),
         ),
-        CompositedTransformFollower(
-          link: _link,
-          showWhenUnlinked: false,
-          targetAnchor: Alignment.bottomLeft,
-          followerAnchor: Alignment.topLeft,
-          offset: const Offset(0, 4),
+        Positioned(
+          left: left,
+          top: top,
+          width: _menuWidth,
           child: _TokenMenuCard(
             entries: entries,
             emptyLabel: l10n.tokenMenuEmpty,
@@ -240,7 +302,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         }
         return KeyEventResult.ignored;
       },
-      child: CompositedTransformTarget(link: _link, child: widget.child),
+      child: widget.child,
     );
   }
 }

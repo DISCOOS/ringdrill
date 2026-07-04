@@ -101,6 +101,11 @@ void main() {
 
       await tester.tap(find.byType(TextField));
       await tester.enterText(find.byType(TextField), '/');
+      // The menu opens via a post-frame callback (caret position is only
+      // read once RenderEditable has relaid out for the new text), and
+      // inserting the OverlayEntry schedules its first real build for the
+      // next frame after that — two pumps, not one.
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('frekvens'), findsOneWidget);
