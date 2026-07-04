@@ -4,14 +4,12 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/utils/app_flags.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
-import 'package:ringdrill/views/widgets/optional_field_sections.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -34,7 +32,6 @@ class ExerciseFormScreen extends StatefulWidget {
     this.exercise,
     this.numberOfTeams,
     this.variables = const <DrillVariable>[],
-    @visibleForTesting this.debugPlanVariablesOverride,
   });
 
   final Exercise? exercise;
@@ -44,17 +41,8 @@ class ExerciseFormScreen extends StatefulWidget {
   /// edits an `Exercise`, not the `Program`, so it cannot create, rename,
   /// delete or default-edit them (DESIGN-008 follow-up 06's settled scope).
   /// The caller opens this form from a program context that has the active
-  /// `Program`; every call site passes `program.variables`. Only consulted
-  /// in the flag-on section-navigated body.
+  /// `Program`; every call site passes `program.variables`.
   final List<DrillVariable> variables;
-
-  /// Overrides [AppFlags.planVariables] for a test. `bool.fromEnvironment`
-  /// is a compile-time const, so a widget test cannot flip it at runtime —
-  /// this lets a test render the flag-on section-navigated body without a
-  /// `--dart-define`. Production code never sets this; the real flag is
-  /// read when it is null.
-  @visibleForTesting
-  final bool? debugPlanVariablesOverride;
 
   @override
   State<ExerciseFormScreen> createState() => _ExerciseFormScreenState();
@@ -98,32 +86,19 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   bool _stationsTracksTeams = true;
   bool _legacyOversizedCounters = false;
 
-  /// A [TokenTextEditingController] in the flag-on path, so
-  /// `RingDrillTextArea(tokenAware: true)` can drive its chips from
-  /// [PlanScope]; a plain controller in the legacy path. `_planVariablesOn`
-  /// is constant for the screen's lifetime, so exactly one of
-  /// `_buildSectionNavigated`/`_buildLegacy` ever actually renders these
-  /// (same reasoning as `ProgramFormScreen`'s markdown controllers).
-  late final Map<_ExerciseSection, TextEditingController> _sectionControllers =
-      {
-        for (final s in _ExerciseSection.values)
-          s: _planVariablesOn
-              ? TokenTextEditingController()
-              : TextEditingController(),
-      };
+  /// Token-aware so `RingDrillTextArea(tokenAware: true)` can drive its
+  /// chips from [PlanScope].
+  final Map<_ExerciseSection, TextEditingController> _sectionControllers = {
+    for (final s in _ExerciseSection.values) s: TokenTextEditingController(),
+  };
   final Map<_ExerciseSection, FocusNode> _sectionFocusNodes = {
     for (final s in _ExerciseSection.values) s: FocusNode(),
   };
   final Set<_ExerciseSection> _activeSections = {};
 
   /// Working copy of `exercise.variableOverrides` (DESIGN-008 follow-up 06),
-  /// edited by [VariableOverridesSection] and read by [_saveExercise]. Only
-  /// mutated in the flag-on path — the legacy body never mounts the override
-  /// table — so it round-trips unchanged in the flag-off path.
+  /// edited by [VariableOverridesSection] and read by [_saveExercise].
   late Map<String, String> _workingOverrides;
-
-  bool get _planVariablesOn =>
-      widget.debugPlanVariablesOverride ?? AppFlags.planVariables;
 
   @override
   void initState() {
@@ -196,16 +171,10 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_planVariablesOn) {
-      return _buildSectionNavigated(context);
-    }
-    return _buildLegacy(context);
+    return _buildSectionNavigated(context);
   }
 
-  /// DESIGN-008 follow-up 06, behind `RINGDRILL_PLAN_VARIABLES`. Same
-  /// controllers, [_activeSections] and save path as the legacy body below
-  /// — only their presentation moves into sections, plus the override table
-  /// on the Variabler section.
+  /// DESIGN-008 follow-up 06.
   Widget _buildSectionNavigated(BuildContext context) {
     final l = AppLocalizations.of(context)!;
 
@@ -435,207 +404,6 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     ];
   }
 
-  Widget _buildLegacy(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: localizations.cancel,
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          widget.exercise == null
-              ? localizations.createExercise
-              : localizations.editExercise,
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: _saveExercise,
-            child: Text(localizations.save),
-          ),
-        ],
-        actionsPadding: EdgeInsets.only(right: 16.0),
-      ),
-      body: DismissKeyboard(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                children: [
-                  // Exercise Name, with the start-time picker beside it —
-                  // sized to its own content (IntrinsicWidth) rather than
-                  // stretched, so the name field keeps most of the row.
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          autofocus: true,
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: localizations.exerciseName,
-                          ),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? localizations.pleaseEnterAName
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 16.0),
-                      IntrinsicWidth(
-                        child: _buildStartTimeField(context, localizations),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 16.0),
-
-                  // The three duration fields (execution, evaluation,
-                  // rotation) share one row — short minute values, mirroring
-                  // the teams/stations/rounds row below.
-                  _buildTimeSection(context, localizations),
-
-                  SizedBox(height: 16.0),
-
-                  if (_legacyOversizedCounters) ...[
-                    MaterialBanner(
-                      content: Text(
-                        localizations.legacyOversizedExerciseNotice,
-                      ),
-                      actions: const [SizedBox.shrink()],
-                      padding: const EdgeInsetsDirectional.only(
-                        start: 16,
-                        end: 8,
-                      ),
-                      leading: const Icon(Icons.info_outline),
-                    ),
-                    SizedBox(height: 16.0),
-                  ],
-
-                  Row(
-                    children: [
-                      // Number of Teams
-                      Expanded(
-                        child: TextFormField(
-                          controller: _numberOfTeamsController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: localizations.numberOfTeams,
-                          ),
-                          onChanged: (value) {
-                            if (_stationsTracksTeams) {
-                              _numberOfStationsController.text = value;
-                            }
-                            setState(() {});
-                          },
-                          validator: (value) {
-                            final counterError = _validateCounter(
-                              value,
-                              localizations,
-                            );
-                            if (counterError != null) return counterError;
-                            if (_isValidNumber(
-                                  _numberOfStationsController.text,
-                                ) &&
-                                int.parse(value!) >
-                                    int.parse(
-                                      _numberOfStationsController.text,
-                                    )) {
-                              return localizations
-                                  .mustBeEqualToOrLessThanNumberOf(
-                                    localizations.station(2).toLowerCase(),
-                                  );
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-
-                      SizedBox(width: 16.0),
-
-                      // Number of Stations
-                      Expanded(
-                        child: TextFormField(
-                          controller: _numberOfStationsController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: localizations.numberOfStations,
-                          ),
-                          onChanged: (_) {
-                            _stationsTracksTeams = false;
-                            setState(() {});
-                          },
-                          validator: (value) {
-                            final counterError = _validateCounter(
-                              value,
-                              localizations,
-                            );
-                            if (counterError != null) return counterError;
-                            if (_isValidNumber(_numberOfTeamsController.text) &&
-                                int.parse(value!) <
-                                    int.parse(_numberOfTeamsController.text)) {
-                              return localizations
-                                  .mustBeEqualToOrGreaterThanNumberOf(
-                                    localizations.team(2).toLowerCase(),
-                                  );
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-
-                      SizedBox(width: 16.0),
-
-                      // Number of Rounds
-                      Expanded(
-                        child: TextFormField(
-                          controller: _numberOfRoundsController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: localizations.numberOfRounds,
-                          ),
-                          onChanged: (_) => setState(() {}),
-                          validator: (value) =>
-                              _validateCounter(value, localizations),
-                        ),
-                      ),
-                    ],
-                  ),
-                  ?_buildStationsRoundNote(localizations),
-
-                  SizedBox(height: 16.0),
-
-                  OptionalFieldSections<_ExerciseSection>(
-                    sections: [
-                      for (final section in _ExerciseSection.values)
-                        OptionalFieldSection<_ExerciseSection>(
-                          id: section,
-                          label: _labelFor(section, localizations),
-                          controller: _sectionControllers[section]!,
-                          focusNode: _sectionFocusNodes[section],
-                        ),
-                    ],
-                    activeIds: _activeSections,
-                    onAdd: _addSection,
-                    onRemove: _removeSection,
-                  ),
-                  // Hidden once every optional section has been added: with
-                  // no add-buttons left to show, the divider would sit right
-                  // below the last text field with nothing to separate.
-                  if (_activeSections.length < _ExerciseSection.values.length)
-                    const Divider(height: 32),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   /// The three duration fields (execution, evaluation, rotation) always
   /// share one row — short minute values, mirroring the teams/stations/
   /// rounds row below. The start-time picker sits beside the exercise name
@@ -749,22 +517,16 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     }
 
     if (_formKey.currentState?.validate() ?? false) {
-      // Flag off has no Variabler section and no way to reference an
-      // undeclared token in the first place (RingDrillTextArea's chip
-      // rendering, and therefore the red/unknown state, only mounts in the
-      // flag-on path) — only the flag-on path can produce one to block on.
-      if (_planVariablesOn) {
-        final offending = _sectionsWithUndeclaredTokens();
-        if (offending.isNotEmpty) {
-          final l = AppLocalizations.of(context)!;
-          final sections = offending.map((s) => _labelFor(s, l)).join(', ');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
-            ),
-          );
-          return;
-        }
+      final offending = _sectionsWithUndeclaredTokens();
+      if (offending.isNotEmpty) {
+        final l = AppLocalizations.of(context)!;
+        final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+          ),
+        );
+        return;
       }
 
       final name = _nameController.text.trim();
@@ -820,9 +582,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         stations: widget.exercise?.stations ?? [],
         localizations: localizations,
         // The working copy, not widget.exercise?.variableOverrides directly:
-        // in the flag-off path it is never mutated so this round-trips the
-        // original unchanged; in the flag-on path it carries whatever
-        // VariableOverridesSection's author edits produced.
+        // carries whatever VariableOverridesSection's author edits produced.
         variableOverrides: _workingOverrides,
       );
 
