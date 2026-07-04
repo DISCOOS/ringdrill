@@ -3356,6 +3356,12 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get variablesSectionDeleteAction;
 
+  /// Row overflow-menu action (ADR-0031) that edits a variable's value/hint, and the title/confirm-button text of the dialog it opens. The name field in that dialog is read-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit value'**
+  String get variablesSectionEditValueAction;
+
   /// Validation message when a variable name does not match the ADR-0046 slug rule ^[a-z][a-z0-9_]*$.
   ///
   /// In en, this message translates to:

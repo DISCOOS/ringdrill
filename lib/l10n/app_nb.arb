@@ -1043,6 +1043,10 @@
   "@variablesSectionRenameAction": {
     "description": "Radens overflytmeny-handling (ADR-0031) som gir en variabel nytt navn, og tittel/bekreft-knapptekst på dialogene den åpner."
   },
+  "variablesSectionEditValueAction": "Endre verdi",
+  "@variablesSectionEditValueAction": {
+    "description": "Row overflow-menu action (ADR-0031) that edits a variable's value/hint, and the title/confirm-button text of the dialog it opens. The name field in that dialog is read-only."
+  },
   "variablesSectionDeleteAction": "Slett",
   "@variablesSectionDeleteAction": {
     "description": "Radens overflytmeny-handling (ADR-0031) som sletter en ubrukt variabel."

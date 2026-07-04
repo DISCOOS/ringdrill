@@ -1984,6 +1984,10 @@
   "@variablesSectionDeleteAction": {
     "description": "Row overflow-menu action (ADR-0031) that deletes an unreferenced variable."
   },
+  "variablesSectionEditValueAction": "Edit value",
+  "@variablesSectionEditValueAction": {
+    "description": "Row overflow-menu action (ADR-0031) that edits a variable's value/hint, and the title/confirm-button text of the dialog it opens. The name field in that dialog is read-only."
+  },
   "variablesSectionInvalidSlugError": "Must start with a lowercase letter and contain only lowercase letters, numbers and underscores",
   "@variablesSectionInvalidSlugError": {
     "description": "Validation message when a variable name does not match the ADR-0046 slug rule ^[a-z][a-z0-9_]*$."

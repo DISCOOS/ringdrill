@@ -22,9 +22,12 @@ final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 /// [referenceDescriptions] are injected so the caller (which holds the
 /// working `Program`) can answer "is this referenced, and where".
 ///
-/// Editing a variable's *value* after creation is out of scope for this
-/// stage (not in the DESIGN-008 Stage 5 prompt) — only name (rename) and
-/// existence (create/delete) are editable here today.
+/// A variable's value (and hint) can be edited after creation via the row's
+/// "Endre verdi" action — this is what closes the create-inline loop
+/// (create empty → reference → set value → chip turns blue). It reuses the
+/// same name/value/hint form as "+ Ny variabel" with the name field
+/// read-only, since a value edit must never change the name (that's what
+/// rename is for).
 class VariablesSection extends StatelessWidget {
   const VariablesSection({
     super.key,
@@ -32,6 +35,7 @@ class VariablesSection extends StatelessWidget {
     required this.onAdd,
     required this.onRename,
     required this.onDelete,
+    required this.onEditValue,
     required this.referenceCount,
     required this.referenceDescriptions,
   });
@@ -51,6 +55,12 @@ class VariablesSection extends StatelessWidget {
   /// removes it from its working list. Never called while referenced;
   /// this widget shows the blocked dialog itself in that case.
   final ValueChanged<String> onDelete;
+
+  /// Called with the updated [DrillVariable] (same `name`, new `value`/
+  /// `hint`) after the "Endre verdi" dialog is confirmed. The caller
+  /// replaces the matching entry in its working list and refreshes any
+  /// live token controllers so the chip re-resolves immediately.
+  final ValueChanged<DrillVariable> onEditValue;
 
   /// Total `{{var.<name>}}` occurrences plus `variableOverrides` key hits
   /// across the whole plan (`plan_variable_refs.dart`).
@@ -75,6 +85,7 @@ class VariablesSection extends StatelessWidget {
             _VariableRow(
               key: ValueKey(variable.name),
               variable: variable,
+              onEditValue: () => _handleEditValue(context, variable),
               onRename: () => _handleRename(context, l10n, variable),
               onDelete: () => _handleDelete(context, l10n, variable),
             ),
@@ -113,6 +124,20 @@ class VariablesSection extends StatelessWidget {
       ),
     );
     if (created != null) onAdd(created);
+  }
+
+  Future<void> _handleEditValue(
+    BuildContext context,
+    DrillVariable variable,
+  ) async {
+    final updated = await showDialog<DrillVariable>(
+      context: context,
+      builder: (dialogContext) => _VariableFormDialog(
+        existingNames: variables.map((v) => v.name).toSet(),
+        initial: variable,
+      ),
+    );
+    if (updated != null) onEditValue(updated);
   }
 
   Future<void> _handleRename(
@@ -228,17 +253,19 @@ class _PublishNote extends StatelessWidget {
   }
 }
 
-enum _VariableRowAction { rename, delete }
+enum _VariableRowAction { editValue, rename, delete }
 
 class _VariableRow extends StatelessWidget {
   const _VariableRow({
     super.key,
     required this.variable,
+    required this.onEditValue,
     required this.onRename,
     required this.onDelete,
   });
 
   final DrillVariable variable;
+  final VoidCallback onEditValue;
   final VoidCallback onRename;
   final VoidCallback onDelete;
 
@@ -271,10 +298,15 @@ class _VariableRow extends StatelessWidget {
           PopupMenuButton<_VariableRowAction>(
             tooltip: '',
             onSelected: (action) => switch (action) {
+              _VariableRowAction.editValue => onEditValue(),
               _VariableRowAction.rename => onRename(),
               _VariableRowAction.delete => onDelete(),
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: _VariableRowAction.editValue,
+                child: Text(l10n.variablesSectionEditValueAction),
+              ),
               PopupMenuItem(
                 value: _VariableRowAction.rename,
                 child: Text(l10n.variablesSectionRenameAction),
@@ -291,14 +323,19 @@ class _VariableRow extends StatelessWidget {
   }
 }
 
-/// Shared name/value/hint form used by both the add-variable and (name
-/// portion of the) rename flows — actually just the add dialog; rename uses
-/// [_RenameDialog], a name-only variant, since renaming has its own
-/// plan-wide-rewrite confirmation step the caller handles.
+/// Shared name/value/hint form used by the add-variable, "Endre verdi" and
+/// (name portion of the) rename flows. When [initial] is given this is an
+/// edit-value dialog: the name field is shown read-only (seeded from
+/// [initial], not re-validated — a value edit must never change the name)
+/// and the result carries [initial]'s name unchanged. Otherwise this is the
+/// add-variable dialog and the name field is editable and validated.
+/// Rename itself uses [_RenameDialog], a name-only variant, since renaming
+/// has its own plan-wide-rewrite confirmation step the caller handles.
 class _VariableFormDialog extends StatefulWidget {
-  const _VariableFormDialog({required this.existingNames});
+  const _VariableFormDialog({required this.existingNames, this.initial});
 
   final Set<String> existingNames;
+  final DrillVariable? initial;
 
   @override
   State<_VariableFormDialog> createState() => _VariableFormDialogState();
@@ -306,9 +343,17 @@ class _VariableFormDialog extends StatefulWidget {
 
 class _VariableFormDialogState extends State<_VariableFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _valueController = TextEditingController();
-  final _hintController = TextEditingController();
+  late final _nameController = TextEditingController(
+    text: widget.initial?.name ?? '',
+  );
+  late final _valueController = TextEditingController(
+    text: widget.initial?.value ?? '',
+  );
+  late final _hintController = TextEditingController(
+    text: widget.initial?.hint ?? '',
+  );
+
+  bool get _isEdit => widget.initial != null;
 
   @override
   void dispose() {
@@ -333,7 +378,7 @@ class _VariableFormDialogState extends State<_VariableFormDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     Navigator.of(context).pop(
       DrillVariable(
-        name: _nameController.text.trim(),
+        name: _isEdit ? widget.initial!.name : _nameController.text.trim(),
         value: _valueController.text.trim(),
         hint: _hintController.text.trim().isEmpty
             ? null
@@ -345,8 +390,11 @@ class _VariableFormDialogState extends State<_VariableFormDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final title = _isEdit
+        ? l10n.variablesSectionEditValueAction
+        : l10n.variablesSectionAddAction;
     return AlertDialog(
-      title: Text(l10n.variablesSectionAddAction),
+      title: Text(title),
       content: Form(
         key: _formKey,
         child: Column(
@@ -354,15 +402,17 @@ class _VariableFormDialogState extends State<_VariableFormDialog> {
           children: [
             TextFormField(
               controller: _nameController,
-              autofocus: true,
+              autofocus: !_isEdit,
+              enabled: !_isEdit,
               decoration: InputDecoration(
                 labelText: l10n.variablesSectionNameLabel,
               ),
-              validator: (value) => _validateName(value, l10n),
+              validator: _isEdit ? null : (value) => _validateName(value, l10n),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _valueController,
+              autofocus: _isEdit,
               decoration: InputDecoration(
                 labelText: l10n.variablesSectionValueLabel,
               ),
@@ -382,10 +432,7 @@ class _VariableFormDialogState extends State<_VariableFormDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.cancel),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(l10n.variablesSectionAddAction),
-        ),
+        FilledButton(onPressed: _submit, child: Text(title)),
       ],
     );
   }

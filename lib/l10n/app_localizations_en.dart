@@ -1967,6 +1967,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get variablesSectionDeleteAction => 'Delete';
 
   @override
+  String get variablesSectionEditValueAction => 'Edit value';
+
+  @override
   String get variablesSectionInvalidSlugError =>
       'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores';
 

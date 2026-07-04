@@ -1964,6 +1964,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get variablesSectionDeleteAction => 'Slett';
 
   @override
+  String get variablesSectionEditValueAction => 'Endre verdi';
+
+  @override
   String get variablesSectionInvalidSlugError =>
       'Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek';
 
