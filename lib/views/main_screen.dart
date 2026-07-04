@@ -31,6 +31,7 @@ import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
@@ -294,132 +295,141 @@ class _MainScreenState extends State<MainScreen>
       offstage: true,
       child: TickerMode(enabled: false, child: widget.shellChild),
     );
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // The rail + master/detail layout only earns its keep when there is
-        // also room for a usable (>=360) detail pane. In narrower medium
-        // widths the detail pane would be too cramped — and previously had no
-        // home at all: detail opened only as a bottom sheet and the mini
-        // player wasn't shown. So fall back to the compact narrow layout
-        // there: bottom NavigationBar, floating mini player, detail via the
-        // context sheet. This keeps `useRail` and `windowSizeClass.hasRail`
-        // distinct — the size class still says "medium" but we render narrow.
-        const railWidth = 72.0;
-        final masterWidth = windowSizeClass == WindowSizeClass.expanded
-            ? 420.0
-            : 320.0;
-        final useRail =
-            windowSizeClass.hasRail &&
-            (constraints.maxWidth - railWidth - masterWidth) >= 360;
-        // The Map tab (index 1) is rendered without an AppBar so the map
-        // gets the full height. The wide/master-detail layout already does
-        // this via [WideShell]'s `currentTab == 1` branch; mirror it here
-        // for the compact layout so the bottom-nav Map tab also goes
-        // chrome-free at the top. Every other tab keeps its AppBar.
-        final isMapTab = _currentTab == 1;
-        final tabsStack = IndexedStack(
-          key: _indexedTabsKey,
-          index: _currentTab,
-          children: _pages,
-        );
-        final scaffoldBody = Stack(
-          fit: StackFit.expand,
-          children: [
-            useRail
-                ? WideShell(
-                    constraints: constraints,
-                    page: page,
-                    windowSizeClass: windowSizeClass,
-                    currentTab: _currentTab,
-                    scaffoldKey: _scaffoldKey,
-                    destinations: _buildDestinations(localizations),
-                    onDestinationSelected: _onDestinationSelected,
-                    tabs: tabsStack,
-                    emptyPaneBuilder: _emptyPaneBuilderForCurrentTab,
-                    masterAppBar: _buildAppBar(
-                      context,
-                      constraints,
-                      page,
-                      hasRail: true,
+    return PlanScope(
+      variables: ProgramService().activeProgram?.variables ?? const [],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The rail + master/detail layout only earns its keep when there is
+          // also room for a usable (>=360) detail pane. In narrower medium
+          // widths the detail pane would be too cramped — and previously had no
+          // home at all: detail opened only as a bottom sheet and the mini
+          // player wasn't shown. So fall back to the compact narrow layout
+          // there: bottom NavigationBar, floating mini player, detail via the
+          // context sheet. This keeps `useRail` and `windowSizeClass.hasRail`
+          // distinct — the size class still says "medium" but we render narrow.
+          const railWidth = 72.0;
+          final masterWidth = windowSizeClass == WindowSizeClass.expanded
+              ? 420.0
+              : 320.0;
+          final useRail =
+              windowSizeClass.hasRail &&
+              (constraints.maxWidth - railWidth - masterWidth) >= 360;
+          // The Map tab (index 1) is rendered without an AppBar so the map
+          // gets the full height. The wide/master-detail layout already does
+          // this via [WideShell]'s `currentTab == 1` branch; mirror it here
+          // for the compact layout so the bottom-nav Map tab also goes
+          // chrome-free at the top. Every other tab keeps its AppBar.
+          final isMapTab = _currentTab == 1;
+          final tabsStack = IndexedStack(
+            key: _indexedTabsKey,
+            index: _currentTab,
+            children: _pages,
+          );
+          final scaffoldBody = Stack(
+            fit: StackFit.expand,
+            children: [
+              useRail
+                  ? WideShell(
+                      constraints: constraints,
+                      page: page,
+                      windowSizeClass: windowSizeClass,
+                      currentTab: _currentTab,
+                      scaffoldKey: _scaffoldKey,
+                      destinations: _buildDestinations(localizations),
+                      onDestinationSelected: _onDestinationSelected,
+                      tabs: tabsStack,
+                      emptyPaneBuilder: _emptyPaneBuilderForCurrentTab,
+                      masterAppBar: _buildAppBar(
+                        context,
+                        constraints,
+                        page,
+                        hasRail: true,
+                      ),
+                      contextSheetController: _contextSheetController,
+                      drillPlayer: _drillPlayer,
+                    )
+                  : SafeArea(
+                      child: Column(
+                        children: [
+                          const MigrationBanner(),
+                          // Keep all tabs in memory allowing state to persist
+                          // between tab switches.
+                          Expanded(child: tabsStack),
+                        ],
+                      ),
                     ),
-                    contextSheetController: _contextSheetController,
-                    drillPlayer: _drillPlayer,
-                  )
-                : SafeArea(
-                    child: Column(
-                      children: [
-                        const MigrationBanner(),
-                        // Keep all tabs in memory allowing state to persist
-                        // between tab switches.
-                        Expanded(child: tabsStack),
-                      ],
+              shellSentinel,
+            ],
+          );
+          final body = isMapTab
+              ? AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: Theme.of(context).brightness == Brightness.dark
+                      ? SystemUiOverlayStyle.light
+                      : SystemUiOverlayStyle.dark,
+                  child: scaffoldBody,
+                )
+              : scaffoldBody;
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: ContextSheet(
+                  controller: _contextSheetController,
+                  child: Scaffold(
+                    key: _scaffoldKey,
+                    extendBody: true,
+                    extendBodyBehindAppBar: true,
+                    // On the rail (master/detail) layout, forms open as a Dialog
+                    // (see openFormSurface) which handles its own keyboard inset.
+                    // Letting the background scaffold also resize for that keyboard
+                    // squeezes the fixed-height chrome (NavigationRail, program
+                    // overview + segment switcher) and produces RenderFlex overflows.
+                    // The dialog owns the inset here, so the background must not move.
+                    resizeToAvoidBottomInset: !useRail,
+                    drawerEnableOpenDragGesture:
+                        Theme.of(context).platform != TargetPlatform.iOS,
+                    appBar: (useRail || isMapTab)
+                        ? null
+                        : _buildAppBar(
+                            context,
+                            constraints,
+                            page,
+                            hasRail: false,
+                          ),
+                    drawer: MainDrawer(
+                      localizations: localizations,
+                      onOpenSettings: () =>
+                          MainScreen.showSettings(context, true),
+                    ),
+                    // StackFit.expand is load-bearing: without it the Stack sizes
+                    // itself to the biggest non-positioned child, but the only
+                    // non-positioned child here is the Offstage shell sentinel
+                    // (which has zero size by design), so the Stack collapses to
+                    // 0x0 and the visible Positioned.fill child has nothing to
+                    // fill. Result: tabs render fine but at zero size, so the UI
+                    // looks completely empty even though no exception is thrown.
+                    body: body,
+                    floatingActionButton: useRail
+                        ? null
+                        : page.controller.buildFAB(context, constraints),
+                    bottomNavigationBar: _buildBottomChrome(
+                      context,
+                      localizations,
+                      useRail,
                     ),
                   ),
-            shellSentinel,
-          ],
-        );
-        final body = isMapTab
-            ? AnnotatedRegion<SystemUiOverlayStyle>(
-                value: Theme.of(context).brightness == Brightness.dark
-                    ? SystemUiOverlayStyle.light
-                    : SystemUiOverlayStyle.dark,
-                child: scaffoldBody,
-              )
-            : scaffoldBody;
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: ContextSheet(
-                controller: _contextSheetController,
-                child: Scaffold(
-            key: _scaffoldKey,
-            extendBody: true,
-            extendBodyBehindAppBar: true,
-            // On the rail (master/detail) layout, forms open as a Dialog
-            // (see openFormSurface) which handles its own keyboard inset.
-            // Letting the background scaffold also resize for that keyboard
-            // squeezes the fixed-height chrome (NavigationRail, program
-            // overview + segment switcher) and produces RenderFlex overflows.
-            // The dialog owns the inset here, so the background must not move.
-            resizeToAvoidBottomInset: !useRail,
-            drawerEnableOpenDragGesture:
-                Theme.of(context).platform != TargetPlatform.iOS,
-            appBar: (useRail || isMapTab)
-                ? null
-                : _buildAppBar(context, constraints, page, hasRail: false),
-            drawer: MainDrawer(
-              localizations: localizations,
-              onOpenSettings: () => MainScreen.showSettings(context, true),
-            ),
-            // StackFit.expand is load-bearing: without it the Stack sizes
-            // itself to the biggest non-positioned child, but the only
-            // non-positioned child here is the Offstage shell sentinel
-            // (which has zero size by design), so the Stack collapses to
-            // 0x0 and the visible Positioned.fill child has nothing to
-            // fill. Result: tabs render fine but at zero size, so the UI
-            // looks completely empty even though no exception is thrown.
-            body: body,
-            floatingActionButton: useRail
-                ? null
-                : page.controller.buildFAB(context, constraints),
-            bottomNavigationBar: _buildBottomChrome(
-              context,
-              localizations,
-              useRail,
-            ),
                 ),
               ),
-            ),
-            // Persistent legacy marker (ADR-0042). Mounted above the whole
-            // app — like Flutter's debug banner — so the diagonal ribbon
-            // sits in the top-right screen corner, clear of the migration
-            // banner's controls below. Hidden off legacy apex via its own
-            // `isLegacyHost()` gate. The AppBar nudges its actions left in
-            // compact so the ribbon does not cover the plan status badge.
-            const Positioned(top: 0, right: 0, child: LegacyBadge()),
-          ],
-        );
-      },
+              // Persistent legacy marker (ADR-0042). Mounted above the whole
+              // app — like Flutter's debug banner — so the diagonal ribbon
+              // sits in the top-right screen corner, clear of the migration
+              // banner's controls below. Hidden off legacy apex via its own
+              // `isLegacyHost()` gate. The AppBar nudges its actions left in
+              // compact so the ribbon does not cover the plan status badge.
+              const Positioned(top: 0, right: 0, child: LegacyBadge()),
+            ],
+          );
+        },
+      ),
     );
   }
 
