@@ -23,6 +23,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/template_registry.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/projection.dart';
 
 /// Thrown when a brief template asset cannot be loaded from the bundle.
@@ -587,11 +588,6 @@ Map<String, dynamic> _exerciseRefContext(
   },
 };
 
-// Matches `{{var.<name>}}`, tolerating inner whitespace around the name.
-// Only `var.*` tokens are handled here — every other `{{...}}` expression is
-// left untouched for the subsequent mustache pass.
-final _varTokenPattern = RegExp(r'\{\{\s*var\.([a-z][a-z0-9_]*)\s*\}\}');
-
 /// Declared plan variables, keyed by name, at the program scope.
 Map<String, String> _programVariables(Program program) => {
   for (final v in program.variables) v.name: v.value,
@@ -637,10 +633,11 @@ String _substituteVariables(
   Map<String, String> vars,
   AppLocalizations l10n,
 ) {
-  return content.replaceAllMapped(_varTokenPattern, (match) {
-    final name = match.group(1)!;
-    return vars[name] ?? l10n.briefUnknownVariable(name);
-  });
+  return substitutePlanVariables(
+    content,
+    vars,
+    onUnknown: (name) => l10n.briefUnknownVariable(name),
+  );
 }
 
 /// Resolves a markdown field for rendering: substitutes `{{var.<name>}}`

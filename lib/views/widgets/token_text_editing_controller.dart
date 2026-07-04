@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
-
-/// Matches `{{var.<name>}}` (whitespace-tolerant). Kept in sync by hand with
-/// the server-side pattern in `lib/services/brief/brief_renderer.dart`
-/// (`_varTokenPattern`) — duplicated deliberately, since the renderer is a
-/// pure model/services concern and this controller is a view concern
-/// (DESIGN-008 Stage 2 vs Stage 4). Only `var.*` participates in chip
-/// validation (ADR-0046); every other `{{...}}` expression is left as
-/// ordinary text.
-final tokenPattern = RegExp(r'\{\{\s*var\.([a-z][a-z0-9_]*)\s*\}\}');
 
 /// A [TextEditingController] that renders `{{var.<name>}}` tokens as
 /// colored, boxed text instead of plain text — DESIGN-008 Stage 4's chosen
@@ -48,7 +40,7 @@ class TokenTextEditingController extends TextEditingController {
     TextStyle? style,
     required bool withComposing,
   }) {
-    final matches = tokenPattern.allMatches(text);
+    final matches = planVariableTokenPattern.allMatches(text);
     if (matches.isEmpty) {
       return TextSpan(text: text, style: style);
     }

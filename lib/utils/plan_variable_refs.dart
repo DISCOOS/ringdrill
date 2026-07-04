@@ -17,6 +17,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 
 /// One markdown field (or `variableOverrides` map) a `{{var.<name>}}`
 /// reference — or an override key naming it — can occur in.
@@ -68,14 +69,6 @@ class PlanVariableReference {
       'station: $stationCode, roleplay: $roleplayName)';
 }
 
-/// Matches `{{var.<name>}}` for one specific [name], whitespace-tolerant —
-/// same shape as the generic `{{var.<name>}}` pattern duplicated in
-/// `lib/views/widgets/token_text_editing_controller.dart` (`tokenPattern`)
-/// and `lib/services/brief/brief_renderer.dart` (`_varTokenPattern`); keep
-/// this in sync if that shape ever changes.
-RegExp _tokenPatternFor(String name) =>
-    RegExp('\\{\\{\\s*var\\.${RegExp.escape(name)}\\s*\\}\\}');
-
 class _FieldHit {
   const _FieldHit(
     this.field,
@@ -98,7 +91,7 @@ class _FieldHit {
 /// (program, every exercise, every station, every roleplay) is only
 /// enumerated in one place.
 Iterable<_FieldHit> _hits(Program program, String name) sync* {
-  final pattern = _tokenPatternFor(name);
+  final pattern = planVariableTokenPatternFor(name);
   int matches(String? content) =>
       content == null ? 0 : pattern.allMatches(content).length;
 
@@ -324,7 +317,7 @@ Map<String, String> _renameOverrideKey(
 /// `program.variables` itself renamed. Does not mutate [program]; uses
 /// `copyWith` throughout, per ADR-0046's plan-wide rename requirement.
 Program renameVariable(Program program, String oldName, String newName) {
-  final pattern = _tokenPatternFor(oldName);
+  final pattern = planVariableTokenPatternFor(oldName);
   final token = '{{var.$newName}}';
 
   Station rewriteStation(Station station) => station.copyWith(
