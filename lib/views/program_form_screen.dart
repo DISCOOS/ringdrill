@@ -414,6 +414,10 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
             icon: Icons.assignment_outlined,
             builder: (ctx) => _buildPlanSectionBody(ctx, l),
           ),
+          ...activeMdSections,
+          // Last: the markdown sections above are what authors reference
+          // {{var.<name>}} from, so Variabler reads better as the section
+          // you land on after them, not before.
           FormSection(
             id: 'variables',
             label: l.variablesSectionTitle,
@@ -432,7 +436,6 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
               ],
             ),
           ),
-          ...activeMdSections,
         ],
         addable: addableSections,
         onAdd: (id) => _addSection(_Section.values.byName(id)),
