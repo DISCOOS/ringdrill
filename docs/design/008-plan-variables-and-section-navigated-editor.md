@@ -173,6 +173,8 @@ Each stage is a separate PR.
 
 **Stage 5 — VariablesSection.** Declaration surface on `Program`, override surface on `Exercise`/`Station`, "+ Ny variabel" everywhere, rename-rewrite and blocked-delete, save-time validation of red tokens.
 
+**Follow-up 03 — `PlanScope` and the `RingDrillText*` widget family.** `TokenAwareField` is concretely `lib/views/widgets/ringdrill_text_field.dart`'s `RingDrillTextField` (single-line) / `RingDrillTextArea` (multi-line, subsuming the Stage 3/4 `MarkdownSectionField`), driven by `lib/views/widgets/plan_scope.dart`'s `PlanScope` — an `InheritedWidget` carrying the active plan's declared variables — instead of a `variables:` list a caller rebuilds and passes down by hand. `ProgramFormScreen` provides the scope; `ExerciseFormScreen`/`StationFormScreen`/`RolePlayFormScreen` will when they migrate onto the section-navigated shell. See ADR-0046's follow-up 03 addendum for the resolution-surface scope note (this also lays groundwork for variables in names/descriptions, not yet wired to a live display surface).
+
 All user-facing strings go in `app_en.arb` and `app_nb.arb`; run `make i18n`.
 
 ## References
