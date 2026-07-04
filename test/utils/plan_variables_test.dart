@@ -1,10 +1,47 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+
+Program _emptyProgram() {
+  final now = DateTime(2026);
+  return Program(
+    uuid: 'prog-1',
+    name: 'Test Program',
+    description: '',
+    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+    rolePlays: const [],
+    actors: const [],
+  );
+}
+
+Exercise _exercise({Map<String, String> variableOverrides = const {}}) =>
+    Exercise(
+      uuid: 'ex-1',
+      name: 'Exercise',
+      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+      endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+      numberOfTeams: 1,
+      numberOfRounds: 1,
+      executionTime: 10,
+      evaluationTime: 5,
+      rotationTime: 5,
+      stations: const [],
+      schedule: const [],
+      variableOverrides: variableOverrides,
+    );
 
 void main() {
   group('planVariableTokenPattern', () {
     test('matches a declared token and captures the name', () {
-      final match = planVariableTokenPattern.firstMatch('Kanal {{var.frekvens}}');
+      final match = planVariableTokenPattern.firstMatch(
+        'Kanal {{var.frekvens}}',
+      );
       expect(match, isNotNull);
       expect(match!.group(1), 'frekvens');
     });
@@ -73,6 +110,64 @@ void main() {
         'x': 'y',
       });
       expect(result, '{{exercise.name}} y');
+    });
+  });
+
+  group('effectivePlanVariables', () {
+    test('program scope returns the declared defaults', () {
+      final program = _emptyProgram().copyWith(
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      );
+      expect(effectivePlanVariables(program), {'frekvens': 'Kanal 6'});
+    });
+
+    test('an exercise override shadows the program default', () {
+      final program = _emptyProgram().copyWith(
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      );
+      final exercise = _exercise(
+        variableOverrides: const {'frekvens': 'Kanal 8'},
+      );
+      expect(effectivePlanVariables(program, exercise: exercise), {
+        'frekvens': 'Kanal 8',
+      });
+    });
+
+    test(
+      'a station override shadows both the exercise and program default',
+      () {
+        final program = _emptyProgram().copyWith(
+          variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+        );
+        final exercise = _exercise(
+          variableOverrides: const {'frekvens': 'Kanal 8'},
+        );
+        const station = Station(
+          index: 0,
+          name: 'Post',
+          variableOverrides: {'frekvens': 'Kanal 9'},
+        );
+        expect(
+          effectivePlanVariables(program, exercise: exercise, station: station),
+          {'frekvens': 'Kanal 9'},
+        );
+      },
+    );
+
+    test('an override keyed on an undeclared variable name is ignored', () {
+      final program = _emptyProgram().copyWith(
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      );
+      final exercise = _exercise(
+        variableOverrides: const {'ukjent': 'Skal ikke vises'},
+      );
+      expect(effectivePlanVariables(program, exercise: exercise), {
+        'frekvens': 'Kanal 6',
+      });
+    });
+
+    test('a plan with no declared variables returns an empty map', () {
+      expect(effectivePlanVariables(_emptyProgram()), <String, String>{});
     });
   });
 }

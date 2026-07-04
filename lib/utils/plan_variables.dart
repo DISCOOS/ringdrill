@@ -8,6 +8,10 @@
 /// `package:flutter/*`.
 library;
 
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/station.dart';
+
 /// Matches `{{var.<name>}}`, tolerating inner whitespace around the name.
 /// Capture group 1 is the name. A declared variable name (ADR-0046) starts
 /// with a lowercase letter, then lowercase letters/digits/underscores —
@@ -39,4 +43,37 @@ String substitutePlanVariables(
     if (value != null) return value;
     return onUnknown == null ? match.group(0)! : onUnknown(name);
   });
+}
+
+/// Declared plan variables, keyed by name, at the program scope (ADR-0046).
+Map<String, String> _declaredVariables(Program program) => {
+  for (final v in program.variables) v.name: v.value,
+};
+
+/// Effective variable values for a scope (ADR-0046): the program's declared
+/// values overlaid by [exercise]'s overrides, then [station]'s overrides —
+/// later scopes win. An override key that is not a declared variable name is
+/// ignored, per ADR-0046's "an undeclared override key is meaningless" rule.
+///
+/// Shared by `BriefRenderer`'s server-side resolution and the editor: the
+/// override table needs the parent-scope value with no local override (call
+/// with the parent scope's `exercise`/`station` omitted or one level up),
+/// and a token-aware field needs the full effective map for its own scope.
+Map<String, String> effectivePlanVariables(
+  Program program, {
+  Exercise? exercise,
+  Station? station,
+}) {
+  final vars = _declaredVariables(program);
+  if (exercise != null) {
+    for (final entry in exercise.variableOverrides.entries) {
+      if (vars.containsKey(entry.key)) vars[entry.key] = entry.value;
+    }
+  }
+  if (station != null) {
+    for (final entry in station.variableOverrides.entries) {
+      if (vars.containsKey(entry.key)) vars[entry.key] = entry.value;
+    }
+  }
+  return vars;
 }

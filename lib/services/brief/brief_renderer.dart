@@ -607,34 +607,20 @@ Map<String, dynamic> _exerciseRefContext(
   },
 };
 
-/// Declared plan variables, keyed by name, at the program scope.
-Map<String, String> _programVariables(Program program) => {
-  for (final v in program.variables) v.name: v.value,
-};
+/// Declared plan variables, keyed by name, at the program scope. Delegates
+/// to the shared `lib/utils/plan_variables.dart` helper (DESIGN-008
+/// follow-up 06) — kept as a private wrapper here so every call site below
+/// (and the `@visibleForTesting` statics) stays unchanged.
+Map<String, String> _programVariables(Program program) =>
+    effectivePlanVariables(program);
 
-/// Effective variable values for a scope (ADR-0046): start from the
-/// program's declared values, then overlay [exercise]'s overrides, then
-/// [station]'s overrides — later scopes win. An override key that is not a
-/// declared variable name is ignored, per ADR-0046's "undeclared override
-/// key is meaningless" rule.
+/// Effective variable values for a scope (ADR-0046) — see
+/// [effectivePlanVariables] for the resolution rule.
 Map<String, String> _effectiveVariables(
   Program program, {
   Exercise? exercise,
   Station? station,
-}) {
-  final vars = _programVariables(program);
-  if (exercise != null) {
-    for (final entry in exercise.variableOverrides.entries) {
-      if (vars.containsKey(entry.key)) vars[entry.key] = entry.value;
-    }
-  }
-  if (station != null) {
-    for (final entry in station.variableOverrides.entries) {
-      if (vars.containsKey(entry.key)) vars[entry.key] = entry.value;
-    }
-  }
-  return vars;
-}
+}) => effectivePlanVariables(program, exercise: exercise, station: station);
 
 /// Replaces every `{{var.<name>}}` token in [content] with its effective
 /// value, or with the localized unknown-variable placeholder when `<name>`
