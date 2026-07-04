@@ -9,9 +9,12 @@ import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/brief_renderer.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // Web implementation provides a real window.print(); the stub is a no-op.
 // Pattern: unqualified = web, if(dart.library.io) = native stub.
@@ -206,39 +209,53 @@ class _BriefScreenState extends State<BriefScreen> {
     // program name. Falls back to the generic localized label when neither
     // resolves (e.g. before data is loaded).
     final appBarTitle = exercise?.name ?? program.name;
+    final appBarTitleOverrides = effectivePlanVariables(
+      program,
+      exercise: exercise,
+    );
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        appBarTheme: AppBarTheme(
-          backgroundColor: theme.surfaces.appBar,
-          foregroundColor: theme.text.heading,
-          elevation: 0,
-          // copyWith replaces the global AppBarTheme wholesale, so restate
-          // the app-wide left alignment here too.
-          centerTitle: false,
+    return PlanScope(
+      // The brief renders an explicit program (DESIGN-008 follow-up 11):
+      // seeded from `program` (the one this screen actually resolved),
+      // not the ambient default the modal choke point already provides —
+      // `program` and the active plan agree today (see the mismatch
+      // debugPrint above), but the title/body must stay correct if that
+      // ever changes.
+      variables: program.variables,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          appBarTheme: AppBarTheme(
+            backgroundColor: theme.surfaces.appBar,
+            foregroundColor: theme.text.heading,
+            elevation: 0,
+            // copyWith replaces the global AppBarTheme wholesale, so restate
+            // the app-wide left alignment here too.
+            centerTitle: false,
+          ),
+
+          scaffoldBackgroundColor: theme.surfaces.canvas,
         ),
-
-        scaffoldBackgroundColor: theme.surfaces.canvas,
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= _kWideBreakpoint;
-          if (isWide != _wideTocSidebar) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _setWideTocSidebar(isWide);
-            });
-          }
-          return Scaffold(
-            appBar: _buildAppBar(
-              context,
-              localizations,
-              theme,
-              isWide,
-              appBarTitle,
-            ),
-            body: _buildContent(context, localizations, theme, isWide),
-          );
-        },
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= _kWideBreakpoint;
+            if (isWide != _wideTocSidebar) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _setWideTocSidebar(isWide);
+              });
+            }
+            return Scaffold(
+              appBar: _buildAppBar(
+                context,
+                localizations,
+                theme,
+                isWide,
+                appBarTitle,
+                appBarTitleOverrides,
+              ),
+              body: _buildContent(context, localizations, theme, isWide),
+            );
+          },
+        ),
       ),
     );
   }
@@ -249,6 +266,7 @@ class _BriefScreenState extends State<BriefScreen> {
     BriefTheme theme,
     bool isWide,
     String title,
+    Map<String, String> titleOverrides,
   ) {
     return AppBar(
       leading: widget.isSheet
@@ -259,8 +277,9 @@ class _BriefScreenState extends State<BriefScreen> {
               onPressed: widget.onClose,
             )
           : null,
-      title: Text(
+      title: RingDrillText(
         title,
+        overrides: titleOverrides,
         style: theme.typography.h4.copyWith(color: theme.text.heading),
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
@@ -765,7 +784,11 @@ class _BriefScreenState extends State<BriefScreen> {
   /// (24/18 px), which is far too big for a sidebar — we pull the plain text
   /// and re-render it compact, with H2 entries slightly bolder than H3 for
   /// visual nesting.
-  Widget _buildSidebarTocItem(Toc toc, int activeWidgetIndex, BriefTheme theme) {
+  Widget _buildSidebarTocItem(
+    Toc toc,
+    int activeWidgetIndex,
+    BriefTheme theme,
+  ) {
     final level = _tocLevel(toc);
     final isActive = toc.widgetIndex == activeWidgetIndex;
     return GestureDetector(
