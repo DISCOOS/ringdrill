@@ -32,6 +32,7 @@ import 'package:ringdrill/views/stations_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
@@ -512,21 +513,29 @@ class _MainScreenState extends State<MainScreen>
     required bool hasRail,
   }) {
     final pageTitle = page.controller.title(context);
+    // Only the Program tab's title is ever the active plan name itself
+    // (other tabs' `title()` is a fixed section label, e.g. "Kart",
+    // "Bemanning") — used below to decide which titles need to resolve
+    // `{{var.<name>}}` (DESIGN-008 follow-up 11) and which are plain.
+    final planName = ProgramService().activeProgram?.name;
+    final isPlanNameTitle = pageTitle == planName;
     // In master/detail mode, mirror the detail-screen `SheetTitle` pattern:
     // primary = tab title (e.g. "Markører"), secondary = active plan name.
     // The active plan was previously only visible via the tooltip on the
     // program tab title, which made cross-tab orientation invisible.
-    final activePlanName = hasRail
-        ? ProgramService().activeProgram?.name
-        : null;
+    final activePlanName = hasRail ? planName : null;
     // Suppress the secondary line when it would just repeat the primary.
     // The Program tab's title already is the active plan name, so without
     // this it printed the plan name twice. Other tabs (Map, Roster) keep
     // the plan name as orientation because their primary is a section name.
     final secondary = activePlanName == pageTitle ? null : activePlanName;
+    // `SheetTitle` already resolves both its lines via `RingDrillText`
+    // (DESIGN-008 follow-up 09); the compact title is a bare `Text` and
+    // needs the same treatment, but only when it actually is the plan
+    // name — a fixed section label never contains a token.
     final Widget titleChild = hasRail
         ? SheetTitle(primary: pageTitle, secondary: secondary)
-        : Text(pageTitle);
+        : (isPlanNameTitle ? RingDrillText(pageTitle) : Text(pageTitle));
 
     final controller = page.controller;
     if (controller is! ProgramPageControllerBase) return titleChild;
