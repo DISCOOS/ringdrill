@@ -1253,6 +1253,8 @@ class _ExerciseCardState extends State<ExerciseCard> {
       builder: (_) => StationFormScreen(
         station: station,
         markers: programService.getLocations().toMarkerSpecs(),
+        variables: programService.activeProgram?.variables ?? const [],
+        parentExercise: exercise,
       ),
     );
     if (!mounted || newStation == null) return;

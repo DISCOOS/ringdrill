@@ -442,6 +442,8 @@ class _StationListViewState extends State<StationListView> {
       builder: (_) => StationFormScreen(
         station: station,
         markers: _programService.getLocations().toMarkerSpecs(),
+        variables: _programService.activeProgram?.variables ?? const [],
+        parentExercise: exercise,
       ),
     );
     if (!mounted || newStation == null) return;

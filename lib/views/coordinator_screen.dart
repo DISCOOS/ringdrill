@@ -1488,6 +1488,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       builder: (_) => StationFormScreen(
         station: _exercise!.stations[stationIndex],
         markers: _programService.getLocations().toMarkerSpecs(),
+        variables: _programService.activeProgram?.variables ?? const [],
+        parentExercise: _exercise,
       ),
     );
     // No mounted gate on the save: openFormSurface disposes this State when

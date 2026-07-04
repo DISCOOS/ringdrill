@@ -701,6 +701,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       builder: (context) => StationFormScreen(
         station: stations[widget.stationIndex],
         markers: _programService.getLocations().toMarkerSpecs(),
+        variables: _programService.activeProgram?.variables ?? const [],
+        parentExercise: _exercise,
       ),
     );
     // The previous guard was `newStation != _exercise`, but those are
