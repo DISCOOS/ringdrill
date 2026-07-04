@@ -60,7 +60,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _programService = ProgramService();
 
-  final _nameController = TextEditingController();
+  /// Token-aware so `RingDrillTextField(tokenAware: true)` can drive its
+  /// chips from [PlanScope] (DESIGN-008 follow-up 09).
+  final TextEditingController _nameController = TokenTextEditingController();
   final _ageController = TextEditingController();
   // Never token-aware — signalement is a short field in the always-visible
   // "Rolle" base section, not one of the three markdown sections.
@@ -229,6 +231,17 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     ];
   }
 
+  /// Whether the base section's name field (DESIGN-008 follow-up 09) has a
+  /// `{{var.<name>}}` token not declared in [widget.variables]. Name is
+  /// unconditionally present, unlike [_MdSection], so this is a short
+  /// parallel check rather than another enum member.
+  bool _nameHasUndeclaredTokens() {
+    final declared = widget.variables.map((v) => v.name).toSet();
+    return planVariableTokenPattern
+        .allMatches(_nameController.text)
+        .any((m) => !declared.contains(m.group(1)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildSectionNavigated(context);
@@ -336,10 +349,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      autofocus: true,
+                    child: RingDrillTextField(
                       controller: _nameController,
-                      decoration: InputDecoration(labelText: l.roleName),
+                      label: l.roleName,
+                      autofocus: true,
+                      tokenAware: true,
+                      overrides: _effectiveVariables,
                       validator: (value) =>
                           value != null && value.trim().isNotEmpty
                           ? null
@@ -443,10 +458,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final offending = _sectionsWithUndeclaredTokens();
+    final l = AppLocalizations.of(context)!;
+    final offending = [
+      if (_nameHasUndeclaredTokens()) l.roleName,
+      ..._sectionsWithUndeclaredTokens().map((s) => _mdLabelFor(s, l)),
+    ];
     if (offending.isNotEmpty) {
-      final l = AppLocalizations.of(context)!;
-      final sections = offending.map((s) => _mdLabelFor(s, l)).join(', ');
+      final sections = offending.join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l.programSaveBlockedUndeclaredVariable(sections)),

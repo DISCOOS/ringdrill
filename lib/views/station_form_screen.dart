@@ -59,12 +59,14 @@ class _StationFormScreenState extends State<StationFormScreen> {
   LatLng? _position;
 
   // Form field controllers
-  final TextEditingController _nameController = TextEditingController(
+  /// Token-aware so `RingDrillTextField`/`RingDrillTextArea`
+  /// (`tokenAware: true`) can drive their chips from [PlanScope]
+  /// (DESIGN-008 follow-up 09).
+  final TextEditingController _nameController = TokenTextEditingController(
     text: "Station",
   );
-  final TextEditingController _descriptionController = TextEditingController(
-    text: "",
-  );
+  final TextEditingController _descriptionController =
+      TokenTextEditingController();
 
   /// Token-aware so `RingDrillTextArea(tokenAware: true)` can drive its
   /// chips from [PlanScope].
@@ -182,6 +184,21 @@ class _StationFormScreenState extends State<StationFormScreen> {
     ];
   }
 
+  /// Base section field labels (name/description, DESIGN-008 follow-up 09)
+  /// whose text has a `{{var.<name>}}` token not declared in
+  /// [widget.variables]. Unconditionally present, unlike [_StationSection],
+  /// so this is a short parallel check rather than another enum member.
+  List<String> _baseFieldLabelsWithUndeclaredTokens(AppLocalizations l) {
+    final declared = widget.variables.map((v) => v.name).toSet();
+    bool hasUndeclared(String text) => planVariableTokenPattern
+        .allMatches(text)
+        .any((m) => !declared.contains(m.group(1)));
+    return [
+      if (hasUndeclared(_nameController.text)) l.stationName,
+      if (hasUndeclared(_descriptionController.text)) l.stationDescription,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildSectionNavigated(context);
@@ -291,13 +308,13 @@ class _StationFormScreenState extends State<StationFormScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      autofocus: true,
+                    child: RingDrillTextField(
                       controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: l.stationName,
-                        hintText: l.stationNameHint,
-                      ),
+                      label: l.stationName,
+                      hintText: l.stationNameHint,
+                      autofocus: true,
+                      tokenAware: true,
+                      overrides: _workingOverrides,
                       validator: (value) =>
                           value != null && value.trim().isNotEmpty
                           ? null
@@ -327,17 +344,15 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              RingDrillTextArea(
                 controller: _descriptionController,
-                keyboardType: TextInputType.multiline,
+                label: l.stationDescription,
+                hintText: l.stationDescriptionHint,
+                hintMaxLines: 10,
                 minLines: 1,
                 maxLines: 15,
-                decoration: InputDecoration(
-                  labelText: l.stationDescription,
-                  hintText: l.stationDescriptionHint,
-                  hintMaxLines: 10,
-                  alignLabelWithHint: true,
-                ),
+                tokenAware: true,
+                overrides: _workingOverrides,
               ),
             ],
           ),
@@ -361,10 +376,13 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   void _saveStation() {
     if (_formKey.currentState?.validate() ?? false) {
-      final offending = _sectionsWithUndeclaredTokens();
+      final l = AppLocalizations.of(context)!;
+      final offending = [
+        ..._baseFieldLabelsWithUndeclaredTokens(l),
+        ..._sectionsWithUndeclaredTokens().map((s) => _labelFor(s, l)),
+      ];
       if (offending.isNotEmpty) {
-        final l = AppLocalizations.of(context)!;
-        final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+        final sections = offending.join(', ');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l.programSaveBlockedUndeclaredVariable(sections)),

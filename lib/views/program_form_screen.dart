@@ -95,8 +95,11 @@ class ProgramFormScreen extends StatefulWidget {
 class _ProgramFormScreenState extends State<ProgramFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  /// Token-aware so `RingDrillTextField(tokenAware: true)` can drive its
+  /// chips from [PlanScope] (DESIGN-008 follow-up 09).
+  final TextEditingController _nameController = TokenTextEditingController();
+  final TextEditingController _descriptionController =
+      TokenTextEditingController();
   final _tagInputController = TextEditingController();
   final _tagInputFocus = FocusNode();
 
@@ -292,6 +295,21 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     ];
   }
 
+  /// The base section's name/description labels (DESIGN-008 follow-up 09)
+  /// whose text has a `{{var.<name>}}` token not declared in [_variables].
+  /// Name/description are unconditionally present, unlike [_Section], so
+  /// this is a short parallel check rather than another enum member.
+  List<String> _baseFieldLabelsWithUndeclaredTokens(AppLocalizations l) {
+    final declared = _variables.map((v) => v.name).toSet();
+    bool hasUndeclared(String text) => _varTokenPattern
+        .allMatches(text)
+        .any((m) => !declared.contains(m.group(1)));
+    return [
+      if (hasUndeclared(_nameController.text)) l.programName,
+      if (hasUndeclared(_descriptionController.text)) l.programDescription,
+    ];
+  }
+
   FocusNode _focusFor(_Section section) => switch (section) {
     _Section.briefIntro => _briefIntroFocus,
     _Section.comms => _commsFocus,
@@ -450,25 +468,23 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                autofocus: true,
+              RingDrillTextField(
                 controller: _nameController,
-                decoration: InputDecoration(labelText: l.programName),
+                label: l.programName,
+                autofocus: true,
+                tokenAware: true,
                 validator: (value) => value != null && value.trim().isNotEmpty
                     ? null
                     : l.pleaseEnterAName,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              RingDrillTextArea(
                 controller: _descriptionController,
-                keyboardType: TextInputType.multiline,
+                label: l.programDescription,
+                hintText: l.programDescriptionHint,
                 minLines: 1,
                 maxLines: 4,
-                decoration: InputDecoration(
-                  labelText: l.programDescription,
-                  hintText: l.programDescriptionHint,
-                  alignLabelWithHint: true,
-                ),
+                tokenAware: true,
               ),
               const Divider(height: 32),
               Row(
@@ -510,10 +526,13 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
 
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final offending = _sectionsWithUndeclaredTokens();
+    final l = AppLocalizations.of(context)!;
+    final offending = [
+      ..._baseFieldLabelsWithUndeclaredTokens(l),
+      ..._sectionsWithUndeclaredTokens().map((s) => _labelFor(s, l)),
+    ];
     if (offending.isNotEmpty) {
-      final l = AppLocalizations.of(context)!;
-      final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+      final sections = offending.join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l.programSaveBlockedUndeclaredVariable(sections)),

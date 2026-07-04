@@ -64,7 +64,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   } // Default start time
 
   // Form field controllers
-  final TextEditingController _nameController = TextEditingController(text: "");
+  /// Token-aware so `RingDrillTextField(tokenAware: true)` can drive its
+  /// chips from [PlanScope] (DESIGN-008 follow-up 09).
+  final TextEditingController _nameController = TokenTextEditingController();
   final TextEditingController _numberOfTeamsController = TextEditingController(
     text: "4",
   );
@@ -289,10 +291,12 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      autofocus: true,
+                    child: RingDrillTextField(
                       controller: _nameController,
-                      decoration: InputDecoration(labelText: l.exerciseName),
+                      label: l.exerciseName,
+                      autofocus: true,
+                      tokenAware: true,
+                      overrides: _workingOverrides,
                       validator: (value) =>
                           value == null || value.trim().isEmpty
                           ? l.pleaseEnterAName
@@ -402,6 +406,17 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                 .any((m) => !declared.contains(m.group(1))))
           section,
     ];
+  }
+
+  /// Whether the base section's name field (DESIGN-008 follow-up 09) has a
+  /// `{{var.<name>}}` token not declared in [widget.variables]. Name is
+  /// unconditionally present, unlike [_ExerciseSection], so this is a short
+  /// parallel check rather than another enum member.
+  bool _nameHasUndeclaredTokens() {
+    final declared = widget.variables.map((v) => v.name).toSet();
+    return planVariableTokenPattern
+        .allMatches(_nameController.text)
+        .any((m) => !declared.contains(m.group(1)));
   }
 
   /// The three duration fields (execution, evaluation, rotation) always
@@ -517,10 +532,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     }
 
     if (_formKey.currentState?.validate() ?? false) {
-      final offending = _sectionsWithUndeclaredTokens();
+      final l = AppLocalizations.of(context)!;
+      final offending = [
+        if (_nameHasUndeclaredTokens()) l.exerciseName,
+        ..._sectionsWithUndeclaredTokens().map((s) => _labelFor(s, l)),
+      ];
       if (offending.isNotEmpty) {
-        final l = AppLocalizations.of(context)!;
-        final sections = offending.map((s) => _labelFor(s, l)).join(', ');
+        final sections = offending.join(', ');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l.programSaveBlockedUndeclaredVariable(sections)),

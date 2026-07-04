@@ -62,9 +62,8 @@ Widget _wrapTokenAware({
 
 /// Single-line counterpart to [RingDrillTextArea] — same token-aware
 /// behavior, shared with it via [_wrapTokenAware], for name/description-like
-/// fields. Not yet wired to any call site: DESIGN-008 follow-up 03 lays
-/// this foundation without resolving variables in names/descriptions on a
-/// live display surface — that is a later follow-up.
+/// fields. First wired to a call site in DESIGN-008 follow-up 09: every
+/// editor's name field.
 class RingDrillTextField extends StatefulWidget {
   const RingDrillTextField({
     super.key,
@@ -75,6 +74,9 @@ class RingDrillTextField extends StatefulWidget {
     this.overrides = const {},
     this.planFields = const [],
     this.onCreateVariable,
+    this.validator,
+    this.autofocus = false,
+    this.hintText,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -94,6 +96,11 @@ class RingDrillTextField extends StatefulWidget {
   final Map<String, String> overrides;
   final List<PlanFieldToken> planFields;
   final ValueChanged<String>? onCreateVariable;
+  final FormFieldValidator<String>? validator;
+  final bool autofocus;
+
+  /// Placeholder shown while the field is empty, e.g. a name's example text.
+  final String? hintText;
 
   @override
   State<RingDrillTextField> createState() => _RingDrillTextFieldState();
@@ -102,7 +109,8 @@ class RingDrillTextField extends StatefulWidget {
 class _RingDrillTextFieldState extends State<RingDrillTextField> {
   FocusNode? _ownedFocusNode;
 
-  FocusNode get _focusNode => widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
+  FocusNode get _focusNode =>
+      widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
 
   @override
   void dispose() {
@@ -115,7 +123,12 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
     final field = TextFormField(
       controller: widget.controller,
       focusNode: widget.tokenAware ? _focusNode : widget.focusNode,
-      decoration: InputDecoration(labelText: widget.label),
+      decoration: InputDecoration(
+        labelText: widget.label,
+        hintText: widget.hintText,
+      ),
+      validator: widget.validator,
+      autofocus: widget.autofocus,
     );
     return _wrapTokenAware(
       context: context,
@@ -163,6 +176,8 @@ class RingDrillTextArea extends StatefulWidget {
     this.overrides = const {},
     this.planFields = const [],
     this.onCreateVariable,
+    this.hintText,
+    this.hintMaxLines,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -179,6 +194,11 @@ class RingDrillTextArea extends StatefulWidget {
   /// (null) where removal is handled elsewhere, e.g. a section's overflow
   /// menu (ADR-0031).
   final VoidCallback? onRemove;
+
+  /// Placeholder shown while the field is empty, e.g. a description's
+  /// example text.
+  final String? hintText;
+  final int? hintMaxLines;
 
   /// Opts this field into chip rendering and the insertion menu, reading
   /// [PlanScope]. Only a caller that has provided a [PlanScope] ancestor
@@ -198,7 +218,8 @@ class RingDrillTextArea extends StatefulWidget {
 class _RingDrillTextAreaState extends State<RingDrillTextArea> {
   FocusNode? _ownedFocusNode;
 
-  FocusNode get _focusNode => widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
+  FocusNode get _focusNode =>
+      widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
 
   @override
   void dispose() {
@@ -218,10 +239,15 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
       textAlignVertical: widget.expands ? TextAlignVertical.top : null,
       decoration: InputDecoration(
         labelText: widget.label,
+        hintText: widget.hintText,
+        hintMaxLines: widget.hintMaxLines,
         alignLabelWithHint: true,
         suffixIcon: widget.onRemove == null
             ? null
-            : IconButton(icon: const Icon(Icons.close), onPressed: widget.onRemove),
+            : IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: widget.onRemove,
+              ),
       ),
     );
     return _wrapTokenAware(
