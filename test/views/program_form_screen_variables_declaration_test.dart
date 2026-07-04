@@ -1,0 +1,401 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/views/program_form_screen.dart';
+
+/// DESIGN-008 Stage 5 — the Variabler declaration section end-to-end inside
+/// the flag-on Program editor: declare, create-inline, rename (plan-wide
+/// rewrite), delete (reference-guarded) and save-time validation.
+///
+/// `RINGDRILL_PLAN_VARIABLES` is a compile-time `bool.fromEnvironment`, so
+/// every test here pumps `ProgramFormScreen` with `debugPlanVariablesOverride:
+/// true` (a `@visibleForTesting`-only constructor param — see Stage 3).
+
+Program _program({
+  String? briefIntroMd,
+  String? commsMd,
+  List<DrillVariable> variables = const [],
+}) {
+  final now = DateTime.utc(2026, 1, 1);
+  return Program(
+    uuid: 'pgm-1',
+    name: 'Vinterøvelse',
+    description: '',
+    metadata: ProgramMetadata(
+      created: now,
+      updated: now,
+      version: '1.1',
+      languageCode: 'nb',
+    ),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+    briefIntroMd: briefIntroMd,
+    commsMd: commsMd,
+    variables: variables,
+  );
+}
+
+/// Mutable holder for the popped [Program], since the value only becomes
+/// available once Save is eventually tapped — long after `_openForm`
+/// itself has returned (it only opens the form; awaiting `_openForm` does
+/// NOT wait for the editor to close).
+class _Captured {
+  Program? value;
+}
+
+Future<void> _openForm(
+  WidgetTester tester,
+  Program program,
+  _Captured captured,
+) async {
+  tester.view.physicalSize = const Size(400, 800);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (ctx) => TextButton(
+          onPressed: () async {
+            captured.value = await Navigator.push<Program>(
+              ctx,
+              MaterialPageRoute(
+                builder: (_) => ProgramFormScreen(
+                  program: program,
+                  debugPlanVariablesOverride: true,
+                ),
+              ),
+            );
+          },
+          child: const Text('Open'),
+        ),
+      ),
+    ),
+  );
+  await tester.tap(find.text('Open'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openSwitcherFrom(WidgetTester tester, String currentLabel) async {
+  await tester.tap(
+    find.descendant(of: find.byType(AppBar), matching: find.text(currentLabel)),
+  );
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  late AppLocalizations l;
+
+  setUpAll(() async {
+    l = await AppLocalizations.delegate.load(const Locale('en'));
+  });
+
+  testWidgets(
+    'declare a variable, reference it, save: the popped Program has both',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(tester, _program(briefIntroMd: 'Intro'), captured);
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l.variablesSectionAddAction));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
+        'frekvens',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, l.variablesSectionValueLabel),
+        'Kanal 6',
+      );
+      await tester.tap(
+        find.widgetWithText(FilledButton, l.variablesSectionAddAction),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('frekvens'), findsOneWidget);
+
+      await _openSwitcherFrom(tester, l.variablesSectionTitle);
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, l.briefSectionProgramIntro),
+        'Kanal {{var.frekvens}}',
+      );
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      final saved = captured.value!;
+      expect(saved.variables.single.name, 'frekvens');
+      expect(saved.variables.single.value, 'Kanal 6');
+      expect(saved.briefIntroMd, 'Kanal {{var.frekvens}}');
+    },
+  );
+
+  testWidgets(
+    'create-inline via the insertion menu declares an empty (amber) variable',
+    (tester) async {
+      await _openForm(tester, _program(briefIntroMd: 'Intro'), _Captured());
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'Intro /freken');
+      await tester.pump();
+      await tester.pump();
+
+      final createLabel = l.tokenMenuCreateVariable('freken');
+      expect(find.text(createLabel), findsOneWidget);
+      await tester.tap(find.text(createLabel));
+      await tester.pump();
+
+      expect(find.textContaining('{{var.freken}}'), findsOneWidget);
+
+      await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.text('freken'), findsOneWidget);
+      // Declared but empty: the row shows the empty-value placeholder, not
+      // "freken" twice.
+      expect(find.text('—'), findsOneWidget);
+    },
+  );
+
+  testWidgets('renaming a variable rewrites every reference in the editor', (
+    tester,
+  ) async {
+    await _openForm(
+      tester,
+      _program(
+        briefIntroMd: 'Kanal {{var.frekvens}}',
+        commsMd: 'Bruk {{var.frekvens}} her også',
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      ),
+      _Captured(),
+    );
+
+    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l.variablesSectionRenameAction));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
+      'kanal',
+    );
+    await tester.tap(
+      find.widgetWithText(FilledButton, l.variablesSectionRenameAction),
+    );
+    await tester.pumpAndSettle();
+    // Confirmation dialog (referenced twice).
+    await tester.tap(
+      find.widgetWithText(FilledButton, l.variablesSectionRenameAction),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('kanal'), findsOneWidget);
+    expect(find.text('frekvens'), findsNothing);
+
+    await _openSwitcherFrom(tester, l.variablesSectionTitle);
+    await tester.tap(find.text(l.briefSectionProgramIntro));
+    await tester.pumpAndSettle();
+    expect(find.text('Kanal {{var.kanal}}'), findsOneWidget);
+
+    await _openSwitcherFrom(tester, l.briefSectionProgramIntro);
+    await tester.tap(find.text(l.briefSectionProgramComms));
+    await tester.pumpAndSettle();
+    expect(find.text('Bruk {{var.kanal}} her også'), findsOneWidget);
+  });
+
+  testWidgets(
+    'delete is blocked while referenced, and removes once unreferenced',
+    (tester) async {
+      await _openForm(
+        tester,
+        _program(
+          briefIntroMd: 'Kanal {{var.frekvens}}',
+          variables: const [
+            DrillVariable(name: 'frekvens', value: 'Kanal 6'),
+            DrillVariable(name: 'ubrukt', value: 'X'),
+          ],
+        ),
+        _Captured(),
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      // Referenced: blocked.
+      final menus = find.byIcon(Icons.more_vert);
+      await tester.tap(menus.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.variablesSectionDeleteAction));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l.variablesSectionDeleteBlockedTitle), findsOneWidget);
+      await tester.tap(find.text(l.ok));
+      await tester.pumpAndSettle();
+      expect(find.text('frekvens'), findsOneWidget);
+
+      // Unreferenced: removes immediately.
+      await tester.tap(find.byIcon(Icons.more_vert).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.variablesSectionDeleteAction));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ubrukt'), findsNothing);
+      expect(find.text('frekvens'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'save is blocked on an undeclared token, and declaring it unblocks save',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _program(briefIntroMd: 'Kanal {{var.mangler}}'),
+        captured,
+      );
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+      expect(captured.value, isNull);
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.variablesSectionAddAction));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
+        'mangler',
+      );
+      await tester.tap(
+        find.widgetWithText(FilledButton, l.variablesSectionAddAction),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      final saved = captured.value;
+      expect(saved, isNotNull);
+      expect(saved!.variables.single.name, 'mangler');
+    },
+  );
+
+  testWidgets('a declared-but-empty variable referenced in a field saves fine', (
+    tester,
+  ) async {
+    final captured = _Captured();
+    await _openForm(
+      tester,
+      _program(
+        briefIntroMd: 'Verdi:[{{var.tom}}]',
+        variables: const [DrillVariable(name: 'tom')],
+      ),
+      captured,
+    );
+
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
+
+    final saved = captured.value;
+    expect(saved, isNotNull);
+    expect(saved!.briefIntroMd, 'Verdi:[{{var.tom}}]');
+  });
+
+  testWidgets('creating an invalid slug or a duplicate name is rejected', (
+    tester,
+  ) async {
+    await _openForm(
+      tester,
+      _program(variables: const [DrillVariable(name: 'frekvens', value: 'X')]),
+      _Captured(),
+    );
+
+    await _openSwitcherFrom(tester, l.programSectionPlan);
+    await tester.tap(find.text(l.variablesSectionTitle));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l.variablesSectionAddAction));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
+      '1bad',
+    );
+    await tester.tap(
+      find.widgetWithText(FilledButton, l.variablesSectionAddAction),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(l.variablesSectionInvalidSlugError), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
+      'frekvens',
+    );
+    await tester.tap(
+      find.widgetWithText(FilledButton, l.variablesSectionAddAction),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(l.variablesSectionDuplicateNameError), findsOneWidget);
+  });
+
+  testWidgets(
+    'flag-off: no Variabler section, no undeclared-token save-blocking',
+    (tester) async {
+      Program? captured;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () async {
+                captured = await Navigator.push<Program>(
+                  ctx,
+                  MaterialPageRoute(
+                    builder: (_) => ProgramFormScreen(
+                      program: _program(briefIntroMd: 'Kanal {{var.mangler}}'),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l.variablesSectionTitle), findsNothing);
+
+      // No save-blocking in the legacy path — an undeclared {{var.x}}
+      // token in briefIntroMd is just literal text to it.
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured, isNotNull);
+      expect(captured!.briefIntroMd, 'Kanal {{var.mangler}}');
+    },
+  );
+}
