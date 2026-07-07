@@ -16,7 +16,9 @@ import 'package:mustache_template/mustache_template.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -306,6 +308,8 @@ class BriefRenderer {
       vars: stationVars,
       l10n: l10n,
       refContext: stationRefContext,
+      scenarioStation: station,
+      scenarioRolePlays: rolePlays,
     );
 
     final roleplayContexts = rolePlays.map((rp) {
@@ -335,6 +339,8 @@ class BriefRenderer {
         vars: stationVars,
         l10n: l10n,
         refContext: roleplayRefContext,
+        scenarioStation: station,
+        scenarioRolePlays: rolePlays,
       );
       return {
         'name': resolvedRpName,
@@ -646,24 +652,178 @@ String _substituteVariables(
 }
 
 /// Resolves a markdown field for rendering: substitutes `{{var.<name>}}`
-/// tokens against [vars] first, then feeds the result through the existing
+/// tokens against [vars] first, then — when [scenarioStation] is given —
+/// `{{station.loc.<slug>}}` / `{{station.person.<slug>}}` tokens against it
+/// (ADR-0047/DESIGN-009), then feeds the result through the existing
 /// mustache cross-reference pass against [refContext] (e.g.
 /// `{{station.position.utm}}`). Falls back to the variable-substituted (but
 /// not mustache-rendered) content if that pass throws — the same fallback
 /// behaviour the renderer had before variable substitution was introduced.
+///
+/// [scenarioStation] is omitted (null) for program- and exercise-scope
+/// fields, which have no station in scope and so never resolve
+/// `station.loc.*`/`station.person.*` — only station and roleplay fields
+/// pass it, both scoped to that same station's `locations`/`persons`.
 String? _resolveField(
   String? content, {
   required Map<String, String> vars,
   required AppLocalizations l10n,
   Map<String, dynamic> refContext = const {},
+  Station? scenarioStation,
+  List<RolePlay> scenarioRolePlays = const [],
 }) {
   if (content == null) return null;
   final withVars = _substituteVariables(content, vars, l10n);
+  final withScenario = scenarioStation == null
+      ? withVars
+      : _resolveStationScenarioTokens(
+          withVars,
+          station: scenarioStation,
+          rolePlays: scenarioRolePlays,
+          l10n: l10n,
+        );
   try {
-    return Template(withVars, htmlEscapeValues: false).renderString(refContext);
+    return Template(
+      withScenario,
+      htmlEscapeValues: false,
+    ).renderString(refContext);
   } catch (_) {
-    return withVars;
+    return withScenario;
   }
+}
+
+/// Matches `{{station.loc.<slug>}}` / `{{station.person.<slug>}}`, with an
+/// optional dotted facet path (`.place`, `.utm`, `.home.utm`, ...). Group 1
+/// is `loc`/`person`, group 2 the slug, group 3 the facet path including its
+/// leading dots (empty for the bare token).
+final _stationScenarioTokenPattern = RegExp(
+  r'\{\{\s*station\.(loc|person)\.([a-z][a-z0-9_]*)((?:\.[a-zA-Z]+)*)\s*\}\}',
+);
+
+/// Replaces every `{{station.loc.<slug>}}` / `{{station.person.<slug>}}`
+/// token (with facets) in [content] against [station]'s own
+/// `locations`/`persons` — the station-and-down scope ADR-0047 defines.
+/// [rolePlays] are the roleplays on this same station, used to resolve a
+/// person facet's effective (denormalized) identity. An unknown slug
+/// renders the same kind of visible, localized placeholder an undeclared
+/// `{{var.x}}` does; a known slug with an empty facet renders empty, which
+/// is a valid authoring state, not an error.
+///
+/// Runs pre-mustache, alongside `{{var.<name>}}` substitution — this is a
+/// second registry-like lookup, not mustache's fixed derived context, so it
+/// stays on the same pre-pass rather than growing a second parser. The
+/// remaining `{{station.position.*}}` etc. are untouched here and still
+/// resolved by the subsequent mustache pass against `refContext`.
+String _resolveStationScenarioTokens(
+  String content, {
+  required Station station,
+  required List<RolePlay> rolePlays,
+  required AppLocalizations l10n,
+}) {
+  return content.replaceAllMapped(_stationScenarioTokenPattern, (match) {
+    final kind = match.group(1)!;
+    final slug = match.group(2)!;
+    final facets = (match.group(3) ?? '')
+        .split('.')
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (kind == 'loc') {
+      final location = _bySlug(station.locations, slug, (l) => l.slug);
+      if (location == null) {
+        return l10n.briefUnknownReference('station.loc.$slug');
+      }
+      return _resolveLocationFacet(location, facets);
+    }
+    final person = _bySlug(station.persons, slug, (p) => p.slug);
+    if (person == null) {
+      return l10n.briefUnknownReference('station.person.$slug');
+    }
+    final portrayer = _bySlug(rolePlays, slug, (rp) => rp.personRef ?? '');
+    return _resolvePersonFacet(person, portrayer, station, facets);
+  });
+}
+
+T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
+  for (final item in items) {
+    if (slugOf(item) == slug) return item;
+  }
+  return null;
+}
+
+/// `{{station.loc.<slug>[.facet]}}` facet resolution. The bare/default and
+/// `.utm` forms render the UTM as inline code (backtick-wrapped), matching
+/// how the brief presents `station.position.utm` elsewhere; empty when the
+/// location has no position.
+String _resolveLocationFacet(Location location, List<String> facets) {
+  switch (facets.isEmpty ? null : facets.first) {
+    case 'place':
+      return location.place;
+    case 'label':
+      return location.label;
+    case 'utm':
+      return _locationUtmCode(location);
+    default:
+      return _locationDefault(location);
+  }
+}
+
+String _locationUtmCode(Location location) {
+  final utm = _formatUtm(location.position);
+  return utm.isEmpty ? '' : '`$utm`';
+}
+
+/// Sensible bare-token default: `place` plus, when a position is set, the
+/// inline-code UTM.
+String _locationDefault(Location location) {
+  final utmCode = _locationUtmCode(location);
+  if (location.place.isEmpty) return utmCode;
+  if (utmCode.isEmpty) return location.place;
+  return '${location.place} ($utmCode)';
+}
+
+/// `{{station.person.<slug>[.facet]}}` facet resolution. [portrayer] is the
+/// roleplay on [station] whose `personRef` names this person, if any — its
+/// identity fields take precedence over [person]'s own when set (the
+/// effective, denormalized identity from ADR-0047); `.home` resolves
+/// [Person.homeSlug] to a location on the same station and applies the
+/// remaining facet path to it.
+String _resolvePersonFacet(
+  Person person,
+  RolePlay? portrayer,
+  Station station,
+  List<String> facets,
+) {
+  switch (facets.isEmpty ? null : facets.first) {
+    case 'age':
+      final age = portrayer?.age ?? person.age;
+      return age == null ? '' : '$age';
+    case 'gender':
+      return _effectiveField(portrayer?.gender, person.gender) ?? '';
+    case 'signalement':
+      return _effectiveField(portrayer?.signalement, person.signalement) ??
+          '';
+    case 'home':
+      final homeSlug = person.homeSlug;
+      final home = homeSlug == null
+          ? null
+          : _bySlug(station.locations, homeSlug, (l) => l.slug);
+      return home == null
+          ? ''
+          : _resolveLocationFacet(home, facets.skip(1).toList());
+    case 'name':
+    default:
+      return _effectivePersonName(person, portrayer);
+  }
+}
+
+String _effectivePersonName(Person person, RolePlay? portrayer) =>
+    _effectiveField(portrayer?.name, person.name) ?? '';
+
+/// The portraying roleplay's value when non-empty, otherwise the person's
+/// own value (ADR-0047's effective-identity rule).
+String? _effectiveField(String? roleplayValue, String? personValue) {
+  if (roleplayValue != null && roleplayValue.isNotEmpty) return roleplayValue;
+  return personValue;
 }
 
 /// Converts a heading string to a GitHub-flavored markdown anchor id:

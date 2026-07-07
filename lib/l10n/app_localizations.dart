@@ -2972,6 +2972,12 @@ abstract class AppLocalizations {
   /// **'‹missing variable: {name}›'**
   String briefUnknownVariable(String name);
 
+  /// Rendered in place of {{station.loc.<slug>}} or {{station.person.<slug>}} in a brief when <slug> does not name a location/person on the station (DESIGN-009/ADR-0047). {name} is the full reference, e.g. 'station.loc.lkp'.
+  ///
+  /// In en, this message translates to:
+  /// **'‹missing reference: {name}›'**
+  String briefUnknownReference(String name);
+
   /// Tooltip on the floating copy-markdown button at the top-right of the brief reading column.
   ///
   /// In en, this message translates to:

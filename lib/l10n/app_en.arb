@@ -1709,6 +1709,13 @@
       "name": { "type": "String" }
     }
   },
+  "briefUnknownReference": "‹missing reference: {name}›",
+  "@briefUnknownReference": {
+    "description": "Rendered in place of {{station.loc.<slug>}} or {{station.person.<slug>}} in a brief when <slug> does not name a location/person on the station (DESIGN-009/ADR-0047). {name} is the full reference, e.g. 'station.loc.lkp'.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "briefCopyMarkdown": "Copy as markdown",
   "@briefCopyMarkdown": {
     "description": "Tooltip on the floating copy-markdown button at the top-right of the brief reading column."

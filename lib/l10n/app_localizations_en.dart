@@ -1766,6 +1766,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String briefUnknownReference(String name) {
+    return '‹missing reference: $name›';
+  }
+
+  @override
   String get briefCopyMarkdown => 'Copy as markdown';
 
   @override

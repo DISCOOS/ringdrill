@@ -1763,6 +1763,11 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String briefUnknownReference(String name) {
+    return '‹mangler referanse: $name›';
+  }
+
+  @override
   String get briefCopyMarkdown => 'Kopier som markdown';
 
   @override
