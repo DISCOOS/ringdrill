@@ -1272,6 +1272,18 @@
   "@locationsSectionKindLabel": {
     "description": "Feltetikett for en lokasjons LocationKind-nedtrekk i legg-til/rediger-dialogen."
   },
+  "locationsSectionPlaceSearchHint": "Søk etter sted",
+  "@locationsSectionPlaceSearchHint": {
+    "description": "Hjelpetekst i det geokoder-støttede stedsfeltet (DESIGN-009 oppfølging 3c): tekst debounces til et geokodersøk hvis treff setter både sted og posisjon."
+  },
+  "locationsSectionPlaceNoResults": "Fant ingen treff",
+  "@locationsSectionPlaceNoResults": {
+    "description": "Liten hjelpetekst under stedsfeltet når et geokodersøk gir null treff (eller feiler, f.eks. uten nett) -- blokkerer aldri, i tråd med feltets beste-innsats-kontrakt (ADR-0047 oppfølging 3c)."
+  },
+  "locationsSectionUpdatePlaceFromMapAction": "Oppdater fra kart",
+  "@locationsSectionUpdatePlaceFromMapAction": {
+    "description": "Eksplisitt handling vist ved siden av et ikke-tomt stedsfelt når en posisjon er satt, som tilbyr et reversgeokodet oppdatering uten å overskrive det forfatteren har skrevet (ADR-0047 oppfølging 3c: geokoding overskriver aldri en eksisterende verdi av seg selv)."
+  },
   "locationsSectionPlaceLabel": "Sted",
   "@locationsSectionPlaceLabel": {
     "description": "Feltetikett for en lokasjons stedsbeskrivelse/adresse i legg-til/rediger-dialogen."

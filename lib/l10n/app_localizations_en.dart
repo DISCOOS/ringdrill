@@ -2160,6 +2160,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationsSectionPlaceLabel => 'Place';
 
   @override
+  String get locationsSectionPlaceSearchHint => 'Search for a place';
+
+  @override
+  String get locationsSectionPlaceNoResults => 'No matches found';
+
+  @override
+  String get locationsSectionUpdatePlaceFromMapAction => 'Update from map';
+
+  @override
   String get locationsSectionNoteLabel => 'Note';
 
   @override

@@ -2156,6 +2156,15 @@ class AppLocalizationsNb extends AppLocalizations {
   String get locationsSectionPlaceLabel => 'Sted';
 
   @override
+  String get locationsSectionPlaceSearchHint => 'Søk etter sted';
+
+  @override
+  String get locationsSectionPlaceNoResults => 'Fant ingen treff';
+
+  @override
+  String get locationsSectionUpdatePlaceFromMapAction => 'Oppdater fra kart';
+
+  @override
   String get locationsSectionNoteLabel => 'Notat';
 
   @override

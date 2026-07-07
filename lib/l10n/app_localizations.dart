@@ -3674,6 +3674,24 @@ abstract class AppLocalizations {
   /// **'Place'**
   String get locationsSectionPlaceLabel;
 
+  /// Hint text on the geocoder-backed place field (DESIGN-009 follow-up 3c): typing debounces into a forward-geocode search whose suggestions set both place and position.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a place'**
+  String get locationsSectionPlaceSearchHint;
+
+  /// Small caption shown under the place field after a forward-geocode search completes with zero hits (or fails, e.g. offline) -- never blocking, matching the field's best-effort contract (ADR-0047 follow-up 3c).
+  ///
+  /// In en, this message translates to:
+  /// **'No matches found'**
+  String get locationsSectionPlaceNoResults;
+
+  /// Explicit action shown next to a non-empty place field once a position is set, offering a reverse-geocode refresh without silently overwriting what the author typed (ADR-0047 follow-up 3c: geocoding never clobbers an existing value on its own).
+  ///
+  /// In en, this message translates to:
+  /// **'Update from map'**
+  String get locationsSectionUpdatePlaceFromMapAction;
+
   /// Field label for a location's optional note in the add/edit-location dialog.
   ///
   /// In en, this message translates to:

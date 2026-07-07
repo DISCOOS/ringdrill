@@ -1,13 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/location_kind_labels.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
+
+/// Debounce before a typed `place` query reaches the geocoder (ADR-0047
+/// follow-up 3c) -- long enough to skip a search per keystroke, short
+/// enough that suggestions still feel live.
+const _placeSearchDebounce = Duration(milliseconds: 350);
 
 /// Self-sufficient full-screen/dialog form for creating or editing a
 /// station-owned [Location] (ADR-0047, DESIGN-009 follow-up 3b). Opened via
@@ -18,13 +26,20 @@ import 'package:ringdrill/views/widgets/location_kind_style.dart';
 /// The reference (`slug`) is never shown: it is generated from [label] at
 /// creation via [generateSlug] against [existingSlugs] and carries through
 /// unchanged when [initial] is edited (a reference rename is a future
-/// action, ADR-0047 — not built here). `place` is plain text; geocoding is
-/// a separate follow-up.
+/// action, ADR-0047 — not built here). `place` is a geocoder-backed search
+/// (DESIGN-009 follow-up 3c): typing debounces into a forward-geocode
+/// lookup whose suggestions set both `place` and `position`; setting a
+/// position with an empty `place` reverse-geocodes to fill it. Both
+/// directions are best-effort — offline, an error or no result is a silent
+/// no-op and never blocks save — and neither ever overwrites text the
+/// author already typed; an explicit "Oppdater fra kart" action offers a
+/// reverse-geocode refresh instead.
 class LocationFormScreen extends StatefulWidget {
   const LocationFormScreen({
     super.key,
     required this.existingSlugs,
     this.initial,
+    this.geocodingService,
   });
 
   /// Slugs already used by other locations on the station, so a new
@@ -33,11 +48,19 @@ class LocationFormScreen extends StatefulWidget {
 
   final Location? initial;
 
+  /// Geocoder for the `place` field's forward/reverse lookups. Defaults to
+  /// the real `osm_nominatim`-backed service; tests inject a fake so no
+  /// test hits the network.
+  final GeocodingService? geocodingService;
+
   @override
   State<LocationFormScreen> createState() => _LocationFormScreenState();
 }
 
 class _LocationFormScreenState extends State<LocationFormScreen> {
+  late final GeocodingService _geocoder =
+      widget.geocodingService ?? NominatimGeocodingService();
+
   final _formKey = GlobalKey<FormState>();
   late final _labelController = TextEditingController(
     text: widget.initial?.label ?? '',
@@ -49,16 +72,122 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     text: widget.initial?.note ?? '',
   );
   late LocationKind _kind = widget.initial?.kind ?? LocationKind.other;
-  LatLng? _position;
+  late LatLng? _position = widget.initial?.position;
+
+  Timer? _placeSearchDebounceTimer;
+
+  /// Incremented on every place search; a completed lookup is only applied
+  /// if it is still the latest one, so a slow response to an earlier
+  /// keystroke can never clobber a faster response to a later one.
+  int _placeSearchGeneration = 0;
+  List<GeocodingHit> _placeSuggestions = const [];
+  bool _searchingPlace = false;
+
+  /// True once a place search has completed (successfully or not) with no
+  /// hits, so the "no matches" caption only shows after a real attempt —
+  /// never for an empty/untouched field.
+  bool _placeSearchedEmpty = false;
+
+  /// The label most recently applied by [_selectPlaceSuggestion] — lets
+  /// [_onPlaceChanged] tell "the author picked a suggestion" (skip
+  /// re-searching the exact text just applied) apart from "the author kept
+  /// typing" (search again), without depending on whether setting
+  /// `TextEditingController.text` itself re-fires `onChanged`.
+  String? _lastAppliedPlace;
 
   bool get _isEdit => widget.initial != null;
 
   @override
   void dispose() {
+    _placeSearchDebounceTimer?.cancel();
     _labelController.dispose();
     _placeController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _onPlaceChanged(String value) {
+    _placeSearchDebounceTimer?.cancel();
+    if (value == _lastAppliedPlace) {
+      setState(() => _placeSuggestions = const []);
+      return;
+    }
+    final query = value.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _placeSuggestions = const [];
+        _placeSearchedEmpty = false;
+        _searchingPlace = false;
+      });
+      return;
+    }
+    setState(() => _searchingPlace = true);
+    _placeSearchDebounceTimer = Timer(_placeSearchDebounce, () {
+      unawaited(_searchPlace(query));
+    });
+  }
+
+  Future<void> _searchPlace(String query) async {
+    final generation = ++_placeSearchGeneration;
+    List<GeocodingHit> hits;
+    try {
+      hits = await _geocoder.search(query, near: _position);
+    } catch (_) {
+      // Best-effort (ADR-0047 follow-up 3c): offline/error is a silent
+      // no-op, same as a zero-result search.
+      hits = const [];
+    }
+    if (!mounted || generation != _placeSearchGeneration) return;
+    setState(() {
+      _searchingPlace = false;
+      _placeSuggestions = hits;
+      _placeSearchedEmpty = hits.isEmpty;
+    });
+  }
+
+  void _selectPlaceSuggestion(GeocodingHit hit) {
+    setState(() {
+      _lastAppliedPlace = hit.label;
+      _placeController.text = hit.label;
+      _position = hit.position;
+      _placeSuggestions = const [];
+      _placeSearchedEmpty = false;
+    });
+  }
+
+  /// Wired to the position field's `onChanged` (map-pick or forward-geocode
+  /// pick). Reverse-geocodes to fill an *empty* place; a non-empty place is
+  /// never overwritten automatically (`_updatePlaceFromMap` is the explicit
+  /// opt-in for that).
+  void _onPositionChanged(LatLng position) {
+    setState(() => _position = position);
+    if (_placeController.text.trim().isEmpty) {
+      unawaited(_reverseGeocodeInto(position));
+    }
+  }
+
+  Future<void> _updatePlaceFromMap() async {
+    final position = _position;
+    if (position == null) return;
+    await _reverseGeocodeInto(position, force: true);
+  }
+
+  Future<void> _reverseGeocodeInto(LatLng position, {bool force = false}) async {
+    String label;
+    try {
+      label = await _geocoder.reverse(position);
+    } catch (_) {
+      // Best-effort: offline/error is a silent no-op.
+      return;
+    }
+    if (!mounted) return;
+    // Re-check emptiness at completion time, not just at call time: the
+    // author may have typed something while the lookup was in flight.
+    if (!force && _placeController.text.trim().isNotEmpty) return;
+    setState(() {
+      _lastAppliedPlace = label;
+      _placeController.text = label;
+    });
   }
 
   void _save() {
@@ -86,6 +215,8 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     final title = _isEdit
         ? l10n.locationsSectionEditAction
         : l10n.locationsSectionAddAction;
+    final place = _placeController.text.trim();
+    final canUpdateFromMap = _position != null && place.isNotEmpty;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -123,14 +254,53 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _placeController,
+                    onChanged: _onPlaceChanged,
                     decoration: InputDecoration(
                       labelText: l10n.locationsSectionPlaceLabel,
+                      hintText: l10n.locationsSectionPlaceSearchHint,
+                      suffixIcon: _searchingPlace
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : null,
                     ),
                   ),
+                  if (_placeSuggestions.isNotEmpty)
+                    _PlaceSuggestionsList(
+                      suggestions: _placeSuggestions,
+                      onSelect: _selectPlaceSuggestion,
+                    )
+                  else if (_placeSearchedEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        l10n.locationsSectionPlaceNoResults,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  if (canUpdateFromMap)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: _updatePlaceFromMap,
+                        child: Text(l10n.locationsSectionUpdatePlaceFromMapAction),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   _LocationPositionField(
-                    initialValue: widget.initial?.position,
+                    key: ValueKey(_position),
+                    value: _position,
                     onSaved: (value) => _position = value,
+                    onChanged: _onPositionChanged,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -146,6 +316,39 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Compact suggestion list under the `place` field, rendered inline (not an
+/// overlay) since the field lives in a `SingleChildScrollView`, not a
+/// `Stack` like the map's own search box.
+class _PlaceSuggestionsList extends StatelessWidget {
+  const _PlaceSuggestionsList({
+    required this.suggestions,
+    required this.onSelect,
+  });
+
+  final List<GeocodingHit> suggestions;
+  final ValueChanged<GeocodingHit> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(top: 4),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final hit in suggestions)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.location_on_outlined),
+              title: Text(hit.label, overflow: TextOverflow.ellipsis),
+              onTap: () => onSelect(hit),
+            ),
+        ],
       ),
     );
   }
@@ -282,22 +485,24 @@ class _KindCard extends StatelessWidget {
 /// [PositionFormField] pick affordance (map icon button + UTM readout) —
 /// the only new piece here is the preview; the pick/readout themselves are
 /// the same widget every other position field in the app uses.
-class _LocationPositionField extends StatefulWidget {
+///
+/// Fully controlled by [value] rather than owning its own state: the parent
+/// (`LocationFormScreen`) keys this widget on the position itself, so a
+/// forward-geocode pick (which sets the position without going through
+/// [PositionFormField]'s own map picker) remounts it with a fresh
+/// `initialValue` instead of needing a separate imperative update path into
+/// [PositionFormField]'s internal `FormFieldState`.
+class _LocationPositionField extends StatelessWidget {
   const _LocationPositionField({
-    required this.initialValue,
+    super.key,
+    required this.value,
     required this.onSaved,
+    required this.onChanged,
   });
 
-  final LatLng? initialValue;
+  final LatLng? value;
   final FormFieldSetter<LatLng> onSaved;
-
-  @override
-  State<_LocationPositionField> createState() =>
-      _LocationPositionFieldState();
-}
-
-class _LocationPositionFieldState extends State<_LocationPositionField> {
-  late LatLng? _preview = widget.initialValue;
+  final ValueChanged<LatLng> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +516,7 @@ class _LocationPositionFieldState extends State<_LocationPositionField> {
             height: 92,
             width: double.infinity,
             color: theme.colorScheme.surfaceContainerHighest,
-            child: _preview == null
+            child: value == null
                 ? Center(
                     child: Icon(
                       Icons.place_outlined,
@@ -325,12 +530,12 @@ class _LocationPositionFieldState extends State<_LocationPositionField> {
                       withToggle: false,
                       withClustering: false,
                       initialZoom: 15,
-                      initialCenter: _preview!,
+                      initialCenter: value!,
                       markers: [
                         MapMarkerSpec(
                           id: 0,
                           label: '',
-                          point: _preview!,
+                          point: value!,
                           child: const Icon(
                             Icons.place,
                             color: Colors.green,
@@ -343,9 +548,9 @@ class _LocationPositionFieldState extends State<_LocationPositionField> {
           ),
         ),
         PositionFormField<int>(
-          initialValue: widget.initialValue,
-          onSaved: widget.onSaved,
-          onChanged: (position) => setState(() => _preview = position),
+          initialValue: value,
+          onSaved: onSaved,
+          onChanged: onChanged,
         ),
       ],
     );
