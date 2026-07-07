@@ -2025,6 +2025,114 @@ class AppLocalizationsNb extends AppLocalizations {
       'Ingen variabler i planen ennå';
 
   @override
+  String get locationKindLkpLabel => 'Sist kjent posisjon (LKP)';
+
+  @override
+  String get locationKindLkpDescription =>
+      'Siste bekreftede posisjon til den savnede.';
+
+  @override
+  String get locationKindIppLabel => 'Initielt planleggingspunkt (IPP)';
+
+  @override
+  String get locationKindIppDescription =>
+      'Utgangspunktet søkesektorer måles fra.';
+
+  @override
+  String get locationKindPpLabel => 'Planleggingspunkt (PP)';
+
+  @override
+  String get locationKindPpDescription =>
+      'Et planleggingspunkt brukt til å strukturere søksområdet.';
+
+  @override
+  String get locationKindRendezvousLabel => 'Oppmøtested';
+
+  @override
+  String get locationKindRendezvousDescription =>
+      'Hvor mannskaper møtes før utrykning.';
+
+  @override
+  String get locationKindCommandPostLabel => 'Kommandoplass';
+
+  @override
+  String get locationKindCommandPostDescription => 'Hvor øvelsen ledes fra.';
+
+  @override
+  String get locationKindHomeLabel => 'Bosted';
+
+  @override
+  String get locationKindHomeDescription => 'Personens bosted.';
+
+  @override
+  String get locationKindTrackFoundLabel => 'Funn av spor';
+
+  @override
+  String get locationKindTrackFoundDescription =>
+      'Et sted hvor det ble funnet spor.';
+
+  @override
+  String get locationKindDogInterestLabel => 'Interesse av hund';
+
+  @override
+  String get locationKindDogInterestDescription =>
+      'Et sted hvor en søkshund viste interesse.';
+
+  @override
+  String get locationKindObstacleLabel => 'Hindring';
+
+  @override
+  String get locationKindObstacleDescription =>
+      'En hindring som påvirker søket.';
+
+  @override
+  String get locationKindNotSearchableLabel => 'Ikke søkbart';
+
+  @override
+  String get locationKindNotSearchableDescription =>
+      'Et område som ikke kunne søkes.';
+
+  @override
+  String get locationKindPhoneTraceLabel => 'Mobilspor';
+
+  @override
+  String get locationKindPhoneTraceDescription =>
+      'En posisjon avledet fra mobilsporing.';
+
+  @override
+  String get locationKindObservationLabel => 'Observasjon';
+
+  @override
+  String get locationKindObservationDescription => 'En rapportert observasjon.';
+
+  @override
+  String get locationKindVantagePointLabel => 'Utkikkspunkt';
+
+  @override
+  String get locationKindVantagePointDescription =>
+      'Et punkt med god utsikt over søksområdet.';
+
+  @override
+  String get locationKindContainmentPostLabel => 'Sperrepost';
+
+  @override
+  String get locationKindContainmentPostDescription =>
+      'En post brukt for å avgrense søksområdet.';
+
+  @override
+  String get locationKindPersonFoundLabel => 'Funn av person';
+
+  @override
+  String get locationKindPersonFoundDescription =>
+      'Hvor den savnede ble funnet.';
+
+  @override
+  String get locationKindOtherLabel => 'Annet';
+
+  @override
+  String get locationKindOtherDescription => 'Enhver annen type lokasjon.';
+
+  @override
   String programSaveBlockedUndeclaredVariable(String sections) {
     return 'Kan ikke lagre: $sections inneholder en ukjent variabel';
   }

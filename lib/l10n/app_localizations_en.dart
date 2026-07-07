@@ -2027,6 +2027,116 @@ class AppLocalizationsEn extends AppLocalizations {
       'No variables in the plan yet';
 
   @override
+  String get locationKindLkpLabel => 'Last known position (LKP)';
+
+  @override
+  String get locationKindLkpDescription =>
+      'The last confirmed position of the missing person.';
+
+  @override
+  String get locationKindIppLabel => 'Initial planning point (IPP)';
+
+  @override
+  String get locationKindIppDescription =>
+      'The point search sectors are measured from.';
+
+  @override
+  String get locationKindPpLabel => 'Planning point (PP)';
+
+  @override
+  String get locationKindPpDescription =>
+      'A planning point used to structure the search area.';
+
+  @override
+  String get locationKindRendezvousLabel => 'Rendezvous point';
+
+  @override
+  String get locationKindRendezvousDescription =>
+      'Where teams meet before deployment.';
+
+  @override
+  String get locationKindCommandPostLabel => 'Command post';
+
+  @override
+  String get locationKindCommandPostDescription =>
+      'Where the exercise is led from.';
+
+  @override
+  String get locationKindHomeLabel => 'Home';
+
+  @override
+  String get locationKindHomeDescription => 'The person\'s home address.';
+
+  @override
+  String get locationKindTrackFoundLabel => 'Track found';
+
+  @override
+  String get locationKindTrackFoundDescription =>
+      'A place where a track was found.';
+
+  @override
+  String get locationKindDogInterestLabel => 'Dog interest';
+
+  @override
+  String get locationKindDogInterestDescription =>
+      'A place a search dog showed interest.';
+
+  @override
+  String get locationKindObstacleLabel => 'Obstacle';
+
+  @override
+  String get locationKindObstacleDescription =>
+      'An obstacle affecting the search.';
+
+  @override
+  String get locationKindNotSearchableLabel => 'Not searchable';
+
+  @override
+  String get locationKindNotSearchableDescription =>
+      'An area that could not be searched.';
+
+  @override
+  String get locationKindPhoneTraceLabel => 'Phone trace';
+
+  @override
+  String get locationKindPhoneTraceDescription =>
+      'A location derived from a phone trace.';
+
+  @override
+  String get locationKindObservationLabel => 'Observation';
+
+  @override
+  String get locationKindObservationDescription =>
+      'A reported sighting or observation.';
+
+  @override
+  String get locationKindVantagePointLabel => 'Vantage point';
+
+  @override
+  String get locationKindVantagePointDescription =>
+      'A point with good visibility over the search area.';
+
+  @override
+  String get locationKindContainmentPostLabel => 'Containment post';
+
+  @override
+  String get locationKindContainmentPostDescription =>
+      'A post used to contain the search area.';
+
+  @override
+  String get locationKindPersonFoundLabel => 'Person found';
+
+  @override
+  String get locationKindPersonFoundDescription =>
+      'Where the missing person was found.';
+
+  @override
+  String get locationKindOtherLabel => 'Other';
+
+  @override
+  String get locationKindOtherDescription => 'Any other kind of location.';
+
+  @override
   String programSaveBlockedUndeclaredVariable(String sections) {
     return 'Can’t save: $sections contains an unknown variable';
   }

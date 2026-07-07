@@ -1115,6 +1115,136 @@
   "@variableOverridesSectionEmptyState": {
     "description": "Vist i VariableOverridesSection i stedet for radlisten når planen ikke har noen deklarerte variabler å overstyre."
   },
+
+  "locationKindLkpLabel": "Sist kjent posisjon (LKP)",
+  "@locationKindLkpLabel": {
+    "description": "Etikett for LocationKind.lkp, vist i type-velgeren og på kartet (ADR-0047/DESIGN-009)."
+  },
+  "locationKindLkpDescription": "Siste bekreftede posisjon til den savnede.",
+  "@locationKindLkpDescription": {
+    "description": "Hjelpetekst for LocationKind.lkp, vist under etiketten i type-velgeren."
+  },
+  "locationKindIppLabel": "Initielt planleggingspunkt (IPP)",
+  "@locationKindIppLabel": {
+    "description": "Etikett for LocationKind.ipp, vist i type-velgeren og på kartet."
+  },
+  "locationKindIppDescription": "Utgangspunktet søkesektorer måles fra.",
+  "@locationKindIppDescription": {
+    "description": "Hjelpetekst for LocationKind.ipp, vist under etiketten i type-velgeren."
+  },
+  "locationKindPpLabel": "Planleggingspunkt (PP)",
+  "@locationKindPpLabel": {
+    "description": "Etikett for LocationKind.pp, vist i type-velgeren og på kartet."
+  },
+  "locationKindPpDescription": "Et planleggingspunkt brukt til å strukturere søksområdet.",
+  "@locationKindPpDescription": {
+    "description": "Hjelpetekst for LocationKind.pp, vist under etiketten i type-velgeren."
+  },
+  "locationKindRendezvousLabel": "Oppmøtested",
+  "@locationKindRendezvousLabel": {
+    "description": "Etikett for LocationKind.rendezvous, vist i type-velgeren og på kartet."
+  },
+  "locationKindRendezvousDescription": "Hvor mannskaper møtes før utrykning.",
+  "@locationKindRendezvousDescription": {
+    "description": "Hjelpetekst for LocationKind.rendezvous, vist under etiketten i type-velgeren."
+  },
+  "locationKindCommandPostLabel": "Kommandoplass",
+  "@locationKindCommandPostLabel": {
+    "description": "Etikett for LocationKind.commandPost, vist i type-velgeren og på kartet."
+  },
+  "locationKindCommandPostDescription": "Hvor øvelsen ledes fra.",
+  "@locationKindCommandPostDescription": {
+    "description": "Hjelpetekst for LocationKind.commandPost, vist under etiketten i type-velgeren."
+  },
+  "locationKindHomeLabel": "Bosted",
+  "@locationKindHomeLabel": {
+    "description": "Etikett for LocationKind.home, vist i type-velgeren og på kartet."
+  },
+  "locationKindHomeDescription": "Personens bosted.",
+  "@locationKindHomeDescription": {
+    "description": "Hjelpetekst for LocationKind.home, vist under etiketten i type-velgeren."
+  },
+  "locationKindTrackFoundLabel": "Funn av spor",
+  "@locationKindTrackFoundLabel": {
+    "description": "Etikett for LocationKind.trackFound, vist i type-velgeren og på kartet."
+  },
+  "locationKindTrackFoundDescription": "Et sted hvor det ble funnet spor.",
+  "@locationKindTrackFoundDescription": {
+    "description": "Hjelpetekst for LocationKind.trackFound, vist under etiketten i type-velgeren."
+  },
+  "locationKindDogInterestLabel": "Interesse av hund",
+  "@locationKindDogInterestLabel": {
+    "description": "Etikett for LocationKind.dogInterest, vist i type-velgeren og på kartet."
+  },
+  "locationKindDogInterestDescription": "Et sted hvor en søkshund viste interesse.",
+  "@locationKindDogInterestDescription": {
+    "description": "Hjelpetekst for LocationKind.dogInterest, vist under etiketten i type-velgeren."
+  },
+  "locationKindObstacleLabel": "Hindring",
+  "@locationKindObstacleLabel": {
+    "description": "Etikett for LocationKind.obstacle, vist i type-velgeren og på kartet."
+  },
+  "locationKindObstacleDescription": "En hindring som påvirker søket.",
+  "@locationKindObstacleDescription": {
+    "description": "Hjelpetekst for LocationKind.obstacle, vist under etiketten i type-velgeren."
+  },
+  "locationKindNotSearchableLabel": "Ikke søkbart",
+  "@locationKindNotSearchableLabel": {
+    "description": "Etikett for LocationKind.notSearchable, vist i type-velgeren og på kartet."
+  },
+  "locationKindNotSearchableDescription": "Et område som ikke kunne søkes.",
+  "@locationKindNotSearchableDescription": {
+    "description": "Hjelpetekst for LocationKind.notSearchable, vist under etiketten i type-velgeren."
+  },
+  "locationKindPhoneTraceLabel": "Mobilspor",
+  "@locationKindPhoneTraceLabel": {
+    "description": "Etikett for LocationKind.phoneTrace, vist i type-velgeren og på kartet."
+  },
+  "locationKindPhoneTraceDescription": "En posisjon avledet fra mobilsporing.",
+  "@locationKindPhoneTraceDescription": {
+    "description": "Hjelpetekst for LocationKind.phoneTrace, vist under etiketten i type-velgeren."
+  },
+  "locationKindObservationLabel": "Observasjon",
+  "@locationKindObservationLabel": {
+    "description": "Etikett for LocationKind.observation, vist i type-velgeren og på kartet."
+  },
+  "locationKindObservationDescription": "En rapportert observasjon.",
+  "@locationKindObservationDescription": {
+    "description": "Hjelpetekst for LocationKind.observation, vist under etiketten i type-velgeren."
+  },
+  "locationKindVantagePointLabel": "Utkikkspunkt",
+  "@locationKindVantagePointLabel": {
+    "description": "Etikett for LocationKind.vantagePoint, vist i type-velgeren og på kartet."
+  },
+  "locationKindVantagePointDescription": "Et punkt med god utsikt over søksområdet.",
+  "@locationKindVantagePointDescription": {
+    "description": "Hjelpetekst for LocationKind.vantagePoint, vist under etiketten i type-velgeren."
+  },
+  "locationKindContainmentPostLabel": "Sperrepost",
+  "@locationKindContainmentPostLabel": {
+    "description": "Etikett for LocationKind.containmentPost, vist i type-velgeren og på kartet."
+  },
+  "locationKindContainmentPostDescription": "En post brukt for å avgrense søksområdet.",
+  "@locationKindContainmentPostDescription": {
+    "description": "Hjelpetekst for LocationKind.containmentPost, vist under etiketten i type-velgeren."
+  },
+  "locationKindPersonFoundLabel": "Funn av person",
+  "@locationKindPersonFoundLabel": {
+    "description": "Etikett for LocationKind.personFound, vist i type-velgeren og på kartet."
+  },
+  "locationKindPersonFoundDescription": "Hvor den savnede ble funnet.",
+  "@locationKindPersonFoundDescription": {
+    "description": "Hjelpetekst for LocationKind.personFound, vist under etiketten i type-velgeren."
+  },
+  "locationKindOtherLabel": "Annet",
+  "@locationKindOtherLabel": {
+    "description": "Etikett for LocationKind.other, vist i type-velgeren og på kartet."
+  },
+  "locationKindOtherDescription": "Enhver annen type lokasjon.",
+  "@locationKindOtherDescription": {
+    "description": "Hjelpetekst for LocationKind.other, vist under etiketten i type-velgeren."
+  },
+
   "programSaveBlockedUndeclaredVariable": "Kan ikke lagre: {sections} inneholder en ukjent variabel",
   "@programSaveBlockedUndeclaredVariable": {
     "description": "Snackbar vist når Lagre blokkeres fordi en Program-scopet markdown-seksjon inneholder {{var.<navn>}} for et udeklarert navn. {sections} er en kommaseparert liste over de aktuelle seksjonsetikettene.",

@@ -2052,6 +2052,136 @@
   "@variableOverridesSectionEmptyState": {
     "description": "Shown in VariableOverridesSection instead of the row list when the plan has no declared variables to override."
   },
+
+  "locationKindLkpLabel": "Last known position (LKP)",
+  "@locationKindLkpLabel": {
+    "description": "LocationKind.lkp label, shown in the kind picker and on the map (ADR-0047/DESIGN-009)."
+  },
+  "locationKindLkpDescription": "The last confirmed position of the missing person.",
+  "@locationKindLkpDescription": {
+    "description": "LocationKind.lkp helper description, shown under the label in the kind picker."
+  },
+  "locationKindIppLabel": "Initial planning point (IPP)",
+  "@locationKindIppLabel": {
+    "description": "LocationKind.ipp label, shown in the kind picker and on the map."
+  },
+  "locationKindIppDescription": "The point search sectors are measured from.",
+  "@locationKindIppDescription": {
+    "description": "LocationKind.ipp helper description, shown under the label in the kind picker."
+  },
+  "locationKindPpLabel": "Planning point (PP)",
+  "@locationKindPpLabel": {
+    "description": "LocationKind.pp label, shown in the kind picker and on the map."
+  },
+  "locationKindPpDescription": "A planning point used to structure the search area.",
+  "@locationKindPpDescription": {
+    "description": "LocationKind.pp helper description, shown under the label in the kind picker."
+  },
+  "locationKindRendezvousLabel": "Rendezvous point",
+  "@locationKindRendezvousLabel": {
+    "description": "LocationKind.rendezvous label, shown in the kind picker and on the map."
+  },
+  "locationKindRendezvousDescription": "Where teams meet before deployment.",
+  "@locationKindRendezvousDescription": {
+    "description": "LocationKind.rendezvous helper description, shown under the label in the kind picker."
+  },
+  "locationKindCommandPostLabel": "Command post",
+  "@locationKindCommandPostLabel": {
+    "description": "LocationKind.commandPost label, shown in the kind picker and on the map."
+  },
+  "locationKindCommandPostDescription": "Where the exercise is led from.",
+  "@locationKindCommandPostDescription": {
+    "description": "LocationKind.commandPost helper description, shown under the label in the kind picker."
+  },
+  "locationKindHomeLabel": "Home",
+  "@locationKindHomeLabel": {
+    "description": "LocationKind.home label, shown in the kind picker and on the map."
+  },
+  "locationKindHomeDescription": "The person's home address.",
+  "@locationKindHomeDescription": {
+    "description": "LocationKind.home helper description, shown under the label in the kind picker."
+  },
+  "locationKindTrackFoundLabel": "Track found",
+  "@locationKindTrackFoundLabel": {
+    "description": "LocationKind.trackFound label, shown in the kind picker and on the map."
+  },
+  "locationKindTrackFoundDescription": "A place where a track was found.",
+  "@locationKindTrackFoundDescription": {
+    "description": "LocationKind.trackFound helper description, shown under the label in the kind picker."
+  },
+  "locationKindDogInterestLabel": "Dog interest",
+  "@locationKindDogInterestLabel": {
+    "description": "LocationKind.dogInterest label, shown in the kind picker and on the map."
+  },
+  "locationKindDogInterestDescription": "A place a search dog showed interest.",
+  "@locationKindDogInterestDescription": {
+    "description": "LocationKind.dogInterest helper description, shown under the label in the kind picker."
+  },
+  "locationKindObstacleLabel": "Obstacle",
+  "@locationKindObstacleLabel": {
+    "description": "LocationKind.obstacle label, shown in the kind picker and on the map."
+  },
+  "locationKindObstacleDescription": "An obstacle affecting the search.",
+  "@locationKindObstacleDescription": {
+    "description": "LocationKind.obstacle helper description, shown under the label in the kind picker."
+  },
+  "locationKindNotSearchableLabel": "Not searchable",
+  "@locationKindNotSearchableLabel": {
+    "description": "LocationKind.notSearchable label, shown in the kind picker and on the map."
+  },
+  "locationKindNotSearchableDescription": "An area that could not be searched.",
+  "@locationKindNotSearchableDescription": {
+    "description": "LocationKind.notSearchable helper description, shown under the label in the kind picker."
+  },
+  "locationKindPhoneTraceLabel": "Phone trace",
+  "@locationKindPhoneTraceLabel": {
+    "description": "LocationKind.phoneTrace label, shown in the kind picker and on the map."
+  },
+  "locationKindPhoneTraceDescription": "A location derived from a phone trace.",
+  "@locationKindPhoneTraceDescription": {
+    "description": "LocationKind.phoneTrace helper description, shown under the label in the kind picker."
+  },
+  "locationKindObservationLabel": "Observation",
+  "@locationKindObservationLabel": {
+    "description": "LocationKind.observation label, shown in the kind picker and on the map."
+  },
+  "locationKindObservationDescription": "A reported sighting or observation.",
+  "@locationKindObservationDescription": {
+    "description": "LocationKind.observation helper description, shown under the label in the kind picker."
+  },
+  "locationKindVantagePointLabel": "Vantage point",
+  "@locationKindVantagePointLabel": {
+    "description": "LocationKind.vantagePoint label, shown in the kind picker and on the map."
+  },
+  "locationKindVantagePointDescription": "A point with good visibility over the search area.",
+  "@locationKindVantagePointDescription": {
+    "description": "LocationKind.vantagePoint helper description, shown under the label in the kind picker."
+  },
+  "locationKindContainmentPostLabel": "Containment post",
+  "@locationKindContainmentPostLabel": {
+    "description": "LocationKind.containmentPost label, shown in the kind picker and on the map."
+  },
+  "locationKindContainmentPostDescription": "A post used to contain the search area.",
+  "@locationKindContainmentPostDescription": {
+    "description": "LocationKind.containmentPost helper description, shown under the label in the kind picker."
+  },
+  "locationKindPersonFoundLabel": "Person found",
+  "@locationKindPersonFoundLabel": {
+    "description": "LocationKind.personFound label, shown in the kind picker and on the map."
+  },
+  "locationKindPersonFoundDescription": "Where the missing person was found.",
+  "@locationKindPersonFoundDescription": {
+    "description": "LocationKind.personFound helper description, shown under the label in the kind picker."
+  },
+  "locationKindOtherLabel": "Other",
+  "@locationKindOtherLabel": {
+    "description": "LocationKind.other label, shown in the kind picker and on the map."
+  },
+  "locationKindOtherDescription": "Any other kind of location.",
+  "@locationKindOtherDescription": {
+    "description": "LocationKind.other helper description, shown under the label in the kind picker."
+  },
+
   "programSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",
   "@programSaveBlockedUndeclaredVariable": {
     "description": "Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.",

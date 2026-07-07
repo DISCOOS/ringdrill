@@ -3440,6 +3440,198 @@ abstract class AppLocalizations {
   /// **'No variables in the plan yet'**
   String get variableOverridesSectionEmptyState;
 
+  /// LocationKind.lkp label, shown in the kind picker and on the map (ADR-0047/DESIGN-009).
+  ///
+  /// In en, this message translates to:
+  /// **'Last known position (LKP)'**
+  String get locationKindLkpLabel;
+
+  /// LocationKind.lkp helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'The last confirmed position of the missing person.'**
+  String get locationKindLkpDescription;
+
+  /// LocationKind.ipp label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial planning point (IPP)'**
+  String get locationKindIppLabel;
+
+  /// LocationKind.ipp helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'The point search sectors are measured from.'**
+  String get locationKindIppDescription;
+
+  /// LocationKind.pp label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning point (PP)'**
+  String get locationKindPpLabel;
+
+  /// LocationKind.pp helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'A planning point used to structure the search area.'**
+  String get locationKindPpDescription;
+
+  /// LocationKind.rendezvous label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Rendezvous point'**
+  String get locationKindRendezvousLabel;
+
+  /// LocationKind.rendezvous helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Where teams meet before deployment.'**
+  String get locationKindRendezvousDescription;
+
+  /// LocationKind.commandPost label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Command post'**
+  String get locationKindCommandPostLabel;
+
+  /// LocationKind.commandPost helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the exercise is led from.'**
+  String get locationKindCommandPostDescription;
+
+  /// LocationKind.home label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get locationKindHomeLabel;
+
+  /// LocationKind.home helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'The person\'s home address.'**
+  String get locationKindHomeDescription;
+
+  /// LocationKind.trackFound label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Track found'**
+  String get locationKindTrackFoundLabel;
+
+  /// LocationKind.trackFound helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'A place where a track was found.'**
+  String get locationKindTrackFoundDescription;
+
+  /// LocationKind.dogInterest label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Dog interest'**
+  String get locationKindDogInterestLabel;
+
+  /// LocationKind.dogInterest helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'A place a search dog showed interest.'**
+  String get locationKindDogInterestDescription;
+
+  /// LocationKind.obstacle label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Obstacle'**
+  String get locationKindObstacleLabel;
+
+  /// LocationKind.obstacle helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'An obstacle affecting the search.'**
+  String get locationKindObstacleDescription;
+
+  /// LocationKind.notSearchable label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Not searchable'**
+  String get locationKindNotSearchableLabel;
+
+  /// LocationKind.notSearchable helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'An area that could not be searched.'**
+  String get locationKindNotSearchableDescription;
+
+  /// LocationKind.phoneTrace label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone trace'**
+  String get locationKindPhoneTraceLabel;
+
+  /// LocationKind.phoneTrace helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'A location derived from a phone trace.'**
+  String get locationKindPhoneTraceDescription;
+
+  /// LocationKind.observation label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Observation'**
+  String get locationKindObservationLabel;
+
+  /// LocationKind.observation helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'A reported sighting or observation.'**
+  String get locationKindObservationDescription;
+
+  /// LocationKind.vantagePoint label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Vantage point'**
+  String get locationKindVantagePointLabel;
+
+  /// LocationKind.vantagePoint helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'A point with good visibility over the search area.'**
+  String get locationKindVantagePointDescription;
+
+  /// LocationKind.containmentPost label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Containment post'**
+  String get locationKindContainmentPostLabel;
+
+  /// LocationKind.containmentPost helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'A post used to contain the search area.'**
+  String get locationKindContainmentPostDescription;
+
+  /// LocationKind.personFound label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Person found'**
+  String get locationKindPersonFoundLabel;
+
+  /// LocationKind.personFound helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the missing person was found.'**
+  String get locationKindPersonFoundDescription;
+
+  /// LocationKind.other label, shown in the kind picker and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get locationKindOtherLabel;
+
+  /// LocationKind.other helper description, shown under the label in the kind picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Any other kind of location.'**
+  String get locationKindOtherDescription;
+
   /// Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.
   ///
   /// In en, this message translates to:
