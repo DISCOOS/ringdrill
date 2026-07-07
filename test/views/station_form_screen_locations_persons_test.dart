@@ -8,12 +8,14 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 
-/// DESIGN-009 prompt 3 — the Locations and Persons sections in
-/// `StationFormScreen`: add/edit/delete for both lists, and the Persons
-/// row's home picker setting `homeSlug`. No explicit surface size is set:
-/// the default `flutter_test` surface (800x600) lands in the wide/medium
-/// window class, so tapping a section label needs no switcher-sheet step
-/// first (see `station_form_screen_variables_test.dart`).
+/// DESIGN-009 prompt 3 / follow-up 3b — the Locations and Persons sections
+/// in `StationFormScreen`: add/edit (through `openFormSurface` forms) and
+/// swipe-to-dismiss delete for both lists, and the Persons form's home
+/// picker setting `homeSlug`. No explicit surface size is set: the default
+/// `flutter_test` surface (800x600) lands in the wide/medium window class,
+/// so tapping a section label needs no switcher-sheet step first (see
+/// `station_form_screen_variables_test.dart`), and `openFormSurface` opens
+/// each entity form as a `Dialog`, not a full-screen route.
 
 Station _station({
   List<Location> locations = const [],
@@ -75,24 +77,19 @@ Future<void> _openForm(
   await tester.pumpAndSettle();
 }
 
-/// The `⋮` row-action menu for the row whose label text is [text]. Scoped
-/// to that row rather than a bare `find.byIcon(Icons.more_vert)`, since
-/// `SectionNavigatedForm`'s own overflow control always renders one too
-/// (see `program_form_screen_variables_declaration_test.dart`'s
-/// `_variableRowMenu`, the same pattern).
-Finder _rowMenu(String text) {
-  final row = find.ancestor(of: find.text(text), matching: find.byType(Row));
-  return find.descendant(of: row, matching: find.byIcon(Icons.more_vert)).first;
-}
-
-/// Same scoping as [_rowMenu], for a `ListTile`-based row (the Locations
-/// list, DESIGN-009 follow-up 3b) rather than a bare `Row`.
-Finder _tileMenu(String text) {
-  final tile = find.ancestor(
-    of: find.text(text),
-    matching: find.byType(ListTile),
-  );
-  return find.descendant(of: tile, matching: find.byIcon(Icons.more_vert)).first;
+/// Swipes the tile showing [text] end-to-start past the dismiss threshold
+/// and confirms the resulting `confirmDestructive` dialog (ADR-0031) — the
+/// same drag offset and confirm-tap `roster_view_test.dart` uses for its
+/// own swipe-to-delete row.
+Future<void> _swipeToDeleteAndConfirm(
+  WidgetTester tester,
+  AppLocalizations l,
+  String text,
+) async {
+  await tester.drag(find.text(text), const Offset(-500, 0));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(l.delete));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -191,10 +188,7 @@ void main() {
       await tester.tap(find.text(l.locationsSectionTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(_tileMenu('Sist kjent'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l.locationsSectionDeleteAction));
-      await tester.pumpAndSettle();
+      await _swipeToDeleteAndConfirm(tester, l, 'Sist kjent');
 
       expect(find.text('Sist kjent'), findsNothing);
 
@@ -222,9 +216,7 @@ void main() {
         find.widgetWithText(TextFormField, l.roleName),
         'Anne Glemsk',
       );
-      await tester.tap(
-        find.widgetWithText(FilledButton, l.personsSectionAddAction),
-      );
+      await tester.tap(find.widgetWithText(FilledButton, l.save));
       await tester.pumpAndSettle();
 
       expect(find.text('Anne Glemsk'), findsOneWidget);
@@ -255,9 +247,15 @@ void main() {
         await tester.tap(find.text(l.personsSectionTitle));
         await tester.pumpAndSettle();
 
+        await tester.tap(find.text('Anne Glemsk'));
+        await tester.pumpAndSettle();
+
         await tester.tap(find.byKey(const Key('home-field')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Sist kjent').last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(FilledButton, l.save));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text(l.save));
@@ -283,22 +281,15 @@ void main() {
       await tester.tap(find.text(l.personsSectionTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(_rowMenu('Anne Glemsk'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l.personsSectionEditAction));
+      await tester.tap(find.text('Anne Glemsk'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
         find.widgetWithText(TextFormField, l.roleAge),
         '74',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.roleGender),
-        'kvinne',
-      );
-      await tester.tap(
-        find.widgetWithText(FilledButton, l.personsSectionEditAction),
-      );
+      await tester.tap(find.text(l.genderWomanLabel));
+      await tester.tap(find.widgetWithText(FilledButton, l.save));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l.save));
@@ -308,7 +299,7 @@ void main() {
       final saved = captured.value!.persons.single;
       expect(saved.slug, 'anne');
       expect(saved.age, 74);
-      expect(saved.gender, 'kvinne');
+      expect(saved.gender, 'woman');
     });
 
     testWidgets('deleting a person removes it', (tester) async {
@@ -324,10 +315,7 @@ void main() {
       await tester.tap(find.text(l.personsSectionTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(_rowMenu('Anne Glemsk'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l.personsSectionDeleteAction));
-      await tester.pumpAndSettle();
+      await _swipeToDeleteAndConfirm(tester, l, 'Anne Glemsk');
 
       expect(find.text('Anne Glemsk'), findsNothing);
 

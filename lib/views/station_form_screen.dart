@@ -183,6 +183,22 @@ class _StationFormScreenState extends State<StationFormScreen> {
     });
   }
 
+  /// Same upsert-by-slug as [_upsertLocation], for [_workingPersons]. Also
+  /// the target for a [Location] created inline from
+  /// [PersonsSection]'s home picker (via [_upsertLocation]) — see
+  /// `PersonsSection.onSave`.
+  void _upsertPerson(Person person) {
+    setState(() {
+      final exists = _workingPersons.any((p) => p.slug == person.slug);
+      _workingPersons = exists
+          ? [
+              for (final p in _workingPersons)
+                if (p.slug == person.slug) person else p,
+            ]
+          : [..._workingPersons, person];
+    });
+  }
+
   String _labelFor(_StationSection section, AppLocalizations l) =>
       switch (section) {
         _StationSection.equipment => l.briefSectionStationEquipment,
@@ -336,21 +352,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
               builder: (_) => PersonsSection(
                 persons: _workingPersons,
                 locations: _workingLocations,
-                onAdd: (person) => setState(
-                  () => _workingPersons = [..._workingPersons, person],
-                ),
-                onEdit: (person) => setState(
-                  () => _workingPersons = [
-                    for (final p in _workingPersons)
-                      if (p.slug == person.slug) person else p,
-                  ],
-                ),
-                onHomeChanged: (slug, homeSlug) => setState(
-                  () => _workingPersons = [
-                    for (final p in _workingPersons)
-                      if (p.slug == slug) p.copyWith(homeSlug: homeSlug) else p,
-                  ],
-                ),
+                onSave: (person, newLocation) {
+                  if (newLocation != null) _upsertLocation(newLocation);
+                  _upsertPerson(person);
+                },
                 onDelete: (slug) => setState(
                   () => _workingPersons = _workingPersons
                       .where((p) => p.slug != slug)

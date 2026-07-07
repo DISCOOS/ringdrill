@@ -1255,11 +1255,14 @@
   },
   "locationsSectionEditAction": "Rediger",
   "@locationsSectionEditAction": {
-    "description": "Rad-menyhandling (ADR-0031) som redigerer en lokasjons label/kind/place/note, og tittelen på dialogen den åpner. Referansen genereres automatisk og vises/redigeres aldri (DESIGN-009 oppfølging 3b); posisjon har sin egen kartvelger på selve raden."
+    "description": "AppBar-tittel for LocationFormScreen ved redigering av en eksisterende lokasjon (DESIGN-009 oppfølging 3b). Referansen genereres automatisk og vises/redigeres aldri; posisjon settes inline i skjemaet via sin egen kartvelger."
   },
-  "locationsSectionDeleteAction": "Slett",
-  "@locationsSectionDeleteAction": {
-    "description": "Rad-menyhandling (ADR-0031) som sletter en lokasjon. Enkel sletting i denne prompten -- referansesperren (blokkert mens den refereres) kommer i DESIGN-009 prompt 5."
+  "locationsSectionDeleteConfirmMessage": "Slette «{name}»?",
+  "@locationsSectionDeleteConfirmMessage": {
+    "description": "confirmDestructive-melding før en sveip-for-å-slette av en lokasjon (ADR-0031). Enkel sletting -- referansesperren (blokkert mens den refereres) er en fremtidig handling, ADR-0047.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
   },
   "locationsSectionLabelLabel": "Navn",
   "@locationsSectionLabelLabel": {
@@ -1284,6 +1287,10 @@
       "count": { "type": "int" }
     }
   },
+  "locationsSectionShowFewerKinds": "Vis mindre",
+  "@locationsSectionShowFewerKinds": {
+    "description": "Sammenslåingslenke under det utvidede LocationKind-kategorirutenettet i lokasjonsskjemaet, motstykket til locationsSectionShowAllKinds."
+  },
   "locationsSectionSearchHint": "Søk i lokasjoner",
   "@locationsSectionSearchHint": {
     "description": "Plassholdertekst i Lokasjoner-seksjonens søkefelt (filtrerer på label/place)."
@@ -1306,11 +1313,14 @@
   },
   "personsSectionEditAction": "Rediger",
   "@personsSectionEditAction": {
-    "description": "Rad-menyhandling (ADR-0031) som redigerer en persons navn/alder/kjønn/signalement/notater, og tittelen på dialogen den åpner. Referansen genereres automatisk og vises/redigeres aldri (DESIGN-009 oppfølging 3b); bopel har sin egen velger på selve raden."
+    "description": "AppBar-tittel for PersonFormScreen ved redigering av en eksisterende person (DESIGN-009 oppfølging 3b). Referansen genereres automatisk og vises/redigeres aldri; bopel har sin egen velger i skjemaet."
   },
-  "personsSectionDeleteAction": "Slett",
-  "@personsSectionDeleteAction": {
-    "description": "Rad-menyhandling (ADR-0031) som sletter en person. Enkel sletting i denne prompten -- referansesperren (blokkert mens den refereres, inkludert en homeSlug som peker på den) kommer i DESIGN-009 prompt 5."
+  "personsSectionDeleteConfirmMessage": "Slette «{name}»?",
+  "@personsSectionDeleteConfirmMessage": {
+    "description": "confirmDestructive-melding før en sveip-for-å-slette av en person (ADR-0031). Enkel sletting -- referansesperren (blokkert mens den refereres, inkludert en homeSlug som peker på den) er en fremtidig handling, ADR-0047.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
   },
   "personsSectionHomeLabel": "Bopel",
   "@personsSectionHomeLabel": {
@@ -1324,9 +1334,33 @@
   "@personsSectionNotesLabel": {
     "description": "Feltetikett for en persons valgfrie notater i legg-til/rediger-dialogen."
   },
+  "personsSectionSearchHint": "Søk i personer",
+  "@personsSectionSearchHint": {
+    "description": "Plassholdertekst i Personer-seksjonens søkefelt (filtrerer på navn/signalement)."
+  },
+  "personsSectionSortByName": "Navn",
+  "@personsSectionSortByName": {
+    "description": "Sorteringsetikett når Personer-listen sorteres alfabetisk etter navn (standard). Trykk bytter til personsSectionSortByAge."
+  },
+  "personsSectionSortByAge": "Alder",
+  "@personsSectionSortByAge": {
+    "description": "Sorteringsetikett når Personer-listen sorteres etter alder. Trykk bytter til personsSectionSortByName."
+  },
   "roleGender": "Kjønn",
   "@roleGender": {
-    "description": "Feltetikett for kjønns-identitetsfeltet, delt mellom PersonsSection (Person.gender) og, fra DESIGN-009 prompt 4, RolePlayFormScreens eget gender-felt (ADR-0047) -- kalt roleGender for roleName/roleAge/roleSignalement-familien den slutter seg til, selv om PersonsSection bruker den først."
+    "description": "Etikett over GenderSegmentedControl, delt mellom PersonsSection (Person.gender) og, fra DESIGN-009 prompt 4, RolePlayFormScreens eget gender-felt (ADR-0047) -- kalt roleGender for roleName/roleAge/roleSignalement-familien den slutter seg til, selv om PersonsSection bruker den først."
+  },
+  "genderWomanLabel": "Kvinne",
+  "@genderWomanLabel": {
+    "description": "GenderSegmentedControl-alternativ for den stabile koden «woman» (DESIGN-009 oppfølging 3b, ADR-0047). Delt av Person.gender og, fra prompt 4, RolePlay.gender."
+  },
+  "genderManLabel": "Mann",
+  "@genderManLabel": {
+    "description": "GenderSegmentedControl-alternativ for den stabile koden «man»."
+  },
+  "genderOtherLabel": "Annet",
+  "@genderOtherLabel": {
+    "description": "GenderSegmentedControl-alternativ for den stabile koden «other»."
   },
 
   "programSaveBlockedUndeclaredVariable": "Kan ikke lagre: {sections} inneholder en ukjent variabel",

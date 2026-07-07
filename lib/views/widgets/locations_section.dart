@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/utils/projection.dart';
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
@@ -12,8 +13,10 @@ enum _LocationSort { byKind, byLabel }
 /// DESIGN-009 "Lokasjoner" section (follow-up 3b — full-screen forms,
 /// searchable/sortable tile list): a light tile per station-owned
 /// [Location] (kind icon + label + place/UTM summary). Tap opens
-/// [LocationFormScreen] to edit; `⋮` offers delete (ADR-0031 — never a
-/// per-row pencil); "+ Ny lokasjon" opens the same form to add.
+/// [LocationFormScreen] to edit; swipe-to-dismiss deletes, behind a
+/// `confirmDestructive` confirmation (ADR-0031 — no per-row pencil, and no
+/// `⋮` menu now that edit is a tap away); "+ Ny lokasjon" opens the same
+/// form to add.
 ///
 /// Presentation-only, mirroring `VariablesSection`: [locations] and the
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
@@ -197,31 +200,34 @@ class _LocationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final displayName = location.label.isEmpty ? location.slug : location.label;
     final subtitle = location.place.isNotEmpty
         ? location.place
         : (location.position == null ? '' : _formatUtm(location.position!));
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(location.kind.icon, color: location.kind.color),
-      title: Text(
-        location.label.isEmpty ? location.slug : location.label,
-        overflow: TextOverflow.ellipsis,
+    return Dismissible(
+      key: ValueKey(location.slug),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: theme.colorScheme.error,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
-      subtitle: subtitle.isEmpty
-          ? null
-          : Text(subtitle, overflow: TextOverflow.ellipsis),
-      trailing: PopupMenuButton<bool>(
-        tooltip: '',
-        // A PopupMenuItem with no `value` pops `null`, which
-        // PopupMenuButton treats as "cancelled" and never calls
-        // onSelected -- give it a real value so a tap actually fires.
-        onSelected: (_) => onDelete(),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: true,
-            child: Text(l10n.locationsSectionDeleteAction),
-          ),
-        ],
+      confirmDismiss: (_) => confirmDestructive(
+        context,
+        title: l10n.confirm,
+        message: l10n.locationsSectionDeleteConfirmMessage(displayName),
+        confirmLabel: l10n.delete,
+      ),
+      onDismissed: (_) => onDelete(),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(location.kind.icon, color: location.kind.color),
+        title: Text(displayName, overflow: TextOverflow.ellipsis),
+        subtitle: subtitle.isEmpty
+            ? null
+            : Text(subtitle, overflow: TextOverflow.ellipsis),
       ),
     );
   }

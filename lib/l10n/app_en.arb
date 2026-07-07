@@ -2192,11 +2192,14 @@
   },
   "locationsSectionEditAction": "Edit",
   "@locationsSectionEditAction": {
-    "description": "Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); position has its own inline map-pick control on the row."
+    "description": "AppBar title of LocationFormScreen when editing an existing location (DESIGN-009 follow-up 3b). The reference is auto-generated and never shown/edited; position is set inline in the form via its own map-pick control."
   },
-  "locationsSectionDeleteAction": "Delete",
-  "@locationsSectionDeleteAction": {
-    "description": "Row overflow-menu action (ADR-0031) that deletes a location. Plain delete in this prompt -- the reference guard (blocked-while-referenced) is DESIGN-009 prompt 5."
+  "locationsSectionDeleteConfirmMessage": "Delete “{name}”?",
+  "@locationsSectionDeleteConfirmMessage": {
+    "description": "confirmDestructive message before a swipe-to-dismiss delete of a location (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced) is a future action, ADR-0047.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
   },
   "locationsSectionLabelLabel": "Name",
   "@locationsSectionLabelLabel": {
@@ -2221,6 +2224,10 @@
       "count": { "type": "int" }
     }
   },
+  "locationsSectionShowFewerKinds": "Show less",
+  "@locationsSectionShowFewerKinds": {
+    "description": "Collapse link below the expanded LocationKind category grid in the Location form, the counterpart to locationsSectionShowAllKinds."
+  },
   "locationsSectionSearchHint": "Search locations",
   "@locationsSectionSearchHint": {
     "description": "Placeholder text in the Locations section's search field (filters by label/place)."
@@ -2243,11 +2250,14 @@
   },
   "personsSectionEditAction": "Edit",
   "@personsSectionEditAction": {
-    "description": "Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); home has its own inline picker on the row."
+    "description": "AppBar title of PersonFormScreen when editing an existing person (DESIGN-009 follow-up 3b). The reference is auto-generated and never shown/edited; home has its own inline picker in the form."
   },
-  "personsSectionDeleteAction": "Delete",
-  "@personsSectionDeleteAction": {
-    "description": "Row overflow-menu action (ADR-0031) that deletes a person. Plain delete in this prompt -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is DESIGN-009 prompt 5."
+  "personsSectionDeleteConfirmMessage": "Delete “{name}”?",
+  "@personsSectionDeleteConfirmMessage": {
+    "description": "confirmDestructive message before a swipe-to-dismiss delete of a person (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is a future action, ADR-0047.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
   },
   "personsSectionHomeLabel": "Home",
   "@personsSectionHomeLabel": {
@@ -2261,9 +2271,33 @@
   "@personsSectionNotesLabel": {
     "description": "Field label for a person's optional notes in the add/edit-person dialog."
   },
+  "personsSectionSearchHint": "Search persons",
+  "@personsSectionSearchHint": {
+    "description": "Placeholder text in the Persons section's search field (filters by name/signalement)."
+  },
+  "personsSectionSortByName": "Name",
+  "@personsSectionSortByName": {
+    "description": "Sort-toggle label when the Persons list is sorted alphabetically by name (the default). Tapping switches to personsSectionSortByAge."
+  },
+  "personsSectionSortByAge": "Age",
+  "@personsSectionSortByAge": {
+    "description": "Sort-toggle label when the Persons list is sorted by age. Tapping switches to personsSectionSortByName."
+  },
   "roleGender": "Gender",
   "@roleGender": {
-    "description": "Field label for the gender identity field, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first."
+    "description": "Label above the GenderSegmentedControl, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first."
+  },
+  "genderWomanLabel": "Woman",
+  "@genderWomanLabel": {
+    "description": "GenderSegmentedControl option label for the stable code \"woman\" (DESIGN-009 follow-up 3b, ADR-0047). Shared by Person.gender and, from prompt 4, RolePlay.gender."
+  },
+  "genderManLabel": "Man",
+  "@genderManLabel": {
+    "description": "GenderSegmentedControl option label for the stable code \"man\"."
+  },
+  "genderOtherLabel": "Other",
+  "@genderOtherLabel": {
+    "description": "GenderSegmentedControl option label for the stable code \"other\"."
   },
 
   "programSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",

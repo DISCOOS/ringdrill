@@ -208,20 +208,23 @@ class _KindCategoryGridState extends State<_KindCategoryGrid> {
               ),
           ],
         ),
-        if (!_expanded)
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => setState(() => _expanded = true),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                l10n.locationsSectionShowAllKinds(LocationKind.values.length),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              _expanded
+                  ? l10n.locationsSectionShowFewerKinds
+                  : l10n.locationsSectionShowAllKinds(
+                      LocationKind.values.length,
+                    ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
+        ),
       ],
     );
   }

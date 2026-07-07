@@ -3644,17 +3644,17 @@ abstract class AppLocalizations {
   /// **'New location'**
   String get locationsSectionAddAction;
 
-  /// Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); position has its own inline map-pick control on the row.
+  /// AppBar title of LocationFormScreen when editing an existing location (DESIGN-009 follow-up 3b). The reference is auto-generated and never shown/edited; position is set inline in the form via its own map-pick control.
   ///
   /// In en, this message translates to:
   /// **'Edit'**
   String get locationsSectionEditAction;
 
-  /// Row overflow-menu action (ADR-0031) that deletes a location. Plain delete in this prompt -- the reference guard (blocked-while-referenced) is DESIGN-009 prompt 5.
+  /// confirmDestructive message before a swipe-to-dismiss delete of a location (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced) is a future action, ADR-0047.
   ///
   /// In en, this message translates to:
-  /// **'Delete'**
-  String get locationsSectionDeleteAction;
+  /// **'Delete “{name}”?'**
+  String locationsSectionDeleteConfirmMessage(String name);
 
   /// Field label for a location's display label in the add/edit-location dialog.
   ///
@@ -3686,6 +3686,12 @@ abstract class AppLocalizations {
   /// **'Show all {count} categories'**
   String locationsSectionShowAllKinds(int count);
 
+  /// Collapse link below the expanded LocationKind category grid in the Location form, the counterpart to locationsSectionShowAllKinds.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get locationsSectionShowFewerKinds;
+
   /// Placeholder text in the Locations section's search field (filters by label/place).
   ///
   /// In en, this message translates to:
@@ -3716,17 +3722,17 @@ abstract class AppLocalizations {
   /// **'New person'**
   String get personsSectionAddAction;
 
-  /// Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); home has its own inline picker on the row.
+  /// AppBar title of PersonFormScreen when editing an existing person (DESIGN-009 follow-up 3b). The reference is auto-generated and never shown/edited; home has its own inline picker in the form.
   ///
   /// In en, this message translates to:
   /// **'Edit'**
   String get personsSectionEditAction;
 
-  /// Row overflow-menu action (ADR-0031) that deletes a person. Plain delete in this prompt -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is DESIGN-009 prompt 5.
+  /// confirmDestructive message before a swipe-to-dismiss delete of a person (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is a future action, ADR-0047.
   ///
   /// In en, this message translates to:
-  /// **'Delete'**
-  String get personsSectionDeleteAction;
+  /// **'Delete “{name}”?'**
+  String personsSectionDeleteConfirmMessage(String name);
 
   /// Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row.
   ///
@@ -3746,11 +3752,47 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get personsSectionNotesLabel;
 
-  /// Field label for the gender identity field, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first.
+  /// Placeholder text in the Persons section's search field (filters by name/signalement).
+  ///
+  /// In en, this message translates to:
+  /// **'Search persons'**
+  String get personsSectionSearchHint;
+
+  /// Sort-toggle label when the Persons list is sorted alphabetically by name (the default). Tapping switches to personsSectionSortByAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get personsSectionSortByName;
+
+  /// Sort-toggle label when the Persons list is sorted by age. Tapping switches to personsSectionSortByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get personsSectionSortByAge;
+
+  /// Label above the GenderSegmentedControl, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first.
   ///
   /// In en, this message translates to:
   /// **'Gender'**
   String get roleGender;
+
+  /// GenderSegmentedControl option label for the stable code "woman" (DESIGN-009 follow-up 3b, ADR-0047). Shared by Person.gender and, from prompt 4, RolePlay.gender.
+  ///
+  /// In en, this message translates to:
+  /// **'Woman'**
+  String get genderWomanLabel;
+
+  /// GenderSegmentedControl option label for the stable code "man".
+  ///
+  /// In en, this message translates to:
+  /// **'Man'**
+  String get genderManLabel;
+
+  /// GenderSegmentedControl option label for the stable code "other".
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get genderOtherLabel;
 
   /// Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.
   ///

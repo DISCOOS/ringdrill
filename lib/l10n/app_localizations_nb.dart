@@ -2142,7 +2142,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get locationsSectionEditAction => 'Rediger';
 
   @override
-  String get locationsSectionDeleteAction => 'Slett';
+  String locationsSectionDeleteConfirmMessage(String name) {
+    return 'Slette «$name»?';
+  }
 
   @override
   String get locationsSectionLabelLabel => 'Navn';
@@ -2160,6 +2162,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String locationsSectionShowAllKinds(int count) {
     return 'Vis alle $count kategorier';
   }
+
+  @override
+  String get locationsSectionShowFewerKinds => 'Vis mindre';
 
   @override
   String get locationsSectionSearchHint => 'Søk i lokasjoner';
@@ -2180,7 +2185,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get personsSectionEditAction => 'Rediger';
 
   @override
-  String get personsSectionDeleteAction => 'Slett';
+  String personsSectionDeleteConfirmMessage(String name) {
+    return 'Slette «$name»?';
+  }
 
   @override
   String get personsSectionHomeLabel => 'Bopel';
@@ -2192,7 +2199,25 @@ class AppLocalizationsNb extends AppLocalizations {
   String get personsSectionNotesLabel => 'Notater';
 
   @override
+  String get personsSectionSearchHint => 'Søk i personer';
+
+  @override
+  String get personsSectionSortByName => 'Navn';
+
+  @override
+  String get personsSectionSortByAge => 'Alder';
+
+  @override
   String get roleGender => 'Kjønn';
+
+  @override
+  String get genderWomanLabel => 'Kvinne';
+
+  @override
+  String get genderManLabel => 'Mann';
+
+  @override
+  String get genderOtherLabel => 'Annet';
 
   @override
   String programSaveBlockedUndeclaredVariable(String sections) {

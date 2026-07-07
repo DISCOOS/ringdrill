@@ -2146,7 +2146,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationsSectionEditAction => 'Edit';
 
   @override
-  String get locationsSectionDeleteAction => 'Delete';
+  String locationsSectionDeleteConfirmMessage(String name) {
+    return 'Delete “$name”?';
+  }
 
   @override
   String get locationsSectionLabelLabel => 'Name';
@@ -2164,6 +2166,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String locationsSectionShowAllKinds(int count) {
     return 'Show all $count categories';
   }
+
+  @override
+  String get locationsSectionShowFewerKinds => 'Show less';
 
   @override
   String get locationsSectionSearchHint => 'Search locations';
@@ -2184,7 +2189,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personsSectionEditAction => 'Edit';
 
   @override
-  String get personsSectionDeleteAction => 'Delete';
+  String personsSectionDeleteConfirmMessage(String name) {
+    return 'Delete “$name”?';
+  }
 
   @override
   String get personsSectionHomeLabel => 'Home';
@@ -2196,7 +2203,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personsSectionNotesLabel => 'Notes';
 
   @override
+  String get personsSectionSearchHint => 'Search persons';
+
+  @override
+  String get personsSectionSortByName => 'Name';
+
+  @override
+  String get personsSectionSortByAge => 'Age';
+
+  @override
   String get roleGender => 'Gender';
+
+  @override
+  String get genderWomanLabel => 'Woman';
+
+  @override
+  String get genderManLabel => 'Man';
+
+  @override
+  String get genderOtherLabel => 'Other';
 
   @override
   String programSaveBlockedUndeclaredVariable(String sections) {
