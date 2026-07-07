@@ -46,7 +46,7 @@ sealed class Location with _$Location {
     @Default('') String label,      // display name, e.g. "Last known position"
     @Default(LocationKind.other) LocationKind kind, // drives map styling; extensible
     @Default('') String place,      // address / place description
-    @NullableLatLngJsonConverter() LatLng? position,
+    @NullableLatLngJsonConverter() LatLng? position, // stored as LatLng (WGS84); projections are render-time
     String? note,
   }) = _Location;
   factory Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
@@ -104,7 +104,7 @@ The starter set aligns with the category picker in **FAKS** (Felles aksjonsstøt
 
 Locations and persons extend the **derived `station.*` context** (the same place `{{station.position.utm}}` already lives), not the `var.*` registry. They are referenced with facets:
 
-* `{{station.loc.<slug>}}` (default facet: place plus UTM), `{{station.loc.<slug>.place}}`, `{{station.loc.<slug>.utm}}`, `{{station.loc.<slug>.label}}`.
+* `{{station.loc.<slug>}}` (default facet: place plus UTM), `{{station.loc.<slug>.place}}`, `{{station.loc.<slug>.utm}}`, `{{station.loc.<slug>.label}}`. The coordinate is **stored as `LatLng` (WGS84)**; `.utm` is one render-time *projection* of it, so further facets (MGRS, decimal degrees, …) can be added later without any storage or format change.
 * `{{station.person.<slug>}}` (default: name), `.name`, `.age`, `.gender`, `.signalement`, and `.home` which resolves through `homeSlug` to the referenced location's facets (`{{station.person.anne.home.utm}}`).
 
 Scope is **the station and down**: the station's own fields, and the fields of a `RolePlay` linked to that station. Program- and exercise-level text has no station in scope and cannot reference `station.loc.*` / `station.person.*`. A roleplay resolves against the station it belongs to.

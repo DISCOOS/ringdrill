@@ -50,11 +50,13 @@ In the station's section-navigated editor (DESIGN-008), **Locations** and **Pers
 
 The "What has happened" markdown field is a future addition (it will seed a marker's roleplay); this design does not build it, but it is the archetypal narrative that references `station.person.*` and `station.loc.*`, and it needs nothing beyond what is specified here.
 
-**Locations.** A row per location: `label`, `kind`, and a `place`/coordinate summary. Tapping a row opens the location form (see below); a `⋮` menu offers delete (ADR-0031). "+ New location" opens the form to add one. The reference is auto-generated from the label; the author never types it. Editing the display `label` is free. Delete is blocked while referenced (by a field or by a person's home), listing the usages. Changing the reference itself is a **future** action ("change reference"), which will run the station-and-down rewrite.
+**Locations.** A row per location: `label`, `kind`, and a `place`/coordinate summary. Tapping a row opens the location form (see below); **swipe-to-dismiss deletes** it, matching the app's list pattern (ADR-0031). "+ New location" opens the form to add one. The reference is auto-generated from the label; the author never types it. Editing the display `label` is free. Delete is blocked while referenced (by a field or by a person's home), listing the usages. Changing the reference itself is a **future** action ("change reference"), which will run the station-and-down rewrite.
 
-**Persons.** A row per person: `name` with an `age`/`gender`/`signalement` summary. Tapping opens the person form; `⋮` → delete. "+ New person" opens the form. Reference auto-generated from the name; editing the display name is free; delete guarded as above.
+**Persons.** A row per person: `name` with an `age`/`gender`/`signalement` summary. Tapping opens the person form; swipe-to-dismiss deletes. "+ New person" opens the form. Reference auto-generated from the name; editing the display name is free; delete guarded as above. The location form's category picker is a show-more/less toggle (expand to all 16 kinds, collapse back).
 
 Both lists are the single source. The reference is auto-generated and stable; the display fields (`label`, `name`) are freely editable and are what the picker shows and what facets resolve to. The word "slug" never appears in the UI — where the concept must be named it is "reference".
+
+The Location form's `place` is geocoder-backed, reusing the existing map-search geocoder (`osm_nominatim`) — typing a place suggests and sets the coordinate, and setting the coordinate fills an empty place by reverse lookup. It is best-effort (offline/no-result is a silent no-op) and never overwrites what the author typed. The coordinate is stored as `LatLng` (WGS84); UTM and any other projection are render-time facets (ADR-0047). Detail in prompt 3c.
 
 ## Referencing in text
 
