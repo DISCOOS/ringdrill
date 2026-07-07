@@ -11,6 +11,13 @@ You are working in the RingDrill repository, on `design-009`. Add geocoder assis
 * **Suggestion, not authority.** The author's own entry always wins. Geocoding only auto-fills the empty counterpart; otherwise it suggests. Never overwrite a field the author has typed without an explicit action.
 * **Best-effort.** Offline, an error, or no result is a silent no-op — manual entry and the map picker still work, and geocoding never blocks save. This is a field tool; assume flaky connectivity.
 
+## Also in this prompt (editor-UX review)
+
+Two small refinements folded in with the geocoding work:
+
+* **Section header shows the station name.** In the station's `SectionNavigatedForm`, the AppBar title shows the **station's display name** on every section *except* the base "Post" section (so you can see which station you're in from Locations, Persons, Variabler and the markdown sections). The base section keeps the generic edit title (the name is edited there). Implement as an opt-in on the shell (e.g. an `entityName` the caller passes; non-default sections show it, the default section shows the static `title`) and have the station editor pass the station name — so other editors can adopt it later without change.
+* **Simpler list chrome.** In the Locations and Persons sections: drop the category/sort control (lists are short — not worth it), and put the search field and the "+ Ny lokasjon" / "+ Ny person" action on **one row at the bottom** of the list. Restyle the search to match RingDrill's existing search-field idiom (e.g. the map search field) rather than the current bespoke look.
+
 ## Ground rules
 
 * Reuse `map_view.dart`'s geocoding, don't duplicate it. If the search/reverse logic is inlined there, extract a small reusable geocoding service (forward `search(query)` + `reverse(latLng)`) that both the map and the Location form call. Keep it injectable so tests pass a fake (no network in tests).
@@ -21,7 +28,7 @@ You are working in the RingDrill repository, on `design-009`. Add geocoder assis
 
 ## Scope
 
-Three commits.
+Six commits (three geocoding, three UX-review).
 
 ### Commit 1. Reusable geocoding service
 
@@ -48,11 +55,32 @@ With an injected fake geocoder (no network):
 
 Files: test files under `test/`. Commit: `test: cover Location-form geocoding (forward, reverse, offline-graceful)`.
 
+### Commit 4. Section header shows the station name
+
+In `section_navigated_form.dart`, add an opt-in so the AppBar title shows a caller-supplied entity name on non-default sections while the default (first) section keeps the static `title`. Wire `StationFormScreen` to pass the station's name, so Locations/Persons/Variabler/markdown sections show the station name and the "Post" base section shows the generic edit title. Behavior-preserving for editors that don't pass an entity name.
+
+Files: `lib/views/widgets/section_navigated_form.dart`, `lib/views/station_form_screen.dart`. `flutter analyze` + `flutter test test/views/`. Commit: `feat(views): show the station name as the section header off the base section`.
+
+### Commit 5. Simpler list chrome
+
+In the Locations and Persons sections: remove the sort/category control; render a single bottom row holding the search field and the "+ Ny …" action; restyle the search to RingDrill's existing search-field idiom (match the map search field rather than the bespoke look). Keep search filtering behavior.
+
+Files: the two section widgets, ARB if any string changes. `flutter analyze` + `flutter test test/views/`. Commit: `feat(views): move list search and add-action to one bottom row, drop the sort control`.
+
+### Commit 6. Section ordering
+
+Two ordering rules that hold in every editor's switcher:
+
+* **Variabler is always the last section**, in all selectors (Program, Exercise and Station editors). Make it a guarantee, not per-editor discipline — either pin it last in the shell (e.g. a `FormSection` ordering hint the shell renders last) or ensure every editor builds its list with Variabler last. This also moves the Program editor's Variabler section (currently just after the base) to the bottom.
+* **In the station editor, Persons comes before Locations**, and both come before the narrative markdown sections. So the station order is: Post (base) → Persons → Locations → markdown sections → Variabler.
+
+Files: `lib/views/widgets/section_navigated_form.dart` (if pinning in the shell), `program_form_screen.dart`, `exercise_form_screen.dart`, `station_form_screen.dart`. `flutter analyze` + `flutter test test/views/`. Commit: `feat(views): pin Variabler last and order Persons above Locations`.
+
 ## Verification (final gate — run once)
 
 1. `flutter analyze` clean; full `flutter test` no new failures; no test hits the network.
 2. `make i18n` idempotent; `dart build cli` succeeds.
-3. Manual smoke (online): typing a place suggests and sets the coordinate; dropping a pin fills an empty place; a typed place is never overwritten silently. Offline: the form still works, no errors surfaced, save not blocked.
+3. Manual smoke (online): typing a place suggests and sets the coordinate; dropping a pin fills an empty place; a typed place is never overwritten silently. Offline: the form still works, no errors surfaced, save not blocked. Also: the station name shows as the header on Locations/Persons (and other non-base sections) but not on the base "Post" section; the list search + "+ Ny …" sit on one bottom row with no sort control, styled like the app's other search fields; Variabler is the last section in every editor's switcher and Persons sits above Locations in the station editor.
 4. `git diff --stat` touches `lib/services/…`, `lib/views/…`, `lib/l10n/…`, `test/…`. No model-shape change. Map search still works (shared geocoder).
 5. Clean tree; localizations committed with ARB changes.
 

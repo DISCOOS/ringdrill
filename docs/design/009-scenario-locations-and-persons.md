@@ -46,7 +46,7 @@ Positions and person identity are retyped across a station's situation prose, it
 
 ## The Locations and Persons sections
 
-In the station's section-navigated editor (DESIGN-008), **Locations** and **Persons** are two first-class sections, sitting alongside the base **Station** section and the narrative markdown sections (Situation, Mission, and a future "What has happened"). Each is a list you manage directly; the narrative sections are where their slugs get referenced.
+In the station's section-navigated editor (DESIGN-008), **Locations** and **Persons** are two first-class sections, sitting alongside the base **Station** section and the narrative markdown sections (Situation, Mission, and a future "What has happened"). Each is a list you manage directly; the narrative sections are where their references get used. Switcher order in the station editor is: Post (base) → Persons → Locations → narrative markdown → Variabler. Two rules hold in every editor's switcher: **Variabler is always the last section** (Program, Exercise, Station), and **Persons is always above Locations**.
 
 The "What has happened" markdown field is a future addition (it will seed a marker's roleplay); this design does not build it, but it is the archetypal narrative that references `station.person.*` and `station.loc.*`, and it needs nothing beyond what is specified here.
 
@@ -54,7 +54,7 @@ The "What has happened" markdown field is a future addition (it will seed a mark
 
 **Persons.** A row per person: `name` with an `age`/`gender`/`signalement` summary. Tapping opens the person form; swipe-to-dismiss deletes. "+ New person" opens the form. Reference auto-generated from the name; editing the display name is free; delete guarded as above. The location form's category picker is a show-more/less toggle (expand to all 16 kinds, collapse back).
 
-Both lists are the single source. The reference is auto-generated and stable; the display fields (`label`, `name`) are freely editable and are what the picker shows and what facets resolve to. The word "slug" never appears in the UI — where the concept must be named it is "reference".
+Both lists are the single source. The reference is auto-generated and stable; the display fields (`label`, `name`) are freely editable and are what the picker shows and what facets resolve to. The word "slug" never appears in the UI — where the concept must be named it is "reference". Each list keeps its chrome light: a single bottom row holds the search field and the "+ Ny …" action, with no sort control (the lists are short), and the search matches the app's standard search-field idiom. Across the station editor, the AppBar header shows the station's name on every section except the base "Post" section, so the author always sees which station they are in.
 
 The Location form's `place` is geocoder-backed, reusing the existing map-search geocoder (`osm_nominatim`) — typing a place suggests and sets the coordinate, and setting the coordinate fills an empty place by reverse lookup. It is best-effort (offline/no-result is a silent no-op) and never overwrites what the author typed. The coordinate is stored as `LatLng` (WGS84); UTM and any other projection are render-time facets (ADR-0047). Detail in prompt 3c.
 
