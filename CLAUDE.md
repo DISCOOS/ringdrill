@@ -11,6 +11,7 @@ This file is read by Claude Code on startup. The authoritative project context l
 * Web-only code lives in `lib/web/` behind `if (dart.library.io)` conditional imports. Do not import `package:web` or `dart:html` from anything that is also compiled on Android or iOS.
 * The CLI (`bin/ringdrill.dart`) and everything it transitively imports must stay free of `package:flutter/*` imports.
 * Sentry calls must be inside the analytics consent gate set up in `lib/main.dart`. Default is opt-out.
+* All documentation is written in English (`docs/`, ADRs, DESIGN issues, `README.md`, `AGENTS.md`, `CLAUDE.md`). Real example data (e.g. Norwegian SAR-plan content) and quoted template fields may stay in their source language. See rule 12 in `AGENTS.md`.
 
 ## Useful slash-command targets
 
