@@ -27,7 +27,13 @@ Map<String, String> _stationOverrides(Exercise exercise, Station station) {
 /// administrative marker. A person's `home` is not iterated separately: it
 /// always names a `Location` already in `station.locations`, so it is
 /// covered by the same loop.
-List<MapMarkerSpec<int>> _stationMarkers(Exercise exercise, Station station) {
+///
+/// A plain top-level function (not private) so tests can assert on the
+/// built [MapMarkerSpec] list directly — a marker-spec unit test, rather
+/// than pumping a real `flutter_map` widget tree, which nothing else in
+/// this codebase does yet.
+@visibleForTesting
+List<MapMarkerSpec<int>> stationMarkers(Exercise exercise, Station station) {
   final markers = <MapMarkerSpec<int>>[];
   final position = station.position;
   if (position != null) {
@@ -103,7 +109,7 @@ class StationMiniMap extends StatelessWidget {
               withClustering: false,
               initialZoom: 15,
               initialCenter: position,
-              markers: _stationMarkers(exercise, station),
+              markers: stationMarkers(exercise, station),
             ),
           ),
         ),
@@ -125,7 +131,7 @@ Future<void> openStationMapSheet(
   if (position == null) {
     return Future.value();
   }
-  final markers = _stationMarkers(exercise, station);
+  final markers = stationMarkers(exercise, station);
   final points = markers.map((m) => m.point).toList();
   return showRingdrillActionSheet<void>(
     context: context,
