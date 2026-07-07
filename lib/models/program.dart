@@ -221,7 +221,13 @@ extension ProgramX on Program {
   /// All *Md fields are excluded from toJson (ADR-0022) so they are injected
   /// back into the canonical maps before hashing. Stations inside exercises
   /// are sorted by index for determinism. Exercises and RolePlays are
-  /// sorted by uuid.
+  /// sorted by uuid. A station's own `locations`/`persons` are ordinary
+  /// JSON fields (not markdown), so they flow into `_canonicalExerciseMap`
+  /// automatically via `Station.toJson()` — but are re-sorted by `slug`
+  /// there so archive order never affects the hash (ADR-0047), the same
+  /// treatment `variables` gets by name above. RolePlay's `personRef`/
+  /// `gender` are likewise ordinary JSON fields on `RolePlay.toJson()`,
+  /// already carried into `_canonicalRolePlayMap` with no extra code.
   String computeContentHash() {
     // Build canonical exercise/rolePlay maps with markdown fields injected.
     // Shared with diffPrograms() below so both stay exhaustive over the same
@@ -295,6 +301,11 @@ Map<String, dynamic> _canonicalExerciseMap(Exercise ex) {
     sMap['criticalQuestionsMd'] = s.criticalQuestionsMd;
     sMap['leaderAnswersMd'] = s.leaderAnswersMd;
     sMap['directorNotesMd'] = s.directorNotesMd;
+    // toJson() gives raw, unsorted lists; sorted by slug (ADR-0047) so
+    // archive order never affects the hash, same rationale as `variables`
+    // sorted by name at the program level above.
+    sMap['locations'] = _sortedCanonical(s.locations, (l) => l.slug);
+    sMap['persons'] = _sortedCanonical(s.persons, (p) => p.slug);
     return _canonicalize(sMap);
   }).toList();
   return _canonicalize(map) as Map<String, dynamic>;

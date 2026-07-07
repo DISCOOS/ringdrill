@@ -22,6 +22,15 @@ mixin _$Program {
  List<String> get tags;// @Default([]) so 1.0/1.1/1.2 archives without the key deserialize to
 // an empty registry (ADR-0046, additive field, no schema bump).
  List<DrillVariable> get variables;// Markdown brief fields — stored as program/<field>.md, not in JSON.
+// May contain unresolved {{var.<name>}} tokens and {{program.name}}/
+// {{program.description}} cross-references (ADR-0046, DESIGN-004/008).
+// Never render one of these directly in a Text widget — resolve it
+// first via ResolvedMarkdownText (lib/views/widgets/) or
+// BriefRenderer.resolveProgramScopeText, the same way BriefRenderer.render
+// resolves it in the full brief. Reading the raw field straight into a
+// Text widget is the bug the Program overview card had before
+// ResolvedMarkdownText existed: a declared variable renders as a
+// literal `{{...}}` token instead of its value.
 @JsonKey(includeFromJson: false, includeToJson: false) String? get briefIntroMd;@JsonKey(includeFromJson: false, includeToJson: false) String? get commsMd;@JsonKey(includeFromJson: false, includeToJson: false) String? get beforeRoundMd;
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
@@ -318,6 +327,15 @@ class _Program implements Program {
 }
 
 // Markdown brief fields — stored as program/<field>.md, not in JSON.
+// May contain unresolved {{var.<name>}} tokens and {{program.name}}/
+// {{program.description}} cross-references (ADR-0046, DESIGN-004/008).
+// Never render one of these directly in a Text widget — resolve it
+// first via ResolvedMarkdownText (lib/views/widgets/) or
+// BriefRenderer.resolveProgramScopeText, the same way BriefRenderer.render
+// resolves it in the full brief. Reading the raw field straight into a
+// Text widget is the bug the Program overview card had before
+// ResolvedMarkdownText existed: a declared variable renders as a
+// literal `{{...}}` token instead of its value.
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? briefIntroMd;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? commsMd;
 @override@JsonKey(includeFromJson: false, includeToJson: false) final  String? beforeRoundMd;
