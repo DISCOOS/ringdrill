@@ -326,4 +326,225 @@ void main() {
       expect(captured.value!.persons, isEmpty);
     });
   });
+
+  group('auto-generated reference', () {
+    testWidgets(
+      'two same-named locations get distinct references',
+      (tester) async {
+        final captured = _Captured();
+        await _openForm(tester, _station(), captured);
+
+        await tester.tap(find.text(l.locationsSectionTitle));
+        await tester.pumpAndSettle();
+
+        for (var i = 0; i < 2; i++) {
+          await tester.tap(find.text(l.locationsSectionAddAction));
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
+            'Sperrepost',
+          );
+          await tester.tap(find.widgetWithText(FilledButton, l.save));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text(l.save));
+        await tester.pumpAndSettle();
+
+        expect(captured.value, isNotNull);
+        final slugs = captured.value!.locations.map((e) => e.slug).toSet();
+        expect(slugs, hasLength(2));
+      },
+    );
+
+    testWidgets(
+      'two same-named persons get distinct references',
+      (tester) async {
+        final captured = _Captured();
+        await _openForm(tester, _station(), captured);
+
+        await tester.tap(find.text(l.personsSectionTitle));
+        await tester.pumpAndSettle();
+
+        for (var i = 0; i < 2; i++) {
+          await tester.tap(find.text(l.personsSectionAddAction));
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.widgetWithText(TextFormField, l.roleName),
+            'Ukjent',
+          );
+          await tester.tap(find.widgetWithText(FilledButton, l.save));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text(l.save));
+        await tester.pumpAndSettle();
+
+        expect(captured.value, isNotNull);
+        final slugs = captured.value!.persons.map((e) => e.slug).toSet();
+        expect(slugs, hasLength(2));
+      },
+    );
+  });
+
+  group('search and sort', () {
+    testWidgets('the Locations list filters by search text', (tester) async {
+      await _openForm(
+        tester,
+        _station(
+          locations: const [
+            Location(slug: 'lkp', label: 'Sist kjent'),
+            Location(slug: 'ko', label: 'Kommandoplass'),
+          ],
+        ),
+        _Captured(),
+      );
+
+      await tester.tap(find.text(l.locationsSectionTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sist kjent'), findsOneWidget);
+      expect(find.text('Kommandoplass'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, l.locationsSectionSearchHint),
+        'kommando',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sist kjent'), findsNothing);
+      expect(find.text('Kommandoplass'), findsOneWidget);
+    });
+
+    testWidgets('the Locations sort toggle re-sorts the list', (
+      tester,
+    ) async {
+      await _openForm(
+        tester,
+        _station(
+          locations: const [
+            Location(slug: 'z', label: 'Å', kind: LocationKind.lkp),
+            Location(slug: 'a', label: 'Å', kind: LocationKind.other),
+          ],
+        ),
+        _Captured(),
+      );
+
+      await tester.tap(find.text(l.locationsSectionTitle));
+      await tester.pumpAndSettle();
+
+      // Default sort is by kind then label: lkp (index 0) before other.
+      expect(find.text(l.locationsSectionSortByKind), findsOneWidget);
+      var tiles = tester
+          .widgetList<Text>(find.byType(Text))
+          .where((t) => t.data == 'Å')
+          .length;
+      expect(tiles, 2);
+
+      await tester.tap(find.text(l.locationsSectionSortByKind));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l.locationsSectionSortByLabel), findsOneWidget);
+    });
+
+    testWidgets('the Persons list filters by search text', (tester) async {
+      await _openForm(
+        tester,
+        _station(
+          persons: const [
+            Person(slug: 'anne', name: 'Anne Glemsk'),
+            Person(slug: 'ola', name: 'Ola Nordmann'),
+          ],
+        ),
+        _Captured(),
+      );
+
+      await tester.tap(find.text(l.personsSectionTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Anne Glemsk'), findsOneWidget);
+      expect(find.text('Ola Nordmann'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, l.personsSectionSearchHint),
+        'ola',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Anne Glemsk'), findsNothing);
+      expect(find.text('Ola Nordmann'), findsOneWidget);
+    });
+  });
+
+  group('openFormSurface surface', () {
+    testWidgets('the Location form opens as a dialog on wide', (
+      tester,
+    ) async {
+      await _openForm(tester, _station(), _Captured());
+
+      await tester.tap(find.text(l.locationsSectionTitle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.locationsSectionAddAction));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsOneWidget);
+    });
+
+    testWidgets('the Location form opens full-screen (no Dialog) on narrow', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _openForm(tester, _station(), _Captured());
+
+      // Narrow layout: the section switcher is a bottom sheet, not a rail.
+      await tester.tap(find.text(l.station(1)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.locationsSectionTitle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.locationsSectionAddAction));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text(l.locationsSectionAddAction), findsWidgets);
+    });
+  });
+
+  testWidgets(
+    'no user-facing "slug" wording appears in either section or form',
+    (tester) async {
+      await _openForm(
+        tester,
+        _station(
+          locations: const [Location(slug: 'lkp', label: 'Sist kjent')],
+          persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+        ),
+        _Captured(),
+      );
+
+      await tester.tap(find.text(l.locationsSectionTitle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.locationsSectionAddAction));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('slug'), findsNothing);
+      expect(find.textContaining('Slug'), findsNothing);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byIcon(Icons.close),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l.personsSectionTitle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.personsSectionAddAction));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('slug'), findsNothing);
+      expect(find.textContaining('Slug'), findsNothing);
+    },
+  );
 }
