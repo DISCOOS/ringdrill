@@ -3,8 +3,10 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
@@ -16,6 +18,45 @@ Map<String, String> _stationOverrides(Exercise exercise, Station station) {
   final program = ProgramService().activeProgram;
   if (program == null) return const {};
   return effectivePlanVariables(program, exercise: exercise, station: station);
+}
+
+/// Markers for [station]'s own administrative position (id `0`, green
+/// `Icons.place`, matching every other station marker in the app) plus its
+/// scenario `locations` that carry a coordinate (id `index + 1`, styled by
+/// `LocationKind` — ADR-0047/DESIGN-009), visually distinct from the
+/// administrative marker. A person's `home` is not iterated separately: it
+/// always names a `Location` already in `station.locations`, so it is
+/// covered by the same loop.
+List<MapMarkerSpec<int>> _stationMarkers(Exercise exercise, Station station) {
+  final markers = <MapMarkerSpec<int>>[];
+  final position = station.position;
+  if (position != null) {
+    markers.add(
+      MapMarkerSpec(
+        id: 0,
+        label: substitutePlanVariables(
+          station.name,
+          _stationOverrides(exercise, station),
+        ),
+        point: position,
+        child: const Icon(Icons.place, color: Colors.green, size: 32),
+      ),
+    );
+  }
+  for (var i = 0; i < station.locations.length; i++) {
+    final location = station.locations[i];
+    final point = location.position;
+    if (point == null) continue;
+    markers.add(
+      MapMarkerSpec(
+        id: i + 1,
+        label: location.label.isEmpty ? location.slug : location.label,
+        point: point,
+        child: Icon(location.kind.icon, color: location.kind.color, size: 28),
+      ),
+    );
+  }
+  return markers;
 }
 
 /// Static preview of a single station's position. Tapping the preview
@@ -62,17 +103,7 @@ class StationMiniMap extends StatelessWidget {
               withClustering: false,
               initialZoom: 15,
               initialCenter: position,
-              markers: [
-                MapMarkerSpec(
-                  id: 0,
-                  label: substitutePlanVariables(
-                    station.name,
-                    _stationOverrides(exercise, station),
-                  ),
-                  point: position,
-                  child: const Icon(Icons.place, color: Colors.green, size: 32),
-                ),
-              ],
+              markers: _stationMarkers(exercise, station),
             ),
           ),
         ),
@@ -94,6 +125,8 @@ Future<void> openStationMapSheet(
   if (position == null) {
     return Future.value();
   }
+  final markers = _stationMarkers(exercise, station);
+  final points = markers.map((m) => m.point).toList();
   return showRingdrillActionSheet<void>(
     context: context,
     builder: (sheetContext) {
@@ -114,22 +147,13 @@ Future<void> openStationMapSheet(
                 withClustering: false,
                 initialZoom: 16,
                 initialCenter: position,
+                // A location marker may sit away from the station's own
+                // point; fit all of them (falls back to initialCenter/Zoom
+                // above when there's nothing to fit, i.e. fewer than two
+                // points — see LatlngListX.fit).
+                initialFit: points.fit(),
                 interactionFlags: MapConfig.interactive,
-                markers: [
-                  MapMarkerSpec(
-                    id: 0,
-                    label: substitutePlanVariables(
-                      station.name,
-                      _stationOverrides(exercise, station),
-                    ),
-                    point: position,
-                    child: const Icon(
-                      Icons.place,
-                      color: Colors.green,
-                      size: 32,
-                    ),
-                  ),
-                ],
+                markers: markers,
               ),
             ),
           ],
