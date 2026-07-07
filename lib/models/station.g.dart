@@ -19,6 +19,16 @@ _Station _$StationFromJson(Map<String, dynamic> json) => _Station(
         (k, e) => MapEntry(k, e as String),
       ) ??
       const <String, String>{},
+  locations:
+      (json['locations'] as List<dynamic>?)
+          ?.map((e) => Location.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Location>[],
+  persons:
+      (json['persons'] as List<dynamic>?)
+          ?.map((e) => Person.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Person>[],
 );
 
 Map<String, dynamic> _$StationToJson(_Station instance) => <String, dynamic>{
@@ -28,4 +38,6 @@ Map<String, dynamic> _$StationToJson(_Station instance) => <String, dynamic>{
   'position': const NullableLatLngJsonConverter().toJson(instance.position),
   'description': instance.description,
   'variableOverrides': instance.variableOverrides,
+  'locations': instance.locations,
+  'persons': instance.persons,
 };

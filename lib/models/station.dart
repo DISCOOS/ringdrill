@@ -1,6 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/lat_lng_converter.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
 
 part 'station.freezed.dart';
 part 'station.g.dart';
@@ -18,6 +20,16 @@ sealed class Station with _$Station {
     /// meaningless and is ignored at resolution time (ADR-0046). This scope
     /// never declares new variables.
     @Default(<String, String>{}) Map<String, String> variableOverrides,
+    /// Station-owned scenario geography, referenced as
+    /// `{{station.loc.<slug>}}` (ADR-0047, DESIGN-009). @Default so
+    /// archives without the key deserialize to an empty list (additive
+    /// field, no schema bump).
+    @Default(<Location>[]) List<Location> locations,
+    /// Station-owned fictional scenario persons, referenced as
+    /// `{{station.person.<slug>}}` (ADR-0047, DESIGN-009). @Default so
+    /// archives without the key deserialize to an empty list (additive
+    /// field, no schema bump).
+    @Default(<Person>[]) List<Person> persons,
     // Markdown brief fields — stored as exercises/<uuid>/stations/<index>/<field>.md, not in JSON.
     @JsonKey(includeFromJson: false, includeToJson: false) String? equipmentMd,
     @JsonKey(includeFromJson: false, includeToJson: false) String? situationMd,
