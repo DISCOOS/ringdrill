@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Lokasjon- og person-redigering (DESIGN-009)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+  .phone{width:330px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .t{flex:1;font-size:15px;font-weight:500}
+  .save{font-size:13px;font-weight:500;color:#fff;background:var(--accent);padding:7px 14px;border-radius:var(--radius)}
+  .lbl{font-size:11px;color:var(--text-2);margin:0 0 4px}
+  .inp{border:1px solid var(--border);border-radius:var(--radius);padding:9px 10px;font-size:14px}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border)}
+  .body{padding:14px;display:flex;flex-direction:column;gap:14px}
+  .seg{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .seg > div{flex:1;text-align:center;font-size:13px;padding:8px 0}
+  .seg .on{background:var(--accent-bg);color:var(--accent);font-weight:500}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="phone">
+    <p class="cap">1 · Lokasjoner — søk, sortering, scroll</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Lokasjoner</span><span style="font-size:12px;color:var(--text-3)">7</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)">
+        <i class="ti ti-search" style="font-size:16px;color:var(--text-3)"></i>
+        <span style="font-size:14px;color:var(--text-3);flex:1">Søk i lokasjoner</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-2)"><i class="ti ti-arrows-sort" style="font-size:15px"></i>Kategori</span>
+      </div>
+      <div style="max-height:180px;overflow:hidden">
+        <div class="row"><i class="ti ti-map-pin" style="font-size:19px;color:var(--accent)"></i><div style="flex:1;min-width:0"><div style="font-size:14px">Sist kjent posisjon</div><div style="font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">LKP · 32V 0580414 6552008</div></div><i class="ti ti-dots-vertical" style="font-size:18px;color:var(--text-3)"></i></div>
+        <div class="row"><i class="ti ti-home" style="font-size:19px;color:var(--accent)"></i><div style="flex:1;min-width:0"><div style="font-size:14px">Bosted</div><div style="font-size:12px;color:var(--text-2)">Gamlestuen, Eidene</div></div><i class="ti ti-dots-vertical" style="font-size:18px;color:var(--text-3)"></i></div>
+        <div class="row"><i class="ti ti-eye" style="font-size:19px;color:var(--accent)"></i><div style="flex:1;min-width:0"><div style="font-size:14px">Observasjon kl 0930</div><div style="font-size:12px;color:var(--text-2)">Ved kjellertrappen</div></div><i class="ti ti-dots-vertical" style="font-size:18px;color:var(--text-3)"></i></div>
+        <div class="row" style="border-bottom:none"><i class="ti ti-flag" style="font-size:19px;color:var(--accent)"></i><div style="flex:1;min-width:0"><div style="font-size:14px">Funn av spor</div><div style="font-size:12px;color:var(--text-2)">R25, sør for huset</div></div><i class="ti ti-dots-vertical" style="font-size:18px;color:var(--text-3)"></i></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;color:var(--accent);padding:12px 14px;border-top:1px solid var(--border)"><i class="ti ti-plus" style="font-size:17px"></i><span style="font-size:14px;font-weight:500">Ny lokasjon</span></div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <p class="cap">2 · Lokasjons-skjema (fullskjerm) — kategori + posisjon i skjemaet, ingen slug</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Ny lokasjon</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div style="display:flex;flex-direction:column"><span class="lbl">Navn</span><div class="inp">Bosted</div></div>
+        <div>
+          <span class="lbl">Kategori</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--radius);padding:9px 10px;font-size:13px"><i class="ti ti-arrows-join-2" style="font-size:17px;color:var(--text-2)"></i>Oppmøtested</div>
+            <div style="display:flex;align-items:center;gap:8px;border:2px solid var(--accent);border-radius:var(--radius);padding:8px 10px;font-size:13px;color:var(--accent)"><i class="ti ti-home" style="font-size:17px"></i>Bosted</div>
+            <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--radius);padding:9px 10px;font-size:13px"><i class="ti ti-eye" style="font-size:17px;color:var(--text-2)"></i>Observasjon</div>
+            <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--radius);padding:9px 10px;font-size:13px"><i class="ti ti-map-pin" style="font-size:17px;color:var(--text-2)"></i>LKP</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:6px">Vis alle 16 kategorier</div>
+        </div>
+        <div style="display:flex;flex-direction:column"><span class="lbl">Sted</span><div class="inp">Gamlestuen, Eidene</div></div>
+        <div>
+          <span class="lbl">Posisjon</span>
+          <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+            <div style="height:92px;background:var(--bg-2);display:flex;align-items:center;justify-content:center"><i class="ti ti-map-pin" style="font-size:26px;color:var(--accent)"></i></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-top:1px solid var(--border)"><span style="font-family:var(--font-mono);font-size:12px;color:var(--text-2);flex:1">32V 0580414 6552008</span><span style="font-size:12px;color:var(--accent);display:flex;align-items:center;gap:4px"><i class="ti ti-map-2" style="font-size:15px"></i>Velg på kart</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <p class="cap">3 · Person-skjema — kjønn segmentert, bopel opprettes inline</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Ny person</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div style="display:flex;flex-direction:column"><span class="lbl">Navn</span><div class="inp">Anne Glemsk</div></div>
+        <div style="display:flex;gap:10px">
+          <div style="display:flex;flex-direction:column;width:84px"><span class="lbl">Alder</span><div class="inp">39</div></div>
+          <div style="display:flex;flex-direction:column;flex:1"><span class="lbl">Kjønn</span><div class="seg"><div class="on">Kvinne</div><div>Mann</div><div>Annet</div></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column"><span class="lbl">Signalement</span><div class="inp" style="color:var(--text-3)">160 cm, grått hår, blå anorakk</div></div>
+        <div>
+          <span class="lbl">Bopel</span>
+          <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 10px"><i class="ti ti-home" style="font-size:16px;color:var(--text-2)"></i><span style="font-size:14px;flex:1;color:var(--text-3)">Velg lokasjon</span><i class="ti ti-chevron-down" style="font-size:16px;color:var(--text-2)"></i></div>
+            <div style="border-top:1px solid var(--border);background:var(--bg-3)">
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 10px;font-size:13px"><i class="ti ti-map-pin" style="font-size:15px;color:var(--text-2)"></i>Sist kjent posisjon</div>
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 10px;font-size:13px;color:var(--accent);border-top:1px solid var(--border)"><i class="ti ti-plus" style="font-size:15px"></i>Ny lokasjon</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

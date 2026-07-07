@@ -38,9 +38,9 @@ Positions and person identity are retyped across a station's situation prose, it
 
 ## Concepts
 
-**Location** — a named place: `slug` (the stable token reference), display `label`, `kind` (for map styling), `place` (address), an optional coordinate, a note. Station-owned.
+**Location** — a named place: display `label`, `kind` (for map styling), `place` (address), an optional coordinate, a note. The token reference (`slug`, called "reference" in the UI) is auto-generated from the label at creation and hidden from typing. Station-owned.
 
-**Person** — a fictional scenario person: `slug`, display `name`, `age`, `gender`, `signalement`, `homeSlug` (a reference to one of the station's locations), notes. Station-owned, no PII (ADR-0047; the real human is the `Actor`, the roster layer).
+**Person** — a fictional scenario person: display `name`, `age`, `gender` (woman/man/other), `signalement`, `homeSlug` (a reference to one of the station's locations), notes. The reference (`slug`) is auto-generated from the name. Station-owned, no PII (ADR-0047; the real human is the `Actor`, the roster layer).
 
 **Effective identity** — a `RolePlay` portrays a `Person` and its identity fields (`name`/`age`/`gender`/`signalement`) hold the effective identity: a field equal to the Person's value is *inherited* (and follows later Person edits), a field that differs is an *override* the marker set. The effective value is what renders everywhere and is persisted denormalized on the roleplay so any reader gets a populated marker (ADR-0047). Same default-plus-override intuition as variables, cached for forward-compat.
 
@@ -50,11 +50,11 @@ In the station's section-navigated editor (DESIGN-008), **Locations** and **Pers
 
 The "What has happened" markdown field is a future addition (it will seed a marker's roleplay); this design does not build it, but it is the archetypal narrative that references `station.person.*` and `station.loc.*`, and it needs nothing beyond what is specified here.
 
-**Locations.** A row per location: `label`, `kind`, `place`, and a coordinate with a map picker. A `⋮` row menu offers rename (of the `slug`) and delete (ADR-0031). "+ New location" adds one. Editing the display `label` is free; renaming the `slug` runs the station-and-down reference rewrite; delete is blocked while referenced (by a field or by a person's `homeSlug`), listing the usages.
+**Locations.** A row per location: `label`, `kind`, and a `place`/coordinate summary. Tapping a row opens the location form (see below); a `⋮` menu offers delete (ADR-0031). "+ New location" opens the form to add one. The reference is auto-generated from the label; the author never types it. Editing the display `label` is free. Delete is blocked while referenced (by a field or by a person's home), listing the usages. Changing the reference itself is a **future** action ("change reference"), which will run the station-and-down rewrite.
 
-**Persons.** A row per person: `name`, `age`, `gender`, `signalement`, a home picker (choosing one of the station's locations for `homeSlug`), and notes. Same `⋮` rename/delete with station-and-down integrity (editing the display `name` is free; only a `slug` rename rewrites references). "+ New person" adds one.
+**Persons.** A row per person: `name` with an `age`/`gender`/`signalement` summary. Tapping opens the person form; `⋮` → delete. "+ New person" opens the form. Reference auto-generated from the name; editing the display name is free; delete guarded as above.
 
-Both lists are the declaration surface; they are the single source. The `slug` is the stable reference used in tokens; the display fields (`label`, `name`) are freely editable and are what the picker shows and what facets resolve to.
+Both lists are the single source. The reference is auto-generated and stable; the display fields (`label`, `name`) are freely editable and are what the picker shows and what facets resolve to. The word "slug" never appears in the UI — where the concept must be named it is "reference".
 
 ## Referencing in text
 
@@ -132,6 +132,9 @@ The design and ADR use English concept names throughout. The `nb` UI ships these
 | New location | Ny lokasjon |
 | New person | Ny person |
 | home (`Person.homeSlug`) | Bopel |
+| reference (the `slug`, UI-facing) | Referanse |
+| change reference (future) | Endre referanse |
+| gender: woman / man / other | Kvinne / Mann / Annet |
 | `LocationKind.lkp` | Sist kjent posisjon (LKP) |
 | `LocationKind.ipp` | Initielt planleggingspunkt (IPP) |
 | `LocationKind.pp` | Planleggingspunkt (PP) |
