@@ -3680,6 +3680,30 @@ abstract class AppLocalizations {
   /// **'Note'**
   String get locationsSectionNoteLabel;
 
+  /// Expansion link below the collapsed LocationKind category grid in the Location form (DESIGN-009 follow-up 3b). {count} is LocationKind.values.length, not hard-coded.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all {count} categories'**
+  String locationsSectionShowAllKinds(int count);
+
+  /// Placeholder text in the Locations section's search field (filters by label/place).
+  ///
+  /// In en, this message translates to:
+  /// **'Search locations'**
+  String get locationsSectionSearchHint;
+
+  /// Sort-toggle label when the Locations list is sorted by kind then label (the default). Tapping switches to locationsSectionSortByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get locationsSectionSortByKind;
+
+  /// Sort-toggle label when the Locations list is sorted alphabetically by label. Tapping switches to locationsSectionSortByKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get locationsSectionSortByLabel;
+
   /// DESIGN-009 first-class station-editor section label for the station's Person list (section-navigated shell).
   ///
   /// In en, this message translates to:

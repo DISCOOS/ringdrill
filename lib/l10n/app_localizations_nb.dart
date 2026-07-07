@@ -2157,6 +2157,20 @@ class AppLocalizationsNb extends AppLocalizations {
   String get locationsSectionNoteLabel => 'Notat';
 
   @override
+  String locationsSectionShowAllKinds(int count) {
+    return 'Vis alle $count kategorier';
+  }
+
+  @override
+  String get locationsSectionSearchHint => 'Søk i lokasjoner';
+
+  @override
+  String get locationsSectionSortByKind => 'Kategori';
+
+  @override
+  String get locationsSectionSortByLabel => 'Navn';
+
+  @override
   String get personsSectionTitle => 'Personer';
 
   @override

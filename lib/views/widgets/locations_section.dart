@@ -2,74 +2,151 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
-import 'package:ringdrill/utils/slug.dart';
-import 'package:ringdrill/views/position_form_field.dart';
-import 'package:ringdrill/views/widgets/location_kind_labels.dart';
+import 'package:ringdrill/utils/projection.dart';
+import 'package:ringdrill/views/location_form_screen.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/widgets/location_kind_style.dart';
 
-/// DESIGN-009 "Lokasjoner" section: a row per station-owned [Location] with
-/// a `⋮` menu for edit/delete (ADR-0031 — never a per-row pencil), a
-/// "+ Ny lokasjon" action, and the existing coordinate/map-pick affordance
-/// ([PositionFormField]) live on each row.
+enum _LocationSort { byKind, byLabel }
+
+/// DESIGN-009 "Lokasjoner" section (follow-up 3b — full-screen forms,
+/// searchable/sortable tile list): a light tile per station-owned
+/// [Location] (kind icon + label + place/UTM summary). Tap opens
+/// [LocationFormScreen] to edit; `⋮` offers delete (ADR-0031 — never a
+/// per-row pencil); "+ Ny lokasjon" opens the same form to add.
 ///
 /// Presentation-only, mirroring `VariablesSection`: [locations] and the
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
 /// persists the working list via `Station.copyWith` on save.
 ///
-/// Scope boundary (DESIGN-009 prompt 3): this section only adds, edits
-/// non-slug fields, and plain-deletes. A location's `slug` is fixed at
-/// creation; renaming it and the station-and-down reference-rewrite/delete
-/// guard are DESIGN-009 prompt 5 — intentionally not implemented here.
-class LocationsSection extends StatelessWidget {
+/// Scope boundary (ADR-0047): this section only adds, edits non-reference
+/// fields, and plain-deletes. A location's reference (`slug`) is generated
+/// once at creation and never shown; renaming it and the station-and-down
+/// reference-rewrite/delete guard are a future action — intentionally not
+/// implemented here.
+class LocationsSection extends StatefulWidget {
   const LocationsSection({
     super.key,
     required this.locations,
-    required this.onAdd,
-    required this.onEdit,
-    required this.onPositionChanged,
+    required this.onSave,
     required this.onDelete,
   });
 
   final List<Location> locations;
 
-  /// Called with a new, validated [Location] from the "+ Ny lokasjon"
-  /// dialog. The caller appends it to its own working list.
-  final ValueChanged<Location> onAdd;
-
-  /// Called with the updated [Location] (same `slug`) after the edit
-  /// dialog (label/kind/place/note) is confirmed.
-  final ValueChanged<Location> onEdit;
-
-  /// Called with a location's `slug` and its newly picked position, from
-  /// the row's own [PositionFormField] — kept separate from [onEdit] since
-  /// it fires immediately from the row, not from a dialog confirm.
-  final void Function(String slug, LatLng position) onPositionChanged;
+  /// Called with the saved [Location] from [LocationFormScreen] — a new
+  /// entry (add) or the same `slug` (edit). The caller upserts it into its
+  /// own working list by `slug`.
+  final ValueChanged<Location> onSave;
 
   /// Called with the `slug` to remove. Plain delete — no reference guard
-  /// yet (prompt 5).
+  /// yet (a future action, ADR-0047).
   final ValueChanged<String> onDelete;
+
+  @override
+  State<LocationsSection> createState() => _LocationsSectionState();
+}
+
+class _LocationsSectionState extends State<LocationsSection> {
+  final _searchController = TextEditingController();
+  String _query = '';
+  _LocationSort _sort = _LocationSort.byKind;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Location> get _visibleLocations {
+    final query = _query.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? widget.locations
+        : widget.locations.where((l) {
+            final label = l.label.isEmpty ? l.slug : l.label;
+            return label.toLowerCase().contains(query) ||
+                l.place.toLowerCase().contains(query);
+          }).toList();
+    final sorted = [...filtered];
+    switch (_sort) {
+      case _LocationSort.byKind:
+        sorted.sort((a, b) {
+          final byKind = a.kind.index.compareTo(b.kind.index);
+          return byKind != 0
+              ? byKind
+              : a.label.toLowerCase().compareTo(b.label.toLowerCase());
+        });
+      case _LocationSort.byLabel:
+        sorted.sort(
+          (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
+        );
+    }
+    return sorted;
+  }
+
+  void _toggleSort() {
+    setState(() {
+      _sort = _sort == _LocationSort.byKind
+          ? _LocationSort.byLabel
+          : _LocationSort.byKind;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final visible = _visibleLocations;
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
         children: [
-          for (final location in locations)
-            _LocationRow(
-              key: ValueKey(location.slug),
-              location: location,
-              onEdit: () => _handleEdit(context, location),
-              onPositionChanged: (p) => onPositionChanged(location.slug, p),
-              onDelete: () => onDelete(location.slug),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _query = value),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: l10n.locationsSectionSearchHint,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: _toggleSort,
+                  icon: const Icon(Icons.sort, size: 18),
+                  label: Text(
+                    _sort == _LocationSort.byKind
+                        ? l10n.locationsSectionSortByKind
+                        : l10n.locationsSectionSortByLabel,
+                  ),
+                ),
+              ],
             ),
-          const SizedBox(height: 8),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              children: [
+                for (final location in visible)
+                  _LocationTile(
+                    key: ValueKey(location.slug),
+                    location: location,
+                    onTap: () => _openForm(context, location),
+                    onDelete: () => widget.onDelete(location.slug),
+                  ),
+              ],
+            ),
+          ),
           InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () => _handleAdd(context),
+            onTap: () => _openForm(context, null),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -91,100 +168,58 @@ class LocationsSection extends StatelessWidget {
     );
   }
 
-  Future<void> _handleAdd(BuildContext context) async {
-    final created = await showDialog<Location>(
-      context: context,
-      builder: (dialogContext) => _LocationFormDialog(
-        existingSlugs: locations.map((l) => l.slug).toSet(),
-      ),
+  Future<void> _openForm(BuildContext context, Location? location) async {
+    final existingSlugs = widget.locations
+        .where((l) => l.slug != location?.slug)
+        .map((l) => l.slug)
+        .toSet();
+    final saved = await openFormSurface<Location>(
+      context,
+      builder: (_) =>
+          LocationFormScreen(existingSlugs: existingSlugs, initial: location),
     );
-    if (created != null) onAdd(created);
-  }
-
-  Future<void> _handleEdit(BuildContext context, Location location) async {
-    final updated = await showDialog<Location>(
-      context: context,
-      builder: (dialogContext) => _LocationFormDialog(
-        existingSlugs: locations.map((l) => l.slug).toSet(),
-        initial: location,
-      ),
-    );
-    if (updated != null) onEdit(updated);
+    if (saved != null) widget.onSave(saved);
   }
 }
 
-enum _LocationRowAction { edit, delete }
-
-class _LocationRow extends StatelessWidget {
-  const _LocationRow({
+class _LocationTile extends StatelessWidget {
+  const _LocationTile({
     super.key,
     required this.location,
-    required this.onEdit,
-    required this.onPositionChanged,
+    required this.onTap,
     required this.onDelete,
   });
 
   final Location location;
-  final VoidCallback onEdit;
-  final ValueChanged<LatLng> onPositionChanged;
+  final VoidCallback onTap;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  location.label.isEmpty ? location.slug : location.label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              _KindChip(text: location.kind.label(l10n)),
-              PopupMenuButton<_LocationRowAction>(
-                tooltip: '',
-                onSelected: (action) => switch (action) {
-                  _LocationRowAction.edit => onEdit(),
-                  _LocationRowAction.delete => onDelete(),
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: _LocationRowAction.edit,
-                    child: Text(l10n.locationsSectionEditAction),
-                  ),
-                  PopupMenuItem(
-                    value: _LocationRowAction.delete,
-                    child: Text(l10n.locationsSectionDeleteAction),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (location.place.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 4),
-              child: Text(
-                location.place,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          PositionFormField<int>(
-            initialValue: location.position,
-            onSaved: (_) {},
-            onChanged: onPositionChanged,
+    final subtitle = location.place.isNotEmpty
+        ? location.place
+        : (location.position == null ? '' : _formatUtm(location.position!));
+    return ListTile(
+      onTap: onTap,
+      leading: Icon(location.kind.icon, color: location.kind.color),
+      title: Text(
+        location.label.isEmpty ? location.slug : location.label,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: subtitle.isEmpty
+          ? null
+          : Text(subtitle, overflow: TextOverflow.ellipsis),
+      trailing: PopupMenuButton<bool>(
+        tooltip: '',
+        // A PopupMenuItem with no `value` pops `null`, which
+        // PopupMenuButton treats as "cancelled" and never calls
+        // onSelected -- give it a real value so a tap actually fires.
+        onSelected: (_) => onDelete(),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: true,
+            child: Text(l10n.locationsSectionDeleteAction),
           ),
         ],
       ),
@@ -192,156 +227,14 @@ class _LocationRow extends StatelessWidget {
   }
 }
 
-class _KindChip extends StatelessWidget {
-  const _KindChip({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSecondaryContainer,
-        ),
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-/// Shared label/kind/place/note form used by both the add-location and
-/// edit-location dialogs. The reference (`slug`) is never shown or typed —
-/// it is generated from the label at creation via [generateSlug] and stays
-/// fixed after that (a reference *rename* is a future action, ADR-0047).
-/// [initial]'s slug and position carry through unchanged on edit — position
-/// is edited directly on the row via its own [PositionFormField], not here.
-class _LocationFormDialog extends StatefulWidget {
-  const _LocationFormDialog({required this.existingSlugs, this.initial});
-
-  final Set<String> existingSlugs;
-  final Location? initial;
-
-  @override
-  State<_LocationFormDialog> createState() => _LocationFormDialogState();
-}
-
-class _LocationFormDialogState extends State<_LocationFormDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late final _labelController = TextEditingController(
-    text: widget.initial?.label ?? '',
-  );
-  late final _placeController = TextEditingController(
-    text: widget.initial?.place ?? '',
-  );
-  late final _noteController = TextEditingController(
-    text: widget.initial?.note ?? '',
-  );
-  late LocationKind _kind = widget.initial?.kind ?? LocationKind.other;
-
-  bool get _isEdit => widget.initial != null;
-
-  @override
-  void dispose() {
-    _labelController.dispose();
-    _placeController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    final note = _noteController.text.trim();
-    final slug =
-        widget.initial?.slug ??
-        generateSlug(
-          _labelController.text.trim(),
-          widget.existingSlugs.contains,
-        );
-    Navigator.of(context).pop(
-      Location(
-        slug: slug,
-        label: _labelController.text.trim(),
-        kind: _kind,
-        place: _placeController.text.trim(),
-        position: widget.initial?.position,
-        note: note.isEmpty ? null : note,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final title = _isEdit
-        ? l10n.locationsSectionEditAction
-        : l10n.locationsSectionAddAction;
-    return AlertDialog(
-      title: Text(title),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _labelController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: l10n.locationsSectionLabelLabel,
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<LocationKind>(
-                initialValue: _kind,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  labelText: l10n.locationsSectionKindLabel,
-                ),
-                items: [
-                  for (final kind in LocationKind.values)
-                    DropdownMenuItem(
-                      value: kind,
-                      child: Text(kind.label(l10n)),
-                    ),
-                ],
-                onChanged: (value) =>
-                    setState(() => _kind = value ?? LocationKind.other),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _placeController,
-                decoration: InputDecoration(
-                  labelText: l10n.locationsSectionPlaceLabel,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _noteController,
-                minLines: 1,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: l10n.locationsSectionNoteLabel,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(onPressed: _submit, child: Text(title)),
-      ],
-    );
-  }
+/// "32V 0580414E 6552008N" — zone+band, then zero-padded 7-digit easting
+/// and northing. Mirrors `BriefRenderer`'s private formatter of the same
+/// shape; duplicated rather than reused since that one is
+/// `@visibleForTesting` (renderer-internal), matching `UtmWidget`'s own
+/// independent formatting of the same coordinate for display.
+String _formatUtm(LatLng position) {
+  final utm = position.utm();
+  final e = utm.easting.toStringAsFixed(0).padLeft(7, '0');
+  final n = utm.northing.toStringAsFixed(0).padLeft(7, '0');
+  return '${utm.zone}${utm.band} ${e}E ${n}N';
 }

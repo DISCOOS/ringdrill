@@ -1277,6 +1277,25 @@
   "@locationsSectionNoteLabel": {
     "description": "Feltetikett for en lokasjons valgfrie notat i legg-til/rediger-dialogen."
   },
+  "locationsSectionShowAllKinds": "Vis alle {count} kategorier",
+  "@locationsSectionShowAllKinds": {
+    "description": "Utvidelseslenke under det sammenslåtte LocationKind-kategorirutenettet i lokasjonsskjemaet (DESIGN-009 oppfølging 3b). {count} er LocationKind.values.length, ikke hardkodet.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "locationsSectionSearchHint": "Søk i lokasjoner",
+  "@locationsSectionSearchHint": {
+    "description": "Plassholdertekst i Lokasjoner-seksjonens søkefelt (filtrerer på label/place)."
+  },
+  "locationsSectionSortByKind": "Kategori",
+  "@locationsSectionSortByKind": {
+    "description": "Sorteringsetikett når Lokasjoner-listen sorteres etter type så navn (standard). Trykk bytter til locationsSectionSortByLabel."
+  },
+  "locationsSectionSortByLabel": "Navn",
+  "@locationsSectionSortByLabel": {
+    "description": "Sorteringsetikett når Lokasjoner-listen sorteres alfabetisk etter navn. Trykk bytter til locationsSectionSortByKind."
+  },
   "personsSectionTitle": "Personer",
   "@personsSectionTitle": {
     "description": "DESIGN-009 seksjonsetikett for postens Person-liste (seksjonsnavigert skall)."

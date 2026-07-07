@@ -85,6 +85,16 @@ Finder _rowMenu(String text) {
   return find.descendant(of: row, matching: find.byIcon(Icons.more_vert)).first;
 }
 
+/// Same scoping as [_rowMenu], for a `ListTile`-based row (the Locations
+/// list, DESIGN-009 follow-up 3b) rather than a bare `Row`.
+Finder _tileMenu(String text) {
+  final tile = find.ancestor(
+    of: find.text(text),
+    matching: find.byType(ListTile),
+  );
+  return find.descendant(of: tile, matching: find.byIcon(Icons.more_vert)).first;
+}
+
 void main() {
   late AppLocalizations l;
 
@@ -108,9 +118,7 @@ void main() {
         find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
         'Sist kjente posisjon',
       );
-      await tester.tap(
-        find.widgetWithText(FilledButton, l.locationsSectionAddAction),
-      );
+      await tester.tap(find.widgetWithText(FilledButton, l.save));
       await tester.pumpAndSettle();
 
       expect(find.text('Sist kjente posisjon'), findsOneWidget);
@@ -146,9 +154,7 @@ void main() {
       await tester.tap(find.text(l.locationsSectionTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(_rowMenu('Old label'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l.locationsSectionEditAction));
+      await tester.tap(find.text('Old label'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -159,9 +165,7 @@ void main() {
         find.widgetWithText(TextFormField, l.locationsSectionPlaceLabel),
         'New place',
       );
-      await tester.tap(
-        find.widgetWithText(FilledButton, l.locationsSectionEditAction),
-      );
+      await tester.tap(find.widgetWithText(FilledButton, l.save));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l.save));
@@ -187,7 +191,7 @@ void main() {
       await tester.tap(find.text(l.locationsSectionTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(_rowMenu('Sist kjent'));
+      await tester.tap(_tileMenu('Sist kjent'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.locationsSectionDeleteAction));
       await tester.pumpAndSettle();

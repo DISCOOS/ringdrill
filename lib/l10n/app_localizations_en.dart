@@ -2161,6 +2161,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationsSectionNoteLabel => 'Note';
 
   @override
+  String locationsSectionShowAllKinds(int count) {
+    return 'Show all $count categories';
+  }
+
+  @override
+  String get locationsSectionSearchHint => 'Search locations';
+
+  @override
+  String get locationsSectionSortByKind => 'Category';
+
+  @override
+  String get locationsSectionSortByLabel => 'Name';
+
+  @override
   String get personsSectionTitle => 'Persons';
 
   @override

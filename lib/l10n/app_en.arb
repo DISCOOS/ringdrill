@@ -2214,6 +2214,25 @@
   "@locationsSectionNoteLabel": {
     "description": "Field label for a location's optional note in the add/edit-location dialog."
   },
+  "locationsSectionShowAllKinds": "Show all {count} categories",
+  "@locationsSectionShowAllKinds": {
+    "description": "Expansion link below the collapsed LocationKind category grid in the Location form (DESIGN-009 follow-up 3b). {count} is LocationKind.values.length, not hard-coded.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "locationsSectionSearchHint": "Search locations",
+  "@locationsSectionSearchHint": {
+    "description": "Placeholder text in the Locations section's search field (filters by label/place)."
+  },
+  "locationsSectionSortByKind": "Category",
+  "@locationsSectionSortByKind": {
+    "description": "Sort-toggle label when the Locations list is sorted by kind then label (the default). Tapping switches to locationsSectionSortByLabel."
+  },
+  "locationsSectionSortByLabel": "Name",
+  "@locationsSectionSortByLabel": {
+    "description": "Sort-toggle label when the Locations list is sorted alphabetically by label. Tapping switches to locationsSectionSortByKind."
+  },
   "personsSectionTitle": "Persons",
   "@personsSectionTitle": {
     "description": "DESIGN-009 first-class station-editor section label for the station's Person list (section-navigated shell)."

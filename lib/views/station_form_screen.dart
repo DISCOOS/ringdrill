@@ -166,6 +166,23 @@ class _StationFormScreenState extends State<StationFormScreen> {
     });
   }
 
+  /// Upserts [location] into [_workingLocations] by `slug` — a new slug
+  /// (add) appends, an existing one (edit) replaces in place, so
+  /// [LocationsSection] can drive both through a single `onSave` callback
+  /// (DESIGN-009 follow-up 3b: add/edit both open the same
+  /// `LocationFormScreen`).
+  void _upsertLocation(Location location) {
+    setState(() {
+      final exists = _workingLocations.any((l) => l.slug == location.slug);
+      _workingLocations = exists
+          ? [
+              for (final l in _workingLocations)
+                if (l.slug == location.slug) location else l,
+            ]
+          : [..._workingLocations, location];
+    });
+  }
+
   String _labelFor(_StationSection section, AppLocalizations l) =>
       switch (section) {
         _StationSection.equipment => l.briefSectionStationEquipment,
@@ -304,21 +321,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
               icon: Icons.location_on_outlined,
               builder: (_) => LocationsSection(
                 locations: _workingLocations,
-                onAdd: (location) => setState(
-                  () => _workingLocations = [..._workingLocations, location],
-                ),
-                onEdit: (location) => setState(
-                  () => _workingLocations = [
-                    for (final l in _workingLocations)
-                      if (l.slug == location.slug) location else l,
-                  ],
-                ),
-                onPositionChanged: (slug, position) => setState(
-                  () => _workingLocations = [
-                    for (final l in _workingLocations)
-                      if (l.slug == slug) l.copyWith(position: position) else l,
-                  ],
-                ),
+                onSave: _upsertLocation,
                 onDelete: (slug) => setState(
                   () => _workingLocations = _workingLocations
                       .where((l) => l.slug != slug)
