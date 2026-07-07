@@ -9,8 +9,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart';
 import 'package:http/retry.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:osm_nominatim/osm_nominatim.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
@@ -228,6 +228,7 @@ class MapView<K> extends StatefulWidget {
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
     this.onTap,
+    this.geocodingService,
   });
 
   final bool withCross;
@@ -267,6 +268,11 @@ class MapView<K> extends StatefulWidget {
   final MapController? controller;
   final List<TileLayer> layers;
 
+  /// Geocoder used by the search field's place lookups (ADR-0047 follow-up
+  /// 3c). Defaults to the real `osm_nominatim`-backed service; tests
+  /// substitute a fake so no test hits the network.
+  final GeocodingService? geocodingService;
+
   /// Unified marker list. Replaces the old `markers` + `roleMarkers` split.
   /// Each spec carries its own icon widget and optional tap callback.
   /// Markers with a non-null [MapMarkerSpec.clusterGroup] are clustered
@@ -303,6 +309,8 @@ class MapView<K> extends StatefulWidget {
 }
 
 class _MapViewState<K> extends State<MapView<K>> {
+  late final GeocodingService _geocoder =
+      widget.geocodingService ?? NominatimGeocodingService();
   late MapController _mapController;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _resultsScrollController = ScrollController();
@@ -1201,24 +1209,20 @@ class _MapViewState<K> extends State<MapView<K>> {
         }
       }
 
-      // Try geocoding via osm_nominatim
-      final nominatim = Nominatim(userAgent: 'discoos.org/ringdrill');
-      final results = await nominatim.searchByName(
-        limit: 5,
-        query: '${input.trim()},',
-        nameDetails: true,
-        addressDetails: true,
-        viewBox: _createViewBoxFromLatLng(_mapController.camera.center, 1000),
+      // Try geocoding via the shared geocoder.
+      final hits = await _geocoder.search(
+        input.trim(),
+        near: _mapController.camera.center,
       );
 
       setState(() {
         _isSearching = false;
-        if (results.isNotEmpty) {
+        if (hits.isNotEmpty) {
           _searchResults.addAll(
-            results.map(
-              (r) => SearchResult(
-                _formatPlace(r),
-                LatLng(r.lat, r.lon),
+            hits.map(
+              (h) => SearchResult(
+                h.label,
+                h.position,
                 kind: SearchResultKind.place,
               ),
             ),
@@ -1233,65 +1237,6 @@ class _MapViewState<K> extends State<MapView<K>> {
         unawaited(Sentry.captureException(e, stackTrace: stackTrace));
       }
     }
-  }
-
-  ViewBox _createViewBoxFromLatLng(LatLng center, double radiusInKm) {
-    const double earthRadiusKm = 6371.0; // Radius of the Earth in kilometers
-
-    // Convert latitude and longitude to radians
-    final double lat = center.latitude * pi / 180;
-    final double lng = center.longitude * pi / 180;
-
-    // Calculate degree offsets for the given radius
-    final double latOffset = radiusInKm / earthRadiusKm;
-    final double lngOffset = radiusInKm / (earthRadiusKm * math.cos(lat));
-
-    // Calculate raw ViewBox boundaries in degrees
-    double northLatitude = (lat + latOffset) * 180 / pi;
-    double southLatitude = (lat - latOffset) * 180 / pi;
-    double eastLongitude = (lng + lngOffset) * 180 / pi;
-    double westLongitude = (lng - lngOffset) * 180 / pi;
-
-    // Clamp latitudes and longitudes to valid range
-    northLatitude = northLatitude.clamp(-90.0, 90.0);
-    southLatitude = southLatitude.clamp(-90.0, 90.0);
-    eastLongitude = eastLongitude.clamp(-180.0, 180.0);
-    westLongitude = westLongitude.clamp(-180.0, 180.0);
-
-    // Return the bounding box (north, south, east, west)
-    return ViewBox(northLatitude, southLatitude, eastLongitude, westLongitude);
-  }
-
-  String _formatPlace(Place result) {
-    if (result.address == null) return _formatNameDetails(result);
-
-    // Check if this is a place (not an address)
-    if (result.address?['road'] == null &&
-        result.address?['house_number'] == null) {
-      return _formatNameDetails(result);
-    }
-
-    // Otherwise, it's an address – extract specific fields
-    final addressParts = <String>[
-      [
-        result.address?['road'] ?? '', // Street
-        result.address?['house_number'] ?? '',
-      ].join(' '), // Street number
-      [
-        result.address?['postcode'] ?? '', // Postal code
-        result.address?['city'] ??
-            result.address?['town'] ??
-            result.address?['village'] ??
-            '',
-      ].join(' '),
-    ];
-
-    return addressParts.where((part) => part.isNotEmpty).join(', ');
-  }
-
-  String _formatNameDetails(Place result) {
-    // Combine place details into a single formatted string
-    return result.displayName;
   }
 
   void _onResultTap(SearchResult result) {
