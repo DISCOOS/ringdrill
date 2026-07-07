@@ -3,11 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-
-/// Slug rule for a [Person.slug] (ADR-0047) — see
-/// `locations_section.dart`'s `_slugPattern` doc; identical rule, a
-/// different (station-local) namespace.
-final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
+import 'package:ringdrill/utils/slug.dart';
 
 /// DESIGN-009 "Personer" section: a row per station-owned [Person] with a
 /// `⋮` menu for edit/delete (ADR-0031), a "+ Ny person" action, and a home
@@ -253,9 +249,6 @@ class _PersonFormDialog extends StatefulWidget {
 
 class _PersonFormDialogState extends State<_PersonFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final _slugController = TextEditingController(
-    text: widget.initial?.slug ?? '',
-  );
   late final _nameController = TextEditingController(
     text: widget.initial?.name ?? '',
   );
@@ -276,24 +269,12 @@ class _PersonFormDialogState extends State<_PersonFormDialog> {
 
   @override
   void dispose() {
-    _slugController.dispose();
     _nameController.dispose();
     _ageController.dispose();
     _genderController.dispose();
     _signalementController.dispose();
     _notesController.dispose();
     super.dispose();
-  }
-
-  String? _validateSlug(String? value, AppLocalizations l10n) {
-    final slug = value?.trim() ?? '';
-    if (!_slugPattern.hasMatch(slug)) {
-      return l10n.personsSectionInvalidSlugError;
-    }
-    if (widget.existingSlugs.contains(slug)) {
-      return l10n.personsSectionDuplicateSlugError;
-    }
-    return null;
   }
 
   String? _validateAge(String? value, AppLocalizations l10n) {
@@ -308,9 +289,12 @@ class _PersonFormDialogState extends State<_PersonFormDialog> {
     final gender = _genderController.text.trim();
     final signalement = _signalementController.text.trim();
     final notes = _notesController.text.trim();
+    final slug =
+        widget.initial?.slug ??
+        generateSlug(_nameController.text.trim(), widget.existingSlugs.contains);
     Navigator.of(context).pop(
       Person(
-        slug: _isEdit ? widget.initial!.slug : _slugController.text.trim(),
+        slug: slug,
         name: _nameController.text.trim(),
         age: _ageController.text.isEmpty
             ? null
@@ -337,25 +321,13 @@ class _PersonFormDialogState extends State<_PersonFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: _slugController,
-                autofocus: !_isEdit,
-                enabled: !_isEdit,
-                decoration: InputDecoration(
-                  labelText: l10n.personsSectionSlugLabel,
-                ),
-                validator: _isEdit
-                    ? null
-                    : (value) => _validateSlug(value, l10n),
-              ),
-              const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _nameController,
-                      autofocus: _isEdit,
+                      autofocus: true,
                       decoration: InputDecoration(labelText: l10n.roleName),
                     ),
                   ),

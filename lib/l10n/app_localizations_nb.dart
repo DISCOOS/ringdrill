@@ -2145,9 +2145,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get locationsSectionDeleteAction => 'Slett';
 
   @override
-  String get locationsSectionSlugLabel => 'Slug';
-
-  @override
   String get locationsSectionLabelLabel => 'Navn';
 
   @override
@@ -2158,14 +2155,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get locationsSectionNoteLabel => 'Notat';
-
-  @override
-  String get locationsSectionInvalidSlugError =>
-      'Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek';
-
-  @override
-  String get locationsSectionDuplicateSlugError =>
-      'Denne sluggen er allerede i bruk på denne posten';
 
   @override
   String get personsSectionTitle => 'Personer';
@@ -2180,9 +2169,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get personsSectionDeleteAction => 'Slett';
 
   @override
-  String get personsSectionSlugLabel => 'Slug';
-
-  @override
   String get personsSectionHomeLabel => 'Bopel';
 
   @override
@@ -2190,14 +2176,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get personsSectionNotesLabel => 'Notater';
-
-  @override
-  String get personsSectionInvalidSlugError =>
-      'Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek';
-
-  @override
-  String get personsSectionDuplicateSlugError =>
-      'Denne sluggen er allerede i bruk på denne posten';
 
   @override
   String get roleGender => 'Kjønn';

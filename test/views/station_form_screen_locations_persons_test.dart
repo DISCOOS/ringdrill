@@ -105,10 +105,6 @@ void main() {
       await tester.tap(find.text(l.locationsSectionAddAction));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.locationsSectionSlugLabel),
-        'lkp',
-      );
-      await tester.enterText(
         find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
         'Sist kjente posisjon',
       );
@@ -124,7 +120,8 @@ void main() {
 
       expect(captured.value, isNotNull);
       expect(captured.value!.locations, hasLength(1));
-      expect(captured.value!.locations.single.slug, 'lkp');
+      // Auto-generated (DESIGN-009 follow-up 3b) -- no manual reference field.
+      expect(captured.value!.locations.single.slug, 'sist_kjente_posisjon');
       expect(
         captured.value!.locations.single.label,
         'Sist kjente posisjon',
@@ -218,10 +215,6 @@ void main() {
       await tester.tap(find.text(l.personsSectionAddAction));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.personsSectionSlugLabel),
-        'anne',
-      );
-      await tester.enterText(
         find.widgetWithText(TextFormField, l.roleName),
         'Anne Glemsk',
       );
@@ -237,7 +230,8 @@ void main() {
 
       expect(captured.value, isNotNull);
       expect(captured.value!.persons, hasLength(1));
-      expect(captured.value!.persons.single.slug, 'anne');
+      // Auto-generated (DESIGN-009 follow-up 3b) -- no manual reference field.
+      expect(captured.value!.persons.single.slug, 'anne_glemsk');
       expect(captured.value!.persons.single.name, 'Anne Glemsk');
     });
 

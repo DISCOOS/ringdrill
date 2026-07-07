@@ -2149,9 +2149,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationsSectionDeleteAction => 'Delete';
 
   @override
-  String get locationsSectionSlugLabel => 'Slug';
-
-  @override
   String get locationsSectionLabelLabel => 'Name';
 
   @override
@@ -2162,14 +2159,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationsSectionNoteLabel => 'Note';
-
-  @override
-  String get locationsSectionInvalidSlugError =>
-      'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores';
-
-  @override
-  String get locationsSectionDuplicateSlugError =>
-      'This slug is already in use on this station';
 
   @override
   String get personsSectionTitle => 'Persons';
@@ -2184,9 +2173,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personsSectionDeleteAction => 'Delete';
 
   @override
-  String get personsSectionSlugLabel => 'Slug';
-
-  @override
   String get personsSectionHomeLabel => 'Home';
 
   @override
@@ -2194,14 +2180,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get personsSectionNotesLabel => 'Notes';
-
-  @override
-  String get personsSectionInvalidSlugError =>
-      'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores';
-
-  @override
-  String get personsSectionDuplicateSlugError =>
-      'This slug is already in use on this station';
 
   @override
   String get roleGender => 'Gender';

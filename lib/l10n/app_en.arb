@@ -2192,15 +2192,11 @@
   },
   "locationsSectionEditAction": "Edit",
   "@locationsSectionEditAction": {
-    "description": "Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. Slug and position are not editable here (slug is prompt 5's rename; position has its own inline map-pick control on the row)."
+    "description": "Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); position has its own inline map-pick control on the row."
   },
   "locationsSectionDeleteAction": "Delete",
   "@locationsSectionDeleteAction": {
     "description": "Row overflow-menu action (ADR-0031) that deletes a location. Plain delete in this prompt -- the reference guard (blocked-while-referenced) is DESIGN-009 prompt 5."
-  },
-  "locationsSectionSlugLabel": "Slug",
-  "@locationsSectionSlugLabel": {
-    "description": "Field label for a location's slug (the stable reference used as {{station.loc.<slug>}}) in the add-location dialog. \"Slug\" stays untranslated per DESIGN-009's Norwegian-labels table."
   },
   "locationsSectionLabelLabel": "Name",
   "@locationsSectionLabelLabel": {
@@ -2218,15 +2214,6 @@
   "@locationsSectionNoteLabel": {
     "description": "Field label for a location's optional note in the add/edit-location dialog."
   },
-  "locationsSectionInvalidSlugError": "Must start with a lowercase letter and contain only lowercase letters, numbers and underscores",
-  "@locationsSectionInvalidSlugError": {
-    "description": "Validation message when a location slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$."
-  },
-  "locationsSectionDuplicateSlugError": "This slug is already in use on this station",
-  "@locationsSectionDuplicateSlugError": {
-    "description": "Validation message when a location slug is already used by another location on the same station."
-  },
-
   "personsSectionTitle": "Persons",
   "@personsSectionTitle": {
     "description": "DESIGN-009 first-class station-editor section label for the station's Person list (section-navigated shell)."
@@ -2237,15 +2224,11 @@
   },
   "personsSectionEditAction": "Edit",
   "@personsSectionEditAction": {
-    "description": "Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. Slug and home are not editable here (slug is prompt 5's rename; home has its own inline picker on the row)."
+    "description": "Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); home has its own inline picker on the row."
   },
   "personsSectionDeleteAction": "Delete",
   "@personsSectionDeleteAction": {
     "description": "Row overflow-menu action (ADR-0031) that deletes a person. Plain delete in this prompt -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is DESIGN-009 prompt 5."
-  },
-  "personsSectionSlugLabel": "Slug",
-  "@personsSectionSlugLabel": {
-    "description": "Field label for a person's slug (the stable reference used as {{station.person.<slug>}}) in the add-person dialog. \"Slug\" stays untranslated per DESIGN-009's Norwegian-labels table."
   },
   "personsSectionHomeLabel": "Home",
   "@personsSectionHomeLabel": {
@@ -2258,14 +2241,6 @@
   "personsSectionNotesLabel": "Notes",
   "@personsSectionNotesLabel": {
     "description": "Field label for a person's optional notes in the add/edit-person dialog."
-  },
-  "personsSectionInvalidSlugError": "Must start with a lowercase letter and contain only lowercase letters, numbers and underscores",
-  "@personsSectionInvalidSlugError": {
-    "description": "Validation message when a person slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$."
-  },
-  "personsSectionDuplicateSlugError": "This slug is already in use on this station",
-  "@personsSectionDuplicateSlugError": {
-    "description": "Validation message when a person slug is already used by another person on the same station."
   },
   "roleGender": "Gender",
   "@roleGender": {

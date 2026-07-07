@@ -1255,15 +1255,11 @@
   },
   "locationsSectionEditAction": "Rediger",
   "@locationsSectionEditAction": {
-    "description": "Rad-menyhandling (ADR-0031) som redigerer en lokasjons label/kind/place/note, og tittelen på dialogen den åpner. Slug og posisjon redigeres ikke her (slug er prompt 5 sin omdøping; posisjon har sin egen kartvelger på selve raden)."
+    "description": "Rad-menyhandling (ADR-0031) som redigerer en lokasjons label/kind/place/note, og tittelen på dialogen den åpner. Referansen genereres automatisk og vises/redigeres aldri (DESIGN-009 oppfølging 3b); posisjon har sin egen kartvelger på selve raden."
   },
   "locationsSectionDeleteAction": "Slett",
   "@locationsSectionDeleteAction": {
     "description": "Rad-menyhandling (ADR-0031) som sletter en lokasjon. Enkel sletting i denne prompten -- referansesperren (blokkert mens den refereres) kommer i DESIGN-009 prompt 5."
-  },
-  "locationsSectionSlugLabel": "Slug",
-  "@locationsSectionSlugLabel": {
-    "description": "Feltetikett for en lokasjons slug (den stabile referansen brukt som {{station.loc.<slug>}}) i legg-til-dialogen. «Slug» forblir uoversatt jf. DESIGN-009s tabell over norske etiketter."
   },
   "locationsSectionLabelLabel": "Navn",
   "@locationsSectionLabelLabel": {
@@ -1281,15 +1277,6 @@
   "@locationsSectionNoteLabel": {
     "description": "Feltetikett for en lokasjons valgfrie notat i legg-til/rediger-dialogen."
   },
-  "locationsSectionInvalidSlugError": "Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek",
-  "@locationsSectionInvalidSlugError": {
-    "description": "Valideringsmelding når en lokasjons slug ikke matcher ADR-0047s slug-regel ^[a-z][a-z0-9_]*$."
-  },
-  "locationsSectionDuplicateSlugError": "Denne sluggen er allerede i bruk på denne posten",
-  "@locationsSectionDuplicateSlugError": {
-    "description": "Valideringsmelding når en lokasjons slug allerede brukes av en annen lokasjon på samme post."
-  },
-
   "personsSectionTitle": "Personer",
   "@personsSectionTitle": {
     "description": "DESIGN-009 seksjonsetikett for postens Person-liste (seksjonsnavigert skall)."
@@ -1300,15 +1287,11 @@
   },
   "personsSectionEditAction": "Rediger",
   "@personsSectionEditAction": {
-    "description": "Rad-menyhandling (ADR-0031) som redigerer en persons navn/alder/kjønn/signalement/notater, og tittelen på dialogen den åpner. Slug og bopel redigeres ikke her (slug er prompt 5 sin omdøping; bopel har sin egen velger på selve raden)."
+    "description": "Rad-menyhandling (ADR-0031) som redigerer en persons navn/alder/kjønn/signalement/notater, og tittelen på dialogen den åpner. Referansen genereres automatisk og vises/redigeres aldri (DESIGN-009 oppfølging 3b); bopel har sin egen velger på selve raden."
   },
   "personsSectionDeleteAction": "Slett",
   "@personsSectionDeleteAction": {
     "description": "Rad-menyhandling (ADR-0031) som sletter en person. Enkel sletting i denne prompten -- referansesperren (blokkert mens den refereres, inkludert en homeSlug som peker på den) kommer i DESIGN-009 prompt 5."
-  },
-  "personsSectionSlugLabel": "Slug",
-  "@personsSectionSlugLabel": {
-    "description": "Feltetikett for en persons slug (den stabile referansen brukt som {{station.person.<slug>}}) i legg-til-dialogen. «Slug» forblir uoversatt jf. DESIGN-009s tabell over norske etiketter."
   },
   "personsSectionHomeLabel": "Bopel",
   "@personsSectionHomeLabel": {
@@ -1321,14 +1304,6 @@
   "personsSectionNotesLabel": "Notater",
   "@personsSectionNotesLabel": {
     "description": "Feltetikett for en persons valgfrie notater i legg-til/rediger-dialogen."
-  },
-  "personsSectionInvalidSlugError": "Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek",
-  "@personsSectionInvalidSlugError": {
-    "description": "Valideringsmelding når en persons slug ikke matcher ADR-0047s slug-regel ^[a-z][a-z0-9_]*$."
-  },
-  "personsSectionDuplicateSlugError": "Denne sluggen er allerede i bruk på denne posten",
-  "@personsSectionDuplicateSlugError": {
-    "description": "Valideringsmelding når en persons slug allerede brukes av en annen person på samme post."
   },
   "roleGender": "Kjønn",
   "@roleGender": {

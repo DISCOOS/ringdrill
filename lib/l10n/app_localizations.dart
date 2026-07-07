@@ -3644,7 +3644,7 @@ abstract class AppLocalizations {
   /// **'New location'**
   String get locationsSectionAddAction;
 
-  /// Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. Slug and position are not editable here (slug is prompt 5's rename; position has its own inline map-pick control on the row).
+  /// Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); position has its own inline map-pick control on the row.
   ///
   /// In en, this message translates to:
   /// **'Edit'**
@@ -3655,12 +3655,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get locationsSectionDeleteAction;
-
-  /// Field label for a location's slug (the stable reference used as {{station.loc.<slug>}}) in the add-location dialog. "Slug" stays untranslated per DESIGN-009's Norwegian-labels table.
-  ///
-  /// In en, this message translates to:
-  /// **'Slug'**
-  String get locationsSectionSlugLabel;
 
   /// Field label for a location's display label in the add/edit-location dialog.
   ///
@@ -3686,18 +3680,6 @@ abstract class AppLocalizations {
   /// **'Note'**
   String get locationsSectionNoteLabel;
 
-  /// Validation message when a location slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$.
-  ///
-  /// In en, this message translates to:
-  /// **'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores'**
-  String get locationsSectionInvalidSlugError;
-
-  /// Validation message when a location slug is already used by another location on the same station.
-  ///
-  /// In en, this message translates to:
-  /// **'This slug is already in use on this station'**
-  String get locationsSectionDuplicateSlugError;
-
   /// DESIGN-009 first-class station-editor section label for the station's Person list (section-navigated shell).
   ///
   /// In en, this message translates to:
@@ -3710,7 +3692,7 @@ abstract class AppLocalizations {
   /// **'New person'**
   String get personsSectionAddAction;
 
-  /// Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. Slug and home are not editable here (slug is prompt 5's rename; home has its own inline picker on the row).
+  /// Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. The reference is auto-generated and never shown/edited (DESIGN-009 follow-up 3b); home has its own inline picker on the row.
   ///
   /// In en, this message translates to:
   /// **'Edit'**
@@ -3721,12 +3703,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get personsSectionDeleteAction;
-
-  /// Field label for a person's slug (the stable reference used as {{station.person.<slug>}}) in the add-person dialog. "Slug" stays untranslated per DESIGN-009's Norwegian-labels table.
-  ///
-  /// In en, this message translates to:
-  /// **'Slug'**
-  String get personsSectionSlugLabel;
 
   /// Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row.
   ///
@@ -3745,18 +3721,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes'**
   String get personsSectionNotesLabel;
-
-  /// Validation message when a person slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$.
-  ///
-  /// In en, this message translates to:
-  /// **'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores'**
-  String get personsSectionInvalidSlugError;
-
-  /// Validation message when a person slug is already used by another person on the same station.
-  ///
-  /// In en, this message translates to:
-  /// **'This slug is already in use on this station'**
-  String get personsSectionDuplicateSlugError;
 
   /// Field label for the gender identity field, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first.
   ///

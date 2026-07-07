@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/location_kind_labels.dart';
-
-/// Slug rule for a [Location.slug] (ADR-0047): starts with a lowercase
-/// letter, then lowercase letters/digits/underscores — the same shape as a
-/// plan variable's name (`variables_section.dart`'s `_slugPattern`), applied
-/// to a different (station-local) namespace.
-final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
 /// DESIGN-009 "Lokasjoner" section: a row per station-owned [Location] with
 /// a `⋮` menu for edit/delete (ADR-0031 — never a per-row pencil), a
@@ -222,11 +217,12 @@ class _KindChip extends StatelessWidget {
   }
 }
 
-/// Shared slug/label/kind/place/note form used by both the add-location and
-/// edit-location dialogs. When [initial] is given, the slug field is shown
-/// read-only (a slug rename is DESIGN-009 prompt 5, not this dialog) and the
-/// result carries [initial]'s slug and position unchanged — position is
-/// edited directly on the row via its own [PositionFormField], not here.
+/// Shared label/kind/place/note form used by both the add-location and
+/// edit-location dialogs. The reference (`slug`) is never shown or typed —
+/// it is generated from the label at creation via [generateSlug] and stays
+/// fixed after that (a reference *rename* is a future action, ADR-0047).
+/// [initial]'s slug and position carry through unchanged on edit — position
+/// is edited directly on the row via its own [PositionFormField], not here.
 class _LocationFormDialog extends StatefulWidget {
   const _LocationFormDialog({required this.existingSlugs, this.initial});
 
@@ -239,9 +235,6 @@ class _LocationFormDialog extends StatefulWidget {
 
 class _LocationFormDialogState extends State<_LocationFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final _slugController = TextEditingController(
-    text: widget.initial?.slug ?? '',
-  );
   late final _labelController = TextEditingController(
     text: widget.initial?.label ?? '',
   );
@@ -257,30 +250,24 @@ class _LocationFormDialogState extends State<_LocationFormDialog> {
 
   @override
   void dispose() {
-    _slugController.dispose();
     _labelController.dispose();
     _placeController.dispose();
     _noteController.dispose();
     super.dispose();
   }
 
-  String? _validateSlug(String? value, AppLocalizations l10n) {
-    final slug = value?.trim() ?? '';
-    if (!_slugPattern.hasMatch(slug)) {
-      return l10n.locationsSectionInvalidSlugError;
-    }
-    if (widget.existingSlugs.contains(slug)) {
-      return l10n.locationsSectionDuplicateSlugError;
-    }
-    return null;
-  }
-
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final note = _noteController.text.trim();
+    final slug =
+        widget.initial?.slug ??
+        generateSlug(
+          _labelController.text.trim(),
+          widget.existingSlugs.contains,
+        );
     Navigator.of(context).pop(
       Location(
-        slug: _isEdit ? widget.initial!.slug : _slugController.text.trim(),
+        slug: slug,
         label: _labelController.text.trim(),
         kind: _kind,
         place: _placeController.text.trim(),
@@ -305,20 +292,8 @@ class _LocationFormDialogState extends State<_LocationFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: _slugController,
-                autofocus: !_isEdit,
-                enabled: !_isEdit,
-                decoration: InputDecoration(
-                  labelText: l10n.locationsSectionSlugLabel,
-                ),
-                validator: _isEdit
-                    ? null
-                    : (value) => _validateSlug(value, l10n),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
                 controller: _labelController,
-                autofocus: _isEdit,
+                autofocus: true,
                 decoration: InputDecoration(
                   labelText: l10n.locationsSectionLabelLabel,
                 ),
