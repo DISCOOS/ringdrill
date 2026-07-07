@@ -54,6 +54,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0044 | [Render the shareable preview on the site and expose plan meta as JSON](./0044-render-preview-on-site.md) | Accepted |
 | ADR-0045 | [Drill library bundle format for multi-program export and import](./0045-drill-library-bundle-format.md) | Accepted |
 | ADR-0046 | [Plan-scoped variables with cascading value overrides](./0046-plan-variables.md) | Accepted |
+| ADR-0047 | [Station-scoped scenario locations and persons, and RolePlay portrays a Person](./0047-scenario-locations-and-persons.md) | Proposed |
 
 ## When to write an ADR
 
