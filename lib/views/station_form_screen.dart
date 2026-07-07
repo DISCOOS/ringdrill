@@ -3,11 +3,15 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/locations_section.dart';
+import 'package:ringdrill/views/widgets/persons_section.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -82,6 +86,14 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// edited by [VariableOverridesSection] and read by [_saveStation].
   late Map<String, String> _workingOverrides;
 
+  /// Working copies of `station.locations`/`persons` (DESIGN-009 prompt 3),
+  /// edited by [LocationsSection]/[PersonsSection] and read by
+  /// [_saveStation]. A person's `homeSlug` can be left dangling by deleting
+  /// the location it points at — that guard is DESIGN-009 prompt 5, not
+  /// implemented here.
+  late List<Location> _workingLocations;
+  late List<Person> _workingPersons;
+
   /// This station's inherited baseline (ADR-0046): the plan's declared
   /// defaults overlaid by [StationFormScreen.parentExercise]'s overrides —
   /// mirrors `effectivePlanVariables(program, exercise: parentExercise)`,
@@ -118,6 +130,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
     _workingOverrides = Map<String, String>.of(
       widget.station.variableOverrides,
     );
+    _workingLocations = List<Location>.of(widget.station.locations);
+    _workingPersons = List<Person>.of(widget.station.persons);
     _nameController.text = widget.station.name;
     _descriptionController.text = widget.station.description?.toString() ?? "";
     _position = widget.station.position;
@@ -267,7 +281,6 @@ class _StationFormScreenState extends State<StationFormScreen> {
               icon: Icons.place,
               builder: (ctx) => _buildStationSectionBody(ctx, l),
             ),
-            ...activeMdSections,
             FormSection(
               id: 'variables',
               label: l.variablesSectionTitle,
@@ -280,6 +293,69 @@ class _StationFormScreenState extends State<StationFormScreen> {
                     setState(() => _workingOverrides = updated),
               ),
             ),
+            // Locations and Persons sit before the narrative markdown
+            // sections (DESIGN-009): declare the station's scenario data
+            // first, then reference it from Situation/Mission/etc — the
+            // opposite ordering rationale from Variabler above, which sits
+            // after its own referencing fields (see ExerciseFormScreen).
+            FormSection(
+              id: 'locations',
+              label: l.locationsSectionTitle,
+              icon: Icons.location_on_outlined,
+              builder: (_) => LocationsSection(
+                locations: _workingLocations,
+                onAdd: (location) => setState(
+                  () => _workingLocations = [..._workingLocations, location],
+                ),
+                onEdit: (location) => setState(
+                  () => _workingLocations = [
+                    for (final l in _workingLocations)
+                      if (l.slug == location.slug) location else l,
+                  ],
+                ),
+                onPositionChanged: (slug, position) => setState(
+                  () => _workingLocations = [
+                    for (final l in _workingLocations)
+                      if (l.slug == slug) l.copyWith(position: position) else l,
+                  ],
+                ),
+                onDelete: (slug) => setState(
+                  () => _workingLocations = _workingLocations
+                      .where((l) => l.slug != slug)
+                      .toList(),
+                ),
+              ),
+            ),
+            FormSection(
+              id: 'persons',
+              label: l.personsSectionTitle,
+              icon: Icons.people_alt_outlined,
+              builder: (_) => PersonsSection(
+                persons: _workingPersons,
+                locations: _workingLocations,
+                onAdd: (person) => setState(
+                  () => _workingPersons = [..._workingPersons, person],
+                ),
+                onEdit: (person) => setState(
+                  () => _workingPersons = [
+                    for (final p in _workingPersons)
+                      if (p.slug == person.slug) person else p,
+                  ],
+                ),
+                onHomeChanged: (slug, homeSlug) => setState(
+                  () => _workingPersons = [
+                    for (final p in _workingPersons)
+                      if (p.slug == slug) p.copyWith(homeSlug: homeSlug) else p,
+                  ],
+                ),
+                onDelete: (slug) => setState(
+                  () => _workingPersons = _workingPersons
+                      .where((p) => p.slug != slug)
+                      .toList(),
+                ),
+              ),
+            ),
+            ...activeMdSections,
           ],
           addable: addableSections,
           onAdd: (id) => _addSection(_StationSection.values.byName(id)),
@@ -408,6 +484,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
         directorNotesMd: _readSection(_StationSection.directorNotes),
         // The working copy: carries VariableOverridesSection's edits.
         variableOverrides: _workingOverrides,
+        // The working copies: carry LocationsSection's/PersonsSection's edits.
+        locations: _workingLocations,
+        persons: _workingPersons,
       );
 
       Navigator.of(context).pop(newStation);

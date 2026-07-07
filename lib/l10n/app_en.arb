@@ -1504,11 +1504,11 @@
   },
   "roleName": "Name",
   "@roleName": {
-    "description": "Field label for the role name in RolePlayFormScreen."
+    "description": "Field label for the role name in RolePlayFormScreen; reused by PersonsSection (Person.name, DESIGN-009 prompt 3)."
   },
   "roleAge": "Age",
   "@roleAge": {
-    "description": "Field label for the optional age field in RolePlayFormScreen."
+    "description": "Field label for the optional age field in RolePlayFormScreen; reused by PersonsSection (Person.age, DESIGN-009 prompt 3)."
   },
   "optional": "Optional",
   "@optional": {
@@ -1516,7 +1516,7 @@
   },
   "ageRange": "Age must be between 0 and 120",
   "@ageRange": {
-    "description": "Validation error shown when the age value is outside the valid range."
+    "description": "Validation error shown when the age value is outside the valid range. Shared by RolePlayFormScreen and PersonsSection (DESIGN-009 prompt 3)."
   },
   "stationLabel": "Station",
   "@stationLabel": {
@@ -1572,7 +1572,7 @@
   },
   "roleSignalement": "Signalement",
   "@roleSignalement": {
-    "description": "Form field label for the signalement field in RolePlayFormScreen."
+    "description": "Form field label for the signalement field in RolePlayFormScreen; reused by PersonsSection (Person.signalement, DESIGN-009 prompt 3)."
   },
   "roleBackground": "Background",
   "@roleBackground": {
@@ -2180,6 +2180,96 @@
   "locationKindOtherDescription": "Any other kind of location.",
   "@locationKindOtherDescription": {
     "description": "LocationKind.other helper description, shown under the label in the kind picker."
+  },
+
+  "locationsSectionTitle": "Locations",
+  "@locationsSectionTitle": {
+    "description": "DESIGN-009 first-class station-editor section label for the station's Location list (section-navigated shell)."
+  },
+  "locationsSectionAddAction": "New location",
+  "@locationsSectionAddAction": {
+    "description": "\"+ Ny lokasjon\" action label in the Locations section, and the title of the add dialog it opens."
+  },
+  "locationsSectionEditAction": "Edit",
+  "@locationsSectionEditAction": {
+    "description": "Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. Slug and position are not editable here (slug is prompt 5's rename; position has its own inline map-pick control on the row)."
+  },
+  "locationsSectionDeleteAction": "Delete",
+  "@locationsSectionDeleteAction": {
+    "description": "Row overflow-menu action (ADR-0031) that deletes a location. Plain delete in this prompt -- the reference guard (blocked-while-referenced) is DESIGN-009 prompt 5."
+  },
+  "locationsSectionSlugLabel": "Slug",
+  "@locationsSectionSlugLabel": {
+    "description": "Field label for a location's slug (the stable reference used as {{station.loc.<slug>}}) in the add-location dialog. \"Slug\" stays untranslated per DESIGN-009's Norwegian-labels table."
+  },
+  "locationsSectionLabelLabel": "Name",
+  "@locationsSectionLabelLabel": {
+    "description": "Field label for a location's display label in the add/edit-location dialog."
+  },
+  "locationsSectionKindLabel": "Kind",
+  "@locationsSectionKindLabel": {
+    "description": "Field label for a location's LocationKind dropdown in the add/edit-location dialog."
+  },
+  "locationsSectionPlaceLabel": "Place",
+  "@locationsSectionPlaceLabel": {
+    "description": "Field label for a location's place/address text in the add/edit-location dialog."
+  },
+  "locationsSectionNoteLabel": "Note",
+  "@locationsSectionNoteLabel": {
+    "description": "Field label for a location's optional note in the add/edit-location dialog."
+  },
+  "locationsSectionInvalidSlugError": "Must start with a lowercase letter and contain only lowercase letters, numbers and underscores",
+  "@locationsSectionInvalidSlugError": {
+    "description": "Validation message when a location slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$."
+  },
+  "locationsSectionDuplicateSlugError": "This slug is already in use on this station",
+  "@locationsSectionDuplicateSlugError": {
+    "description": "Validation message when a location slug is already used by another location on the same station."
+  },
+
+  "personsSectionTitle": "Persons",
+  "@personsSectionTitle": {
+    "description": "DESIGN-009 first-class station-editor section label for the station's Person list (section-navigated shell)."
+  },
+  "personsSectionAddAction": "New person",
+  "@personsSectionAddAction": {
+    "description": "\"+ Ny person\" action label in the Persons section, and the title of the add dialog it opens."
+  },
+  "personsSectionEditAction": "Edit",
+  "@personsSectionEditAction": {
+    "description": "Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. Slug and home are not editable here (slug is prompt 5's rename; home has its own inline picker on the row)."
+  },
+  "personsSectionDeleteAction": "Delete",
+  "@personsSectionDeleteAction": {
+    "description": "Row overflow-menu action (ADR-0031) that deletes a person. Plain delete in this prompt -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is DESIGN-009 prompt 5."
+  },
+  "personsSectionSlugLabel": "Slug",
+  "@personsSectionSlugLabel": {
+    "description": "Field label for a person's slug (the stable reference used as {{station.person.<slug>}}) in the add-person dialog. \"Slug\" stays untranslated per DESIGN-009's Norwegian-labels table."
+  },
+  "personsSectionHomeLabel": "Home",
+  "@personsSectionHomeLabel": {
+    "description": "Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row."
+  },
+  "personsSectionHomeNone": "No home",
+  "@personsSectionHomeNone": {
+    "description": "The \"no home selected\" option in the home picker dropdown, and shown when a person has no homeSlug."
+  },
+  "personsSectionNotesLabel": "Notes",
+  "@personsSectionNotesLabel": {
+    "description": "Field label for a person's optional notes in the add/edit-person dialog."
+  },
+  "personsSectionInvalidSlugError": "Must start with a lowercase letter and contain only lowercase letters, numbers and underscores",
+  "@personsSectionInvalidSlugError": {
+    "description": "Validation message when a person slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$."
+  },
+  "personsSectionDuplicateSlugError": "This slug is already in use on this station",
+  "@personsSectionDuplicateSlugError": {
+    "description": "Validation message when a person slug is already used by another person on the same station."
+  },
+  "roleGender": "Gender",
+  "@roleGender": {
+    "description": "Field label for the gender identity field, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first."
   },
 
   "programSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",

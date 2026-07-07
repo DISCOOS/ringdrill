@@ -2133,6 +2133,76 @@ class AppLocalizationsNb extends AppLocalizations {
   String get locationKindOtherDescription => 'Enhver annen type lokasjon.';
 
   @override
+  String get locationsSectionTitle => 'Lokasjoner';
+
+  @override
+  String get locationsSectionAddAction => 'Ny lokasjon';
+
+  @override
+  String get locationsSectionEditAction => 'Rediger';
+
+  @override
+  String get locationsSectionDeleteAction => 'Slett';
+
+  @override
+  String get locationsSectionSlugLabel => 'Slug';
+
+  @override
+  String get locationsSectionLabelLabel => 'Navn';
+
+  @override
+  String get locationsSectionKindLabel => 'Type';
+
+  @override
+  String get locationsSectionPlaceLabel => 'Sted';
+
+  @override
+  String get locationsSectionNoteLabel => 'Notat';
+
+  @override
+  String get locationsSectionInvalidSlugError =>
+      'Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek';
+
+  @override
+  String get locationsSectionDuplicateSlugError =>
+      'Denne sluggen er allerede i bruk på denne posten';
+
+  @override
+  String get personsSectionTitle => 'Personer';
+
+  @override
+  String get personsSectionAddAction => 'Ny person';
+
+  @override
+  String get personsSectionEditAction => 'Rediger';
+
+  @override
+  String get personsSectionDeleteAction => 'Slett';
+
+  @override
+  String get personsSectionSlugLabel => 'Slug';
+
+  @override
+  String get personsSectionHomeLabel => 'Bopel';
+
+  @override
+  String get personsSectionHomeNone => 'Ingen bopel';
+
+  @override
+  String get personsSectionNotesLabel => 'Notater';
+
+  @override
+  String get personsSectionInvalidSlugError =>
+      'Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek';
+
+  @override
+  String get personsSectionDuplicateSlugError =>
+      'Denne sluggen er allerede i bruk på denne posten';
+
+  @override
+  String get roleGender => 'Kjønn';
+
+  @override
   String programSaveBlockedUndeclaredVariable(String sections) {
     return 'Kan ikke lagre: $sections inneholder en ukjent variabel';
   }

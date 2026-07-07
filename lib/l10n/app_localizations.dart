@@ -2690,13 +2690,13 @@ abstract class AppLocalizations {
   /// **'Unknown role'**
   String get unknownRole;
 
-  /// Field label for the role name in RolePlayFormScreen.
+  /// Field label for the role name in RolePlayFormScreen; reused by PersonsSection (Person.name, DESIGN-009 prompt 3).
   ///
   /// In en, this message translates to:
   /// **'Name'**
   String get roleName;
 
-  /// Field label for the optional age field in RolePlayFormScreen.
+  /// Field label for the optional age field in RolePlayFormScreen; reused by PersonsSection (Person.age, DESIGN-009 prompt 3).
   ///
   /// In en, this message translates to:
   /// **'Age'**
@@ -2708,7 +2708,7 @@ abstract class AppLocalizations {
   /// **'Optional'**
   String get optional;
 
-  /// Validation error shown when the age value is outside the valid range.
+  /// Validation error shown when the age value is outside the valid range. Shared by RolePlayFormScreen and PersonsSection (DESIGN-009 prompt 3).
   ///
   /// In en, this message translates to:
   /// **'Age must be between 0 and 120'**
@@ -2786,7 +2786,7 @@ abstract class AppLocalizations {
   /// **'No roles at this post'**
   String get noRolesAtThisStation;
 
-  /// Form field label for the signalement field in RolePlayFormScreen.
+  /// Form field label for the signalement field in RolePlayFormScreen; reused by PersonsSection (Person.signalement, DESIGN-009 prompt 3).
   ///
   /// In en, this message translates to:
   /// **'Signalement'**
@@ -3631,6 +3631,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Any other kind of location.'**
   String get locationKindOtherDescription;
+
+  /// DESIGN-009 first-class station-editor section label for the station's Location list (section-navigated shell).
+  ///
+  /// In en, this message translates to:
+  /// **'Locations'**
+  String get locationsSectionTitle;
+
+  /// "+ Ny lokasjon" action label in the Locations section, and the title of the add dialog it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'New location'**
+  String get locationsSectionAddAction;
+
+  /// Row overflow-menu action (ADR-0031) that edits a location's label/kind/place/note, and the title of the dialog it opens. Slug and position are not editable here (slug is prompt 5's rename; position has its own inline map-pick control on the row).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get locationsSectionEditAction;
+
+  /// Row overflow-menu action (ADR-0031) that deletes a location. Plain delete in this prompt -- the reference guard (blocked-while-referenced) is DESIGN-009 prompt 5.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get locationsSectionDeleteAction;
+
+  /// Field label for a location's slug (the stable reference used as {{station.loc.<slug>}}) in the add-location dialog. "Slug" stays untranslated per DESIGN-009's Norwegian-labels table.
+  ///
+  /// In en, this message translates to:
+  /// **'Slug'**
+  String get locationsSectionSlugLabel;
+
+  /// Field label for a location's display label in the add/edit-location dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get locationsSectionLabelLabel;
+
+  /// Field label for a location's LocationKind dropdown in the add/edit-location dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get locationsSectionKindLabel;
+
+  /// Field label for a location's place/address text in the add/edit-location dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get locationsSectionPlaceLabel;
+
+  /// Field label for a location's optional note in the add/edit-location dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get locationsSectionNoteLabel;
+
+  /// Validation message when a location slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$.
+  ///
+  /// In en, this message translates to:
+  /// **'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores'**
+  String get locationsSectionInvalidSlugError;
+
+  /// Validation message when a location slug is already used by another location on the same station.
+  ///
+  /// In en, this message translates to:
+  /// **'This slug is already in use on this station'**
+  String get locationsSectionDuplicateSlugError;
+
+  /// DESIGN-009 first-class station-editor section label for the station's Person list (section-navigated shell).
+  ///
+  /// In en, this message translates to:
+  /// **'Persons'**
+  String get personsSectionTitle;
+
+  /// "+ Ny person" action label in the Persons section, and the title of the add dialog it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'New person'**
+  String get personsSectionAddAction;
+
+  /// Row overflow-menu action (ADR-0031) that edits a person's name/age/gender/signalement/notes, and the title of the dialog it opens. Slug and home are not editable here (slug is prompt 5's rename; home has its own inline picker on the row).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get personsSectionEditAction;
+
+  /// Row overflow-menu action (ADR-0031) that deletes a person. Plain delete in this prompt -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is DESIGN-009 prompt 5.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get personsSectionDeleteAction;
+
+  /// Field label for a person's slug (the stable reference used as {{station.person.<slug>}}) in the add-person dialog. "Slug" stays untranslated per DESIGN-009's Norwegian-labels table.
+  ///
+  /// In en, this message translates to:
+  /// **'Slug'**
+  String get personsSectionSlugLabel;
+
+  /// Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get personsSectionHomeLabel;
+
+  /// The "no home selected" option in the home picker dropdown, and shown when a person has no homeSlug.
+  ///
+  /// In en, this message translates to:
+  /// **'No home'**
+  String get personsSectionHomeNone;
+
+  /// Field label for a person's optional notes in the add/edit-person dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get personsSectionNotesLabel;
+
+  /// Validation message when a person slug does not match the ADR-0047 slug rule ^[a-z][a-z0-9_]*$.
+  ///
+  /// In en, this message translates to:
+  /// **'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores'**
+  String get personsSectionInvalidSlugError;
+
+  /// Validation message when a person slug is already used by another person on the same station.
+  ///
+  /// In en, this message translates to:
+  /// **'This slug is already in use on this station'**
+  String get personsSectionDuplicateSlugError;
+
+  /// Field label for the gender identity field, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get roleGender;
 
   /// Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.
   ///

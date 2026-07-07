@@ -2137,6 +2137,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationKindOtherDescription => 'Any other kind of location.';
 
   @override
+  String get locationsSectionTitle => 'Locations';
+
+  @override
+  String get locationsSectionAddAction => 'New location';
+
+  @override
+  String get locationsSectionEditAction => 'Edit';
+
+  @override
+  String get locationsSectionDeleteAction => 'Delete';
+
+  @override
+  String get locationsSectionSlugLabel => 'Slug';
+
+  @override
+  String get locationsSectionLabelLabel => 'Name';
+
+  @override
+  String get locationsSectionKindLabel => 'Kind';
+
+  @override
+  String get locationsSectionPlaceLabel => 'Place';
+
+  @override
+  String get locationsSectionNoteLabel => 'Note';
+
+  @override
+  String get locationsSectionInvalidSlugError =>
+      'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores';
+
+  @override
+  String get locationsSectionDuplicateSlugError =>
+      'This slug is already in use on this station';
+
+  @override
+  String get personsSectionTitle => 'Persons';
+
+  @override
+  String get personsSectionAddAction => 'New person';
+
+  @override
+  String get personsSectionEditAction => 'Edit';
+
+  @override
+  String get personsSectionDeleteAction => 'Delete';
+
+  @override
+  String get personsSectionSlugLabel => 'Slug';
+
+  @override
+  String get personsSectionHomeLabel => 'Home';
+
+  @override
+  String get personsSectionHomeNone => 'No home';
+
+  @override
+  String get personsSectionNotesLabel => 'Notes';
+
+  @override
+  String get personsSectionInvalidSlugError =>
+      'Must start with a lowercase letter and contain only lowercase letters, numbers and underscores';
+
+  @override
+  String get personsSectionDuplicateSlugError =>
+      'This slug is already in use on this station';
+
+  @override
+  String get roleGender => 'Gender';
+
+  @override
   String programSaveBlockedUndeclaredVariable(String sections) {
     return 'Can’t save: $sections contains an unknown variable';
   }
