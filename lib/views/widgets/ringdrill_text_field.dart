@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_insertion_menu.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
@@ -50,6 +51,13 @@ Widget _wrapTokenAware({
   final tokenController = controller as TokenTextEditingController;
   final variables = _effectiveTokens(context, overrides);
   tokenController.variables = variables;
+  // Optional: only a caller editing under a StationScope (station and
+  // roleplay editors) gets `station.loc`/`station.person` chip coloring
+  // (ADR-0047, DESIGN-009 follow-up 4). Program/Exercise fields have no
+  // station in scope, so this stays null there and the tokens render as
+  // plain text, same as before this field existed.
+  final stationScope = StationScope.maybeOf(context);
+  tokenController.stationTokenResolver = stationScope?.resolve;
   return TokenInsertionMenu(
     controller: tokenController,
     focusNode: focusNode,

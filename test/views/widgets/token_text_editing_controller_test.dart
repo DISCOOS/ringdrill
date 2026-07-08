@@ -173,4 +173,129 @@ void main() {
       expect(controller.text, 'A {{var.}} B');
     },
   );
+
+  group('station.loc/person chips (DESIGN-009 follow-up 4)', () {
+    testWidgets(
+      'known, empty and unknown station.loc/person references get distinct chip styles',
+      (tester) async {
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                ctx = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        final controller = TokenTextEditingController(
+          text:
+              'A {{station.loc.lkp}} B {{station.loc.empty}} '
+              'C {{station.loc.ghost}} D {{station.person.anne}}',
+        );
+        controller.stationTokenResolver = (kind, slug, facets) {
+          if (kind == 'loc' && slug == 'lkp') return 'Sentrum';
+          if (kind == 'loc' && slug == 'empty') return '';
+          if (kind == 'person' && slug == 'anne') return 'Anne';
+          return null;
+        };
+
+        final span = controller.buildTextSpan(
+          context: ctx,
+          style: const TextStyle(color: Colors.black),
+          withComposing: false,
+        );
+
+        final known = _chipFor(span, '{{station.loc.lkp}}');
+        final empty = _chipFor(span, '{{station.loc.empty}}');
+        final unknown = _chipFor(span, '{{station.loc.ghost}}');
+        final person = _chipFor(span, '{{station.person.anne}}');
+
+        expect(known.style?.color, Colors.blue.shade800);
+        expect(empty.style?.color, Colors.amber.shade900);
+        expect(unknown.style?.color, Colors.red.shade800);
+        expect(unknown.style?.decoration, TextDecoration.underline);
+        expect(person.style?.color, Colors.blue.shade800);
+      },
+    );
+
+    testWidgets(
+      'a facet path is passed to the resolver and a var + station token in '
+      'the same text both chip correctly',
+      (tester) async {
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                ctx = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        List<String>? capturedFacets;
+        final controller = TokenTextEditingController(
+          text: '{{var.freq}} at {{station.loc.lkp.utm}}',
+          variables: const [
+            VariableToken(name: 'freq', effectiveValue: 'Kanal 6'),
+          ],
+        );
+        controller.stationTokenResolver = (kind, slug, facets) {
+          capturedFacets = facets;
+          return '32V 0580414E 6552008N';
+        };
+
+        final span = controller.buildTextSpan(
+          context: ctx,
+          style: const TextStyle(color: Colors.black),
+          withComposing: false,
+        );
+
+        expect(capturedFacets, ['utm']);
+        expect(
+          _chipFor(span, '{{var.freq}}').style?.color,
+          Colors.blue.shade800,
+        );
+        expect(
+          _chipFor(span, '{{station.loc.lkp.utm}}').style?.color,
+          Colors.blue.shade800,
+        );
+      },
+    );
+
+    testWidgets(
+      'without a resolver, a station.loc/person token is left as plain '
+      'text (no StationScope in this field\'s context)',
+      (tester) async {
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                ctx = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        const baseStyle = TextStyle(color: Colors.black);
+        final controller = TokenTextEditingController(
+          text: 'See {{station.loc.lkp}}',
+        );
+        final span = controller.buildTextSpan(
+          context: ctx,
+          style: baseStyle,
+          withComposing: false,
+        );
+
+        expect(span.children, isNull);
+        expect(span.text, 'See {{station.loc.lkp}}');
+      },
+    );
+  });
 }

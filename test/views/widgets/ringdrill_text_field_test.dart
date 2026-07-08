@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_insertion_menu.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
@@ -198,5 +201,99 @@ void main() {
       expect(find.byType(TokenInsertionMenu), findsOneWidget);
       expect(_chipColor(tester, '{{var.frekvens}}'), Colors.blue.shade800);
     });
+  });
+
+  group('StationScope wiring (DESIGN-009 follow-up 4)', () {
+    testWidgets(
+      'a station.loc/person chip resolves from an ancestor StationScope',
+      (tester) async {
+        final controller = TokenTextEditingController(
+          text: '{{station.loc.lkp}} {{station.person.ghost}}',
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: PlanScope(
+                variables: const [],
+                child: StationScope(
+                  locations: const [
+                    Location(slug: 'lkp', place: 'Sentrum'),
+                  ],
+                  persons: const [],
+                  child: RingDrillTextArea(
+                    controller: controller,
+                    label: 'Situasjon',
+                    tokenAware: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(_chipColor(tester, '{{station.loc.lkp}}'), Colors.blue.shade800);
+        expect(
+          _chipColor(tester, '{{station.person.ghost}}'),
+          Colors.red.shade800,
+        );
+      },
+    );
+
+    testWidgets(
+      'without an ancestor StationScope, a station.loc/person token stays plain',
+      (tester) async {
+        final controller = TokenTextEditingController(
+          text: '{{station.loc.lkp}}',
+        );
+        await _pump(
+          tester,
+          RingDrillTextArea(
+            controller: controller,
+            label: 'Situasjon',
+            tokenAware: true,
+          ),
+          scopeVariables: const [],
+        );
+
+        expect(find.text('{{station.loc.lkp}}'), findsOneWidget);
+        expect(_chipColor(tester, '{{station.loc.lkp}}'), isNull);
+      },
+    );
+
+    testWidgets(
+      'an empty-resolving location facet chips amber, matching var.* semantics',
+      (tester) async {
+        final controller = TokenTextEditingController(
+          text: '{{station.loc.empty}}',
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: PlanScope(
+                variables: const [],
+                child: StationScope(
+                  locations: const [Location(slug: 'empty')],
+                  persons: const [Person(slug: 'p')],
+                  child: RingDrillTextArea(
+                    controller: controller,
+                    label: 'Situasjon',
+                    tokenAware: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          _chipColor(tester, '{{station.loc.empty}}'),
+          Colors.amber.shade900,
+        );
+      },
+    );
   });
 }
