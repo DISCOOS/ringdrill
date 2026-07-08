@@ -388,6 +388,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stationName => 'Station Name';
 
   @override
+  String get stationCode => 'Station Code';
+
+  @override
+  String get positionUtm => 'Position (UTM)';
+
+  @override
+  String get variantSuffix => 'Variant Suffix';
+
+  @override
   String get stationNameHint => 'Name this station';
 
   @override

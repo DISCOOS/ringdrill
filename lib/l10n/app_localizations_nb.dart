@@ -388,6 +388,15 @@ class AppLocalizationsNb extends AppLocalizations {
   String get stationName => 'Postnavn';
 
   @override
+  String get stationCode => 'Postkode';
+
+  @override
+  String get positionUtm => 'Posisjon (UTM)';
+
+  @override
+  String get variantSuffix => 'Variantsuffiks';
+
+  @override
   String get stationNameHint => 'Gi posten et navn';
 
   @override

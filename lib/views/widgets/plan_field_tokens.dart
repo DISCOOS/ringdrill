@@ -33,4 +33,31 @@ class PlanFieldTokens {
     PlanFieldToken(name: 'exercise.rotationTime', label: l.rotationTime),
     PlanFieldToken(name: 'exercise.phaseBreakdown', label: l.phaseBreakdown),
   ];
+
+  /// Resolvable at station scope and, via cascade, roleplay scope. Omits
+  /// `station.description` (DESIGN-009 follow-up 4c): it *is* the free-text
+  /// field the author edits in the station's own base section — resolving
+  /// through the fixpoint pass, offering it there recurses on itself.
+  static List<PlanFieldToken> station(AppLocalizations l) => [
+    PlanFieldToken(name: 'station.name', label: l.stationName),
+    PlanFieldToken(name: 'station.stationCode', label: l.stationCode),
+    PlanFieldToken(name: 'station.position.utm', label: l.positionUtm),
+    PlanFieldToken(name: 'station.variantSuffix', label: l.variantSuffix),
+  ];
+
+  /// Resolvable at roleplay scope only. `roleplay.name` is self-referential
+  /// in the roleplay's own name field the same way `station.description` is
+  /// (DESIGN-009 follow-up 4c) — the renderer only substitutes `{{var.*}}`
+  /// in that field, never runs the cross-reference pass on it — so the
+  /// caller must exclude it from that one field's own `planFields` while
+  /// still offering it in the roleplay's other fields (behavior, background,
+  /// propsMd). `roleplay.signalement` has the matching issue in the
+  /// signalement field, but that field is never token-aware in the first
+  /// place, so no caller-side filtering is needed for it.
+  static List<PlanFieldToken> roleplay(AppLocalizations l) => [
+    PlanFieldToken(name: 'roleplay.name', label: l.roleName),
+    PlanFieldToken(name: 'roleplay.age', label: l.roleAge),
+    PlanFieldToken(name: 'roleplay.signalement', label: l.roleSignalement),
+    PlanFieldToken(name: 'roleplay.position.utm', label: l.positionUtm),
+  ];
 }

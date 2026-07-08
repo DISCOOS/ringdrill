@@ -415,6 +415,18 @@
   "@stationName": {
     "description": "Label"
   },
+  "stationCode": "Station Code",
+  "@stationCode": {
+    "description": "Label"
+  },
+  "positionUtm": "Position (UTM)",
+  "@positionUtm": {
+    "description": "Label"
+  },
+  "variantSuffix": "Variant Suffix",
+  "@variantSuffix": {
+    "description": "Label"
+  },
   "stationNameHint": "Name this station",
   "@stationNameHint": {
     "description": "Label"

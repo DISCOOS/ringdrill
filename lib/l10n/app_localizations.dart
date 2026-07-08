@@ -695,6 +695,24 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
+  /// **'Station Code'**
+  String get stationCode;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Position (UTM)'**
+  String get positionUtm;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Variant Suffix'**
+  String get variantSuffix;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
   /// **'Name this station'**
   String get stationNameHint;
 
