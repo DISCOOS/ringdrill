@@ -234,66 +234,64 @@ class PositionCardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (thumbnail != null)
-                SizedBox(
-                  height: thumbnailHeight,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      thumbnail!,
-                      if (overlayActions.isNotEmpty)
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: overlayActions,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                ),
-                child: Row(
+    // No hand-drawn Border.all: a plain Card picks up the ambient
+    // cardTheme's shape/elevation/shadow, so this reads as the same kind
+    // of card as everything else in the app instead of a bespoke boxed
+    // frame around the map preview.
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (thumbnail != null)
+              SizedBox(
+                height: thumbnailHeight,
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    if (barLabel != null) ...[
-                      barLabel!,
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(child: barChild),
-                    const SizedBox(width: 8),
-                    barTrailing ??
-                        Icon(
-                          Icons.chevron_right,
-                          color: theme.colorScheme.onSurfaceVariant,
+                    thumbnail!,
+                    if (overlayActions.isNotEmpty)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: overlayActions,
                         ),
+                      ),
                   ],
                 ),
               ),
-            ],
-          ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+              ),
+              child: Row(
+                children: [
+                  if (barLabel != null) ...[
+                    barLabel!,
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(child: barChild),
+                  const SizedBox(width: 8),
+                  barTrailing ??
+                      Icon(
+                        Icons.chevron_right,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
