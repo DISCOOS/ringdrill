@@ -70,7 +70,6 @@ class StationFacetMenuEntry extends TokenMenuEntry {
     required this.slug,
     required this.facetPath,
     required this.label,
-    required this.entityLabel,
   });
 
   final StationFacetKind kind;
@@ -79,11 +78,6 @@ class StationFacetMenuEntry extends TokenMenuEntry {
 
   /// The facet's own display label, e.g. "Signalement".
   final String label;
-
-  /// The owning entity's display label, e.g. "Anne Glemsk" — shown as a
-  /// muted trailing hint so a facet tile reads "Signalement — Anne Glemsk"
-  /// rather than repeating the slug.
-  final String entityLabel;
 }
 
 class _Trigger {
@@ -145,17 +139,21 @@ final _stationPersonPrefixPattern = RegExp(
 
 /// The facets `brief_renderer.dart`'s `_resolveLocationFacet` switches on,
 /// in picker display order (ADR-0047, DESIGN-009 follow-up 4d). There is no
-/// facet enum in the renderer, so this constant — and the resolution-guard
-/// test that renders each one — is what keeps the picker in sync with it.
-/// The bare token (no facet) is a separate, always-offered default; it is
-/// not itself in this list.
-const _locationFacetNames = ['place', 'label', 'utm'];
+/// facet enum in the renderer, so this constant — read directly by the
+/// resolution-guard test that renders each one through `BriefRenderer` — is
+/// what keeps the picker in sync with it. Public (not the usual leading
+/// underscore) for that test's benefit only, same rationale as
+/// [TokenInsertionMenuState.isMenuOpen]. The bare token (no facet) is a
+/// separate, always-offered default; it is not itself in this list.
+@visibleForTesting
+const locationFacetNames = ['place', 'label', 'utm'];
 
 /// The facets `_resolvePersonFacet` switches on. `home` chains to the
-/// person's home location's own [_locationFacetNames] one level deep (see
+/// person's home location's own [locationFacetNames] one level deep (see
 /// `_facetAwareEntries`) — `brief_renderer.dart` supports exactly one level
 /// of chaining, so this picker does too.
-const _personFacetNames = ['name', 'age', 'gender', 'signalement', 'home'];
+@visibleForTesting
+const personFacetNames = ['name', 'age', 'gender', 'signalement', 'home'];
 
 String _locationFacetLabel(AppLocalizations l10n, String facet) =>
     switch (facet) {
@@ -512,14 +510,13 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       return (
         entries: [
           if (rest == null) StationLocationMenuEntry(location),
-          for (final f in _locationFacetNames)
+          for (final f in locationFacetNames)
             if (rest == null || f.toLowerCase().contains(rest.toLowerCase()))
               StationFacetMenuEntry(
                 kind: StationFacetKind.location,
                 slug: slugPart,
                 facetPath: [f],
                 label: _locationFacetLabel(l10n, f),
-                entityLabel: location.label,
               ),
         ],
         matchedEntity: true,
@@ -552,14 +549,13 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         final homePartial = rest.substring(homeDot + 1).toLowerCase();
         return (
           entries: [
-            for (final f in _locationFacetNames)
+            for (final f in locationFacetNames)
               if (homePartial.isEmpty || f.toLowerCase().contains(homePartial))
                 StationFacetMenuEntry(
                   kind: StationFacetKind.person,
                   slug: slugPart,
                   facetPath: ['home', f],
                   label: _locationFacetLabel(l10n, f),
-                  entityLabel: person.label,
                 ),
           ],
           matchedEntity: true,
@@ -569,14 +565,13 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     return (
       entries: [
         if (rest == null) StationPersonMenuEntry(person),
-        for (final f in _personFacetNames)
+        for (final f in personFacetNames)
           if (rest == null || f.toLowerCase().contains(rest.toLowerCase()))
             StationFacetMenuEntry(
               kind: StationFacetKind.person,
               slug: slugPart,
               facetPath: [f],
               label: _personFacetLabel(l10n, f),
-              entityLabel: person.label,
             ),
       ],
       matchedEntity: true,
@@ -739,12 +734,24 @@ class _TokenMenuCard extends StatelessWidget {
     final mutedStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic);
+    // Every tile's title/trailing is capped to one line: a menu card with a
+    // fixed max height (_menuMaxHeight) renders as many tiles as fit its
+    // viewport, so an entry whose text wraps to extra lines both looks
+    // wrong and, worse, silently pushes tiles below it out of that
+    // viewport — the exact failure mode ADR-0047/DESIGN-009 follow-up 4d's
+    // facet-discovery list hit with a long location/person label paired
+    // with a long preview (Flutter's ListTile has no built-in single-line
+    // guarantee for either slot).
+    Widget title(String text) =>
+        Text(text, maxLines: 1, overflow: TextOverflow.ellipsis);
+    Widget trailing(String text, {TextStyle? style}) =>
+        Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
     return switch (entry) {
       VariableMenuEntry(token: final v) => ListTile(
         dense: true,
         leading: const Icon(Icons.data_object, size: 18),
-        title: Text(v.name),
-        trailing: Text(
+        title: title(v.name),
+        trailing: trailing(
           v.effectiveValue,
           style: Theme.of(context).textTheme.bodySmall,
         ),
@@ -753,57 +760,57 @@ class _TokenMenuCard extends StatelessWidget {
       PlanFieldMenuEntry(token: final f) => ListTile(
         dense: true,
         leading: const Icon(Icons.article_outlined, size: 18),
-        title: Text(f.label),
-        trailing: Text(l10n.tokenMenuPlanFieldHint, style: mutedStyle),
+        title: title(f.label),
+        trailing: trailing(l10n.tokenMenuPlanFieldHint, style: mutedStyle),
         onTap: () => onSelect(entry),
       ),
       StationLocationMenuEntry(token: final l) => ListTile(
         dense: true,
         leading: const Icon(Icons.location_on_outlined, size: 18),
-        title: Text(l.label),
-        trailing: Text(l.preview, style: Theme.of(context).textTheme.bodySmall),
+        title: title(l.label),
+        trailing: trailing(
+          l.preview,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         onTap: () => onSelect(entry),
       ),
       StationPersonMenuEntry(token: final p) => ListTile(
         dense: true,
         leading: const Icon(Icons.person_outline, size: 18),
-        title: Text(p.label),
-        trailing: Text(p.preview, style: Theme.of(context).textTheme.bodySmall),
+        title: title(p.label),
+        trailing: trailing(
+          p.preview,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         onTap: () => onSelect(entry),
       ),
-      StationFacetMenuEntry(
-        kind: final kind,
-        label: final label,
-        entityLabel: final entityLabel,
-      ) =>
-        ListTile(
-          dense: true,
-          leading: Icon(
-            kind == StationFacetKind.location
-                ? Icons.location_on_outlined
-                : Icons.person_outline,
-            size: 18,
-          ),
-          title: Text(label),
-          trailing: Text(entityLabel, style: mutedStyle),
-          onTap: () => onSelect(entry),
+      StationFacetMenuEntry(kind: final kind, label: final label) => ListTile(
+        dense: true,
+        leading: Icon(
+          kind == StationFacetKind.location
+              ? Icons.location_on_outlined
+              : Icons.person_outline,
+          size: 18,
         ),
+        title: title(label),
+        onTap: () => onSelect(entry),
+      ),
       CreateVariableMenuEntry(name: final name) => ListTile(
         dense: true,
         leading: const Icon(Icons.add, size: 18),
-        title: Text(l10n.tokenMenuCreateVariable(name)),
+        title: title(l10n.tokenMenuCreateVariable(name)),
         onTap: () => onSelect(entry),
       ),
       CreateLocationMenuEntry(label: final label) => ListTile(
         dense: true,
         leading: const Icon(Icons.add, size: 18),
-        title: Text(l10n.tokenMenuCreateLocation(label)),
+        title: title(l10n.tokenMenuCreateLocation(label)),
         onTap: () => onSelect(entry),
       ),
       CreatePersonMenuEntry(label: final label) => ListTile(
         dense: true,
         leading: const Icon(Icons.add, size: 18),
-        title: Text(l10n.tokenMenuCreatePerson(label)),
+        title: title(l10n.tokenMenuCreatePerson(label)),
         onTap: () => onSelect(entry),
       ),
     };

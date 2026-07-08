@@ -17,6 +17,29 @@ Future<void> _typeAndOpen(WidgetTester tester, String text) async {
   await tester.pump();
 }
 
+/// Mirrors `token_insertion_menu.dart`'s private `_locationFacetLabel`, so
+/// the discovery test can assert every entry in the public
+/// [locationFacetNames] renders its expected tile without duplicating the
+/// widget's own switch inline at each call site.
+String _locationFacetLabelFor(AppLocalizations l10n, String facet) =>
+    switch (facet) {
+      'place' => l10n.locationsSectionPlaceLabel,
+      'label' => l10n.locationsSectionLabelLabel,
+      'utm' => l10n.utm,
+      _ => facet,
+    };
+
+/// The [personFacetNames] counterpart of [_locationFacetLabelFor].
+String _personFacetLabelFor(AppLocalizations l10n, String facet) =>
+    switch (facet) {
+      'name' => l10n.roleName,
+      'age' => l10n.roleAge,
+      'gender' => l10n.roleGender,
+      'signalement' => l10n.roleSignalement,
+      'home' => l10n.personsSectionHomeLabel,
+      _ => facet,
+    };
+
 /// A field whose `onChanged` rebuilds an ancestor on every keystroke —
 /// mirroring `RolePlayFormScreen`'s own name field, which does this to keep
 /// a live effective-identity preview in sync (DESIGN-009 follow-up 4c
@@ -558,6 +581,160 @@ void main() {
           await tester.tap(find.text(l10n.tokenMenuCreateLocation('zzz')));
           await tester.pump();
           expect(controller.text, '{{station.loc.slug}}');
+        },
+      );
+    });
+
+    group('facet completion (DESIGN-009 follow-up 4d)', () {
+      const location = StationLocationToken(
+        slug: 'lkp',
+        label: 'Siste kjente posisjon',
+        preview: 'Sentrum',
+      );
+      const person = StationPersonToken(
+        slug: 'anne',
+        label: 'Anne Glemsk',
+        preview: 'effektivt navn',
+      );
+
+      testWidgets(
+        'discovery: an exact location slug shows the bare entry plus its '
+        'facets, unfiltered',
+        (tester) async {
+          await _pump(tester, stationLocations: const [location]);
+
+          await _typeAndOpen(tester, '{{station.loc.lkp');
+
+          expect(find.text('Siste kjente posisjon'), findsOneWidget);
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          for (final facet in locationFacetNames) {
+            expect(
+              find.text(_locationFacetLabelFor(l10n, facet)),
+              findsOneWidget,
+              reason: 'missing facet tile for $facet',
+            );
+          }
+        },
+      );
+
+      testWidgets(
+        'discovery: an exact person slug shows the bare entry plus its '
+        'facets, unfiltered',
+        (tester) async {
+          await _pump(tester, stationPersons: const [person]);
+
+          await _typeAndOpen(tester, '{{station.person.anne');
+
+          expect(find.text('Anne Glemsk'), findsOneWidget);
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          // The bare entry plus all 5 person facets don't all fit within
+          // the menu's fixed max height at once (a real author scrolls the
+          // same way); scroll each one into view before asserting it.
+          for (final facet in personFacetNames) {
+            final label = _personFacetLabelFor(l10n, facet);
+            await tester.scrollUntilVisible(
+              find.text(label),
+              50,
+              scrollable: find.descendant(
+                of: find.byType(ListView),
+                matching: find.byType(Scrollable),
+              ),
+            );
+            expect(
+              find.text(label),
+              findsOneWidget,
+              reason: 'missing facet tile for $facet',
+            );
+          }
+        },
+      );
+
+      testWidgets(
+        'completion: "station.person.anne.sig" narrows to signalement and '
+        'inserts the full dotted token',
+        (tester) async {
+          final controller = await _pump(
+            tester,
+            stationPersons: const [person],
+          );
+
+          await _typeAndOpen(tester, '{{station.person.anne.sig');
+
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          expect(find.text(l10n.roleSignalement), findsOneWidget);
+          expect(find.text(l10n.roleAge), findsNothing);
+          expect(find.text('Anne Glemsk'), findsNothing);
+
+          await tester.tap(find.text(l10n.roleSignalement));
+          await tester.pump();
+
+          expect(controller.text, '{{station.person.anne.signalement}}');
+        },
+      );
+
+      testWidgets(
+        'completion: "station.loc.lkp.ut" narrows to utm and inserts the '
+        'full dotted token',
+        (tester) async {
+          final controller = await _pump(
+            tester,
+            stationLocations: const [location],
+          );
+
+          await _typeAndOpen(tester, '{{station.loc.lkp.ut');
+
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          expect(find.text(l10n.utm), findsOneWidget);
+          expect(find.text(l10n.locationsSectionPlaceLabel), findsNothing);
+          expect(find.text('Siste kjente posisjon'), findsNothing);
+
+          await tester.tap(find.text(l10n.utm));
+          await tester.pump();
+
+          expect(controller.text, '{{station.loc.lkp.utm}}');
+        },
+      );
+
+      testWidgets(
+        'home chaining: "station.person.anne.home.ut" offers the location '
+        'utm facet and inserts {{station.person.anne.home.utm}}',
+        (tester) async {
+          final controller = await _pump(
+            tester,
+            stationPersons: const [person],
+          );
+
+          await _typeAndOpen(tester, '{{station.person.anne.home.ut');
+
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          expect(find.text(l10n.utm), findsOneWidget);
+          expect(find.text(l10n.roleAge), findsNothing);
+
+          await tester.tap(find.text(l10n.utm));
+          await tester.pump();
+
+          expect(controller.text, '{{station.person.anne.home.utm}}');
+        },
+      );
+
+      testWidgets(
+        'fallthrough: an unknown slug offers "Create …", not facets',
+        (tester) async {
+          await _pump(
+            tester,
+            stationPersons: const [person],
+            onCreatePerson: (label) => 'slug',
+          );
+
+          await _typeAndOpen(tester, '{{station.person.ukjent');
+
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          expect(
+            find.text(l10n.tokenMenuCreatePerson('ukjent')),
+            findsOneWidget,
+          );
+          expect(find.text(l10n.roleAge), findsNothing);
+          expect(find.text(l10n.roleSignalement), findsNothing);
         },
       );
     });
