@@ -107,6 +107,59 @@
     <p class="sub" style="margin-top:8px">Nå: «Oppdater fra kart»-lenke + 92px thumbnail + PositionFormField-rad, tre løse elementer om samme sak.</p>
   </div>
 
+  <!-- ============ C · READ-ONLY DETAIL PANELS ============ -->
+  <div class="phone">
+    <p class="cap">C · Detaljvisning (read-only) — Station- og RolePlay-panelet i samme kortlayout</p>
+
+    <p class="sub">Stasjonsdetalj</p>
+    <div class="frame" style="margin-bottom:16px">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">2a) Fisker (Angler)</span><i class="ti ti-pencil" style="font-size:18px;color:var(--text-2)"></i></div>
+      <div class="body">
+        <!-- StationPositionPanel : bordered card, mini-map on top, coord bar below, no floating pin header -->
+        <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+          <div class="maptile" style="height:140px">
+            <div style="position:absolute;top:26%;left:52%;transform:translate(-50%,-100%)"><i class="ti ti-flag" style="font-size:24px;color:var(--accent)"></i></div>
+            <div style="position:absolute;top:56%;left:47%;transform:translate(-50%,-100%);text-align:center">
+              <span style="background:var(--bg-3);color:var(--text-1);font-size:11px;padding:2px 6px;border-radius:4px;white-space:nowrap">2a) Fisker (Angler)</span><br>
+              <i class="ti ti-map-pin" style="font-size:26px;color:#2e9e5b"></i>
+            </div>
+            <div class="scale">250 m</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--border)">
+            <span class="lbl" style="margin:0">Posisjon</span>
+            <span class="mono" style="font-size:13px;flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">32V 6551796N 0580345E</span>
+            <i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="sub">RolePlay-detalj</p>
+    <div class="frame">
+      <div class="bar" style="align-items:flex-start"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t" style="line-height:1.3">Hilde<br><span style="font-size:12px;color:var(--text-3);font-weight:400">Førsteinnsats søk (ringøvelse)</span></span><i class="ti ti-pencil" style="font-size:18px;color:var(--text-2)"></i></div>
+      <div class="body">
+        <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px"><i class="ti ti-map-pin" style="font-size:18px;color:var(--accent)"></i><span style="font-size:14px">Post: 2a) Fisker (Angler)</span></div>
+        <!-- RolePositionPanel : same card shell, role marker instead of station pin -->
+        <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+          <div class="maptile" style="height:140px">
+            <div style="position:absolute;top:26%;left:52%;transform:translate(-50%,-100%)"><i class="ti ti-flag" style="font-size:24px;color:var(--accent)"></i></div>
+            <div style="position:absolute;top:56%;left:47%;transform:translate(-50%,-100%);text-align:center">
+              <span style="background:var(--bg-3);color:var(--text-1);font-size:11px;padding:2px 6px;border-radius:4px">Hilde</span><br>
+              <i class="ti ti-masks-theater" style="font-size:24px;color:#c9862e"></i>
+            </div>
+            <div class="scale">250 m</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--border)">
+            <span class="lbl" style="margin:0">Posisjon</span>
+            <span class="mono" style="font-size:13px;flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">32V 6551796N 0580345E</span>
+            <i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Read-only: tapp åpner den interaktive fullskjerm-/bunnark-kartvisningen (pan/zoom), ikke velgeren. Samme kortskall som redigeringen, men uten pin-ikonet som svever i header-raden.</p>
+  </div>
+
   <!-- ============ SHARED COMPONENT NOTE ============ -->
   <div class="phone" style="width:330px">
     <p class="cap">Delt komponent</p>
@@ -117,6 +170,9 @@
         <div><span class="mono" style="color:var(--accent)">showThumbnail</span> : live MapView i IgnorePointer</div>
         <div><span class="mono" style="color:var(--accent)">overlayActions</span> : List&lt;Widget&gt;, oppe til høyre over kartet</div>
         <div><span class="mono" style="color:var(--accent)">onTap</span> : hele flaten åpner MapPickerScreen</div>
+      </div>
+      <div style="font-size:13px;color:var(--text-2);line-height:1.5;border-top:1px solid var(--border);padding-top:10px">
+        <b style="color:var(--text-1);font-weight:500">Read-only-panelene deler skallet.</b> <span class="mono">StationPositionPanel</span> og <span class="mono">RolePositionPanel</span> (C) bruker samme kortskall — kart på topp, koordinatstripe under — men tapp åpner kartvisning, ikke velger. Tre bruksteder → ett felles skall (jf. token-mønsteret).
       </div>
       <div style="font-size:12px;color:var(--text-3);line-height:1.5;border-top:1px solid var(--border);padding-top:10px">
         Ingen <span class="mono">Icons.edit</span> i raden (ADR-0031). Chevron = «åpner en flate». Koordinatformatet er uendret (UtmWidget). MapView forblir domeneagnostisk: refresh-handlingen sendes inn via overlayActions, ikke et nytt flagg.
