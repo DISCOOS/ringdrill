@@ -50,6 +50,15 @@ class PositionCard<K> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (variant == PositionFieldVariant.card) {
+      return PositionCardShell(
+        onTap: onTap,
+        thumbnail: showThumbnail ? _buildMapContent(theme, pinSize: 28) : null,
+        thumbnailHeight: _cardThumbnailHeight,
+        overlayActions: overlayActions,
+        barChild: _buildCoordinate(theme),
+      );
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Container(
@@ -57,12 +66,7 @@ class PositionCard<K> extends StatelessWidget {
           border: Border.all(color: theme.colorScheme.outlineVariant),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: InkWell(
-          onTap: onTap,
-          child: variant == PositionFieldVariant.row
-              ? _buildRow(theme)
-              : _buildCard(theme),
-        ),
+        child: InkWell(onTap: onTap, child: _buildRow(theme)),
       ),
     );
   }
@@ -76,7 +80,21 @@ class PositionCard<K> extends StatelessWidget {
           if (showThumbnail)
             SizedBox(
               width: _thumbnailWidth,
-              child: _buildThumbnail(theme, pinSize: 20),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildMapContent(theme, pinSize: 20),
+                  if (overlayActions.isNotEmpty)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: overlayActions,
+                      ),
+                    ),
+                ],
+              ),
             ),
           Expanded(
             child: Padding(
@@ -104,39 +122,11 @@ class PositionCard<K> extends StatelessWidget {
     );
   }
 
-  Widget _buildCard(ThemeData theme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (showThumbnail)
-          SizedBox(
-            height: _cardThumbnailHeight,
-            child: _buildThumbnail(theme, pinSize: 28),
-          ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: theme.colorScheme.outlineVariant),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(child: _buildCoordinate(theme)),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildThumbnail(ThemeData theme, {required double pinSize}) {
+  /// Just the map/placeholder content — no overlay actions. [_buildRow]
+  /// wraps this in its own `Stack` (it isn't built on [PositionCardShell]);
+  /// the `card` variant hands it to the shell's `thumbnail` slot, which
+  /// applies `overlayActions` itself.
+  Widget _buildMapContent(ThemeData theme, {required double pinSize}) {
     final here = position;
     return Stack(
       fit: StackFit.expand,
@@ -177,15 +167,6 @@ class PositionCard<K> extends StatelessWidget {
             ),
           ),
         ],
-        if (overlayActions.isNotEmpty)
-          Positioned(
-            top: 6,
-            right: 6,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: overlayActions,
-            ),
-          ),
       ],
     );
   }
@@ -202,5 +183,119 @@ class PositionCard<K> extends StatelessWidget {
             format: PositionFormat.utm,
             wrapped: false,
           );
+  }
+}
+
+/// Shared `card` shell (docs/prompts/position-panel-read-alignment.md):
+/// an optional thumbnail slot (with its own top-right [overlayActions]
+/// stack) above a coordinate bar (optional leading [barLabel], a
+/// [barChild] slot, a trailing widget), the whole surface wrapped in one
+/// [InkWell] driving [onTap].
+///
+/// Used by [PositionCard]'s `card` variant (the pick surfaces) and by
+/// `StationPositionPanel`/`RolePositionPanel` (the read-only detail
+/// panels) — three call sites sharing one bordered-card layout instead of
+/// three near-identical `Column`s.
+class PositionCardShell extends StatelessWidget {
+  const PositionCardShell({
+    super.key,
+    required this.onTap,
+    this.thumbnail,
+    this.thumbnailHeight = 120.0,
+    this.overlayActions = const [],
+    this.barLabel,
+    required this.barChild,
+    this.barTrailing,
+  });
+
+  final VoidCallback onTap;
+
+  /// The mini-map (or placeholder) content. Null omits the whole
+  /// thumbnail section — and with it, [overlayActions], which have
+  /// nowhere to sit without a thumbnail to float over.
+  final Widget? thumbnail;
+  final double thumbnailHeight;
+
+  /// Rendered top-right over [thumbnail] in a [Stack]. Ignored when
+  /// [thumbnail] is null.
+  final List<Widget> overlayActions;
+
+  /// Optional leading label in the coordinate bar (e.g. "Position" on the
+  /// read-only panels; the pick surfaces omit it — their label sits above
+  /// the whole field instead).
+  final Widget? barLabel;
+
+  final Widget barChild;
+
+  /// Defaults to a muted `chevron_right` — every call site uses the same
+  /// "tap opens a surface" affordance (ADR-0031).
+  final Widget? barTrailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (thumbnail != null)
+                SizedBox(
+                  height: thumbnailHeight,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      thumbnail!,
+                      if (overlayActions.isNotEmpty)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: overlayActions,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    if (barLabel != null) ...[
+                      barLabel!,
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(child: barChild),
+                    const SizedBox(width: 8),
+                    barTrailing ??
+                        Icon(
+                          Icons.chevron_right,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
