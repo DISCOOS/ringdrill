@@ -78,4 +78,22 @@ void main() {
     final scalebar = tester.widget<Scalebar>(find.byType(Scalebar));
     expect(scalebar.padding, const EdgeInsets.all(10));
   });
+
+  testWidgets('withCross renders one fixed centre pin, not the old red X', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MapView<int>(layers: MapConfig.layers, withCross: true),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byIcon(Icons.location_on), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsNothing);
+  });
 }

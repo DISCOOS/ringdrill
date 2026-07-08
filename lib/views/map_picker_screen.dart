@@ -71,6 +71,26 @@ class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
     super.dispose();
   }
 
+  /// Context markers (e.g. sibling stations passed in via [MapPickerScreen.
+  /// markers]) dimmed to half opacity, so the single fixed centre pin
+  /// unambiguously reads as "the point being set" and these read as
+  /// background context instead. Done here, not in [MapView], so MapView
+  /// stays domain-agnostic (ADR-0020): it just renders whatever child a
+  /// [MapMarkerSpec] hands it — this wraps that child before handing it
+  /// over.
+  List<MapMarkerSpec<K>> get _dimmedMarkers => [
+    for (final spec in widget.markers)
+      MapMarkerSpec<K>(
+        id: spec.id,
+        label: spec.label,
+        point: spec.point,
+        clusterGroup: spec.clusterGroup,
+        highlighted: spec.highlighted,
+        onTap: spec.onTap,
+        child: Opacity(opacity: 0.5, child: spec.child),
+      ),
+  ];
+
   void _measureBar() {
     final box = _barKey.currentContext?.findRenderObject();
     if (box is! RenderBox || !box.hasSize) return;
@@ -104,7 +124,7 @@ class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
               initialCenter: widget.initialCenter,
               interactionFlags: MapConfig.interactive,
               layers: MapConfig.layers,
-              markers: widget.markers,
+              markers: _dimmedMarkers,
               bottomOverlayInset: _bottomOverlayInset,
             ),
             // Confirm within thumb reach instead of a small AppBar check.

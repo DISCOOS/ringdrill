@@ -463,16 +463,33 @@ class _MapViewState<K> extends State<MapView<K>> {
               ],
             ),
             if (widget.withCross)
+              // One clear centre pin = the point the camera centre sets
+              // (e.g. the map picker's selection), with a small ground dot
+              // marking the exact coordinate under the pin's tip.
               IgnorePointer(
-                child: Center(
-                  child: Transform.rotate(
-                    angle: 45 * math.pi / 180,
-                    child: Icon(
-                      Icons.close,
-                      size: 40,
-                      color: Colors.red.withValues(alpha: 0.65),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Transform.translate(
+                        offset: const Offset(0, -21),
+                        child: Icon(
+                          Icons.location_on,
+                          size: 42,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
                     ),
-                  ),
+                    Center(
+                      child: Container(
+                        width: 10,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             if (widget.withSearch)
