@@ -22,6 +22,18 @@ class PlanFieldMenuEntry extends TokenMenuEntry {
   final PlanFieldToken token;
 }
 
+/// A `{{station.loc.<slug>}}` entry (ADR-0047, DESIGN-009 follow-up 4).
+class StationLocationMenuEntry extends TokenMenuEntry {
+  const StationLocationMenuEntry(this.token);
+  final StationLocationToken token;
+}
+
+/// A `{{station.person.<slug>}}` entry.
+class StationPersonMenuEntry extends TokenMenuEntry {
+  const StationPersonMenuEntry(this.token);
+  final StationPersonToken token;
+}
+
 class CreateVariableMenuEntry extends TokenMenuEntry {
   const CreateVariableMenuEntry(this.name);
   final String name;
@@ -72,6 +84,18 @@ _Trigger? _detectTrigger(String text, int caret) {
 /// present.
 final _varPrefixPattern = RegExp(r'^var\.(.*)$', caseSensitive: false);
 
+/// `{{station.loc.`/`{{station.person.` prefixes name the station-scoped
+/// namespaces explicitly (ADR-0047, DESIGN-009 follow-up 4), the
+/// `station.*` counterpart of [_varPrefixPattern].
+final _stationLocPrefixPattern = RegExp(
+  r'^station\.loc\.(.*)$',
+  caseSensitive: false,
+);
+final _stationPersonPrefixPattern = RegExp(
+  r'^station\.person\.(.*)$',
+  caseSensitive: false,
+);
+
 /// Wraps a token-aware field with the DESIGN-008 `/`/`{{` insertion menu: an
 /// [OverlayEntry] anchored at the caret (via [RenderEditable] found through
 /// [FocusNode.context], not a `position: fixed` hack), shown while the
@@ -92,6 +116,8 @@ class TokenInsertionMenu extends StatefulWidget {
     required this.child,
     this.variables = const [],
     this.planFields = const [],
+    this.stationLocations = const [],
+    this.stationPersons = const [],
     this.onCreateVariable,
   });
 
@@ -100,6 +126,13 @@ class TokenInsertionMenu extends StatefulWidget {
   final Widget child;
   final List<VariableToken> variables;
   final List<PlanFieldToken> planFields;
+
+  /// `station.loc.*`/`station.person.*` entries (ADR-0047, DESIGN-009
+  /// follow-up 4) — empty when the field has no `StationScope` ancestor
+  /// (Program/Exercise fields), same as [variables] being empty absent a
+  /// `PlanScope`.
+  final List<StationLocationToken> stationLocations;
+  final List<StationPersonToken> stationPersons;
 
   /// Wired by the caller once a scope owns a variable registry to mutate
   /// (DESIGN-008 Stage 5). Null keeps the "Opprett variabel" entry hidden.
@@ -154,7 +187,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       _hideMenu();
       return;
     }
-    final trigger = _detectTrigger(widget.controller.text, selection.baseOffset);
+    final trigger = _detectTrigger(
+      widget.controller.text,
+      selection.baseOffset,
+    );
     if (trigger == null) {
       _hideMenu();
       return;
@@ -222,23 +258,41 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   }
 
   List<TokenMenuEntry> _filteredEntries(String rawFilter) {
-    // "var." names the registry namespace, not part of any variable's own
-    // name — once typed, narrow to variables only and match the remainder
-    // against their names, the same as the bare `/` picker would.
+    // A `var.`/`station.loc.`/`station.person.` prefix names one registry
+    // namespace explicitly (ADR-0046/ADR-0047) rather than being part of
+    // any entry's own name — once typed, narrow to just that namespace and
+    // match the remainder against its entries' names, the same as the bare
+    // `/` picker would for an unprefixed filter.
     final varMatch = _varPrefixPattern.firstMatch(rawFilter);
-    final filter = varMatch?.group(1) ?? rawFilter;
+    final locMatch = _stationLocPrefixPattern.firstMatch(rawFilter);
+    final personMatch = _stationPersonPrefixPattern.firstMatch(rawFilter);
+    final namespaced = varMatch ?? locMatch ?? personMatch;
+    final filter = namespaced?.group(1) ?? rawFilter;
     final lower = filter.toLowerCase();
 
     final entries = <TokenMenuEntry>[
-      for (final v in widget.variables)
-        if (filter.isEmpty || v.name.toLowerCase().contains(lower))
-          VariableMenuEntry(v),
-      if (varMatch == null)
+      if (namespaced == null || varMatch != null)
+        for (final v in widget.variables)
+          if (filter.isEmpty || v.name.toLowerCase().contains(lower))
+            VariableMenuEntry(v),
+      if (namespaced == null)
         for (final f in widget.planFields)
           if (filter.isEmpty ||
               f.name.toLowerCase().contains(lower) ||
               f.label.toLowerCase().contains(lower))
             PlanFieldMenuEntry(f),
+      if (namespaced == null || locMatch != null)
+        for (final l in widget.stationLocations)
+          if (filter.isEmpty ||
+              l.slug.toLowerCase().contains(lower) ||
+              l.label.toLowerCase().contains(lower))
+            StationLocationMenuEntry(l),
+      if (namespaced == null || personMatch != null)
+        for (final p in widget.stationPersons)
+          if (filter.isEmpty ||
+              p.slug.toLowerCase().contains(lower) ||
+              p.label.toLowerCase().contains(lower))
+            StationPersonMenuEntry(p),
     ];
     if (widget.onCreateVariable != null &&
         filter.trim().isNotEmpty &&
@@ -256,6 +310,8 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     final token = switch (entry) {
       VariableMenuEntry(token: final v) => '{{var.${v.name}}}',
       PlanFieldMenuEntry(token: final f) => '{{${f.name}}}',
+      StationLocationMenuEntry(token: final l) => '{{station.loc.${l.slug}}}',
+      StationPersonMenuEntry(token: final p) => '{{station.person.${p.slug}}}',
       CreateVariableMenuEntry(name: final name) => '{{var.$name}}',
     };
     final newText = text.replaceRange(trigger.start, caret, token);
@@ -352,27 +408,39 @@ class _TokenMenuCard extends StatelessWidget {
         child: entries.isEmpty
             ? Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(emptyLabel, style: Theme.of(context).textTheme.bodySmall),
+                child: Text(
+                  emptyLabel,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               )
             : ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                children: [for (final entry in entries) _tile(context, l10n, entry)],
+                children: [
+                  for (final entry in entries) _tile(context, l10n, entry),
+                ],
               ),
       ),
     );
   }
 
-  Widget _tile(BuildContext context, AppLocalizations l10n, TokenMenuEntry entry) {
-    final mutedStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      fontStyle: FontStyle.italic,
-    );
+  Widget _tile(
+    BuildContext context,
+    AppLocalizations l10n,
+    TokenMenuEntry entry,
+  ) {
+    final mutedStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic);
     return switch (entry) {
       VariableMenuEntry(token: final v) => ListTile(
         dense: true,
         leading: const Icon(Icons.data_object, size: 18),
         title: Text(v.name),
-        trailing: Text(v.effectiveValue, style: Theme.of(context).textTheme.bodySmall),
+        trailing: Text(
+          v.effectiveValue,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         onTap: () => onSelect(entry),
       ),
       PlanFieldMenuEntry(token: final f) => ListTile(
@@ -380,6 +448,20 @@ class _TokenMenuCard extends StatelessWidget {
         leading: const Icon(Icons.article_outlined, size: 18),
         title: Text(f.label),
         trailing: Text(l10n.tokenMenuPlanFieldHint, style: mutedStyle),
+        onTap: () => onSelect(entry),
+      ),
+      StationLocationMenuEntry(token: final l) => ListTile(
+        dense: true,
+        leading: const Icon(Icons.location_on_outlined, size: 18),
+        title: Text(l.label),
+        trailing: Text(l.preview, style: Theme.of(context).textTheme.bodySmall),
+        onTap: () => onSelect(entry),
+      ),
+      StationPersonMenuEntry(token: final p) => ListTile(
+        dense: true,
+        leading: const Icon(Icons.person_outline, size: 18),
+        title: Text(p.label),
+        trailing: Text(p.preview, style: Theme.of(context).textTheme.bodySmall),
         onTap: () => onSelect(entry),
       ),
       CreateVariableMenuEntry(name: final name) => ListTile(

@@ -15,6 +15,7 @@ import 'package:ringdrill/views/widgets/persons_section.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
 
@@ -302,80 +303,89 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
     return PlanScope(
       variables: widget.variables,
-      child: Form(
-        key: _formKey,
-        child: SectionNavigatedForm(
-          title: l.editStation,
-          entityName: _nameController.text.trim().isNotEmpty
-              ? _nameController.text.trim()
-              : null,
-          initialSectionId: 'station',
-          sections: [
-            // Base section: structural fields (name, position, description).
-            FormSection(
-              id: 'station',
-              label: l.station(1),
-              icon: Icons.place,
-              builder: (ctx) => _buildStationSectionBody(ctx, l),
-            ),
-            // Persons before Locations so the author can name the subject
-            // before declaring where they were last seen (DESIGN-009 3c).
-            FormSection(
-              id: 'persons',
-              label: l.personsSectionTitle,
-              icon: Icons.people_alt_outlined,
-              builder: (_) => PersonsSection(
-                persons: _workingPersons,
-                locations: _workingLocations,
-                onSave: (person, newLocation) {
-                  if (newLocation != null) _upsertLocation(newLocation);
-                  _upsertPerson(person);
-                },
-                onDelete: (slug) => setState(
-                  () => _workingPersons = _workingPersons
-                      .where((p) => p.slug != slug)
-                      .toList(),
+      child: StationScope(
+        // The station editor owns its locations/persons directly (unlike
+        // the roleplay editor's linked-station copy), so it needs no
+        // `portrayerOf` — every person here resolves to its own bare
+        // fields; the effective-identity override only matters where a
+        // roleplay's fields might differ from the Person's (ADR-0047).
+        locations: _workingLocations,
+        persons: _workingPersons,
+        child: Form(
+          key: _formKey,
+          child: SectionNavigatedForm(
+            title: l.editStation,
+            entityName: _nameController.text.trim().isNotEmpty
+                ? _nameController.text.trim()
+                : null,
+            initialSectionId: 'station',
+            sections: [
+              // Base section: structural fields (name, position, description).
+              FormSection(
+                id: 'station',
+                label: l.station(1),
+                icon: Icons.place,
+                builder: (ctx) => _buildStationSectionBody(ctx, l),
+              ),
+              // Persons before Locations so the author can name the subject
+              // before declaring where they were last seen (DESIGN-009 3c).
+              FormSection(
+                id: 'persons',
+                label: l.personsSectionTitle,
+                icon: Icons.people_alt_outlined,
+                builder: (_) => PersonsSection(
+                  persons: _workingPersons,
+                  locations: _workingLocations,
+                  onSave: (person, newLocation) {
+                    if (newLocation != null) _upsertLocation(newLocation);
+                    _upsertPerson(person);
+                  },
+                  onDelete: (slug) => setState(
+                    () => _workingPersons = _workingPersons
+                        .where((p) => p.slug != slug)
+                        .toList(),
+                  ),
                 ),
               ),
-            ),
-            FormSection(
-              id: 'locations',
-              label: l.locationsSectionTitle,
-              icon: Icons.location_on_outlined,
-              builder: (_) => LocationsSection(
-                locations: _workingLocations,
-                onSave: _upsertLocation,
-                onDelete: (slug) => setState(
-                  () => _workingLocations = _workingLocations
-                      .where((l) => l.slug != slug)
-                      .toList(),
+              FormSection(
+                id: 'locations',
+                label: l.locationsSectionTitle,
+                icon: Icons.location_on_outlined,
+                builder: (_) => LocationsSection(
+                  locations: _workingLocations,
+                  onSave: _upsertLocation,
+                  onDelete: (slug) => setState(
+                    () => _workingLocations = _workingLocations
+                        .where((l) => l.slug != slug)
+                        .toList(),
+                  ),
                 ),
               ),
-            ),
-            // Markdown sections: the narrative fields that reference
-            // {{var.<name>}}, {{loc.<slug>}}, and {{person.<slug>}} — so
-            // they come after Persons and Locations, not before.
-            ...activeMdSections,
-            // Last: Variabler, matching Program and Exercise — the section
-            // you land on after the fields that reference variables.
-            FormSection(
-              id: 'variables',
-              label: l.variablesSectionTitle,
-              icon: Icons.data_object,
-              builder: (_) => VariableOverridesSection(
-                variables: widget.variables,
-                inherited: inherited,
-                overrides: _workingOverrides,
-                onChanged: (updated) =>
-                    setState(() => _workingOverrides = updated),
+              // Markdown sections: the narrative fields that reference
+              // {{var.<name>}}, {{loc.<slug>}}, and {{person.<slug>}} — so
+              // they come after Persons and Locations, not before.
+              ...activeMdSections,
+              // Last: Variabler, matching Program and Exercise — the section
+              // you land on after the fields that reference variables.
+              FormSection(
+                id: 'variables',
+                label: l.variablesSectionTitle,
+                icon: Icons.data_object,
+                builder: (_) => VariableOverridesSection(
+                  variables: widget.variables,
+                  inherited: inherited,
+                  overrides: _workingOverrides,
+                  onChanged: (updated) =>
+                      setState(() => _workingOverrides = updated),
+                ),
               ),
-            ),
-          ],
-          addable: addableSections,
-          onAdd: (id) => _addSection(_StationSection.values.byName(id)),
-          onRemove: (id) => _removeSection(_StationSection.values.byName(id)),
-          onSave: _saveStation,
-          onClose: () => Navigator.of(context).pop(),
+            ],
+            addable: addableSections,
+            onAdd: (id) => _addSection(_StationSection.values.byName(id)),
+            onRemove: (id) => _removeSection(_StationSection.values.byName(id)),
+            onSave: _saveStation,
+            onClose: () => Navigator.of(context).pop(),
+          ),
         ),
       ),
     );

@@ -15,6 +15,7 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
 /// Token-aware markdown sections, addable/removable (DESIGN-008
@@ -301,25 +302,34 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
     return PlanScope(
       variables: widget.variables,
-      child: Form(
-        key: _formKey,
-        child: SectionNavigatedForm(
-          title: titleText,
-          initialSectionId: 'roleplay',
-          sections: [
-            FormSection(
-              id: 'roleplay',
-              label: l.roleplaySectionRole,
-              icon: Icons.theater_comedy,
-              builder: (ctx) => _buildRoleplaySectionBody(ctx, l),
-            ),
-            ...activeMdSections,
-          ],
-          addable: addableSections,
-          onAdd: (id) => _addMdSection(_MdSection.values.byName(id)),
-          onRemove: (id) => _removeMdSection(_MdSection.values.byName(id)),
-          onSave: _save,
-          onClose: () => Navigator.of(context).pop(),
+      // The linked station's own locations/persons (ADR-0047,
+      // DESIGN-009 follow-up 4) — a roleplay does not own a station's
+      // collections, so it always reads someone else's, unlike
+      // StationFormScreen's own working copy. No StationScope at all
+      // (locations/persons empty) when no station is selected yet.
+      child: StationScope(
+        locations: _parentStation?.locations ?? const [],
+        persons: _parentStation?.persons ?? const [],
+        child: Form(
+          key: _formKey,
+          child: SectionNavigatedForm(
+            title: titleText,
+            initialSectionId: 'roleplay',
+            sections: [
+              FormSection(
+                id: 'roleplay',
+                label: l.roleplaySectionRole,
+                icon: Icons.theater_comedy,
+                builder: (ctx) => _buildRoleplaySectionBody(ctx, l),
+              ),
+              ...activeMdSections,
+            ],
+            addable: addableSections,
+            onAdd: (id) => _addMdSection(_MdSection.values.byName(id)),
+            onRemove: (id) => _removeMdSection(_MdSection.values.byName(id)),
+            onSave: _save,
+            onClose: () => Navigator.of(context).pop(),
+          ),
         ),
       ),
     );

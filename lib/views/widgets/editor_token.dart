@@ -40,3 +40,43 @@ class PlanFieldToken {
   /// fields show a muted "planfelt" hint, never a resolved value).
   final String? hint;
 }
+
+/// A view-layer projection of one station-owned [Location]/[Person]
+/// (ADR-0047, DESIGN-009 follow-up 4) for the insertion menu — just enough
+/// to list it as a `station.loc.*`/`station.person.*` entry with a preview
+/// value, mirroring [VariableToken]'s role for `var.*`. Built by
+/// `StationScope` from its own `locations`/`persons`.
+class StationLocationToken {
+  const StationLocationToken({
+    required this.slug,
+    required this.label,
+    required this.preview,
+  });
+
+  final String slug;
+
+  /// Display name shown in the picker (the location's own label, falling
+  /// back to its slug when blank).
+  final String label;
+
+  /// The bare-facet resolved value (place, falling back to UTM) — the same
+  /// preview a `var.*` entry shows via its effective value.
+  final String preview;
+}
+
+class StationPersonToken {
+  const StationPersonToken({
+    required this.slug,
+    required this.label,
+    required this.preview,
+  });
+
+  final String slug;
+
+  /// Display name shown in the picker (the person's own name, falling back
+  /// to its slug when blank).
+  final String label;
+
+  /// The bare-facet resolved (effective) name.
+  final String preview;
+}

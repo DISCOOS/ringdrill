@@ -20,6 +20,8 @@ Future<void> _typeAndOpen(WidgetTester tester, String text) async {
 Future<TextEditingController> _pump(
   WidgetTester tester, {
   ValueChanged<String>? onCreateVariable,
+  List<StationLocationToken> stationLocations = const [],
+  List<StationPersonToken> stationPersons = const [],
 }) async {
   final controller = TextEditingController();
   final focusNode = FocusNode();
@@ -37,6 +39,8 @@ Future<TextEditingController> _pump(
           planFields: const [
             PlanFieldToken(name: 'exercise.name', label: 'Øvelsesnavn'),
           ],
+          stationLocations: stationLocations,
+          stationPersons: stationPersons,
           onCreateVariable: onCreateVariable,
           child: TextField(controller: controller, focusNode: focusNode),
         ),
@@ -268,6 +272,116 @@ void main() {
         expect(menuPositioned.top!, lessThan(screenHeight / 2));
       },
     );
+
+    group('station.loc/person entries (DESIGN-009 follow-up 4)', () {
+      const location = StationLocationToken(
+        slug: 'lkp',
+        label: 'Siste kjente posisjon',
+        preview: 'Sentrum',
+      );
+      const person = StationPersonToken(
+        slug: 'anne',
+        label: 'Anne Glemsk',
+        preview: 'effektivt navn',
+      );
+
+      testWidgets(
+        '"/" offers station locations/persons alongside variables and plan fields',
+        (tester) async {
+          await _pump(
+            tester,
+            stationLocations: const [location],
+            stationPersons: const [person],
+          );
+
+          await _typeAndOpen(tester, '/');
+
+          expect(find.text('frekvens'), findsOneWidget);
+          expect(find.text('Øvelsesnavn'), findsOneWidget);
+          expect(find.text('Siste kjente posisjon'), findsOneWidget);
+          expect(find.text('Anne Glemsk'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'selecting a station location inserts {{station.loc.<slug>}}',
+        (tester) async {
+          final controller = await _pump(
+            tester,
+            stationLocations: const [location],
+          );
+
+          await _typeAndOpen(tester, '/');
+          await tester.tap(find.text('Siste kjente posisjon'));
+          await tester.pump();
+
+          expect(controller.text, '{{station.loc.lkp}}');
+        },
+      );
+
+      testWidgets(
+        'selecting a station person inserts {{station.person.<slug>}}',
+        (tester) async {
+          final controller = await _pump(
+            tester,
+            stationPersons: const [person],
+          );
+
+          await _typeAndOpen(tester, '/');
+          await tester.tap(find.text('Anne Glemsk'));
+          await tester.pump();
+
+          expect(controller.text, '{{station.person.anne}}');
+        },
+      );
+
+      testWidgets(
+        'typing "{{station.loc." narrows to locations only, hiding '
+        'variables, plan fields and persons',
+        (tester) async {
+          await _pump(
+            tester,
+            stationLocations: const [location],
+            stationPersons: const [person],
+          );
+
+          await _typeAndOpen(tester, '{{station.loc.');
+
+          expect(find.text('Siste kjente posisjon'), findsOneWidget);
+          expect(find.text('frekvens'), findsNothing);
+          expect(find.text('Øvelsesnavn'), findsNothing);
+          expect(find.text('Anne Glemsk'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'typing "{{station.person." narrows to persons only',
+        (tester) async {
+          await _pump(
+            tester,
+            stationLocations: const [location],
+            stationPersons: const [person],
+          );
+
+          await _typeAndOpen(tester, '{{station.person.');
+
+          expect(find.text('Anne Glemsk'), findsOneWidget);
+          expect(find.text('Siste kjente posisjon'), findsNothing);
+          expect(find.text('frekvens'), findsNothing);
+        },
+      );
+
+      testWidgets('empty stationLocations/stationPersons offer nothing extra', (
+        tester,
+      ) async {
+        await _pump(tester);
+
+        await _typeAndOpen(tester, '/');
+
+        expect(find.text('frekvens'), findsOneWidget);
+        expect(find.text('Øvelsesnavn'), findsOneWidget);
+      });
+    });
 
     testWidgets('dismisses on Escape', (tester) async {
       await _pump(tester);

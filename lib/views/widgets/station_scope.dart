@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
+import 'package:ringdrill/views/widgets/editor_token.dart';
 
 /// Exposes the in-scope station's [Location]s/[Person]s (ADR-0047,
 /// DESIGN-009 follow-up 4) to a subtree, so token-aware fields
@@ -42,6 +43,35 @@ class StationScope extends InheritedWidget {
 
   static StationScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<StationScope>();
+
+  /// [locations] projected for the insertion menu (DESIGN-009 follow-up
+  /// 4): each entry's [StationLocationToken.preview] is its bare-facet
+  /// value, the same default a `{{station.loc.<slug>}}` chip without a
+  /// facet path would show.
+  List<StationLocationToken> get locationTokens => [
+    for (final l in locations)
+      StationLocationToken(
+        slug: l.slug,
+        label: l.label.isEmpty ? l.slug : l.label,
+        preview: resolveLocationFacet(l, const []),
+      ),
+  ];
+
+  /// [persons] projected for the insertion menu, mirroring [locationTokens]
+  /// — each entry's preview is the effective (portrayer-aware) bare name.
+  List<StationPersonToken> get personTokens => [
+    for (final p in persons)
+      StationPersonToken(
+        slug: p.slug,
+        label: p.name.isEmpty ? p.slug : p.name,
+        preview: resolvePersonFacet(
+          p,
+          portrayerOf?.call(p.slug),
+          locations,
+          const [],
+        ),
+      ),
+  ];
 
   /// Resolves a `{{station.(loc|person).<slug>(.facet)*}}` match to its
   /// effective displayed value, or `null` when `slug` is not one of

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
@@ -129,6 +131,44 @@ void main() {
       expect(find.text('Kanal 9'), findsOneWidget);
       expect(find.text('Kanal 8'), findsNothing);
       expect(find.text('Kanal 6'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a token-aware field offers the linked station\'s locations/persons '
+    '(DESIGN-009 follow-up 4) and chips a known reference blue',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        locations: const [Location(slug: 'lkp', place: 'Sentrum')],
+        persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+      );
+      await _openForm(
+        tester,
+        _rolePlay(stationIndex: 0, behavior: 'x'),
+        _exercise(stations: [station]),
+        const [],
+        _Captured(),
+      );
+
+      await tester.tap(find.text(l.roleBehavior));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'x /');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Sentrum'), findsOneWidget);
+      expect(find.text('Anne Glemsk'), findsWidgets);
+
+      await tester.tap(find.text('Anne Glemsk').last);
+      await tester.pump();
+
+      expect(
+        find.textContaining('{{station.person.anne}}'),
+        findsOneWidget,
+      );
     },
   );
 

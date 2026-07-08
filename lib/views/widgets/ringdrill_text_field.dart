@@ -63,6 +63,8 @@ Widget _wrapTokenAware({
     focusNode: focusNode,
     variables: variables,
     planFields: planFields,
+    stationLocations: stationScope?.locationTokens ?? const [],
+    stationPersons: stationScope?.personTokens ?? const [],
     onCreateVariable: onCreateVariable,
     child: field,
   );
