@@ -4,11 +4,19 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
-import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/widgets/position_card.dart';
 
 import 'map_picker_screen.dart';
 
+export 'package:ringdrill/views/widgets/position_card.dart'
+    show PositionFieldVariant;
+
+/// Position pick field (docs/prompts/position-card-reflow.md). Renders the
+/// shared [PositionCard] surface — [PositionFieldVariant.row] for the
+/// station form, [PositionFieldVariant.card] for the location form — and
+/// wires it into [FormField] save/validate. Tapping anywhere on the surface
+/// opens [MapPickerScreen]; there is no separate map icon.
 class PositionFormField<K> extends FormField<LatLng> {
   PositionFormField({
     super.key,
@@ -20,77 +28,70 @@ class PositionFormField<K> extends FormField<LatLng> {
     // distinguish a manual edit from a programmatic default (e.g. inheriting
     // the station position).
     ValueChanged<LatLng>? onChanged,
-
+    PositionFieldVariant variant = PositionFieldVariant.row,
+    bool showThumbnail = true,
+    List<Widget> overlayActions = const [],
     AutovalidateMode super.autovalidateMode = AutovalidateMode.disabled,
   }) : super(
          builder: (FormFieldState<LatLng> state) {
            final position = state.value;
+           final theme = Theme.of(state.context);
+           final l10n = AppLocalizations.of(state.context)!;
+
+           Future<void> openPicker() async {
+             // With a position, open on it. Without one, frame the picker on
+             // the surrounding markers (e.g. sibling stations) instead of
+             // the global default centre, so the user places the new point
+             // near its context.
+             final points = markers
+                 .map((m) => m.point)
+                 .toList(growable: false);
+             final LatLng center;
+             CameraFit? fit;
+             if (position != null) {
+               center = position;
+             } else if (points.isEmpty) {
+               center = MapConfig.initialCenter;
+             } else if (points.length == 1) {
+               center = points.first;
+             } else {
+               center = points.average();
+               fit =
+                   points.centroidFit() ??
+                   CameraFit.coordinates(coordinates: points);
+             }
+             final selected = await openFormSurface<LatLng>(
+               state.context,
+               builder: (context) => MapPickerScreen(
+                 initialCenter: center,
+                 initialFit: fit,
+                 markers: markers,
+               ),
+             );
+             if (selected != null) {
+               state.didChange(selected);
+               onChanged?.call(selected);
+             }
+           }
+
            return Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
              children: [
-               Row(
-                 crossAxisAlignment: CrossAxisAlignment.center,
-                 children: [
-                   Text(AppLocalizations.of(state.context)!.position),
-                   // Expanded (not Spacer) so the value below is forced to
-                   // fit the remaining width instead of pushing the
-                   // IconButton past the panel's edge — a fixed-width
-                   // parent (e.g. station_form_screen.dart's 230px box)
-                   // has no slack to absorb an over-wide label/value pair.
-                   Expanded(
-                     child: Align(
-                       alignment: Alignment.centerRight,
-                       child: position == null
-                           ? Text(
-                               AppLocalizations.of(state.context)!.pickALocation,
-                               overflow: TextOverflow.ellipsis,
-                               maxLines: 1,
-                             )
-                           : PositionWidget(
-                               position: position,
-                               format: PositionFormat.utm,
-                             ),
-                     ),
-                   ),
-                   SizedBox(width: 8),
-                   IconButton(
-                     icon: Icon(Icons.map),
-                     onPressed: () async {
-                       // With a position, open on it. Without one, frame the
-                       // picker on the surrounding markers (e.g. sibling
-                       // stations) instead of the global default centre, so
-                       // the user places the new point near its context.
-                       final points = markers
-                           .map((m) => m.point)
-                           .toList(growable: false);
-                       final LatLng center;
-                       CameraFit? fit;
-                       if (position != null) {
-                         center = position;
-                       } else if (points.isEmpty) {
-                         center = MapConfig.initialCenter;
-                       } else if (points.length == 1) {
-                         center = points.first;
-                       } else {
-                         center = points.average();
-                         fit =
-                             points.centroidFit() ??
-                             CameraFit.coordinates(coordinates: points);
-                       }
-                       final selected = await openFormSurface<LatLng>(
-                         state.context,
-                         builder: (context) => MapPickerScreen(
-                           initialCenter: center,
-                           initialFit: fit,
-                           markers: markers,
-                         ),
-                       );
-                       if (selected != null) {
-                         state.didChange(selected);
-                         onChanged?.call(selected);
-                       }
-                     },
-                   ),
-                 ],
+               Text(
+                 l10n.position,
+                 style: theme.textTheme.labelSmall?.copyWith(
+                   color: theme.colorScheme.onSurfaceVariant,
+                 ),
+               ),
+               const SizedBox(height: 6),
+               PositionCard<K>(
+                 variant: variant,
+                 position: position,
+                 onTap: openPicker,
+                 showThumbnail: showThumbnail,
+                 markers: markers,
+                 overlayActions: overlayActions,
+                 emptyLabel: l10n.pickALocation,
                ),
                if (state.hasError)
                  Padding(

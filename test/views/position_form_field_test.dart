@@ -3,7 +3,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/map_picker_screen.dart';
 import 'package:ringdrill/views/position_form_field.dart';
+
+/// Finds the picker's own [FlutterMap] — the field's thumbnail renders one
+/// too, so a bare `find.byType(FlutterMap)` matches both once the picker
+/// is open.
+Finder _pickerMap() => find.descendant(
+  of: find.byType(MapPickerScreen),
+  matching: find.byType(FlutterMap),
+);
 
 /// End-to-end coverage for the exact bug fixed in station_form_screen.dart,
 /// team_form_screen.dart and (already correct) roleplay_form_screen.dart:
@@ -40,15 +49,16 @@ void main() {
         ),
       );
 
-      // Open the map picker.
-      await tester.tap(find.byIcon(Icons.map));
+      // Open the map picker by tapping the surface (there is no separate
+      // map icon button; the whole card opens the picker).
+      await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
-      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(_pickerMap(), findsOneWidget);
 
       // Pan the map: map_picker_screen.dart tracks the fixed centre
       // crosshair's geographic point via mapEventStream, so dragging moves
       // the point that gets confirmed.
-      await tester.drag(find.byType(FlutterMap), const Offset(-200, -150));
+      await tester.drag(_pickerMap(), const Offset(-200, -150));
       await tester.pump(const Duration(milliseconds: 300));
 
       // Confirm the pick and return to the form.
@@ -68,6 +78,45 @@ void main() {
       // stale initialValue.
       Form.of(tester.element(find.byType(PositionFormField))).save();
       expect(saved, changed);
+    },
+  );
+
+  testWidgets(
+    'card variant renders overlayActions over the thumbnail and tapping '
+    'the surface still opens the picker',
+    (tester) async {
+      var actionTapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Form(
+              child: PositionFormField(
+                initialValue: LatLng(59.0, 10.0),
+                variant: PositionFieldVariant.card,
+                overlayActions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () => actionTapped = true,
+                  ),
+                ],
+                onSaved: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.refresh));
+      expect(actionTapped, isTrue);
+
+      // Tapping elsewhere on the card still opens the picker.
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+      expect(_pickerMap(), findsOneWidget);
     },
   );
 }
