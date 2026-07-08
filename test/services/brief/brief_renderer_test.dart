@@ -498,6 +498,119 @@ void main() {
     });
   });
 
+  group('BriefRenderer — description lead (DESIGN-009)', () {
+    Program programWithDescription(
+      String? description, {
+      LatLng? position,
+    }) {
+      final exercise = Exercise(
+        uuid: 'ex-1',
+        name: 'Test',
+        startTime: _start,
+        endTime: _end,
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 30,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: [
+          Station(
+            index: 0,
+            name: 'Post',
+            position: position,
+            description: description,
+          ),
+        ],
+        schedule: const [],
+      );
+      return _emptyProgram().copyWith(exercises: [exercise]);
+    }
+
+    test(
+      'renders as an unheaded lead paragraph before the plassering line (nb)',
+      () async {
+        final result = await BriefRenderer().render(
+          program: programWithDescription('Åpent jorde ved elva.'),
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+        final normalized = _normalizeLines(result);
+
+        expect(normalized, contains('Åpent jorde ved elva.'));
+        expect(
+          normalized.indexOf('Åpent jorde ved elva.'),
+          lessThan(normalized.indexOf('**Post 1.1 plassering:**')),
+        );
+        // No section heading of its own.
+        expect(normalized, isNot(contains('#### Postbeskrivelse')));
+      },
+    );
+
+    test(
+      'renders as an unheaded lead paragraph before the location line (en)',
+      () async {
+        final result = await BriefRenderer().render(
+          program: programWithDescription('Open field by the river.'),
+          audience: BriefAudience.participant,
+          l10n: _l10nEn,
+        );
+        final normalized = _normalizeLines(result);
+
+        expect(normalized, contains('Open field by the river.'));
+        expect(
+          normalized.indexOf('Open field by the river.'),
+          lessThan(normalized.indexOf('**Station 1.1 location:**')),
+        );
+      },
+    );
+
+    test('resolves a {{...}} token inside the description', () async {
+      const position = LatLng(58.99, 10.43);
+      final expectedUtm = BriefRenderer.formatUtm(position);
+      final result = await BriefRenderer().render(
+        program: programWithDescription(
+          'IPP er ved {{station.position.utm}}.',
+          position: position,
+        ),
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      expect(result, isNot(contains('{{station.position.utm}}')));
+      expect(result, contains('IPP er ved $expectedUtm.'));
+    });
+
+    test('an absent description renders no lead paragraph or stray blank '
+        'line', () async {
+      final result = await BriefRenderer().render(
+        program: programWithDescription(null),
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      final normalized = _normalizeLines(result);
+      final headingIndex = normalized.indexOf('### 1.1 – Post');
+      final placementIndex = normalized.indexOf('**Post 1.1 plassering:**');
+      expect(headingIndex, greaterThanOrEqualTo(0));
+      expect(placementIndex, greaterThan(headingIndex));
+      // Exactly one blank line between the heading and the plassering line —
+      // no extra blank line left behind by the absent lead block.
+      final between = normalized
+          .substring(headingIndex, placementIndex)
+          .split('\n')
+          .where((l) => l.isNotEmpty)
+          .toList();
+      expect(between, hasLength(1)); // just the heading line itself
+    });
+
+    test('an empty-string description renders no lead paragraph', () async {
+      final result = await BriefRenderer().render(
+        program: programWithDescription(''),
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+      expect(result, isNot(contains('#### Postbeskrivelse')));
+    });
+  });
+
   group('BriefRenderer — comms fallback', () {
     test('exercise.commsMd overrides program.commsMd in station Samband', () async {
       // Use distinct tokens so we can check the station section independently
