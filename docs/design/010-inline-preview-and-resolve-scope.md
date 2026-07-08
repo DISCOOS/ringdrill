@@ -80,6 +80,8 @@ Preview reacts live to edits with a debounce (field resolution is cheap string w
 
 The default (base) section of the exercise, station and roleplay editors gains an optional read-only **rollup**: each active section's field, resolved via the field resolver and stacked in order, so the author sees the whole post/exercise/marker as it will read without leaving the editor. Behind its own toggle, default off, to keep the default section compact. On narrow it is an inline continuation beneath the structural fields (one scroll: fields, then the resolved sections); on wide it is a side-by-side live-preview pane (edit left, preview right) using the master/detail split ([ADR-0030](../adrs/0030-wide-screen-master-detail-layout.md)). It is built from the field resolver per section, not from `BriefRenderer.render()` (which is program/exercise-scoped and cannot target a single station or roleplay). Because it renders resolved content, it inherits the audience caveat below.
 
+Each rendered section in the rollup is **tap-to-edit**: tapping it jumps to that section in the section-navigated switcher (reusing the existing navigation rather than inline editing that would duplicate the editor). The station **detail sheet** is this rollup — the station's lead description plus its sections, resolved (see DESIGN-009, "The station description as the default section").
+
 ## `RingDrillText` upgrade
 
 With the cascade in place, `RingDrillText` moves from `{{var.*}}`-only to full resolution by reading the same scopes and calling the field resolver. Every read-only display surface (lists, headers, the live coordinator UI) then shows the same resolved text the brief does, closing the gap the current variable-only resolver leaves.
