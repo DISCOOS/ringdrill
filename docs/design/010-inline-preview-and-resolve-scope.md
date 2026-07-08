@@ -87,6 +87,8 @@ Each rendered section in the rollup is **tap-to-edit**: tapping it jumps to that
 
 With the cascade in place, `RingDrillText` moves from `{{var.*}}`-only to full resolution by reading the same scopes and calling the field resolver. Every read-only display surface (lists, headers, the live coordinator UI) then shows the same resolved text the brief does, closing the gap the current variable-only resolver leaves.
 
+Stage 4 must also catch the surfaces that call `substitutePlanVariables` **directly** rather than through `RingDrillText` — notably the station detail view (`station_screen.dart` renders `station.description` in a `SelectableText` via `substitutePlanVariables`, so `{{station.position.utm}}` shows literal today), and likely the station list, coordinator and program views. These are migrated to the field resolver too, so the var-only gap closes everywhere, not just where `RingDrillText` is used.
+
 ## DESIGN-009 leaf fields (follow-up 4e) as a consumer
 
 DESIGN-009's token-aware scenario leaf fields (`Location.place`/`note`, `Person.name`/`signalement`/`notes`) depend on exactly the boundary mechanism above: the Location/Person forms open through `openFormSurface`, so they need `PlanScope`/`StationScope` re-provided. Once `openFormSurface` re-wraps the ancestor scopes, 4e is the wiring of `tokenAware: true` (and the self-reference rule) onto those leaf fields — it no longer needs its own scope plumbing. 4e therefore sequences **after** DESIGN-010 stage 1.
