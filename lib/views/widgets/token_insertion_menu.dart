@@ -540,6 +540,32 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       );
     }
 
+    // Home chaining (DESIGN-009 follow-up 4d): a person path
+    // <slug>.home.<partial> switches from completing the person's own
+    // facets to completing their *home location's* facets — mirroring
+    // _resolvePersonFacet's 'home' case, which resolves Person.homeSlug to
+    // a Location and applies the remaining facet path to it. One level
+    // only, matching the renderer.
+    if (rest != null) {
+      final homeDot = rest.indexOf('.');
+      if (homeDot >= 0 && rest.substring(0, homeDot).toLowerCase() == 'home') {
+        final homePartial = rest.substring(homeDot + 1).toLowerCase();
+        return (
+          entries: [
+            for (final f in _locationFacetNames)
+              if (homePartial.isEmpty || f.toLowerCase().contains(homePartial))
+                StationFacetMenuEntry(
+                  kind: StationFacetKind.person,
+                  slug: slugPart,
+                  facetPath: ['home', f],
+                  label: _locationFacetLabel(l10n, f),
+                  entityLabel: person.label,
+                ),
+          ],
+          matchedEntity: true,
+        );
+      }
+    }
     return (
       entries: [
         if (rest == null) StationPersonMenuEntry(person),
