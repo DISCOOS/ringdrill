@@ -6,6 +6,7 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
 /// DESIGN-008 follow-up 07 — the section-navigated `StationFormScreen`:
 /// the override table (`VariableOverridesSection`) at station scope,
@@ -223,6 +224,28 @@ void main() {
 
       await tester.tap(find.text(l.tokenMenuCreateLocation('Sentrum')));
       await tester.pump();
+
+      // The just-created location has no place/position yet, so its bare
+      // token chips amber — "declared but empty", the same as a freshly
+      // created {{var.x}} (ADR-0046/ADR-0047 share this three-way state).
+      final editableFinder = find.byType(EditableText);
+      final controller =
+          tester.widget<EditableText>(editableFinder).controller
+              as TokenTextEditingController;
+      final span = controller.buildTextSpan(
+        context: tester.element(editableFinder),
+        style: const TextStyle(),
+        withComposing: false,
+      );
+      Color? chipColor;
+      span.visitChildren((child) {
+        if (child is TextSpan && child.text == '{{station.loc.sentrum}}') {
+          chipColor = child.style?.color;
+          return false;
+        }
+        return true;
+      });
+      expect(chipColor, Colors.amber.shade900);
 
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
