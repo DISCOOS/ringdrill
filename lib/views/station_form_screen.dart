@@ -14,6 +14,7 @@ import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/locations_section.dart';
 import 'package:ringdrill/views/widgets/persons_section.dart';
+import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -334,6 +335,13 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// DESIGN-008 follow-up 07.
   Widget _buildSectionNavigated(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    // Additive to the station.loc/person entries StationScope already
+    // supplies (DESIGN-009 follow-up 4) — those come through StationScope,
+    // not planFields, so both coexist (follow-up 4b).
+    final planFields = [
+      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.exercise(l),
+    ];
 
     final activeMdSections = [
       for (final section in _StationSection.values)
@@ -356,6 +364,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       expands: true,
                       tokenAware: true,
                       overrides: _effectiveAtStationScope,
+                      planFields: planFields,
                       // A Station cannot declare a plan variable itself
                       // (DESIGN-008 follow-up 07's settled scope, matching
                       // Exercise), but can now create one inline for the
@@ -484,6 +493,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// fields that never become their own section (name, position,
   /// description).
   Widget _buildStationSectionBody(BuildContext context, AppLocalizations l) {
+    final planFields = [
+      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.exercise(l),
+    ];
     final markers = _position == null
         ? widget.markers
         : widget.markers.where((e) => e.point == _position).toList();
@@ -504,6 +517,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       autofocus: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
+                      planFields: planFields,
                       onCreateVariable: _createVariableInline,
                       onCreateLocation: _createLocationInline,
                       onCreatePerson: _createPersonInline,
@@ -545,6 +559,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 maxLines: 15,
                 tokenAware: true,
                 overrides: _workingOverrides,
+                planFields: planFields,
                 onCreateVariable: _createVariableInline,
                 onCreateLocation: _createLocationInline,
                 onCreatePerson: _createPersonInline,

@@ -11,6 +11,7 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -217,6 +218,12 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   /// DESIGN-008 follow-up 06.
   Widget _buildSectionNavigated(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    // Program cascades into exercise scope in brief_renderer.dart, so both
+    // sets resolve here (DESIGN-009 follow-up 4b).
+    final planFields = [
+      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.exercise(l),
+    ];
 
     final activeMdSections = [
       for (final section in _ExerciseSection.values)
@@ -241,6 +248,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       expands: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
+                      planFields: planFields,
                       // An Exercise cannot declare a plan variable itself
                       // (DESIGN-008 follow-up 06's settled scope), but can
                       // now create one inline for the write-back
@@ -323,6 +331,10 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   /// fields that never become their own section (name, start time, the
   /// scheduling counters).
   Widget _buildExerciseSectionBody(BuildContext context, AppLocalizations l) {
+    final planFields = [
+      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.exercise(l),
+    ];
     return SafeArea(
       child: DismissKeyboard(
         child: SingleChildScrollView(
@@ -340,6 +352,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       autofocus: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
+                      planFields: planFields,
                       onCreateVariable: _createVariableInline,
                       validator: (value) =>
                           value == null || value.trim().isEmpty

@@ -155,11 +155,20 @@ void main() {
       await tester.tap(find.text(l.roleBehavior));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(TextField));
-      await tester.enterText(find.byType(TextField), 'x /');
+      // Narrowed to each station namespace explicitly (DESIGN-009 follow-up
+      // 4b added a dozen program/exercise plan-field entries ahead of these
+      // in the unfiltered "/" list, pushing them out of the picker's fixed
+      // viewport in this 800x600 test surface).
+      await tester.enterText(find.byType(TextField), 'x {{station.loc.');
       await tester.pump();
       await tester.pump();
 
       expect(find.text('Sentrum'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'x {{station.person.');
+      await tester.pump();
+      await tester.pump();
+
       expect(find.text('Anne Glemsk'), findsWidgets);
 
       await tester.tap(find.text('Anne Glemsk').last);

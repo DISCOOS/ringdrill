@@ -17,6 +17,7 @@ import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
+import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -474,6 +475,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final titleText = widget.rolePlay.name.trim().isEmpty
         ? l.newRolePlayTitle
         : widget.rolePlay.name;
+    // Additive to the station.loc/person entries StationScope already
+    // supplies below (DESIGN-009 follow-up 4) — those come through
+    // StationScope, not planFields, so both coexist (follow-up 4b).
+    final planFields = [
+      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.exercise(l),
+    ];
 
     final activeMdSections = [
       for (final section in _MdSection.values)
@@ -496,6 +504,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       expands: true,
                       tokenAware: true,
                       overrides: _effectiveVariables,
+                      planFields: planFields,
                       // A RolePlay cannot declare a plan variable itself
                       // (DESIGN-008 follow-up 07's settled scope, matching
                       // Exercise/Station), but can now create one inline
@@ -572,6 +581,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// fields that never become their own section (name, age, signalement,
   /// station, position).
   Widget _buildRoleplaySectionBody(BuildContext context, AppLocalizations l) {
+    final planFields = [
+      ...PlanFieldTokens.program(l),
+      ...PlanFieldTokens.exercise(l),
+    ];
     final stations = widget.exercise?.stations ?? [];
     final exercises = _programService.loadExercises();
     final exerciseIndex = exercises.indexWhere(
@@ -598,6 +611,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       autofocus: true,
                       tokenAware: true,
                       overrides: _effectiveVariables,
+                      planFields: planFields,
                       // Rebuilds this screen so the effective-identity
                       // preview and the field's own inherited/override
                       // caption stay live as the author types — the

@@ -5,7 +5,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/utils/plan_variable_refs.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
-import 'package:ringdrill/views/widgets/editor_token.dart';
+import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -352,14 +352,10 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
   /// renaming the plan happens through the name field in the "Plan" section
   /// instead, one tap away.
   Widget _buildSectionNavigated(BuildContext context, AppLocalizations l) {
-    // Small and explicit, per the Stage 4 prompt: only fields the renderer
-    // already resolves at program scope (brief_renderer.dart's `program`
-    // context — `name`, `description`), so a token inserted here always
-    // resolves to something rather than a silently-empty mustache miss.
-    final planFields = [
-      PlanFieldToken(name: 'program.name', label: l.programName),
-      PlanFieldToken(name: 'program.description', label: l.programDescription),
-    ];
+    // The program editor only ever resolves program.* (DESIGN-009 follow-up
+    // 4b) — PlanFieldTokens.program(l) is the single source of truth shared
+    // with every other editor.
+    final planFields = PlanFieldTokens.program(l);
 
     final activeMdSections = [
       for (final section in _Section.values)
