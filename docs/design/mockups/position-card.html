@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Posisjonsfelt (layout-reflow)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --map:#9bbd85; --map-2:#a8c290;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;--map:#6f8f5f;--map-2:#7fa06d;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+  .phone{width:330px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px}
+  .sub{font-size:11px;color:var(--text-3);margin:0 0 5px 4px}
+  .note{font-size:11px;color:var(--text-3);margin:6px 4px 0}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .t{flex:1;font-size:15px;font-weight:500}
+  .save{font-size:13px;font-weight:500;color:#fff;background:var(--accent);padding:7px 14px;border-radius:var(--radius)}
+  .body{padding:14px;display:flex;flex-direction:column;gap:14px}
+  .lbl{font-size:11px;color:var(--text-2);margin:0 0 4px}
+  .field{display:flex;flex-direction:column}
+  .underline{border-bottom:1px solid var(--border);padding:7px 0;font-size:14px}
+  .mono{font-family:var(--font-mono)}
+  .hatch{background:repeating-linear-gradient(45deg,var(--bg-2),var(--bg-2) 6px,var(--bg-3) 6px,var(--bg-3) 12px)}
+  .maptile{background:linear-gradient(120deg,var(--map),var(--map-2));position:relative}
+  .scale{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,0.45);border-radius:4px;padding:2px 6px;font-size:11px;color:#fff}
+  .ovbtn{position:absolute;top:8px;right:8px;width:32px;height:32px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- ============ A · STATION FORM ============ -->
+  <div class="phone">
+    <p class="cap">A · Stasjonsskjema — navn får full bredde, posisjon som egen rad-variant under</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Endre post</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div class="field"><span class="lbl">Postnavn</span><div class="underline">2a) Fisker (Angler)</div></div>
+
+        <div class="field">
+          <span class="lbl">Posisjon</span>
+          <!-- PositionFieldVariant.row : thumbnail | single-line coord | chevron ; whole surface taps to picker -->
+          <div style="display:flex;align-items:stretch;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+            <div class="maptile" style="width:76px">
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-100%)"><i class="ti ti-map-pin" style="font-size:20px;color:var(--accent)"></i></div>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;padding:0 12px">
+              <span class="mono" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">32V 0580345E 6551796N</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:0 10px;border-left:1px solid var(--border)"><i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i></div>
+          </div>
+          <p class="note">Koordinat på én linje i eksisterende format. Full bredde i stedet for 230px-sidevogn. Tapp raden → kartvelger.</p>
+        </div>
+
+        <div class="field"><span class="lbl">Beskrivelse</span><div class="underline" style="color:var(--text-3)">Post-beskrivelse …</div></div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:8px">Nå: <span class="mono">Row[Expanded(navn), SizedBox(width:230, PositionFormField)]</span> — navnet presses, koordinat brekker til to linjer.</p>
+  </div>
+
+  <!-- ============ B · LOCATION FORM ============ -->
+  <div class="phone">
+    <p class="cap">B · Stedsskjema — fire stablede elementer blir ett kartkort (card-variant)</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Ny lokasjon</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div class="field"><span class="lbl">Sted</span><div class="underline">Meiselen 14</div></div>
+
+        <div class="field">
+          <span class="lbl">Posisjon</span>
+          <!-- PositionFieldVariant.card : thumbnail on top + coord bar ; overlayActions top-right ; whole card taps to picker -->
+          <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+            <div class="maptile" style="height:120px">
+              <div class="maptile" style="position:absolute;inset:0;background:radial-gradient(circle at 65% 40%, var(--map-2) 0 34px, transparent 35px)"></div>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-100%)"><i class="ti ti-map-pin" style="font-size:30px;color:var(--accent)"></i></div>
+              <!-- overlayActions slot : reverse-geocode place from position (was the "Oppdater fra kart" text link) -->
+              <div class="ovbtn" title="Hent stedsnavn fra posisjon"><i class="ti ti-refresh" style="font-size:16px;color:var(--text-2)"></i></div>
+              <div class="scale">250 m</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--border)">
+              <span class="mono" style="font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">32V 0563689E 6622277N</span>
+              <i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i>
+            </div>
+          </div>
+          <p class="note">Kart + koordinat + «hent stedsnavn» (refresh-ikon) samlet i ett kort. Erstatter lenke + løs thumbnail + egen lesbar rad.</p>
+        </div>
+
+        <div class="field"><span class="lbl">Notat</span><div class="underline" style="color:var(--text-3)">Valgfritt …</div></div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:8px">Nå: «Oppdater fra kart»-lenke + 92px thumbnail + PositionFormField-rad, tre løse elementer om samme sak.</p>
+  </div>
+
+  <!-- ============ SHARED COMPONENT NOTE ============ -->
+  <div class="phone" style="width:330px">
+    <p class="cap">Delt komponent</p>
+    <div class="frame"><div class="body" style="gap:10px">
+      <div style="font-size:14px;font-weight:500">PositionFormField (fortsatt FormField&lt;LatLng&gt;)</div>
+      <div style="font-size:13px;color:var(--text-2);line-height:1.5">
+        <div><span class="mono" style="color:var(--accent)">variant</span> : <span class="mono">row</span> (A) · <span class="mono">card</span> (B)</div>
+        <div><span class="mono" style="color:var(--accent)">showThumbnail</span> : live MapView i IgnorePointer</div>
+        <div><span class="mono" style="color:var(--accent)">overlayActions</span> : List&lt;Widget&gt;, oppe til høyre over kartet</div>
+        <div><span class="mono" style="color:var(--accent)">onTap</span> : hele flaten åpner MapPickerScreen</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-3);line-height:1.5;border-top:1px solid var(--border);padding-top:10px">
+        Ingen <span class="mono">Icons.edit</span> i raden (ADR-0031). Chevron = «åpner en flate». Koordinatformatet er uendret (UtmWidget). MapView forblir domeneagnostisk: refresh-handlingen sendes inn via overlayActions, ikke et nytt flagg.
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

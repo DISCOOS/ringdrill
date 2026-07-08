@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Kartvelger (layout-reflow)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --map:#9bbd85; --map-2:#a8c290; --map-3:#7fa06d;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;--map:#6f8f5f;--map-2:#7fa06d;--map-3:#5f8050;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+  .phone{width:330px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px}
+  .note{font-size:11px;color:var(--text-3);margin:6px 4px 0;line-height:1.5}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .map{position:relative;height:520px;background:linear-gradient(120deg,var(--map),var(--map-2))}
+  .float{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius)}
+  .ctrl{width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+  .mono{font-family:var(--font-mono)}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="phone">
+    <p class="cap">Kartvelger — bunnstolpe med «Velg her», fast senternål, koordinat forankret nederst</p>
+    <div class="frame">
+      <div class="map">
+
+        <!-- terrain hints -->
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 28% 22%, var(--map-2) 0 46px, transparent 47px), radial-gradient(circle at 78% 66%, var(--map-3) 0 66px, transparent 67px)"></div>
+        <div style="position:absolute;top:38%;left:-6%;width:112%;height:3px;background:#c94f4f;opacity:.7;transform:rotate(-8deg)"></div>
+        <div style="position:absolute;top:56%;left:8%;width:84%;height:2px;background:#5a5a5a;opacity:.45;transform:rotate(4deg)"></div>
+
+        <!-- top: close + search -->
+        <div style="position:absolute;top:12px;left:12px;right:12px;display:flex;align-items:center;gap:8px">
+          <div class="float ctrl" style="flex:0 0 auto"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i></div>
+          <div class="float" style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 12px">
+            <i class="ti ti-search" style="font-size:16px;color:var(--text-3)"></i>
+            <span style="font-size:13px;color:var(--text-3)">Søk sted eller koordinat</span>
+          </div>
+        </div>
+
+        <!-- context marker (dimmed) -->
+        <div style="position:absolute;top:30%;left:30%;opacity:.5;text-align:center">
+          <i class="ti ti-map-pin" style="font-size:20px;color:#2b2b2b"></i>
+        </div>
+
+        <!-- fixed centre pin = the point being set, with ground dot -->
+        <div style="position:absolute;top:46%;left:50%;transform:translate(-50%,-100%);text-align:center">
+          <i class="ti ti-map-pin" style="font-size:42px;color:var(--accent)"></i>
+        </div>
+        <div style="position:absolute;top:46%;left:50%;transform:translate(-50%,-2px);width:10px;height:3px;background:rgba(0,0,0,.35);border-radius:50%"></div>
+
+        <!-- right controls: zoom + locate -->
+        <div style="position:absolute;right:12px;top:70px;display:flex;flex-direction:column;gap:8px">
+          <div class="float ctrl"><i class="ti ti-plus" style="font-size:18px"></i></div>
+          <div class="float ctrl"><i class="ti ti-minus" style="font-size:18px"></i></div>
+          <div class="float ctrl"><i class="ti ti-current-location" style="font-size:18px;color:var(--accent)"></i></div>
+        </div>
+
+        <!-- scale chip -->
+        <div style="position:absolute;left:12px;bottom:104px;background:rgba(0,0,0,.45);border-radius:4px;padding:3px 7px;display:flex;align-items:center;gap:6px">
+          <span style="display:inline-block;width:34px;height:3px;background:#fff"></span>
+          <span style="font-size:11px;color:#fff">250 m</span>
+        </div>
+
+        <!-- bottom action bar : coordinate + primary confirm within thumb reach -->
+        <div class="float" style="position:absolute;left:12px;right:12px;bottom:12px;padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <i class="ti ti-crosshair" style="font-size:18px;color:var(--text-3)"></i>
+            <span class="mono" style="font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">32V 0563689E 6622277N</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:#fff;border-radius:var(--radius);padding:11px;font-size:14px;font-weight:500">
+            <i class="ti ti-check" style="font-size:16px"></i> Velg her
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- change list -->
+  <div class="phone">
+    <p class="cap">Hva endrer seg fra dagens velger</p>
+    <div class="frame"><div style="padding:14px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px"><i class="ti ti-arrow-down" style="font-size:17px;color:var(--accent);flex:0 0 auto;margin-top:1px"></i><div style="font-size:13px;color:var(--text-2);line-height:1.5"><b style="color:var(--text-1);font-weight:500">Bekreft nederst.</b> «Velg her» i en bunnstolpe innen tommelrekkevidde, ikke en liten hake i AppBar øverst.</div></div>
+      <div style="display:flex;gap:10px"><i class="ti ti-map-pin" style="font-size:17px;color:var(--accent);flex:0 0 auto;margin-top:1px"></i><div style="font-size:13px;color:var(--text-2);line-height:1.5"><b style="color:var(--text-1);font-weight:500">Én fast senternål.</b> Nålen midt i skjermen er punktet du setter (kamera-senter, som i dag). Andre markører dempes som kontekst.</div></div>
+      <div style="display:flex;gap:10px"><i class="ti ti-crosshair" style="font-size:17px;color:var(--accent);flex:0 0 auto;margin-top:1px"></i><div style="font-size:13px;color:var(--text-2);line-height:1.5"><b style="color:var(--text-1);font-weight:500">Koordinat forankret.</b> Live-koordinat i bunnstolpa der øyet er, ikke i en flytende topplinje.</div></div>
+      <div style="display:flex;gap:10px"><i class="ti ti-ruler-2" style="font-size:17px;color:var(--accent);flex:0 0 auto;margin-top:1px"></i><div style="font-size:13px;color:var(--text-2);line-height:1.5"><b style="color:var(--text-1);font-weight:500">Målestokk som chip.</b> Halvtransparent chip så den ikke drukner i kartteksten.</div></div>
+      <div style="display:flex;gap:10px;border-top:1px solid var(--border);padding-top:12px"><i class="ti ti-ban" style="font-size:17px;color:var(--text-3);flex:0 0 auto;margin-top:1px"></i><div style="font-size:12px;color:var(--text-3);line-height:1.5">Utenfor scope: koordinatformatet er uendret, og reverse-geokodet stedsnavn i stolpa er valgfritt (kun hvis en geocoder er koblet inn) — ellers bare koordinat.</div></div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>
