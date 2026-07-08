@@ -38,9 +38,9 @@ Positions and person identity are retyped across a station's situation prose, it
 
 ## Concepts
 
-**Location** — a named place: display `label`, `kind` (for map styling), `place` (address), an optional coordinate, a note. The token reference (`slug`, called "reference" in the UI) is auto-generated from the label at creation and hidden from typing. Station-owned.
+**Location** — a named place: display `label`, `kind` (for map styling), `place` (address), an optional coordinate, a note. The token reference (`slug`, called "reference" in the UI) is a short random id generated at creation and hidden from typing — it is not derived from any editable field, so changing the `label`, `kind` or coordinate never affects it. Station-owned.
 
-**Person** — a fictional scenario person: display `name`, `age`, `gender` (woman/man/other), `signalement`, `homeSlug` (a reference to one of the station's locations), notes. The reference (`slug`) is auto-generated from the name. Station-owned, no PII (ADR-0047; the real human is the `Actor`, the roster layer).
+**Person** — a fictional scenario person: display `name`, `age`, `gender` (woman/man/other), `signalement`, `homeSlug` (a reference to one of the station's locations), notes. The reference (`slug`) is a short random id generated at creation, not derived from the name or any editable field. Station-owned, no PII (ADR-0047; the real human is the `Actor`, the roster layer).
 
 **Effective identity** — a `RolePlay` portrays a `Person` and its identity fields (`name`/`age`/`gender`/`signalement`) hold the effective identity: a field equal to the Person's value is *inherited* (and follows later Person edits), a field that differs is an *override* the marker set. The effective value is what renders everywhere and is persisted denormalized on the roleplay so any reader gets a populated marker (ADR-0047). Same default-plus-override intuition as variables, cached for forward-compat.
 
@@ -50,11 +50,11 @@ In the station's section-navigated editor (DESIGN-008), **Locations** and **Pers
 
 The "What has happened" markdown field is a future addition (it will seed a marker's roleplay); this design does not build it, but it is the archetypal narrative that references `station.person.*` and `station.loc.*`, and it needs nothing beyond what is specified here.
 
-**Locations.** A row per location: `label`, `kind`, and a `place`/coordinate summary. Tapping a row opens the location form (see below); **swipe-to-dismiss deletes** it, matching the app's list pattern (ADR-0031). "+ New location" opens the form to add one. The reference is auto-generated from the label; the author never types it. Editing the display `label` is free. Delete is blocked while referenced (by a field or by a person's home), listing the usages. Changing the reference itself is a **future** action ("change reference"), which will run the station-and-down rewrite.
+**Locations.** A row per location: `label`, `kind`, and a `place`/coordinate summary. Tapping a row opens the location form (see below); **swipe-to-dismiss deletes** it, matching the app's list pattern (ADR-0031). "+ New location" opens the form to add one. The reference is a random id generated at creation; the author never types it. Editing the display `label`, `kind` or coordinate is free and never affects the reference. Delete is blocked while referenced (by a field or by a person's home), listing the usages. There is no rename of the reference — it is opaque and stable, so nothing ever needs rewriting.
 
-**Persons.** A row per person: `name` with an `age`/`gender`/`signalement` summary. Tapping opens the person form; swipe-to-dismiss deletes. "+ New person" opens the form. Reference auto-generated from the name; editing the display name is free; delete guarded as above. The location form's category picker is a show-more/less toggle (expand to all 16 kinds, collapse back).
+**Persons.** A row per person: `name` with an `age`/`gender`/`signalement` summary. Tapping opens the person form; swipe-to-dismiss deletes. "+ New person" opens the form. Reference is a random id; editing the display name is free and never touches it; delete guarded as above. The location form's category picker is a show-more/less toggle (expand to all 16 kinds, collapse back).
 
-Both lists are the single source. The reference is auto-generated and stable; the display fields (`label`, `name`) are freely editable and are what the picker shows and what facets resolve to. The word "slug" never appears in the UI — where the concept must be named it is "reference". Each list keeps its chrome light: a single bottom row holds the search field and the "+ Ny …" action, with no sort control (the lists are short), and the search matches the app's standard search-field idiom. Across the station editor, the AppBar header shows the station's name on every section except the base "Post" section, so the author always sees which station they are in.
+Both lists are the single source. The reference is a random, opaque, stable id; the display fields (`label`, `name`) are freely editable and are what the picker shows and what facets resolve to. The word "slug" never appears in the UI — where the concept must be named it is "reference". Each list keeps its chrome light: a single bottom row holds the search field and the "+ Ny …" action, with no sort control (the lists are short), and the search matches the app's standard search-field idiom. Across the station editor, the AppBar header shows the station's name on every section except the base "Post" section, so the author always sees which station they are in.
 
 The Location form's `place` is geocoder-backed, reusing the existing map-search geocoder (`osm_nominatim`) — typing a place suggests and sets the coordinate, and setting the coordinate fills an empty place by reverse lookup. It is best-effort (offline/no-result is a silent no-op) and never overwrites what the author typed. The coordinate is stored as `LatLng` (WGS84); UTM and any other projection are render-time facets (ADR-0047). Detail in prompt 3c.
 
@@ -106,7 +106,9 @@ The station's locations (and a person's home) become map markers via `MapMarkerS
 
 ## Behavior
 
-Editing a location or person updates every reference on save. Rename rewrites `{{station.loc.old}}` / `{{station.person.old}}` across the station's fields and its linked roleplays' fields (station-and-down), behind a confirmation. Delete is blocked while referenced (including a person's `homeSlug` pointing at a location), with the usages listed. Save is blocked when a station or roleplay field contains an unresolved `station.*` token. The effective identity means the brief always shows what the marker actually presents, updating as casting firms up.
+Editing any editable field of a location or person (`label`, `name`, `kind`, coordinate, …) never affects its references, because the `slug` is a random id fixed at creation and derived from none of them. Delete is blocked while referenced (including a person's `homeSlug` pointing at a location, and a roleplay's `personRef`), with the usages listed. Save is blocked when a station or roleplay field contains an unresolved `station.*` token. The effective identity means the brief always shows what the marker actually presents, updating as casting firms up.
+
+**There is no reference rename, and none is needed.** The `slug` is a random, opaque id that reflects nothing editable, so it never goes stale and never needs rewriting across references. This removes a whole class of drift — the reference can never disagree with a name or kind — and means the station-and-down rewrite machinery is never required. The delete-guard (stage 6) is the only reference-integrity surface.
 
 ## The station description as the brief lead
 
@@ -120,6 +122,7 @@ The `description` field is **reused as-is** — no new field, no migration, no s
 * No PII handling on scenario data — that stays in `Actor` (the roster).
 * Multiple roleplays portraying the same person: v1 assumes one portraying roleplay per person for override resolution; if several, the primary/first wins.
 * Rich per-location metadata beyond place/coordinate/kind is out of scope for v1.
+* **Reference (`slug`) rename** — not applicable. The slug is a random opaque id, derived from no field, so it never drifts and there is nothing to rename; a reference is stable for the entity's whole life.
 
 ## Open questions
 
@@ -159,7 +162,7 @@ The design and ADR use English concept names throughout. The `nb` UI ships these
 | Person / Persons | Person / Personer |
 | New location | Ny lokasjon |
 | New person | Ny person |
-| home (`Person.homeSlug`) | Bopel |
+| home (`Person.homeSlug`) | Lokasjon |
 | reference (the `slug`, UI-facing) | Referanse |
 | change reference (future) | Endre referanse |
 | gender: woman / man / other | Kvinne / Mann / Annet |

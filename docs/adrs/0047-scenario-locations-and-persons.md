@@ -42,7 +42,7 @@ Chosen option: **A**. It keeps scenario data where the domain puts it (the stati
 @freezed
 sealed class Location with _$Location {
   const factory Location({
-    required String slug,           // ^[a-z][a-z0-9_]*$, unique within station; auto-generated from label at creation; users never type it (UI term: "reference", not "slug")
+    required String slug,           // ^[a-z][a-z0-9_]*$, unique within station; a short random id generated at creation (not derived from any field); users never type it (UI term: "reference", not "slug")
     @Default('') String label,      // display name, e.g. "Last known position"
     @Default(LocationKind.other) LocationKind kind, // drives map styling; extensible
     @Default('') String place,      // address / place description
@@ -56,7 +56,7 @@ sealed class Location with _$Location {
 @freezed
 sealed class Person with _$Person {
   const factory Person({
-    required String slug,           // ^[a-z][a-z0-9_]*$, unique within station; auto-generated from name at creation; users never type it (UI term: "reference", not "slug")
+    required String slug,           // ^[a-z][a-z0-9_]*$, unique within station; a short random id generated at creation (not derived from any field); users never type it (UI term: "reference", not "slug")
     @Default('') String name,       // display name, e.g. "Anne Glemsk"
     int? age,
     String? gender,                 // stable code: woman | man | other (segmented control; i18n labels)
@@ -127,7 +127,7 @@ This is one mechanism for all three kinds. It also **un-defers** the DESIGN-008 
 
 ### Reference integrity
 
-An unresolved `{{station.loc.x}}` or `{{station.person.y}}` — the (linked) station has no such slug — is an error: a red token in the editor that blocks save, and a visible placeholder in the brief, exactly as an undeclared `{{var.x}}` (ADR-0046). Moving a roleplay to a different station (a different `personRef`) re-resolves its fields and flags references that newly break. Renaming or deleting a location or person rewrites, or guards, references across the **station-and-down** set (the station's fields and its linked roleplays' fields), the same rename/delete integrity as variables but station-scoped. Deleting a `Location` referenced by a `Person.homeSlug` is likewise guarded. Note the `slug` is the stable reference. It is **auto-generated from the display name/label at creation** (unique within the station) — users never type it. The display fields (`label`, `name`) are freely editable and never touch references. Changing the reference itself is a deliberate action that runs the station-and-down rewrite; it is retained as a **future** capability ("change reference"), not required for v1. The UI never shows the word "slug" — it says "reference". This is a small improvement over the variable model, where the `name` doubles as both slug and display.
+An unresolved `{{station.loc.x}}` or `{{station.person.y}}` — the (linked) station has no such slug — is an error: a red token in the editor that blocks save, and a visible placeholder in the brief, exactly as an undeclared `{{var.x}}` (ADR-0046). Moving a roleplay to a different station (a different `personRef`) re-resolves its fields and flags references that newly break. Deleting a location or person is guarded across the **station-and-down** set (the station's fields and its linked roleplays' fields) while it is still referenced; deleting a `Location` referenced by a `Person.homeSlug` is likewise guarded. Note the `slug` is the stable reference: it is a **short random id generated at creation** (unique within the station), derived from no field — users never type it. The display fields (`label`, `name`), the `kind` and the coordinate are freely editable and never touch references. **There is no reference rename, and none is needed**: a random opaque slug reflects nothing editable, so it can never go stale and no station-and-down rewrite is ever required. The UI never shows the word "slug" — it says "reference". This is a small improvement over the variable model, where the `name` doubles as both slug and display.
 
 ### PII
 
