@@ -7,8 +7,6 @@ import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
-enum _PersonSort { byName, byAge }
-
 /// DESIGN-009 "Personer" section (follow-up 3b — full-screen forms,
 /// searchable/sortable tile list): a light tile per station-owned [Person]
 /// (name + age/gender/signalement summary). Tap opens [PersonFormScreen] to
@@ -58,7 +56,6 @@ class PersonsSection extends StatefulWidget {
 class _PersonsSectionState extends State<PersonsSection> {
   final _searchController = TextEditingController();
   String _query = '';
-  _PersonSort _sort = _PersonSort.byName;
 
   @override
   void dispose() {
@@ -68,76 +65,21 @@ class _PersonsSectionState extends State<PersonsSection> {
 
   List<Person> get _visiblePersons {
     final query = _query.trim().toLowerCase();
-    final filtered = query.isEmpty
-        ? widget.persons
-        : widget.persons.where((p) {
-            final name = p.name.isEmpty ? p.slug : p.name;
-            return name.toLowerCase().contains(query) ||
-                (p.signalement ?? '').toLowerCase().contains(query);
-          }).toList();
-    final sorted = [...filtered];
-    switch (_sort) {
-      case _PersonSort.byName:
-        sorted.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-      case _PersonSort.byAge:
-        sorted.sort((a, b) {
-          final ageA = a.age;
-          final ageB = b.age;
-          if (ageA == null && ageB == null) return 0;
-          if (ageA == null) return 1;
-          if (ageB == null) return -1;
-          return ageA.compareTo(ageB);
-        });
-    }
-    return sorted;
-  }
-
-  void _toggleSort() {
-    setState(() {
-      _sort = _sort == _PersonSort.byName
-          ? _PersonSort.byAge
-          : _PersonSort.byName;
-    });
+    if (query.isEmpty) return widget.persons;
+    return widget.persons.where((p) {
+      final name = p.name.isEmpty ? p.slug : p.name;
+      return name.toLowerCase().contains(query) ||
+          (p.signalement ?? '').toLowerCase().contains(query);
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     final visible = _visiblePersons;
     return SafeArea(
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _query = value),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: l10n.personsSectionSearchHint,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: _toggleSort,
-                  icon: const Icon(Icons.sort, size: 18),
-                  label: Text(
-                    _sort == _PersonSort.byName
-                        ? l10n.personsSectionSortByName
-                        : l10n.personsSectionSortByAge,
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -152,26 +94,12 @@ class _PersonsSectionState extends State<PersonsSection> {
               ],
             ),
           ),
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => _openForm(context, null),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.personsSectionAddAction,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          _SearchAddRow(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _query = value),
+            searchHint: l10n.personsSectionSearchHint,
+            addLabel: l10n.personsSectionAddAction,
+            onAdd: () => _openForm(context, null),
           ),
         ],
       ),
@@ -192,6 +120,61 @@ class _PersonsSectionState extends State<PersonsSection> {
       ),
     );
     if (result != null) widget.onSave(result.person, result.newLocation);
+  }
+}
+
+/// Card-based bottom row with a search field and an add-action button,
+/// matching the map search field's no-border Card idiom (DESIGN-009
+/// follow-up 3c). Duplicated from `locations_section.dart` — both files
+/// are presentation-only leaf widgets with no shared library; a shared
+/// helper would need its own file and import cycle. Three similar lines
+/// beats a premature abstraction for two callers.
+class _SearchAddRow extends StatelessWidget {
+  const _SearchAddRow({
+    required this.controller,
+    required this.onChanged,
+    required this.searchHint,
+    required this.addLabel,
+    required this.onAdd,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final String searchHint;
+  final String addLabel;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                onChanged: onChanged,
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: searchHint,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const VerticalDivider(),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(addLabel),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

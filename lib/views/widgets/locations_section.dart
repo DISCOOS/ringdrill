@@ -8,8 +8,6 @@ import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 
-enum _LocationSort { byKind, byLabel }
-
 /// DESIGN-009 "Lokasjoner" section (follow-up 3b — full-screen forms,
 /// searchable/sortable tile list): a light tile per station-owned
 /// [Location] (kind icon + label + place/UTM summary). Tap opens
@@ -53,7 +51,6 @@ class LocationsSection extends StatefulWidget {
 class _LocationsSectionState extends State<LocationsSection> {
   final _searchController = TextEditingController();
   String _query = '';
-  _LocationSort _sort = _LocationSort.byKind;
 
   @override
   void dispose() {
@@ -63,74 +60,21 @@ class _LocationsSectionState extends State<LocationsSection> {
 
   List<Location> get _visibleLocations {
     final query = _query.trim().toLowerCase();
-    final filtered = query.isEmpty
-        ? widget.locations
-        : widget.locations.where((l) {
-            final label = l.label.isEmpty ? l.slug : l.label;
-            return label.toLowerCase().contains(query) ||
-                l.place.toLowerCase().contains(query);
-          }).toList();
-    final sorted = [...filtered];
-    switch (_sort) {
-      case _LocationSort.byKind:
-        sorted.sort((a, b) {
-          final byKind = a.kind.index.compareTo(b.kind.index);
-          return byKind != 0
-              ? byKind
-              : a.label.toLowerCase().compareTo(b.label.toLowerCase());
-        });
-      case _LocationSort.byLabel:
-        sorted.sort(
-          (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-        );
-    }
-    return sorted;
-  }
-
-  void _toggleSort() {
-    setState(() {
-      _sort = _sort == _LocationSort.byKind
-          ? _LocationSort.byLabel
-          : _LocationSort.byKind;
-    });
+    if (query.isEmpty) return widget.locations;
+    return widget.locations.where((l) {
+      final label = l.label.isEmpty ? l.slug : l.label;
+      return label.toLowerCase().contains(query) ||
+          l.place.toLowerCase().contains(query);
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     final visible = _visibleLocations;
     return SafeArea(
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _query = value),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: l10n.locationsSectionSearchHint,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: _toggleSort,
-                  icon: const Icon(Icons.sort, size: 18),
-                  label: Text(
-                    _sort == _LocationSort.byKind
-                        ? l10n.locationsSectionSortByKind
-                        : l10n.locationsSectionSortByLabel,
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -145,26 +89,12 @@ class _LocationsSectionState extends State<LocationsSection> {
               ],
             ),
           ),
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => _openForm(context, null),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.locationsSectionAddAction,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          _SearchAddRow(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _query = value),
+            searchHint: l10n.locationsSectionSearchHint,
+            addLabel: l10n.locationsSectionAddAction,
+            onAdd: () => _openForm(context, null),
           ),
         ],
       ),
@@ -182,6 +112,59 @@ class _LocationsSectionState extends State<LocationsSection> {
           LocationFormScreen(existingSlugs: existingSlugs, initial: location),
     );
     if (saved != null) widget.onSave(saved);
+  }
+}
+
+/// A single bottom row used by both [LocationsSection] and [PersonsSection]
+/// (imported from their own files, or inlined here since it is private).
+/// Matches the map search field's Card-based, no-border idiom: a [Card]
+/// wrapping the search field and the add action, separated by a divider.
+class _SearchAddRow extends StatelessWidget {
+  const _SearchAddRow({
+    required this.controller,
+    required this.onChanged,
+    required this.searchHint,
+    required this.addLabel,
+    required this.onAdd,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final String searchHint;
+  final String addLabel;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                onChanged: onChanged,
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: searchHint,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const VerticalDivider(),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(addLabel),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

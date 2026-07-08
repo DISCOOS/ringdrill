@@ -416,9 +416,7 @@ void main() {
       expect(find.text('Kommandoplass'), findsOneWidget);
     });
 
-    testWidgets('the Locations sort toggle re-sorts the list', (
-      tester,
-    ) async {
+    testWidgets('the Locations section has no sort control', (tester) async {
       await _openForm(
         tester,
         _station(
@@ -433,18 +431,8 @@ void main() {
       await tester.tap(find.text(l.locationsSectionTitle));
       await tester.pumpAndSettle();
 
-      // Default sort is by kind then label: lkp (index 0) before other.
-      expect(find.text(l.locationsSectionSortByKind), findsOneWidget);
-      var tiles = tester
-          .widgetList<Text>(find.byType(Text))
-          .where((t) => t.data == 'Å')
-          .length;
-      expect(tiles, 2);
-
-      await tester.tap(find.text(l.locationsSectionSortByKind));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l.locationsSectionSortByLabel), findsOneWidget);
+      expect(find.text(l.locationsSectionSortByKind), findsNothing);
+      expect(find.text(l.locationsSectionSortByLabel), findsNothing);
     });
 
     testWidgets('the Persons list filters by search text', (tester) async {
