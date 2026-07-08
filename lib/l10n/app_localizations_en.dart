@@ -723,6 +723,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pickALocation => 'Pick a Location';
 
   @override
+  String get selectHere => 'Select here';
+
+  @override
   String get switchToOSM => 'Switch to OSM';
 
   @override

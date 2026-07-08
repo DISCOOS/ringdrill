@@ -201,6 +201,7 @@
   "searchForPlaceOrLocation": "Søk etter sted eller posisjon",
   "searchFailed": "Søk feilet: {error}",
   "pickALocation": "Velg plassering",
+  "selectHere": "Velg her",
   "switchToOSM": "Bytt til OSM",
   "switchToTopo": "Bytt til Topo",
   "layers": "Bytt kartlag",

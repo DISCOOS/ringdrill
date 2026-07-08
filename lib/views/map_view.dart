@@ -106,11 +106,12 @@ class MapConfig {
   /// appear at a more zoomed-out overview without crowding the map; compact
   /// phones keep the tighter [labelMinZoom] baseline. Mirrors the marker-scale
   /// bump in [MapView] so labels and icons grow into the extra space together.
-  static double labelMinZoomFor(WindowSizeClass sizeClass) => switch (sizeClass) {
-    WindowSizeClass.compact => labelMinZoom,
-    WindowSizeClass.medium => 12.5,
-    WindowSizeClass.expanded => 11.5,
-  };
+  static double labelMinZoomFor(WindowSizeClass sizeClass) =>
+      switch (sizeClass) {
+        WindowSizeClass.compact => labelMinZoom,
+        WindowSizeClass.medium => 12.5,
+        WindowSizeClass.expanded => 11.5,
+      };
 
   /// Padding used when calling [MapController.fitCamera] so the fit
   /// honours the on-map overlays. Because [MapController.fitCamera]
@@ -224,6 +225,7 @@ class MapView<K> extends StatefulWidget {
     this.withClustering = true,
     this.searchTargets = const [],
     this.topRightCommands = const [],
+    this.bottomOverlayInset = 0,
     this.initialFit,
     this.interactionFlags = MapConfig.static,
     this.initialCenter = MapConfig.initialCenter,
@@ -304,6 +306,13 @@ class MapView<K> extends StatefulWidget {
   /// [FloatingActionButton] and carry a unique `heroTag`.
   final List<Widget> topRightCommands;
 
+  /// Extra bottom clearance for [MapView]'s own bottom-anchored chrome —
+  /// the bottom-right command column (zoom, locate, centre) and the
+  /// [Scalebar] — so a caller can overlay its own bottom chrome (e.g. a
+  /// confirm bar) without either sitting underneath it. [MapView] stays
+  /// domain-agnostic: the caller just reports how much space it needs.
+  final double bottomOverlayInset;
+
   @override
   State<MapView<K>> createState() => _MapViewState();
 }
@@ -377,8 +386,7 @@ class _MapViewState<K> extends State<MapView<K>> {
     // 10 px gap so the search field never butts up against it. The command
     // column itself is inset 10 px from the right and its small-FAB visual
     // sits `tapInset` in from its hit box.
-    final topRightInset =
-        10 + commandSize.tapInset + commandSize.diameter + 10;
+    final topRightInset = 10 + commandSize.tapInset + commandSize.diameter + 10;
     // The visible command circle starts `tapInset` below the column's 16 px
     // top padding, so the search field drops by the same amount to keep the
     // tops aligned.
@@ -443,7 +451,15 @@ class _MapViewState<K> extends State<MapView<K>> {
                       ),
                     ],
                   ),
-                Scalebar(alignment: Alignment.bottomLeft),
+                Scalebar(
+                  alignment: Alignment.bottomLeft,
+                  padding: EdgeInsets.fromLTRB(
+                    10,
+                    10,
+                    10,
+                    10 + widget.bottomOverlayInset,
+                  ),
+                ),
               ],
             ),
             if (widget.withCross)
@@ -509,7 +525,12 @@ class _MapViewState<K> extends State<MapView<K>> {
               Align(
                 alignment: Alignment.bottomRight,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + widget.bottomOverlayInset,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -918,7 +939,6 @@ class _MapViewState<K> extends State<MapView<K>> {
     });
   }
 
-
   // ---------------------------------------------------------------------------
   // Marker layer builders
   // ---------------------------------------------------------------------------
@@ -954,10 +974,7 @@ class _MapViewState<K> extends State<MapView<K>> {
           scope.setTag('marker.id', '${spec.id}');
           scope.setTag('marker.label', spec.label);
           scope.setTag('marker.point', '${spec.point}');
-          scope.setTag(
-            'marker.clusterGroup',
-            '${spec.clusterGroup}',
-          );
+          scope.setTag('marker.clusterGroup', '${spec.clusterGroup}');
         },
       ),
     );
@@ -988,9 +1005,7 @@ class _MapViewState<K> extends State<MapView<K>> {
 
     if (!widget.withClustering) {
       return [
-        MarkerLayer(
-          markers: specs.map((s) => _buildMarker(s, scale)).toList(),
-        ),
+        MarkerLayer(markers: specs.map((s) => _buildMarker(s, scale)).toList()),
       ];
     }
 

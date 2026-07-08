@@ -722,6 +722,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pickALocation => 'Velg plassering';
 
   @override
+  String get selectHere => 'Velg her';
+
+  @override
   String get switchToOSM => 'Bytt til OSM';
 
   @override

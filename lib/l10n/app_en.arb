@@ -814,6 +814,10 @@
   "@pickALocation": {
     "description": "Label"
   },
+  "selectHere": "Select here",
+  "@selectHere": {
+    "description": "Confirm button label on the map picker screen; confirms the centred point"
+  },
   "switchToOSM": "Switch to OSM",
   "@switchToOSM": {
     "description": "Label"

@@ -1244,6 +1244,12 @@ abstract class AppLocalizations {
   /// **'Pick a Location'**
   String get pickALocation;
 
+  /// Confirm button label on the map picker screen; confirms the centred point
+  ///
+  /// In en, this message translates to:
+  /// **'Select here'**
+  String get selectHere;
+
   /// Label
   ///
   /// In en, this message translates to:
