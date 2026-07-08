@@ -69,6 +69,19 @@ The token picker (slash and `{{`, from DESIGN-008) in the station's own markdown
 
 When the picker's filter matches no existing entry, it offers **inline creation** — "Create location «x»", "Create person «x»", or "Create variable «x»", parallel to DESIGN-008's inline variable create. Selecting it creates the entity and inserts the token, so the author never has to leave the field to declare it first. A freshly created entity is empty, so it renders amber ("declared but empty") until filled in its section. Inline create is offered only where the namespace has scope: `station.loc.*` / `station.person.*` need a station (the station's own field, or a linked roleplay's field), while `var.*` is always available.
 
+### Own-entity facets, facet completion, and leaf fields (follow-ups 4c–4e)
+
+The picker also offers each in-scope entity's **own** scalar facets, not just cross-references. Prompt 4b added `program.*` and `exercise.*`; the same treatment applies to the station and the roleplay:
+
+* **Station own facets** (station and roleplay fields): `station.name`, `station.stationCode`, `station.position.utm`, `station.variantSuffix`. These resolve in `BriefRenderer`'s station context but were not offered until follow-up 4c.
+* **RolePlay own facets** (roleplay fields): `roleplay.name`, `roleplay.age`, `roleplay.signalement`, `roleplay.position.utm`.
+
+**Self-reference rule.** A field never offers a token that reads the same free-text field it is editing, since that value contains the token being typed and would recurse through the fixpoint pass. So `station.description` is withheld from the station's own description field and `program.description` from the program's, and a roleplay's own `name`/`signalement` are withheld from those same fields. The short, derived facets (`name`, `stationCode`, `position.utm`) are safe and always offered.
+
+**Facet completion.** The `.place` / `.utm` / `.age` / `.home.utm` facets promised above are reached by continuing to type after a chosen entity: once the filter reads `station.loc.<slug>.` or `station.person.<slug>.`, the picker lists that kind's facet names as selectable entries (loc: `place`, `label`, `utm`; person: `name`, `age`, `gender`, `signalement`, `home`), inserting the full dotted token. The bare entity entry still inserts the sensible default (place + UTM for a location, effective name for a person).
+
+**Leaf fields are token hosts too.** The scenario leaf fields themselves accept tokens: a `Location`'s `place` and `note`, and a `Person`'s `name`, `signalement` and `notes`. So a recurring subject name or a shared place string can be a `{{var.*}}`, and a leaf may reference `{{station.loc.*}}` / other facets. These forms open as their own surface (`openFormSurface`), a separate route from the station editor, so they re-provide `PlanScope` and `StationScope` seeded from the same working data — an inherited scope does not cross the `Navigator` boundary. No renderer change is needed: a token injected through a leaf value is caught by the next pass of the fixpoint loop (`_resolveField`, bounded by `_maxResolvePasses`). The self-reference rule applies here too — a `Person`'s name field does not offer `station.person.<self>.name`.
+
 ## Inline creation and write-back
 
 Inline create writes to the **owner** of the created entity, which is not always the entity the editor is editing:
@@ -118,6 +131,13 @@ Staged, each a separate PR. The format stays additive (no schema bump, `KNOWN_SC
 4. **Token picker + RolePlay editor.** Offer `station.loc.*`/`station.person.*` in the picker; the `personRef` selector and override/inherit identity fields with effective preview.
 5. **Map.** Locations and homes as `MapMarkerSpec`, styled by kind.
 6. **Integrity.** Rename/delete rewrite and guards over the station-and-down set; save-blocking on unresolved `station.*` tokens; re-link handling.
+
+Picker/authoring follow-ups, all additive views/l10n/test work with no model or renderer change (each guarded by a render round-trip so an offered token can never be unresolvable):
+
+* **4b (done).** Offer the already-resolvable `program.*` / `exercise.*` fields in every editor's picker, from a shared `PlanFieldTokens` source.
+* **4c.** Offer the station's own facets (`station.name`, `stationCode`, `position.utm`, `variantSuffix`) in the station and roleplay editors, and the roleplay's own facets (`roleplay.name`, `age`, `signalement`, `position.utm`) in the roleplay editor. Withhold each field's own free-text facet (self-reference rule).
+* **4d.** Facet completion in the picker for `station.loc.<slug>.` / `station.person.<slug>.` — list the kind's facet names as selectable entries.
+* **4e.** Make the scenario leaf fields token-aware (`Location.place`/`note`, `Person.name`/`signalement`/`notes`), re-providing `PlanScope`/`StationScope` inside the `openFormSurface` forms.
 
 All user-facing strings in `app_en.arb` / `app_nb.arb`; run `make i18n`.
 
