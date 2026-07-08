@@ -311,43 +311,15 @@ class _StationFormScreenState extends State<StationFormScreen> {
               : null,
           initialSectionId: 'station',
           sections: [
+            // Base section: structural fields (name, position, description).
             FormSection(
               id: 'station',
               label: l.station(1),
               icon: Icons.place,
               builder: (ctx) => _buildStationSectionBody(ctx, l),
             ),
-            FormSection(
-              id: 'variables',
-              label: l.variablesSectionTitle,
-              icon: Icons.data_object,
-              builder: (_) => VariableOverridesSection(
-                variables: widget.variables,
-                inherited: inherited,
-                overrides: _workingOverrides,
-                onChanged: (updated) =>
-                    setState(() => _workingOverrides = updated),
-              ),
-            ),
-            // Locations and Persons sit before the narrative markdown
-            // sections (DESIGN-009): declare the station's scenario data
-            // first, then reference it from Situation/Mission/etc — the
-            // opposite ordering rationale from Variabler above, which sits
-            // after its own referencing fields (see ExerciseFormScreen).
-            FormSection(
-              id: 'locations',
-              label: l.locationsSectionTitle,
-              icon: Icons.location_on_outlined,
-              builder: (_) => LocationsSection(
-                locations: _workingLocations,
-                onSave: _upsertLocation,
-                onDelete: (slug) => setState(
-                  () => _workingLocations = _workingLocations
-                      .where((l) => l.slug != slug)
-                      .toList(),
-                ),
-              ),
-            ),
+            // Persons before Locations so the author can name the subject
+            // before declaring where they were last seen (DESIGN-009 3c).
             FormSection(
               id: 'persons',
               label: l.personsSectionTitle,
@@ -366,7 +338,38 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 ),
               ),
             ),
+            FormSection(
+              id: 'locations',
+              label: l.locationsSectionTitle,
+              icon: Icons.location_on_outlined,
+              builder: (_) => LocationsSection(
+                locations: _workingLocations,
+                onSave: _upsertLocation,
+                onDelete: (slug) => setState(
+                  () => _workingLocations = _workingLocations
+                      .where((l) => l.slug != slug)
+                      .toList(),
+                ),
+              ),
+            ),
+            // Markdown sections: the narrative fields that reference
+            // {{var.<name>}}, {{loc.<slug>}}, and {{person.<slug>}} — so
+            // they come after Persons and Locations, not before.
             ...activeMdSections,
+            // Last: Variabler, matching Program and Exercise — the section
+            // you land on after the fields that reference variables.
+            FormSection(
+              id: 'variables',
+              label: l.variablesSectionTitle,
+              icon: Icons.data_object,
+              builder: (_) => VariableOverridesSection(
+                variables: widget.variables,
+                inherited: inherited,
+                overrides: _workingOverrides,
+                onChanged: (updated) =>
+                    setState(() => _workingOverrides = updated),
+              ),
+            ),
           ],
           addable: addableSections,
           onAdd: (id) => _addSection(_StationSection.values.byName(id)),
