@@ -633,12 +633,14 @@ Map<String, String> _effectiveVariables(
 /// is not declared. A declared-but-empty variable substitutes the empty
 /// string — that is a valid authoring state, not an error (ADR-0046).
 ///
-/// Runs before the mustache pass (see [BriefRenderer]'s `resolveField`), so
-/// cross-references like `{{station.position.utm}}` are still handled by the
-/// existing `Template(...).renderString(...)` call afterwards. A variable
-/// *value* that itself contains `{{...}}` is inserted literally here and may
-/// be re-parsed by that subsequent mustache pass — authors should not put
-/// mustache syntax in variable values in v1.
+/// Runs before the mustache pass (see [_resolveField]), so cross-references
+/// like `{{station.position.utm}}` are still handled by the existing
+/// `Template(...).renderString(...)` call afterwards. A variable *value*
+/// that itself contains `{{...}}` is inserted literally here and picked up
+/// by a later pass of [_resolveField]'s fixpoint loop: a `{{var.*}}` value
+/// resolves on the next iteration, a cross-reference token in it on the
+/// mustache pass. A self- or mutually-referential value never converges and
+/// is left literal once the loop's cap is hit.
 String _substituteVariables(
   String content,
   Map<String, String> vars,
@@ -651,19 +653,36 @@ String _substituteVariables(
   );
 }
 
-/// Resolves a markdown field for rendering: substitutes `{{var.<name>}}`
-/// tokens against [vars] first, then — when [scenarioStation] is given —
-/// `{{station.loc.<slug>}}` / `{{station.person.<slug>}}` tokens against it
-/// (ADR-0047/DESIGN-009), then feeds the result through the existing
-/// mustache cross-reference pass against [refContext] (e.g.
-/// `{{station.position.utm}}`). Falls back to the variable-substituted (but
-/// not mustache-rendered) content if that pass throws — the same fallback
-/// behaviour the renderer had before variable substitution was introduced.
+/// Upper bound on [_resolveField]'s fixpoint iterations. Each successful
+/// resolution removes tokens, so a well-formed field converges in one or two
+/// passes; this cap only bites on a circular reference (e.g. a name that
+/// references a description that references the name), guaranteeing
+/// termination instead of an infinite loop. Any tokens still present when
+/// the cap is reached are left as visible literal text, which surfaces the
+/// cycle to the author rather than hanging the render.
+const _maxResolvePasses = 10;
+
+/// Resolves a markdown field for rendering by running the full token
+/// pipeline — `{{var.<name>}}`, then (when [scenarioStation] is given)
+/// `{{station.loc/person.<slug>}}`, then the mustache cross-reference pass
+/// against [refContext] — repeatedly until the string stops changing
+/// (bounded by [_maxResolvePasses]).
+///
+/// The loop is what makes *nested* tokens resolve: any of the three systems
+/// can inject a value that itself contains further tokens. A `{{var.year}}`
+/// living inside `program.name` and reached through `{{program.name}}`, or a
+/// `{{program.name}}` living inside `program.description` and reached through
+/// `{{program.description}}`, only appears in the text after the pass that
+/// injected it, so a single pass would leave it literal. Re-running the
+/// whole pipeline on each pass' output resolves the next layer down. This
+/// also means the cross-reference source values in the various `refContext`
+/// maps can stay raw (unresolved) — the following pass' `{{var.*}}`
+/// substitution catches whatever they inject.
 ///
 /// [scenarioStation] is omitted (null) for program- and exercise-scope
 /// fields, which have no station in scope and so never resolve
-/// `station.loc.*`/`station.person.*` — only station and roleplay fields
-/// pass it, both scoped to that same station's `locations`/`persons`.
+/// `station.loc.*`/`station.person.*`; only station and roleplay fields pass
+/// it, both scoped to that same station's `locations`/`persons`.
 String? _resolveField(
   String? content, {
   required Map<String, String> vars,
@@ -673,6 +692,36 @@ String? _resolveField(
   List<RolePlay> scenarioRolePlays = const [],
 }) {
   if (content == null) return null;
+  var current = content;
+  for (var pass = 0; pass < _maxResolvePasses; pass++) {
+    final next = _resolveFieldOnce(
+      current,
+      vars: vars,
+      l10n: l10n,
+      refContext: refContext,
+      scenarioStation: scenarioStation,
+      scenarioRolePlays: scenarioRolePlays,
+    );
+    if (next == current) return next;
+    current = next;
+  }
+  return current;
+}
+
+/// One iteration of the [_resolveField] pipeline: `{{var.<name>}}`
+/// substitution, then optional `{{station.loc/person.<slug>}}` resolution,
+/// then the mustache cross-reference pass. Falls back to the (variable- and
+/// scenario-substituted, but not mustache-rendered) content if that pass
+/// throws — the same fallback behaviour the renderer had before variable
+/// substitution was introduced.
+String _resolveFieldOnce(
+  String content, {
+  required Map<String, String> vars,
+  required AppLocalizations l10n,
+  required Map<String, dynamic> refContext,
+  Station? scenarioStation,
+  List<RolePlay> scenarioRolePlays = const [],
+}) {
   final withVars = _substituteVariables(content, vars, l10n);
   final withScenario = scenarioStation == null
       ? withVars

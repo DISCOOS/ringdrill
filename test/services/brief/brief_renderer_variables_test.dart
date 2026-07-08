@@ -576,4 +576,76 @@ void main() {
       },
     );
   });
+
+  /// Nested-token resolution: a token can arrive inside a value injected by
+  /// another token. `_resolveField` iterates its pipeline to a fixpoint so
+  /// these deeper layers resolve, instead of stopping at the innermost layer
+  /// already present in the raw text.
+  group('BriefRenderer — nested token resolution', () {
+    test(
+      'a variable inside program.name resolves when the name is reached '
+      'through {{program.name}} in a markdown field',
+      () async {
+        final program = _emptyProgram().copyWith(
+          name: 'LSOR Eidene {{var.year}}',
+          variables: const [DrillVariable(name: 'year', value: '2026')],
+          briefIntroMd: 'Velkommen til {{program.name}}!',
+        );
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        expect(result, contains('# LSOR Eidene 2026'));
+        expect(result, contains('Velkommen til LSOR Eidene 2026!'));
+        expect(result, isNot(contains('{{var.year}}')));
+      },
+    );
+
+    test(
+      'a three-level chain field -> {{program.description}} -> {{program.name}} '
+      '-> {{var.year}} resolves fully',
+      () async {
+        final program = _emptyProgram().copyWith(
+          name: 'LSOR Eidene {{var.year}}',
+          description: 'Se planen {{program.name}}',
+          variables: const [DrillVariable(name: 'year', value: '2026')],
+          commsMd: 'Detaljer: {{program.description}}.',
+        );
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        expect(result, contains('Detaljer: Se planen LSOR Eidene 2026.'));
+        expect(result, isNot(contains('{{var.year}}')));
+      },
+    );
+
+    test(
+      'a circular cross-reference terminates and leaves a literal token '
+      'instead of hanging',
+      () async {
+        final program = _emptyProgram().copyWith(
+          name: '{{program.description}}',
+          description: '{{program.name}}',
+          commsMd: 'Intro: {{program.name}}',
+        );
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        // Reaching here at all proves the fixpoint loop terminated; the cap's
+        // fail-safe leaves the unresolvable cycle as a visible literal token.
+        expect(result, contains('{{program.'));
+      },
+    );
+  });
 }
