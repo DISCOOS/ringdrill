@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Postbeskrivelse som brief-ingress (DESIGN-009)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --map:#9bbd85; --map-2:#a8c290;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;--map:#6f8f5f;--map-2:#7fa06d;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  h1{font-size:17px;font-weight:600;margin:0 0 4px;text-align:center}
+  p.intro{font-size:12.5px;color:var(--text-2);max-width:760px;margin:0 auto 22px;text-align:center;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:330px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px;line-height:1.45}
+  .cap b{color:var(--text-2);font-weight:600}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .t{flex:1;font-size:15px;font-weight:500}
+  .save{font-size:13px;font-weight:500;color:#fff;background:var(--accent);padding:7px 14px;border-radius:var(--radius)}
+  .body{padding:14px;display:flex;flex-direction:column;gap:14px}
+  .field{display:flex;flex-direction:column}
+  .lbl{font-size:11px;color:var(--text-2);margin:0 0 4px}
+  .underline{border-bottom:1px solid var(--border);padding:7px 0;font-size:14px;line-height:1.5}
+  .mono{font-family:var(--font-mono)}
+  .tok{font-family:var(--font-mono);font-size:12px;background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:1px 6px;white-space:nowrap}
+  .grip{width:34px;height:4px;border-radius:2px;background:var(--text-3);opacity:.5;margin:8px auto 0}
+  /* position field — implemented row variant (see position-card.html) */
+  .maptile{background:linear-gradient(120deg,var(--map),var(--map-2));position:relative}
+  .posrow{display:flex;align-items:stretch;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .posrow .thumb{width:76px}
+  .posrow .thumb .pin{position:absolute;top:50%;left:50%;transform:translate(-50%,-100%)}
+  .posrow .coord{flex:1;min-width:0;display:flex;align-items:center;padding:0 12px}
+  .posrow .coord span{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .posrow .chev{display:flex;align-items:center;padding:0 10px;border-left:1px solid var(--border)}
+  /* collapsed add-description affordance */
+  .addaff{display:flex;align-items:center;gap:8px;border:1px dashed var(--border);border-radius:var(--radius);
+    padding:10px 10px;color:var(--text-3);font-size:14px}
+  .addaff i{color:var(--accent);font-size:16px}
+  /* rollup */
+  .rolllbl{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin:2px 0 -4px 2px}
+  .card{border:1px solid var(--border);border-radius:var(--radius);padding:10px 11px;background:var(--bg-2)}
+  .card .h{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--accent);font-weight:600;margin-bottom:5px}
+  .card .h .ed{margin-left:auto;color:var(--text-3);font-weight:400;display:flex;align-items:center;gap:3px}
+  .card .tx{font-size:13px;color:var(--text-1);line-height:1.5}
+  /* brief */
+  .brief{padding:16px 15px 20px;font-size:13.5px;line-height:1.55;color:var(--text-1)}
+  .brief h3{font-size:15px;margin:0 0 10px;font-weight:700}
+  .brief .lead{margin:0 0 12px}
+  .brief .plass{margin:0 0 12px;color:var(--text-1)}
+  .brief h4{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-2);margin:14px 0 5px;font-weight:600}
+  .brief p{margin:0 0 6px;color:var(--text-2)}
+  code{font-family:var(--font-mono);font-size:12px;background:var(--bg-3);border-radius:4px;padding:1px 5px;color:var(--text-1)}
+  .footnote{max-width:760px;margin:24px auto 0;font-size:12px;color:var(--text-3);line-height:1.55}
+  .footnote code{background:var(--bg-2)}
+</style>
+</head>
+<body>
+  <h1>Postbeskrivelse som brief-ingress</h1>
+  <p class="intro">DESIGN-009. Postbeskrivelse blir værende i base-seksjonen — under navn og den reflowede posisjonsraden — men begynner å rendres i briefen som postens ingress uten egen overskrift. Tom beskrivelse kollapser til en «Legg til beskrivelse»-affordance, så en seksjonsrik post ikke viser en tom boks. Samme <code>description</code>-felt gjenbrukes — ingen migrering, ingen schema-bump.</p>
+
+  <div class="grid">
+
+    <!-- A · filled, simple post -->
+    <div class="phone">
+      <p class="cap"><b>A · Enkel post.</b> Beskrivelsen fylt inn i base-seksjonen, som i dag — men havner nå i briefen (C). Ett felt er alt en enkel post trenger.</p>
+      <div class="frame">
+        <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Endre post</span><span class="save">Lagre</span></div>
+        <div class="body">
+          <div class="field"><span class="lbl">Postnavn</span><div class="underline">2a) Fisker (Angler)</div></div>
+          <div class="field"><span class="lbl">Posisjon</span>
+            <div class="posrow">
+              <div class="maptile thumb"><span class="pin"><i class="ti ti-map-pin" style="font-size:20px;color:var(--accent)"></i></span></div>
+              <div class="coord"><span class="mono">32V 0580345E 6551796N</span></div>
+              <div class="chev"><i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i></div>
+            </div>
+          </div>
+          <div class="field"><span class="lbl">Postbeskrivelse</span>
+            <div class="underline">Eidene. Kari Fiskeløs – finsøk rundt IPP innenfor R25. Post starter i <span class="tok">{{station.position.utm}}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B · empty, section-rich post -->
+    <div class="phone">
+      <p class="cap"><b>B · Seksjonsrik post.</b> Tom beskrivelse er en sammenklappet affordance, ingen tom boks. Rollup-kortene under er tapp-for-å-redigere og hopper til seksjonen i velgeren.</p>
+      <div class="frame">
+        <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Endre post</span><span class="save">Lagre</span></div>
+        <div class="body">
+          <div class="field"><span class="lbl">Postnavn</span><div class="underline">3b) Skjærgård (Kai)</div></div>
+          <div class="field"><span class="lbl">Posisjon</span>
+            <div class="posrow">
+              <div class="maptile thumb"><span class="pin"><i class="ti ti-map-pin" style="font-size:20px;color:var(--accent)"></i></span></div>
+              <div class="coord"><span class="mono">32V 0581007E 6552310N</span></div>
+              <div class="chev"><i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i></div>
+            </div>
+          </div>
+          <div class="field"><span class="lbl">Postbeskrivelse</span>
+            <div class="addaff"><i class="ti ti-plus"></i>Legg til beskrivelse</div>
+          </div>
+          <div class="rolllbl">Seksjoner</div>
+          <div class="card">
+            <div class="h"><i class="ti ti-file-description" style="font-size:14px"></i>Situasjon<span class="ed"><i class="ti ti-pencil" style="font-size:13px"></i>Rediger</span></div>
+            <div class="tx">Melder observerte en person ved kaikanten ca. kl. 0730, gikk mot <span class="tok">{{station.loc.molo}}</span>.</div>
+          </div>
+          <div class="card">
+            <div class="h"><i class="ti ti-file-description" style="font-size:14px"></i>Oppdrag<span class="ed"><i class="ti ti-pencil" style="font-size:13px"></i>Rediger</span></div>
+            <div class="tx">Finsøk langs moloen og fortøyningsområdet. Rapporter funn til <span class="tok">{{station.person.kari.home}}</span>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C · brief output -->
+    <div class="phone">
+      <p class="cap"><b>C · Brief.</b> Beskrivelsen rendres som ingress rett under overskriften, før «plassering» og seksjonene. Ingen egen «Beskrivelse»-overskrift, og tokens er oppløst.</p>
+      <div class="frame">
+        <div class="grip"></div>
+        <div class="bar" style="border-bottom:none;padding-top:6px"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Brief</span></div>
+        <div class="brief" style="border-top:1px solid var(--border)">
+          <h3>2a – Fisker (Angler)</h3>
+          <p class="lead">Eidene. Kari Fiskeløs – finsøk rundt IPP innenfor R25. Post starter i <code>32V 0580345E 6551796N</code></p>
+          <p class="plass"><strong>Post 2a plassering:</strong> <code>32V 0580345E 6551796N</code></p>
+          <h4>Varighet</h4>
+          <p>30 min (15 | 10 | 5)</p>
+          <h4>Situasjon</h4>
+          <p>Melder observerte en person ved kaikanten …</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="footnote">Posisjonsraden er den implementerte <code>PositionFormField</code>-radvarianten (thumbnail · koordinat på én linje · chevron, hele raden åpner kartvelgeren — se <code>position-card.html</code>). Mal (<code>ringdrill-standard-v1.*.md.mustache</code>): ny <code>{{#descriptionMd}}</code>-blokk mellom post-overskriften (<code>### {{stationCode}} – {{name}}</code>) og «plassering»-linjen; rendereren legger <code>resolveField(station.description)</code> inn i post-mappen som <code>descriptionMd</code>. Fravær eller tom verdi gir ingen ingress.</p>
+</body>
+</html>

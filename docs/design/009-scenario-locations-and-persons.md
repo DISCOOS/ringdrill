@@ -108,6 +108,12 @@ The station's locations (and a person's home) become map markers via `MapMarkerS
 
 Editing a location or person updates every reference on save. Rename rewrites `{{station.loc.old}}` / `{{station.person.old}}` across the station's fields and its linked roleplays' fields (station-and-down), behind a confirmation. Delete is blocked while referenced (including a person's `homeSlug` pointing at a location), with the usages listed. Save is blocked when a station or roleplay field contains an unresolved `station.*` token. The effective identity means the brief always shows what the marker actually presents, updating as casting firms up.
 
+## The station description as the brief lead
+
+`Station.description` (the "Postbeskrivelse") stops being UI-only and starts rendering in the brief as the station's **lead paragraph** (no heading). It **stays in the base section**, alongside name and position — it is not moved into the section switcher and is not a removable section. So a simple station needs only this one field and it reaches the brief, while a rich station adds the labeled, sometimes audience-gated sections (Situasjon, Oppdrag, `directorNotes`, …) that render with headings below the lead.
+
+The `description` field is **reused as-is** — no new field, no migration, no schema bump; an absent/empty description renders no lead paragraph. When empty in the editor it collapses to a "Legg til beskrivelse" affordance that expands on focus, so a section-rich station shows no empty box in the base section. This resolves the earlier overlap where narrative could sit either in the description or a section: description is the unstructured lead, sections are the structured blocks. The in-app summary surfaces (station list subtitle, coordinator, program view, detail sheet) keep reading `description`, now resolved via the DESIGN-010 scope cascade; the station detail sheet becomes the DESIGN-010 rollup (lead + sections). The brief-template lead paragraph is a small [DESIGN-004](./brief-template.md) change.
+
 ## Deferred / non-goals
 
 * No central (plan/exercise) location or person registry — station-owned only (ADR-0047).
