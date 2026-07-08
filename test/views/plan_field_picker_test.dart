@@ -1,0 +1,266 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
+import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/views/exercise_form_screen.dart';
+import 'package:ringdrill/views/program_form_screen.dart';
+import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/station_form_screen.dart';
+
+/// DESIGN-009 follow-up 4b — the `/`/`{{` picker offers the already-
+/// resolvable `program.*`/`exercise.*` plan fields, built from the single
+/// `PlanFieldTokens` source ([lib/views/widgets/plan_field_tokens.dart]),
+/// alongside whatever each editor already offered
+/// ([test/views/plan_field_tokens_resolution_test.dart] is the renderer-side
+/// half of this invariant: every offered token actually resolves).
+///
+/// Filters use the `{{<name>` form throughout, not `/`: the `/` trigger's
+/// filter is `\w*` only (no dot), so it cannot narrow to a dotted path like
+/// `exercise.startTime` — matching the same reasoning already applied to
+/// `{{station.loc.`/`{{station.person.` filters elsewhere.
+
+Future<void> _pumpAndOpen(WidgetTester tester, Widget home) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (ctx) => TextButton(
+          onPressed: () =>
+              Navigator.push(ctx, MaterialPageRoute(builder: (_) => home)),
+          child: const Text('Open'),
+        ),
+      ),
+    ),
+  );
+  await tester.tap(find.text('Open'));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  late AppLocalizations l;
+
+  setUpAll(() async {
+    l = await AppLocalizations.delegate.load(const Locale('en'));
+  });
+
+  group('ProgramFormScreen', () {
+    testWidgets('offers only program.* plan fields, never exercise.*', (
+      tester,
+    ) async {
+      final now = DateTime.utc(2026, 1, 1);
+      await _pumpAndOpen(
+        tester,
+        ProgramFormScreen(
+          program: Program(
+            uuid: 'pgm-1',
+            name: 'Vinterøvelse',
+            description: '',
+            metadata: ProgramMetadata(
+              created: now,
+              updated: now,
+              version: '1.0',
+            ),
+            teams: const [],
+            sessions: const [],
+            exercises: const [],
+            briefIntroMd: 'x',
+          ),
+        ),
+      );
+
+      await tester.tap(find.text(l.briefSectionProgramIntro));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, l.briefSectionProgramIntro),
+        'x {{',
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(l.programName), findsOneWidget);
+      expect(find.text(l.programDescription), findsOneWidget);
+      expect(find.text(l.exerciseName), findsNothing);
+      expect(find.text(l.startTime), findsNothing);
+
+      await tester.tap(find.text(l.programName));
+      await tester.pump();
+
+      expect(find.textContaining('{{program.name}}'), findsOneWidget);
+    });
+  });
+
+  group('ExerciseFormScreen', () {
+    Exercise exercise() => Exercise(
+      uuid: 'ex-1',
+      name: 'Original name',
+      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+      numberOfTeams: 1,
+      numberOfRounds: 1,
+      executionTime: 10,
+      evaluationTime: 5,
+      rotationTime: 2,
+      stations: const [],
+      schedule: const [],
+      endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+    );
+
+    testWidgets(
+      'offers both program.* and exercise.* plan fields; selecting one '
+      'inserts the exact token',
+      (tester) async {
+        await _pumpAndOpen(
+          tester,
+          ExerciseFormScreen(exercise: exercise(), variables: const []),
+        );
+
+        final nameField = find.widgetWithText(TextFormField, l.exerciseName);
+
+        await tester.enterText(nameField, 'x {{program.name');
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(l.programName), findsOneWidget);
+
+        await tester.enterText(nameField, 'x {{exercise.startTime');
+        await tester.pump();
+        await tester.pump();
+        final menuEntry = find.descendant(
+          of: find.byType(ListView),
+          matching: find.text(l.startTime),
+        );
+        expect(menuEntry, findsOneWidget);
+
+        await tester.tap(menuEntry);
+        await tester.pump();
+
+        expect(find.textContaining('{{exercise.startTime}}'), findsOneWidget);
+      },
+    );
+  });
+
+  group('StationFormScreen', () {
+    Exercise parentExercise() => Exercise(
+      uuid: 'ex-1',
+      name: 'Exercise',
+      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+      endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+      numberOfTeams: 1,
+      numberOfRounds: 1,
+      executionTime: 10,
+      evaluationTime: 5,
+      rotationTime: 5,
+      stations: const [],
+      schedule: const [],
+    );
+
+    testWidgets(
+      'the program/exercise plan fields coexist with station.loc/person '
+      'entries the linked StationScope already supplies',
+      (tester) async {
+        final station = Station(
+          index: 0,
+          name: 'Post 1',
+          position: const LatLng(58.99, 10.43),
+          locations: const [Location(slug: 'lkp', place: 'Sentrum')],
+          persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+        );
+        await _pumpAndOpen(
+          tester,
+          StationFormScreen(
+            station: station,
+            parentExercise: parentExercise(),
+            variables: const <DrillVariable>[],
+          ),
+        );
+
+        final descriptionField = find.widgetWithText(
+          TextFormField,
+          l.stationDescription,
+        );
+
+        await tester.enterText(descriptionField, '{{exercise.startTime');
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(l.startTime), findsOneWidget);
+
+        await tester.enterText(
+          descriptionField,
+          '{{exercise.startTime}}{{station.loc.',
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Sentrum'), findsOneWidget);
+      },
+    );
+  });
+
+  group('RolePlayFormScreen', () {
+    RolePlay rolePlay() => const RolePlay(
+      uuid: 'role-1',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: 'Anna Hansen',
+      stationIndex: 0,
+      behavior: 'x',
+    );
+
+    Exercise exercise(Station station) => Exercise(
+      uuid: 'ex-1',
+      name: 'Exercise',
+      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+      endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+      numberOfTeams: 1,
+      numberOfRounds: 1,
+      executionTime: 10,
+      evaluationTime: 5,
+      rotationTime: 5,
+      stations: [station],
+      schedule: const [],
+    );
+
+    testWidgets(
+      'the program/exercise plan fields coexist with station.loc/person '
+      'entries the linked station supplies',
+      (tester) async {
+        final station = Station(
+          index: 0,
+          name: 'Post 1',
+          locations: const [Location(slug: 'lkp', place: 'Sentrum')],
+          persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+        );
+        await _pumpAndOpen(
+          tester,
+          RolePlayFormScreen(
+            rolePlay: rolePlay(),
+            exercise: exercise(station),
+            variables: const <DrillVariable>[],
+          ),
+        );
+
+        await tester.tap(find.text(l.roleBehavior));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(TextField));
+
+        await tester.enterText(
+          find.byType(TextField),
+          'x {{exercise.startTime',
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(l.startTime), findsOneWidget);
+
+        await tester.enterText(find.byType(TextField), 'x {{station.person.');
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Anne Glemsk'), findsWidgets);
+      },
+    );
+  });
+}
