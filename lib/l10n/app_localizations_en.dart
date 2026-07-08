@@ -813,6 +813,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rotationTime => 'Rotation Time';
 
   @override
+  String get endTime => 'End Time';
+
+  @override
+  String get timeLabel => 'Time Range';
+
+  @override
+  String get durationLabel => 'Duration';
+
+  @override
+  String get phaseBreakdown => 'Phase Breakdown';
+
+  @override
   String get pleaseEnterAValidTime => 'Please enter a valid time';
 
   @override

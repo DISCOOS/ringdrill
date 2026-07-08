@@ -809,6 +809,18 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rotationTime => 'Rulleringstid';
 
   @override
+  String get endTime => 'Sluttid';
+
+  @override
+  String get timeLabel => 'Tidsrom';
+
+  @override
+  String get durationLabel => 'Varighet';
+
+  @override
+  String get phaseBreakdown => 'Faseinndeling';
+
+  @override
   String get pleaseEnterAValidTime => 'Oppgi tid';
 
   @override

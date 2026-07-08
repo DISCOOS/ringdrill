@@ -925,6 +925,22 @@
   "@rotationTime": {
     "description": "Label"
   },
+  "endTime": "End Time",
+  "@endTime": {
+    "description": "Label"
+  },
+  "timeLabel": "Time Range",
+  "@timeLabel": {
+    "description": "Label"
+  },
+  "durationLabel": "Duration",
+  "@durationLabel": {
+    "description": "Label"
+  },
+  "phaseBreakdown": "Phase Breakdown",
+  "@phaseBreakdown": {
+    "description": "Label"
+  },
   "pleaseEnterAValidTime": "Please enter a valid time",
   "@pleaseEnterAValidTime": {
     "description": "Message"

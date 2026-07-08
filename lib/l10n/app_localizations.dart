@@ -1406,6 +1406,30 @@ abstract class AppLocalizations {
   /// **'Rotation Time'**
   String get rotationTime;
 
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'End Time'**
+  String get endTime;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Time Range'**
+  String get timeLabel;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get durationLabel;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Phase Breakdown'**
+  String get phaseBreakdown;
+
   /// Message
   ///
   /// In en, this message translates to:
