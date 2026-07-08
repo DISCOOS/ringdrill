@@ -28,6 +28,7 @@ class StationPositionPanel extends StatelessWidget {
     this.mapHeight = 200,
     this.miniMapKey,
     this.padding = EdgeInsets.zero,
+    this.asCard = false,
   });
 
   final Exercise exercise;
@@ -41,6 +42,13 @@ class StationPositionPanel extends StatelessWidget {
   final Key? miniMapKey;
 
   final EdgeInsetsGeometry padding;
+
+  /// Forwarded to [PositionCardShell]. Defaults to `false` because most
+  /// call sites embed this panel inside an `ExpandableTile` body — itself
+  /// a `Card` — where the panel's own [Card] would nest inside it.
+  /// Station/RolePlay detail screens, which show this panel on a bare
+  /// page with no ambient card, pass `true`.
+  final bool asCard;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +76,7 @@ class StationPositionPanel extends StatelessWidget {
             )
           : PositionCardShell(
               onTap: () => openStationMapSheet(context, exercise, station),
+              asCard: asCard,
               thumbnail: StationMiniMap(
                 key: miniMapKey,
                 exercise: exercise,

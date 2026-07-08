@@ -77,4 +77,51 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsNothing);
     },
   );
+
+  testWidgets(
+    'asCard defaults to false (no nested Card when already inside one, e.g. '
+    'an ExpandableTile body) and opts into its own Card when set',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        position: const LatLng(58.99, 10.43),
+      );
+
+      // Default (false): embedding inside an ambient Card must not add a
+      // second, nested Card around the panel.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Card(
+              child: StationPositionPanel(
+                exercise: exercise(),
+                station: station,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Card), findsOneWidget);
+
+      // asCard: true — a bare page with no ambient card, so the panel
+      // must draw its own.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StationPositionPanel(
+              exercise: exercise(),
+              station: station,
+              asCard: true,
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Card), findsOneWidget);
+    },
+  );
 }

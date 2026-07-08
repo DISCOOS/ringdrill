@@ -194,8 +194,8 @@ class PositionCard<K> extends StatelessWidget {
 ///
 /// Used by [PositionCard]'s `card` variant (the pick surfaces) and by
 /// `StationPositionPanel`/`RolePositionPanel` (the read-only detail
-/// panels) — three call sites sharing one bordered-card layout instead of
-/// three near-identical `Column`s.
+/// panels) — call sites sharing one layout instead of near-identical
+/// `Column`s.
 class PositionCardShell extends StatelessWidget {
   const PositionCardShell({
     super.key,
@@ -206,6 +206,7 @@ class PositionCardShell extends StatelessWidget {
     this.barLabel,
     required this.barChild,
     this.barTrailing,
+    this.asCard = true,
   });
 
   final VoidCallback onTap;
@@ -231,69 +232,78 @@ class PositionCardShell extends StatelessWidget {
   /// "tap opens a surface" affordance (ADR-0031).
   final Widget? barTrailing;
 
+  /// Whether this shell draws its own [Card] (elevation, background,
+  /// rounded shape from the ambient `cardTheme`). Set to `false` when the
+  /// caller already sits inside another card-like surface (e.g. an
+  /// `ExpandableTile`, itself a `Card`) — otherwise the map preview nests
+  /// a card inside a card. `false` still rounds the thumbnail's corners
+  /// via [ClipRRect] and keeps the divider between the thumbnail and the
+  /// coordinate bar; it just skips the extra background/elevation.
+  final bool asCard;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // No hand-drawn Border.all: a plain Card picks up the ambient
-    // cardTheme's shape/elevation/shadow, so this reads as the same kind
-    // of card as everything else in the app instead of a bespoke boxed
-    // frame around the map preview.
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (thumbnail != null)
-              SizedBox(
-                height: thumbnailHeight,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    thumbnail!,
-                    if (overlayActions.isNotEmpty)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: overlayActions,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: theme.colorScheme.outlineVariant),
-                ),
-              ),
-              child: Row(
-                children: [
-                  if (barLabel != null) ...[
-                    barLabel!,
-                    const SizedBox(width: 8),
-                  ],
-                  Expanded(child: barChild),
-                  const SizedBox(width: 8),
-                  barTrailing ??
-                      Icon(
-                        Icons.chevron_right,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                ],
-              ),
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (thumbnail != null)
+          SizedBox(
+            height: thumbnailHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                thumbnail!,
+                if (overlayActions.isNotEmpty)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: overlayActions,
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
+          ),
+          child: Row(
+            children: [
+              if (barLabel != null) ...[barLabel!, const SizedBox(width: 8)],
+              Expanded(child: barChild),
+              const SizedBox(width: 8),
+              barTrailing ??
+                  Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
+
+    // asCard: a plain Card picks up the ambient cardTheme's
+    // shape/elevation/shadow, so this reads as the same kind of card as
+    // everything else in the app instead of a bespoke boxed frame. When
+    // the caller already provides that card (asCard: false), skip it —
+    // otherwise the map preview nests a card inside a card — and just
+    // round the thumbnail's own corners.
+    return asCard
+        ? Card(
+            margin: EdgeInsets.zero,
+            child: InkWell(onTap: onTap, child: content),
+          )
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(onTap: onTap, child: content),
+          );
   }
 }

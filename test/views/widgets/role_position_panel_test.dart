@@ -34,4 +34,40 @@ void main() {
       expect(find.byType(BottomSheet), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'asCard defaults to false (no nested Card when already inside one, e.g. '
+    'an ExpandableTile body) and opts into its own Card when set',
+    (tester) async {
+      const position = LatLng(58.99, 10.43);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: Card(
+              child: RolePositionPanel(position: position, label: 'Hilde'),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Card), findsOneWidget);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: RolePositionPanel(
+              position: position,
+              label: 'Hilde',
+              asCard: true,
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Card), findsOneWidget);
+    },
+  );
 }

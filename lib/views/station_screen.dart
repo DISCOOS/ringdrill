@@ -277,17 +277,17 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildDescription(station, localizations),
-        Card(
-          elevation: 1,
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: StationPositionPanel(
-              exercise: _exercise,
-              station: station,
-              miniMapKey: ValueKey<String>(
-                'station-screen-map-${_exercise.uuid}-${station.index}',
-              ),
+        // asCard: true — this page has no ambient card around the panel
+        // (unlike the ExpandableTile-body call sites), so the panel draws
+        // its own Card instead of a bare rounded thumbnail.
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: StationPositionPanel(
+            exercise: _exercise,
+            station: station,
+            asCard: true,
+            miniMapKey: ValueKey<String>(
+              'station-screen-map-${_exercise.uuid}-${station.index}',
             ),
           ),
         ),

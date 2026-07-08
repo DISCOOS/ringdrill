@@ -234,21 +234,18 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                 ),
               ),
 
-              // Position card
+              // Position card. asCard: true — this page has no ambient
+              // card around the panel, so it draws its own Card.
               if (rolePlay.position != null)
-                Card(
-                  elevation: 1,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  clipBehavior: Clip.antiAlias,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: RolePositionPanel(
-                      position: rolePlay.position!,
-                      label: substitutePlanVariables(
-                        rolePlay.name,
-                        roleOverrides,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: RolePositionPanel(
+                    position: rolePlay.position!,
+                    label: substitutePlanVariables(
+                      rolePlay.name,
+                      roleOverrides,
                     ),
+                    asCard: true,
                   ),
                 ),
             ],

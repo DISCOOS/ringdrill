@@ -20,6 +20,7 @@ class RolePositionPanel extends StatelessWidget {
     required this.position,
     required this.label,
     this.mapHeight = 200,
+    this.asCard = false,
   });
 
   final LatLng position;
@@ -29,6 +30,13 @@ class RolePositionPanel extends StatelessWidget {
 
   final double mapHeight;
 
+  /// Forwarded to [PositionCardShell]. Defaults to `false` because most
+  /// call sites embed this panel inside an `ExpandableTile` body — itself
+  /// a `Card` — where the panel's own [Card] would nest inside it. The
+  /// RolePlay detail screen, which shows this panel on a bare page with
+  /// no ambient card, passes `true`.
+  final bool asCard;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -36,6 +44,7 @@ class RolePositionPanel extends StatelessWidget {
 
     return PositionCardShell(
       onTap: () => openRoleMapSheet(context, position, label),
+      asCard: asCard,
       thumbnail: RoleMiniMap(
         position: position,
         label: label,
