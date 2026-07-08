@@ -82,6 +82,12 @@ class StationPositionPanel extends StatelessWidget {
                 exercise: exercise,
                 station: station,
                 height: mapHeight,
+                // Square bottom corners: the map sits flush above the
+                // coordinate bar, and PositionCardShell's own outer
+                // rounding already handles the card's top corners.
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                ),
               ),
               thumbnailHeight: mapHeight,
               barLabel: Text(

@@ -5,6 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
+import 'package:ringdrill/views/widgets/station_mini_map.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
 /// docs/prompts/position-panel-read-alignment.md — StationPositionPanel on
@@ -122,6 +123,31 @@ void main() {
         ),
       );
       expect(find.byType(Card), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the embedded StationMiniMap has square bottom corners so it sits flush '
+    'against the coordinate bar instead of cutting a notch at the seam',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        position: const LatLng(58.99, 10.43),
+      );
+      await pump(tester, station);
+
+      final clip = tester.widget<ClipRRect>(
+        find.descendant(
+          of: find.byType(StationMiniMap),
+          matching: find.byType(ClipRRect),
+        ),
+      );
+      final radius = clip.borderRadius.resolve(TextDirection.ltr);
+      expect(radius.topLeft, const Radius.circular(8));
+      expect(radius.topRight, const Radius.circular(8));
+      expect(radius.bottomLeft, Radius.zero);
+      expect(radius.bottomRight, Radius.zero);
     },
   );
 }

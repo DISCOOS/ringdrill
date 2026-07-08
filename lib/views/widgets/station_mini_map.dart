@@ -75,11 +75,19 @@ class StationMiniMap extends StatelessWidget {
     required this.exercise,
     required this.station,
     this.height = 140,
+    this.borderRadius = const BorderRadius.all(Radius.circular(8)),
   });
 
   final Exercise exercise;
   final Station station;
   final double height;
+
+  /// Rounds the preview's own corners. `StationPositionPanel` passes a
+  /// top-only radius when embedding this as a card's thumbnail — the map
+  /// sits flush against the coordinate bar below it, so its bottom
+  /// corners must stay square or they'd cut a rounded notch into the
+  /// card at that seam, exposing the background behind it.
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +109,7 @@ class StationMiniMap extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: () => openStationMapSheet(context, exercise, station),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: borderRadius,
           child: IgnorePointer(
             child: MapView(
               layers: MapConfig.layers,
