@@ -2299,6 +2299,32 @@
   "@roleGender": {
     "description": "Label above the GenderSegmentedControl, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first."
   },
+  "rolePlayPersonLabel": "Person",
+  "@rolePlayPersonLabel": {
+    "description": "Dropdown label for the personRef selector in RolePlayFormScreen (ADR-0047, DESIGN-009 follow-up 4)."
+  },
+  "pleaseSelectPerson": "Please select a person",
+  "@pleaseSelectPerson": {
+    "description": "Validation message shown when no person is selected for a roleplay (ADR-0047's mandatory personRef, an editor-level invariant)."
+  },
+  "rolePlayIdentityInherited": "Inherited from person",
+  "@rolePlayIdentityInherited": {
+    "description": "Small caption under an identity field (name/age/gender/signalement) whose value currently equals the selected Person's own value (ADR-0047)."
+  },
+  "rolePlayIdentityOverride": "Overridden",
+  "@rolePlayIdentityOverride": {
+    "description": "Small caption under an identity field whose value has been changed to differ from the selected Person's own value (ADR-0047)."
+  },
+  "rolePlayEffectiveIdentityPreview": "Effective identity: {summary}",
+  "@rolePlayEffectiveIdentityPreview": {
+    "description": "Small preview line summarizing the roleplay's current effective identity (name, age, gender, signalement) below the person selector.",
+    "placeholders": {
+      "summary": {
+        "type": "String",
+        "example": "Anne Glemsk, 47, woman"
+      }
+    }
+  },
   "genderWomanLabel": "Woman",
   "@genderWomanLabel": {
     "description": "GenderSegmentedControl option label for the stable code \"woman\" (DESIGN-009 follow-up 3b, ADR-0047). Shared by Person.gender and, from prompt 4, RolePlay.gender."

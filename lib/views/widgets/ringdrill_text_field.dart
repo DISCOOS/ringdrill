@@ -87,6 +87,7 @@ class RingDrillTextField extends StatefulWidget {
     this.validator,
     this.autofocus = false,
     this.hintText,
+    this.onChanged,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -95,6 +96,13 @@ class RingDrillTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final FocusNode? focusNode;
+
+  /// Notified on every keystroke. Optional — a caller only needs this when
+  /// something *outside* this field's own [controller] must react live
+  /// (e.g. a sibling effective-identity preview in `RolePlayFormScreen`);
+  /// the field's own chip rendering already reacts to the controller's own
+  /// `notifyListeners()` regardless of whether this is set.
+  final ValueChanged<String>? onChanged;
 
   /// Opts this field into chip rendering and the insertion menu, reading
   /// [PlanScope]. Only a caller that has provided a [PlanScope] ancestor
@@ -139,6 +147,7 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
       ),
       validator: widget.validator,
       autofocus: widget.autofocus,
+      onChanged: widget.onChanged,
     );
     return _wrapTokenAware(
       context: context,

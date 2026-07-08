@@ -1362,6 +1362,32 @@
   "@roleGender": {
     "description": "Etikett over GenderSegmentedControl, delt mellom PersonsSection (Person.gender) og, fra DESIGN-009 prompt 4, RolePlayFormScreens eget gender-felt (ADR-0047) -- kalt roleGender for roleName/roleAge/roleSignalement-familien den slutter seg til, selv om PersonsSection bruker den først."
   },
+  "rolePlayPersonLabel": "Person",
+  "@rolePlayPersonLabel": {
+    "description": "Nedtrekksetikett for personRef-velgeren i RolePlayFormScreen (ADR-0047, DESIGN-009 oppfølging 4)."
+  },
+  "pleaseSelectPerson": "Velg en person",
+  "@pleaseSelectPerson": {
+    "description": "Valideringsmelding vist når ingen person er valgt for en rollefigur (ADR-0047s obligatoriske personRef, et krav på redigeringsnivå)."
+  },
+  "rolePlayIdentityInherited": "Arvet fra person",
+  "@rolePlayIdentityInherited": {
+    "description": "Liten bildetekst under et identitetsfelt (navn/alder/kjønn/signalement) hvis verdi for øyeblikket er lik den valgte personens egen verdi (ADR-0047)."
+  },
+  "rolePlayIdentityOverride": "Overstyrt",
+  "@rolePlayIdentityOverride": {
+    "description": "Liten bildetekst under et identitetsfelt hvis verdi er endret til å avvike fra den valgte personens egen verdi (ADR-0047)."
+  },
+  "rolePlayEffectiveIdentityPreview": "Effektiv identitet: {summary}",
+  "@rolePlayEffectiveIdentityPreview": {
+    "description": "Liten forhåndsvisningslinje som oppsummerer rollefigurens gjeldende effektive identitet (navn, alder, kjønn, signalement) under personvelgeren.",
+    "placeholders": {
+      "summary": {
+        "type": "String",
+        "example": "Anne Glemsk, 47, kvinne"
+      }
+    }
+  },
   "genderWomanLabel": "Kvinne",
   "@genderWomanLabel": {
     "description": "GenderSegmentedControl-alternativ for den stabile koden «woman» (DESIGN-009 oppfølging 3b, ADR-0047). Delt av Person.gender og, fra prompt 4, RolePlay.gender."

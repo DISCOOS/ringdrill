@@ -3794,6 +3794,36 @@ abstract class AppLocalizations {
   /// **'Gender'**
   String get roleGender;
 
+  /// Dropdown label for the personRef selector in RolePlayFormScreen (ADR-0047, DESIGN-009 follow-up 4).
+  ///
+  /// In en, this message translates to:
+  /// **'Person'**
+  String get rolePlayPersonLabel;
+
+  /// Validation message shown when no person is selected for a roleplay (ADR-0047's mandatory personRef, an editor-level invariant).
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a person'**
+  String get pleaseSelectPerson;
+
+  /// Small caption under an identity field (name/age/gender/signalement) whose value currently equals the selected Person's own value (ADR-0047).
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited from person'**
+  String get rolePlayIdentityInherited;
+
+  /// Small caption under an identity field whose value has been changed to differ from the selected Person's own value (ADR-0047).
+  ///
+  /// In en, this message translates to:
+  /// **'Overridden'**
+  String get rolePlayIdentityOverride;
+
+  /// Small preview line summarizing the roleplay's current effective identity (name, age, gender, signalement) below the person selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective identity: {summary}'**
+  String rolePlayEffectiveIdentityPreview(String summary);
+
   /// GenderSegmentedControl option label for the stable code "woman" (DESIGN-009 follow-up 3b, ADR-0047). Shared by Person.gender and, from prompt 4, RolePlay.gender.
   ///
   /// In en, this message translates to:

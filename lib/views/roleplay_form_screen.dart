@@ -4,13 +4,18 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/slug.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
@@ -93,6 +98,30 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   // map, so we never overwrite a manual fine-tune.
   bool _positionFromStation = false;
 
+  /// New on `RolePlay` (ADR-0047, DESIGN-009 follow-up 4) — the
+  /// `roleGender`-labeled counterpart of `Person.gender`, reusing
+  /// [GenderSegmentedControl]. Not token-aware, like `signalement`.
+  String? _gender;
+
+  /// Slug of the [Person] this roleplay portrays. Required for a new or
+  /// edited roleplay (an editor-level invariant, not a wire constraint —
+  /// ADR-0047); a legacy roleplay opened with `personRef == null` gets one
+  /// auto-created from its current identity in [initState] (see
+  /// [_autoCreatePersonFromIdentity]), so mandatory `personRef` adds no
+  /// extra authoring step.
+  String? _personRef;
+
+  /// Working copies of [_parentStation]'s `locations`/`persons` — a
+  /// roleplay does not own a station's collections, so anything created
+  /// here this session (currently only [_autoCreatePersonFromIdentity]'s
+  /// bootstrap Person) is a pending write-back, not yet persisted to the
+  /// station (wired in DESIGN-009 follow-up 4 commit 4's `PlanAdditions`).
+  /// Also feeds [StationScope] so `station.loc`/`station.person` chips and
+  /// the picker see it live, the same "editor resolves against a working
+  /// copy" pattern `LocationFormScreen`/`PersonFormScreen` already use.
+  late List<Location> _workingLocations;
+  late List<Person> _workingPersons;
+
   /// The station currently selected in the dropdown, or null. Recomputed on
   /// every access (not cached) so it always follows [_stationIndex] live —
   /// a roleplay's effective scope must track the dropdown, not just the
@@ -160,6 +189,108 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       if (_rolePlay.behavior != null) _MdSection.behavior,
       if (_rolePlay.propsMd != null) _MdSection.props,
     };
+    _gender = _rolePlay.gender;
+    _personRef = _rolePlay.personRef;
+    _workingLocations = List<Location>.of(
+      _parentStation?.locations ?? const [],
+    );
+    _workingPersons = List<Person>.of(_parentStation?.persons ?? const []);
+    if (_personRef == null) {
+      _autoCreatePersonFromIdentity();
+    }
+  }
+
+  /// A new roleplay, or a legacy one opened with `personRef == null`, gets a
+  /// [Person] auto-created on its station from whatever identity fields it
+  /// currently carries (ADR-0047): "creating a roleplay auto-creates its
+  /// Person... so mandatory `personRef` adds no authoring step". A no-op
+  /// without a station selected yet — retried from the station dropdown's
+  /// `onChanged` once one is picked.
+  void _autoCreatePersonFromIdentity() {
+    if (_parentStation == null) return;
+    final existingSlugs = _workingPersons.map((p) => p.slug).toSet();
+    final name = _nameController.text.trim();
+    final ageText = _ageController.text.trim();
+    final signalement = _signalementController.text.trim();
+    final created = Person(
+      slug: generateSlug(
+        name.isEmpty ? 'person' : name,
+        existingSlugs.contains,
+      ),
+      name: name,
+      age: ageText.isEmpty ? null : int.tryParse(ageText),
+      gender: _gender,
+      signalement: signalement.isEmpty ? null : signalement,
+    );
+    _workingPersons = [..._workingPersons, created];
+    _personRef = created.slug;
+  }
+
+  Person? _personBySlug(String? slug) {
+    if (slug == null) return null;
+    for (final p in _workingPersons) {
+      if (p.slug == slug) return p;
+    }
+    return null;
+  }
+
+  /// Applies [slug] as the new [_personRef]: an identity field that was
+  /// still tracking the *previous* selection's value (inherited, ADR-0047 —
+  /// "a field tracking the Person shows its value and stays in sync")
+  /// updates to the new person's value; a field the author already
+  /// overrode (differs from the old person) is left untouched. Must be
+  /// called from inside a `setState`.
+  void _applyPersonSelection(String? slug) {
+    final oldPerson = _personBySlug(_personRef);
+    final currentAge = _ageController.text.trim().isEmpty
+        ? null
+        : int.tryParse(_ageController.text.trim());
+    final wasNameInherited =
+        oldPerson == null || _nameController.text == oldPerson.name;
+    final wasAgeInherited = oldPerson == null || currentAge == oldPerson.age;
+    final wasGenderInherited = oldPerson == null || _gender == oldPerson.gender;
+    final wasSignalementInherited =
+        oldPerson == null ||
+        _signalementController.text == (oldPerson.signalement ?? '');
+
+    _personRef = slug;
+    final person = _personBySlug(slug);
+    if (person == null) return;
+    if (wasNameInherited) _nameController.text = person.name;
+    if (wasAgeInherited) _ageController.text = person.age?.toString() ?? '';
+    if (wasGenderInherited) _gender = person.gender;
+    if (wasSignalementInherited) {
+      _signalementController.text = person.signalement ?? '';
+    }
+  }
+
+  void _onPersonChanged(String? slug) {
+    setState(() => _applyPersonSelection(slug));
+  }
+
+  /// True when [fieldValue] currently equals [personValue] — i.e. the field
+  /// is inherited from the selected Person rather than overridden
+  /// (ADR-0047). Shown as a small per-field caption; a field with no
+  /// selected person at all shows neither state.
+  bool _isInherited(String fieldValue, String? personValue) =>
+      fieldValue == (personValue ?? '');
+
+  /// [StationScope.portrayerOf]: for this roleplay's own [_personRef], the
+  /// effective identity is whatever the author is typing *right now* —
+  /// more current than the last-saved [_rolePlay] — so a `station.person`
+  /// chip elsewhere in this same editor reflects live edits. Null for any
+  /// other person slug: this editor only ever portrays the one it is
+  /// editing.
+  EffectivePersonIdentity? _portrayerOf(String personSlug) {
+    if (personSlug != _personRef) return null;
+    final ageText = _ageController.text.trim();
+    final signalement = _signalementController.text.trim();
+    return EffectivePersonIdentity(
+      name: _nameController.text.trim(),
+      age: ageText.isEmpty ? null : int.tryParse(ageText),
+      gender: _gender,
+      signalement: signalement.isEmpty ? null : signalement,
+    );
   }
 
   /// Position of the station at [index] within the current exercise, or null.
@@ -302,14 +433,18 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
     return PlanScope(
       variables: widget.variables,
-      // The linked station's own locations/persons (ADR-0047,
-      // DESIGN-009 follow-up 4) — a roleplay does not own a station's
-      // collections, so it always reads someone else's, unlike
-      // StationFormScreen's own working copy. No StationScope at all
-      // (locations/persons empty) when no station is selected yet.
+      // The linked station's own locations/persons, plus anything created
+      // inline this session (ADR-0047, DESIGN-009 follow-up 4) — a
+      // roleplay does not own a station's collections, so it always reads
+      // a working copy of someone else's, unlike StationFormScreen's own.
+      // [_portrayerOf] feeds this roleplay's own *live* (in-progress, not
+      // yet saved) identity fields for its own personRef, so a
+      // station.person chip resolving that person reflects what the
+      // author is typing right now.
       child: StationScope(
-        locations: _parentStation?.locations ?? const [],
-        persons: _parentStation?.persons ?? const [],
+        locations: _workingLocations,
+        persons: _workingPersons,
+        portrayerOf: _portrayerOf,
         child: Form(
           key: _formKey,
           child: SectionNavigatedForm(
@@ -365,6 +500,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       autofocus: true,
                       tokenAware: true,
                       overrides: _effectiveVariables,
+                      // Rebuilds this screen so the effective-identity
+                      // preview and the field's own inherited/override
+                      // caption stay live as the author types — the
+                      // controller's own notifyListeners() only repaints
+                      // the field itself (DESIGN-009 follow-up 4).
+                      onChanged: (_) => setState(() {}),
                       validator: (value) =>
                           value != null && value.trim().isNotEmpty
                           ? null
@@ -380,6 +521,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(labelText: l.roleAge),
+                      onChanged: (_) => setState(() {}),
                       validator: (value) {
                         if (value == null || value.isEmpty) return null;
                         final age = int.tryParse(value);
@@ -392,6 +534,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   ),
                 ],
               ),
+              if (_personRef != null)
+                _identityCaption(
+                  context,
+                  l,
+                  inherited: _isInherited(
+                    _nameController.text,
+                    _personBySlug(_personRef)?.name,
+                  ),
+                ),
               const SizedBox(height: 12),
               DropdownButtonFormField<int?>(
                 initialValue: _stationIndex,
@@ -424,17 +575,103 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 validator: (v) => stations.isNotEmpty && v == null
                     ? l.pleaseSelectStation
                     : null,
-                onChanged: (v) => setState(() {
-                  _stationIndex = v;
-                  final canInherit = _position == null || _positionFromStation;
-                  if (v != null && canInherit) {
-                    final stationPos = _stationPosition(v);
-                    if (stationPos != null) {
-                      _position = stationPos;
-                      _positionFromStation = true;
+                onChanged: (v) {
+                  if (v == _stationIndex) return;
+                  setState(() {
+                    _stationIndex = v;
+                    final canInherit =
+                        _position == null || _positionFromStation;
+                    if (v != null && canInherit) {
+                      final stationPos = _stationPosition(v);
+                      if (stationPos != null) {
+                        _position = stationPos;
+                        _positionFromStation = true;
+                      }
                     }
-                  }
-                }),
+                    // Persons/locations are station-owned (ADR-0047): a new
+                    // station means a new person/location list, so the
+                    // working copies and personRef follow the selection,
+                    // same as [_parentStation] does. Deliberately does NOT
+                    // re-run [_autoCreatePersonFromIdentity] — that bootstrap
+                    // is an [initState]-only nicety for a fresh/legacy
+                    // roleplay's *first* load; once the author is
+                    // interactively switching stations, the mandatory-
+                    // personRef validator should make them pick from the
+                    // new station's own list, not silently manufacture a
+                    // duplicate from whatever is currently typed.
+                    _workingLocations = List<Location>.of(
+                      _parentStation?.locations ?? const [],
+                    );
+                    _workingPersons = List<Person>.of(
+                      _parentStation?.persons ?? const [],
+                    );
+                    _personRef = null;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                key: const Key('person-field'),
+                initialValue: _personRef,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.rolePlayPersonLabel),
+                items: [
+                  for (final person in _workingPersons)
+                    DropdownMenuItem(
+                      value: person.slug,
+                      child: Text(
+                        person.name.isEmpty ? person.slug : person.name,
+                      ),
+                    ),
+                ],
+                // Mandatory personRef is scoped to "a station is selected"
+                // (ADR-0047): persons are station-owned, so there is
+                // nothing to require a selection *from* without one —
+                // mirrors the station dropdown's own
+                // `stations.isNotEmpty && v == null` conditioning above.
+                validator: (_) => _parentStation != null && _personRef == null
+                    ? l.pleaseSelectPerson
+                    : null,
+                onChanged: _onPersonChanged,
+              ),
+              if (_personRef != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  l.rolePlayEffectiveIdentityPreview(
+                    _effectiveIdentitySummary(),
+                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.roleGender,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  GenderSegmentedControl(
+                    value: _gender,
+                    onChanged: (value) => setState(() {
+                      _gender = value;
+                    }),
+                  ),
+                  if (_personRef != null)
+                    _identityCaption(
+                      context,
+                      l,
+                      inherited: _isInherited(
+                        _gender ?? '',
+                        _personBySlug(_personRef)?.gender,
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 16),
               PositionFormField(
@@ -451,6 +688,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _signalementController,
+                onChanged: (_) => setState(() {}),
                 keyboardType: TextInputType.multiline,
                 minLines: 1,
                 maxLines: 6,
@@ -459,11 +697,58 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   alignLabelWithHint: true,
                 ),
               ),
+              if (_personRef != null)
+                _identityCaption(
+                  context,
+                  l,
+                  inherited: _isInherited(
+                    _signalementController.text,
+                    _personBySlug(_personRef)?.signalement,
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Small "Arvet fra person"/"Overstyrt" tag under an identity field
+  /// (ADR-0047) — see [_isInherited].
+  Widget _identityCaption(
+    BuildContext context,
+    AppLocalizations l, {
+    required bool inherited,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: 4),
+      child: Text(
+        inherited ? l.rolePlayIdentityInherited : l.rolePlayIdentityOverride,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
+
+  /// "Anne Glemsk, 47, kvinne, ..." — the current effective identity, for
+  /// the small preview line under the person selector (ADR-0047). Always
+  /// reflects the fields as they stand right now, the same effective
+  /// values [_save] persists.
+  String _effectiveIdentitySummary() {
+    final l = AppLocalizations.of(context)!;
+    final ageText = _ageController.text.trim();
+    final genderLabel = genderLabelFor(_gender, l);
+    final signalement = _signalementController.text.trim();
+    final parts = [
+      _nameController.text.trim(),
+      if (ageText.isNotEmpty) ageText,
+      ?genderLabel,
+      if (signalement.isNotEmpty) signalement,
+    ];
+    return parts.where((p) => p.isNotEmpty).join(', ');
   }
 
   void _save() {
@@ -497,6 +782,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final updated = _rolePlay.copyWith(
       name: _nameController.text.trim(),
       age: ageText.isEmpty ? null : int.parse(ageText),
+      gender: _gender,
       signalement: signalement,
       background: backgroundActive && backgroundText.isNotEmpty
           ? backgroundText
@@ -504,6 +790,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       behavior: behaviorActive && behaviorText.isNotEmpty ? behaviorText : null,
       propsMd: propsActive && propsText.isNotEmpty ? propsText : null,
       stationIndex: _stationIndex,
+      // On disk each identity field holds the *effective* value, not a
+      // separate override flag (ADR-0047) — `updated` above already is
+      // that effective value, computed live by the inherit/override sync
+      // in `_applyPersonSelection`/the fields' own `onChanged`.
+      personRef: _personRef,
     );
 
     Navigator.of(context).pop(updated);

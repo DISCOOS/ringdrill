@@ -2220,6 +2220,23 @@ class AppLocalizationsNb extends AppLocalizations {
   String get roleGender => 'Kjønn';
 
   @override
+  String get rolePlayPersonLabel => 'Person';
+
+  @override
+  String get pleaseSelectPerson => 'Velg en person';
+
+  @override
+  String get rolePlayIdentityInherited => 'Arvet fra person';
+
+  @override
+  String get rolePlayIdentityOverride => 'Overstyrt';
+
+  @override
+  String rolePlayEffectiveIdentityPreview(String summary) {
+    return 'Effektiv identitet: $summary';
+  }
+
+  @override
   String get genderWomanLabel => 'Kvinne';
 
   @override

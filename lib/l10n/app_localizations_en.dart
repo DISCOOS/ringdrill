@@ -2224,6 +2224,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleGender => 'Gender';
 
   @override
+  String get rolePlayPersonLabel => 'Person';
+
+  @override
+  String get pleaseSelectPerson => 'Please select a person';
+
+  @override
+  String get rolePlayIdentityInherited => 'Inherited from person';
+
+  @override
+  String get rolePlayIdentityOverride => 'Overridden';
+
+  @override
+  String rolePlayEffectiveIdentityPreview(String summary) {
+    return 'Effective identity: $summary';
+  }
+
+  @override
   String get genderWomanLabel => 'Woman';
 
   @override
