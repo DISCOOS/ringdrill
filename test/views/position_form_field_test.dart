@@ -8,9 +8,11 @@ import 'package:ringdrill/views/position_form_field.dart';
 
 /// Finds the picker's own [FlutterMap] — the field's thumbnail renders one
 /// too, so a bare `find.byType(FlutterMap)` matches both once the picker
-/// is open.
+/// is open. `byWidgetPredicate` (not `find.byType`) because
+/// `MapPickerScreen<K>`'s `runtimeType` is never `==` to the bare
+/// `MapPickerScreen` type token for a non-dynamic `K`.
 Finder _pickerMap() => find.descendant(
-  of: find.byType(MapPickerScreen),
+  of: find.byWidgetPredicate((widget) => widget is MapPickerScreen),
   matching: find.byType(FlutterMap),
 );
 

@@ -4,12 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
+import 'package:ringdrill/views/map_picker_screen.dart';
 
 /// DESIGN-009 follow-up 3b — `LocationFormScreen` in isolation: the inline
 /// map-pick affordance, the category grid, and its show-more/less toggle.
 /// Hosted directly (no `StationFormScreen`/`LocationsSection` around it),
 /// mirroring `position_form_field_test.dart`'s own "this is about the
 /// widget's own wiring, not layout" rationale.
+
+/// Finds the picker's own [FlutterMap] — the position card's own thumbnail
+/// renders one too once a position is set, so a bare
+/// `find.byType(FlutterMap)` could match both once the picker is open.
+/// `byWidgetPredicate` (not `find.byType`) because `MapPickerScreen<int>`'s
+/// `runtimeType` is never `==` to the bare `MapPickerScreen` type token.
+Finder _pickerMap() => find.descendant(
+  of: find.byWidgetPredicate((widget) => widget is MapPickerScreen),
+  matching: find.byType(FlutterMap),
+);
 
 class _Captured {
   Location? value;
@@ -67,16 +78,17 @@ void main() {
       );
 
       // Open the real map picker (real FlutterMap, real pan gesture, real
-      // "confirm" tap) -- same drive as position_form_field_test.dart.
-      // Scroll the icon into view first: unlike that test's minimal host,
-      // this form has fields above the position section that push it
-      // below the fold on the default test surface.
-      await tester.ensureVisible(find.byIcon(Icons.map));
-      await tester.tap(find.byIcon(Icons.map));
+      // "confirm" tap) -- same drive as position_form_field_test.dart. Tap
+      // the position card's chevron (there is no separate map icon button);
+      // scroll it into view first since this form has fields above the
+      // position section that push it below the fold on the default test
+      // surface.
+      await tester.ensureVisible(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
-      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(_pickerMap(), findsOneWidget);
 
-      await tester.drag(find.byType(FlutterMap), const Offset(-200, -150));
+      await tester.drag(_pickerMap(), const Offset(-200, -150));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byIcon(Icons.check));
       await tester.pumpAndSettle();

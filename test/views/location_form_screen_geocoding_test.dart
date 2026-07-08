@@ -6,6 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
+import 'package:ringdrill/views/map_picker_screen.dart';
 import 'package:ringdrill/views/map_view.dart';
 
 /// DESIGN-009 follow-up 3c — geocoding in `LocationFormScreen`: forward
@@ -17,6 +18,16 @@ import 'package:ringdrill/views/map_view.dart';
 /// `GeocodingService`.
 ///
 /// No test touches the network: every case injects a [_FakeGeocodingService].
+
+/// Finds the picker's own [FlutterMap] — the position card's own thumbnail
+/// renders one too once a position is set, so a bare
+/// `find.byType(FlutterMap)` could match both once the picker is open.
+/// `byWidgetPredicate` (not `find.byType`) because `MapPickerScreen<int>`'s
+/// `runtimeType` is never `==` to the bare `MapPickerScreen` type token.
+Finder _pickerMap() => find.descendant(
+  of: find.byWidgetPredicate((widget) => widget is MapPickerScreen),
+  matching: find.byType(FlutterMap),
+);
 
 // ---------------------------------------------------------------------------
 // Fake geocoder
@@ -188,12 +199,12 @@ void main() {
       );
 
       // Open the map picker, drag, confirm — same pattern as the existing test.
-      await tester.ensureVisible(find.byIcon(Icons.map));
-      await tester.tap(find.byIcon(Icons.map));
+      await tester.ensureVisible(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
-      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(_pickerMap(), findsOneWidget);
 
-      await tester.drag(find.byType(FlutterMap), const Offset(-200, -150));
+      await tester.drag(_pickerMap(), const Offset(-200, -150));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byIcon(Icons.check));
 
@@ -250,10 +261,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set a position via the map picker.
-      await tester.ensureVisible(find.byIcon(Icons.map));
-      await tester.tap(find.byIcon(Icons.map));
+      await tester.ensureVisible(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
-      await tester.drag(find.byType(FlutterMap), const Offset(100, 50));
+      await tester.drag(_pickerMap(), const Offset(100, 50));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byIcon(Icons.check));
       await tester.pumpAndSettle();
@@ -266,8 +277,9 @@ void main() {
         'My typed place',
       );
 
-      // The explicit "Update from map" button should be visible.
-      final updateBtn = find.text(l.locationsSectionUpdatePlaceFromMapAction);
+      // The explicit "Update from map" action (a refresh icon over the
+      // position card's thumbnail) should be visible.
+      final updateBtn = find.byTooltip(l.locationsSectionUpdatePlaceFromMapAction);
       await tester.ensureVisible(updateBtn);
       expect(updateBtn, findsOneWidget);
 
@@ -315,10 +327,10 @@ void main() {
       expect(find.byType(LocationFormScreen), findsOneWidget);
 
       // Set a position — the reverse geocode will throw but must not crash.
-      await tester.ensureVisible(find.byIcon(Icons.map));
-      await tester.tap(find.byIcon(Icons.map));
+      await tester.ensureVisible(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
-      await tester.drag(find.byType(FlutterMap), const Offset(50, 50));
+      await tester.drag(_pickerMap(), const Offset(50, 50));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byIcon(Icons.check));
       await tester.pumpAndSettle();

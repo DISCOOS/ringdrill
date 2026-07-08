@@ -6,7 +6,6 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/utils/slug.dart';
-import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/location_kind_labels.dart';
@@ -32,8 +31,8 @@ const _placeSearchDebounce = Duration(milliseconds: 350);
 /// position with an empty `place` reverse-geocodes to fill it. Both
 /// directions are best-effort — offline, an error or no result is a silent
 /// no-op and never blocks save — and neither ever overwrites text the
-/// author already typed; an explicit "Oppdater fra kart" action offers a
-/// reverse-geocode refresh instead.
+/// author already typed; an explicit reverse-geocode refresh action (a
+/// refresh icon over the position card's thumbnail) offers that instead.
 class LocationFormScreen extends StatefulWidget {
   const LocationFormScreen({
     super.key,
@@ -287,20 +286,22 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
                         ),
                       ),
                     ),
-                  if (canUpdateFromMap)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton(
-                        onPressed: _updatePlaceFromMap,
-                        child: Text(l10n.locationsSectionUpdatePlaceFromMapAction),
-                      ),
-                    ),
                   const SizedBox(height: 16),
-                  _LocationPositionField(
+                  PositionFormField<int>(
                     key: ValueKey(_position),
-                    value: _position,
+                    variant: PositionFieldVariant.card,
+                    showThumbnail: true,
+                    initialValue: _position,
                     onSaved: (value) => _position = value,
                     onChanged: _onPositionChanged,
+                    overlayActions: [
+                      if (canUpdateFromMap)
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          tooltip: l10n.locationsSectionUpdatePlaceFromMapAction,
+                          onPressed: _updatePlaceFromMap,
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -481,78 +482,3 @@ class _KindCard extends StatelessWidget {
   }
 }
 
-/// Position field with a live mini-preview above the existing
-/// [PositionFormField] pick affordance (map icon button + UTM readout) —
-/// the only new piece here is the preview; the pick/readout themselves are
-/// the same widget every other position field in the app uses.
-///
-/// Fully controlled by [value] rather than owning its own state: the parent
-/// (`LocationFormScreen`) keys this widget on the position itself, so a
-/// forward-geocode pick (which sets the position without going through
-/// [PositionFormField]'s own map picker) remounts it with a fresh
-/// `initialValue` instead of needing a separate imperative update path into
-/// [PositionFormField]'s internal `FormFieldState`.
-class _LocationPositionField extends StatelessWidget {
-  const _LocationPositionField({
-    super.key,
-    required this.value,
-    required this.onSaved,
-    required this.onChanged,
-  });
-
-  final LatLng? value;
-  final FormFieldSetter<LatLng> onSaved;
-  final ValueChanged<LatLng> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            height: 92,
-            width: double.infinity,
-            color: theme.colorScheme.surfaceContainerHighest,
-            child: value == null
-                ? Center(
-                    child: Icon(
-                      Icons.place_outlined,
-                      size: 28,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                : IgnorePointer(
-                    child: MapView(
-                      layers: MapConfig.layers,
-                      withToggle: false,
-                      withClustering: false,
-                      initialZoom: 15,
-                      initialCenter: value!,
-                      markers: [
-                        MapMarkerSpec(
-                          id: 0,
-                          label: '',
-                          point: value!,
-                          child: const Icon(
-                            Icons.place,
-                            color: Colors.green,
-                            size: 28,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ),
-        PositionFormField<int>(
-          initialValue: value,
-          onSaved: onSaved,
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-}
