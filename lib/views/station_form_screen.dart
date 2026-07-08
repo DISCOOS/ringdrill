@@ -341,6 +341,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
     final planFields = [
       ...PlanFieldTokens.program(l),
       ...PlanFieldTokens.exercise(l),
+      ...PlanFieldTokens.station(l),
     ];
 
     final activeMdSections = [
@@ -496,6 +497,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
     final planFields = [
       ...PlanFieldTokens.program(l),
       ...PlanFieldTokens.exercise(l),
+      ...PlanFieldTokens.station(l),
     ];
     final markers = _position == null
         ? widget.markers

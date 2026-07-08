@@ -477,10 +477,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         : widget.rolePlay.name;
     // Additive to the station.loc/person entries StationScope already
     // supplies below (DESIGN-009 follow-up 4) — those come through
-    // StationScope, not planFields, so both coexist (follow-up 4b).
+    // StationScope, not planFields, so both coexist (follow-up 4b). The full
+    // set including roleplay.name: these fields (behavior/background/props)
+    // are not the roleplay's own name field, so no self-reference concern
+    // (DESIGN-009 follow-up 4c) — see the name field's own planFields below.
     final planFields = [
       ...PlanFieldTokens.program(l),
       ...PlanFieldTokens.exercise(l),
+      ...PlanFieldTokens.station(l),
+      ...PlanFieldTokens.roleplay(l),
     ];
 
     final activeMdSections = [
@@ -581,9 +586,16 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// fields that never become their own section (name, age, signalement,
   /// station, position).
   Widget _buildRoleplaySectionBody(BuildContext context, AppLocalizations l) {
+    // Excludes roleplay.name (DESIGN-009 follow-up 4c): this is the
+    // roleplay's own name field, and the renderer only substitutes
+    // {{var.*}} there, never the cross-reference pass — so {{roleplay.name}}
+    // would never resolve in this one field, unlike in behavior/background/
+    // propsMd (see the full list in _buildSectionNavigated above).
     final planFields = [
       ...PlanFieldTokens.program(l),
       ...PlanFieldTokens.exercise(l),
+      ...PlanFieldTokens.station(l),
+      ...PlanFieldTokens.roleplay(l).where((t) => t.name != 'roleplay.name'),
     ];
     final stations = widget.exercise?.stations ?? [];
     final exercises = _programService.loadExercises();
