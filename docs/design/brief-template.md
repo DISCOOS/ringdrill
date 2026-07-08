@@ -140,6 +140,7 @@ Columns in the tables below:
 | Booklet field                            | Source                                                       | Status   |
 |------------------------------------------|--------------------------------------------------------------|----------|
 | Title                                    | derived (parent name + index + `station.variantSuffix` (new))| mixed    |
+| Lead paragraph (no heading)              | `station.description` (existing, reused — DESIGN-009)        | existing |
 | Post placement (UTM)                     | `station.position`                                           | existing |
 | Tid (duration)                           | derived                                                      | derived  |
 | Utstyrsbehov (equipment)                 | `station.equipmentMd` (new)                                  | **new**  |

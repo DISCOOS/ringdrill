@@ -367,6 +367,7 @@ class BriefRenderer {
       'position': {'utm': utmStr},
       'positionValue': positionValue,
       'stationDurationLabel': _stationDurationLabel(exercise),
+      'descriptionMd': resolveField(station.description),
       'equipmentMd': resolveField(station.equipmentMd),
       'situationMd': resolveField(station.situationMd),
       'missionMd': resolveField(station.missionMd),
