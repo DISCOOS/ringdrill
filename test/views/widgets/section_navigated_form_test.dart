@@ -22,6 +22,7 @@ Future<AppLocalizations> _pump(
   required List<FormSection> sections,
   List<FormSection> addable = const [],
   String? initialSectionId,
+  String? entityName,
   Size size = const Size(400, 800),
 }) async {
   tester.view.physicalSize = size;
@@ -35,6 +36,7 @@ Future<AppLocalizations> _pump(
       supportedLocales: AppLocalizations.supportedLocales,
       home: SectionNavigatedForm(
         title: 'Test',
+        entityName: entityName,
         sections: sections,
         addable: addable,
         initialSectionId: initialSectionId,
@@ -330,6 +332,62 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Body A'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'entityName: default section shows title; '
+    'non-default sections show entityName in the AppBar',
+    (tester) async {
+      await _pump(
+        tester,
+        sections: _sections(),
+        entityName: 'My Entity',
+      );
+
+      // Default (first) section: the static title is in the AppBar.
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('My Entity'),
+        ),
+        findsNothing,
+      );
+
+      // Navigate to the second section.
+      final l = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.tap(find.byTooltip(l.formSectionNext));
+      await tester.pumpAndSettle();
+
+      // Non-default section: entityName replaces the static title.
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('My Entity'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'entityName: omitting entityName shows title on all sections (no change)',
+    (tester) async {
+      await _pump(tester, sections: _sections(), initialSectionId: 'b');
+
+      // Without entityName every section shows the static title.
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Test')),
+        findsOneWidget,
+      );
     },
   );
 }

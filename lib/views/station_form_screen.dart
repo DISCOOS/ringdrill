@@ -306,6 +306,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
         key: _formKey,
         child: SectionNavigatedForm(
           title: l.editStation,
+          entityName: _nameController.text.trim().isNotEmpty
+              ? _nameController.text.trim()
+              : null,
           initialSectionId: 'station',
           sections: [
             FormSection(

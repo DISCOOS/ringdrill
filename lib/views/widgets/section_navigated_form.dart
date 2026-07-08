@@ -49,11 +49,17 @@ class SectionNavigatedForm extends StatefulWidget {
     required this.onSave,
     required this.onClose,
     this.initialSectionId,
+    this.entityName,
   });
 
-  /// Static title shown in the wide AppBar. On compact the AppBar title
-  /// slot is replaced by the section switcher instead.
+  /// Static title shown in the AppBar on the default (first) section.
   final String title;
+
+  /// When non-null, shown in the AppBar instead of [title] on every section
+  /// except the default (first) one — so secondary sections like Locations,
+  /// Persons, and Variables show the entity being edited rather than a
+  /// generic label. Callers that don't pass this see no behaviour change.
+  final String? entityName;
 
   /// Ordered, active sections only.
   final List<FormSection> sections;
@@ -156,7 +162,16 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
         // the section name truncated. The whole navigation cluster now
         // lives in the bottom bar below; the top bar is just the entity
         // title and Save on every window size.
-        title: Text(widget.title),
+        //
+        // When [entityName] is provided, non-default sections show it so
+        // the author always sees which entity they are editing — the base
+        // section keeps [title] since that is where the name is edited.
+        title: Text(
+          widget.entityName != null &&
+                  current.id != widget.sections.first.id
+              ? widget.entityName!
+              : widget.title,
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 16),
