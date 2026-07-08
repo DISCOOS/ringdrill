@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/position_widget.dart';
+import 'package:ringdrill/views/widgets/position_card.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart';
 
-/// Reusable position panel for a single role's detail surface.
+/// Reusable position panel for a single role's detail surface
+/// (docs/prompts/position-panel-read-alignment.md). Mirrors
+/// [StationPositionPanel] but accepts a [LatLng] directly rather than a
+/// Station/Exercise pair, keeping it domain-agnostic.
 ///
-/// Mirrors [StationPositionPanel] but accepts a [LatLng] directly rather
-/// than a Station/Exercise pair, keeping it domain-agnostic.
-///
-/// Renders:
-/// 1. A label row: "Position" on the left, pin icon + UTM coordinates on the
-///    right (matching the station panel's layout).
-/// 2. A [RoleMiniMap] preview below. Tapping opens the interactive bottom
-///    sheet.
+/// Renders [PositionCardShell]: the static [RoleMiniMap] preview on top,
+/// a coordinate bar below (label, UTM coordinate, trailing chevron). Tap
+/// (thumbnail or bar) opens the same interactive bottom sheet as
+/// [RoleMiniMap] on its own — read-only, never the [PositionCard] picker.
 class RolePositionPanel extends StatelessWidget {
   const RolePositionPanel({
     super.key,
@@ -34,43 +34,29 @@ class RolePositionPanel extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              localizations.position,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.place,
-              color: theme.colorScheme.primary,
-              size: 20,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: PositionWidget(
-                wrapped: false,
-                format: PositionFormat.utm,
-                position: position,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-          ],
+    return PositionCardShell(
+      onTap: () => openRoleMapSheet(context, position, label),
+      thumbnail: RoleMiniMap(
+        position: position,
+        label: label,
+        height: mapHeight,
+      ),
+      thumbnailHeight: mapHeight,
+      barLabel: Text(
+        localizations.position,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(height: 12),
-        RoleMiniMap(
+      ),
+      barChild: Align(
+        alignment: Alignment.centerRight,
+        child: PositionWidget(
+          wrapped: false,
+          format: PositionFormat.utm,
           position: position,
-          label: label,
-          height: mapHeight,
+          style: theme.textTheme.bodyMedium,
         ),
-      ],
+      ),
     );
   }
 }

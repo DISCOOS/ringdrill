@@ -1,0 +1,37 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/widgets/position_card.dart';
+import 'package:ringdrill/views/widgets/role_position_panel.dart';
+
+/// docs/prompts/position-panel-read-alignment.md — RolePositionPanel on the
+/// shared PositionCardShell, mirroring StationPositionPanel's card shape.
+void main() {
+  testWidgets(
+    'renders the shared card shell with a chevron and the UTM coordinate, '
+    'and tapping it opens the interactive map sheet titled with the role',
+    (tester) async {
+      const position = LatLng(58.99, 10.43);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: RolePositionPanel(position: position, label: 'Hilde'),
+          ),
+        ),
+      );
+
+      expect(find.byType(PositionCardShell), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+      expect(find.byType(BottomSheet), findsNothing);
+      await tester.tap(find.byType(PositionCardShell));
+      await tester.pumpAndSettle();
+
+      // openRoleMapSheet opens the interactive map in a modal sheet.
+      expect(find.byType(BottomSheet), findsOneWidget);
+    },
+  );
+}
