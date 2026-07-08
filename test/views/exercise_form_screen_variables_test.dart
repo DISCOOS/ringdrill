@@ -38,7 +38,7 @@ Exercise _exercise({
 );
 
 class _Captured {
-  Exercise? value;
+  ExerciseFormResult? value;
 }
 
 Future<void> _openForm(
@@ -59,11 +59,13 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Exercise>(
+            captured.value = await Navigator.push<ExerciseFormResult>(
               ctx,
               MaterialPageRoute(
-                builder: (_) =>
-                    ExerciseFormScreen(exercise: exercise, variables: variables),
+                builder: (_) => ExerciseFormScreen(
+                  exercise: exercise,
+                  variables: variables,
+                ),
               ),
             );
           },
@@ -142,7 +144,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured.value, isNotNull);
-    expect(captured.value!.variableOverrides, {'frekvens': 'Kanal 9'});
+    expect(captured.value!.exercise.variableOverrides, {'frekvens': 'Kanal 9'});
   });
 
   testWidgets('clearing a local override value reverts to inherit on save', (
@@ -172,7 +174,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured.value, isNotNull);
-    expect(captured.value!.variableOverrides, <String, String>{});
+    expect(captured.value!.exercise.variableOverrides, <String, String>{});
   });
 
   testWidgets(
@@ -209,6 +211,48 @@ void main() {
   );
 
   testWidgets(
+    'creating a variable inline from a markdown field declares it, and save '
+    'returns it in additions.variables (ADR-0047, DESIGN-009 follow-up 4)',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _exercise(methodMd: 'x'),
+        const [],
+        captured,
+      );
+
+      await _openSwitcherFrom(tester, l.exercise(1));
+      await tester.tap(find.text(l.briefSectionExerciseMethod));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'x /frekvens');
+      await tester.pump();
+      await tester.pump();
+
+      final createLabel = l.tokenMenuCreateVariable('frekvens');
+      expect(find.text(createLabel), findsOneWidget);
+      await tester.tap(find.text(createLabel));
+      await tester.pump();
+
+      // The freshly declared (empty) variable chips amber, not red.
+      expect(find.textContaining('{{var.frekvens}}'), findsOneWidget);
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      expect(
+        captured.value!.additions.variables.map((v) => v.name),
+        ['frekvens'],
+      );
+      expect(captured.value!.additions.stationLocations, isEmpty);
+      expect(captured.value!.additions.stationPersons, isEmpty);
+    },
+  );
+
+  testWidgets(
     'save is blocked on an undeclared token; removing it unblocks save',
     (tester) async {
       final captured = _Captured();
@@ -240,7 +284,7 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
       expect(captured.value, isNotNull);
-      expect(captured.value!.methodMd, 'Bruk radio');
+      expect(captured.value!.exercise.methodMd, 'Bruk radio');
     },
   );
 
@@ -259,7 +303,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.methodMd, 'Bruk {{var.mangler}}');
+      expect(captured.value!.exercise.methodMd, 'Bruk {{var.mangler}}');
     },
   );
 
@@ -301,7 +345,7 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
 
-      final saved = captured.value;
+      final saved = captured.value?.exercise;
       expect(saved, isNotNull);
       expect(saved!.name, 'Renamed');
       expect(saved.variableOverrides, {'frekvens': 'Kanal 9'});

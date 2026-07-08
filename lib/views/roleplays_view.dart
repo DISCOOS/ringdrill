@@ -12,6 +12,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
@@ -481,7 +482,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       }
       return;
     }
-    final updated = await openFormSurface<RolePlay>(
+    final result = await openFormSurface<RolePlayFormResult>(
       context,
       builder: (_) => RolePlayFormScreen(
         rolePlay: rolePlay,
@@ -489,8 +490,14 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         variables: _service.activeProgram?.variables ?? const [],
       ),
     );
-    if (updated == null || !mounted) return;
-    await _service.saveRolePlay(localizations, updated);
+    if (result == null || !mounted) return;
+    await applyRolePlayAdditions(
+      _service,
+      localizations,
+      result.rolePlay,
+      result.additions,
+    );
+    await _service.saveRolePlay(localizations, result.rolePlay);
     if (mounted) setState(() {});
   }
 
@@ -752,7 +759,7 @@ class RolePlaysController extends ScreenController {
       name: '',
     );
 
-    final saved = await openFormSurface<RolePlay>(
+    final result = await openFormSurface<RolePlayFormResult>(
       context,
       builder: (_) => RolePlayFormScreen(
         rolePlay: draft,
@@ -760,8 +767,14 @@ class RolePlaysController extends ScreenController {
         variables: service.activeProgram?.variables ?? const [],
       ),
     );
-    if (saved == null || !context.mounted) return;
-    await service.saveRolePlay(localizations, saved);
+    if (result == null || !context.mounted) return;
+    await applyRolePlayAdditions(
+      service,
+      localizations,
+      result.rolePlay,
+      result.additions,
+    );
+    await service.saveRolePlay(localizations, result.rolePlay);
   }
 
   Widget _buildExercisePickerSheet(

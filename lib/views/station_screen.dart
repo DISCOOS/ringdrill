@@ -14,6 +14,7 @@ import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -54,7 +55,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
     final program = _programService.activeProgram;
     if (program == null) return const {};
-    return effectivePlanVariables(program, exercise: exercise, station: station);
+    return effectivePlanVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    );
   }
 
   @override
@@ -431,10 +436,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                     );
                   },
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -446,9 +448,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: isCurrent
-                          ? Colors.blueAccent
-                          : Colors.transparent,
+                      color: isCurrent ? Colors.blueAccent : Colors.transparent,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -485,8 +485,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     required AppLocalizations localizations,
   }) {
     final phases = _exercise.schedule[roundIndex];
-    final isCurrentRound =
-        event.isRunning && roundIndex == event.currentRound;
+    final isCurrentRound = event.isRunning && roundIndex == event.currentRound;
     return List<Widget>.generate(phases.length, (phaseIndex) {
       final isCurrentPhase =
           isCurrentRound && phaseIndex == event.phase.index - 1;
@@ -505,10 +504,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
         child: Row(
           children: [
-            SizedBox(
-              width: 64,
-              child: Text(label.toUpperCase(), style: style),
-            ),
+            SizedBox(width: 64, child: Text(label.toUpperCase(), style: style)),
             Text(time, style: style),
           ],
         ),
@@ -606,7 +602,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       ),
       confirmDismiss: (_) async {
         final localizations = AppLocalizations.of(context)!;
-        final updated = await openFormSurface<RolePlay>(
+        final result = await openFormSurface<RolePlayFormResult>(
           context,
           builder: (_) => RolePlayFormScreen(
             rolePlay: r,
@@ -614,8 +610,14 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
             variables: _programService.activeProgram?.variables ?? const [],
           ),
         );
-        if (updated != null) {
-          await _programService.saveRolePlay(localizations, updated);
+        if (result != null) {
+          await applyRolePlayAdditions(
+            _programService,
+            localizations,
+            result.rolePlay,
+            result.additions,
+          );
+          await _programService.saveRolePlay(localizations, result.rolePlay);
           if (mounted) setState(() {});
         }
         return false;
@@ -686,7 +688,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       stationIndex: station.index,
       name: '',
     );
-    final saved = await openFormSurface<RolePlay>(
+    final result = await openFormSurface<RolePlayFormResult>(
       context,
       builder: (_) => RolePlayFormScreen(
         rolePlay: draft,
@@ -694,8 +696,14 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         variables: _programService.activeProgram?.variables ?? const [],
       ),
     );
-    if (saved != null) {
-      await _programService.saveRolePlay(localizations, saved);
+    if (result != null) {
+      await applyRolePlayAdditions(
+        _programService,
+        localizations,
+        result.rolePlay,
+        result.additions,
+      );
+      await _programService.saveRolePlay(localizations, result.rolePlay);
       if (mounted) setState(() {});
     }
   }
@@ -729,7 +737,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final stations = _exercise.stations.toList();
 
     // Navigate to the edit exercise screen
-    final newStation = await openFormSurface<Station>(
+    final result = await openFormSurface<StationFormResult>(
       context,
       builder: (context) => StationFormScreen(
         station: stations[widget.stationIndex],
@@ -740,10 +748,14 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     );
     // The previous guard was `newStation != _exercise`, but those are
     // two unrelated types (Station vs Exercise) so the comparison was
-    // always true. Backing out of the form (newStation == null) then
+    // always true. Backing out of the form (result == null) then
     // ran `stations[i] = null` on a non-nullable list and crashed.
-    if (newStation == null) return;
-    stations[widget.stationIndex] = newStation;
+    if (result == null) return;
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
+    stations[widget.stationIndex] = result.station;
     final newExercise = _exercise.copyWith(stations: stations);
     await _programService.saveExercise(localizations, newExercise);
     if (!mounted) return;

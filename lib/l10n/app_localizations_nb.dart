@@ -1953,6 +1953,16 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String tokenMenuCreateLocation(String label) {
+    return 'Opprett lokasjon «$label»';
+  }
+
+  @override
+  String tokenMenuCreatePerson(String label) {
+    return 'Opprett person «$label»';
+  }
+
+  @override
   String get variablesSectionTitle => 'Variabler';
 
   @override

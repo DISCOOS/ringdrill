@@ -39,6 +39,21 @@ class CreateVariableMenuEntry extends TokenMenuEntry {
   final String name;
 }
 
+/// "Create location «x»" (ADR-0047, DESIGN-009 follow-up 4) — offered only
+/// when [TokenInsertionMenu.onCreateLocation] is supplied, i.e. only in a
+/// field with a `StationScope` (a station needs to own the new [Location]).
+class CreateLocationMenuEntry extends TokenMenuEntry {
+  const CreateLocationMenuEntry(this.label);
+  final String label;
+}
+
+/// "Create person «x»", the [StationPersonToken] counterpart of
+/// [CreateLocationMenuEntry].
+class CreatePersonMenuEntry extends TokenMenuEntry {
+  const CreatePersonMenuEntry(this.label);
+  final String label;
+}
+
 class _Trigger {
   const _Trigger({required this.start, required this.filter});
 
@@ -119,6 +134,8 @@ class TokenInsertionMenu extends StatefulWidget {
     this.stationLocations = const [],
     this.stationPersons = const [],
     this.onCreateVariable,
+    this.onCreateLocation,
+    this.onCreatePerson,
   });
 
   final TextEditingController controller;
@@ -137,6 +154,17 @@ class TokenInsertionMenu extends StatefulWidget {
   /// Wired by the caller once a scope owns a variable registry to mutate
   /// (DESIGN-008 Stage 5). Null keeps the "Opprett variabel" entry hidden.
   final ValueChanged<String>? onCreateVariable;
+
+  /// Wired by the caller once a `StationScope` owns a station to create a
+  /// new [Location]/[Person] on, from the typed label — synchronous, like
+  /// [onCreateVariable]: the callback creates the entity in its own working
+  /// list right away and returns its generated slug, which is what gets
+  /// embedded in the inserted `{{station.loc/person.<slug>}}` token (ADR-0047
+  /// DESIGN-009 follow-up 4). Null keeps the "Create location/person «x»"
+  /// entry hidden — a field with no `StationScope` has no station to own
+  /// the new entity.
+  final String Function(String label)? onCreateLocation;
+  final String Function(String label)? onCreatePerson;
 
   @override
   State<TokenInsertionMenu> createState() => TokenInsertionMenuState();
@@ -294,10 +322,28 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
               p.label.toLowerCase().contains(lower))
             StationPersonMenuEntry(p),
     ];
-    if (widget.onCreateVariable != null &&
-        filter.trim().isNotEmpty &&
-        entries.isEmpty) {
-      entries.add(CreateVariableMenuEntry(filter.trim()));
+    // Inline creation (ADR-0047, DESIGN-009 follow-up 4): when the filter
+    // matches nothing, offer a "Create …" entry per namespace that both (a)
+    // has a callback wired (only a field with the right scope offers it at
+    // all) and (b) is in scope for the current prefix — an explicit
+    // "var."/"station.loc."/"station.person." prefix narrows to just that
+    // one kind, matching how it already narrows the real entries above; a
+    // bare filter (no prefix) offers every kind that is available here, all
+    // at once, since the author has not said which they mean yet.
+    final trimmed = filter.trim();
+    if (trimmed.isNotEmpty && entries.isEmpty) {
+      if ((namespaced == null || varMatch != null) &&
+          widget.onCreateVariable != null) {
+        entries.add(CreateVariableMenuEntry(trimmed));
+      }
+      if ((namespaced == null || locMatch != null) &&
+          widget.onCreateLocation != null) {
+        entries.add(CreateLocationMenuEntry(trimmed));
+      }
+      if ((namespaced == null || personMatch != null) &&
+          widget.onCreatePerson != null) {
+        entries.add(CreatePersonMenuEntry(trimmed));
+      }
     }
     return entries;
   }
@@ -313,6 +359,13 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       StationLocationMenuEntry(token: final l) => '{{station.loc.${l.slug}}}',
       StationPersonMenuEntry(token: final p) => '{{station.person.${p.slug}}}',
       CreateVariableMenuEntry(name: final name) => '{{var.$name}}',
+      // The slug is only known once the callback creates the entity (it
+      // generates it, ADR-0047), unlike CreateVariableMenuEntry where the
+      // typed name already *is* the var.* key.
+      CreateLocationMenuEntry(label: final label) =>
+        '{{station.loc.${widget.onCreateLocation!(label)}}}',
+      CreatePersonMenuEntry(label: final label) =>
+        '{{station.person.${widget.onCreatePerson!(label)}}}',
     };
     final newText = text.replaceRange(trigger.start, caret, token);
     widget.controller.value = TextEditingValue(
@@ -468,6 +521,18 @@ class _TokenMenuCard extends StatelessWidget {
         dense: true,
         leading: const Icon(Icons.add, size: 18),
         title: Text(l10n.tokenMenuCreateVariable(name)),
+        onTap: () => onSelect(entry),
+      ),
+      CreateLocationMenuEntry(label: final label) => ListTile(
+        dense: true,
+        leading: const Icon(Icons.add, size: 18),
+        title: Text(l10n.tokenMenuCreateLocation(label)),
+        onTap: () => onSelect(entry),
+      ),
+      CreatePersonMenuEntry(label: final label) => ListTile(
+        dense: true,
+        leading: const Icon(Icons.add, size: 18),
+        title: Text(l10n.tokenMenuCreatePerson(label)),
         onTap: () => onSelect(entry),
       ),
     };

@@ -1970,6 +1970,20 @@
       "name": { "type": "String" }
     }
   },
+  "tokenMenuCreateLocation": "Create location “{label}”",
+  "@tokenMenuCreateLocation": {
+    "description": "Entry in the token insertion menu offered when the typed filter matches no station location, wired to an onCreateLocation callback (ADR-0047, DESIGN-009 follow-up 4).",
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "tokenMenuCreatePerson": "Create person “{label}”",
+  "@tokenMenuCreatePerson": {
+    "description": "Entry in the token insertion menu offered when the typed filter matches no station person, wired to an onCreatePerson callback (ADR-0047, DESIGN-009 follow-up 4).",
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
 
   "variablesSectionTitle": "Variables",
   "@variablesSectionTitle": {

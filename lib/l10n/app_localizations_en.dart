@@ -1956,6 +1956,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String tokenMenuCreateLocation(String label) {
+    return 'Create location “$label”';
+  }
+
+  @override
+  String tokenMenuCreatePerson(String label) {
+    return 'Create person “$label”';
+  }
+
+  @override
   String get variablesSectionTitle => 'Variables';
 
   @override

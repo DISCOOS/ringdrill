@@ -8,6 +8,7 @@ import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
@@ -25,6 +26,18 @@ enum _ExerciseSection {
   executionTips,
   comms,
 }
+
+/// [ExerciseFormScreen]'s result: the saved [Exercise] plus any [PlanAdditions]
+/// created inline this session (ADR-0047, DESIGN-009 follow-up 4) — the
+/// caller applies both atomically (the exercise to its own owner, the
+/// additions' variables to `Program`).
+typedef ExerciseFormResult = ({Exercise exercise, PlanAdditions additions});
+
+/// ADR-0046's declared-variable-name rule, duplicated from
+/// `ProgramFormScreen`'s own `_slugPattern`/`VariablesSection`'s
+/// `_slugPattern` (each editor validates a name being typed, not an
+/// existing token — not worth sharing a one-line RegExp across three files).
+final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
 class ExerciseFormScreen extends StatefulWidget {
   const ExerciseFormScreen({
@@ -102,6 +115,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   /// edited by [VariableOverridesSection] and read by [_saveExercise].
   late Map<String, String> _workingOverrides;
 
+  /// New plan variables created inline from a token field this session
+  /// (ADR-0047, DESIGN-009 follow-up 4 — un-defers DESIGN-008's parked
+  /// "create a variable from a sub-editor"). An `Exercise` cannot declare
+  /// variables itself; these are returned as [PlanAdditions] for the caller
+  /// to apply to `Program` alongside this exercise's own save.
+  final List<DrillVariable> _pendingVariables = [];
+
   @override
   void initState() {
     _workingOverrides = Map<String, String>.of(
@@ -171,6 +191,24 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     return value.isEmpty ? null : value;
   }
 
+  /// Wired to every token-aware field's `onCreateVariable` hook (ADR-0047,
+  /// DESIGN-009 follow-up 4 — mirrors `ProgramFormScreen._createVariableInline`):
+  /// the insertion menu already inserted `{{var.<name>}}` before calling
+  /// this, so all that's left is declaring it, empty, in [_pendingVariables]
+  /// so the chip resolves live (amber) via the merged [PlanScope] below.
+  /// `name` came from the menu's `\w*` filter capture, looser than the
+  /// ADR-0046 slug rule — validate before declaring; an invalid name is
+  /// left as an undeclared (red) token for save-time validation to catch.
+  void _createVariableInline(String name) {
+    if (!_variableSlugPattern.hasMatch(name)) return;
+    final alreadyDeclared = widget.variables.any((v) => v.name == name);
+    final alreadyPending = _pendingVariables.any((v) => v.name == name);
+    if (alreadyDeclared || alreadyPending) return;
+    setState(() {
+      _pendingVariables.add(DrillVariable(name: name, value: ''));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildSectionNavigated(context);
@@ -203,11 +241,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       expands: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
-                      // No onCreateVariable: Exercise cannot create plan
-                      // variables (DESIGN-008 follow-up 06's settled
-                      // scope) — an unknown {{var.x}} typed here stays a
-                      // red, save-blocking token until it is declared in
-                      // the Program editor or removed.
+                      // An Exercise cannot declare a plan variable itself
+                      // (DESIGN-008 follow-up 06's settled scope), but can
+                      // now create one inline for the write-back
+                      // `PlanAdditions` carries up to Program (ADR-0047,
+                      // DESIGN-009 follow-up 4 — un-defers DESIGN-008's
+                      // parked sub-editor variable creation).
+                      onCreateVariable: _createVariableInline,
                     ),
                   ),
                 ],
@@ -236,7 +276,10 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     final inherited = {for (final v in widget.variables) v.name: v.value};
 
     return PlanScope(
-      variables: widget.variables,
+      // Declared variables plus anything created inline this session, so a
+      // just-created {{var.x}} chip resolves live (amber) instead of red
+      // (ADR-0047, DESIGN-009 follow-up 4).
+      variables: [...widget.variables, ..._pendingVariables],
       child: Form(
         key: _formKey,
         child: SectionNavigatedForm(
@@ -297,6 +340,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       autofocus: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
+                      onCreateVariable: _createVariableInline,
                       validator: (value) =>
                           value == null || value.trim().isEmpty
                           ? l.pleaseEnterAName
@@ -392,12 +436,22 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     );
   }
 
+  /// Names declared for this editor's save-time undeclared-token check: the
+  /// plan's own registry plus anything created inline this session
+  /// (ADR-0047, DESIGN-009 follow-up 4) — a variable the author just
+  /// declared via the picker must not immediately block save as
+  /// "undeclared".
+  Set<String> get _declaredVariableNames => {
+    for (final v in widget.variables) v.name,
+    for (final v in _pendingVariables) v.name,
+  };
+
   /// [_ExerciseSection]s whose text contains an undeclared `{{var.x}}` —
   /// mirrors `ProgramFormScreen._sectionsWithUndeclaredTokens`, scoped to
   /// only the fields this editor edits. Declared-but-empty never blocks;
   /// only an undeclared name does, matching the Program editor's rule.
   List<_ExerciseSection> _sectionsWithUndeclaredTokens() {
-    final declared = widget.variables.map((v) => v.name).toSet();
+    final declared = _declaredVariableNames;
     return [
       for (final section in _ExerciseSection.values)
         if (_activeSections.contains(section) &&
@@ -409,11 +463,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   }
 
   /// Whether the base section's name field (DESIGN-008 follow-up 09) has a
-  /// `{{var.<name>}}` token not declared in [widget.variables]. Name is
-  /// unconditionally present, unlike [_ExerciseSection], so this is a short
-  /// parallel check rather than another enum member.
+  /// `{{var.<name>}}` token not declared in [_declaredVariableNames]. Name
+  /// is unconditionally present, unlike [_ExerciseSection], so this is a
+  /// short parallel check rather than another enum member.
   bool _nameHasUndeclaredTokens() {
-    final declared = widget.variables.map((v) => v.name).toSet();
+    final declared = _declaredVariableNames;
     return planVariableTokenPattern
         .allMatches(_nameController.text)
         .any((m) => !declared.contains(m.group(1)));
@@ -622,7 +676,10 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       );
 
       // Return the exercise to the previous screen
-      Navigator.of(context).pop(withBrief);
+      Navigator.of(context).pop((
+        exercise: withBrief,
+        additions: variableAdditions(_pendingVariables),
+      ));
     }
   }
 

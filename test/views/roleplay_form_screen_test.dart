@@ -9,34 +9,34 @@ import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 
 RolePlay _baseRole() => const RolePlay(
-      uuid: 'role-1',
-      index: 0,
-      exerciseUuid: 'ex-1',
-      name: 'Anna Hansen',
-    );
+  uuid: 'role-1',
+  index: 0,
+  exerciseUuid: 'ex-1',
+  name: 'Anna Hansen',
+);
 
 Exercise _exercise() => Exercise(
-      uuid: 'ex-1',
-      name: 'Øvelse 1',
-      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
-      numberOfTeams: 1,
-      numberOfRounds: 1,
-      executionTime: 10,
-      evaluationTime: 5,
-      rotationTime: 2,
-      stations: const [
-        Station(index: 0, name: 'Post 1'),
-        Station(index: 1, name: 'Post 2'),
-      ],
-      schedule: const [
-        [
-          SimpleTimeOfDay(hour: 8, minute: 0),
-          SimpleTimeOfDay(hour: 8, minute: 10),
-          SimpleTimeOfDay(hour: 8, minute: 15),
-        ],
-      ],
-      endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
-    );
+  uuid: 'ex-1',
+  name: 'Øvelse 1',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+  numberOfTeams: 1,
+  numberOfRounds: 1,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 2,
+  stations: const [
+    Station(index: 0, name: 'Post 1'),
+    Station(index: 1, name: 'Post 2'),
+  ],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 0),
+      SimpleTimeOfDay(hour: 8, minute: 10),
+      SimpleTimeOfDay(hour: 8, minute: 15),
+    ],
+  ],
+  endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
+);
 
 Widget _buildForm({RolePlay? rolePlay, Exercise? exercise}) {
   return MaterialApp(
@@ -90,7 +90,7 @@ void main() {
   });
 
   testWidgets('save pops with updated name', (tester) async {
-    RolePlay? result;
+    RolePlayFormResult? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -98,7 +98,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<RolePlay>(
+              result = await Navigator.push<RolePlayFormResult>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => RolePlayFormScreen(rolePlay: _baseRole()),
@@ -122,11 +122,12 @@ void main() {
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
 
-    expect(result?.name, 'Maria Olsen');
+    expect(result?.rolePlay.name, 'Maria Olsen');
   });
 
-  testWidgets('AppBar title shows newRolePlayTitle when name is empty',
-      (tester) async {
+  testWidgets('AppBar title shows newRolePlayTitle when name is empty', (
+    tester,
+  ) async {
     final emptyRole = const RolePlay(
       uuid: 'role-new',
       index: 0,
@@ -139,8 +140,9 @@ void main() {
     expect(find.text(l10n.newRolePlayTitle), findsOneWidget);
   });
 
-  testWidgets('AppBar title shows role name when name is non-empty',
-      (tester) async {
+  testWidgets('AppBar title shows role name when name is non-empty', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildForm());
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
@@ -171,8 +173,9 @@ void main() {
     expect(find.text('Post 2'), findsWidgets);
   });
 
-  testWidgets('station is required when the exercise has stations',
-      (tester) async {
+  testWidgets('station is required when the exercise has stations', (
+    tester,
+  ) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
@@ -183,56 +186,44 @@ void main() {
     expect(find.text(l10n.pleaseSelectStation), findsOneWidget);
   });
 
-  testWidgets(
-    'new markør on a post defaults position to the post location',
-    (tester) async {
-      final exercise = _exercise().copyWith(
-        stations: const [
-          Station(
-            index: 0,
-            name: 'Post 1',
-            position: LatLng(59.911, 10.757),
-          ),
-          Station(index: 1, name: 'Post 2'),
-        ],
-      );
-      // Draft markør already assigned to post 1 but without its own position.
-      final draft = const RolePlay(
-        uuid: 'role-new',
-        index: 0,
-        exerciseUuid: 'ex-1',
-        name: 'Esel',
-        stationIndex: 0,
-      );
+  testWidgets('new markør on a post defaults position to the post location', (
+    tester,
+  ) async {
+    final exercise = _exercise().copyWith(
+      stations: const [
+        Station(index: 0, name: 'Post 1', position: LatLng(59.911, 10.757)),
+        Station(index: 1, name: 'Post 2'),
+      ],
+    );
+    // Draft markør already assigned to post 1 but without its own position.
+    final draft = const RolePlay(
+      uuid: 'role-new',
+      index: 0,
+      exerciseUuid: 'ex-1',
+      name: 'Esel',
+      stationIndex: 0,
+    );
 
-      await tester.pumpWidget(_buildForm(rolePlay: draft, exercise: exercise));
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await tester.pumpWidget(_buildForm(rolePlay: draft, exercise: exercise));
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-      // Position should be pre-filled from the post, not "Pick a Location".
-      expect(find.text(l10n.pickALocation), findsNothing);
-      expect(find.byType(PositionWidget), findsOneWidget);
-    },
-  );
+    // Position should be pre-filled from the post, not "Pick a Location".
+    expect(find.text(l10n.pickALocation), findsNothing);
+    expect(find.byType(PositionWidget), findsOneWidget);
+  });
 
-  testWidgets(
-    'markør without a post keeps Pick a Location',
-    (tester) async {
-      final exercise = _exercise().copyWith(
-        stations: const [
-          Station(
-            index: 0,
-            name: 'Post 1',
-            position: LatLng(59.911, 10.757),
-          ),
-        ],
-      );
-      // No stationIndex assigned yet.
-      await tester.pumpWidget(_buildForm(exercise: exercise));
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  testWidgets('markør without a post keeps Pick a Location', (tester) async {
+    final exercise = _exercise().copyWith(
+      stations: const [
+        Station(index: 0, name: 'Post 1', position: LatLng(59.911, 10.757)),
+      ],
+    );
+    // No stationIndex assigned yet.
+    await tester.pumpWidget(_buildForm(exercise: exercise));
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-      expect(find.text(l10n.pickALocation), findsOneWidget);
-    },
-  );
+    expect(find.text(l10n.pickALocation), findsOneWidget);
+  });
 
   testWidgets('AppBar subtitle is not shown', (tester) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));

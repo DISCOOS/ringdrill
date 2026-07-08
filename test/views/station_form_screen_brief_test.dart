@@ -15,7 +15,7 @@ void main() {
     tester,
   ) async {
     await useWideSurface(tester);
-    Station? captured;
+    StationFormResult? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -23,7 +23,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Station>(
+              captured = await Navigator.push<StationFormResult>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => StationFormScreen(
@@ -57,15 +57,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured, isNotNull);
-    expect(captured!.equipmentMd, 'Stort hus');
-    expect(captured!.situationMd, isNull);
+    expect(captured!.station.equipmentMd, 'Stort hus');
+    expect(captured!.station.situationMd, isNull);
   });
 
   testWidgets('removing a seeded section clears its value on save', (
     tester,
   ) async {
     await useWideSurface(tester);
-    Station? captured;
+    StationFormResult? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -73,7 +73,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Station>(
+              captured = await Navigator.push<StationFormResult>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => StationFormScreen(
@@ -109,7 +109,7 @@ void main() {
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
 
-    expect(captured!.equipmentMd, isNull);
+    expect(captured!.station.equipmentMd, isNull);
   });
 
   testWidgets(
@@ -122,7 +122,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (ctx) => TextButton(
-              onPressed: () => Navigator.push<Station>(
+              onPressed: () => Navigator.push<StationFormResult>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => StationFormScreen(

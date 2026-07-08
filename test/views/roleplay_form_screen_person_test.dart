@@ -42,7 +42,7 @@ Exercise _exercise({List<Station> stations = const []}) => Exercise(
 );
 
 class _Captured {
-  RolePlay? value;
+  RolePlayFormResult? value;
 }
 
 Future<void> _openForm(
@@ -58,7 +58,7 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<RolePlay>(
+            captured.value = await Navigator.push<RolePlayFormResult>(
               ctx,
               MaterialPageRoute(
                 builder: (_) =>
@@ -101,52 +101,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.personRef, isNotNull);
+      expect(captured.value!.rolePlay.personRef, isNotNull);
     },
   );
 
-  testWidgets(
-    'selecting an existing person fills inherited identity fields',
-    (tester) async {
-      final station = Station(
-        index: 0,
-        name: 'Post 1',
-        persons: const [
-          Person(
-            slug: 'anne',
-            name: 'Anne Glemsk',
-            age: 47,
-            gender: 'woman',
-            signalement: 'Rød jakke',
-          ),
-        ],
-      );
-      await _openForm(
-        tester,
-        _rolePlay(name: '', stationIndex: 0),
-        _exercise(stations: [station]),
-        _Captured(),
-      );
+  testWidgets('selecting an existing person fills inherited identity fields', (
+    tester,
+  ) async {
+    final station = Station(
+      index: 0,
+      name: 'Post 1',
+      persons: const [
+        Person(
+          slug: 'anne',
+          name: 'Anne Glemsk',
+          age: 47,
+          gender: 'woman',
+          signalement: 'Rød jakke',
+        ),
+      ],
+    );
+    await _openForm(
+      tester,
+      _rolePlay(name: '', stationIndex: 0),
+      _exercise(stations: [station]),
+      _Captured(),
+    );
 
-      await tester.tap(find.byKey(const Key('person-field')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Anne Glemsk').last);
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('person-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anne Glemsk').last);
+    await tester.pumpAndSettle();
 
-      expect(
-        find.widgetWithText(TextFormField, 'Anne Glemsk'),
-        findsOneWidget,
-      );
-      expect(find.text('47'), findsOneWidget);
-      expect(
-        find.widgetWithText(TextFormField, 'Rød jakke'),
-        findsOneWidget,
-      );
-      // Every field still matches the person's own value: inherited, not
-      // overridden.
-      expect(find.text(l.rolePlayIdentityOverride), findsNothing);
-    },
-  );
+    expect(find.widgetWithText(TextFormField, 'Anne Glemsk'), findsOneWidget);
+    expect(find.text('47'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Rød jakke'), findsOneWidget);
+    // Every field still matches the person's own value: inherited, not
+    // overridden.
+    expect(find.text(l.rolePlayIdentityOverride), findsNothing);
+  });
 
   testWidgets(
     'typing a different name after selecting a person marks it overridden, '
@@ -176,62 +169,57 @@ void main() {
       await tester.pump();
 
       expect(find.text(l.rolePlayIdentityOverride), findsOneWidget);
-      expect(
-        find.textContaining('Anne (spilt av Kari)'),
-        findsWidgets,
-      );
+      expect(find.textContaining('Anne (spilt av Kari)'), findsWidgets);
     },
   );
 
-  testWidgets(
-    'save writes the effective identity and personRef',
-    (tester) async {
-      final station = Station(
-        index: 0,
-        name: 'Post 1',
-        persons: const [Person(slug: 'anne', name: 'Anne Glemsk', age: 47)],
-      );
-      final captured = _Captured();
-      await _openForm(
-        tester,
-        _rolePlay(name: '', stationIndex: 0),
-        _exercise(stations: [station]),
-        captured,
-      );
+  testWidgets('save writes the effective identity and personRef', (
+    tester,
+  ) async {
+    final station = Station(
+      index: 0,
+      name: 'Post 1',
+      persons: const [Person(slug: 'anne', name: 'Anne Glemsk', age: 47)],
+    );
+    final captured = _Captured();
+    await _openForm(
+      tester,
+      _rolePlay(name: '', stationIndex: 0),
+      _exercise(stations: [station]),
+      captured,
+    );
 
-      await tester.tap(find.byKey(const Key('person-field')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Anne Glemsk').last);
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('person-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anne Glemsk').last);
+    await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Anne Glemsk'),
-        'Anne (spilt av Kari)',
-      );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Anne Glemsk'),
+      'Anne (spilt av Kari)',
+    );
 
-      await tester.tap(find.text(l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNotNull);
-      expect(captured.value!.personRef, 'anne');
-      expect(captured.value!.name, 'Anne (spilt av Kari)');
-      expect(captured.value!.age, 47);
-    },
-  );
+    expect(captured.value, isNotNull);
+    expect(captured.value!.rolePlay.personRef, 'anne');
+    expect(captured.value!.rolePlay.name, 'Anne (spilt av Kari)');
+    expect(captured.value!.rolePlay.age, 47);
+  });
 
-  testWidgets(
-    'personRef is not required when no station is selected',
-    (tester) async {
-      final captured = _Captured();
-      await _openForm(tester, _rolePlay(), null, captured);
+  testWidgets('personRef is not required when no station is selected', (
+    tester,
+  ) async {
+    final captured = _Captured();
+    await _openForm(tester, _rolePlay(), null, captured);
 
-      await tester.tap(find.text(l.save));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text(l.save));
+    await tester.pumpAndSettle();
 
-      expect(captured.value, isNotNull);
-      expect(captured.value!.personRef, isNull);
-    },
-  );
+    expect(captured.value, isNotNull);
+    expect(captured.value!.rolePlay.personRef, isNull);
+  });
 
   testWidgets(
     'switching stations re-derives the person list and clears the old selection',
@@ -300,6 +288,6 @@ void main() {
     await tester.tap(find.text(l.save));
     await tester.pumpAndSettle();
 
-    expect(captured.value?.gender, 'woman');
+    expect(captured.value?.rolePlay.gender, 'woman');
   });
 }

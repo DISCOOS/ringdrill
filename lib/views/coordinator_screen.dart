@@ -42,6 +42,7 @@ import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
+import 'plan_additions.dart';
 
 /// Width of the combined hero card when it's used as a sidebar to the
 /// right of the round table. Below this the colour squares plus the
@@ -271,7 +272,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final localizations = AppLocalizations.of(context)!;
     final numberOfTeams = _programService.loadTeams().length;
     // Navigate to the edit exercise screen
-    final newExercise = await openFormSurface<Exercise>(
+    final result = await openFormSurface<ExerciseFormResult>(
       context,
       builder: (context) => ExerciseFormScreen(
         exercise: _exercise,
@@ -279,11 +280,18 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         variables: _programService.activeProgram?.variables ?? const [],
       ),
     );
-    if (newExercise == null) return;
-    await _programService.saveExercise(localizations, newExercise);
+    if (result == null) return;
+    // Apply the write-back (any variable created inline, ADR-0047) before
+    // the exercise itself, so a chip the exercise's own save might validate
+    // against is already declared.
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
+    await _programService.saveExercise(localizations, result.exercise);
     if (!mounted) return;
     setState(() {
-      _exercise = newExercise;
+      _exercise = result.exercise;
     });
   }
 
@@ -1519,7 +1527,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       );
       return;
     }
-    final updated = await openFormSurface<Station>(
+    final result = await openFormSurface<StationFormResult>(
       context,
       builder: (_) => StationFormScreen(
         station: _exercise!.stations[stationIndex],
@@ -1530,9 +1538,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
     // No mounted gate on the save: openFormSurface disposes this State when
     // it dismisses the hosting context sheet around the form push.
-    if (updated == null) return;
+    if (result == null) return;
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
     final stations = [..._exercise!.stations];
-    stations[stationIndex] = updated;
+    stations[stationIndex] = result.station;
     await _programService.saveExercise(
       localizations,
       _exercise!.copyWith(stations: stations),

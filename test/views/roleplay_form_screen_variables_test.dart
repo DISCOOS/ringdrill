@@ -48,7 +48,7 @@ Exercise _exercise({
 );
 
 class _Captured {
-  RolePlay? value;
+  RolePlayFormResult? value;
 }
 
 Future<void> _openForm(
@@ -65,7 +65,7 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<RolePlay>(
+            captured.value = await Navigator.push<RolePlayFormResult>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => RolePlayFormScreen(
@@ -165,10 +165,48 @@ void main() {
       await tester.tap(find.text('Anne Glemsk').last);
       await tester.pump();
 
-      expect(
-        find.textContaining('{{station.person.anne}}'),
-        findsOneWidget,
+      expect(find.textContaining('{{station.person.anne}}'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'creating a location/person inline from a markdown field carries them '
+    'up as write-back additions for the linked station (ADR-0047, '
+    'DESIGN-009 follow-up 4) — the roleplay editor does not own the station',
+    (tester) async {
+      final station = Station(index: 0, name: 'Post 1');
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _rolePlay(name: 'Esel', stationIndex: 0, behavior: 'x'),
+        _exercise(stations: [station]),
+        const [],
+        captured,
       );
+
+      await tester.tap(find.text(l.roleBehavior));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'x /Sentrum');
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text(l.tokenMenuCreateLocation('Sentrum')));
+      await tester.pump();
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      final additions = captured.value!.additions;
+      expect(
+        additions.stationLocations.map((l) => l.label),
+        contains('Sentrum'),
+      );
+      // The mandatory-personRef bootstrap (ADR-0047) also creates a Person
+      // on this same station this session, so it too rides along in the
+      // write-back — this editor owns neither.
+      expect(additions.stationPersons, isNotEmpty);
     },
   );
 
@@ -202,7 +240,7 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
       expect(captured.value, isNotNull);
-      expect(captured.value!.behavior, 'Bruk radio');
+      expect(captured.value!.rolePlay.behavior, 'Bruk radio');
     },
   );
 
@@ -249,7 +287,7 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
 
-      final saved = captured.value;
+      final saved = captured.value?.rolePlay;
       expect(saved, isNotNull);
       expect(saved!.name, 'Renamed');
       expect(saved.signalement, '180 cm, mørkt hår');

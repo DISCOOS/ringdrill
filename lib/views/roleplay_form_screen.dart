@@ -13,6 +13,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -28,6 +29,17 @@ import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 /// in the always-visible "Rolle" base section instead.
 enum _MdSection { background, behavior, props }
 
+/// [RolePlayFormScreen]'s result: the saved [RolePlay] plus any
+/// [PlanAdditions] created inline this session (ADR-0047, DESIGN-009
+/// follow-up 4) — new plan variables (→ `Program`) and any new station
+/// locations/persons beyond what [RolePlayFormScreen.rolePlay]'s linked
+/// station already had (→ that station; a roleplay does not own it).
+typedef RolePlayFormResult = ({RolePlay rolePlay, PlanAdditions additions});
+
+/// ADR-0046's declared-variable-name rule — see `ExerciseFormScreen`'s own
+/// copy of this same one-line RegExp for why it is duplicated per editor.
+final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
+
 /// Edit form for a single [RolePlay].
 ///
 /// Edits the publishable Role fields only: name, age, signalement,
@@ -35,9 +47,9 @@ enum _MdSection { background, behavior, props }
 /// (cast assignment) is intentionally absent — casting is managed
 /// from the RolePlays list via the cast picker.
 ///
-/// Pops with the updated [RolePlay] on save, or null on cancel.
-/// The caller is responsible for persisting the result (same pattern
-/// as [StationFormScreen]).
+/// Pops with a [RolePlayFormResult] on save, or null on cancel. The caller
+/// is responsible for persisting both the [RolePlay] and applying the
+/// write-back [PlanAdditions] (same pattern as [StationFormScreen]).
 ///
 /// [exercise] is optional. When provided, the stationIndex dropdown
 /// is populated with the exercise's stations.
@@ -113,14 +125,30 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
   /// Working copies of [_parentStation]'s `locations`/`persons` — a
   /// roleplay does not own a station's collections, so anything created
-  /// here this session (currently only [_autoCreatePersonFromIdentity]'s
-  /// bootstrap Person) is a pending write-back, not yet persisted to the
-  /// station (wired in DESIGN-009 follow-up 4 commit 4's `PlanAdditions`).
-  /// Also feeds [StationScope] so `station.loc`/`station.person` chips and
-  /// the picker see it live, the same "editor resolves against a working
-  /// copy" pattern `LocationFormScreen`/`PersonFormScreen` already use.
+  /// here this session ([_autoCreatePersonFromIdentity]'s bootstrap Person,
+  /// or a "Create location/person «x»" picked from a markdown field's
+  /// insertion menu) is a pending write-back the caller applies to the
+  /// station via the returned [RolePlayFormResult.additions] (ADR-0047,
+  /// DESIGN-009 follow-up 4). Also feeds [StationScope] so
+  /// `station.loc`/`station.person` chips and the picker see it live, the
+  /// same "editor resolves against a working copy" pattern
+  /// `LocationFormScreen`/`PersonFormScreen` already use.
   late List<Location> _workingLocations;
   late List<Person> _workingPersons;
+
+  /// [_workingLocations]'/[_workingPersons]' slugs as of the currently
+  /// selected station (reset in [_onStationChanged] alongside them) — the
+  /// baseline [_save] diffs against to compute which entries are new this
+  /// session (the write-back) versus already on the station.
+  late Set<String> _originalLocationSlugs;
+  late Set<String> _originalPersonSlugs;
+
+  /// New plan variables created inline from a token field this session
+  /// (ADR-0047, DESIGN-009 follow-up 4 — un-defers DESIGN-008's parked
+  /// "create a variable from a sub-editor"). A `RolePlay` cannot declare
+  /// variables itself; these are returned as [PlanAdditions] for the caller
+  /// to apply to `Program` alongside this roleplay's own save.
+  final List<DrillVariable> _pendingVariables = [];
 
   /// The station currently selected in the dropdown, or null. Recomputed on
   /// every access (not cached) so it always follows [_stationIndex] live —
@@ -195,6 +223,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       _parentStation?.locations ?? const [],
     );
     _workingPersons = List<Person>.of(_parentStation?.persons ?? const []);
+    _originalLocationSlugs = _workingLocations.map((l) => l.slug).toSet();
+    _originalPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
     if (_personRef == null) {
       _autoCreatePersonFromIdentity();
     }
@@ -224,6 +254,53 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     );
     _workingPersons = [..._workingPersons, created];
     _personRef = created.slug;
+  }
+
+  /// Wired to a markdown field's `onCreateLocation` hook (ADR-0047,
+  /// DESIGN-009 follow-up 4): the insertion menu needs the generated slug
+  /// synchronously to embed in the token it is about to insert. Unlike the
+  /// station editor, this new [Location] belongs to the linked station,
+  /// which this editor does not own — [_save] diffs [_workingLocations]
+  /// against [_originalLocationSlugs] to carry it up as a write-back.
+  String _createLocationInline(String label) {
+    final slug = generateSlug(
+      label,
+      (candidate) => _workingLocations.any((l) => l.slug == candidate),
+    );
+    setState(() {
+      _workingLocations = [
+        ..._workingLocations,
+        Location(slug: slug, label: label),
+      ];
+    });
+    return slug;
+  }
+
+  /// [_createLocationInline]'s [_workingPersons] counterpart.
+  String _createPersonInline(String label) {
+    final slug = generateSlug(
+      label,
+      (candidate) => _workingPersons.any((p) => p.slug == candidate),
+    );
+    setState(() {
+      _workingPersons = [..._workingPersons, Person(slug: slug, name: label)];
+    });
+    return slug;
+  }
+
+  /// Wired to every token-aware field's `onCreateVariable` hook (ADR-0047,
+  /// DESIGN-009 follow-up 4 — mirrors `ExerciseFormScreen`'s own copy): the
+  /// menu already inserted `{{var.<name>}}`; this only needs to declare it,
+  /// empty, in [_pendingVariables] so the chip resolves live (amber) via the
+  /// merged [PlanScope] below.
+  void _createVariableInline(String name) {
+    if (!_variableSlugPattern.hasMatch(name)) return;
+    final alreadyDeclared = widget.variables.any((v) => v.name == name);
+    final alreadyPending = _pendingVariables.any((v) => v.name == name);
+    if (alreadyDeclared || alreadyPending) return;
+    setState(() {
+      _pendingVariables.add(DrillVariable(name: name, value: ''));
+    });
   }
 
   Person? _personBySlug(String? slug) {
@@ -349,10 +426,20 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         _MdSection.props => _propsController,
       };
 
+  /// Names declared for this editor's save-time undeclared-token check: the
+  /// plan's own registry plus anything created inline this session
+  /// (ADR-0047, DESIGN-009 follow-up 4) — a variable the author just
+  /// declared via the picker must not immediately block save as
+  /// "undeclared".
+  Set<String> get _declaredVariableNames => {
+    for (final v in widget.variables) v.name,
+    for (final v in _pendingVariables) v.name,
+  };
+
   /// [_MdSection]s whose text contains an undeclared `{{var.x}}` — mirrors
   /// `ExerciseFormScreen._sectionsWithUndeclaredTokens`.
   List<_MdSection> _sectionsWithUndeclaredTokens() {
-    final declared = widget.variables.map((v) => v.name).toSet();
+    final declared = _declaredVariableNames;
     return [
       for (final section in _MdSection.values)
         if (_activeMdSections.contains(section) &&
@@ -364,11 +451,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   }
 
   /// Whether the base section's name field (DESIGN-008 follow-up 09) has a
-  /// `{{var.<name>}}` token not declared in [widget.variables]. Name is
-  /// unconditionally present, unlike [_MdSection], so this is a short
+  /// `{{var.<name>}}` token not declared in [_declaredVariableNames]. Name
+  /// is unconditionally present, unlike [_MdSection], so this is a short
   /// parallel check rather than another enum member.
   bool _nameHasUndeclaredTokens() {
-    final declared = widget.variables.map((v) => v.name).toSet();
+    final declared = _declaredVariableNames;
     return planVariableTokenPattern
         .allMatches(_nameController.text)
         .any((m) => !declared.contains(m.group(1)));
@@ -409,9 +496,17 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       expands: true,
                       tokenAware: true,
                       overrides: _effectiveVariables,
-                      // No onCreateVariable: a roleplay cannot create plan
-                      // variables (DESIGN-008 follow-up 07's settled
-                      // scope, matching Exercise/Station).
+                      // A RolePlay cannot declare a plan variable itself
+                      // (DESIGN-008 follow-up 07's settled scope, matching
+                      // Exercise/Station), but can now create one inline
+                      // for the write-back PlanAdditions carries up to
+                      // Program (ADR-0047, DESIGN-009 follow-up 4). A new
+                      // location/person belongs to the linked station,
+                      // which this editor also does not own — both are
+                      // likewise carried up as write-back.
+                      onCreateVariable: _createVariableInline,
+                      onCreateLocation: _createLocationInline,
+                      onCreatePerson: _createPersonInline,
                     ),
                   ),
                 ],
@@ -432,7 +527,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     ];
 
     return PlanScope(
-      variables: widget.variables,
+      // Declared variables plus anything created inline this session, so a
+      // just-created {{var.x}} chip resolves live (amber) instead of red
+      // (ADR-0047, DESIGN-009 follow-up 4).
+      variables: [...widget.variables, ..._pendingVariables],
       // The linked station's own locations/persons, plus anything created
       // inline this session (ADR-0047, DESIGN-009 follow-up 4) — a
       // roleplay does not own a station's collections, so it always reads
@@ -506,6 +604,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       // controller's own notifyListeners() only repaints
                       // the field itself (DESIGN-009 follow-up 4).
                       onChanged: (_) => setState(() {}),
+                      onCreateVariable: _createVariableInline,
+                      onCreateLocation: _createLocationInline,
+                      onCreatePerson: _createPersonInline,
                       validator: (value) =>
                           value != null && value.trim().isNotEmpty
                           ? null
@@ -605,6 +706,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                     _workingPersons = List<Person>.of(
                       _parentStation?.persons ?? const [],
                     );
+                    _originalLocationSlugs = _workingLocations
+                        .map((l) => l.slug)
+                        .toSet();
+                    _originalPersonSlugs = _workingPersons
+                        .map((p) => p.slug)
+                        .toSet();
                     _personRef = null;
                   });
                 },
@@ -797,6 +904,27 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       personRef: _personRef,
     );
 
-    Navigator.of(context).pop(updated);
+    // Write-back (ADR-0047, DESIGN-009 follow-up 4): only entries created
+    // this session — those beyond what the (currently selected) station
+    // already had when this editor opened/last switched stations — need to
+    // be carried up; the rest already live on the station this editor
+    // itself does not own.
+    final newLocations = [
+      for (final location in _workingLocations)
+        if (!_originalLocationSlugs.contains(location.slug)) location,
+    ];
+    final newPersons = [
+      for (final person in _workingPersons)
+        if (!_originalPersonSlugs.contains(person.slug)) person,
+    ];
+
+    Navigator.of(context).pop((
+      rolePlay: updated,
+      additions: (
+        variables: _pendingVariables,
+        stationLocations: newLocations,
+        stationPersons: newPersons,
+      ),
+    ));
   }
 }

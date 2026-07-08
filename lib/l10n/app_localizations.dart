@@ -3332,6 +3332,18 @@ abstract class AppLocalizations {
   /// **'Create variable “{name}”'**
   String tokenMenuCreateVariable(String name);
 
+  /// Entry in the token insertion menu offered when the typed filter matches no station location, wired to an onCreateLocation callback (ADR-0047, DESIGN-009 follow-up 4).
+  ///
+  /// In en, this message translates to:
+  /// **'Create location “{label}”'**
+  String tokenMenuCreateLocation(String label);
+
+  /// Entry in the token insertion menu offered when the typed filter matches no station person, wired to an onCreatePerson callback (ADR-0047, DESIGN-009 follow-up 4).
+  ///
+  /// In en, this message translates to:
+  /// **'Create person “{label}”'**
+  String tokenMenuCreatePerson(String label);
+
   /// DESIGN-008 Stage 5 section label for the plan-variable declaration section (Program editor, section-navigated shell).
   ///
   /// In en, this message translates to:

@@ -44,6 +44,7 @@ import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 import 'exercise_form_screen.dart';
+import 'plan_additions.dart';
 
 export 'package:ringdrill/web/program_page_controller.dart'
     if (dart.library.io) 'program_page_controller.dart';
@@ -458,7 +459,7 @@ class _ProgramViewState extends State<ProgramView> {
     Exercise exercise,
   ) async {
     final numberOfTeams = _programService.loadTeams().length;
-    final updated = await openFormSurface<Exercise>(
+    final result = await openFormSurface<ExerciseFormResult>(
       context,
       builder: (_) => ExerciseFormScreen(
         exercise: exercise,
@@ -466,8 +467,12 @@ class _ProgramViewState extends State<ProgramView> {
         variables: _programService.activeProgram?.variables ?? const [],
       ),
     );
-    if (updated != null && context.mounted) {
-      await _programService.saveExercise(localizations, updated);
+    if (result != null && context.mounted) {
+      await applyVariableAdditionsToActiveProgram(
+        _programService,
+        result.additions,
+      );
+      await _programService.saveExercise(localizations, result.exercise);
       setState(_initExercises);
     }
   }
@@ -1278,7 +1283,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
       }
       return;
     }
-    final newStation = await openFormSurface<Station>(
+    final result = await openFormSurface<StationFormResult>(
       context,
       builder: (_) => StationFormScreen(
         station: station,
@@ -1287,14 +1292,18 @@ class _ExerciseCardState extends State<ExerciseCard> {
         parentExercise: exercise,
       ),
     );
-    if (!mounted || newStation == null) return;
+    if (!mounted || result == null) return;
 
+    await applyVariableAdditionsToActiveProgram(
+      programService,
+      result.additions,
+    );
     final current = programService.getExercise(exercise.uuid);
     if (current == null) return;
     final stations = [...current.stations];
     final idxInList = stations.indexWhere((s) => s.index == station.index);
     if (idxInList < 0) return;
-    stations[idxInList] = newStation;
+    stations[idxInList] = result.station;
     await programService.saveExercise(
       localizations,
       current.copyWith(stations: stations),
@@ -1455,19 +1464,21 @@ abstract class ProgramPageControllerBase extends ScreenController {
 
   // Navigate to the CreateExerciseScreen to add a new exercise
   Future<void> _navigateToCreateExercise(BuildContext context) async {
-    final newExercise = await openFormSurface<Exercise>(
+    final result = await openFormSurface<ExerciseFormResult>(
       context,
       builder: (context) => ExerciseFormScreen(
         variables: programService.activeProgram?.variables ?? const [],
       ),
     );
 
-    if (context.mounted && newExercise != null) {
-      // Add the new exercise and reload the list
-      await programService.saveExercise(
-        AppLocalizations.of(context)!,
-        newExercise,
+    if (context.mounted && result != null) {
+      final localizations = AppLocalizations.of(context)!;
+      await applyVariableAdditionsToActiveProgram(
+        programService,
+        result.additions,
       );
+      // Add the new exercise and reload the list
+      await programService.saveExercise(localizations, result.exercise);
     }
   }
 

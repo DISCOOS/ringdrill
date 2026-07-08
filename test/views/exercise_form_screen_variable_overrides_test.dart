@@ -33,47 +33,46 @@ Exercise _exerciseWithOverrides() => Exercise(
 );
 
 void main() {
-  testWidgets(
-    'saving an edited exercise preserves its variableOverrides',
-    (tester) async {
-      Exercise? captured;
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (ctx) => TextButton(
-              onPressed: () async {
-                captured = await Navigator.push<Exercise>(
-                  ctx,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ExerciseFormScreen(exercise: _exerciseWithOverrides()),
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            ),
+  testWidgets('saving an edited exercise preserves its variableOverrides', (
+    tester,
+  ) async {
+    ExerciseFormResult? captured;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              captured = await Navigator.push<ExerciseFormResult>(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ExerciseFormScreen(exercise: _exerciseWithOverrides()),
+                ),
+              );
+            },
+            child: const Text('Open'),
           ),
         ),
-      );
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      ),
+    );
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
 
-      // Change an unrelated field so the save path actually rebuilds the
-      // exercise via generateSchedule, then save.
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Original name'),
-        'Renamed',
-      );
-      await tester.tap(find.text(l10n.save));
-      await tester.pumpAndSettle();
+    // Change an unrelated field so the save path actually rebuilds the
+    // exercise via generateSchedule, then save.
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Original name'),
+      'Renamed',
+    );
+    await tester.tap(find.text(l10n.save));
+    await tester.pumpAndSettle();
 
-      expect(captured, isNotNull);
-      expect(captured!.name, 'Renamed');
-      expect(captured!.variableOverrides, {'frekvens': 'Kanal 8'});
-    },
-  );
+    expect(captured, isNotNull);
+    expect(captured!.exercise.name, 'Renamed');
+    expect(captured!.exercise.variableOverrides, {'frekvens': 'Kanal 8'});
+  });
 }

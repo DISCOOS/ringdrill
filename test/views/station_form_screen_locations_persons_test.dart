@@ -43,7 +43,7 @@ Exercise _exercise() => Exercise(
 );
 
 class _Captured {
-  Station? value;
+  StationFormResult? value;
 }
 
 Future<void> _openForm(
@@ -58,7 +58,7 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Station>(
+            captured.value = await Navigator.push<StationFormResult>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => StationFormScreen(
@@ -124,14 +124,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.locations, hasLength(1));
+      expect(captured.value!.station.locations, hasLength(1));
       // Auto-generated (DESIGN-009 follow-up 3b) -- no manual reference field.
-      expect(captured.value!.locations.single.slug, 'sist_kjente_posisjon');
       expect(
-        captured.value!.locations.single.label,
+        captured.value!.station.locations.single.slug,
+        'sist_kjente_posisjon',
+      );
+      expect(
+        captured.value!.station.locations.single.label,
         'Sist kjente posisjon',
       );
-      expect(captured.value!.locations.single.kind, LocationKind.other);
+      expect(captured.value!.station.locations.single.kind, LocationKind.other);
     });
 
     testWidgets('editing a location\'s fields persists, slug unchanged', (
@@ -169,7 +172,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      final saved = captured.value!.locations.single;
+      final saved = captured.value!.station.locations.single;
       expect(saved.slug, 'lkp');
       expect(saved.label, 'New label');
       expect(saved.place, 'New place');
@@ -196,14 +199,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.locations, isEmpty);
+      expect(captured.value!.station.locations, isEmpty);
     });
   });
 
   group('Persons section', () {
-    testWidgets('adding a person writes it to persons on save', (
-      tester,
-    ) async {
+    testWidgets('adding a person writes it to persons on save', (tester) async {
       final captured = _Captured();
       await _openForm(tester, _station(), captured);
 
@@ -225,10 +226,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.persons, hasLength(1));
+      expect(captured.value!.station.persons, hasLength(1));
       // Auto-generated (DESIGN-009 follow-up 3b) -- no manual reference field.
-      expect(captured.value!.persons.single.slug, 'anne_glemsk');
-      expect(captured.value!.persons.single.name, 'Anne Glemsk');
+      expect(captured.value!.station.persons.single.slug, 'anne_glemsk');
+      expect(captured.value!.station.persons.single.name, 'Anne Glemsk');
     });
 
     testWidgets(
@@ -262,7 +263,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(captured.value, isNotNull);
-        expect(captured.value!.persons.single.homeSlug, 'lkp');
+        expect(captured.value!.station.persons.single.homeSlug, 'lkp');
       },
     );
 
@@ -296,7 +297,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      final saved = captured.value!.persons.single;
+      final saved = captured.value!.station.persons.single;
       expect(saved.slug, 'anne');
       expect(saved.age, 74);
       expect(saved.gender, 'woman');
@@ -323,68 +324,68 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.persons, isEmpty);
+      expect(captured.value!.station.persons, isEmpty);
     });
   });
 
   group('auto-generated reference', () {
-    testWidgets(
-      'two same-named locations get distinct references',
-      (tester) async {
-        final captured = _Captured();
-        await _openForm(tester, _station(), captured);
+    testWidgets('two same-named locations get distinct references', (
+      tester,
+    ) async {
+      final captured = _Captured();
+      await _openForm(tester, _station(), captured);
 
-        await tester.tap(find.text(l.locationsSectionTitle));
+      await tester.tap(find.text(l.locationsSectionTitle));
+      await tester.pumpAndSettle();
+
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.text(l.locationsSectionAddAction));
         await tester.pumpAndSettle();
-
-        for (var i = 0; i < 2; i++) {
-          await tester.tap(find.text(l.locationsSectionAddAction));
-          await tester.pumpAndSettle();
-          await tester.enterText(
-            find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
-            'Sperrepost',
-          );
-          await tester.tap(find.widgetWithText(FilledButton, l.save));
-          await tester.pumpAndSettle();
-        }
-
-        await tester.tap(find.text(l.save));
+        await tester.enterText(
+          find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
+          'Sperrepost',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, l.save));
         await tester.pumpAndSettle();
+      }
 
-        expect(captured.value, isNotNull);
-        final slugs = captured.value!.locations.map((e) => e.slug).toSet();
-        expect(slugs, hasLength(2));
-      },
-    );
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
 
-    testWidgets(
-      'two same-named persons get distinct references',
-      (tester) async {
-        final captured = _Captured();
-        await _openForm(tester, _station(), captured);
+      expect(captured.value, isNotNull);
+      final slugs = captured.value!.station.locations
+          .map((e) => e.slug)
+          .toSet();
+      expect(slugs, hasLength(2));
+    });
 
-        await tester.tap(find.text(l.personsSectionTitle));
+    testWidgets('two same-named persons get distinct references', (
+      tester,
+    ) async {
+      final captured = _Captured();
+      await _openForm(tester, _station(), captured);
+
+      await tester.tap(find.text(l.personsSectionTitle));
+      await tester.pumpAndSettle();
+
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.text(l.personsSectionAddAction));
         await tester.pumpAndSettle();
-
-        for (var i = 0; i < 2; i++) {
-          await tester.tap(find.text(l.personsSectionAddAction));
-          await tester.pumpAndSettle();
-          await tester.enterText(
-            find.widgetWithText(TextFormField, l.roleName),
-            'Ukjent',
-          );
-          await tester.tap(find.widgetWithText(FilledButton, l.save));
-          await tester.pumpAndSettle();
-        }
-
-        await tester.tap(find.text(l.save));
+        await tester.enterText(
+          find.widgetWithText(TextFormField, l.roleName),
+          'Ukjent',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, l.save));
         await tester.pumpAndSettle();
+      }
 
-        expect(captured.value, isNotNull);
-        final slugs = captured.value!.persons.map((e) => e.slug).toSet();
-        expect(slugs, hasLength(2));
-      },
-    );
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      final slugs = captured.value!.station.persons.map((e) => e.slug).toSet();
+      expect(slugs, hasLength(2));
+    });
   });
 
   group('search and sort', () {
@@ -465,9 +466,7 @@ void main() {
   });
 
   group('openFormSurface surface', () {
-    testWidgets('the Location form opens as a dialog on wide', (
-      tester,
-    ) async {
+    testWidgets('the Location form opens as a dialog on wide', (tester) async {
       await _openForm(tester, _station(), _Captured());
 
       await tester.tap(find.text(l.locationsSectionTitle));

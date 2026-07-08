@@ -7,7 +7,9 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/locations_section.dart';
@@ -29,6 +31,17 @@ enum _StationSection {
   leaderAnswers,
   directorNotes,
 }
+
+/// [StationFormScreen]'s result: the saved [Station] plus any [PlanAdditions]
+/// created inline this session (ADR-0047, DESIGN-009 follow-up 4). Only
+/// `variables` is ever populated — a station's own new locations/persons go
+/// straight into its returned [Station] (it owns them directly), never
+/// through the write-back payload.
+typedef StationFormResult = ({Station station, PlanAdditions additions});
+
+/// ADR-0046's declared-variable-name rule — see `ExerciseFormScreen`'s own
+/// copy of this same one-line RegExp for why it is duplicated per editor.
+final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
 class StationFormScreen extends StatefulWidget {
   const StationFormScreen({
@@ -94,6 +107,13 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// implemented here.
   late List<Location> _workingLocations;
   late List<Person> _workingPersons;
+
+  /// New plan variables created inline from a token field this session
+  /// (ADR-0047, DESIGN-009 follow-up 4 — un-defers DESIGN-008's parked
+  /// "create a variable from a sub-editor"). A `Station` cannot declare
+  /// variables itself; these are returned as [PlanAdditions] for the caller
+  /// to apply to `Program` alongside this station's own save.
+  final List<DrillVariable> _pendingVariables = [];
 
   /// This station's inherited baseline (ADR-0046): the plan's declared
   /// defaults overlaid by [StationFormScreen.parentExercise]'s overrides —
@@ -200,6 +220,54 @@ class _StationFormScreenState extends State<StationFormScreen> {
     });
   }
 
+  /// Wired to a token-aware field's `onCreateLocation` hook (ADR-0047,
+  /// DESIGN-009 follow-up 4): the insertion menu needs the generated slug
+  /// synchronously to embed in the token it is about to insert, so this
+  /// both creates the entry (label-only, like a bare "+ Ny lokasjon" would)
+  /// and returns it in the same call. Unlike the roleplay editor, a station
+  /// owns its own locations directly — straight into [_workingLocations],
+  /// no write-back needed.
+  String _createLocationInline(String label) {
+    final slug = generateSlug(
+      label,
+      (candidate) => _workingLocations.any((l) => l.slug == candidate),
+    );
+    setState(() {
+      _workingLocations = [
+        ..._workingLocations,
+        Location(slug: slug, label: label),
+      ];
+    });
+    return slug;
+  }
+
+  /// [_createLocationInline]'s [_workingPersons] counterpart.
+  String _createPersonInline(String label) {
+    final slug = generateSlug(
+      label,
+      (candidate) => _workingPersons.any((p) => p.slug == candidate),
+    );
+    setState(() {
+      _workingPersons = [..._workingPersons, Person(slug: slug, name: label)];
+    });
+    return slug;
+  }
+
+  /// Wired to every token-aware field's `onCreateVariable` hook (ADR-0047,
+  /// DESIGN-009 follow-up 4 — mirrors `ExerciseFormScreen`'s own copy): the
+  /// menu already inserted `{{var.<name>}}`; this only needs to declare it,
+  /// empty, in [_pendingVariables] so the chip resolves live (amber) via the
+  /// merged [PlanScope] below.
+  void _createVariableInline(String name) {
+    if (!_variableSlugPattern.hasMatch(name)) return;
+    final alreadyDeclared = widget.variables.any((v) => v.name == name);
+    final alreadyPending = _pendingVariables.any((v) => v.name == name);
+    if (alreadyDeclared || alreadyPending) return;
+    setState(() {
+      _pendingVariables.add(DrillVariable(name: name, value: ''));
+    });
+  }
+
   String _labelFor(_StationSection section, AppLocalizations l) =>
       switch (section) {
         _StationSection.equipment => l.briefSectionStationEquipment,
@@ -218,10 +286,20 @@ class _StationFormScreenState extends State<StationFormScreen> {
     return value.isEmpty ? null : value;
   }
 
+  /// Names declared for this editor's save-time undeclared-token check: the
+  /// plan's own registry plus anything created inline this session
+  /// (ADR-0047, DESIGN-009 follow-up 4) — a variable the author just
+  /// declared via the picker must not immediately block save as
+  /// "undeclared".
+  Set<String> get _declaredVariableNames => {
+    for (final v in widget.variables) v.name,
+    for (final v in _pendingVariables) v.name,
+  };
+
   /// [_StationSection]s whose text contains an undeclared `{{var.x}}` —
   /// mirrors `ExerciseFormScreen._sectionsWithUndeclaredTokens`.
   List<_StationSection> _sectionsWithUndeclaredTokens() {
-    final declared = widget.variables.map((v) => v.name).toSet();
+    final declared = _declaredVariableNames;
     return [
       for (final section in _StationSection.values)
         if (_activeSections.contains(section) &&
@@ -234,10 +312,11 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   /// Base section field labels (name/description, DESIGN-008 follow-up 09)
   /// whose text has a `{{var.<name>}}` token not declared in
-  /// [widget.variables]. Unconditionally present, unlike [_StationSection],
-  /// so this is a short parallel check rather than another enum member.
+  /// [_declaredVariableNames]. Unconditionally present, unlike
+  /// [_StationSection], so this is a short parallel check rather than
+  /// another enum member.
   List<String> _baseFieldLabelsWithUndeclaredTokens(AppLocalizations l) {
-    final declared = widget.variables.map((v) => v.name).toSet();
+    final declared = _declaredVariableNames;
     bool hasUndeclared(String text) => planVariableTokenPattern
         .allMatches(text)
         .any((m) => !declared.contains(m.group(1)));
@@ -277,9 +356,16 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       expands: true,
                       tokenAware: true,
                       overrides: _effectiveAtStationScope,
-                      // No onCreateVariable: Station cannot create plan
-                      // variables (DESIGN-008 follow-up 07's settled
-                      // scope, matching Exercise).
+                      // A Station cannot declare a plan variable itself
+                      // (DESIGN-008 follow-up 07's settled scope, matching
+                      // Exercise), but can now create one inline for the
+                      // write-back PlanAdditions carries up to Program
+                      // (ADR-0047, DESIGN-009 follow-up 4). Location/person
+                      // creation needs no write-back — the station owns
+                      // both directly.
+                      onCreateVariable: _createVariableInline,
+                      onCreateLocation: _createLocationInline,
+                      onCreatePerson: _createPersonInline,
                     ),
                   ),
                 ],
@@ -302,7 +388,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
     final inherited = _inheritedAtExerciseScope;
 
     return PlanScope(
-      variables: widget.variables,
+      // Declared variables plus anything created inline this session, so a
+      // just-created {{var.x}} chip resolves live (amber) instead of red
+      // (ADR-0047, DESIGN-009 follow-up 4).
+      variables: [...widget.variables, ..._pendingVariables],
       child: StationScope(
         // The station editor owns its locations/persons directly (unlike
         // the roleplay editor's linked-station copy), so it needs no
@@ -415,6 +504,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       autofocus: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
+                      onCreateVariable: _createVariableInline,
+                      onCreateLocation: _createLocationInline,
+                      onCreatePerson: _createPersonInline,
                       validator: (value) =>
                           value != null && value.trim().isNotEmpty
                           ? null
@@ -453,6 +545,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 maxLines: 15,
                 tokenAware: true,
                 overrides: _workingOverrides,
+                onCreateVariable: _createVariableInline,
+                onCreateLocation: _createLocationInline,
+                onCreatePerson: _createPersonInline,
               ),
             ],
           ),
@@ -513,7 +608,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
         persons: _workingPersons,
       );
 
-      Navigator.of(context).pop(newStation);
+      Navigator.of(context).pop((
+        station: newStation,
+        additions: variableAdditions(_pendingVariables),
+      ));
     }
   }
 }

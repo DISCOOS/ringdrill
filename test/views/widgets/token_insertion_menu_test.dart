@@ -20,6 +20,8 @@ Future<void> _typeAndOpen(WidgetTester tester, String text) async {
 Future<TextEditingController> _pump(
   WidgetTester tester, {
   ValueChanged<String>? onCreateVariable,
+  String Function(String label)? onCreateLocation,
+  String Function(String label)? onCreatePerson,
   List<StationLocationToken> stationLocations = const [],
   List<StationPersonToken> stationPersons = const [],
 }) async {
@@ -42,6 +44,8 @@ Future<TextEditingController> _pump(
           stationLocations: stationLocations,
           stationPersons: stationPersons,
           onCreateVariable: onCreateVariable,
+          onCreateLocation: onCreateLocation,
+          onCreatePerson: onCreatePerson,
           child: TextField(controller: controller, focusNode: focusNode),
         ),
       ),
@@ -381,6 +385,137 @@ void main() {
         expect(find.text('frekvens'), findsOneWidget);
         expect(find.text('Øvelsesnavn'), findsOneWidget);
       });
+    });
+
+    group('inline create (DESIGN-009 follow-up 4)', () {
+      testWidgets(
+        '"Create location/person" entries are hidden when the callbacks '
+        'are null, even with a no-match filter',
+        (tester) async {
+          await _pump(tester);
+
+          await _typeAndOpen(tester, '/zzz');
+
+          final l10n = await AppLocalizations.delegate.load(
+            const Locale('en'),
+          );
+          expect(find.text(l10n.tokenMenuEmpty), findsOneWidget);
+          expect(
+            find.textContaining(l10n.tokenMenuCreateLocation('zzz')),
+            findsNothing,
+          );
+          expect(
+            find.textContaining(l10n.tokenMenuCreatePerson('zzz')),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'a bare no-match filter offers create-variable, create-location and '
+        'create-person all at once when every callback is supplied',
+        (tester) async {
+          await _pump(
+            tester,
+            onCreateVariable: (_) {},
+            onCreateLocation: (label) => 'slug-for-$label',
+            onCreatePerson: (label) => 'slug-for-$label',
+          );
+
+          await _typeAndOpen(tester, '/zzz');
+
+          final l10n = await AppLocalizations.delegate.load(
+            const Locale('en'),
+          );
+          expect(find.text(l10n.tokenMenuCreateVariable('zzz')), findsOneWidget);
+          expect(find.text(l10n.tokenMenuCreateLocation('zzz')), findsOneWidget);
+          expect(find.text(l10n.tokenMenuCreatePerson('zzz')), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'selecting "Create location «x»" calls onCreateLocation and inserts '
+        '{{station.loc.<generated slug>}}',
+        (tester) async {
+          String? createdLabel;
+          final controller = await _pump(
+            tester,
+            onCreateLocation: (label) {
+              createdLabel = label;
+              return 'lkp_2';
+            },
+          );
+
+          await _typeAndOpen(tester, '/Ny_lokasjon');
+
+          final l10n = await AppLocalizations.delegate.load(
+            const Locale('en'),
+          );
+          final createLabel = l10n.tokenMenuCreateLocation('Ny_lokasjon');
+          expect(find.text(createLabel), findsOneWidget);
+
+          await tester.tap(find.text(createLabel));
+          await tester.pump();
+
+          expect(createdLabel, 'Ny_lokasjon');
+          expect(controller.text, '{{station.loc.lkp_2}}');
+        },
+      );
+
+      testWidgets(
+        'selecting "Create person «x»" calls onCreatePerson and inserts '
+        '{{station.person.<generated slug>}}',
+        (tester) async {
+          String? createdLabel;
+          final controller = await _pump(
+            tester,
+            onCreatePerson: (label) {
+              createdLabel = label;
+              return 'anne_2';
+            },
+          );
+
+          await _typeAndOpen(tester, '/Anne');
+
+          final l10n = await AppLocalizations.delegate.load(
+            const Locale('en'),
+          );
+          final createLabel = l10n.tokenMenuCreatePerson('Anne');
+          expect(find.text(createLabel), findsOneWidget);
+
+          await tester.tap(find.text(createLabel));
+          await tester.pump();
+
+          expect(createdLabel, 'Anne');
+          expect(controller.text, '{{station.person.anne_2}}');
+        },
+      );
+
+      testWidgets(
+        'typing "{{station.loc.zzz" offers only "Create location", not '
+        'variable or person, using the name after the prefix',
+        (tester) async {
+          final controller = await _pump(
+            tester,
+            onCreateVariable: (_) {},
+            onCreateLocation: (label) => 'slug',
+            onCreatePerson: (label) => 'slug',
+          );
+
+          await _typeAndOpen(tester, '{{station.loc.zzz');
+
+          final l10n = await AppLocalizations.delegate.load(
+            const Locale('en'),
+          );
+          expect(find.text(l10n.tokenMenuCreateLocation('zzz')), findsOneWidget);
+          expect(find.text(l10n.tokenMenuCreateVariable('zzz')), findsNothing);
+          expect(find.text(l10n.tokenMenuCreatePerson('zzz')), findsNothing);
+
+          await tester.tap(find.text(l10n.tokenMenuCreateLocation('zzz')));
+          await tester.pump();
+          expect(controller.text, '{{station.loc.slug}}');
+        },
+      );
     });
 
     testWidgets('dismisses on Escape', (tester) async {

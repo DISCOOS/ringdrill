@@ -45,7 +45,7 @@ Exercise _exercise({Map<String, String> variableOverrides = const {}}) =>
     );
 
 class _Captured {
-  Station? value;
+  StationFormResult? value;
 }
 
 Future<void> _openForm(
@@ -62,7 +62,7 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Station>(
+            captured.value = await Navigator.push<StationFormResult>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => StationFormScreen(
@@ -132,7 +132,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.variableOverrides, {'frekvens': 'Kanal 9'});
+      expect(captured.value!.station.variableOverrides, {
+        'frekvens': 'Kanal 9',
+      });
     },
   );
 
@@ -163,6 +165,75 @@ void main() {
     expect(find.text('Kanal 8'), findsNothing);
     expect(find.text('Kanal 6'), findsNothing);
   });
+
+  testWidgets(
+    'creating a variable inline declares it (no save-block) and returns it '
+    'in additions.variables (ADR-0047, DESIGN-009 follow-up 4)',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _station(situationMd: 'x'),
+        _exercise(),
+        const [],
+        captured,
+      );
+
+      await tester.tap(find.text(l.briefSectionStationSituation));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'x /frekvens');
+      await tester.pump();
+      await tester.pump();
+
+      final createVar = l.tokenMenuCreateVariable('frekvens');
+      await tester.tap(find.text(createVar));
+      await tester.pump();
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      expect(
+        captured.value!.additions.variables.map((v) => v.name),
+        ['frekvens'],
+      );
+    },
+  );
+
+  testWidgets(
+    'creating a location/person inline adds it straight to the station '
+    '(no write-back — the station owns them directly)',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _station(situationMd: 'x'),
+        _exercise(),
+        const [],
+        captured,
+      );
+
+      await tester.tap(find.text(l.briefSectionStationSituation));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), 'x /Sentrum');
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text(l.tokenMenuCreateLocation('Sentrum')));
+      await tester.pump();
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      expect(captured.value!.station.locations, hasLength(1));
+      expect(captured.value!.station.locations.single.label, 'Sentrum');
+      // Not part of the write-back: the station owns this directly.
+      expect(captured.value!.additions.stationLocations, isEmpty);
+    },
+  );
 
   testWidgets(
     'save is blocked on an undeclared token; removing it unblocks save',
@@ -198,7 +269,7 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
       expect(captured.value, isNotNull);
-      expect(captured.value!.situationMd, 'Bruk radio');
+      expect(captured.value!.station.situationMd, 'Bruk radio');
     },
   );
 }

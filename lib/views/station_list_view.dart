@@ -10,6 +10,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/page_widget.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
@@ -465,7 +466,7 @@ class _StationListViewState extends State<StationListView> {
       }
       return;
     }
-    final newStation = await openFormSurface<Station>(
+    final result = await openFormSurface<StationFormResult>(
       context,
       builder: (_) => StationFormScreen(
         station: station,
@@ -474,15 +475,19 @@ class _StationListViewState extends State<StationListView> {
         parentExercise: exercise,
       ),
     );
-    if (!mounted || newStation == null) return;
+    if (!mounted || result == null) return;
 
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
     // Persist the edited station back into its owning exercise.
     final current = _programService.getExercise(exercise.uuid);
     if (current == null) return;
     final stations = [...current.stations];
     final idxInList = stations.indexWhere((s) => s.index == station.index);
     if (idxInList < 0) return;
-    stations[idxInList] = newStation;
+    stations[idxInList] = result.station;
     await _programService.saveExercise(
       localizations,
       current.copyWith(stations: stations),

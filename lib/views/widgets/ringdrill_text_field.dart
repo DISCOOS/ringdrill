@@ -40,6 +40,8 @@ Widget _wrapTokenAware({
   required Map<String, String> overrides,
   required List<PlanFieldToken> planFields,
   required ValueChanged<String>? onCreateVariable,
+  required String Function(String label)? onCreateLocation,
+  required String Function(String label)? onCreatePerson,
 }) {
   if (!tokenAware) return field;
   assert(
@@ -66,6 +68,8 @@ Widget _wrapTokenAware({
     stationLocations: stationScope?.locationTokens ?? const [],
     stationPersons: stationScope?.personTokens ?? const [],
     onCreateVariable: onCreateVariable,
+    onCreateLocation: stationScope == null ? null : onCreateLocation,
+    onCreatePerson: stationScope == null ? null : onCreatePerson,
     child: field,
   );
 }
@@ -84,6 +88,8 @@ class RingDrillTextField extends StatefulWidget {
     this.overrides = const {},
     this.planFields = const [],
     this.onCreateVariable,
+    this.onCreateLocation,
+    this.onCreatePerson,
     this.validator,
     this.autofocus = false,
     this.hintText,
@@ -114,6 +120,15 @@ class RingDrillTextField extends StatefulWidget {
   final Map<String, String> overrides;
   final List<PlanFieldToken> planFields;
   final ValueChanged<String>? onCreateVariable;
+
+  /// Inline-create hooks for the picker's "Create location/person «x»"
+  /// entries (ADR-0047, DESIGN-009 follow-up 4) — see
+  /// [TokenInsertionMenu.onCreateLocation]/`onCreatePerson`. Only take
+  /// effect when this field also has a `StationScope` ancestor; ignored (as
+  /// if null) otherwise, same as [tokenAware]'s own `station.loc`/
+  /// `station.person` entries being empty without one.
+  final String Function(String label)? onCreateLocation;
+  final String Function(String label)? onCreatePerson;
   final FormFieldValidator<String>? validator;
   final bool autofocus;
 
@@ -158,6 +173,8 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
       overrides: widget.overrides,
       planFields: widget.planFields,
       onCreateVariable: widget.onCreateVariable,
+      onCreateLocation: widget.onCreateLocation,
+      onCreatePerson: widget.onCreatePerson,
     );
   }
 }
@@ -195,6 +212,8 @@ class RingDrillTextArea extends StatefulWidget {
     this.overrides = const {},
     this.planFields = const [],
     this.onCreateVariable,
+    this.onCreateLocation,
+    this.onCreatePerson,
     this.hintText,
     this.hintMaxLines,
   });
@@ -229,6 +248,12 @@ class RingDrillTextArea extends StatefulWidget {
   final Map<String, String> overrides;
   final List<PlanFieldToken> planFields;
   final ValueChanged<String>? onCreateVariable;
+
+  /// Inline-create hooks for the picker's "Create location/person «x»"
+  /// entries (ADR-0047, DESIGN-009 follow-up 4) — see
+  /// [RingDrillTextField.onCreateLocation]/`onCreatePerson`.
+  final String Function(String label)? onCreateLocation;
+  final String Function(String label)? onCreatePerson;
 
   @override
   State<RingDrillTextArea> createState() => _RingDrillTextAreaState();
@@ -278,6 +303,8 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
       overrides: widget.overrides,
       planFields: widget.planFields,
       onCreateVariable: widget.onCreateVariable,
+      onCreateLocation: widget.onCreateLocation,
+      onCreatePerson: widget.onCreatePerson,
     );
   }
 }

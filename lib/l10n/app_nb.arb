@@ -1033,6 +1033,20 @@
       "name": { "type": "String" }
     }
   },
+  "tokenMenuCreateLocation": "Opprett lokasjon «{label}»",
+  "@tokenMenuCreateLocation": {
+    "description": "Oppføring i token-innsettingsmenyen som vises når det innskrevne filteret ikke matcher noen stasjonslokasjon, koblet til en onCreateLocation-callback (ADR-0047, DESIGN-009 oppfølging 4).",
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "tokenMenuCreatePerson": "Opprett person «{label}»",
+  "@tokenMenuCreatePerson": {
+    "description": "Oppføring i token-innsettingsmenyen som vises når det innskrevne filteret ikke matcher noen stasjonsperson, koblet til en onCreatePerson-callback (ADR-0047, DESIGN-009 oppfølging 4).",
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
 
   "variablesSectionTitle": "Variabler",
   "@variablesSectionTitle": {

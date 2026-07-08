@@ -27,8 +27,10 @@ Exercise _exerciseWithMethod() => Exercise(
 );
 
 void main() {
-  testWidgets('seeded brief section survives a save round-trip', (tester) async {
-    Exercise? captured;
+  testWidgets('seeded brief section survives a save round-trip', (
+    tester,
+  ) async {
+    ExerciseFormResult? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -36,12 +38,11 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Exercise>(
+              captured = await Navigator.push<ExerciseFormResult>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ExerciseFormScreen(
-                    exercise: _exerciseWithMethod(),
-                  ),
+                  builder: (_) =>
+                      ExerciseFormScreen(exercise: _exerciseWithMethod()),
                 ),
               );
             },
@@ -70,16 +71,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured, isNotNull);
-    expect(captured!.methodMd, 'Skogsøving');
+    expect(captured!.exercise.methodMd, 'Skogsøving');
     // Other brief fields stay null because we never added their sections.
-    expect(captured!.learningGoalsMd, isNull);
-    expect(captured!.commsMd, isNull);
+    expect(captured!.exercise.learningGoalsMd, isNull);
+    expect(captured!.exercise.commsMd, isNull);
   });
 
   testWidgets('removing a seeded brief section clears its value on save', (
     tester,
   ) async {
-    Exercise? captured;
+    ExerciseFormResult? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -87,12 +88,11 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<Exercise>(
+              captured = await Navigator.push<ExerciseFormResult>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => ExerciseFormScreen(
-                    exercise: _exerciseWithMethod(),
-                  ),
+                  builder: (_) =>
+                      ExerciseFormScreen(exercise: _exerciseWithMethod()),
                 ),
               );
             },
@@ -119,7 +119,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured, isNotNull);
-    expect(captured!.methodMd, isNull);
+    expect(captured!.exercise.methodMd, isNull);
   });
 
   testWidgets(
@@ -138,7 +138,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (ctx) => TextButton(
-              onPressed: () => Navigator.push<Exercise>(
+              onPressed: () => Navigator.push<ExerciseFormResult>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => ExerciseFormScreen(exercise: exercise),

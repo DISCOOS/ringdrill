@@ -10,6 +10,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -128,7 +129,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             icon: const Icon(Icons.edit),
             tooltip: localizations.roleSection,
             onPressed: () async {
-              final updated = await openFormSurface<RolePlay>(
+              final result = await openFormSurface<RolePlayFormResult>(
                 context,
                 builder: (_) => RolePlayFormScreen(
                   rolePlay: rolePlay,
@@ -137,8 +138,17 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                       _programService.activeProgram?.variables ?? const [],
                 ),
               );
-              if (updated != null) {
-                await _programService.saveRolePlay(localizations, updated);
+              if (result != null) {
+                await applyRolePlayAdditions(
+                  _programService,
+                  localizations,
+                  result.rolePlay,
+                  result.additions,
+                );
+                await _programService.saveRolePlay(
+                  localizations,
+                  result.rolePlay,
+                );
                 if (context.mounted) _load();
               }
             },
