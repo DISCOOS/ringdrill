@@ -55,6 +55,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0045 | [Drill library bundle format for multi-program export and import](./0045-drill-library-bundle-format.md) | Accepted |
 | ADR-0046 | [Plan-scoped variables with cascading value overrides](./0046-plan-variables.md) | Accepted |
 | ADR-0047 | [Station-scoped scenario locations and persons, and RolePlay portrays a Person](./0047-scenario-locations-and-persons.md) | Proposed |
+| ADR-0048 | [Extract a Flutter-free field resolver from BriefRenderer](./0048-flutter-free-field-resolver.md) | Proposed |
 
 ## When to write an ADR
 

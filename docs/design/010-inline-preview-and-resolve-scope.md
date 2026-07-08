@@ -23,6 +23,7 @@ related_designs:
   - 009-scenario-locations-and-persons.md
   - brief-template.md
 related_adrs:
+  - 0048-flutter-free-field-resolver.md
   - 0046-plan-variables.md
   - 0047-scenario-locations-and-persons.md
   - 0030-wide-screen-master-detail-layout.md
