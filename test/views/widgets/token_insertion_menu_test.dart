@@ -17,6 +17,50 @@ Future<void> _typeAndOpen(WidgetTester tester, String text) async {
   await tester.pump();
 }
 
+/// A field whose `onChanged` rebuilds an ancestor on every keystroke —
+/// mirroring `RolePlayFormScreen`'s own name field, which does this to keep
+/// a live effective-identity preview in sync (DESIGN-009 follow-up 4c
+/// regression coverage). No other field in the app wires `onChanged` this
+/// way, which is why the bug this guards against went unexercised until a
+/// test opened the picker on that specific field.
+class _AncestorRebuildHarness extends StatefulWidget {
+  const _AncestorRebuildHarness();
+
+  @override
+  State<_AncestorRebuildHarness> createState() =>
+      _AncestorRebuildHarnessState();
+}
+
+class _AncestorRebuildHarnessState extends State<_AncestorRebuildHarness> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: TokenInsertionMenu(
+        controller: _controller,
+        focusNode: _focusNode,
+        variables: const [
+          VariableToken(name: 'frekvens', effectiveValue: 'Kanal 6'),
+        ],
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          onChanged: (_) => setState(() {}),
+        ),
+      ),
+    );
+  }
+}
+
 Future<TextEditingController> _pump(
   WidgetTester tester, {
   ValueChanged<String>? onCreateVariable,
@@ -168,7 +212,10 @@ void main() {
 
         final l10n = await AppLocalizations.delegate.load(const Locale('en'));
         expect(find.text(l10n.tokenMenuEmpty), findsOneWidget);
-        expect(find.textContaining(l10n.tokenMenuCreateVariable('zzz')), findsNothing);
+        expect(
+          find.textContaining(l10n.tokenMenuCreateVariable('zzz')),
+          findsNothing,
+        );
       },
     );
 
@@ -264,9 +311,11 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        final screenHeight = tester.view.physicalSize.height /
-            tester.view.devicePixelRatio;
-        final positioned = tester.widgetList<Positioned>(find.byType(Positioned));
+        final screenHeight =
+            tester.view.physicalSize.height / tester.view.devicePixelRatio;
+        final positioned = tester.widgetList<Positioned>(
+          find.byType(Positioned),
+        );
         final menuPositioned = positioned.firstWhere((p) => p.width != null);
 
         // The caret sits on the field's 4th line, near the top of an
@@ -339,41 +388,37 @@ void main() {
         },
       );
 
-      testWidgets(
-        'typing "{{station.loc." narrows to locations only, hiding '
-        'variables, plan fields and persons',
-        (tester) async {
-          await _pump(
-            tester,
-            stationLocations: const [location],
-            stationPersons: const [person],
-          );
+      testWidgets('typing "{{station.loc." narrows to locations only, hiding '
+          'variables, plan fields and persons', (tester) async {
+        await _pump(
+          tester,
+          stationLocations: const [location],
+          stationPersons: const [person],
+        );
 
-          await _typeAndOpen(tester, '{{station.loc.');
+        await _typeAndOpen(tester, '{{station.loc.');
 
-          expect(find.text('Siste kjente posisjon'), findsOneWidget);
-          expect(find.text('frekvens'), findsNothing);
-          expect(find.text('Øvelsesnavn'), findsNothing);
-          expect(find.text('Anne Glemsk'), findsNothing);
-        },
-      );
+        expect(find.text('Siste kjente posisjon'), findsOneWidget);
+        expect(find.text('frekvens'), findsNothing);
+        expect(find.text('Øvelsesnavn'), findsNothing);
+        expect(find.text('Anne Glemsk'), findsNothing);
+      });
 
-      testWidgets(
-        'typing "{{station.person." narrows to persons only',
-        (tester) async {
-          await _pump(
-            tester,
-            stationLocations: const [location],
-            stationPersons: const [person],
-          );
+      testWidgets('typing "{{station.person." narrows to persons only', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          stationLocations: const [location],
+          stationPersons: const [person],
+        );
 
-          await _typeAndOpen(tester, '{{station.person.');
+        await _typeAndOpen(tester, '{{station.person.');
 
-          expect(find.text('Anne Glemsk'), findsOneWidget);
-          expect(find.text('Siste kjente posisjon'), findsNothing);
-          expect(find.text('frekvens'), findsNothing);
-        },
-      );
+        expect(find.text('Anne Glemsk'), findsOneWidget);
+        expect(find.text('Siste kjente posisjon'), findsNothing);
+        expect(find.text('frekvens'), findsNothing);
+      });
 
       testWidgets('empty stationLocations/stationPersons offer nothing extra', (
         tester,
@@ -396,9 +441,7 @@ void main() {
 
           await _typeAndOpen(tester, '/zzz');
 
-          final l10n = await AppLocalizations.delegate.load(
-            const Locale('en'),
-          );
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
           expect(find.text(l10n.tokenMenuEmpty), findsOneWidget);
           expect(
             find.textContaining(l10n.tokenMenuCreateLocation('zzz')),
@@ -424,11 +467,15 @@ void main() {
 
           await _typeAndOpen(tester, '/zzz');
 
-          final l10n = await AppLocalizations.delegate.load(
-            const Locale('en'),
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          expect(
+            find.text(l10n.tokenMenuCreateVariable('zzz')),
+            findsOneWidget,
           );
-          expect(find.text(l10n.tokenMenuCreateVariable('zzz')), findsOneWidget);
-          expect(find.text(l10n.tokenMenuCreateLocation('zzz')), findsOneWidget);
+          expect(
+            find.text(l10n.tokenMenuCreateLocation('zzz')),
+            findsOneWidget,
+          );
           expect(find.text(l10n.tokenMenuCreatePerson('zzz')), findsOneWidget);
         },
       );
@@ -448,9 +495,7 @@ void main() {
 
           await _typeAndOpen(tester, '/Ny_lokasjon');
 
-          final l10n = await AppLocalizations.delegate.load(
-            const Locale('en'),
-          );
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
           final createLabel = l10n.tokenMenuCreateLocation('Ny_lokasjon');
           expect(find.text(createLabel), findsOneWidget);
 
@@ -477,9 +522,7 @@ void main() {
 
           await _typeAndOpen(tester, '/Anne');
 
-          final l10n = await AppLocalizations.delegate.load(
-            const Locale('en'),
-          );
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
           final createLabel = l10n.tokenMenuCreatePerson('Anne');
           expect(find.text(createLabel), findsOneWidget);
 
@@ -504,10 +547,11 @@ void main() {
 
           await _typeAndOpen(tester, '{{station.loc.zzz');
 
-          final l10n = await AppLocalizations.delegate.load(
-            const Locale('en'),
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          expect(
+            find.text(l10n.tokenMenuCreateLocation('zzz')),
+            findsOneWidget,
           );
-          expect(find.text(l10n.tokenMenuCreateLocation('zzz')), findsOneWidget);
           expect(find.text(l10n.tokenMenuCreateVariable('zzz')), findsNothing);
           expect(find.text(l10n.tokenMenuCreatePerson('zzz')), findsNothing);
 
@@ -540,5 +584,51 @@ void main() {
         isFalse,
       );
     });
+
+    testWidgets(
+      "a second keystroke while the menu is open doesn't crash when the "
+      "field's own onChanged rebuilds an ancestor on every change "
+      '(regression: RolePlayFormScreen\'s name field does this to keep its '
+      'identity preview live)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: _AncestorRebuildHarness(),
+          ),
+        );
+        await tester.tap(find.byType(TextField));
+        await tester.pump();
+
+        await _typeAndOpen(tester, '/');
+        expect(
+          tester
+              .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+              .isMenuOpen,
+          isTrue,
+        );
+
+        // The regression: previously, this second controller change — while
+        // the menu was still open — rebuilt TokenInsertionMenu as part of
+        // the ancestor's onChanged-triggered setState(), and
+        // didUpdateWidget's synchronous _entry.markNeedsBuild() then threw
+        // "setState() or markNeedsBuild() called during build" (the
+        // OverlayEntry it targets sits outside the subtree currently being
+        // built).
+        await tester.enterText(find.byType(TextField), '/f');
+        await tester.pump();
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(
+          tester
+              .state<TokenInsertionMenuState>(find.byType(TokenInsertionMenu))
+              .isMenuOpen,
+          isTrue,
+        );
+        expect(find.text('frekvens'), findsOneWidget);
+      },
+    );
   });
 }

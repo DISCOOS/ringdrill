@@ -197,7 +197,22 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       oldWidget.controller.removeListener(_onChanged);
       widget.controller.addListener(_onChanged);
     }
-    _entry?.markNeedsBuild();
+    // Refreshes the open menu's content (e.g. a variable's effective value)
+    // against this widget's latest data. Deferred to a post-frame callback,
+    // the same way _onChanged defers _refreshMenuPosition: this can run
+    // while a caller's own onChanged is mid-rebuild of an ancestor (e.g.
+    // RolePlayFormScreen's name field calls setState() on every keystroke to
+    // keep its identity preview live), and OverlayEntry.markNeedsBuild is a
+    // setState on a State elsewhere in the tree (attached to the root
+    // Overlay, not a descendant of what's currently building) — calling it
+    // synchronously here would hit "setState() or markNeedsBuild() called
+    // during build". _entry is re-read at call time (not captured), so a
+    // menu hidden/disposed before the callback fires is a safe no-op.
+    if (_entry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _entry?.markNeedsBuild();
+      });
+    }
   }
 
   @override
