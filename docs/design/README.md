@@ -17,6 +17,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | DESIGN-007 | [Onboarding and in-app help](./007-onboarding-and-help.md) | Accepted | 2026-06-07 |
 | DESIGN-008 | [Plan variables and the section-navigated editor](./008-plan-variables-and-section-navigated-editor.md) | Accepted | 2026-07-03 |
 | DESIGN-009 | [Scenario locations and persons](./009-scenario-locations-and-persons.md) | Proposed | 2026-07-03 |
+| DESIGN-010 | [Inline preview and the resolve-context scope cascade](./010-inline-preview-and-resolve-scope.md) | Proposed | 2026-07-08 |
 
 ## Folder layout
 
