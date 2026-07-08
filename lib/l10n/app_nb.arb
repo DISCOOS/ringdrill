@@ -122,6 +122,7 @@
   "stationName": "Postnavn",
   "stationCode": "Postkode",
   "positionUtm": "Posisjon (UTM)",
+  "utm": "UTM",
   "variantSuffix": "Variantsuffiks",
   "stationNameHint": "Gi posten et navn",
   "editStation": "Endre post",

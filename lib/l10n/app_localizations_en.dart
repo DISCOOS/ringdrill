@@ -394,6 +394,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get positionUtm => 'Position (UTM)';
 
   @override
+  String get utm => 'UTM';
+
+  @override
   String get variantSuffix => 'Variant Suffix';
 
   @override

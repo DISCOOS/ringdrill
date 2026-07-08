@@ -394,6 +394,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get positionUtm => 'Posisjon (UTM)';
 
   @override
+  String get utm => 'UTM';
+
+  @override
   String get variantSuffix => 'Variantsuffiks';
 
   @override

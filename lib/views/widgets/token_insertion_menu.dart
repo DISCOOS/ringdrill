@@ -54,6 +54,38 @@ class CreatePersonMenuEntry extends TokenMenuEntry {
   final String label;
 }
 
+/// Which entity kind a [StationFacetMenuEntry] completes — `station.loc.*`
+/// or `station.person.*` (ADR-0047, DESIGN-009 follow-up 4d).
+enum StationFacetKind { location, person }
+
+/// A `{{station.loc/person.<slug>.<facetPath>}}` entry completing a known
+/// entity's facet — additive to the bare [StationLocationMenuEntry]/
+/// [StationPersonMenuEntry] default, never replacing it (DESIGN-009
+/// follow-up 4d). [facetPath] is one or two segments (`['utm']` or, for a
+/// person's home chained to its location, `['home', 'utm']`), joined with
+/// `.` to complete the token in [TokenInsertionMenuState._select].
+class StationFacetMenuEntry extends TokenMenuEntry {
+  const StationFacetMenuEntry({
+    required this.kind,
+    required this.slug,
+    required this.facetPath,
+    required this.label,
+    required this.entityLabel,
+  });
+
+  final StationFacetKind kind;
+  final String slug;
+  final List<String> facetPath;
+
+  /// The facet's own display label, e.g. "Signalement".
+  final String label;
+
+  /// The owning entity's display label, e.g. "Anne Glemsk" — shown as a
+  /// muted trailing hint so a facet tile reads "Signalement — Anne Glemsk"
+  /// rather than repeating the slug.
+  final String entityLabel;
+}
+
 class _Trigger {
   const _Trigger({required this.start, required this.filter});
 
@@ -110,6 +142,38 @@ final _stationPersonPrefixPattern = RegExp(
   r'^station\.person\.(.*)$',
   caseSensitive: false,
 );
+
+/// The facets `brief_renderer.dart`'s `_resolveLocationFacet` switches on,
+/// in picker display order (ADR-0047, DESIGN-009 follow-up 4d). There is no
+/// facet enum in the renderer, so this constant — and the resolution-guard
+/// test that renders each one — is what keeps the picker in sync with it.
+/// The bare token (no facet) is a separate, always-offered default; it is
+/// not itself in this list.
+const _locationFacetNames = ['place', 'label', 'utm'];
+
+/// The facets `_resolvePersonFacet` switches on. `home` chains to the
+/// person's home location's own [_locationFacetNames] one level deep (see
+/// `_facetAwareEntries`) — `brief_renderer.dart` supports exactly one level
+/// of chaining, so this picker does too.
+const _personFacetNames = ['name', 'age', 'gender', 'signalement', 'home'];
+
+String _locationFacetLabel(AppLocalizations l10n, String facet) =>
+    switch (facet) {
+      'place' => l10n.locationsSectionPlaceLabel,
+      'label' => l10n.locationsSectionLabelLabel,
+      'utm' => l10n.utm,
+      _ => facet,
+    };
+
+String _personFacetLabel(AppLocalizations l10n, String facet) =>
+    switch (facet) {
+      'name' => l10n.roleName,
+      'age' => l10n.roleAge,
+      'gender' => l10n.roleGender,
+      'signalement' => l10n.roleSignalement,
+      'home' => l10n.personsSectionHomeLabel,
+      _ => facet,
+    };
 
 /// Wraps a token-aware field with the DESIGN-008 `/`/`{{` insertion menu: an
 /// [OverlayEntry] anchored at the caret (via [RenderEditable] found through
@@ -300,7 +364,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     _caretRect = null;
   }
 
-  List<TokenMenuEntry> _filteredEntries(String rawFilter) {
+  List<TokenMenuEntry> _filteredEntries(
+    String rawFilter,
+    AppLocalizations l10n,
+  ) {
     // A `var.`/`station.loc.`/`station.person.` prefix names one registry
     // namespace explicitly (ADR-0046/ADR-0047) rather than being part of
     // any entry's own name — once typed, narrow to just that namespace and
@@ -313,30 +380,64 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     final filter = namespaced?.group(1) ?? rawFilter;
     final lower = filter.toLowerCase();
 
-    final entries = <TokenMenuEntry>[
-      if (namespaced == null || varMatch != null)
-        for (final v in widget.variables)
-          if (filter.isEmpty || v.name.toLowerCase().contains(lower))
-            VariableMenuEntry(v),
-      if (namespaced == null)
-        for (final f in widget.planFields)
-          if (filter.isEmpty ||
-              f.name.toLowerCase().contains(lower) ||
-              f.label.toLowerCase().contains(lower))
-            PlanFieldMenuEntry(f),
-      if (namespaced == null || locMatch != null)
-        for (final l in widget.stationLocations)
-          if (filter.isEmpty ||
-              l.slug.toLowerCase().contains(lower) ||
-              l.label.toLowerCase().contains(lower))
-            StationLocationMenuEntry(l),
-      if (namespaced == null || personMatch != null)
-        for (final p in widget.stationPersons)
-          if (filter.isEmpty ||
-              p.slug.toLowerCase().contains(lower) ||
-              p.label.toLowerCase().contains(lower))
-            StationPersonMenuEntry(p),
-    ];
+    final entries = <TokenMenuEntry>[];
+    // Set once a station.loc./station.person. filter's slug segment exactly
+    // matches an existing entity (DESIGN-009 follow-up 4d) — an existing
+    // slug with no matching facet still means "found the entity", not
+    // "create it", so this suppresses that namespace's "Create …" fallback
+    // below even when its own facet-completion entries come back empty.
+    var matchedEntity = false;
+
+    if (namespaced == null || varMatch != null) {
+      for (final v in widget.variables) {
+        if (filter.isEmpty || v.name.toLowerCase().contains(lower)) {
+          entries.add(VariableMenuEntry(v));
+        }
+      }
+    }
+    if (namespaced == null) {
+      for (final f in widget.planFields) {
+        if (filter.isEmpty ||
+            f.name.toLowerCase().contains(lower) ||
+            f.label.toLowerCase().contains(lower)) {
+          entries.add(PlanFieldMenuEntry(f));
+        }
+      }
+    }
+    if (locMatch != null) {
+      final result = _facetAwareEntries(
+        l10n: l10n,
+        isLocation: true,
+        filter: filter,
+      );
+      entries.addAll(result.entries);
+      matchedEntity = matchedEntity || result.matchedEntity;
+    } else if (namespaced == null) {
+      for (final l in widget.stationLocations) {
+        if (filter.isEmpty ||
+            l.slug.toLowerCase().contains(lower) ||
+            l.label.toLowerCase().contains(lower)) {
+          entries.add(StationLocationMenuEntry(l));
+        }
+      }
+    }
+    if (personMatch != null) {
+      final result = _facetAwareEntries(
+        l10n: l10n,
+        isLocation: false,
+        filter: filter,
+      );
+      entries.addAll(result.entries);
+      matchedEntity = matchedEntity || result.matchedEntity;
+    } else if (namespaced == null) {
+      for (final p in widget.stationPersons) {
+        if (filter.isEmpty ||
+            p.slug.toLowerCase().contains(lower) ||
+            p.label.toLowerCase().contains(lower)) {
+          entries.add(StationPersonMenuEntry(p));
+        }
+      }
+    }
     // Inline creation (ADR-0047, DESIGN-009 follow-up 4): when the filter
     // matches nothing, offer a "Create …" entry per namespace that both (a)
     // has a callback wired (only a field with the right scope offers it at
@@ -346,7 +447,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     // bare filter (no prefix) offers every kind that is available here, all
     // at once, since the author has not said which they mean yet.
     final trimmed = filter.trim();
-    if (trimmed.isNotEmpty && entries.isEmpty) {
+    if (trimmed.isNotEmpty && entries.isEmpty && !matchedEntity) {
       if ((namespaced == null || varMatch != null) &&
           widget.onCreateVariable != null) {
         entries.add(CreateVariableMenuEntry(trimmed));
@@ -363,6 +464,111 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     return entries;
   }
 
+  /// `station.loc.`/`station.person.` facet completion (ADR-0047,
+  /// DESIGN-009 follow-up 4d): [filter] is the text after that prefix, read
+  /// as `<slug>[.<facetPath>]`. While `<slug>` doesn't exactly match an
+  /// existing entity, this behaves exactly like the pre-4d entity list
+  /// (filtering by `contains`). Once it does, the picker switches from
+  /// "search for an entity" to "complete this entity's facets":
+  ///
+  /// * No dot yet (`filter == slug`) — discovery: the bare entry plus every
+  ///   facet, unfiltered, so the facets are discoverable without knowing to
+  ///   type `.` first.
+  /// * One dot (`slug.partial`) — completion: that kind's facets filtered
+  ///   by `partial`, dropping the bare entry (the author has committed to
+  ///   picking a facet).
+  /// * For a person, `slug.home.partial` — chaining: the *location* facets
+  ///   filtered by `partial`, completing to `home.<facet>`. One level of
+  ///   chaining, matching `_resolvePersonFacet`'s `home` case in
+  ///   `brief_renderer.dart`.
+  ({List<TokenMenuEntry> entries, bool matchedEntity}) _facetAwareEntries({
+    required AppLocalizations l10n,
+    required bool isLocation,
+    required String filter,
+  }) {
+    final dot = filter.indexOf('.');
+    final slugPart = dot < 0 ? filter : filter.substring(0, dot);
+    final rest = dot < 0 ? null : filter.substring(dot + 1);
+    final lower = filter.toLowerCase();
+
+    if (isLocation) {
+      final location = _byExactSlug(
+        widget.stationLocations,
+        (l) => l.slug,
+        slugPart,
+      );
+      if (location == null) {
+        return (
+          entries: [
+            for (final l in widget.stationLocations)
+              if (filter.isEmpty ||
+                  l.slug.toLowerCase().contains(lower) ||
+                  l.label.toLowerCase().contains(lower))
+                StationLocationMenuEntry(l),
+          ],
+          matchedEntity: false,
+        );
+      }
+      return (
+        entries: [
+          if (rest == null) StationLocationMenuEntry(location),
+          for (final f in _locationFacetNames)
+            if (rest == null || f.toLowerCase().contains(rest.toLowerCase()))
+              StationFacetMenuEntry(
+                kind: StationFacetKind.location,
+                slug: slugPart,
+                facetPath: [f],
+                label: _locationFacetLabel(l10n, f),
+                entityLabel: location.label,
+              ),
+        ],
+        matchedEntity: true,
+      );
+    }
+
+    final person = _byExactSlug(widget.stationPersons, (p) => p.slug, slugPart);
+    if (person == null) {
+      return (
+        entries: [
+          for (final p in widget.stationPersons)
+            if (filter.isEmpty ||
+                p.slug.toLowerCase().contains(lower) ||
+                p.label.toLowerCase().contains(lower))
+              StationPersonMenuEntry(p),
+        ],
+        matchedEntity: false,
+      );
+    }
+
+    return (
+      entries: [
+        if (rest == null) StationPersonMenuEntry(person),
+        for (final f in _personFacetNames)
+          if (rest == null || f.toLowerCase().contains(rest.toLowerCase()))
+            StationFacetMenuEntry(
+              kind: StationFacetKind.person,
+              slug: slugPart,
+              facetPath: [f],
+              label: _personFacetLabel(l10n, f),
+              entityLabel: person.label,
+            ),
+      ],
+      matchedEntity: true,
+    );
+  }
+
+  T? _byExactSlug<T>(
+    List<T> items,
+    String Function(T item) slugOf,
+    String slug,
+  ) {
+    final lower = slug.toLowerCase();
+    for (final item in items) {
+      if (slugOf(item).toLowerCase() == lower) return item;
+    }
+    return null;
+  }
+
   void _select(TokenMenuEntry entry) {
     final trigger = _trigger;
     if (trigger == null) return;
@@ -373,6 +579,13 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       PlanFieldMenuEntry(token: final f) => '{{${f.name}}}',
       StationLocationMenuEntry(token: final l) => '{{station.loc.${l.slug}}}',
       StationPersonMenuEntry(token: final p) => '{{station.person.${p.slug}}}',
+      StationFacetMenuEntry(
+        kind: final kind,
+        slug: final slug,
+        facetPath: final path,
+      ) =>
+        '{{station.${kind == StationFacetKind.location ? 'loc' : 'person'}.'
+            '$slug.${path.join('.')}}}',
       CreateVariableMenuEntry(name: final name) => '{{var.$name}}',
       // The slug is only known once the callback creates the entity (it
       // generates it, ADR-0047), unlike CreateVariableMenuEntry where the
@@ -395,7 +608,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
 
   Widget _buildOverlay(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final entries = _filteredEntries(_trigger?.filter ?? '');
+    final entries = _filteredEntries(_trigger?.filter ?? '', l10n);
     final screenSize = MediaQuery.sizeOf(context);
     final caretRect = _caretRect ?? Rect.zero;
     final estimatedHeight = entries.isEmpty ? 48.0 : _menuMaxHeight;
@@ -532,6 +745,23 @@ class _TokenMenuCard extends StatelessWidget {
         trailing: Text(p.preview, style: Theme.of(context).textTheme.bodySmall),
         onTap: () => onSelect(entry),
       ),
+      StationFacetMenuEntry(
+        kind: final kind,
+        label: final label,
+        entityLabel: final entityLabel,
+      ) =>
+        ListTile(
+          dense: true,
+          leading: Icon(
+            kind == StationFacetKind.location
+                ? Icons.location_on_outlined
+                : Icons.person_outline,
+            size: 18,
+          ),
+          title: Text(label),
+          trailing: Text(entityLabel, style: mutedStyle),
+          onTap: () => onSelect(entry),
+        ),
       CreateVariableMenuEntry(name: final name) => ListTile(
         dense: true,
         leading: const Icon(Icons.add, size: 18),

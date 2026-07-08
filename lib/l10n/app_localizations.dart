@@ -707,6 +707,12 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
+  /// **'UTM'**
+  String get utm;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
   /// **'Variant Suffix'**
   String get variantSuffix;
 
