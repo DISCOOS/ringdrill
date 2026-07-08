@@ -509,47 +509,29 @@ class _StationFormScreenState extends State<StationFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: RingDrillTextField(
-                      controller: _nameController,
-                      label: l.stationName,
-                      hintText: l.stationNameHint,
-                      autofocus: true,
-                      tokenAware: true,
-                      overrides: _workingOverrides,
-                      planFields: planFields,
-                      onCreateVariable: _createVariableInline,
-                      onCreateLocation: _createLocationInline,
-                      onCreatePerson: _createPersonInline,
-                      validator: (value) =>
-                          value != null && value.trim().isNotEmpty
-                          ? null
-                          : l.pleaseEnterAName,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 230,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: BoxBorder.all(color: Colors.grey.shade700),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0).copyWith(left: 8.0),
-                        child: PositionFormField(
-                          initialValue: _position,
-                          markers: markers,
-                          onSaved: (position) => _position = position,
-                          onChanged: (position) =>
-                              setState(() => _position = position),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              RingDrillTextField(
+                controller: _nameController,
+                label: l.stationName,
+                hintText: l.stationNameHint,
+                autofocus: true,
+                tokenAware: true,
+                overrides: _workingOverrides,
+                planFields: planFields,
+                onCreateVariable: _createVariableInline,
+                onCreateLocation: _createLocationInline,
+                onCreatePerson: _createPersonInline,
+                validator: (value) => value != null && value.trim().isNotEmpty
+                    ? null
+                    : l.pleaseEnterAName,
+              ),
+              const SizedBox(height: 16),
+              PositionFormField(
+                variant: PositionFieldVariant.row,
+                initialValue: _position,
+                markers: markers,
+                onSaved: (position) => _position = position,
+                onChanged: (position) =>
+                    setState(() => _position = position),
               ),
               const SizedBox(height: 16),
               RingDrillTextArea(
