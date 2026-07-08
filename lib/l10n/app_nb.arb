@@ -131,6 +131,7 @@
   "numberOfMembers": "Antall medlemmer",
   "stationDescription": "Postbeskrivelse",
   "stationDescriptionHint": "Beskriv hvordan posten skal utføres",
+  "stationAddDescriptionAction": "Legg til beskrivelse",
   "notification": "{count, plural, =0{Varsel} =1{Varsel} other{Varsler}}",
   "toggleNotificationDescription": "Aktiver eller deaktiver lokale varsler for påminnelser og oppdateringer mens du bruker appen. Hvis du deaktiverer dette, stoppes sendingen av alle varsler umiddelbart.",
   "enableNotifications": "Aktiver varsler",

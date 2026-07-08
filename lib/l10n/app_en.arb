@@ -499,6 +499,10 @@
   "@stationDescriptionHint": {
     "description": "Label"
   },
+  "stationAddDescriptionAction": "Add description",
+  "@stationAddDescriptionAction": {
+    "description": "Tappable row shown in the station editor's base section in place of the description field when it is empty and unfocused (DESIGN-009); tapping it reveals the focused text field."
+  },
   "team": "{count, plural, =0{Team} =1{Team} other{Teams}}",
   "@team": {
     "description": "Team doing the exercise"

@@ -818,6 +818,12 @@ abstract class AppLocalizations {
   /// **'Give a description of how this station should be executed'**
   String get stationDescriptionHint;
 
+  /// Tappable row shown in the station editor's base section in place of the description field when it is empty and unfocused (DESIGN-009); tapping it reveals the focused text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Add description'**
+  String get stationAddDescriptionAction;
+
   /// Team doing the exercise
   ///
   /// In en, this message translates to:

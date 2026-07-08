@@ -86,6 +86,14 @@ class _StationFormScreenState extends State<StationFormScreen> {
   );
   final TextEditingController _descriptionController =
       TokenTextEditingController();
+  final FocusNode _descriptionFocusNode = FocusNode();
+
+  /// Whether the description field is shown directly rather than collapsed
+  /// to the "Legg til beskrivelse" affordance (DESIGN-009). Seeded from
+  /// whether the station already has a description; flips to `true` when
+  /// the affordance is tapped, and back to `false` when the field loses
+  /// focus while empty — see [_handleDescriptionFocusChange].
+  bool _descriptionRevealed = false;
 
   /// Token-aware so `RingDrillTextArea(tokenAware: true)` can drive its
   /// chips from [PlanScope].
@@ -156,6 +164,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
     _workingPersons = List<Person>.of(widget.station.persons);
     _nameController.text = widget.station.name;
     _descriptionController.text = widget.station.description?.toString() ?? "";
+    _descriptionRevealed = _descriptionController.text.trim().isNotEmpty;
+    _descriptionFocusNode.addListener(_handleDescriptionFocusChange);
     _position = widget.station.position;
     final s = widget.station;
     _seedSection(_StationSection.equipment, s.equipmentMd);
@@ -185,6 +195,23 @@ class _StationFormScreenState extends State<StationFormScreen> {
     setState(() {
       _activeSections.remove(section);
       _sectionControllers[section]?.clear();
+    });
+  }
+
+  /// Collapses the description back to the "Legg til beskrivelse" affordance
+  /// once it loses focus while empty (DESIGN-009) — mirrors how a
+  /// section-rich station shows no empty box in the base section.
+  void _handleDescriptionFocusChange() {
+    if (!_descriptionFocusNode.hasFocus &&
+        _descriptionController.text.trim().isEmpty) {
+      setState(() => _descriptionRevealed = false);
+    }
+  }
+
+  void _revealDescription() {
+    setState(() => _descriptionRevealed = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _descriptionFocusNode.requestFocus();
     });
   }
 
@@ -534,20 +561,23 @@ class _StationFormScreenState extends State<StationFormScreen> {
                     setState(() => _position = position),
               ),
               const SizedBox(height: 16),
-              RingDrillTextArea(
-                controller: _descriptionController,
-                label: l.stationDescription,
-                hintText: l.stationDescriptionHint,
-                hintMaxLines: 10,
-                minLines: 1,
-                maxLines: 15,
-                tokenAware: true,
-                overrides: _workingOverrides,
-                planFields: planFields,
-                onCreateVariable: _createVariableInline,
-                onCreateLocation: _createLocationInline,
-                onCreatePerson: _createPersonInline,
-              ),
+              _descriptionRevealed
+                  ? RingDrillTextArea(
+                      controller: _descriptionController,
+                      focusNode: _descriptionFocusNode,
+                      label: l.stationDescription,
+                      hintText: l.stationDescriptionHint,
+                      hintMaxLines: 10,
+                      minLines: 1,
+                      maxLines: 15,
+                      tokenAware: true,
+                      overrides: _workingOverrides,
+                      planFields: planFields,
+                      onCreateVariable: _createVariableInline,
+                      onCreateLocation: _createLocationInline,
+                      onCreatePerson: _createPersonInline,
+                    )
+                  : _AddDescriptionAffordance(onTap: _revealDescription),
             ],
           ),
         ),
@@ -559,6 +589,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _descriptionFocusNode.dispose();
     for (final c in _sectionControllers.values) {
       c.dispose();
     }
@@ -612,5 +643,52 @@ class _StationFormScreenState extends State<StationFormScreen> {
         additions: variableAdditions(_pendingVariables),
       ));
     }
+  }
+}
+
+/// Compact "Legg til beskrivelse" row shown in place of the description
+/// field while it is empty and unfocused (DESIGN-009), matching
+/// [PositionCard]'s outlined-row visual language rather than an empty text
+/// box.
+class _AddDescriptionAffordance extends StatelessWidget {
+  const _AddDescriptionAffordance({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l = AppLocalizations.of(context)!;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.add,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l.stationAddDescriptionAction,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

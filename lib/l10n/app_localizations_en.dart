@@ -454,6 +454,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Give a description of how this station should be executed';
 
   @override
+  String get stationAddDescriptionAction => 'Add description';
+
+  @override
   String team(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

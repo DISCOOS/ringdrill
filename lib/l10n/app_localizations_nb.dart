@@ -453,6 +453,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get stationDescriptionHint => 'Beskriv hvordan posten skal utføres';
 
   @override
+  String get stationAddDescriptionAction => 'Legg til beskrivelse';
+
+  @override
   String team(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

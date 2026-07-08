@@ -198,6 +198,11 @@ void main() {
           ),
         );
 
+        // The description starts empty, so it is collapsed to the
+        // "Legg til beskrivelse" affordance (DESIGN-009); reveal it first.
+        await tester.tap(find.text(l.stationAddDescriptionAction));
+        await tester.pump();
+
         final descriptionField = find.widgetWithText(
           TextFormField,
           l.stationDescription,
@@ -244,6 +249,11 @@ void main() {
           variables: const <DrillVariable>[],
         ),
       );
+
+      // The description starts empty, so it is collapsed to the
+      // "Legg til beskrivelse" affordance (DESIGN-009); reveal it first.
+      await tester.tap(find.text(l.stationAddDescriptionAction));
+      await tester.pump();
 
       final descriptionField = find.widgetWithText(
         TextFormField,
