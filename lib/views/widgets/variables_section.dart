@@ -29,7 +29,7 @@ final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 /// map) this widget doesn't have — [referenceCount] and
 /// [referenceDescriptions] are injected so the caller (which holds the
 /// working `Program`) can answer "is this referenced, and where".
-class VariablesSection extends StatelessWidget {
+class VariablesSection extends StatefulWidget {
   const VariablesSection({
     super.key,
     required this.variables,
@@ -80,6 +80,21 @@ class VariablesSection extends StatelessWidget {
   final GeocodingService? geocodingService;
 
   @override
+  State<VariablesSection> createState() => _VariablesSectionState();
+}
+
+class _VariablesSectionState extends State<VariablesSection> {
+  /// The one variable card allowed to be expanded at a time (DESIGN-008
+  /// follow-up 12) — expanding another collapses this one, mirroring how
+  /// `SectionNavigatedForm`'s own section switcher never shows two sections
+  /// at once. Null when every card is collapsed.
+  String? _expandedName;
+
+  void _toggleExpanded(String name) {
+    setState(() => _expandedName = _expandedName == name ? null : name);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -89,12 +104,14 @@ class VariablesSection extends StatelessWidget {
         children: [
           _PublishNote(text: l10n.variablesSectionPublishNote),
           const SizedBox(height: 12),
-          for (final variable in variables)
+          for (final variable in widget.variables)
             _VariableCard(
               key: ValueKey(variable.name),
               variable: variable,
-              geocodingService: geocodingService,
-              onUpdate: onUpdate,
+              geocodingService: widget.geocodingService,
+              onUpdate: widget.onUpdate,
+              expanded: _expandedName == variable.name,
+              onToggleExpanded: () => _toggleExpanded(variable.name),
               onRename: () => _handleRename(context, l10n, variable),
               confirmDelete: () => _handleDelete(context, l10n, variable),
             ),
@@ -129,10 +146,10 @@ class VariablesSection extends StatelessWidget {
     final created = await showDialog<DrillVariable>(
       context: context,
       builder: (dialogContext) => _AddVariableDialog(
-        existingNames: variables.map((v) => v.name).toSet(),
+        existingNames: widget.variables.map((v) => v.name).toSet(),
       ),
     );
-    if (created != null) onAdd(created);
+    if (created != null) widget.onAdd(created);
   }
 
   Future<void> _handleRename(
@@ -144,7 +161,7 @@ class VariablesSection extends StatelessWidget {
       context: context,
       builder: (dialogContext) => _RenameDialog(
         currentName: variable.name,
-        existingNames: variables
+        existingNames: widget.variables
             .where((v) => v.name != variable.name)
             .map((v) => v.name)
             .toSet(),
@@ -154,7 +171,7 @@ class VariablesSection extends StatelessWidget {
       return;
     }
 
-    final count = referenceCount(variable.name);
+    final count = widget.referenceCount(variable.name);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -172,7 +189,7 @@ class VariablesSection extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed == true) onRename(variable.name, newName);
+    if (confirmed == true) widget.onRename(variable.name, newName);
   }
 
   /// Shared by the context-menu "Delete" action and the swipe-to-dismiss
@@ -185,9 +202,9 @@ class VariablesSection extends StatelessWidget {
     AppLocalizations l10n,
     DrillVariable variable,
   ) async {
-    final count = referenceCount(variable.name);
+    final count = widget.referenceCount(variable.name);
     if (count == 0) {
-      onDelete(variable.name);
+      widget.onDelete(variable.name);
       return true;
     }
     await showDialog<void>(
@@ -201,7 +218,9 @@ class VariablesSection extends StatelessWidget {
             children: [
               Text(l10n.variablesSectionDeleteBlockedMessage(variable.name)),
               const SizedBox(height: 8),
-              for (final location in referenceDescriptions(variable.name))
+              for (final location in widget.referenceDescriptions(
+                variable.name,
+              ))
                 Text('•  $location'),
             ],
           ),
@@ -258,17 +277,23 @@ enum _VariableCardAction { rename, delete }
 
 /// One declaration card (DESIGN-008 follow-up 12), mirroring
 /// `RolePlayFormScreen`'s "Identitet" card: a collapsed summary (a type-icon
-/// avatar, the name, and the formatted value or an empty placeholder), a
-/// `⋮` menu (rename/delete — ADR-0031, never a per-row pencil) in that same
-/// always-visible header, and a "Tilpass" disclosure bar that expands to
-/// the inline type-aware value field (with its type dropdown alongside)
-/// and the hint field. Swiping the card also deletes it,
-/// through the same referenced-guard [confirmDelete] the `⋮` menu uses.
+/// avatar, the name, and the formatted value or an empty placeholder), and
+/// a "Tilpass" disclosure bar that expands to a `⋮` menu (rename/delete —
+/// ADR-0031, never a per-row pencil) in the header plus the inline
+/// type-aware value field (with its type dropdown alongside) and the hint
+/// field. Swiping the card also deletes it, through the same
+/// referenced-guard [confirmDelete] the `⋮` menu uses.
+///
+/// [expanded] and [onToggleExpanded] are owned by the caller
+/// ([VariablesSection]), not this card, so only one card is ever expanded
+/// at a time — expanding one collapses whichever other was open.
 class _VariableCard extends StatefulWidget {
   const _VariableCard({
     super.key,
     required this.variable,
     required this.onUpdate,
+    required this.expanded,
+    required this.onToggleExpanded,
     required this.onRename,
     required this.confirmDelete,
     this.geocodingService,
@@ -276,6 +301,8 @@ class _VariableCard extends StatefulWidget {
 
   final DrillVariable variable;
   final ValueChanged<DrillVariable> onUpdate;
+  final bool expanded;
+  final VoidCallback onToggleExpanded;
   final VoidCallback onRename;
 
   /// Returns `true` once the variable is actually gone (immediate for an
@@ -289,8 +316,6 @@ class _VariableCard extends StatefulWidget {
 }
 
 class _VariableCardState extends State<_VariableCard> {
-  bool _expanded = false;
-
   /// Owned here, not by [VariableValueField]: the hint is a plain string
   /// field with no canonical/typed encoding, edited only from this card, so
   /// there is no "outside change" to resync against — unlike
@@ -391,34 +416,37 @@ class _VariableCardState extends State<_VariableCard> {
                         ],
                       ),
                     ),
-                    // Rename/delete live in the always-visible header, not
-                    // gated behind "Tilpass" — explicit Icons.more_vert
-                    // rather than PopupMenuButton's platform-adaptive
-                    // default, which renders horizontal dots on
-                    // iOS/macOS-style platforms.
-                    PopupMenuButton<_VariableCardAction>(
-                      tooltip: '',
-                      icon: const Icon(Icons.more_vert),
-                      onSelected: (action) => switch (action) {
-                        _VariableCardAction.rename => widget.onRename(),
-                        _VariableCardAction.delete => widget.confirmDelete(),
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: _VariableCardAction.rename,
-                          child: Text(l10n.variablesSectionRenameAction),
-                        ),
-                        PopupMenuItem(
-                          value: _VariableCardAction.delete,
-                          child: Text(l10n.variablesSectionDeleteAction),
-                        ),
-                      ],
-                    ),
+                    // Rename/delete sit in the header, not gated behind the
+                    // expanded panel's fields — but only once "Tilpass" is
+                    // open, so the collapsed row stays a plain summary.
+                    // Explicit Icons.more_vert rather than
+                    // PopupMenuButton's platform-adaptive default, which
+                    // renders horizontal dots on iOS/macOS-style platforms.
+                    if (widget.expanded)
+                      PopupMenuButton<_VariableCardAction>(
+                        tooltip: '',
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (action) => switch (action) {
+                          _VariableCardAction.rename => widget.onRename(),
+                          _VariableCardAction.delete =>
+                            widget.confirmDelete(),
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: _VariableCardAction.rename,
+                            child: Text(l10n.variablesSectionRenameAction),
+                          ),
+                          PopupMenuItem(
+                            value: _VariableCardAction.delete,
+                            child: Text(l10n.variablesSectionDeleteAction),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
               InkWell(
-                onTap: () => setState(() => _expanded = !_expanded),
+                onTap: widget.onToggleExpanded,
                 child: Container(
                   color: panelSurfaceColor,
                   padding: const EdgeInsets.symmetric(
@@ -441,7 +469,7 @@ class _VariableCardState extends State<_VariableCard> {
                       ),
                       const SizedBox(width: 4),
                       Icon(
-                        _expanded
+                        widget.expanded
                             ? Icons.keyboard_arrow_up
                             : Icons.keyboard_arrow_down,
                         size: 16,
@@ -451,7 +479,7 @@ class _VariableCardState extends State<_VariableCard> {
                   ),
                 ),
               ),
-              if (_expanded)
+              if (widget.expanded)
                 Container(
                   color: panelSurfaceColor,
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),

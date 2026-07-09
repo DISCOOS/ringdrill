@@ -150,8 +150,8 @@ Future<void> _expandCard(
   await tester.pumpAndSettle();
 }
 
-/// The `⋮` context menu in [name]'s always-visible header (DESIGN-008
-/// follow-up 12: rename/delete, never gated behind "Tilpass").
+/// The `⋮` context menu in [name]'s header — only present once the card is
+/// expanded (DESIGN-008 follow-up 12); call [_expandCard] first.
 Finder _variableCardMenu(String name) => find.descendant(
   of: _variableCardOf(name),
   matching: find.byIcon(Icons.more_vert),
@@ -267,8 +267,8 @@ void main() {
   );
 
   testWidgets(
-    'the ⋮ menu is reachable in the collapsed header, before expanding '
-    '(DESIGN-008 follow-up 12)',
+    'the ⋮ menu only appears once the card is expanded (DESIGN-008 '
+    'follow-up 12)',
     (tester) async {
       await _openForm(
         tester,
@@ -282,14 +282,60 @@ void main() {
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
-      // Not expanded: no "Tilpass" panel content (type chip/value/hint
-      // fields) is showing yet.
+      // Collapsed: neither the panel content nor the ⋮ menu is showing.
       expect(find.byType(VariableValueField), findsNothing);
+      expect(_variableCardMenu('frekvens'), findsNothing);
+
+      await _expandCard(tester, l, 'frekvens');
+      expect(_variableCardMenu('frekvens'), findsOneWidget);
 
       await tester.tap(_variableCardMenu('frekvens'));
       await tester.pumpAndSettle();
       expect(find.text(l.variablesSectionRenameAction), findsOneWidget);
       expect(find.text(l.variablesSectionDeleteAction), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'expanding a card collapses whichever other card was expanded '
+    '(DESIGN-008 follow-up 12: mutually exclusive expansion)',
+    (tester) async {
+      await _openForm(
+        tester,
+        _program(
+          variables: const [
+            DrillVariable(name: 'frekvens', value: 'Kanal 6'),
+            DrillVariable(name: 'talegruppe', value: 'VFOLD'),
+          ],
+        ),
+        _Captured(),
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      await _expandCard(tester, l, 'frekvens');
+      expect(find.byType(VariableValueField), findsOneWidget);
+
+      await _expandCard(tester, l, 'talegruppe');
+      // Only the newly expanded card's panel is showing — "frekvens"
+      // collapsed back automatically.
+      expect(find.byType(VariableValueField), findsOneWidget);
+      expect(
+        find.descendant(
+          of: _variableCardOf('talegruppe'),
+          matching: find.byType(VariableValueField),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _variableCardOf('frekvens'),
+          matching: find.byType(VariableValueField),
+        ),
+        findsNothing,
+      );
     },
   );
 
@@ -309,6 +355,7 @@ void main() {
     await _openSwitcherFrom(tester, l.programSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
+    await _expandCard(tester, l, 'frekvens');
     await tester.tap(_variableCardMenu('frekvens'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.variablesSectionRenameAction));
@@ -363,6 +410,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Referenced: blocked.
+      await _expandCard(tester, l, 'frekvens');
       await tester.tap(_variableCardMenu('frekvens'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
@@ -374,6 +422,7 @@ void main() {
       expect(find.text('frekvens'), findsOneWidget);
 
       // Unreferenced: removes immediately.
+      await _expandCard(tester, l, 'ubrukt');
       await tester.tap(_variableCardMenu('ubrukt'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
@@ -445,6 +494,7 @@ void main() {
     await _openSwitcherFrom(tester, l.programSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
+    await _expandCard(tester, l, 'frekvens');
     await tester.tap(_variableCardMenu('frekvens'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.variablesSectionDeleteAction));
