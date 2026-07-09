@@ -1401,6 +1401,10 @@
       "fields": { "type": "String" }
     }
   },
+  "rolePlayPostEditAction": "Endre",
+  "@rolePlayPostEditAction": {
+    "description": "Handling på Post-kortet (DESIGN-009 prompt 4j) som åpner postvelgeren for å endre hvilken post en markør er lenket til — en diskret handling fremfor en fullbredde nedtrekksliste, siden det er sjelden man endrer en markørs post etter at den er opprettet."
+  },
   "rolePlayIdentitySectionLabel": "Identitet",
   "@rolePlayIdentitySectionLabel": {
     "description": "Liten feltgruppe-etikett over identitetskortet i RolePlayFormScreen (DESIGN-009 prompt 4i), på linje med «Post»/«Posisjon»-etikettene over sine egne velgere."

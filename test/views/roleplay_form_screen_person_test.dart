@@ -258,7 +258,7 @@ void main() {
         _Captured(),
       );
 
-      await tester.tap(find.byType(DropdownButtonFormField<int?>));
+      await tester.tap(find.byKey(const Key('station-field')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Post 2').last);
       await tester.pumpAndSettle();

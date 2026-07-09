@@ -2275,6 +2275,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get rolePlayPostEditAction => 'Edit';
+
+  @override
   String get rolePlayIdentitySectionLabel => 'Identity';
 
   @override

@@ -199,10 +199,10 @@ void main() {
     expect(find.text(l10n.roleBehavior), findsOneWidget);
   });
 
-  testWidgets('station dropdown shows exercise stations', (tester) async {
+  testWidgets('the Post card picker lists exercise stations', (tester) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));
 
-    await tester.tap(find.byType(DropdownButtonFormField<int?>));
+    await tester.tap(find.byKey(const Key('station-field')));
     await tester.pumpAndSettle();
 
     expect(find.text('Post 1'), findsWidgets);

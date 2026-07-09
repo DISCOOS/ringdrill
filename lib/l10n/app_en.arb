@@ -2368,6 +2368,10 @@
       "fields": { "type": "String" }
     }
   },
+  "rolePlayPostEditAction": "Edit",
+  "@rolePlayPostEditAction": {
+    "description": "Trailing action on the Post card (DESIGN-009 prompt 4j) that opens the station picker dialog to change which post a marker is linked to — a discreet action rather than a full-width dropdown, since re-pointing a marker's post after creation is rare."
+  },
   "rolePlayIdentitySectionLabel": "Identity",
   "@rolePlayIdentitySectionLabel": {
     "description": "Small field-group label above the effective-identity card in RolePlayFormScreen (DESIGN-009 prompt 4i), matching the \"Post\"/\"Position\" labels above their own selectors."

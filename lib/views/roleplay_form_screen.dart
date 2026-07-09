@@ -168,9 +168,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// to apply to `Program` alongside this roleplay's own save.
   final List<DrillVariable> _pendingVariables = [];
 
-  /// The station currently selected in the dropdown, or null. Recomputed on
-  /// every access (not cached) so it always follows [_stationIndex] live —
-  /// a roleplay's effective scope must track the dropdown, not just the
+  /// [widget.exercise]'s own stations, or empty when opened without one.
+  List<Station> get _stations => widget.exercise?.stations ?? const [];
+
+  /// The station currently selected in the Post card, or null. Recomputed
+  /// on every access (not cached) so it always follows [_stationIndex] live
+  /// — a roleplay's effective scope must track the selection, not just the
   /// station it opened with.
   Station? get _parentStation {
     final stations = widget.exercise?.stations;
@@ -809,7 +812,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       ...PlanFieldTokens.station(l),
       ...PlanFieldTokens.roleplay(l).where((t) => t.name != 'roleplay.name'),
     ];
-    final stations = widget.exercise?.stations ?? [];
+    final stations = _stations;
     final exercises = _programService.loadExercises();
     final exerciseIndex = exercises.indexWhere(
       (e) => e.uuid == widget.rolePlay.exerciseUuid,
@@ -826,78 +829,17 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Post — the most structural choice (which post the
-              // marker is on), so it leads (DESIGN-009 prompt 4g).
-              DropdownButtonFormField<int?>(
-                key: const Key('station-field'),
-                initialValue: _stationIndex,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  labelText: l.stationLabel,
-                  hintText: l.noStationAssigned,
-                ),
-                items: [
-                  for (var i = 0; i < stations.length; i++)
-                    DropdownMenuItem<int?>(
-                      value: i,
-                      child: Row(
-                        children: [
-                          StationNumberBadge(
-                            label: Numbering.station(
-                              stationNumberFormat,
-                              exerciseNumber: exerciseIndex < 0
-                                  ? 1
-                                  : exerciseIndex + 1,
-                              stationIndex: i,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(stations[i].name)),
-                        ],
-                      ),
-                    ),
-                ],
-                validator: (v) => stations.isNotEmpty && v == null
-                    ? l.pleaseSelectStation
-                    : null,
-                onChanged: (v) {
-                  if (v == _stationIndex) return;
-                  setState(() {
-                    _stationIndex = v;
-                    final canInherit =
-                        _position == null || _positionFromStation;
-                    if (v != null && canInherit) {
-                      final stationPos = _stationPosition(v);
-                      if (stationPos != null) {
-                        _position = stationPos;
-                        _positionFromStation = true;
-                      }
-                    }
-                    // Persons/locations are station-owned (ADR-0047): a new
-                    // station means a new person/location list, so the
-                    // working copies and personRef follow the selection,
-                    // same as [_parentStation] does. Deliberately does NOT
-                    // re-run [_autoCreatePersonFromIdentity] — that bootstrap
-                    // is an [initState]-only nicety for a fresh/legacy
-                    // roleplay's *first* load; once the author is
-                    // interactively switching stations, the mandatory-
-                    // personRef validator should make them pick from the
-                    // new station's own list, not silently manufacture a
-                    // duplicate from whatever is currently typed.
-                    _workingLocations = List<Location>.of(
-                      _parentStation?.locations ?? const [],
-                    );
-                    _workingPersons = List<Person>.of(
-                      _parentStation?.persons ?? const [],
-                    );
-                    _originalLocationSlugs = _workingLocations
-                        .map((l) => l.slug)
-                        .toSet();
-                    _originalPersonSlugs = _workingPersons
-                        .map((p) => p.slug)
-                        .toSet();
-                    _personRef = null;
-                  });
-                },
+              // marker is on), so it leads (DESIGN-009 prompt 4g). A
+              // compact card, not a full-width dropdown (DESIGN-009 prompt
+              // 4j): re-pointing a marker's post after creation is rare, so
+              // it reads as context with a discreet "Endre" action, not a
+              // prominent control.
+              _buildPostCard(
+                context,
+                l,
+                stations,
+                exerciseIndex: exerciseIndex,
+                stationNumberFormat: stationNumberFormat,
               ),
               ?_buildUnresolvedReferenceWarning(l),
               const SizedBox(height: 16),
@@ -914,6 +856,170 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Applies [index] as the new [_stationIndex] (DESIGN-009 prompt 4j) —
+  /// extracted from the old Post dropdown's own `onChanged` so
+  /// [_showStationPicker] can call the same logic.
+  void _onStationChanged(int index) {
+    if (index == _stationIndex) return;
+    setState(() {
+      _stationIndex = index;
+      final canInherit = _position == null || _positionFromStation;
+      if (canInherit) {
+        final stationPos = _stationPosition(index);
+        if (stationPos != null) {
+          _position = stationPos;
+          _positionFromStation = true;
+        }
+      }
+      // Persons/locations are station-owned (ADR-0047): a new station
+      // means a new person/location list, so the working copies and
+      // personRef follow the selection, same as [_parentStation] does.
+      // Deliberately does NOT re-run [_autoCreatePersonFromIdentity] —
+      // that bootstrap is an [initState]-only nicety for a fresh/legacy
+      // roleplay's *first* load; once the author is interactively
+      // switching stations, the mandatory-personRef validator should make
+      // them pick from the new station's own list, not silently
+      // manufacture a duplicate from whatever is currently typed.
+      _workingLocations = List<Location>.of(
+        _parentStation?.locations ?? const [],
+      );
+      _workingPersons = List<Person>.of(_parentStation?.persons ?? const []);
+      _originalLocationSlugs = _workingLocations.map((l) => l.slug).toSet();
+      _originalPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
+      _personRef = null;
+    });
+  }
+
+  /// The Post picker (DESIGN-009 prompt 4j): a plain pick-one dialog over
+  /// [stations], mirroring [_showPersonPicker] — re-pointing a marker's
+  /// post after creation is rare, so this sits behind the compact card's
+  /// discreet "Endre" action rather than a full-width dropdown always on
+  /// screen.
+  Future<void> _showStationPicker(
+    BuildContext context,
+    AppLocalizations l,
+    List<Station> stations, {
+    required int exerciseIndex,
+    required StationNumberFormat stationNumberFormat,
+  }) async {
+    final selected = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l.stationLabel),
+        children: [
+          for (var i = 0; i < stations.length; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(i),
+              child: Row(
+                children: [
+                  StationNumberBadge(
+                    label: Numbering.station(
+                      stationNumberFormat,
+                      exerciseNumber: exerciseIndex < 0 ? 1 : exerciseIndex + 1,
+                      stationIndex: i,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(stations[i].name)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (selected != null) _onStationChanged(selected);
+  }
+
+  /// The Post selector as a compact card (DESIGN-009 prompt 4j): the
+  /// station-code badge, the post name (or [AppLocalizations.noStationAssigned]
+  /// when none is picked yet), and a discreet "Endre" action opening
+  /// [_showStationPicker] — replacing the old full-width dropdown.
+  Widget _buildPostCard(
+    BuildContext context,
+    AppLocalizations l,
+    List<Station> stations, {
+    required int exerciseIndex,
+    required StationNumberFormat stationNumberFormat,
+  }) {
+    final theme = Theme.of(context);
+    final stationIndex = _stationIndex;
+    final station = stationIndex != null && stationIndex < stations.length
+        ? stations[stationIndex]
+        : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.stationLabel,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: InkWell(
+              key: const Key('station-field'),
+              onTap: () => _showStationPicker(
+                context,
+                l,
+                stations,
+                exerciseIndex: exerciseIndex,
+                stationNumberFormat: stationNumberFormat,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 11,
+                ),
+                child: Row(
+                  children: [
+                    if (station != null && stationIndex != null) ...[
+                      StationNumberBadge(
+                        label: Numbering.station(
+                          stationNumberFormat,
+                          exerciseNumber: exerciseIndex < 0
+                              ? 1
+                              : exerciseIndex + 1,
+                          stationIndex: stationIndex,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      child: Text(
+                        station?.name ?? l.noStationAssigned,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      l.rolePlayPostEditAction,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1537,6 +1643,17 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final l = AppLocalizations.of(context)!;
+
+    // The Post card is a plain tap target opening a picker dialog, not a
+    // DropdownButtonFormField (DESIGN-009 prompt 4j), so this is no longer
+    // covered by the Form's own validate() above — enforced manually here
+    // instead, same pattern as the personRef/name/age checks below.
+    if (_stations.isNotEmpty && _stationIndex == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.pleaseSelectStation)));
+      return;
+    }
 
     // Mandatory personRef is scoped to "a station is selected" (ADR-0047):
     // persons are station-owned, so there is nothing to require a

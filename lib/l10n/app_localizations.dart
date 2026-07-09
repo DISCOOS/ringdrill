@@ -3884,6 +3884,12 @@ abstract class AppLocalizations {
   /// **'Broken reference after re-linking, in: {fields}'**
   String rolePlayBrokenReferenceWarning(String fields);
 
+  /// Trailing action on the Post card (DESIGN-009 prompt 4j) that opens the station picker dialog to change which post a marker is linked to — a discreet action rather than a full-width dropdown, since re-pointing a marker's post after creation is rare.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get rolePlayPostEditAction;
+
   /// Small field-group label above the effective-identity card in RolePlayFormScreen (DESIGN-009 prompt 4i), matching the "Post"/"Position" labels above their own selectors.
   ///
   /// In en, this message translates to:
