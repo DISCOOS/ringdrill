@@ -16,9 +16,13 @@ const _placeSearchDebounce = Duration(milliseconds: 350);
 
 /// Tight prefix/suffix icon box for a dense (`isDense: true`) field's type
 /// icon and clear action — without this, `InputDecoration`'s default 48x48
-/// minimum tap-target box forces the field taller than its own text,
-/// throwing the icon and value off-center against each other.
-const _iconConstraints = BoxConstraints(minWidth: 32, minHeight: 32);
+/// minimum tap-target box forces the field taller than its own text, which
+/// both throws the icon and value off-center against each other *and*
+/// pushes the value up off the underline compared to every icon-less field
+/// (the plain string/number inputs). `minHeight: 0` is the important part:
+/// a non-zero minimum here still out-grows the dense text's own line
+/// height and reintroduces the same stretch.
+const _iconConstraints = BoxConstraints(minWidth: 24, minHeight: 0);
 
 /// Type-aware input for one plan variable's value (DESIGN-008 follow-up 11),
 /// shared by the declaration surface's default-value field and the
@@ -235,15 +239,21 @@ class _VariableValueFieldState extends State<VariableValueField> {
         // tap-target box stretching the row taller than the text.
         prefixIconConstraints: _iconConstraints,
         suffixIconConstraints: _iconConstraints,
+        // A bare Icon in an InkWell, not IconButton: IconButton enforces
+        // its own ~48px minimum tap target internally regardless of the
+        // constraints handed to the outer suffixIcon slot, which was still
+        // stretching this field taller than the icon-less ones and
+        // vertically centering the text in that extra space instead of
+        // sitting it on the underline.
         suffixIcon: widget.value.isEmpty
             ? null
-            : IconButton(
-                icon: const Icon(Icons.clear, size: 18),
-                tooltip: l10n.variableOverridesSectionResetAction,
-                onPressed: () => _reportScalar(''),
-                iconSize: 18,
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
+            : Tooltip(
+                message: l10n.variableOverridesSectionResetAction,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => _reportScalar(''),
+                  child: const Icon(Icons.clear, size: 18),
+                ),
               ),
       ),
       autovalidateMode: AutovalidateMode.always,
