@@ -506,6 +506,21 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     return refs;
   }
 
+  /// Field labels with an unresolved scenario reference, right now, against
+  /// the currently linked station's `locations`/`persons` — shared by the
+  /// live inline warning (below) and the save-block (DESIGN-009 prompt 5,
+  /// commit 3). Re-pointing the station (and so, necessarily, `personRef`)
+  /// to a different station's person changes [_workingLocations]/
+  /// [_workingPersons] out from under any `station.*` token already typed
+  /// in these fields — this re-evaluates on every rebuild, so it reflects
+  /// that change immediately, not just at save time.
+  List<String> _unresolvedReferenceFieldLabels(AppLocalizations l) {
+    return [
+      if (_nameHasUnresolvedReference()) l.roleName,
+      ..._sectionsWithUnresolvedReferences().map((s) => _mdLabelFor(s, l)),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildSectionNavigated(context);
@@ -626,6 +641,38 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     );
   }
 
+  /// Live inline warning shown right under the Post selector when
+  /// switching stations (and so [_workingLocations]/[_workingPersons], and
+  /// necessarily `personRef`) has left a `station.*` token in one of this
+  /// roleplay's own fields unresolved (DESIGN-009 prompt 5, commit 3). Null
+  /// when nothing is broken. Save already stays blocked by
+  /// [_unresolvedReferenceFieldLabels] regardless — this only surfaces the
+  /// problem without waiting for a Save attempt. Never rewrites or clears
+  /// the author's text.
+  Widget? _buildUnresolvedReferenceWarning(AppLocalizations l) {
+    final offending = _unresolvedReferenceFieldLabels(l);
+    if (offending.isEmpty) return null;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, size: 18, color: theme.colorScheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l.rolePlayBrokenReferenceWarning(offending.join(', ')),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// The DESIGN-008 default section for [RolePlay]: the short structural
   /// fields that never become their own section (name, age, signalement,
   /// station, position).
@@ -731,6 +778,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   });
                 },
               ),
+              ?_buildUnresolvedReferenceWarning(l),
               const SizedBox(height: 16),
               // 2. Navn + Alder — the effective identity, inherited.
               Row(
@@ -958,10 +1006,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       return;
     }
 
-    final unresolvedOffending = [
-      if (_nameHasUnresolvedReference()) l.roleName,
-      ..._sectionsWithUnresolvedReferences().map((s) => _mdLabelFor(s, l)),
-    ];
+    final unresolvedOffending = _unresolvedReferenceFieldLabels(l);
     if (unresolvedOffending.isNotEmpty) {
       final sections = unresolvedOffending.join(', ');
       final references = _unresolvedReferences().join(', ');

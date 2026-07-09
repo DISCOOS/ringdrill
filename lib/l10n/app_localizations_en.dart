@@ -2276,6 +2276,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rolePlayIdentityOverride => 'Overridden';
 
   @override
+  String rolePlayBrokenReferenceWarning(String fields) {
+    return 'Broken reference after re-linking, in: $fields';
+  }
+
+  @override
   String rolePlayEffectiveIdentityPreview(String summary) {
     return 'Effective identity: $summary';
   }

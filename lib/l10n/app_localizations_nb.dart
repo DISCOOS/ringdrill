@@ -2272,6 +2272,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rolePlayIdentityOverride => 'Overstyrt';
 
   @override
+  String rolePlayBrokenReferenceWarning(String fields) {
+    return 'Brutt referanse etter ny lenking, i: $fields';
+  }
+
+  @override
   String rolePlayEffectiveIdentityPreview(String summary) {
     return 'Effektiv identitet: $summary';
   }

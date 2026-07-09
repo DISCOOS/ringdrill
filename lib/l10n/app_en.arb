@@ -2369,6 +2369,13 @@
   "@rolePlayIdentityOverride": {
     "description": "Small caption under an identity field whose value has been changed to differ from the selected Person's own value (ADR-0047)."
   },
+  "rolePlayBrokenReferenceWarning": "Broken reference after re-linking, in: {fields}",
+  "@rolePlayBrokenReferenceWarning": {
+    "description": "Inline warning shown under the Post selector when switching the linked station has left a station.loc/station.person token in one of this roleplay's own fields unresolved (DESIGN-009 prompt 5, commit 3). {fields} is a comma-joined list of the offending field labels. Save is already blocked separately; this only surfaces the problem earlier.",
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
   "rolePlayEffectiveIdentityPreview": "Effective identity: {summary}",
   "@rolePlayEffectiveIdentityPreview": {
     "description": "Small preview line summarizing the roleplay's current effective identity (name, age, gender, signalement) below the person selector.",

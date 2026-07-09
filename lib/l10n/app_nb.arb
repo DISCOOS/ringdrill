@@ -1402,6 +1402,13 @@
   "@rolePlayIdentityOverride": {
     "description": "Liten bildetekst under et identitetsfelt hvis verdi er endret til å avvike fra den valgte personens egen verdi (ADR-0047)."
   },
+  "rolePlayBrokenReferenceWarning": "Brutt referanse etter ny lenking, i: {fields}",
+  "@rolePlayBrokenReferenceWarning": {
+    "description": "Advarsel vist under Post-velgeren når endring av lenket post har gjort et station.loc/station.person-token i et av denne markørordrens egne felt ubrukelig (DESIGN-009 prompt 5, commit 3). {fields} er en kommaseparert liste over de aktuelle feltetikettene. Lagre er allerede blokkert separat; dette varsler bare tidligere.",
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
   "rolePlayEffectiveIdentityPreview": "Effektiv identitet: {summary}",
   "@rolePlayEffectiveIdentityPreview": {
     "description": "Liten forhåndsvisningslinje som oppsummerer rollefigurens gjeldende effektive identitet (navn, alder, kjønn, signalement) under personvelgeren.",

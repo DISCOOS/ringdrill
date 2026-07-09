@@ -3890,6 +3890,12 @@ abstract class AppLocalizations {
   /// **'Overridden'**
   String get rolePlayIdentityOverride;
 
+  /// Inline warning shown under the Post selector when switching the linked station has left a station.loc/station.person token in one of this roleplay's own fields unresolved (DESIGN-009 prompt 5, commit 3). {fields} is a comma-joined list of the offending field labels. Save is already blocked separately; this only surfaces the problem earlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Broken reference after re-linking, in: {fields}'**
+  String rolePlayBrokenReferenceWarning(String fields);
+
   /// Small preview line summarizing the roleplay's current effective identity (name, age, gender, signalement) below the person selector.
   ///
   /// In en, this message translates to:
