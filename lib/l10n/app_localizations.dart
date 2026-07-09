@@ -3827,13 +3827,13 @@ abstract class AppLocalizations {
   /// Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row.
   ///
   /// In en, this message translates to:
-  /// **'Home'**
+  /// **'Location'**
   String get personsSectionHomeLabel;
 
-  /// The "no home selected" option in the home picker dropdown, and shown when a person has no homeSlug.
+  /// The "no location selected" option in the location picker dropdown, and shown when a person has no homeSlug.
   ///
   /// In en, this message translates to:
-  /// **'No home'**
+  /// **'No location'**
   String get personsSectionHomeNone;
 
   /// Field label for a person's optional notes in the add/edit-person dialog.

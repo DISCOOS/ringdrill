@@ -2325,13 +2325,13 @@
       "name": { "type": "String" }
     }
   },
-  "personsSectionHomeLabel": "Home",
+  "personsSectionHomeLabel": "Location",
   "@personsSectionHomeLabel": {
     "description": "Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row."
   },
-  "personsSectionHomeNone": "No home",
+  "personsSectionHomeNone": "No location",
   "@personsSectionHomeNone": {
-    "description": "The \"no home selected\" option in the home picker dropdown, and shown when a person has no homeSlug."
+    "description": "The \"no location selected\" option in the location picker dropdown, and shown when a person has no homeSlug."
   },
   "personsSectionNotesLabel": "Notes",
   "@personsSectionNotesLabel": {
