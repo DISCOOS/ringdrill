@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Variabel-overstyringer som kort-liste (DESIGN-008/009)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:12px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:340px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px;line-height:1.4}
+  .cap b{color:var(--text-2);font-weight:600}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-height:520px}
+  .bar{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .p{flex:1;font-size:16px;font-weight:600;min-width:0}
+  .bar i{font-size:20px;color:var(--text-2);flex:0 0 auto}
+  .save{font-size:13px;font-weight:600;color:#fff;background:var(--accent);padding:7px 14px;border-radius:8px}
+  .list{flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg-page)}
+  /* card per variable */
+  .item{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
+  .top{display:flex;align-items:baseline;gap:8px}
+  .var{font-family:var(--font-mono);font-size:13.5px;font-weight:600;color:var(--text-1)}
+  .def{font-family:var(--font-mono);font-size:12.5px;color:var(--text-3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .reset{font-size:12px;color:var(--accent);display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+  .flbl{font-size:11px;color:var(--text-2);margin:9px 0 3px}
+  .field{border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px}
+  .field.ph{color:var(--text-3)}
+  .field.ovr{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  /* bottom section switcher */
+  .secbar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-3)}
+  .secbar .cur{flex:1;display:flex;align-items:center;gap:8px;font-size:14px}
+  .secbar .cur i{font-size:18px;color:var(--text-2)}
+  .secbar .nav{display:flex;align-items:center;gap:14px;color:var(--text-2)}
+  .secbar .nav i{font-size:19px}
+  .note{max-width:720px;margin:16px auto 0;font-size:12px;color:var(--text-3);line-height:1.5;text-align:center}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <div class="phone">
+    <p class="cap"><b>Variabler-seksjon (overstyringer)</b> — variabelnavn med standardverdien i parentes, og et lokalt overstyrings-felt under. Overstyrt kort får aksent + «Tilbakestill». Ingen «Arvet»-etikett; parentesen leser som standarden. Samme kort-standard som Personer/Lokasjoner.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="p">2a) Fisker (Angler)</span><span class="save">Lagre</span></div>
+      <div class="list">
+
+        <div class="item">
+          <div class="top"><span class="var">year</span><span class="def">(2026)</span></div>
+          <div class="field ph">Lokal verdi</div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">tidspunkt</span><span class="def">(00:00)</span><span class="reset"><i class="ti ti-rotate" style="font-size:13px"></i>Tilbakestill</span></div>
+          <div class="flbl">Lokal verdi</div>
+          <div class="field ovr">12:00</div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">talegruppe</span><span class="def">(VFOLD-RKH-01)</span></div>
+          <div class="field ph">Lokal verdi</div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">dmo</span><span class="def">(DMO-ANDRE-1)</span></div>
+          <div class="field ph">Lokal verdi</div>
+        </div>
+
+      </div>
+      <div class="secbar"><span class="cur"><i class="ti ti-variable"></i>Variabler<i class="ti ti-chevron-down" style="font-size:15px"></i></span><span class="nav"><i class="ti ti-chevron-left"></i><i class="ti ti-chevron-right"></i><i class="ti ti-dots-vertical"></i></span></div>
+    </div>
+  </div>
+
+</div>
+<p class="note">Kort-per-element følger app-standarden (ramme + skygge, avrundet, luft). Standardverdien står i parentes etter navnet og gjelder når feltet er tomt; en lokal verdi overstyrer for denne posten. Begge er synlige samtidig (parentes = standard, felt = lokal), uten å klemme lange verdier i to kolonner. «Tilbakestill» tømmer den lokale verdien tilbake til standard. Tom standard → ingen parentes. Ingen «Arvet»/«Standard»-etikett trengs.</p>
+</body>
+</html>

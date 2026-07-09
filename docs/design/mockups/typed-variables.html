@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Typede variabler (DESIGN-008 follow-up 11)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --map:#dfe6cf; --radius:12px;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;--map:#2f3a2c;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:340px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px;line-height:1.4}
+  .cap b{color:var(--text-2);font-weight:600}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+  .bar{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .p{flex:1;font-size:16px;font-weight:600}
+  .bar i{font-size:20px;color:var(--text-2)}
+  .save{font-size:13px;font-weight:600;color:#fff;background:var(--accent);padding:7px 14px;border-radius:8px}
+  .list{padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg-page)}
+  .item{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
+  .top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .var{font-family:var(--font-mono);font-size:13.5px;font-weight:600;flex:1}
+  .type{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--accent);background:var(--accent-bg);border-radius:20px;padding:3px 9px}
+  .field{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px}
+  .field i{font-size:16px;color:var(--text-3)}
+  .field .ph{color:var(--text-3)}
+  .mono{font-family:var(--font-mono)}
+  .hint{font-size:11px;color:var(--text-3);margin-top:5px}
+  /* location value */
+  .loc{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .loc .map{height:78px;background:var(--map);position:relative}
+  .loc .pin{position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);color:var(--accent);font-size:22px}
+  .loc .pick{position:absolute;right:8px;bottom:8px;font-size:11px;color:#fff;background:rgba(0,0,0,.5);border-radius:6px;padding:3px 8px;display:flex;align-items:center;gap:4px}
+  .loc .facets{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-top:1px solid var(--border)}
+  .loc .fr{display:flex;gap:8px;font-size:12px}
+  .loc .fk{color:var(--text-3);width:52px;flex:0 0 auto}
+  .loc .fv{font-family:var(--font-mono);color:var(--text-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .note{max-width:720px;margin:16px auto 0;font-size:12px;color:var(--text-3);line-height:1.5;text-align:center}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- ============ DECLARATION: type per variable ============ -->
+  <div class="phone">
+    <p class="cap"><b>Deklarasjon (plan)</b> — hver variabel får en type, og standardverdi-feltet rendres type-riktig med validering og formattering. Type-chip åpner velgeren.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="p">Variabler</span><span class="save">Lagre</span></div>
+      <div class="list">
+
+        <div class="item">
+          <div class="top"><span class="var">frekvens</span><span class="type">Tekst<i class="ti ti-chevron-down" style="font-size:13px"></i></span></div>
+          <div class="field">Kanal 6</div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">year</span><span class="type">Tall<i class="ti ti-chevron-down" style="font-size:13px"></i></span></div>
+          <div class="field mono">2026</div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">tidspunkt</span><span class="type">Tid<i class="ti ti-chevron-down" style="font-size:13px"></i></span></div>
+          <div class="field"><i class="ti ti-clock"></i><span class="mono">12:00</span></div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">dato</span><span class="type">Dato<i class="ti ti-chevron-down" style="font-size:13px"></i></span></div>
+          <div class="field"><i class="ti ti-calendar"></i>17. mai 2026</div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">varighet</span><span class="type">Varighet<i class="ti ti-chevron-down" style="font-size:13px"></i></span></div>
+          <div class="field"><i class="ti ti-hourglass"></i>45 min</div>
+        </div>
+
+        <div class="item">
+          <div class="top"><span class="var">oppmøte</span><span class="type">Lokasjon<i class="ti ti-chevron-down" style="font-size:13px"></i></span></div>
+          <div class="loc">
+            <div class="map"><i class="ti ti-map-pin pin"></i><span class="pick"><i class="ti ti-map-2" style="font-size:12px"></i>Velg på kart</span></div>
+            <div class="facets">
+              <div class="fr"><span class="fk">Sted</span><span class="fv" style="font-family:var(--font-sans)">Meiselen 14, Drammen</span></div>
+              <div class="fr"><span class="fk">UTM</span><span class="fv">32V 6552008N 0580414E</span></div>
+            </div>
+          </div>
+          <div class="hint">Skriv/lim lat/lng eller UTM, eller søk adresse — lagres som koordinat. Fasetter: <span class="mono">.place</span> · <span class="mono">.utm</span> · <span class="mono">.latlng</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TYPE PICKER ============ -->
+  <div class="phone">
+    <p class="cap"><b>Type-velger</b> — settet i v1. Én <span class="mono">location</span>-type dekker både koordinat og adresse (Location-formen uten kind).</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="p">Type — oppmøte</span></div>
+      <div class="list">
+        <div class="item" style="padding:4px 0">
+          <div class="field" style="border:none"><i class="ti ti-abc"></i>Tekst <span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-3)">string</span></div>
+          <div class="field" style="border:none"><i class="ti ti-123"></i>Tall <span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-3)">number</span></div>
+          <div class="field" style="border:none"><i class="ti ti-clock"></i>Tid <span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-3)">time</span></div>
+          <div class="field" style="border:none"><i class="ti ti-calendar"></i>Dato <span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-3)">date</span></div>
+          <div class="field" style="border:none"><i class="ti ti-hourglass"></i>Varighet <span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-3)">duration</span></div>
+          <div class="field" style="border:none;color:var(--accent)"><i class="ti ti-map-pin" style="color:var(--accent)"></i>Lokasjon <i class="ti ti-check" style="margin-left:auto;font-size:16px"></i></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Typen deklareres én gang på planen. Override-editoren (øvelse/post) rendrer samme type-riktige felt for den lokale verdien, og standardverdien i parentes formatteres per type. Ugyldig verdi blokkerer lagring, som uoppløst token. Location gjenbruker DESIGN-009 sitt koordinat-/UTM-/geokodings-maskineri.</p>
+  </div>
+
+</div>
+</body>
+</html>

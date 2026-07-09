@@ -56,7 +56,7 @@ This revisits the editor-library question DESIGN-004 parked. That doc rejected a
 * **No local-only variables in v1.** Every variable is plan-global (ADR-0046, option A). Adding one from within an exercise still creates a global variable.
 * **No document/WYSIWYG editor.** The field is a token-aware `TextField`, not a block editor.
 * **No live brief preview in the form.** The brief opens in its own route, as in DESIGN-004.
-* **No typed variables.** Values are strings in v1. No number, date, or enum types.
+* **No typed variables.** Values are strings in v1. No number, date, or enum types. *(Lifted later — see Follow-up 11 below.)*
 * **No template/variable sharing across plans.** Variables belong to one plan.
 
 ## Concepts
@@ -141,7 +141,7 @@ Compact and expanded are one model. On compact (window class < 600) the switcher
 ## Deferred decisions
 
 1. **Local-only variables.** ADR-0046 option B. Revisit if the plan-level list grows noisy with single-use variables.
-2. **Typed variables.** Number, date and enum values with formatting. Strings only in v1.
+2. **Typed variables.** Number, date and enum values with formatting. Strings only in v1. *Specified in Follow-up 11 below (string, number, time, date, location, duration).*
 3. **Live preview.** A split preview of the rendered field. The brief route is the v1 escape hatch.
 4. **Variable groups or namespaces.** A flat list per plan in v1.
 5. **Cross-plan variable libraries.** Out of scope until Teams accounts (ADR-0024/0025).
@@ -181,6 +181,14 @@ All user-facing strings go in `app_en.arb` and `app_nb.arb`; run `make i18n`.
 **Follow-up 09 — live-UI resolution and token-aware names.** `PlanScope` now wraps the program-scoped live-app routes (`MainScreen`), so the read-only `RingDrillText` (mirroring `Text`) can resolve `{{var.<name>}}` in list tiles, the coordinator, the drill player, map labels and share text — the piece follow-up 03 deliberately left unbuilt. `RingDrillTextField` gets its first call sites: every editor's name field is `tokenAware`, plus `Program`'s and `Station`'s description fields.
 
 **Follow-up 10 (2026-07-04) — shipped, status Accepted.** The whole feature above is implemented on `design-008` and end-to-end QA'd (`docs/notes/design-008-e2e-qa.md`), including a fix to `plan_variable_refs.dart`'s rename/delete-reference tracking, which had not been extended to the names/descriptions surface follow-ups 05/09 added. Deferred, intentionally: **variable creation from sub-editors** (the `VariablesSection` spec's `Exercise`/`Station` override-surface "+ Ny variabel" with its own record-based result contract — only `Program`'s declaration surface and the slash-menu inline create shipped) and **local-only variables** (ADR-0046 option B). The branch is ready to merge; merging makes the feature live, since there is no flag.
+
+**Follow-up 11 (2026-07-09) — Typed variables.** Lifts non-goal #4 / deferred #2. A `DrillVariable` gains a `type`; the editor renders a type-appropriate input with validation and formatting, and stores the value canonically. Types: **string** (free text, default), **number** (integer/decimal, numeric validation), **time** (HH:MM 24-hour, time picker), **date** (localized date, date picker), **duration** (a span entered and stored as minutes, rendered "45 min" / "1 t 30 min"), and **location** — a place with a coordinate, the geo shape of a `Location` minus `kind`. The location input accepts a decimal lat/lng or a UTM string (typed or pasted) and offers the map picker and address geocoding, all reusing the DESIGN-009 Location machinery; it stores the canonical `LatLng` plus the place text and exposes the same facets, `.place` / `.utm` / `.latlng`, with the bare token rendering place + UTM. Scalar types render bare (no facets in v1); only `location` is faceted — which is where the demand is (a position pasted once, reused as UTM in a brief and as a coordinate on the map). The nb type label for `location` is "lokasjon"; `place` stays the Location text field, so the type is named `location`, and `var.*` never collides with the station-owned `station.loc.*`.
+
+The type is declared once, on the plan's declaration surface; the exercise/station override surfaces render the same type-aware input for the local value, and the inherited default shows in parentheses after the variable name (per `mockups/variable-overrides.html`), formatted for its type — a time as "12:00", a location as its UTM. Slash-menu previews and the brief format the same way. An invalid value blocks save, exactly as an unknown token does (ADR-0046). Inline-created variables default to `string`; the type is set on the declaration afterward.
+
+Additive and back-compat: `DrillVariable.type` defaults to `string`, so every existing variable keeps working with no migration and `KNOWN_SCHEMA_MAX` is unchanged. The one modelling question is the **location value**, which carries more than a scalar string (place + coordinate); the recommendation is a small structured sub-value on the variable (additive, `@Default` empty), which may warrant an ADR-0046 amendment. Mockup: `mockups/typed-variables.html`. Prompt: `docs/prompts/design-008-11-typed-variables.md`.
+
+**Follow-up 12 (2026-07-09) — Section-editor polish (override list + wide chrome).** Two UI refinements to the section-navigated editor, no model change. **(a) Variable override list.** The exercise/station override surface becomes card-per-item, like the DESIGN-009 Persons/Locations lists: each card is the variable name (mono) with its inherited default in parentheses (`year (2026)` — no "Arvet" label), a local-value field below (placeholder "Lokal verdi" when empty), and an accent border plus a per-variable "Tilbakestill" when overridden. **(b) Wide master/detail chrome** ([ADR-0030](../adrs/0030-wide-screen-master-detail-layout.md)): drop the duplicated section title in the detail pane (the rail's highlighted item is the title) and the redundant `‹ ›` arrows, keeping only a `⋮` for section actions; use the **same** bottom search / "+ Ny …" bar as the compact layout (its `bg-2` surface with a top divider and accent-text add action) — no new treatment, the current wide layout merely let it blend into the background; and put the left rail on the same surface palette as the rest (not near-black), with the selected section accent-highlighted like the compact switcher. Compact is unchanged. Mockups: `mockups/variable-overrides.html`, `mockups/post-editor-wide.html`. Prompt: `docs/prompts/design-008-12-section-editor-polish.md`.
 
 ## References
 
