@@ -225,13 +225,22 @@ void main() {
       await tester.tap(find.text(l.tokenMenuCreateLocation('Sentrum')));
       await tester.pump();
 
-      // The just-created location has no place/position yet, so its bare
-      // token chips amber — "declared but empty", the same as a freshly
-      // created {{var.x}} (ADR-0046/ADR-0047 share this three-way state).
+      // The menu inserted a token for the just-created location; read its
+      // slug back from the field text rather than assuming a name-derived
+      // value (DESIGN-009 follow-up 4h — slugs are now random).
       final editableFinder = find.byType(EditableText);
       final controller =
           tester.widget<EditableText>(editableFinder).controller
               as TokenTextEditingController;
+      final tokenMatch = RegExp(
+        r'\{\{station\.loc\.[a-z][a-z0-9_]*\}\}',
+      ).firstMatch(controller.text);
+      expect(tokenMatch, isNotNull);
+      final token = tokenMatch!.group(0)!;
+
+      // The just-created location has no place/position yet, so its bare
+      // token chips amber — "declared but empty", the same as a freshly
+      // created {{var.x}} (ADR-0046/ADR-0047 share this three-way state).
       final span = controller.buildTextSpan(
         context: tester.element(editableFinder),
         style: const TextStyle(),
@@ -239,7 +248,7 @@ void main() {
       );
       Color? chipColor;
       span.visitChildren((child) {
-        if (child is TextSpan && child.text == '{{station.loc.sentrum}}') {
+        if (child is TextSpan && child.text == token) {
           chipColor = child.style?.color;
           return false;
         }

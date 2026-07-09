@@ -17,6 +17,10 @@ import 'package:ringdrill/views/station_form_screen.dart';
 /// `station_form_screen_variables_test.dart`), and `openFormSurface` opens
 /// each entity form as a `Dialog`, not a full-screen route.
 
+/// DESIGN-009 follow-up 4h — references are a random opaque id, not derived
+/// from the display label/name; assert the shape, never a specific value.
+final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
+
 Station _station({
   List<Location> locations = const [],
   List<Person> persons = const [],
@@ -125,11 +129,8 @@ void main() {
 
       expect(captured.value, isNotNull);
       expect(captured.value!.station.locations, hasLength(1));
-      // Auto-generated (DESIGN-009 follow-up 3b) -- no manual reference field.
-      expect(
-        captured.value!.station.locations.single.slug,
-        'sist_kjente_posisjon',
-      );
+      // Random, not derived from the label (DESIGN-009 follow-up 4h).
+      expect(captured.value!.station.locations.single.slug, matches(_slugPattern));
       expect(
         captured.value!.station.locations.single.label,
         'Sist kjente posisjon',
@@ -227,8 +228,8 @@ void main() {
 
       expect(captured.value, isNotNull);
       expect(captured.value!.station.persons, hasLength(1));
-      // Auto-generated (DESIGN-009 follow-up 3b) -- no manual reference field.
-      expect(captured.value!.station.persons.single.slug, 'anne_glemsk');
+      // Random, not derived from the name (DESIGN-009 follow-up 4h).
+      expect(captured.value!.station.persons.single.slug, matches(_slugPattern));
       expect(captured.value!.station.persons.single.name, 'Anne Glemsk');
     });
 
