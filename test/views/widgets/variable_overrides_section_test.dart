@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
+import 'package:ringdrill/views/widgets/variable_value_field.dart';
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -100,6 +101,38 @@ void main() {
     await tester.enterText(find.byType(TextFormField), '');
     expect(captured, <String, String>{});
   });
+
+  testWidgets(
+    'the local-value field is accented only when overridden '
+    '(DESIGN-008 follow-up 12)',
+    (tester) async {
+      await _pump(
+        tester,
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+        inherited: const {'frekvens': 'Kanal 6'},
+        overrides: const {},
+        onChanged: (_) {},
+      );
+      expect(
+        tester.widget<VariableValueField>(find.byType(VariableValueField)).accent,
+        isFalse,
+        reason: 'inheriting (no local override) is not accented',
+      );
+
+      await _pump(
+        tester,
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+        inherited: const {'frekvens': 'Kanal 6'},
+        overrides: const {'frekvens': 'Kanal 8'},
+        onChanged: (_) {},
+      );
+      expect(
+        tester.widget<VariableValueField>(find.byType(VariableValueField)).accent,
+        isTrue,
+        reason: 'a set local override is accented',
+      );
+    },
+  );
 
   testWidgets('has no add/rename/delete affordance', (tester) async {
     await _pump(

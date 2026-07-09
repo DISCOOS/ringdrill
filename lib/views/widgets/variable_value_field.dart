@@ -55,6 +55,7 @@ class VariableValueField extends StatefulWidget {
     required this.value,
     this.location,
     this.hintText,
+    this.accent = false,
     this.geocodingService,
     required this.onChanged,
   });
@@ -66,6 +67,13 @@ class VariableValueField extends StatefulWidget {
   /// Placeholder for the empty state (e.g. the override surfaces' "Lokal
   /// verdi").
   final String? hintText;
+
+  /// True when this field is the current scope's local override, not the
+  /// inherited default (DESIGN-008 follow-up 12, `variable-overrides.html`):
+  /// tints the field's border with the app's accent color so an overridden
+  /// row is visually distinct from an inherited one at a glance. The
+  /// declaration surface (no such concept) always leaves this false.
+  final bool accent;
 
   /// Geocoder for the location input's place lookups. Defaults to the real
   /// `osm_nominatim`-backed service; tests inject a fake so no test hits
@@ -151,6 +159,21 @@ class _VariableValueFieldState extends State<VariableValueField> {
   static String _coordinateDisplay(LatLng? position) =>
       position == null ? '' : formatUtm(position);
 
+  /// Overlays [widget.accent]'s tinted border onto [decoration] — a plain
+  /// [UnderlineInputBorder] in the app's accent color, the same
+  /// `colorScheme.primary` role the "Tilbakestill" action and every chip
+  /// already use for "this is the active/overridden one", rather than a new
+  /// box-style component. Returns [decoration] unchanged when not accented,
+  /// so the declaration surface's fields (never accented) keep the app's
+  /// default input look exactly as before.
+  InputDecoration _accented(InputDecoration decoration, ThemeData theme) {
+    if (!widget.accent) return decoration;
+    final border = UnderlineInputBorder(
+      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+    );
+    return decoration.copyWith(enabledBorder: border, focusedBorder: border);
+  }
+
   void _reportScalar(String value) {
     _lastReportedValue = value;
     widget.onChanged(value, null);
@@ -196,16 +219,19 @@ class _VariableValueFieldState extends State<VariableValueField> {
     return TextFormField(
       controller: _scalarController,
       keyboardType: keyboardType,
-      decoration: InputDecoration(
-        hintText: widget.hintText,
-        isDense: true,
-        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
-        // Without this, the icon's default 48x48 minimum tap-target box
-        // forces the whole (isDense) field taller than its text, so the
-        // icon sits noticeably off-center against the value — shrink the
-        // box to the icon's own size instead.
-        prefixIconConstraints: prefixIcon == null ? null : _iconConstraints,
-        suffixText: suffixText,
+      decoration: _accented(
+        InputDecoration(
+          hintText: widget.hintText,
+          isDense: true,
+          prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
+          // Without this, the icon's default 48x48 minimum tap-target box
+          // forces the whole (isDense) field taller than its text, so the
+          // icon sits noticeably off-center against the value — shrink the
+          // box to the icon's own size instead.
+          prefixIconConstraints: prefixIcon == null ? null : _iconConstraints,
+          suffixText: suffixText,
+        ),
+        Theme.of(context),
       ),
       autovalidateMode: AutovalidateMode.always,
       validator: (_) => _scalarError(l10n),
@@ -229,32 +255,35 @@ class _VariableValueFieldState extends State<VariableValueField> {
       initialValue: display,
       readOnly: true,
       onTap: onTap,
-      decoration: InputDecoration(
-        hintText: widget.hintText,
-        isDense: true,
-        prefixIcon: Icon(widget.type.icon, size: 18),
-        // Same fix as `_buildText`'s prefixIcon: shrink both icon boxes to
-        // their own size so the dense field's icons and value text line up
-        // on the same baseline instead of the icons' default 48x48
-        // tap-target box stretching the row taller than the text.
-        prefixIconConstraints: _iconConstraints,
-        suffixIconConstraints: _iconConstraints,
-        // A bare Icon in an InkWell, not IconButton: IconButton enforces
-        // its own ~48px minimum tap target internally regardless of the
-        // constraints handed to the outer suffixIcon slot, which was still
-        // stretching this field taller than the icon-less ones and
-        // vertically centering the text in that extra space instead of
-        // sitting it on the underline.
-        suffixIcon: widget.value.isEmpty
-            ? null
-            : Tooltip(
-                message: l10n.variableOverridesSectionResetAction,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => _reportScalar(''),
-                  child: const Icon(Icons.clear, size: 18),
+      decoration: _accented(
+        InputDecoration(
+          hintText: widget.hintText,
+          isDense: true,
+          prefixIcon: Icon(widget.type.icon, size: 18),
+          // Same fix as `_buildText`'s prefixIcon: shrink both icon boxes to
+          // their own size so the dense field's icons and value text line
+          // up on the same baseline instead of the icons' default 48x48
+          // tap-target box stretching the row taller than the text.
+          prefixIconConstraints: _iconConstraints,
+          suffixIconConstraints: _iconConstraints,
+          // A bare Icon in an InkWell, not IconButton: IconButton enforces
+          // its own ~48px minimum tap target internally regardless of the
+          // constraints handed to the outer suffixIcon slot, which was
+          // still stretching this field taller than the icon-less ones and
+          // vertically centering the text in that extra space instead of
+          // sitting it on the underline.
+          suffixIcon: widget.value.isEmpty
+              ? null
+              : Tooltip(
+                  message: l10n.variableOverridesSectionResetAction,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => _reportScalar(''),
+                    child: const Icon(Icons.clear, size: 18),
+                  ),
                 ),
-              ),
+        ),
+        Theme.of(context),
       ),
       autovalidateMode: AutovalidateMode.always,
       validator: (_) => _scalarError(l10n),
@@ -323,26 +352,30 @@ class _VariableValueFieldState extends State<VariableValueField> {
   // --- location input (reuses the DESIGN-009 Location machinery) ---
 
   Widget _buildLocation(AppLocalizations l10n) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextFormField(
           controller: _placeController,
           onChanged: _onPlaceChanged,
-          decoration: InputDecoration(
-            labelText: l10n.locationsSectionPlaceLabel,
-            hintText: l10n.locationsSectionPlaceSearchHint,
-            isDense: true,
-            suffixIcon: _searchingPlace
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : null,
+          decoration: _accented(
+            InputDecoration(
+              labelText: l10n.locationsSectionPlaceLabel,
+              hintText: l10n.locationsSectionPlaceSearchHint,
+              isDense: true,
+              suffixIcon: _searchingPlace
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : null,
+            ),
+            theme,
           ),
         ),
         if (_placeSuggestions.isNotEmpty)
@@ -354,10 +387,13 @@ class _VariableValueFieldState extends State<VariableValueField> {
         TextFormField(
           controller: _coordinateController,
           onChanged: _onCoordinateChanged,
-          decoration: InputDecoration(
-            labelText: l10n.variableLocationCoordinateLabel,
-            hintText: l10n.variableLocationCoordinateHint,
-            isDense: true,
+          decoration: _accented(
+            InputDecoration(
+              labelText: l10n.variableLocationCoordinateLabel,
+              hintText: l10n.variableLocationCoordinateHint,
+              isDense: true,
+            ),
+            theme,
           ),
           autocorrect: false,
           enableSuggestions: false,

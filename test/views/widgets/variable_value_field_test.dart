@@ -38,6 +38,7 @@ Future<void> _pump(
   String value = '',
   VariableLocation? location,
   GeocodingService? geocoder,
+  bool accent = false,
   required _Captured captured,
 }) {
   return tester.pumpWidget(
@@ -50,6 +51,7 @@ Future<void> _pump(
             type: type,
             value: value,
             location: location,
+            accent: accent,
             geocodingService: geocoder ?? _FakeGeocodingService(),
             onChanged: (v, loc) {
               captured.value = v;
@@ -73,6 +75,39 @@ void main() {
   setUpAll(() async {
     l = await AppLocalizations.delegate.load(const Locale('en'));
   });
+
+  testWidgets(
+    'accent tints the field border with the app\'s primary color '
+    '(DESIGN-008 follow-up 12)',
+    (tester) async {
+      final captured = _Captured();
+      await _pump(
+        tester,
+        type: VariableType.string,
+        accent: true,
+        captured: captured,
+      );
+
+      final fieldFinder = find.byType(TextField);
+      final field = tester.widget<TextField>(fieldFinder);
+      final border = field.decoration?.enabledBorder as UnderlineInputBorder?;
+      expect(border, isNotNull);
+
+      final theme = Theme.of(tester.element(fieldFinder));
+      expect(border!.borderSide.color, theme.colorScheme.primary);
+    },
+  );
+
+  testWidgets(
+    'no accent leaves the field\'s default border untouched',
+    (tester) async {
+      final captured = _Captured();
+      await _pump(tester, type: VariableType.string, captured: captured);
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.decoration?.enabledBorder, isNull);
+    },
+  );
 
   testWidgets('a non-numeric number surfaces an inline error', (tester) async {
     final captured = _Captured();

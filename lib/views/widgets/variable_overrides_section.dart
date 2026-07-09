@@ -221,6 +221,7 @@ class _OverrideCard extends StatelessWidget {
                           : decodeLocationValue(localOverride))
                     : null,
                 hintText: l10n.variableOverridesSectionLocalValueLabel,
+                accent: _isOverridden,
                 geocodingService: geocodingService,
                 onChanged: (value, location) => onChanged(
                   variable.type == VariableType.location
