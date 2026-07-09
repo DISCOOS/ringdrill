@@ -57,7 +57,7 @@ String resolveLocationFacet(Location location, List<String> facets) {
 String _locationUtm(Location location) {
   final position = location.position;
   if (position == null) return '';
-  return _formatUtm(position);
+  return formatUtm(position);
 }
 
 /// Sensible bare-token default: `place`, falling back to the UTM string when
@@ -65,6 +65,18 @@ String _locationUtm(Location location) {
 String _locationDefault(Location location) {
   if (location.place.isNotEmpty) return location.place;
   return _locationUtm(location);
+}
+
+/// Bare display for a location value that renders *both* parts — "place
+/// (UTM)" when both are set, otherwise whichever exists (DESIGN-008
+/// follow-up 11's bare `{{var.<name>}}` rendering for `location`-typed
+/// variables: place + UTM). Plain text, no markdown wrapping — the brief's
+/// own code-chip styling stays in `BriefRenderer`.
+String locationPlaceUtm(Location location) {
+  final utm = _locationUtm(location);
+  if (location.place.isEmpty) return utm;
+  if (utm.isEmpty) return location.place;
+  return '${location.place} ($utm)';
 }
 
 /// `{{station.person.<slug>[.facet]}}` facet resolution — same shape as
@@ -139,8 +151,10 @@ T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
 /// northing) — duplicated from `BriefRenderer._formatUtm`/
 /// `locations_section.dart._formatUtm` (the latter already duplicates it for
 /// the same "no `lib/services/` reuse, and the renderer's own copy is
-/// `@visibleForTesting`" reason).
-String _formatUtm(LatLng position) {
+/// `@visibleForTesting`" reason). Public since DESIGN-008 follow-up 11 so
+/// typed `location` variables (`variable_values.dart`) format their
+/// coordinate through this same shape instead of a fourth copy.
+String formatUtm(LatLng position) {
   final utm = position.utm();
   final e = utm.easting.toStringAsFixed(0).padLeft(7, '0');
   final n = utm.northing.toStringAsFixed(0).padLeft(7, '0');

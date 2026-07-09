@@ -2091,13 +2091,6 @@
       "name": { "type": "String" }
     }
   },
-  "variableOverridesSectionInheritedValueLabel": "Inherited: {value}",
-  "@variableOverridesSectionInheritedValueLabel": {
-    "description": "Dimmed text shown beside a declared variable's name in the VariableOverridesSection override table (Exercise/Station Variabler section) — the parent-scope effective value a row falls back to when its local override field is empty.",
-    "placeholders": {
-      "value": { "type": "String" }
-    }
-  },
   "variableOverridesSectionLocalValueLabel": "Local value",
   "@variableOverridesSectionLocalValueLabel": {
     "description": "Label of the per-row local-value text field in VariableOverridesSection. An empty field means inherit the parent scope's value."
@@ -2105,6 +2098,84 @@
   "variableOverridesSectionEmptyState": "No variables in the plan yet",
   "@variableOverridesSectionEmptyState": {
     "description": "Shown in VariableOverridesSection instead of the row list when the plan has no declared variables to override."
+  },
+  "variableOverridesSectionResetAction": "Reset",
+  "@variableOverridesSectionResetAction": {
+    "description": "Per-card action in VariableOverridesSection that clears the local override so the variable inherits its parenthesized default again (DESIGN-008 follow-up 11)."
+  },
+  "variableTypeLabelString": "Text",
+  "@variableTypeLabelString": {
+    "description": "VariableType.string label, shown on the declaration card's type chip and in the type picker (DESIGN-008 follow-up 11)."
+  },
+  "variableTypeLabelNumber": "Number",
+  "@variableTypeLabelNumber": {
+    "description": "VariableType.number label."
+  },
+  "variableTypeLabelTime": "Time",
+  "@variableTypeLabelTime": {
+    "description": "VariableType.time label (24-hour clock time, HH:MM)."
+  },
+  "variableTypeLabelDate": "Date",
+  "@variableTypeLabelDate": {
+    "description": "VariableType.date label."
+  },
+  "variableTypeLabelDuration": "Duration",
+  "@variableTypeLabelDuration": {
+    "description": "VariableType.duration label (a span in minutes)."
+  },
+  "variableTypeLabelLocation": "Location",
+  "@variableTypeLabelLocation": {
+    "description": "VariableType.location label (a place with a coordinate)."
+  },
+  "variableTypePickerTitle": "Type — {name}",
+  "@variableTypePickerTitle": {
+    "description": "Title of the per-variable type picker dialog opened from the declaration card's type chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "variableValueInvalidNumber": "Enter a number",
+  "@variableValueInvalidNumber": {
+    "description": "Inline validation error under a number-typed variable value field. An invalid value blocks save (DESIGN-008 follow-up 11)."
+  },
+  "variableValueInvalidTime": "Enter a time as HH:MM",
+  "@variableValueInvalidTime": {
+    "description": "Inline validation error under a time-typed variable value field."
+  },
+  "variableValueInvalidDate": "Enter a date as YYYY-MM-DD",
+  "@variableValueInvalidDate": {
+    "description": "Inline validation error under a date-typed variable value field."
+  },
+  "variableValueInvalidDuration": "Enter minutes as a whole number",
+  "@variableValueInvalidDuration": {
+    "description": "Inline validation error under a duration-typed variable value field."
+  },
+  "variableValueInvalidCoordinate": "Enter a coordinate as lat,lng or UTM",
+  "@variableValueInvalidCoordinate": {
+    "description": "Inline validation error under a location-typed variable's coordinate field when the typed/pasted text parses as neither a decimal lat,lng pair nor a UTM string."
+  },
+  "variableSaveBlockedInvalidValue": "Can’t save: invalid value for {names}",
+  "@variableSaveBlockedInvalidValue": {
+    "description": "Snackbar shown when saving a form is blocked because one or more typed variable values (defaults or overrides) do not read as their declared type — the same blocking rule as an unknown token (DESIGN-008 follow-up 11). {names} is a comma-separated list of variable names.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "variableDurationHourUnit": "h",
+  "@variableDurationHourUnit": {
+    "description": "Short hour unit used when rendering a duration-typed variable (\"1 h 30 min\"). Keep it short — it sits between the hour and minute counts."
+  },
+  "variableLocationCoordinateLabel": "Coordinate",
+  "@variableLocationCoordinateLabel": {
+    "description": "Label of the location-typed variable's coordinate text field."
+  },
+  "variableLocationCoordinateHint": "Type or paste lat,lng or UTM",
+  "@variableLocationCoordinateHint": {
+    "description": "Hint of the location-typed variable's coordinate text field — it accepts a decimal lat,lng pair or a UTM string, typed or pasted."
+  },
+  "variablesSectionEditHintAction": "Edit hint",
+  "@variablesSectionEditHintAction": {
+    "description": "Declaration-card menu action that opens the hint-editing dialog (the value itself is edited inline on the card since DESIGN-008 follow-up 11)."
   },
 
   "locationKindLkpLabel": "Last known position (LKP)",

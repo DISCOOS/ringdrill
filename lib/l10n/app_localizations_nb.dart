@@ -2053,16 +2053,72 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String variableOverridesSectionInheritedValueLabel(String value) {
-    return 'Arvet: $value';
-  }
-
-  @override
   String get variableOverridesSectionLocalValueLabel => 'Lokal verdi';
 
   @override
   String get variableOverridesSectionEmptyState =>
       'Ingen variabler i planen ennå';
+
+  @override
+  String get variableOverridesSectionResetAction => 'Tilbakestill';
+
+  @override
+  String get variableTypeLabelString => 'Tekst';
+
+  @override
+  String get variableTypeLabelNumber => 'Tall';
+
+  @override
+  String get variableTypeLabelTime => 'Tid';
+
+  @override
+  String get variableTypeLabelDate => 'Dato';
+
+  @override
+  String get variableTypeLabelDuration => 'Varighet';
+
+  @override
+  String get variableTypeLabelLocation => 'Lokasjon';
+
+  @override
+  String variableTypePickerTitle(String name) {
+    return 'Type — $name';
+  }
+
+  @override
+  String get variableValueInvalidNumber => 'Oppgi et tall';
+
+  @override
+  String get variableValueInvalidTime => 'Oppgi et klokkeslett som TT:MM';
+
+  @override
+  String get variableValueInvalidDate => 'Oppgi en dato som ÅÅÅÅ-MM-DD';
+
+  @override
+  String get variableValueInvalidDuration =>
+      'Oppgi antall minutter som et heltall';
+
+  @override
+  String get variableValueInvalidCoordinate =>
+      'Oppgi et koordinat som lat,lng eller UTM';
+
+  @override
+  String variableSaveBlockedInvalidValue(String names) {
+    return 'Kan ikke lagre: ugyldig verdi for $names';
+  }
+
+  @override
+  String get variableDurationHourUnit => 't';
+
+  @override
+  String get variableLocationCoordinateLabel => 'Koordinat';
+
+  @override
+  String get variableLocationCoordinateHint =>
+      'Skriv eller lim inn lat,lng eller UTM';
+
+  @override
+  String get variablesSectionEditHintAction => 'Rediger hint';
 
   @override
   String get locationKindLkpLabel => 'Sist kjent posisjon (LKP)';

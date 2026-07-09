@@ -126,6 +126,19 @@ Finder _variableRowMenu(String name) {
   return find.descendant(of: row, matching: find.byIcon(Icons.more_vert)).first;
 }
 
+/// The declaration card for the variable named [name] (DESIGN-008
+/// follow-up 11 — one Card per variable, value edited inline on it).
+Finder _variableCardOf(String name) =>
+    find.ancestor(of: find.text(name), matching: find.byType(Card)).first;
+
+/// The inline type-aware default-value field on [name]'s declaration card.
+Finder _variableValueFieldOf(String name) => find
+    .descendant(of: _variableCardOf(name), matching: find.byType(TextFormField))
+    .first;
+
+/// Edits a variable in the follow-up 11 declaration UI: the value inline on
+/// the card's type-aware field, the hint via the `⋮` menu's "Edit hint"
+/// dialog (the pre-11 flow edited both through one "Edit value" dialog).
 Future<void> _editVariableValue(
   WidgetTester tester,
   AppLocalizations l,
@@ -133,27 +146,24 @@ Future<void> _editVariableValue(
   String? value,
   String? hint,
 }) async {
-  await tester.tap(_variableRowMenu(name));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(l.variablesSectionEditValueAction));
-  await tester.pumpAndSettle();
-
   if (value != null) {
-    await tester.enterText(
-      find.widgetWithText(TextFormField, l.variablesSectionValueLabel),
-      value,
-    );
+    await tester.enterText(_variableValueFieldOf(name), value);
+    await tester.pumpAndSettle();
   }
   if (hint != null) {
+    await tester.tap(_variableRowMenu(name));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l.variablesSectionEditHintAction));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, l.variablesSectionHintLabel),
       hint,
     );
+    await tester.tap(
+      find.widgetWithText(FilledButton, l.variablesSectionEditHintAction),
+    );
+    await tester.pumpAndSettle();
   }
-  await tester.tap(
-    find.widgetWithText(FilledButton, l.variablesSectionEditValueAction),
-  );
-  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -234,9 +244,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('freken'), findsOneWidget);
-      // Declared but empty: the row shows the empty-value placeholder, not
-      // "freken" twice.
-      expect(find.text('—'), findsOneWidget);
+      // Declared but empty: the card's inline value field is empty.
+      expect(
+        tester.widget<TextFormField>(_variableValueFieldOf('freken')).controller?.text ?? '',
+        isEmpty,
+      );
     },
   );
 

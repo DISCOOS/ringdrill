@@ -111,14 +111,11 @@ void main() {
 
       expect(find.text('frekvens'), findsOneWidget);
       expect(find.text('sted'), findsOneWidget);
-      expect(
-        find.text(l.variableOverridesSectionInheritedValueLabel('Kanal 6')),
-        findsOneWidget,
-      );
-      expect(
-        find.text(l.variableOverridesSectionInheritedValueLabel('—')),
-        findsOneWidget,
-      );
+      // The inherited default reads as a parenthesized value after the name
+      // (DESIGN-008 follow-up 11, variable-overrides.html); an empty
+      // default renders no parenthesis at all.
+      expect(find.text('(Kanal 6)'), findsOneWidget);
+      expect(find.textContaining('(—)'), findsNothing);
     },
   );
 

@@ -3494,12 +3494,6 @@ abstract class AppLocalizations {
   /// **'“{name}” is still used here:'**
   String variablesSectionDeleteBlockedMessage(String name);
 
-  /// Dimmed text shown beside a declared variable's name in the VariableOverridesSection override table (Exercise/Station Variabler section) — the parent-scope effective value a row falls back to when its local override field is empty.
-  ///
-  /// In en, this message translates to:
-  /// **'Inherited: {value}'**
-  String variableOverridesSectionInheritedValueLabel(String value);
-
   /// Label of the per-row local-value text field in VariableOverridesSection. An empty field means inherit the parent scope's value.
   ///
   /// In en, this message translates to:
@@ -3511,6 +3505,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No variables in the plan yet'**
   String get variableOverridesSectionEmptyState;
+
+  /// Per-card action in VariableOverridesSection that clears the local override so the variable inherits its parenthesized default again (DESIGN-008 follow-up 11).
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get variableOverridesSectionResetAction;
+
+  /// VariableType.string label, shown on the declaration card's type chip and in the type picker (DESIGN-008 follow-up 11).
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get variableTypeLabelString;
+
+  /// VariableType.number label.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get variableTypeLabelNumber;
+
+  /// VariableType.time label (24-hour clock time, HH:MM).
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get variableTypeLabelTime;
+
+  /// VariableType.date label.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get variableTypeLabelDate;
+
+  /// VariableType.duration label (a span in minutes).
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get variableTypeLabelDuration;
+
+  /// VariableType.location label (a place with a coordinate).
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get variableTypeLabelLocation;
+
+  /// Title of the per-variable type picker dialog opened from the declaration card's type chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Type — {name}'**
+  String variableTypePickerTitle(String name);
+
+  /// Inline validation error under a number-typed variable value field. An invalid value blocks save (DESIGN-008 follow-up 11).
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number'**
+  String get variableValueInvalidNumber;
+
+  /// Inline validation error under a time-typed variable value field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a time as HH:MM'**
+  String get variableValueInvalidTime;
+
+  /// Inline validation error under a date-typed variable value field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a date as YYYY-MM-DD'**
+  String get variableValueInvalidDate;
+
+  /// Inline validation error under a duration-typed variable value field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter minutes as a whole number'**
+  String get variableValueInvalidDuration;
+
+  /// Inline validation error under a location-typed variable's coordinate field when the typed/pasted text parses as neither a decimal lat,lng pair nor a UTM string.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a coordinate as lat,lng or UTM'**
+  String get variableValueInvalidCoordinate;
+
+  /// Snackbar shown when saving a form is blocked because one or more typed variable values (defaults or overrides) do not read as their declared type — the same blocking rule as an unknown token (DESIGN-008 follow-up 11). {names} is a comma-separated list of variable names.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t save: invalid value for {names}'**
+  String variableSaveBlockedInvalidValue(String names);
+
+  /// Short hour unit used when rendering a duration-typed variable ("1 h 30 min"). Keep it short — it sits between the hour and minute counts.
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get variableDurationHourUnit;
+
+  /// Label of the location-typed variable's coordinate text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinate'**
+  String get variableLocationCoordinateLabel;
+
+  /// Hint of the location-typed variable's coordinate text field — it accepts a decimal lat,lng pair or a UTM string, typed or pasted.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or paste lat,lng or UTM'**
+  String get variableLocationCoordinateHint;
+
+  /// Declaration-card menu action that opens the hint-editing dialog (the value itself is edited inline on the card since DESIGN-008 follow-up 11).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit hint'**
+  String get variablesSectionEditHintAction;
 
   /// LocationKind.lkp label, shown in the kind picker and on the map (ADR-0047/DESIGN-009).
   ///

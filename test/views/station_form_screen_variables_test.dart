@@ -104,7 +104,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text(l.variableOverridesSectionInheritedValueLabel('Kanal 8')),
+      find.text('(Kanal 8)'),
       findsOneWidget,
       reason:
           'inherited at station scope means program overlaid by the '

@@ -1124,13 +1124,6 @@
       "name": { "type": "String" }
     }
   },
-  "variableOverridesSectionInheritedValueLabel": "Arvet: {value}",
-  "@variableOverridesSectionInheritedValueLabel": {
-    "description": "Nedtonet tekst vist ved siden av en deklarert variabels navn i VariableOverridesSection-overstyringstabellen (Øvelse/Post sin Variabler-seksjon) — verdien raden faller tilbake til når det lokale overstyringsfeltet er tomt.",
-    "placeholders": {
-      "value": { "type": "String" }
-    }
-  },
   "variableOverridesSectionLocalValueLabel": "Lokal verdi",
   "@variableOverridesSectionLocalValueLabel": {
     "description": "Etikett på det radvise lokal-verdi-tekstfeltet i VariableOverridesSection. Et tomt felt betyr at overordnet omfangs verdi arves."
@@ -1138,6 +1131,84 @@
   "variableOverridesSectionEmptyState": "Ingen variabler i planen ennå",
   "@variableOverridesSectionEmptyState": {
     "description": "Vist i VariableOverridesSection i stedet for radlisten når planen ikke har noen deklarerte variabler å overstyre."
+  },
+  "variableOverridesSectionResetAction": "Tilbakestill",
+  "@variableOverridesSectionResetAction": {
+    "description": "Handling per kort i VariableOverridesSection som tømmer den lokale overstyringen slik at variabelen arver standardverdien i parentes igjen (DESIGN-008 oppfølging 11)."
+  },
+  "variableTypeLabelString": "Tekst",
+  "@variableTypeLabelString": {
+    "description": "Etikett for VariableType.string, vist på deklarasjonskortets type-chip og i type-velgeren (DESIGN-008 oppfølging 11)."
+  },
+  "variableTypeLabelNumber": "Tall",
+  "@variableTypeLabelNumber": {
+    "description": "Etikett for VariableType.number."
+  },
+  "variableTypeLabelTime": "Tid",
+  "@variableTypeLabelTime": {
+    "description": "Etikett for VariableType.time (24-timers klokkeslett, TT:MM)."
+  },
+  "variableTypeLabelDate": "Dato",
+  "@variableTypeLabelDate": {
+    "description": "Etikett for VariableType.date."
+  },
+  "variableTypeLabelDuration": "Varighet",
+  "@variableTypeLabelDuration": {
+    "description": "Etikett for VariableType.duration (et tidsrom i minutter)."
+  },
+  "variableTypeLabelLocation": "Lokasjon",
+  "@variableTypeLabelLocation": {
+    "description": "Etikett for VariableType.location (et sted med koordinat)."
+  },
+  "variableTypePickerTitle": "Type — {name}",
+  "@variableTypePickerTitle": {
+    "description": "Tittel på type-velgeren per variabel, åpnet fra deklarasjonskortets type-chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "variableValueInvalidNumber": "Oppgi et tall",
+  "@variableValueInvalidNumber": {
+    "description": "Inline-valideringsfeil under et tall-typet variabelverdifelt. En ugyldig verdi blokkerer lagring (DESIGN-008 oppfølging 11)."
+  },
+  "variableValueInvalidTime": "Oppgi et klokkeslett som TT:MM",
+  "@variableValueInvalidTime": {
+    "description": "Inline-valideringsfeil under et tid-typet variabelverdifelt."
+  },
+  "variableValueInvalidDate": "Oppgi en dato som ÅÅÅÅ-MM-DD",
+  "@variableValueInvalidDate": {
+    "description": "Inline-valideringsfeil under et dato-typet variabelverdifelt."
+  },
+  "variableValueInvalidDuration": "Oppgi antall minutter som et heltall",
+  "@variableValueInvalidDuration": {
+    "description": "Inline-valideringsfeil under et varighet-typet variabelverdifelt."
+  },
+  "variableValueInvalidCoordinate": "Oppgi et koordinat som lat,lng eller UTM",
+  "@variableValueInvalidCoordinate": {
+    "description": "Inline-valideringsfeil under koordinatfeltet til en lokasjon-typet variabel når teksten verken kan leses som desimal lat,lng eller en UTM-streng."
+  },
+  "variableSaveBlockedInvalidValue": "Kan ikke lagre: ugyldig verdi for {names}",
+  "@variableSaveBlockedInvalidValue": {
+    "description": "Snackbar vist når lagring blokkeres fordi én eller flere typede variabelverdier (standardverdier eller overstyringer) ikke kan leses som sin deklarerte type — samme blokkeringsregel som et ukjent token (DESIGN-008 oppfølging 11). {names} er en kommaseparert liste av variabelnavn.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "variableDurationHourUnit": "t",
+  "@variableDurationHourUnit": {
+    "description": "Kort timeenhet brukt når en varighet-typet variabel rendres («1 t 30 min»). Hold den kort — den står mellom time- og minutt-tallene."
+  },
+  "variableLocationCoordinateLabel": "Koordinat",
+  "@variableLocationCoordinateLabel": {
+    "description": "Etikett på koordinat-tekstfeltet til en lokasjon-typet variabel."
+  },
+  "variableLocationCoordinateHint": "Skriv eller lim inn lat,lng eller UTM",
+  "@variableLocationCoordinateHint": {
+    "description": "Hint på koordinat-tekstfeltet til en lokasjon-typet variabel — det godtar et desimalt lat,lng-par eller en UTM-streng, skrevet eller limt inn."
+  },
+  "variablesSectionEditHintAction": "Rediger hint",
+  "@variablesSectionEditHintAction": {
+    "description": "Menyhandling på deklarasjonskortet som åpner hint-redigeringsdialogen (selve verdien redigeres inline på kortet siden DESIGN-008 oppfølging 11)."
   },
 
   "locationKindLkpLabel": "Sist kjent posisjon (LKP)",

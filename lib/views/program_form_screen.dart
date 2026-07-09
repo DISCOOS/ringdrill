@@ -4,6 +4,7 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/utils/plan_variable_refs.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
@@ -250,13 +251,14 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     );
   }
 
-  /// Replaces the matching entry's value/hint in place (name unchanged, no
-  /// plan-wide rewrite needed — `{{var.<name>}}` tokens stay valid). The
-  /// `setState` rebuild passes the updated registry down through
-  /// [PlanScope], so a now-non-empty variable's chips re-resolve from amber
-  /// to blue without losing focus, the same refresh path
-  /// `_addVariable`/`_renameVariablePlanWide` already rely on.
-  void _editVariableValue(DrillVariable updated) {
+  /// Replaces the matching entry (name unchanged, no plan-wide rewrite
+  /// needed — `{{var.<name>}}` tokens stay valid) — the single sink for the
+  /// declaration cards' inline value edits, type changes and hint edits
+  /// (DESIGN-008 follow-up 11). The `setState` rebuild passes the updated
+  /// registry down through [PlanScope], so a now-non-empty variable's chips
+  /// re-resolve from amber to blue without losing focus, the same refresh
+  /// path `_addVariable`/`_renameVariablePlanWide` already rely on.
+  void _updateVariable(DrillVariable updated) {
     setState(() {
       _variables = [
         for (final v in _variables)
@@ -439,7 +441,7 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                 onAdd: _addVariable,
                 onRename: _renameVariablePlanWide,
                 onDelete: _deleteVariable,
-                onEditValue: _editVariableValue,
+                onUpdate: _updateVariable,
                 referenceCount: (name) =>
                     variableReferenceCount(_workingProgram(), name),
                 referenceDescriptions: (name) => [
@@ -542,6 +544,25 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       );
       return;
     }
+    // An invalid typed value blocks save exactly as an unknown token does
+    // (DESIGN-008 follow-up 11). State-level, not just the Form validators:
+    // the Variabler section may not be mounted (SectionNavigatedForm shows
+    // one section at a time), and an invalid default — e.g. after a type
+    // change — must still block.
+    final invalidNames = [
+      for (final v in _variables)
+        if (!isVariableValueValid(v.type, v.value)) v.name,
+    ];
+    if (invalidNames.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l.variableSaveBlockedInvalidValue(invalidNames.join(', ')),
+          ),
+        ),
+      );
+      return;
+    }
     final updated = widget.program.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
@@ -550,7 +571,14 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
       briefIntroMd: _readSection(_Section.briefIntro),
       commsMd: _readSection(_Section.comms),
       beforeRoundMd: _readSection(_Section.beforeRound),
-      variables: List<DrillVariable>.unmodifiable(_variables),
+      // Values may still be raw user input (e.g. "3,14"); store the
+      // canonical encoding now that validation has passed.
+      variables: List<DrillVariable>.unmodifiable([
+        for (final v in _variables)
+          v.copyWith(
+            value: canonicalizeVariableValue(v.type, v.value) ?? v.value,
+          ),
+      ]),
       metadata: widget.program.metadata.copyWith(
         updated: DateTime.now(),
         languageCode: _languageCode,

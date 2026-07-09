@@ -12,6 +12,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
@@ -163,7 +164,12 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// parent `Exercise`, not the whole `Program` (same reasoning as
   /// `ExerciseFormScreen`'s simpler one-level version).
   Map<String, String> get _inheritedAtExerciseScope {
-    final vars = {for (final v in widget.variables) v.name: v.value};
+    // Canonical string encoding per type (a location default encodes place
+    // + coordinate, DESIGN-008 follow-up 11) — the same shape the exercise
+    // override strings already carry.
+    final vars = {
+      for (final v in widget.variables) v.name: canonicalVariableValue(v),
+    };
     final exercise = widget.parentExercise;
     if (exercise != null) {
       for (final entry in exercise.variableOverrides.entries) {
@@ -904,6 +910,42 @@ class _StationFormScreenState extends State<StationFormScreen> {
         );
         return;
       }
+
+      // An invalid typed override blocks save exactly as an unknown token
+      // does (DESIGN-008 follow-up 11). State-level, not just the Form
+      // validators: the Variabler section may not be the mounted one.
+      final declaredTypes = {
+        for (final v in widget.variables) v.name: v.type,
+      };
+      final invalidOverrides = [
+        for (final entry in _workingOverrides.entries)
+          if (!isVariableValueValid(
+            declaredTypes[entry.key] ?? VariableType.string,
+            entry.value,
+          ))
+            entry.key,
+      ];
+      if (invalidOverrides.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l.variableSaveBlockedInvalidValue(invalidOverrides.join(', ')),
+            ),
+          ),
+        );
+        return;
+      }
+      // Overrides may still be raw user input (e.g. "3,14"); store the
+      // canonical encoding now that validation has passed.
+      _workingOverrides = {
+        for (final entry in _workingOverrides.entries)
+          entry.key:
+              canonicalizeVariableValue(
+                declaredTypes[entry.key] ?? VariableType.string,
+                entry.value,
+              ) ??
+              entry.value,
+      };
 
       _formKey.currentState!.save();
       final name = _nameController.text.trim();

@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/services/geocoding_service.dart';
+import 'package:ringdrill/utils/variable_values.dart';
+import 'package:ringdrill/views/widgets/variable_type_labels.dart';
+import 'package:ringdrill/views/widgets/variable_value_field.dart';
 
 /// DESIGN-008 "Variabler" **override** section shape (as opposed to
-/// [VariablesSection]'s **declaration** shape on `Program`): one row per
-/// declared plan variable showing its parent-scope [inherited] value
-/// (dimmed) and a local-value field backed by [overrides]. An empty local
-/// field means "inherit" (the name is absent from [overrides]); typing a
-/// value sets the override; clearing it reverts to inherit. No
-/// add/rename/delete — a variable's identity is only ever declared on
-/// `Program` (ADR-0046); this table can only override an existing value.
+/// [VariablesSection]'s **declaration** shape on `Program`), reshaped by
+/// follow-up 11 (`variable-overrides.html`): a card per declared plan
+/// variable with the name, the parent-scope default in parentheses after it
+/// — formatted for the variable's type (a time as `12:00`, a location as
+/// its UTM) — and the type-aware local-value input below, backed by
+/// [overrides]. An empty local value means "inherit" (the name is absent
+/// from [overrides]); setting one overrides for this subtree; the
+/// "Tilbakestill" action clears it back to inherit. No add/rename/delete —
+/// a variable's identity (and its type) is only ever declared on `Program`
+/// (ADR-0046); this table can only override an existing value.
 ///
 /// Presentation-only, mirroring `VariablesSection`: [variables], [inherited]
 /// and [overrides] are owned by the caller, and so is [onChanged]. The
@@ -19,68 +26,52 @@ import 'package:ringdrill/models/drill_variable.dart';
 /// simply the program's declared default (no scope between program and
 /// exercise), while a `Station` editor's (follow-up 07) is the *exercise's*
 /// effective value, cascading through the exercise's own overrides.
-class VariableOverridesSection extends StatefulWidget {
+class VariableOverridesSection extends StatelessWidget {
   const VariableOverridesSection({
     super.key,
     required this.variables,
     required this.inherited,
     required this.overrides,
     required this.onChanged,
+    this.geocodingService,
   });
 
-  /// The plan's declared variables, read-only here.
+  /// The plan's declared variables, read-only here. The declared [type]
+  /// drives each card's input and the formatting of its default.
   final List<DrillVariable> variables;
 
-  /// Parent-scope effective value per variable name — what a row resolves
-  /// to with no local override.
+  /// Parent-scope effective value per variable name, in the type's
+  /// canonical string encoding (`canonicalVariableValue` /
+  /// `encodeLocationValue`) — what a card resolves to with no local
+  /// override.
   final Map<String, String> inherited;
 
   /// This entity's current local overrides. A name absent from this map
   /// inherits; a name present in it overrides the parent-scope value.
   final Map<String, String> overrides;
 
-  /// Called with the whole updated overrides map whenever a row's local
+  /// Called with the whole updated overrides map whenever a card's local
   /// value changes.
   final ValueChanged<Map<String, String>> onChanged;
 
-  @override
-  State<VariableOverridesSection> createState() =>
-      _VariableOverridesSectionState();
-}
+  /// Geocoder handed through to `location`-typed value inputs; tests
+  /// inject a fake so no test hits the network.
+  final GeocodingService? geocodingService;
 
-class _VariableOverridesSectionState extends State<VariableOverridesSection> {
-  // The variable list is read-only in this editor (no create/rename/delete
-  // reaches it), so building the controller map once — keyed by name, seeded
-  // from the working overrides — is safe: it never needs to grow, shrink or
-  // re-seed for the lifetime of this widget.
-  late final Map<String, TextEditingController> _controllers = {
-    for (final v in widget.variables)
-      v.name: TextEditingController(text: widget.overrides[v.name] ?? ''),
-  };
-
-  @override
-  void dispose() {
-    for (final c in _controllers.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  void _handleChanged(String name, String value) {
-    final trimmed = value.trim();
-    final updated = {...widget.overrides};
-    if (trimmed.isEmpty) {
+  void _handleChanged(String name, String encoded) {
+    final updated = {...overrides};
+    if (encoded.trim().isEmpty) {
       updated.remove(name);
     } else {
-      updated[name] = trimmed;
+      updated[name] = encoded;
     }
-    widget.onChanged(updated);
+    onChanged(updated);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    if (widget.variables.isEmpty) {
+    if (variables.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -98,13 +89,14 @@ class _VariableOverridesSectionState extends State<VariableOverridesSection> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          for (final variable in widget.variables)
-            _OverrideRow(
+          for (final variable in variables)
+            _OverrideCard(
               key: ValueKey(variable.name),
-              name: variable.name,
-              inheritedValue: widget.inherited[variable.name] ?? '',
-              controller: _controllers[variable.name]!,
-              onChanged: (value) => _handleChanged(variable.name, value),
+              variable: variable,
+              inheritedValue: inherited[variable.name] ?? '',
+              overrideValue: overrides[variable.name],
+              geocodingService: geocodingService,
+              onChanged: (encoded) => _handleChanged(variable.name, encoded),
             ),
         ],
       ),
@@ -112,62 +104,135 @@ class _VariableOverridesSectionState extends State<VariableOverridesSection> {
   }
 }
 
-class _OverrideRow extends StatelessWidget {
-  const _OverrideRow({
+class _OverrideCard extends StatelessWidget {
+  const _OverrideCard({
     super.key,
-    required this.name,
+    required this.variable,
     required this.inheritedValue,
-    required this.controller,
+    required this.overrideValue,
     required this.onChanged,
+    this.geocodingService,
   });
 
-  final String name;
+  final DrillVariable variable;
+
+  /// Parent-scope effective value in the type's canonical string encoding.
   final String inheritedValue;
-  final TextEditingController controller;
+
+  /// This scope's local override (canonical string encoding), or null when
+  /// the card inherits.
+  final String? overrideValue;
+
+  /// Reports the new local value in its canonical string encoding; empty
+  /// means "revert to inherit".
   final ValueChanged<String> onChanged;
+  final GeocodingService? geocodingService;
+
+  bool get _isOverridden => overrideValue != null;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    // The parenthesized default reads formatted for its type — a time as
+    // `12:00`, a location as its UTM (DESIGN-008 follow-up 11). Empty
+    // default → no parenthesis at all.
+    final formattedDefault = formatVariableValue(
+      applyVariableOverride(variable, inheritedValue),
+      variableFormatOf(l10n),
+    );
+    final localOverride = overrideValue;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    variable.name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      formattedDefault.isEmpty ? '' : '($formattedDefault)',
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  if (_isOverridden)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => onChanged(''),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.restart_alt,
+                              size: 14,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              l10n.variableOverridesSectionResetAction,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.variableOverridesSectionInheritedValueLabel(
-                    inheritedValue.isEmpty ? '—' : inheritedValue,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+              const SizedBox(height: 8),
+              VariableValueField(
+                // Keyed by name + declared type only: a reset flows through
+                // the field's own outside-change sync (so the first
+                // keystroke of an override never remounts the field under
+                // the caret), while a (rare) declared-type change reshapes
+                // the input by remounting.
+                key: ValueKey('${variable.name}:${variable.type.name}'),
+                type: variable.type,
+                value: variable.type == VariableType.location
+                    ? ''
+                    : localOverride ?? '',
+                location: variable.type == VariableType.location
+                    ? (localOverride == null
+                          ? null
+                          : decodeLocationValue(localOverride))
+                    : null,
+                hintText: l10n.variableOverridesSectionLocalValueLabel,
+                geocodingService: geocodingService,
+                onChanged: (value, location) => onChanged(
+                  variable.type == VariableType.location
+                      ? encodeLocationValue(
+                          location ?? const VariableLocation(),
+                        )
+                      : value,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              labelText: l10n.variableOverridesSectionLocalValueLabel,
-              isDense: true,
-            ),
-            onChanged: onChanged,
-          ),
-        ],
+        ),
       ),
     );
   }

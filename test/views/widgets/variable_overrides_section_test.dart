@@ -44,15 +44,13 @@ void main() {
 
     expect(find.text('frekvens'), findsOneWidget);
     expect(find.text('sted'), findsOneWidget);
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // The inherited default reads as a parenthesized value after the name
+    // (DESIGN-008 follow-up 11, variable-overrides.html).
+    expect(find.text('(Kanal 6)'), findsOneWidget);
     expect(
-      find.text(l10n.variableOverridesSectionInheritedValueLabel('Kanal 6')),
-      findsOneWidget,
-    );
-    expect(
-      find.text(l10n.variableOverridesSectionInheritedValueLabel('—')),
-      findsOneWidget,
-      reason: 'a declared-but-empty inherited value shows as an em dash',
+      find.textContaining('(—)'),
+      findsNothing,
+      reason: 'a declared-but-empty inherited value renders no parenthesis',
     );
   });
 

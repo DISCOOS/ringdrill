@@ -7,6 +7,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
@@ -280,8 +281,12 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
     // The program-declared default is this scope's inherited baseline: an
     // Exercise sits directly under Program in ADR-0046's chain, with no
     // intermediate scope, so "no local override" always falls back to
-    // exactly the declared value.
-    final inherited = {for (final v in widget.variables) v.name: v.value};
+    // exactly the declared value — in the type's canonical string encoding
+    // (a location default encodes place + coordinate, DESIGN-008 follow-up
+    // 11).
+    final inherited = {
+      for (final v in widget.variables) v.name: canonicalVariableValue(v),
+    };
 
     return PlanScope(
       // Declared variables plus anything created inline this session, so a
@@ -613,6 +618,42 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         );
         return;
       }
+
+      // An invalid typed override blocks save exactly as an unknown token
+      // does (DESIGN-008 follow-up 11). State-level, not just the Form
+      // validators: the Variabler section may not be the mounted one.
+      final declaredTypes = {
+        for (final v in widget.variables) v.name: v.type,
+      };
+      final invalidOverrides = [
+        for (final entry in _workingOverrides.entries)
+          if (!isVariableValueValid(
+            declaredTypes[entry.key] ?? VariableType.string,
+            entry.value,
+          ))
+            entry.key,
+      ];
+      if (invalidOverrides.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l.variableSaveBlockedInvalidValue(invalidOverrides.join(', ')),
+            ),
+          ),
+        );
+        return;
+      }
+      // Overrides may still be raw user input (e.g. "3,14"); store the
+      // canonical encoding now that validation has passed.
+      _workingOverrides = {
+        for (final entry in _workingOverrides.entries)
+          entry.key:
+              canonicalizeVariableValue(
+                declaredTypes[entry.key] ?? VariableType.string,
+                entry.value,
+              ) ??
+              entry.value,
+      };
 
       final name = _nameController.text.trim();
       final numberOfTeams = int.parse(_numberOfTeamsController.text);

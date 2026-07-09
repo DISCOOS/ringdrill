@@ -2055,16 +2055,70 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String variableOverridesSectionInheritedValueLabel(String value) {
-    return 'Inherited: $value';
-  }
-
-  @override
   String get variableOverridesSectionLocalValueLabel => 'Local value';
 
   @override
   String get variableOverridesSectionEmptyState =>
       'No variables in the plan yet';
+
+  @override
+  String get variableOverridesSectionResetAction => 'Reset';
+
+  @override
+  String get variableTypeLabelString => 'Text';
+
+  @override
+  String get variableTypeLabelNumber => 'Number';
+
+  @override
+  String get variableTypeLabelTime => 'Time';
+
+  @override
+  String get variableTypeLabelDate => 'Date';
+
+  @override
+  String get variableTypeLabelDuration => 'Duration';
+
+  @override
+  String get variableTypeLabelLocation => 'Location';
+
+  @override
+  String variableTypePickerTitle(String name) {
+    return 'Type — $name';
+  }
+
+  @override
+  String get variableValueInvalidNumber => 'Enter a number';
+
+  @override
+  String get variableValueInvalidTime => 'Enter a time as HH:MM';
+
+  @override
+  String get variableValueInvalidDate => 'Enter a date as YYYY-MM-DD';
+
+  @override
+  String get variableValueInvalidDuration => 'Enter minutes as a whole number';
+
+  @override
+  String get variableValueInvalidCoordinate =>
+      'Enter a coordinate as lat,lng or UTM';
+
+  @override
+  String variableSaveBlockedInvalidValue(String names) {
+    return 'Can’t save: invalid value for $names';
+  }
+
+  @override
+  String get variableDurationHourUnit => 'h';
+
+  @override
+  String get variableLocationCoordinateLabel => 'Coordinate';
+
+  @override
+  String get variableLocationCoordinateHint => 'Type or paste lat,lng or UTM';
+
+  @override
+  String get variablesSectionEditHintAction => 'Edit hint';
 
   @override
   String get locationKindLkpLabel => 'Last known position (LKP)';
