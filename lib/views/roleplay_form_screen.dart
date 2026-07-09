@@ -76,6 +76,12 @@ class RolePlayFormScreen extends StatefulWidget {
 }
 
 class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
+  /// Below this width, the Person selector and the Kjønn segmented control
+  /// (DESIGN-009 prompt 4g) stack instead of sharing a row — a dropdown
+  /// plus a 3-segment control is too tight to force onto one line on a
+  /// narrow phone.
+  static const double _kPersonGenderBreakpoint = 360;
+
   final _formKey = GlobalKey<FormState>();
   final _programService = ProgramService();
 
@@ -613,65 +619,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: RingDrillTextField(
-                      controller: _nameController,
-                      label: l.roleName,
-                      autofocus: true,
-                      tokenAware: true,
-                      overrides: _effectiveVariables,
-                      planFields: planFields,
-                      // Rebuilds this screen so the effective-identity
-                      // preview and the field's own inherited/override
-                      // caption stay live as the author types — the
-                      // controller's own notifyListeners() only repaints
-                      // the field itself (DESIGN-009 follow-up 4).
-                      onChanged: (_) => setState(() {}),
-                      onCreateVariable: _createVariableInline,
-                      onCreateLocation: _createLocationInline,
-                      onCreatePerson: _createPersonInline,
-                      validator: (value) =>
-                          value != null && value.trim().isNotEmpty
-                          ? null
-                          : l.pleaseEnterAName,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 80,
-                    child: TextFormField(
-                      key: const Key('age-field'),
-                      controller: _ageController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(labelText: l.roleAge),
-                      onChanged: (_) => setState(() {}),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return null;
-                        final age = int.tryParse(value);
-                        if (age == null || age < 0 || age > 120) {
-                          return l.ageRange;
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              if (_personRef != null)
-                _identityCaption(
-                  context,
-                  l,
-                  inherited: _isInherited(
-                    _nameController.text,
-                    _personBySlug(_personRef)?.name,
-                  ),
-                ),
-              const SizedBox(height: 12),
+              // 1. Post — the most structural choice (which post the
+              // marker is on), so it leads (DESIGN-009 prompt 4g).
               DropdownButtonFormField<int?>(
+                key: const Key('station-field'),
                 initialValue: _stationIndex,
                 isExpanded: true,
                 decoration: InputDecoration(
@@ -743,82 +694,154 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                key: const Key('person-field'),
-                initialValue: _personRef,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l.rolePlayPersonLabel),
-                items: [
-                  for (final person in _workingPersons)
-                    DropdownMenuItem(
-                      value: person.slug,
-                      child: Text(
-                        person.name.isEmpty ? person.slug : person.name,
-                      ),
-                    ),
-                ],
-                // Mandatory personRef is scoped to "a station is selected"
-                // (ADR-0047): persons are station-owned, so there is
-                // nothing to require a selection *from* without one —
-                // mirrors the station dropdown's own
-                // `stations.isNotEmpty && v == null` conditioning above.
-                validator: (_) => _parentStation != null && _personRef == null
-                    ? l.pleaseSelectPerson
-                    : null,
-                onChanged: _onPersonChanged,
-              ),
-              if (_personRef != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  l.rolePlayEffectiveIdentityPreview(
-                    _effectiveIdentitySummary(),
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Column(
+              // 2. Navn + Alder — the effective identity, inherited.
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    l.roleGender,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  Expanded(
+                    child: RingDrillTextField(
+                      controller: _nameController,
+                      label: l.roleName,
+                      autofocus: true,
+                      tokenAware: true,
+                      overrides: _effectiveVariables,
+                      planFields: planFields,
+                      // Rebuilds this screen so the effective-identity
+                      // preview and the field's own inherited/override
+                      // caption stay live as the author types — the
+                      // controller's own notifyListeners() only repaints
+                      // the field itself (DESIGN-009 follow-up 4).
+                      onChanged: (_) => setState(() {}),
+                      onCreateVariable: _createVariableInline,
+                      onCreateLocation: _createLocationInline,
+                      onCreatePerson: _createPersonInline,
+                      validator: (value) =>
+                          value != null && value.trim().isNotEmpty
+                          ? null
+                          : l.pleaseEnterAName,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  GenderSegmentedControl(
-                    value: _gender,
-                    onChanged: (value) => setState(() {
-                      _gender = value;
-                    }),
-                  ),
-                  if (_personRef != null)
-                    _identityCaption(
-                      context,
-                      l,
-                      inherited: _isInherited(
-                        _gender ?? '',
-                        _personBySlug(_personRef)?.gender,
-                      ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 80,
+                    child: TextFormField(
+                      key: const Key('age-field'),
+                      controller: _ageController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(labelText: l.roleAge),
+                      onChanged: (_) => setState(() {}),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return null;
+                        final age = int.tryParse(value);
+                        if (age == null || age < 0 || age > 120) {
+                          return l.ageRange;
+                        }
+                        return null;
+                      },
                     ),
+                  ),
                 ],
               ),
+              if (_personRef != null)
+                _identityCaption(
+                  context,
+                  l,
+                  inherited: _isInherited(
+                    _nameController.text,
+                    _personBySlug(_personRef)?.name,
+                  ),
+                ),
               const SizedBox(height: 16),
-              PositionFormField(
-                key: ValueKey(_position),
-                initialValue: _position,
-                onChanged: (pos) {
-                  _position = pos;
-                  _positionFromStation = false;
-                },
-                onSaved: (pos) {
-                  _rolePlay = _rolePlay.copyWith(position: pos);
+              // 3. Person + Kjønn on one row where it fits, stacked on a
+              // narrow width (DESIGN-009 prompt 4g). The explicit
+              // "Effektiv identitet:" preview is dropped here — with these
+              // fields now interleaved with the selectors, the per-field
+              // "Arvet fra person"/"Overstyrt" captions already carry that
+              // meaning.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final personField = DropdownButtonFormField<String>(
+                    key: const Key('person-field'),
+                    initialValue: _personRef,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: l.rolePlayPersonLabel,
+                    ),
+                    items: [
+                      for (final person in _workingPersons)
+                        DropdownMenuItem(
+                          value: person.slug,
+                          child: Text(
+                            person.name.isEmpty ? person.slug : person.name,
+                          ),
+                        ),
+                    ],
+                    // Mandatory personRef is scoped to "a station is
+                    // selected" (ADR-0047): persons are station-owned, so
+                    // there is nothing to require a selection *from*
+                    // without one — mirrors the station dropdown's own
+                    // `stations.isNotEmpty && v == null` conditioning
+                    // above.
+                    validator: (_) =>
+                        _parentStation != null && _personRef == null
+                        ? l.pleaseSelectPerson
+                        : null,
+                    onChanged: _onPersonChanged,
+                  );
+                  final genderField = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l.roleGender,
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      GenderSegmentedControl(
+                        value: _gender,
+                        onChanged: (value) => setState(() {
+                          _gender = value;
+                        }),
+                      ),
+                      if (_personRef != null)
+                        _identityCaption(
+                          context,
+                          l,
+                          inherited: _isInherited(
+                            _gender ?? '',
+                            _personBySlug(_personRef)?.gender,
+                          ),
+                        ),
+                    ],
+                  );
+                  if (constraints.maxWidth < _kPersonGenderBreakpoint) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        personField,
+                        const SizedBox(height: 16),
+                        genderField,
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: personField),
+                      const SizedBox(width: 12),
+                      Expanded(flex: 2, child: genderField),
+                    ],
+                  );
                 },
               ),
               const SizedBox(height: 16),
+              // 4. Signalement.
               TextFormField(
                 controller: _signalementController,
                 onChanged: (_) => setState(() {}),
@@ -839,6 +862,20 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                     _personBySlug(_personRef)?.signalement,
                   ),
                 ),
+              const SizedBox(height: 16),
+              // 5. Posisjon — unchanged existing PositionFormField row
+              // variant.
+              PositionFormField(
+                key: ValueKey(_position),
+                initialValue: _position,
+                onChanged: (pos) {
+                  _position = pos;
+                  _positionFromStation = false;
+                },
+                onSaved: (pos) {
+                  _rolePlay = _rolePlay.copyWith(position: pos);
+                },
+              ),
             ],
           ),
         ),
@@ -864,24 +901,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         ),
       ),
     );
-  }
-
-  /// "Anne Glemsk, 47, kvinne, ..." — the current effective identity, for
-  /// the small preview line under the person selector (ADR-0047). Always
-  /// reflects the fields as they stand right now, the same effective
-  /// values [_save] persists.
-  String _effectiveIdentitySummary() {
-    final l = AppLocalizations.of(context)!;
-    final ageText = _ageController.text.trim();
-    final genderLabel = genderLabelFor(_gender, l);
-    final signalement = _signalementController.text.trim();
-    final parts = [
-      _nameController.text.trim(),
-      if (ageText.isNotEmpty) ageText,
-      ?genderLabel,
-      if (signalement.isNotEmpty) signalement,
-    ];
-    return parts.where((p) => p.isNotEmpty).join(', ');
   }
 
   void _save() {
