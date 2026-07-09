@@ -199,13 +199,8 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
               sections: widget.sections,
               addable: widget.addable,
               current: current,
-              l10n: l10n,
               onSelect: _selectOrAdd,
               onRemove: () => _removeCurrent(current),
-              hasPrevious: hasPrevious,
-              hasNext: hasNext,
-              onPrevious: () => _step(current, -1),
-              onNext: () => _step(current, 1),
             )
           : SafeArea(child: current.builder(context)),
     );
@@ -358,47 +353,53 @@ class _SectionSwitcherSheetState extends State<_SectionSwitcherSheet> {
   }
 }
 
-/// Master/detail body for medium/expanded: a left rail listing sections
-/// (~210 logical px, per DESIGN-008's `variables-wide.html` mockup) and a
-/// detail pane with its own header (label + overflow remove) above the
-/// current section's body.
+/// Master/detail body for medium/expanded (DESIGN-008 follow-up 12, ADR-0030,
+/// `post-editor-wide.html`): a left rail listing sections (~210 logical px,
+/// per DESIGN-008's `variables-wide.html` mockup) and a detail pane whose
+/// header is just the `⋮` section-actions menu — the rail's highlighted
+/// item already *is* the title, so the detail pane never repeats it, and
+/// the `‹ ›` prev/next controls are dropped too (redundant with the rail,
+/// unlike compact where they are the only way to move between sections
+/// without opening the switcher sheet).
+///
+/// [current.builder] gets the full remaining height with no extra outer
+/// padding — the same as compact's `SafeArea(child: current.builder(...))`
+/// — so a section that renders its own edge-to-edge bottom bar (e.g.
+/// `PersonsSection`/`LocationsSection`'s search + "+ Ny …" row) spans the
+/// detail pane exactly as it does on compact, instead of floating inset
+/// inside a 16px margin.
 class _WideBody extends StatelessWidget {
   const _WideBody({
     required this.sections,
     required this.addable,
     required this.current,
-    required this.l10n,
     required this.onSelect,
     required this.onRemove,
-    required this.hasPrevious,
-    required this.hasNext,
-    required this.onPrevious,
-    required this.onNext,
   });
 
   final List<FormSection> sections;
   final List<FormSection> addable;
   final FormSection current;
-  final AppLocalizations l10n;
   final ValueChanged<String> onSelect;
   final VoidCallback onRemove;
 
-  /// The rail already shows every section, so these are secondary here —
-  /// included for consistency with the compact AppBar controls.
-  final bool hasPrevious;
-  final bool hasNext;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
           width: 210,
           child: Material(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            key: const ValueKey('sectionRailSurface'),
+            // The same surface tone `Card`/`BottomAppBar` already use
+            // elsewhere in the app (`colorScheme.surface`, not a
+            // seed-derived `surfaceContainer*` tone) — "a step off the
+            // page background", integrated with the rest of the chrome,
+            // rather than the near-black `surfaceContainerLow` this rail
+            // used before.
+            color: Theme.of(context).colorScheme.surface,
             child: _SectionRail(
               sections: sections,
               addable: addable,
@@ -409,23 +410,14 @@ class _WideBody extends StatelessWidget {
         ),
         const VerticalDivider(width: 1),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Expanded(
-                      child: Text(
-                        current.label,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    // Always rendered (just disabled when not removable),
-                    // matching the compact AppBar: otherwise the prev/next
-                    // controls to its right would jump sideways whenever the
-                    // current section's removability changed.
                     PopupMenuButton<String>(
                       enabled: current.removable,
                       icon: const Icon(Icons.more_vert),
@@ -437,22 +429,11 @@ class _WideBody extends StatelessWidget {
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left),
-                      tooltip: l10n.formSectionPrevious,
-                      onPressed: hasPrevious ? onPrevious : null,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right),
-                      tooltip: l10n.formSectionNext,
-                      onPressed: hasNext ? onNext : null,
-                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Expanded(child: current.builder(context)),
-              ],
-            ),
+              ),
+              Expanded(child: current.builder(context)),
+            ],
           ),
         ),
       ],
@@ -526,9 +507,19 @@ class _SectionRailTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Theme.of(context).colorScheme.primary : null;
+    final theme = Theme.of(context);
+    final color = selected ? theme.colorScheme.primary : null;
     return ListTile(
       dense: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+      // Accent-background highlight for the selected section (DESIGN-008
+      // follow-up 12): the same `primaryContainer` tint already used
+      // elsewhere in the app for "this is the active one"
+      // (`VariablesSection`'s type chip, `PersonsSection`'s "enacted by"
+      // pill) — not a new color role.
+      selectedTileColor: theme.colorScheme.primaryContainer.withValues(
+        alpha: 0.5,
+      ),
       leading: Icon(section.icon, color: color),
       title: Text(
         section.label,

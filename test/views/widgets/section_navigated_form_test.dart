@@ -167,30 +167,61 @@ void main() {
     );
   });
 
-  testWidgets('wide: previous/next appear in the detail-pane header and work', (
-    tester,
-  ) async {
-    final l = await _pump(
-      tester,
-      sections: _sections(),
-      size: const Size(900, 800),
-    );
+  testWidgets(
+    'wide: no duplicated section title and no ‹ › — the rail is the '
+    'navigation, only ⋮ remains (DESIGN-008 follow-up 12)',
+    (tester) async {
+      await _pump(tester, sections: _sections(), size: const Size(900, 800));
 
-    expect(
-      _iconButton(tester, l.formSectionPrevious).onPressed,
-      isNull,
-    );
-    expect(find.text('Body A'), findsOneWidget);
+      // "Section A" appears once — in the rail — never repeated as a
+      // heading in the detail pane.
+      expect(find.text('Section A'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_left), findsNothing);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+      expect(find.text('Body A'), findsOneWidget);
+    },
+  );
 
-    await tester.tap(find.byTooltip(l.formSectionNext));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'wide: tapping a rail item switches sections; the selected item is '
+    'accent-highlighted, others are not (DESIGN-008 follow-up 12)',
+    (tester) async {
+      await _pump(tester, sections: _sections(), size: const Size(900, 800));
 
-    expect(find.text('Body B'), findsOneWidget);
-    expect(
-      _iconButton(tester, l.formSectionPrevious).onPressed,
-      isNotNull,
-    );
-  });
+      ListTile railTile(String label) => tester.widget<ListTile>(
+        find.ancestor(
+          of: find.text(label),
+          matching: find.byType(ListTile),
+        ),
+      );
+
+      expect(railTile('Section A').selected, isTrue);
+      expect(railTile('Section A').selectedTileColor, isNotNull);
+      expect(railTile('Section B').selected, isFalse);
+
+      await tester.tap(find.text('Section B'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Body B'), findsOneWidget);
+      expect(railTile('Section B').selected, isTrue);
+      expect(railTile('Section A').selected, isFalse);
+    },
+  );
+
+  testWidgets(
+    'wide: the rail sits on the app\'s surface tone, not a bespoke color '
+    '(DESIGN-008 follow-up 12)',
+    (tester) async {
+      await _pump(tester, sections: _sections(), size: const Size(900, 800));
+
+      final material = tester.widget<Material>(
+        find.byKey(const ValueKey('sectionRailSurface')),
+      );
+      final theme = Theme.of(tester.element(find.text('Section A')));
+      expect(material.color, theme.colorScheme.surface);
+    },
+  );
 
   testWidgets(
     'compact: the top AppBar shows only the entity title and Save '
