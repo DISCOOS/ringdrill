@@ -43,7 +43,7 @@ void main() {
       const anne = Person(
         slug: 'anne',
         name: 'Anne',
-        homeSlug: 'home_anne',
+        locSlug: 'home_anne',
       );
       final station = Station(
         index: 0,

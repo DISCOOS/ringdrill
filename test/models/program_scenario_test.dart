@@ -29,7 +29,7 @@ void main() {
     place: 'Fjellheisen',
   );
   const home = Location(slug: 'home_anne', kind: LocationKind.home);
-  const anne = Person(slug: 'anne', name: 'Anne Glemsk', homeSlug: 'home_anne');
+  const anne = Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'home_anne');
 
   group('backward compatibility', () {
     test('station json without locations/persons deserializes to empty '

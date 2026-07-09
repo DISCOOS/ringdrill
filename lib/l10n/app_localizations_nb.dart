@@ -2239,10 +2239,10 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get personsSectionHomeLabel => 'Lokasjon';
+  String get personsSectionLocationLabel => 'Lokasjon';
 
   @override
-  String get personsSectionHomeNone => 'Ingen lokasjon';
+  String get personsSectionLocationNone => 'Ingen lokasjon';
 
   @override
   String get personsSectionNotesLabel => 'Notater';

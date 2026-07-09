@@ -22,7 +22,7 @@ sealed class Person with _$Person {
     String? signalement,
 
     /// References a [Location.slug] on the same station.
-    String? homeSlug,
+    String? locSlug,
     String? notes,
   }) = _Person;
 

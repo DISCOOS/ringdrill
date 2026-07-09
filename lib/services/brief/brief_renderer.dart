@@ -743,7 +743,7 @@ String _resolveFieldOnce(
 }
 
 /// Matches `{{station.loc.<slug>}}` / `{{station.person.<slug>}}`, with an
-/// optional dotted facet path (`.place`, `.utm`, `.home.utm`, ...). Group 1
+/// optional dotted facet path (`.place`, `.utm`, `.loc.utm`, ...). Group 1
 /// is `loc`/`person`, group 2 the slug, group 3 the facet path including its
 /// leading dots (empty for the bare token).
 final _stationScenarioTokenPattern = RegExp(
@@ -834,8 +834,8 @@ String _locationDefault(Location location) {
 /// `{{station.person.<slug>[.facet]}}` facet resolution. [portrayer] is the
 /// roleplay on [station] whose `personRef` names this person, if any — its
 /// identity fields take precedence over [person]'s own when set (the
-/// effective, denormalized identity from ADR-0047); `.home` resolves
-/// [Person.homeSlug] to a location on the same station and applies the
+/// effective, denormalized identity from ADR-0047); `.loc` resolves
+/// [Person.locSlug] to a location on the same station and applies the
 /// remaining facet path to it.
 String _resolvePersonFacet(
   Person person,
@@ -852,14 +852,14 @@ String _resolvePersonFacet(
     case 'signalement':
       return _effectiveField(portrayer?.signalement, person.signalement) ??
           '';
-    case 'home':
-      final homeSlug = person.homeSlug;
-      final home = homeSlug == null
+    case 'loc':
+      final locSlug = person.locSlug;
+      final loc = locSlug == null
           ? null
-          : _bySlug(station.locations, homeSlug, (l) => l.slug);
-      return home == null
+          : _bySlug(station.locations, locSlug, (l) => l.slug);
+      return loc == null
           ? ''
-          : _resolveLocationFacet(home, facets.skip(1).toList());
+          : _resolveLocationFacet(loc, facets.skip(1).toList());
     case 'name':
     default:
       return _effectivePersonName(person, portrayer);

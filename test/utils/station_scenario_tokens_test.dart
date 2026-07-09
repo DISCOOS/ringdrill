@@ -77,25 +77,25 @@ void main() {
       age: 47,
       gender: 'woman',
       signalement: 'Rød jakke',
-      homeSlug: 'home',
+      locSlug: 'loc',
     );
-    const home = Location(slug: 'home', place: 'Hjemme');
+    const loc = Location(slug: 'loc', place: 'Hjemme');
 
     test('bare token and named facets resolve the person\'s own fields '
         'when there is no portraying override', () {
-      expect(resolvePersonFacet(person, null, const [home], const []), 'Anne Glemsk');
-      expect(resolvePersonFacet(person, null, const [home], ['age']), '47');
-      expect(resolvePersonFacet(person, null, const [home], ['gender']), 'woman');
+      expect(resolvePersonFacet(person, null, const [loc], const []), 'Anne Glemsk');
+      expect(resolvePersonFacet(person, null, const [loc], ['age']), '47');
+      expect(resolvePersonFacet(person, null, const [loc], ['gender']), 'woman');
       expect(
-        resolvePersonFacet(person, null, const [home], ['signalement']),
+        resolvePersonFacet(person, null, const [loc], ['signalement']),
         'Rød jakke',
       );
       expect(
-        resolvePersonFacet(person, null, const [home], ['home']),
+        resolvePersonFacet(person, null, const [loc], ['loc']),
         'Hjemme',
       );
       expect(
-        resolvePersonFacet(person, null, const [home], ['home', 'place']),
+        resolvePersonFacet(person, null, const [loc], ['loc', 'place']),
         'Hjemme',
       );
     });
@@ -103,12 +103,12 @@ void main() {
     test('a non-empty portrayer field overrides the person\'s own value', () {
       const portrayer = EffectivePersonIdentity(name: 'Anne (spilt av Kari)');
       expect(
-        resolvePersonFacet(person, portrayer, const [home], const []),
+        resolvePersonFacet(person, portrayer, const [loc], const []),
         'Anne (spilt av Kari)',
       );
       // Age is untouched by the override, so it falls back to the person.
       expect(
-        resolvePersonFacet(person, portrayer, const [home], ['age']),
+        resolvePersonFacet(person, portrayer, const [loc], ['age']),
         '47',
       );
     });
@@ -116,14 +116,14 @@ void main() {
     test('an empty portrayer field falls back to the person\'s own value', () {
       const portrayer = EffectivePersonIdentity(name: '');
       expect(
-        resolvePersonFacet(person, portrayer, const [home], const []),
+        resolvePersonFacet(person, portrayer, const [loc], const []),
         'Anne Glemsk',
       );
     });
 
-    test('a dangling homeSlug resolves to empty, not a crash', () {
-      const orphan = Person(slug: 'p', name: 'P', homeSlug: 'missing');
-      expect(resolvePersonFacet(orphan, null, const [home], ['home']), '');
+    test('a dangling locSlug resolves to empty, not a crash', () {
+      const orphan = Person(slug: 'p', name: 'P', locSlug: 'missing');
+      expect(resolvePersonFacet(orphan, null, const [loc], ['loc']), '');
     });
   });
 }

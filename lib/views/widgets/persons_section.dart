@@ -37,12 +37,12 @@ class PersonsSection extends StatefulWidget {
 
   final List<Person> persons;
 
-  /// The station's own locations, offered in [PersonFormScreen]'s home
+  /// The station's own locations, offered in [PersonFormScreen]'s location
   /// picker.
   final List<Location> locations;
 
   /// Called with the saved [Person] from [PersonFormScreen] — a new entry
-  /// (add) or the same `slug` (edit) — and, when the form's home picker
+  /// (add) or the same `slug` (edit) — and, when the form's location picker
   /// created one inline, the new [Location] to add to the station's own
   /// list too. The caller upserts both by `slug`.
   final void Function(Person person, Location? newLocation) onSave;

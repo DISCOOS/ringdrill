@@ -2320,18 +2320,18 @@
   },
   "personsSectionDeleteConfirmMessage": "Delete “{name}”?",
   "@personsSectionDeleteConfirmMessage": {
-    "description": "confirmDestructive message before a swipe-to-dismiss delete of a person (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is a future action, ADR-0047.",
+    "description": "confirmDestructive message before a swipe-to-dismiss delete of a person (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced, including a locSlug pointing at it) is a future action, ADR-0047.",
     "placeholders": {
       "name": { "type": "String" }
     }
   },
-  "personsSectionHomeLabel": "Location",
-  "@personsSectionHomeLabel": {
-    "description": "Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row."
+  "personsSectionLocationLabel": "Location",
+  "@personsSectionLocationLabel": {
+    "description": "Field label for a person's location picker (sets Person.locSlug to one of the station's own locations) on the Persons section row. Also the picker's display label for the person 'loc' facet (DESIGN-009 prompt 4i, renamed from 'home')."
   },
-  "personsSectionHomeNone": "No location",
-  "@personsSectionHomeNone": {
-    "description": "The \"no location selected\" option in the location picker dropdown, and shown when a person has no homeSlug."
+  "personsSectionLocationNone": "No location",
+  "@personsSectionLocationNone": {
+    "description": "The \"no location selected\" option in the location picker dropdown, and shown when a person has no locSlug."
   },
   "personsSectionNotesLabel": "Notes",
   "@personsSectionNotesLabel": {
@@ -2442,7 +2442,7 @@
   },
   "stationReferenceUsageIsPersonHome": "Is {person}’s location",
   "@stationReferenceUsageIsPersonHome": {
-    "description": "One delete-guard usage line (DESIGN-009 prompt 5): the location is set as a person's home (Person.homeSlug). {person} is that person's name.",
+    "description": "One delete-guard usage line (DESIGN-009 prompt 5): the location is set as a person's home (Person.locSlug). {person} is that person's name.",
     "placeholders": {
       "person": { "type": "String" }
     }

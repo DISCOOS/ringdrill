@@ -3818,23 +3818,23 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get personsSectionEditAction;
 
-  /// confirmDestructive message before a swipe-to-dismiss delete of a person (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced, including a homeSlug pointing at it) is a future action, ADR-0047.
+  /// confirmDestructive message before a swipe-to-dismiss delete of a person (ADR-0031). Plain delete -- the reference guard (blocked-while-referenced, including a locSlug pointing at it) is a future action, ADR-0047.
   ///
   /// In en, this message translates to:
   /// **'Delete “{name}”?'**
   String personsSectionDeleteConfirmMessage(String name);
 
-  /// Field label for a person's home picker (sets Person.homeSlug to one of the station's own locations) on the Persons section row.
+  /// Field label for a person's location picker (sets Person.locSlug to one of the station's own locations) on the Persons section row. Also the picker's display label for the person 'loc' facet (DESIGN-009 prompt 4i, renamed from 'home').
   ///
   /// In en, this message translates to:
   /// **'Location'**
-  String get personsSectionHomeLabel;
+  String get personsSectionLocationLabel;
 
-  /// The "no location selected" option in the location picker dropdown, and shown when a person has no homeSlug.
+  /// The "no location selected" option in the location picker dropdown, and shown when a person has no locSlug.
   ///
   /// In en, this message translates to:
   /// **'No location'**
-  String get personsSectionHomeNone;
+  String get personsSectionLocationNone;
 
   /// Field label for a person's optional notes in the add/edit-person dialog.
   ///
@@ -3956,7 +3956,7 @@ abstract class AppLocalizations {
   /// **'In {roleplay}’s {field}'**
   String stationReferenceUsageInRoleplayField(String roleplay, String field);
 
-  /// One delete-guard usage line (DESIGN-009 prompt 5): the location is set as a person's home (Person.homeSlug). {person} is that person's name.
+  /// One delete-guard usage line (DESIGN-009 prompt 5): the location is set as a person's home (Person.locSlug). {person} is that person's name.
   ///
   /// In en, this message translates to:
   /// **'Is {person}’s location'**

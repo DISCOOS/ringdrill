@@ -62,8 +62,8 @@ enum StationFacetKind { location, person }
 /// entity's facet — additive to the bare [StationLocationMenuEntry]/
 /// [StationPersonMenuEntry] default, never replacing it (DESIGN-009
 /// follow-up 4d). [facetPath] is one or two segments (`['utm']` or, for a
-/// person's home chained to its location, `['home', 'utm']`), joined with
-/// `.` to complete the token in [TokenInsertionMenuState._select].
+/// person's location chained to its own facets, `['loc', 'utm']`), joined
+/// with `.` to complete the token in [TokenInsertionMenuState._select].
 class StationFacetMenuEntry extends TokenMenuEntry {
   const StationFacetMenuEntry({
     required this.kind,
@@ -148,12 +148,12 @@ final _stationPersonPrefixPattern = RegExp(
 @visibleForTesting
 const locationFacetNames = ['place', 'label', 'utm'];
 
-/// The facets `_resolvePersonFacet` switches on. `home` chains to the
-/// person's home location's own [locationFacetNames] one level deep (see
+/// The facets `_resolvePersonFacet` switches on. `loc` chains to the
+/// person's location's own [locationFacetNames] one level deep (see
 /// `_facetAwareEntries`) — `brief_renderer.dart` supports exactly one level
 /// of chaining, so this picker does too.
 @visibleForTesting
-const personFacetNames = ['name', 'age', 'gender', 'signalement', 'home'];
+const personFacetNames = ['name', 'age', 'gender', 'signalement', 'loc'];
 
 String _locationFacetLabel(AppLocalizations l10n, String facet) =>
     switch (facet) {
@@ -169,7 +169,7 @@ String _personFacetLabel(AppLocalizations l10n, String facet) =>
       'age' => l10n.roleAge,
       'gender' => l10n.roleGender,
       'signalement' => l10n.roleSignalement,
-      'home' => l10n.personsSectionHomeLabel,
+      'loc' => l10n.personsSectionLocationLabel,
       _ => facet,
     };
 
@@ -475,9 +475,9 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
   /// * One dot (`slug.partial`) — completion: that kind's facets filtered
   ///   by `partial`, dropping the bare entry (the author has committed to
   ///   picking a facet).
-  /// * For a person, `slug.home.partial` — chaining: the *location* facets
-  ///   filtered by `partial`, completing to `home.<facet>`. One level of
-  ///   chaining, matching `_resolvePersonFacet`'s `home` case in
+  /// * For a person, `slug.loc.partial` — chaining: the *location* facets
+  ///   filtered by `partial`, completing to `loc.<facet>`. One level of
+  ///   chaining, matching `_resolvePersonFacet`'s `loc` case in
   ///   `brief_renderer.dart`.
   ({List<TokenMenuEntry> entries, bool matchedEntity}) _facetAwareEntries({
     required AppLocalizations l10n,
@@ -537,24 +537,24 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       );
     }
 
-    // Home chaining (DESIGN-009 follow-up 4d): a person path
-    // <slug>.home.<partial> switches from completing the person's own
-    // facets to completing their *home location's* facets — mirroring
-    // _resolvePersonFacet's 'home' case, which resolves Person.homeSlug to
+    // Location chaining (DESIGN-009 follow-up 4d): a person path
+    // <slug>.loc.<partial> switches from completing the person's own
+    // facets to completing their *location's* facets — mirroring
+    // _resolvePersonFacet's 'loc' case, which resolves Person.locSlug to
     // a Location and applies the remaining facet path to it. One level
     // only, matching the renderer.
     if (rest != null) {
-      final homeDot = rest.indexOf('.');
-      if (homeDot >= 0 && rest.substring(0, homeDot).toLowerCase() == 'home') {
-        final homePartial = rest.substring(homeDot + 1).toLowerCase();
+      final locDot = rest.indexOf('.');
+      if (locDot >= 0 && rest.substring(0, locDot).toLowerCase() == 'loc') {
+        final locPartial = rest.substring(locDot + 1).toLowerCase();
         return (
           entries: [
             for (final f in locationFacetNames)
-              if (homePartial.isEmpty || f.toLowerCase().contains(homePartial))
+              if (locPartial.isEmpty || f.toLowerCase().contains(locPartial))
                 StationFacetMenuEntry(
                   kind: StationFacetKind.person,
                   slug: slugPart,
-                  facetPath: ['home', f],
+                  facetPath: ['loc', f],
                   label: _locationFacetLabel(l10n, f),
                 ),
           ],

@@ -13,9 +13,9 @@ import 'package:ringdrill/views/widgets/token_insertion_menu.dart';
 /// DESIGN-009 follow-up 4d's "the picker never offers an unresolvable
 /// token" invariant, enforced mechanically for `station.loc.*`/
 /// `station.person.*` facet completion: every entry in
-/// [locationFacetNames]/[personFacetNames] — including a person's `home`
+/// [locationFacetNames]/[personFacetNames] — including a person's `loc`
 /// facet chained one level to its location's own facets — is inserted as a
-/// raw `{{station.loc/person.<slug>[.home].<facet>}}` and rendered through
+/// raw `{{station.loc/person.<slug>[.loc].<facet>}}` and rendered through
 /// the real [BriefRenderer]. A future rename that drops a case from
 /// `_resolveLocationFacet`/`_resolvePersonFacet` in `brief_renderer.dart`
 /// fails here instead of only surfacing as a silently empty mustache miss
@@ -43,7 +43,7 @@ Person _person() => const Person(
   age: 39,
   gender: 'female',
   signalement: '160 cm, grått hår, blå anorakk',
-  homeSlug: _locationSlug,
+  locSlug: _locationSlug,
 );
 
 Station _station({required String situationMd}) => Station(
@@ -124,16 +124,16 @@ void main() {
   });
 
   test('every personFacetNames entry resolves via BriefRenderer, including '
-      'the bare "home" facet', () async {
+      'the bare "loc" facet', () async {
     await _expectAllResolve([
       for (final f in personFacetNames) 'station.person.$_personSlug.$f',
     ]);
   });
 
   test('every locationFacetNames entry resolves chained through a person\'s '
-      'home (station.person.<slug>.home.<facet>)', () async {
+      'loc (station.person.<slug>.loc.<facet>)', () async {
     await _expectAllResolve([
-      for (final f in locationFacetNames) 'station.person.$_personSlug.home.$f',
+      for (final f in locationFacetNames) 'station.person.$_personSlug.loc.$f',
     ]);
   });
 }

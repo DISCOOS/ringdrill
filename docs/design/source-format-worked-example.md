@@ -95,7 +95,7 @@ exercises:
             age: 6
             gender: male
             signalement: "Rød jakke, blå lue."
-            homeSlug: lkp
+            locSlug: lkp
 
         situation: |
           {{station.person.magnus}} ({{station.person.magnus.age}} år) –

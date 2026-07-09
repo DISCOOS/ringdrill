@@ -10,8 +10,8 @@ import 'package:ringdrill/views/station_form_screen.dart';
 
 /// DESIGN-009 prompt 3 / follow-up 3b — the Locations and Persons sections
 /// in `StationFormScreen`: add/edit (through `openFormSurface` forms) and
-/// swipe-to-dismiss delete for both lists, and the Persons form's home
-/// picker setting `homeSlug`. No explicit surface size is set: the default
+/// swipe-to-dismiss delete for both lists, and the Persons form's location
+/// picker setting `locSlug`. No explicit surface size is set: the default
 /// `flutter_test` surface (800x600) lands in the wide/medium window class,
 /// so tapping a section label needs no switcher-sheet step first (see
 /// `station_form_screen_variables_test.dart`), and `openFormSurface` opens
@@ -234,7 +234,7 @@ void main() {
     });
 
     testWidgets(
-      'the home picker sets a person\'s homeSlug to a station location',
+      'the location picker sets a person\'s locSlug to a station location',
       (tester) async {
         final captured = _Captured();
         await _openForm(
@@ -252,7 +252,7 @@ void main() {
         await tester.tap(find.text('Anne Glemsk'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(const Key('home-field')));
+        await tester.tap(find.byKey(const Key('loc-field')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Sist kjent').last);
         await tester.pumpAndSettle();
@@ -264,7 +264,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(captured.value, isNotNull);
-        expect(captured.value!.station.persons.single.homeSlug, 'lkp');
+        expect(captured.value!.station.persons.single.locSlug, 'lkp');
       },
     );
 

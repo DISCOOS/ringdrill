@@ -1353,18 +1353,18 @@
   },
   "personsSectionDeleteConfirmMessage": "Slette «{name}»?",
   "@personsSectionDeleteConfirmMessage": {
-    "description": "confirmDestructive-melding før en sveip-for-å-slette av en person (ADR-0031). Enkel sletting -- referansesperren (blokkert mens den refereres, inkludert en homeSlug som peker på den) er en fremtidig handling, ADR-0047.",
+    "description": "confirmDestructive-melding før en sveip-for-å-slette av en person (ADR-0031). Enkel sletting -- referansesperren (blokkert mens den refereres, inkludert en locSlug som peker på den) er en fremtidig handling, ADR-0047.",
     "placeholders": {
       "name": { "type": "String" }
     }
   },
-  "personsSectionHomeLabel": "Lokasjon",
-  "@personsSectionHomeLabel": {
-    "description": "Feltetikett for en persons bopel-velger (setter Person.homeSlug til en av postens egne lokasjoner) på Personer-seksjonens rad."
+  "personsSectionLocationLabel": "Lokasjon",
+  "@personsSectionLocationLabel": {
+    "description": "Feltetikett for en persons lokasjon-velger (setter Person.locSlug til en av postens egne lokasjoner) på Personer-seksjonens rad. Også pickerens visningsetikett for personens «loc»-facet (DESIGN-009 prompt 4i, omdøpt fra «home»)."
   },
-  "personsSectionHomeNone": "Ingen lokasjon",
-  "@personsSectionHomeNone": {
-    "description": "«Ingen lokasjon valgt»-alternativet i lokasjon-nedtrekket, og vist når en person ikke har homeSlug."
+  "personsSectionLocationNone": "Ingen lokasjon",
+  "@personsSectionLocationNone": {
+    "description": "«Ingen lokasjon valgt»-alternativet i lokasjon-nedtrekket, og vist når en person ikke har locSlug."
   },
   "personsSectionNotesLabel": "Notater",
   "@personsSectionNotesLabel": {
@@ -1475,7 +1475,7 @@
   },
   "stationReferenceUsageIsPersonHome": "Er {person}s lokasjon",
   "@stationReferenceUsageIsPersonHome": {
-    "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen er satt som en persons hjem (Person.homeSlug). {person} er personens navn.",
+    "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen er satt som en persons hjem (Person.locSlug). {person} er personens navn.",
     "placeholders": {
       "person": { "type": "String" }
     }

@@ -24,7 +24,7 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/utils/projection.dart';
 
 /// Matches `{{station.loc.<slug>}}` / `{{station.person.<slug>}}`, with an
-/// optional dotted facet path (`.place`, `.utm`, `.home.utm`, ...). Group 1
+/// optional dotted facet path (`.place`, `.utm`, `.loc.utm`, ...). Group 1
 /// is `loc`/`person`, group 2 the slug, group 3 the facet path including its
 /// leading dots (empty for the bare token). Mirrors
 /// `BriefRenderer`'s own (private) pattern of the same shape.
@@ -71,8 +71,8 @@ String _locationDefault(Location location) {
 /// `BriefRenderer`'s `_resolvePersonFacet`. [portrayer] is the effective
 /// identity source (a `RolePlay`-shaped record of the fields that can
 /// override the [Person]'s own, or null when nothing portrays this person in
-/// the caller's context); [stationLocations] resolves `.home` through
-/// [Person.homeSlug].
+/// the caller's context); [stationLocations] resolves `.loc` through
+/// [Person.locSlug].
 String resolvePersonFacet(
   Person person,
   EffectivePersonIdentity? portrayer,
@@ -88,14 +88,14 @@ String resolvePersonFacet(
     case 'signalement':
       return _effectiveField(portrayer?.signalement, person.signalement) ??
           '';
-    case 'home':
-      final homeSlug = person.homeSlug;
-      final home = homeSlug == null
+    case 'loc':
+      final locSlug = person.locSlug;
+      final loc = locSlug == null
           ? null
-          : _bySlug(stationLocations, homeSlug, (l) => l.slug);
-      return home == null
+          : _bySlug(stationLocations, locSlug, (l) => l.slug);
+      return loc == null
           ? ''
-          : resolveLocationFacet(home, facets.skip(1).toList());
+          : resolveLocationFacet(loc, facets.skip(1).toList());
     case 'name':
     default:
       return _effectiveField(portrayer?.name, person.name) ?? person.name;

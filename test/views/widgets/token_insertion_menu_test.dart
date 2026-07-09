@@ -36,7 +36,7 @@ String _personFacetLabelFor(AppLocalizations l10n, String facet) =>
       'age' => l10n.roleAge,
       'gender' => l10n.roleGender,
       'signalement' => l10n.roleSignalement,
-      'home' => l10n.personsSectionHomeLabel,
+      'loc' => l10n.personsSectionLocationLabel,
       _ => facet,
     };
 
@@ -696,15 +696,15 @@ void main() {
       );
 
       testWidgets(
-        'home chaining: "station.person.anne.home.ut" offers the location '
-        'utm facet and inserts {{station.person.anne.home.utm}}',
+        'loc chaining: "station.person.anne.loc.ut" offers the location '
+        'utm facet and inserts {{station.person.anne.loc.utm}}',
         (tester) async {
           final controller = await _pump(
             tester,
             stationPersons: const [person],
           );
 
-          await _typeAndOpen(tester, '{{station.person.anne.home.ut');
+          await _typeAndOpen(tester, '{{station.person.anne.loc.ut');
 
           final l10n = await AppLocalizations.delegate.load(const Locale('en'));
           expect(find.text(l10n.utm), findsOneWidget);
@@ -713,7 +713,7 @@ void main() {
           await tester.tap(find.text(l10n.utm));
           await tester.pump();
 
-          expect(controller.text, '{{station.person.anne.home.utm}}');
+          expect(controller.text, '{{station.person.anne.loc.utm}}');
         },
       );
 

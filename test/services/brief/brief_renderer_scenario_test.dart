@@ -155,11 +155,11 @@ void main() {
       expect(result, contains('Standard: Anne Glemsk'));
     });
 
-    test('.home.utm resolves through homeSlug to the location', () async {
+    test('.loc.utm resolves through locSlug to the location', () async {
       const anne = Person(
         slug: 'anne',
         name: 'Anne Glemsk',
-        homeSlug: 'lkp',
+        locSlug: 'lkp',
       );
       final station = Station(
         index: 0,
@@ -167,8 +167,8 @@ void main() {
         locations: const [_lkp],
         persons: const [anne],
         situationMd:
-            'Hjemme: {{station.person.anne.home}}\n'
-            'HjemmeUTM: {{station.person.anne.home.utm}}',
+            'Hjemme: {{station.person.anne.loc}}\n'
+            'HjemmeUTM: {{station.person.anne.loc.utm}}',
       );
       final program = _emptyProgram().copyWith(
         exercises: [_exerciseWith(station: station)],

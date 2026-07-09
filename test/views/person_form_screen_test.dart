@@ -106,8 +106,8 @@ void main() {
   });
 
   testWidgets(
-    'the home picker\'s "Ny lokasjon" creates a location and selects it '
-    'as homeSlug',
+    'the location picker\'s "Ny lokasjon" creates a location and selects '
+    'it as locSlug',
     (tester) async {
       final captured = _Captured();
       await _open(tester, captured);
@@ -117,7 +117,7 @@ void main() {
         'Anne',
       );
 
-      await tester.tap(find.byKey(const Key('home-field')));
+      await tester.tap(find.byKey(const Key('loc-field')));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.locationsSectionAddAction).last);
       await tester.pumpAndSettle();
@@ -146,7 +146,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Back on the Person form: the new location shows as the selected home.
+      // Back on the Person form: the new location shows as the selected
+      // location.
       expect(find.text('Nytt hjem'), findsWidgets);
 
       await tester.tap(find.widgetWithText(FilledButton, l.save));
@@ -156,7 +157,7 @@ void main() {
       final result = captured.value!;
       expect(result.newLocation, isNotNull);
       expect(result.newLocation!.label, 'Nytt hjem');
-      expect(result.person.homeSlug, result.newLocation!.slug);
+      expect(result.person.locSlug, result.newLocation!.slug);
     },
   );
 
@@ -182,7 +183,7 @@ void main() {
     },
   );
 
-  testWidgets('the home picker label reads "Lokasjon" (nb)', (tester) async {
+  testWidgets('the location picker label reads "Lokasjon" (nb)', (tester) async {
     final lNb = await AppLocalizations.delegate.load(const Locale('nb'));
     final captured = _Captured();
     await tester.pumpWidget(
@@ -211,7 +212,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(find.text(lNb.personsSectionHomeLabel), findsOneWidget);
+    expect(find.text(lNb.personsSectionLocationLabel), findsOneWidget);
     expect(find.text('Bopel'), findsNothing);
   });
 

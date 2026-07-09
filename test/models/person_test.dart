@@ -9,7 +9,7 @@ void main() {
       age: 74,
       gender: 'female',
       signalement: 'Blå jakke, grå bukse',
-      homeSlug: 'home_anne',
+      locSlug: 'loc_anne',
       notes: 'Diabetiker',
     );
     final decoded = Person.fromJson(person.toJson());
@@ -23,7 +23,7 @@ void main() {
     expect(decoded.age, isNull);
     expect(decoded.gender, isNull);
     expect(decoded.signalement, isNull);
-    expect(decoded.homeSlug, isNull);
+    expect(decoded.locSlug, isNull);
     expect(decoded.notes, isNull);
   });
 }

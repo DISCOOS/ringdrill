@@ -9,11 +9,11 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
-/// Marker item value for the home picker's inline "+ Ny lokasjon" entry —
-/// distinct from every real [Location.slug] (which never contains a colon).
+/// Marker item value for the location picker's inline "+ Ny lokasjon" entry
+/// — distinct from every real [Location.slug] (which never contains a colon).
 const _createLocationValue = ':create-location:';
 
-/// [PersonFormScreen]'s result: the saved [Person] plus, when the home
+/// [PersonFormScreen]'s result: the saved [Person] plus, when the location
 /// picker's inline "Ny lokasjon" created one, that new [Location] — a
 /// write-back the caller (`PersonsSection`) applies to the station's own
 /// working list alongside the person (DESIGN-009's inline-creation
@@ -43,7 +43,7 @@ class PersonFormScreen extends StatefulWidget {
   /// reference never collides. Excludes [initial]'s own slug when editing.
   final Set<String> existingSlugs;
 
-  /// The station's own locations, offered in the home picker.
+  /// The station's own locations, offered in the location picker.
   final List<Location> locations;
 
   final Person? initial;
@@ -67,18 +67,18 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     text: widget.initial?.notes ?? '',
   );
   String? _gender;
-  String? _homeSlug;
+  String? _locSlug;
 
   /// Working copy of [PersonFormScreen.locations], seeded from what this
-  /// form was given, so the home picker's own inline "Ny lokasjon" chip
+  /// form was given, so the location picker's own inline "Ny lokasjon" chip
   /// shows up immediately without waiting for the caller to rebuild
   /// (DESIGN-009's "editor resolves newly created entities against a
   /// working copy it holds").
   late List<Location> _workingLocations;
 
-  /// The location created inline via the home picker this session, if any
-  /// — carried out in the popped [PersonFormResult] for the caller to add
-  /// to the station's own list.
+  /// The location created inline via the location picker this session, if
+  /// any — carried out in the popped [PersonFormResult] for the caller to
+  /// add to the station's own list.
   Location? _newLocation;
 
   bool get _isEdit => widget.initial != null;
@@ -87,7 +87,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   void initState() {
     super.initState();
     _gender = widget.initial?.gender;
-    _homeSlug = widget.initial?.homeSlug;
+    _locSlug = widget.initial?.locSlug;
     _workingLocations = List<Location>.of(widget.locations);
   }
 
@@ -118,7 +118,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     setState(() {
       _workingLocations = [..._workingLocations, created];
       _newLocation = created;
-      _homeSlug = created.slug;
+      _locSlug = created.slug;
     });
   }
 
@@ -135,7 +135,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
           : int.tryParse(_ageController.text),
       gender: _gender,
       signalement: signalement.isEmpty ? null : signalement,
-      homeSlug: _homeSlug,
+      locSlug: _locSlug,
       notes: notes.isEmpty ? null : notes,
     );
     Navigator.of(
@@ -229,16 +229,16 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    key: const Key('home-field'),
-                    initialValue: _homeSlug ?? '',
+                    key: const Key('loc-field'),
+                    initialValue: _locSlug ?? '',
                     isExpanded: true,
                     decoration: InputDecoration(
-                      labelText: l10n.personsSectionHomeLabel,
+                      labelText: l10n.personsSectionLocationLabel,
                     ),
                     items: [
                       DropdownMenuItem(
                         value: '',
-                        child: Text(l10n.personsSectionHomeNone),
+                        child: Text(l10n.personsSectionLocationNone),
                       ),
                       for (final location in _workingLocations)
                         DropdownMenuItem(
@@ -267,7 +267,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                         return;
                       }
                       setState(
-                        () => _homeSlug = (value == null || value.isEmpty)
+                        () => _locSlug = (value == null || value.isEmpty)
                             ? null
                             : value,
                       );

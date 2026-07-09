@@ -61,7 +61,7 @@ sealed class Person with _$Person {
     int? age,
     String? gender,                 // stable code: woman | man | other (segmented control; i18n labels)
     String? signalement,
-    String? homeSlug,               // references a Location.slug on the same station
+    String? locSlug,                // references a Location.slug on the same station
     String? notes,
   }) = _Person;
   factory Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
@@ -105,7 +105,7 @@ The starter set aligns with the category picker in **FAKS** (Felles aksjonsstøt
 Locations and persons extend the **derived `station.*` context** (the same place `{{station.position.utm}}` already lives), not the `var.*` registry. They are referenced with facets:
 
 * `{{station.loc.<slug>}}` (default facet: place plus UTM), `{{station.loc.<slug>.place}}`, `{{station.loc.<slug>.utm}}`, `{{station.loc.<slug>.label}}`. The coordinate is **stored as `LatLng` (WGS84)**; `.utm` is one render-time *projection* of it, so further facets (MGRS, decimal degrees, …) can be added later without any storage or format change.
-* `{{station.person.<slug>}}` (default: name), `.name`, `.age`, `.gender`, `.signalement`, and `.home` which resolves through `homeSlug` to the referenced location's facets (`{{station.person.anne.home.utm}}`).
+* `{{station.person.<slug>}}` (default: name), `.name`, `.age`, `.gender`, `.signalement`, and `.loc` which resolves through `locSlug` to the referenced location's facets (`{{station.person.anne.loc.utm}}`).
 
 Scope is **the station and down**: the station's own fields, and the fields of a `RolePlay` linked to that station. Program- and exercise-level text has no station in scope and cannot reference `station.loc.*` / `station.person.*`. A roleplay resolves against the station it belongs to.
 
@@ -127,7 +127,7 @@ This is one mechanism for all three kinds. It also **un-defers** the DESIGN-008 
 
 ### Reference integrity
 
-An unresolved `{{station.loc.x}}` or `{{station.person.y}}` — the (linked) station has no such slug — is an error: a red token in the editor that blocks save, and a visible placeholder in the brief, exactly as an undeclared `{{var.x}}` (ADR-0046). Moving a roleplay to a different station (a different `personRef`) re-resolves its fields and flags references that newly break. Deleting a location or person is guarded across the **station-and-down** set (the station's fields and its linked roleplays' fields) while it is still referenced; deleting a `Location` referenced by a `Person.homeSlug` is likewise guarded. Note the `slug` is the stable reference: it is a **short random id generated at creation** (unique within the station), derived from no field — users never type it. The display fields (`label`, `name`), the `kind` and the coordinate are freely editable and never touch references. **There is no reference rename, and none is needed**: a random opaque slug reflects nothing editable, so it can never go stale and no station-and-down rewrite is ever required. The UI never shows the word "slug" — it says "reference". This is a small improvement over the variable model, where the `name` doubles as both slug and display.
+An unresolved `{{station.loc.x}}` or `{{station.person.y}}` — the (linked) station has no such slug — is an error: a red token in the editor that blocks save, and a visible placeholder in the brief, exactly as an undeclared `{{var.x}}` (ADR-0046). Moving a roleplay to a different station (a different `personRef`) re-resolves its fields and flags references that newly break. Deleting a location or person is guarded across the **station-and-down** set (the station's fields and its linked roleplays' fields) while it is still referenced; deleting a `Location` referenced by a `Person.locSlug` is likewise guarded. Note the `slug` is the stable reference: it is a **short random id generated at creation** (unique within the station), derived from no field — users never type it. The display fields (`label`, `name`), the `kind` and the coordinate are freely editable and never touch references. **There is no reference rename, and none is needed**: a random opaque slug reflects nothing editable, so it can never go stale and no station-and-down rewrite is ever required. The UI never shows the word "slug" — it says "reference". This is a small improvement over the variable model, where the `name` doubles as both slug and display.
 
 ### PII
 

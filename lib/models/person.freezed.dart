@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 mixin _$Person {
 
  String get slug; String get name; int? get age; String? get gender; String? get signalement;/// References a [Location.slug] on the same station.
- String? get homeSlug; String? get notes;
+ String? get locSlug; String? get notes;
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,16 @@ $PersonCopyWith<Person> get copyWith => _$PersonCopyWithImpl<Person>(this as Per
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Person&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.signalement, signalement) || other.signalement == signalement)&&(identical(other.homeSlug, homeSlug) || other.homeSlug == homeSlug)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Person&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.signalement, signalement) || other.signalement == signalement)&&(identical(other.locSlug, locSlug) || other.locSlug == locSlug)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,slug,name,age,gender,signalement,homeSlug,notes);
+int get hashCode => Object.hash(runtimeType,slug,name,age,gender,signalement,locSlug,notes);
 
 @override
 String toString() {
-  return 'Person(slug: $slug, name: $name, age: $age, gender: $gender, signalement: $signalement, homeSlug: $homeSlug, notes: $notes)';
+  return 'Person(slug: $slug, name: $name, age: $age, gender: $gender, signalement: $signalement, locSlug: $locSlug, notes: $notes)';
 }
 
 
@@ -49,7 +49,7 @@ abstract mixin class $PersonCopyWith<$Res>  {
   factory $PersonCopyWith(Person value, $Res Function(Person) _then) = _$PersonCopyWithImpl;
 @useResult
 $Res call({
- String slug, String name, int? age, String? gender, String? signalement, String? homeSlug, String? notes
+ String slug, String name, int? age, String? gender, String? signalement, String? locSlug, String? notes
 });
 
 
@@ -66,14 +66,14 @@ class _$PersonCopyWithImpl<$Res>
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? signalement = freezed,Object? homeSlug = freezed,Object? notes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? signalement = freezed,Object? locSlug = freezed,Object? notes = freezed,}) {
   return _then(_self.copyWith(
 slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,age: freezed == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
 as int?,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
 as String?,signalement: freezed == signalement ? _self.signalement : signalement // ignore: cast_nullable_to_non_nullable
-as String?,homeSlug: freezed == homeSlug ? _self.homeSlug : homeSlug // ignore: cast_nullable_to_non_nullable
+as String?,locSlug: freezed == locSlug ? _self.locSlug : locSlug // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -157,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String name,  int? age,  String? gender,  String? signalement,  String? homeSlug,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String name,  int? age,  String? gender,  String? signalement,  String? locSlug,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Person() when $default != null:
-return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_that.homeSlug,_that.notes);case _:
+return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_that.locSlug,_that.notes);case _:
   return orElse();
 
 }
@@ -178,10 +178,10 @@ return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String name,  int? age,  String? gender,  String? signalement,  String? homeSlug,  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String name,  int? age,  String? gender,  String? signalement,  String? locSlug,  String? notes)  $default,) {final _that = this;
 switch (_that) {
 case _Person():
-return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_that.homeSlug,_that.notes);}
+return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_that.locSlug,_that.notes);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -195,10 +195,10 @@ return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String name,  int? age,  String? gender,  String? signalement,  String? homeSlug,  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String name,  int? age,  String? gender,  String? signalement,  String? locSlug,  String? notes)?  $default,) {final _that = this;
 switch (_that) {
 case _Person() when $default != null:
-return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_that.homeSlug,_that.notes);case _:
+return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_that.locSlug,_that.notes);case _:
   return null;
 
 }
@@ -210,7 +210,7 @@ return $default(_that.slug,_that.name,_that.age,_that.gender,_that.signalement,_
 @JsonSerializable()
 
 class _Person implements Person {
-  const _Person({required this.slug, this.name = '', this.age, this.gender, this.signalement, this.homeSlug, this.notes});
+  const _Person({required this.slug, this.name = '', this.age, this.gender, this.signalement, this.locSlug, this.notes});
   factory _Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
 
 @override final  String slug;
@@ -219,7 +219,7 @@ class _Person implements Person {
 @override final  String? gender;
 @override final  String? signalement;
 /// References a [Location.slug] on the same station.
-@override final  String? homeSlug;
+@override final  String? locSlug;
 @override final  String? notes;
 
 /// Create a copy of Person
@@ -235,16 +235,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Person&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.signalement, signalement) || other.signalement == signalement)&&(identical(other.homeSlug, homeSlug) || other.homeSlug == homeSlug)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Person&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.age, age) || other.age == age)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.signalement, signalement) || other.signalement == signalement)&&(identical(other.locSlug, locSlug) || other.locSlug == locSlug)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,slug,name,age,gender,signalement,homeSlug,notes);
+int get hashCode => Object.hash(runtimeType,slug,name,age,gender,signalement,locSlug,notes);
 
 @override
 String toString() {
-  return 'Person(slug: $slug, name: $name, age: $age, gender: $gender, signalement: $signalement, homeSlug: $homeSlug, notes: $notes)';
+  return 'Person(slug: $slug, name: $name, age: $age, gender: $gender, signalement: $signalement, locSlug: $locSlug, notes: $notes)';
 }
 
 
@@ -255,7 +255,7 @@ abstract mixin class _$PersonCopyWith<$Res> implements $PersonCopyWith<$Res> {
   factory _$PersonCopyWith(_Person value, $Res Function(_Person) _then) = __$PersonCopyWithImpl;
 @override @useResult
 $Res call({
- String slug, String name, int? age, String? gender, String? signalement, String? homeSlug, String? notes
+ String slug, String name, int? age, String? gender, String? signalement, String? locSlug, String? notes
 });
 
 
@@ -272,14 +272,14 @@ class __$PersonCopyWithImpl<$Res>
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? signalement = freezed,Object? homeSlug = freezed,Object? notes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? name = null,Object? age = freezed,Object? gender = freezed,Object? signalement = freezed,Object? locSlug = freezed,Object? notes = freezed,}) {
   return _then(_Person(
 slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,age: freezed == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
 as int?,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
 as String?,signalement: freezed == signalement ? _self.signalement : signalement // ignore: cast_nullable_to_non_nullable
-as String?,homeSlug: freezed == homeSlug ? _self.homeSlug : homeSlug // ignore: cast_nullable_to_non_nullable
+as String?,locSlug: freezed == locSlug ? _self.locSlug : locSlug // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

@@ -40,7 +40,7 @@ Positions and person identity are retyped across a station's situation prose, it
 
 **Location** — a named place: display `label`, `kind` (for map styling), `place` (address), an optional coordinate, a note. The token reference (`slug`, called "reference" in the UI) is a short random id generated at creation and hidden from typing — it is not derived from any editable field, so changing the `label`, `kind` or coordinate never affects it. Station-owned.
 
-**Person** — a fictional scenario person: display `name`, `age`, `gender` (woman/man/other), `signalement`, `homeSlug` (a reference to one of the station's locations), notes. The reference (`slug`) is a short random id generated at creation, not derived from the name or any editable field. Station-owned, no PII (ADR-0047; the real human is the `Actor`, the roster layer).
+**Person** — a fictional scenario person: display `name`, `age`, `gender` (woman/man/other), `signalement`, `locSlug` (a reference to one of the station's locations), notes. The reference (`slug`) is a short random id generated at creation, not derived from the name or any editable field. Station-owned, no PII (ADR-0047; the real human is the `Actor`, the roster layer).
 
 **Effective identity** — a `RolePlay` portrays a `Person` and its identity fields (`name`/`age`/`gender`/`signalement`) hold the effective identity: a field equal to the Person's value is *inherited* (and follows later Person edits), a field that differs is an *override* the marker set. The effective value is what renders everywhere and is persisted denormalized on the roleplay so any reader gets a populated marker (ADR-0047). Same default-plus-override intuition as variables, cached for forward-compat.
 
@@ -50,7 +50,7 @@ In the station's section-navigated editor (DESIGN-008), **Locations** and **Pers
 
 The "What has happened" markdown field is a future addition (it will seed a marker's roleplay); this design does not build it, but it is the archetypal narrative that references `station.person.*` and `station.loc.*`, and it needs nothing beyond what is specified here.
 
-**Locations.** A row per location: `label`, `kind`, and a `place`/coordinate summary. Tapping a row opens the location form (see below); **swipe-to-dismiss deletes** it, matching the app's list pattern (ADR-0031). "+ New location" opens the form to add one. The reference is a random id generated at creation; the author never types it. Editing the display `label`, `kind` or coordinate is free and never affects the reference. Delete is blocked while referenced (by a field or by a person's home), listing the usages. There is no rename of the reference — it is opaque and stable, so nothing ever needs rewriting.
+**Locations.** A row per location: `label`, `kind`, and a `place`/coordinate summary. Tapping a row opens the location form (see below); **swipe-to-dismiss deletes** it, matching the app's list pattern (ADR-0031). "+ New location" opens the form to add one. The reference is a random id generated at creation; the author never types it. Editing the display `label`, `kind` or coordinate is free and never affects the reference. Delete is blocked while referenced (by a field or by a person's `locSlug`), listing the usages. There is no rename of the reference — it is opaque and stable, so nothing ever needs rewriting.
 
 **Persons.** A row per person: `name` with an `age`/`gender`/`signalement` summary. Tapping opens the person form; swipe-to-dismiss deletes. "+ New person" opens the form. Reference is a random id; editing the display name is free and never touches it; delete guarded as above. The location form's category picker is a show-more/less toggle (expand to all 16 kinds, collapse back).
 
@@ -63,7 +63,7 @@ The Location form's `place` is geocoder-backed, reusing the existing map-search 
 The token picker (slash and `{{`, from DESIGN-008) in the station's own markdown fields and in a linked roleplay's fields offers `station.loc.*` and `station.person.*` alongside the existing plan-fields and `var.*`. Facets:
 
 * `{{station.loc.lkp}}` (place + UTM), `{{station.loc.lkp.place}}`, `{{station.loc.lkp.utm}}`, `{{station.loc.lkp.label}}`.
-* `{{station.person.anne}}` (name), `.age`, `.gender`, `.signalement`, and `.home` resolving through to the location facets (`{{station.person.anne.home.utm}}`).
+* `{{station.person.anne}}` (name), `.age`, `.gender`, `.signalement`, and `.loc` resolving through to the location facets (`{{station.person.anne.loc.utm}}`).
 
 `RingDrillText` resolves these in the brief and the live UI; the brief renderer resolves them in generated markdown. An unresolved slug renders as the placeholder and, in the editor, as a red token that blocks save (ADR-0047).
 
@@ -78,7 +78,7 @@ The picker also offers each in-scope entity's **own** scalar facets, not just cr
 
 **Self-reference rule.** A field never offers a token that reads the same free-text field it is editing, since that value contains the token being typed and would recurse through the fixpoint pass. So `station.description` is withheld from the station's own description field and `program.description` from the program's, and a roleplay's own `name`/`signalement` are withheld from those same fields. The short, derived facets (`name`, `stationCode`, `position.utm`) are safe and always offered.
 
-**Facet completion.** The `.place` / `.utm` / `.age` / `.home.utm` facets promised above are reached by continuing to type after a chosen entity: once the filter reads `station.loc.<slug>.` or `station.person.<slug>.`, the picker lists that kind's facet names as selectable entries (loc: `place`, `label`, `utm`; person: `name`, `age`, `gender`, `signalement`, `home`), inserting the full dotted token. The bare entity entry still inserts the sensible default (place + UTM for a location, effective name for a person).
+**Facet completion.** The `.place` / `.utm` / `.age` / `.loc.utm` facets promised above are reached by continuing to type after a chosen entity: once the filter reads `station.loc.<slug>.` or `station.person.<slug>.`, the picker lists that kind's facet names as selectable entries (loc: `place`, `label`, `utm`; person: `name`, `age`, `gender`, `signalement`, `loc`), inserting the full dotted token. The bare entity entry still inserts the sensible default (place + UTM for a location, effective name for a person).
 
 **Leaf fields are token hosts too.** The scenario leaf fields themselves accept tokens: a `Location`'s `place` and `note`, and a `Person`'s `name`, `signalement` and `notes`. So a recurring subject name or a shared place string can be a `{{var.*}}`, and a leaf may reference `{{station.loc.*}}` / other facets. These forms open as their own surface (`openFormSurface`), a separate route from the station editor, so they re-provide `PlanScope` and `StationScope` seeded from the same working data — an inherited scope does not cross the `Navigator` boundary. No renderer change is needed: a token injected through a leaf value is caught by the next pass of the fixpoint loop (`_resolveField`, bounded by `_maxResolvePasses`). The self-reference rule applies here too — a `Person`'s name field does not offer `station.person.<self>.name`.
 
@@ -102,11 +102,11 @@ Creating a roleplay auto-creates its Person on the station from whatever identit
 
 ## Map
 
-The station's locations (and a person's home) become map markers via `MapMarkerSpec` ([ADR-0020](../adrs/0020-map-label-and-marker-clutter.md)), styled by `LocationKind`, distinct from the administrative `position` marker. The map, the brief and the editor all read the same locations — the decoupling win, made visual: an LKP is one point, shown and referenced everywhere from one source.
+The station's locations (including a person's own, via `locSlug`) become map markers via `MapMarkerSpec` ([ADR-0020](../adrs/0020-map-label-and-marker-clutter.md)), styled by `LocationKind`, distinct from the administrative `position` marker. The map, the brief and the editor all read the same locations — the decoupling win, made visual: an LKP is one point, shown and referenced everywhere from one source.
 
 ## Behavior
 
-Editing any editable field of a location or person (`label`, `name`, `kind`, coordinate, …) never affects its references, because the `slug` is a random id fixed at creation and derived from none of them. Delete is blocked while referenced (including a person's `homeSlug` pointing at a location, and a roleplay's `personRef`), with the usages listed. Save is blocked when a station or roleplay field contains an unresolved `station.*` token. The effective identity means the brief always shows what the marker actually presents, updating as casting firms up.
+Editing any editable field of a location or person (`label`, `name`, `kind`, coordinate, …) never affects its references, because the `slug` is a random id fixed at creation and derived from none of them. Delete is blocked while referenced (including a person's `locSlug` pointing at a location, and a roleplay's `personRef`), with the usages listed. Save is blocked when a station or roleplay field contains an unresolved `station.*` token. The effective identity means the brief always shows what the marker actually presents, updating as casting firms up.
 
 **There is no reference rename, and none is needed.** The `slug` is a random, opaque id that reflects nothing editable, so it never goes stale and never needs rewriting across references. This removes a whole class of drift — the reference can never disagree with a name or kind — and means the station-and-down rewrite machinery is never required. The delete-guard (stage 6) is the only reference-integrity surface.
 
@@ -162,7 +162,7 @@ The design and ADR use English concept names throughout. The `nb` UI ships these
 | Person / Persons | Person / Personer |
 | New location | Ny lokasjon |
 | New person | Ny person |
-| home (`Person.homeSlug`) | Lokasjon |
+| loc (`Person.locSlug`) | Lokasjon |
 | reference (the `slug`, UI-facing) | Referanse |
 | change reference (future) | Endre referanse |
 | gender: woman / man / other | Kvinne / Mann / Annet |
@@ -186,7 +186,7 @@ The design and ADR use English concept names throughout. The `nb` UI ships these
 | RolePlay (editor) | Spill / Rolle |
 | Actor (roster) | Markør / Bemanning |
 
-Only these labels are Norwegian. Model, field, facet and code names (`Location`, `Person`, `station.loc.*`, `station.person.*`, `personRef`, `slug`, `homeSlug`) stay English everywhere.
+Only these labels are Norwegian. Model, field, facet and code names (`Location`, `Person`, `station.loc.*`, `station.person.*`, `personRef`, `slug`, `locSlug`) stay English everywhere.
 
 ## References
 

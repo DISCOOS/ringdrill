@@ -11,7 +11,7 @@ import 'package:ringdrill/views/station_form_screen.dart';
 
 /// DESIGN-009 prompt 5, commit 2 — the delete-guard over the
 /// station-and-down set: a `Location`/`Person` still referenced by a
-/// station field, a person's `homeSlug`, or a linked roleplay is blocked
+/// station field, a person's `locSlug`, or a linked roleplay is blocked
 /// from deletion with a dialog listing the usages; an unreferenced one
 /// deletes as before. No explicit surface size is set: the default
 /// `flutter_test` surface (800x600) lands in the wide/medium window class.
@@ -129,7 +129,7 @@ void main() {
         position: const LatLng(58.99, 10.43),
         locations: const [Location(slug: 'lkp', label: 'Sist kjent')],
         persons: const [
-          Person(slug: 'anne', name: 'Anne Glemsk', homeSlug: 'lkp'),
+          Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp'),
         ],
       ),
       captured,

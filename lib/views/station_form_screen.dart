@@ -124,9 +124,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   /// Working copies of `station.locations`/`persons` (DESIGN-009 prompt 3),
   /// edited by [LocationsSection]/[PersonsSection] and read by
-  /// [_saveStation]. A person's `homeSlug` can be left dangling by deleting
-  /// the location it points at — that guard is DESIGN-009 prompt 5, not
-  /// implemented here.
+  /// [_saveStation]. A person's `locSlug` can be left dangling by deleting
+  /// the location it points at — guarded by [_usagesOfLocation] (DESIGN-009
+  /// prompt 5).
   late List<Location> _workingLocations;
   late List<Person> _workingPersons;
 
@@ -449,7 +449,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   /// Human-readable usages of `station.loc.<slug>` across the
   /// station-and-down set (DESIGN-009 prompt 5): this station's own fields,
-  /// every [Person.homeSlug] pointing at it, and its linked [widget.roleplays]'
+  /// every [Person.locSlug] pointing at it, and its linked [widget.roleplays]'
   /// fields. Empty means [slug] is safe to delete. Facet paths key on the
   /// same slug as the bare token, mirroring the save-block above.
   List<String> _usagesOfLocation(String slug, AppLocalizations l) {
@@ -460,7 +460,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
       for (final (label, text) in _stationOwnTexts(l))
         if (references(text)) l.stationReferenceUsageInField(label),
       for (final person in _workingPersons)
-        if (person.homeSlug == slug)
+        if (person.locSlug == slug)
           l.stationReferenceUsageIsPersonHome(
             person.name.isEmpty ? person.slug : person.name,
           ),

@@ -48,7 +48,7 @@ class LocationsSection extends StatefulWidget {
 
   /// Human-readable usages of a location's `slug` across the
   /// station-and-down set (DESIGN-009 prompt 5) — the caller
-  /// (`StationFormScreen`) knows about its own fields, `Person.homeSlug`
+  /// (`StationFormScreen`) knows about its own fields, `Person.locSlug`
   /// and the linked roleplays, none of which this presentation-only
   /// section has access to. An empty list means the location is safe to
   /// delete.
