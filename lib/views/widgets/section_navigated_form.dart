@@ -414,7 +414,12 @@ class _WideBody extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                // Enough breathing room to read as its own header band (the
+                // mockup's `.dhead{padding:10px 12px}`), with a right inset
+                // matching the AppBar Save button's own right margin above
+                // it, so the ⋮ lines up with the dialog's established
+                // right edge instead of floating loose near the corner.
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
