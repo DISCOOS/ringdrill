@@ -2236,7 +2236,7 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get personsSectionAddMarkerAction => 'Legg til markør';
+  String get personsSectionAddMarkerAction => 'Legg til spill';
 
   @override
   String get personsSectionEditAction => 'Rediger';

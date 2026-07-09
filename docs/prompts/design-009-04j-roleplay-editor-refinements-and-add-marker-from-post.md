@@ -32,14 +32,14 @@ Remove any now-unused ARB keys/labels left by the above.
 
 ### 4. Author a marker from the post editor's Persons section
 
-In the post editor (`station_form_screen.dart`), both the **Persons** and **Locations** sections adopt the app's **card-per-item** list style — bordered, rounded, spaced cards with a leading avatar (persons) or kind-colored icon (locations), an overflow menu and swipe-to-delete (ADR-0031, no pencil in rows) — replacing today's flat rows (see `post-editor-persons.html`). The bottom chrome (search field + "Ny …", and the section switcher) is unchanged.
+In the post editor (`station_form_screen.dart`), both the **Persons** and **Locations** sections adopt the app's **card-per-item** list style — bordered, rounded, spaced cards with a leading avatar (persons) or kind-colored icon (locations), swipe-to-delete only (ADR-0031, no overflow menu, no pencil in rows — swipe is the app's one established row-delete affordance) — replacing today's flat rows (see `post-editor-persons.html`). The bottom chrome (search field + "Ny …", and the section switcher) is unchanged.
 
-The **Persons** section additionally gains the marker inline:
+The **Persons** section additionally gains the marker inline, on the same row as the name (right-aligned, not a separate line):
 
-* Each person shows its enacting marker inline — **"Spilles av {navn}"** — tapping it opens that roleplay in the RolePlay editor.
-* A person **without** a marker offers **"Legg til markør"**, which opens the RolePlay editor via `openFormSurface` with the **post and person pre-set** (so the author lands on the play and position, not the person picker).
+* Each person shows its enacting marker inline — **"Spilles av {navn}"**, no chevron (the row itself is the tap target) — tapping it opens that roleplay in the RolePlay editor.
+* A person **without** a marker offers **"Legg til spill"** in that same spot, which opens the RolePlay editor via `openFormSurface` with the **post and person pre-set** (so the author lands on the play and position, not the person picker).
 * Saving the RolePlay editor **returns to the post editor**, where the person now shows the marker inline. The new roleplay is held in the post editor's **working copy** and written back on save, so an aborted post edit never leaves a half-saved marker.
-* A brand-new person-and-marker in one step is already covered by the RolePlay editor's own person selector (inline create, 4/4e); "+ Person" then "Legg til markør" is the two-step path.
+* A brand-new person-and-marker in one step is already covered by the RolePlay editor's own person selector (inline create, 4/4e); "+ Person" then "Legg til spill" is the two-step path.
 
 **Write-back.** The RolePlay editor already returns a `RolePlayFormResult` ( `rolePlay` + `additions`, applied by `applyRolePlayAdditions`). Extend the post editor's save so a marker created/edited here rides its `PlanAdditions` write-back to the plan owner alongside the station's own additions — the same mechanism used for inline-created persons/locations/variables, extended to roleplays. **If carrying a new roleplay to the plan owner needs more than extending the existing payload and its apply site, stop and report** before widening scope.
 
@@ -48,7 +48,7 @@ Removal stays here too (the app's swipe-to-delete, ADR-0031), not in the read-on
 ## Ground rules
 
 * Reuse existing widgets and the post picker, the `openFormSurface` route, `RolePlayFormResult` / `applyRolePlayAdditions`, and the `PlanAdditions` write-back. New UI is the Post card, the collective-reset row, and the Persons-section inline-marker row (mirroring `post-editor-persons.html`).
-* **Both languages, conceptually equivalent.** Every added or changed user-facing string gets an entry in *both* `app_nb.arb` and `app_en.arb`, saying the same thing idiomatically in each language (not a word-for-word calque), followed by `make i18n`. Never change one language and leave the other stale. New pairs (nb / en): "Endre" / "Edit", "Legg til markør" / "Add marker", "Spilles av {navn}" / "Played by {name}", "Tilbakestill" / "Reset", "Tilpasset fra {navn}" / "Customized from {name}", "Tilpass" / "Customize". Reuse an existing key when one already fits. Remove retired strings from both files.
+* **Both languages, conceptually equivalent.** Every added or changed user-facing string gets an entry in *both* `app_nb.arb` and `app_en.arb`, saying the same thing idiomatically in each language (not a word-for-word calque), followed by `make i18n`. Never change one language and leave the other stale. New pairs (nb / en): "Endre" / "Edit", "Legg til spill" / "Add role" (mirrors editRolePlayTitle/newRolePlayTitle's nb "spill" / en "role"; superseded "Legg til markør" / "Add marker"), "Spilles av {navn}" / "Played by {name}", "Tilbakestill" / "Reset", "Tilpasset fra {navn}" / "Customized from {name}", "Tilpass" / "Customize". Reuse an existing key when one already fits. Remove retired strings from both files.
 * **Test-loop discipline (rule 9):** per commit `flutter analyze` + `flutter test test/views/`; `make i18n` only on ARB change; full `flutter test` + `dart build cli` **once at the end**.
 
 ## Scope
@@ -58,7 +58,7 @@ Five commits.
 1. **Static title.** `editRolePlayTitle`/`newRolePlayTitle` nb values → "Endre spill"/"Nytt spill"; title uses `editRolePlayTitle` for existing markers. `make i18n`. Commit: `feat(views): give the roleplay editor a static type title`.
 2. **Post card.** Replace the dropdown with the compact card + "Endre" picker affordance. Commit: `feat(views): show the roleplay post as a compact card with an edit action`.
 3. **Identity/position refinements.** Remove all "Følger person" text/labels, single collective reset, "Tilpass"+chevron only, "Tilpasset fra {navn}" on override, position card by location name; retire unused ARB. Commit: `feat(views): simplify the roleplay identity and position cards`.
-4. **Card-per-item lists + add marker from the post editor.** Persons and Locations sections to card-per-item; Persons-section inline marker + "Legg til markør" preset flow + roleplay write-back into the post editor's save. Commit: `feat(views): card lists and author markers from the post editor's persons section`.
+4. **Card-per-item lists + add marker from the post editor.** Persons and Locations sections to card-per-item; Persons-section inline marker + "Legg til spill" preset flow + roleplay write-back into the post editor's save. Commit: `feat(views): card lists and author markers from the post editor's persons section`.
 5. **Tests.** Commit: `test(views): cover the roleplay editor refinements and post-editor add-marker`.
 
 ### Tests
@@ -66,7 +66,7 @@ Five commits.
 * **Title.** New marker → "Nytt spill"; existing → "Endre spill"; not the marker's name.
 * **Post card.** The post shows as a card; "Endre" opens the picker and changes the post.
 * **Identity/position.** No "Følger person(en)" string anywhere; the panel toggles on "Tilpass" + chevron; a single "Tilbakestill" clears all overrides (including age); an overridden name shows "Tilpasset fra {navn}"; the position card shows the location name, no "Følger …".
-* **Add marker.** From the post editor's Persons section, "Legg til markør" opens the RolePlay editor with post and person pre-set; saving returns and the person shows the marker inline; the new roleplay round-trips through the post editor's save (write-back), and is absent if the post edit is cancelled.
+* **Add marker.** From the post editor's Persons section, "Legg til spill" opens the RolePlay editor with post and person pre-set; saving returns and the person shows the marker inline; the new roleplay round-trips through the post editor's save (write-back), and is absent if the post edit is cancelled.
 
 ## Verification (final gate — run once)
 

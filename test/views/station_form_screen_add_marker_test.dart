@@ -9,7 +9,7 @@ import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 
 /// DESIGN-009 prompt 4j — authoring a marker from the post editor's Persons
-/// section: "Legg til markør" opens the RolePlay editor with the post and
+/// section: "Legg til spill" opens the RolePlay editor with the post and
 /// person pre-set; saving returns to the post editor, where the person
 /// shows the marker inline; the new roleplay rides the post editor's own
 /// [PlanAdditions] write-back rather than being saved directly.
@@ -77,7 +77,7 @@ void main() {
   });
 
   testWidgets(
-    '"Legg til markør" opens the RolePlay editor with the post and person '
+    '"Legg til spill" opens the RolePlay editor with the post and person '
     'pre-set; saving shows the marker inline and rides the write-back',
     (tester) async {
       final station = _station(
@@ -123,7 +123,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Back on the post editor: the person's card now shows the marker
-      // inline instead of "Legg til markør".
+      // inline instead of "Legg til spill".
       expect(find.byType(RolePlayFormScreen), findsNothing);
       expect(find.text(l.personsSectionAddMarkerAction), findsNothing);
       expect(

@@ -3818,10 +3818,10 @@ abstract class AppLocalizations {
   /// **'Played by {name}'**
   String personsSectionEnactedByAction(String name);
 
-  /// Inline row on a person's card in the Persons section, shown instead of personsSectionEnactedByAction when the person has no enacting RolePlay yet (DESIGN-009 prompt 4j). Opens the RolePlay editor with the post and this person pre-set.
+  /// Inline row on a person's card in the Persons section, shown instead of personsSectionEnactedByAction when the person has no enacting RolePlay yet (DESIGN-009 prompt 4j). Opens the RolePlay editor with the post and this person pre-set. "Role" mirrors editRolePlayTitle/newRolePlayTitle's nb "spill" / en "role" convention -- intentionally not a calque of the nb string.
   ///
   /// In en, this message translates to:
-  /// **'Add marker'**
+  /// **'Add role'**
   String get personsSectionAddMarkerAction;
 
   /// AppBar title of PersonFormScreen when editing an existing person (DESIGN-009 follow-up 3b). The reference is auto-generated and never shown/edited; home has its own inline picker in the form.

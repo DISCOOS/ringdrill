@@ -106,7 +106,7 @@ The editor's app-bar title is the static type name — **"Endre spill" / "Nytt s
 
 Creating a roleplay auto-creates its Person on the station from whatever identity is typed, so there is no separate "create the person first" step and no scenario-less roleplay. Re-pointing `personRef` to a different station's person re-scopes the roleplay and flags any `station.*` token in its fields that no longer resolves.
 
-**Authoring a marker from the post editor.** Markers are added from the post editor's **Persons** section, so an author never needs the read-only Post view to build one. Each person shows its enacting marker inline ("Spilles av {navn}"); a person without one offers **"Legg til markør"**, which opens this editor with the post and person **pre-set** — the author lands directly on the play (behavior, background, props) and position. Saving returns to the post editor, where the person now shows the marker inline. The new roleplay is held in the post editor's working copy and written back on save through the same `PlanAdditions` mechanism as inline-created persons/locations/variables (extended to roleplays), so an aborted post edit never leaves a half-saved marker. A brand-new person-and-marker in one step is covered by the RolePlay editor's own person selector (inline create); "+ Person" then "Legg til markør" is the two-step path. Removal lives here too, not in the viewer.
+**Authoring a marker from the post editor.** Markers are added from the post editor's **Persons** section, so an author never needs the read-only Post view to build one. Each person's card shows the marker inline, on the same row as the name (right-aligned, no separate line): "Spilles av {navn}" (no chevron — the row itself is the tap target) when enacted; a person without one offers **"Legg til spill"** in that same spot, which opens this editor with the post and person **pre-set** — the author lands directly on the play (behavior, background, props) and position. Saving returns to the post editor, where the person now shows the marker inline. The new roleplay is held in the post editor's working copy and written back on save through the same `PlanAdditions` mechanism as inline-created persons/locations/variables (extended to roleplays), so an aborted post edit never leaves a half-saved marker. A brand-new person-and-marker in one step is covered by the RolePlay editor's own person selector (inline create); "+ Person" then "Legg til spill" is the two-step path. Removal lives here too, not in the viewer.
 
 ## Map
 
@@ -128,7 +128,7 @@ The `description` field is **reused as-is** — no new field, no migration, no s
 
 **Visual reference:** [`docs/design/mockups/station-and-roleplay-viewers.html`](./mockups/station-and-roleplay-viewers.html).
 
-The Post detail sheet surfaces the station's persons and locations, which have no read-only home today. Each gets a list card ("+ Person", "+ Lokasjon" to add). Because the distinction between a *person* (the scenario character) and a *marker* (the roleplay that enacts one) is opaque to the uninitiated, the two are **not** separate cards: the person is the row, and the enacting marker shows **inline on that person** ("Spilles av {actor}"), tapping through to the Spill viewer. A person not yet enacted offers "Legg til markør", which opens the RolePlay editor with the post and person pre-set — the same flow as the post editor's Persons section, which is the authoritative authoring home (see "Authoring a marker from the post editor"). Removing a marker is **not** a viewer action; it lives in the editor, with the app's swipe-to-delete ([ADR-0031](../adrs/0031-row-edit-affordances.md)).
+The Post detail sheet surfaces the station's persons and locations, which have no read-only home today. Each gets a list card ("+ Person", "+ Lokasjon" to add). Because the distinction between a *person* (the scenario character) and a *marker* (the roleplay that enacts one) is opaque to the uninitiated, the two are **not** separate cards: the person is the row, and the enacting marker shows **inline on that person** ("Spilles av {actor}"), tapping through to the Spill viewer. A person not yet enacted offers "Legg til spill", which opens the RolePlay editor with the post and person pre-set — the same flow as the post editor's Persons section, which is the authoritative authoring home (see "Authoring a marker from the post editor"). Removing a marker is **not** a viewer action; it lives in the editor, with the app's swipe-to-delete ([ADR-0031](../adrs/0031-row-edit-affordances.md)).
 
 The Spill detail sheet is the marker's order: the effective identity, the play fields, the position, the parent post (shown first), and when the marker is active. It says **nothing** about the person relationship when the marker follows the person — there is no difference to explain — and shows "Tilpasset fra {navn}" only when the identity is overridden, naming the underlying person because the presented identity now differs. Casting ("Spilles av {actor}") is shown freely in-app; the PII boundary is a publishing concern handled at publish time, not in the viewer (ADR-0018).
 
@@ -203,9 +203,8 @@ The design and ADR use English concept names throughout. The `nb` UI ships these
 | Station (base section) | Post |
 | RolePlay (editor) | Spill / Rolle |
 | Actor (roster) | Markør / Bemanning |
-| Add marker (per person) | Legg til markør |
+| Add marker (per person) | Legg til spill |
 | played by (actor) | Spilles av {navn} |
-| follows the person (identity/position) | Følger person / Følger personen |
 | customized identity | Tilpasset fra {navn} |
 | customize (disclosure) | Tilpass |
 | revert an override | Tilbakestill |

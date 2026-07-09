@@ -46,7 +46,7 @@ enum _StationSection {
 /// owns them directly), never through the write-back payload. `variables`
 /// carries plan variables created inline from a token field; `rolePlays`
 /// (since prompt 4j) carries any marker created or edited from the
-/// Persons section's "Legg til markør" / "Spilles av {navn}" flow — a
+/// Persons section's "Legg til spill" / "Spilles av {navn}" flow — a
 /// `RolePlay` is not nested in `Station`, so it rides this same mechanism.
 typedef StationFormResult = ({Station station, PlanAdditions additions});
 
@@ -354,7 +354,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// merges the result into this station editor's own working state
   /// (DESIGN-009 prompt 4j) — never written to disk directly, so an
   /// aborted post edit discards it along with everything else unsaved.
-  /// Shared by the Persons section's "Legg til markør" (a fresh draft) and
+  /// Shared by the Persons section's "Legg til spill" (a fresh draft) and
   /// "Spilles av {navn}" (an existing one) rows.
   Future<void> _openRolePlayEditor(RolePlay rolePlay) async {
     final result = await openFormSurface<RolePlayFormResult>(
@@ -398,7 +398,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
     });
   }
 
-  /// "Legg til markør" (DESIGN-009 prompt 4j): a fresh [RolePlay] draft with
+  /// "Legg til spill" (DESIGN-009 prompt 4j): a fresh [RolePlay] draft with
   /// the post and [person] pre-set, seeded from the person's own current
   /// identity so the author lands on the play and position — not the
   /// person picker — the same effective values [_applyPersonSelection]

@@ -2240,7 +2240,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get personsSectionAddMarkerAction => 'Add marker';
+  String get personsSectionAddMarkerAction => 'Add role';
 
   @override
   String get personsSectionEditAction => 'Edit';

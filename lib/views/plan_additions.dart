@@ -168,7 +168,7 @@ Future<void> applyRolePlayAdditions(
 
 /// Persists [additions.rolePlays] via [ProgramService.saveRolePlay]
 /// (DESIGN-009 prompt 4j) — the write-back target for a marker authored
-/// inline from the post editor's Persons section ("Legg til markør" /
+/// inline from the post editor's Persons section ("Legg til spill" /
 /// re-opening an existing one): unlike a station's own locations/persons, a
 /// `RolePlay` is not nested inside `Station`/`Program`, so each one is
 /// saved directly through the repo, the same as any other roleplay edit —

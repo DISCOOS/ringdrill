@@ -12,9 +12,10 @@ import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 /// 4j): a card per station-owned [Person] (name + age/gender/signalement
 /// summary), matching the app's card-per-item list style — bordered,
 /// rounded, spaced, with a leading avatar. Tap opens [PersonFormScreen] to
-/// edit; an overflow menu and swipe-to-dismiss both delete, behind a
-/// `confirmDestructive` confirmation (ADR-0031 — no pencil in the row, edit
-/// stays a tap away); "+ Ny person" opens the same form to add.
+/// edit; swipe-to-dismiss deletes, behind a `confirmDestructive`
+/// confirmation (ADR-0031 — no overflow menu, no pencil in the row; edit
+/// stays a tap away and delete a swipe, the app's one established
+/// row-action pattern); "+ Ny person" opens the same form to add.
 ///
 /// Presentation-only, mirroring `LocationsSection`: [persons] and the
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
@@ -28,10 +29,11 @@ import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 /// at creation and never shown; renaming it is out of scope — there is no
 /// rename (ADR-0047).
 ///
-/// Each card also carries its enacting marker inline (DESIGN-009 prompt
-/// 4j): "Spilles av {navn}" when [rolePlayFor] finds one, tapping through
-/// to [onOpenRolePlay]; otherwise "Legg til markør" via [onAddRolePlay] —
-/// so an author never needs the read-only Post view to build one.
+/// Each card also carries its enacting role inline, on the same row as the
+/// name (DESIGN-009 prompt 4j): "Spilles av {navn}" when [rolePlayFor]
+/// finds one, tapping through to [onOpenRolePlay]; otherwise "Legg til
+/// spill" via [onAddRolePlay] — so an author never needs the read-only
+/// Post view to build one.
 class PersonsSection extends StatefulWidget {
   const PersonsSection({
     super.key,
@@ -317,9 +319,31 @@ class _PersonCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          metaParts.join(' · '),
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                metaParts.join(' · '),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () => rolePlay == null
+                                  ? onAddRolePlay()
+                                  : onOpenRolePlay(rolePlay!),
+                              child: rolePlay == null
+                                  ? _AddMarkerRow(
+                                      label: l10n.personsSectionAddMarkerAction,
+                                    )
+                                  : _EnactedByRow(
+                                      label: l10n.personsSectionEnactedByAction(
+                                        rolePlay!.name,
+                                      ),
+                                    ),
+                            ),
+                          ],
                         ),
                         if ((person.signalement ?? '').isNotEmpty)
                           Text(
@@ -329,21 +353,6 @@ class _PersonCard extends StatelessWidget {
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: InkWell(
-                            onTap: () => rolePlay == null
-                                ? onAddRolePlay()
-                                : onOpenRolePlay(rolePlay!),
-                            child: rolePlay == null
-                                ? _AddMarkerRow(label: l10n.personsSectionAddMarkerAction)
-                                : _EnactedByRow(
-                                    label: l10n.personsSectionEnactedByAction(
-                                      rolePlay!.name,
-                                    ),
-                                  ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -391,19 +400,13 @@ class _EnactedByRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.chevron_right,
-            size: 15,
-            color: theme.colorScheme.primary,
-          ),
         ],
       ),
     );
   }
 }
 
-/// The "+ Legg til markør" inline affordance on an unenacted person's card
+/// The "+ Legg til spill" inline affordance on an unenacted person's card
 /// (DESIGN-009 prompt 4j).
 class _AddMarkerRow extends StatelessWidget {
   const _AddMarkerRow({required this.label});

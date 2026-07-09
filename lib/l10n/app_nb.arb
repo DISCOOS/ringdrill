@@ -1354,7 +1354,7 @@
       "name": { "type": "String" }
     }
   },
-  "personsSectionAddMarkerAction": "Legg til markør",
+  "personsSectionAddMarkerAction": "Legg til spill",
   "@personsSectionAddMarkerAction": {
     "description": "Innebygd rad på personens kort i Personer-seksjonen, vist i stedet for personsSectionEnactedByAction når personen ikke har noen markørordre ennå (DESIGN-009 prompt 4j). Åpner markørredigeringen med post og denne personen forhåndsutfylt."
   },
