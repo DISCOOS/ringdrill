@@ -6,10 +6,12 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
+import 'package:ringdrill/views/widgets/variable_value_field.dart';
 
-/// DESIGN-008 Stage 5 (+ follow-up 01) — the Variabler declaration section
-/// end-to-end inside the Program editor: declare, create-inline, rename
-/// (plan-wide rewrite), delete (reference-guarded), edit-value and
+/// DESIGN-008 Stage 5 (+ follow-ups 01, 11, 12) — the Variabler declaration
+/// section end-to-end inside the Program editor: declare (name+hint only),
+/// expand a card to set its type/value/hint, rename (plan-wide rewrite),
+/// delete via the context menu and via swipe (both reference-guarded), and
 /// save-time validation.
 
 Program _program({
@@ -117,53 +119,62 @@ Color? _tokenChipColor(WidgetTester tester, String token) {
   return found;
 }
 
-/// The `⋮` row-action menu for the variable named [name]. Scoped to that
-/// row rather than a bare `find.byIcon(Icons.more_vert)`, since
-/// `SectionNavigatedForm`'s own overflow control (DESIGN-008 follow-up 02)
-/// now always renders one too — just disabled outside a removable section.
-Finder _variableRowMenu(String name) {
-  final row = find.ancestor(of: find.text(name), matching: find.byType(Row));
-  return find.descendant(of: row, matching: find.byIcon(Icons.more_vert)).first;
-}
-
 /// The declaration card for the variable named [name] (DESIGN-008
-/// follow-up 11 — one Card per variable, value edited inline on it).
-Finder _variableCardOf(String name) =>
-    find.ancestor(of: find.text(name), matching: find.byType(Card)).first;
+/// follow-up 12 — one collapsible card per variable, mirroring the
+/// RolePlay "Identitet" card). Keyed off the card's own `Dismissible`
+/// (`ValueKey(variable.name)`) rather than an ancestor-of-type search, so
+/// this stays correct regardless of the card's internal widget shape
+/// (a bordered `Container`, not a `Card`, per the Identitet mirror).
+Finder _variableCardOf(String name) => find.byKey(ValueKey(name));
 
-/// The inline type-aware default-value field on [name]'s declaration card.
-Finder _variableValueFieldOf(String name) => find
-    .descendant(of: _variableCardOf(name), matching: find.byType(TextFormField))
-    .first;
-
-/// Edits a variable in the follow-up 11 declaration UI: the value inline on
-/// the card's type-aware field, the hint via the `⋮` menu's "Edit hint"
-/// dialog (the pre-11 flow edited both through one "Edit value" dialog).
-Future<void> _editVariableValue(
+/// Expands [name]'s card by tapping its "Tilpass" disclosure bar — a no-op
+/// if already expanded. Every value/type/hint/rename/delete interaction
+/// below requires the card to be expanded first, per DESIGN-008 follow-up
+/// 12 (only the name + formatted value are visible collapsed).
+Future<void> _expandCard(
   WidgetTester tester,
   AppLocalizations l,
-  String name, {
-  String? value,
-  String? hint,
-}) async {
-  if (value != null) {
-    await tester.enterText(_variableValueFieldOf(name), value);
-    await tester.pumpAndSettle();
+  String name,
+) async {
+  final tilpass = find.descendant(
+    of: _variableCardOf(name),
+    matching: find.text(l.variablesSectionCustomizeAction),
+  );
+  if (find.descendant(
+    of: _variableCardOf(name),
+    matching: find.byIcon(Icons.keyboard_arrow_up),
+  ).evaluate().isNotEmpty) {
+    return;
   }
-  if (hint != null) {
-    await tester.tap(_variableRowMenu(name));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l.variablesSectionEditHintAction));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextFormField, l.variablesSectionHintLabel),
-      hint,
-    );
-    await tester.tap(
-      find.widgetWithText(FilledButton, l.variablesSectionEditHintAction),
-    );
-    await tester.pumpAndSettle();
-  }
+  await tester.tap(tilpass);
+  await tester.pumpAndSettle();
+}
+
+/// The `⋮` context menu inside [name]'s *expanded* card (DESIGN-008 follow-up
+/// 12 — rename/delete moved off the always-visible header into the
+/// expanded panel).
+Finder _variableCardMenu(String name) => find.descendant(
+  of: _variableCardOf(name),
+  matching: find.byIcon(Icons.more_vert),
+);
+
+/// The inline type-aware value field on [name]'s *expanded* card — distinct
+/// from the hint field, which is a plain sibling `TextFormField` outside
+/// [VariableValueField].
+Finder _variableValueFieldOf(String name) => find.descendant(
+  of: find.descendant(
+    of: _variableCardOf(name),
+    matching: find.byType(VariableValueField),
+  ),
+  matching: find.byType(TextFormField),
+).first;
+
+/// Swipes [name]'s card end-to-start past the dismiss threshold — the same
+/// offset `station_form_screen_locations_persons_test.dart` uses for
+/// Persons/Locations' own swipe-to-delete.
+Future<void> _swipeToDelete(WidgetTester tester, String name) async {
+  await tester.drag(_variableCardOf(name), const Offset(-500, 0));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -174,7 +185,8 @@ void main() {
   });
 
   testWidgets(
-    'declare a variable, reference it, save: the popped Program has both',
+    'declare a variable (name + hint only), expand its card to set a '
+    'value, reference it, save: the popped Program has both',
     (tester) async {
       final captured = _Captured();
       await _openForm(tester, _program(briefIntroMd: 'Intro'), captured);
@@ -185,19 +197,25 @@ void main() {
 
       await tester.tap(find.text(l.variablesSectionAddAction));
       await tester.pumpAndSettle();
+      // Only name + hint in the creation dialog — no value field.
+      expect(
+        find.widgetWithText(TextFormField, l.variablesSectionValueLabel),
+        findsNothing,
+      );
       await tester.enterText(
         find.widgetWithText(TextFormField, l.variablesSectionNameLabel),
         'frekvens',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.variablesSectionValueLabel),
-        'Kanal 6',
       );
       await tester.tap(
         find.widgetWithText(FilledButton, l.variablesSectionAddAction),
       );
       await tester.pumpAndSettle();
       expect(find.text('frekvens'), findsOneWidget);
+      expect(find.text(l.variablesSectionNoValuePlaceholder), findsOneWidget);
+
+      await _expandCard(tester, l, 'frekvens');
+      await tester.enterText(_variableValueFieldOf('frekvens'), 'Kanal 6');
+      await tester.pumpAndSettle();
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
       await tester.tap(find.text(l.briefSectionProgramIntro));
@@ -244,11 +262,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('freken'), findsOneWidget);
-      // Declared but empty: the card's inline value field is empty.
-      expect(
-        tester.widget<TextFormField>(_variableValueFieldOf('freken')).controller?.text ?? '',
-        isEmpty,
-      );
+      // Declared but empty: the collapsed card shows the placeholder.
+      expect(find.text(l.variablesSectionNoValuePlaceholder), findsOneWidget);
     },
   );
 
@@ -269,7 +284,8 @@ void main() {
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
 
-    await tester.tap(_variableRowMenu('frekvens'));
+    await _expandCard(tester, l, 'frekvens');
+    await tester.tap(_variableCardMenu('frekvens'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.variablesSectionRenameAction));
     await tester.pumpAndSettle();
@@ -303,7 +319,8 @@ void main() {
   });
 
   testWidgets(
-    'delete is blocked while referenced, and removes once unreferenced',
+    'delete via the context menu is blocked while referenced, and removes '
+    'once unreferenced',
     (tester) async {
       await _openForm(
         tester,
@@ -322,7 +339,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Referenced: blocked.
-      await tester.tap(_variableRowMenu('frekvens'));
+      await _expandCard(tester, l, 'frekvens');
+      await tester.tap(_variableCardMenu('frekvens'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
       await tester.pumpAndSettle();
@@ -333,11 +351,47 @@ void main() {
       expect(find.text('frekvens'), findsOneWidget);
 
       // Unreferenced: removes immediately.
-      await tester.tap(_variableRowMenu('ubrukt'));
+      await _expandCard(tester, l, 'ubrukt');
+      await tester.tap(_variableCardMenu('ubrukt'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
       await tester.pumpAndSettle();
 
+      expect(find.text('ubrukt'), findsNothing);
+      expect(find.text('frekvens'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'swiping a card deletes it when unreferenced, and snaps back (blocked '
+    'dialog) when referenced (DESIGN-008 follow-up 12)',
+    (tester) async {
+      await _openForm(
+        tester,
+        _program(
+          briefIntroMd: 'Kanal {{var.frekvens}}',
+          variables: const [
+            DrillVariable(name: 'frekvens', value: 'Kanal 6'),
+            DrillVariable(name: 'ubrukt', value: 'X'),
+          ],
+        ),
+        _Captured(),
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      // Referenced: the blocked dialog appears and the card survives.
+      await _swipeToDelete(tester, 'frekvens');
+      expect(find.text(l.variablesSectionDeleteBlockedTitle), findsOneWidget);
+      await tester.tap(find.text(l.ok));
+      await tester.pumpAndSettle();
+      expect(find.text('frekvens'), findsOneWidget);
+
+      // Unreferenced: swiping removes it with no extra confirmation, the
+      // same as the context-menu delete action.
+      await _swipeToDelete(tester, 'ubrukt');
       expect(find.text('ubrukt'), findsNothing);
       expect(find.text('frekvens'), findsOneWidget);
     },
@@ -370,7 +424,8 @@ void main() {
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
 
-    await tester.tap(_variableRowMenu('frekvens'));
+    await _expandCard(tester, l, 'frekvens');
+    await tester.tap(_variableCardMenu('frekvens'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.variablesSectionDeleteAction));
     await tester.pumpAndSettle();
@@ -504,9 +559,12 @@ void main() {
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
-      await _editVariableValue(tester, l, 'frekvens', value: 'Kanal 6');
-      expect(find.text('Kanal 6'), findsOneWidget);
-      expect(find.text('—'), findsNothing);
+      await _expandCard(tester, l, 'frekvens');
+      await tester.enterText(_variableValueFieldOf('frekvens'), 'Kanal 6');
+      await tester.pumpAndSettle();
+      // Shows twice while expanded: the collapsed-style summary above the
+      // panel and the live value field itself, both reading "Kanal 6".
+      expect(find.text('Kanal 6'), findsWidgets);
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
       await tester.tap(find.text(l.briefSectionProgramIntro));
@@ -539,9 +597,13 @@ void main() {
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
-      await _editVariableValue(tester, l, 'frekvens', value: 'Kanal 8');
+      await _expandCard(tester, l, 'frekvens');
+      await tester.enterText(_variableValueFieldOf('frekvens'), 'Kanal 8');
+      await tester.pumpAndSettle();
       expect(find.text('frekvens'), findsOneWidget);
-      expect(find.text('Kanal 8'), findsOneWidget);
+      // Shows twice while expanded: the summary above the panel and the
+      // live value field itself.
+      expect(find.text('Kanal 8'), findsWidgets);
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
       await tester.tap(find.text(l.briefSectionProgramIntro));
@@ -574,7 +636,12 @@ void main() {
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
 
-    await _editVariableValue(tester, l, 'frekvens', hint: 'Radiokanal');
+    await _expandCard(tester, l, 'frekvens');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, l.variablesSectionHintLabel),
+      'Radiokanal',
+    );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text(l.save));
     await tester.pumpAndSettle();
@@ -602,10 +669,16 @@ void main() {
       await _openSwitcherFrom(tester, l.programSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
+      await _expandCard(tester, l, 'frekvens');
 
       // Change the type via the card's type chip: Text → Number. The kept
       // value "Kanal 6" no longer reads as the type.
-      await tester.tap(find.text(l.variableTypeLabelString));
+      await tester.tap(
+        find.descendant(
+          of: _variableCardOf('frekvens'),
+          matching: find.text(l.variableTypeLabelString),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text(l.variableTypePickerTitle('frekvens')), findsOneWidget);
       await tester.tap(find.text(l.variableTypeLabelNumber));
@@ -634,6 +707,7 @@ void main() {
       await _openSwitcherFrom(tester, l.programSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
+      await _expandCard(tester, l, 'frekvens');
       await tester.enterText(_variableValueFieldOf('frekvens'), '3,14');
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.save));
@@ -647,7 +721,8 @@ void main() {
   );
 
   testWidgets(
-    'create-inline then edit-value closes the loop without ever deleting',
+    'create-inline then expand-to-set-value closes the loop without ever '
+    'deleting',
     (tester) async {
       final captured = _Captured();
       await _openForm(tester, _program(briefIntroMd: 'Intro'), captured);
@@ -670,11 +745,15 @@ void main() {
       await tester.tap(find.text(l.variablesSectionTitle));
       await tester.pumpAndSettle();
 
-      // Never blocked or deleted despite being referenced — edit-value
-      // just works.
-      await _editVariableValue(tester, l, 'freken', value: 'Kanal 6');
+      // Never blocked or deleted despite being referenced — expanding and
+      // setting the value just works.
+      await _expandCard(tester, l, 'freken');
+      await tester.enterText(_variableValueFieldOf('freken'), 'Kanal 6');
+      await tester.pumpAndSettle();
       expect(find.text('freken'), findsOneWidget);
-      expect(find.text('Kanal 6'), findsOneWidget);
+      // Shows twice while expanded: the summary above the panel and the
+      // live value field itself.
+      expect(find.text('Kanal 6'), findsWidgets);
 
       await _openSwitcherFrom(tester, l.variablesSectionTitle);
       await tester.tap(find.text(l.briefSectionProgramIntro));

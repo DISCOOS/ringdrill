@@ -3428,35 +3428,41 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get variablesSectionNameLabel;
 
-  /// Field label for a variable's default value in the add-variable dialog.
+  /// Placeholder for a declaration card's inline type-aware value field (DESIGN-008 follow-up 12).
   ///
   /// In en, this message translates to:
   /// **'Value'**
   String get variablesSectionValueLabel;
 
-  /// Field label for a variable's optional hint, shown in the insertion picker.
+  /// Field label for a variable's optional hint, shown in the insertion picker and on the declaration card's inline hint field.
   ///
   /// In en, this message translates to:
   /// **'Hint (optional)'**
   String get variablesSectionHintLabel;
 
-  /// Row overflow-menu action (ADR-0031) that renames a variable, and the title/confirm-button text of the dialogs it opens.
+  /// Context-menu action (ADR-0031) that renames a variable, and the title/confirm-button text of the dialogs it opens.
   ///
   /// In en, this message translates to:
   /// **'Rename'**
   String get variablesSectionRenameAction;
 
-  /// Row overflow-menu action (ADR-0031) that deletes an unreferenced variable.
+  /// Context-menu action (ADR-0031) that deletes an unreferenced variable.
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get variablesSectionDeleteAction;
 
-  /// Row overflow-menu action (ADR-0031) that edits a variable's value/hint, and the title/confirm-button text of the dialog it opens. The name field in that dialog is read-only.
+  /// Label of the declaration card's expand/collapse disclosure bar (DESIGN-008 follow-up 12, mirroring RolePlayFormScreen's identity-card "Tilpass" bar) — reveals the type picker and the inline value/hint fields.
   ///
   /// In en, this message translates to:
-  /// **'Edit value'**
-  String get variablesSectionEditValueAction;
+  /// **'Customize'**
+  String get variablesSectionCustomizeAction;
+
+  /// Collapsed declaration card's subtitle when the variable's value (or location) is empty (DESIGN-008 follow-up 12).
+  ///
+  /// In en, this message translates to:
+  /// **'No value'**
+  String get variablesSectionNoValuePlaceholder;
 
   /// Validation message when a variable name does not match the ADR-0046 slug rule ^[a-z][a-z0-9_]*$.
   ///
@@ -3607,12 +3613,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type or paste lat,lng or UTM'**
   String get variableLocationCoordinateHint;
-
-  /// Declaration-card menu action that opens the hint-editing dialog (the value itself is edited inline on the card since DESIGN-008 follow-up 11).
-  ///
-  /// In en, this message translates to:
-  /// **'Edit hint'**
-  String get variablesSectionEditHintAction;
 
   /// LocationKind.lkp label, shown in the kind picker and on the map (ADR-0047/DESIGN-009).
   ///

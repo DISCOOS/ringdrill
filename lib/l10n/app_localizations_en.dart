@@ -2021,7 +2021,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get variablesSectionDeleteAction => 'Delete';
 
   @override
-  String get variablesSectionEditValueAction => 'Edit value';
+  String get variablesSectionCustomizeAction => 'Customize';
+
+  @override
+  String get variablesSectionNoValuePlaceholder => 'No value';
 
   @override
   String get variablesSectionInvalidSlugError =>
@@ -2116,9 +2119,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get variableLocationCoordinateHint => 'Type or paste lat,lng or UTM';
-
-  @override
-  String get variablesSectionEditHintAction => 'Edit hint';
 
   @override
   String get locationKindLkpLabel => 'Last known position (LKP)';

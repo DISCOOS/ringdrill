@@ -2018,7 +2018,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get variablesSectionDeleteAction => 'Slett';
 
   @override
-  String get variablesSectionEditValueAction => 'Endre verdi';
+  String get variablesSectionCustomizeAction => 'Tilpass';
+
+  @override
+  String get variablesSectionNoValuePlaceholder => 'Ingen verdi';
 
   @override
   String get variablesSectionInvalidSlugError =>
@@ -2116,9 +2119,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get variableLocationCoordinateHint =>
       'Skriv eller lim inn lat,lng eller UTM';
-
-  @override
-  String get variablesSectionEditHintAction => 'Rediger hint';
 
   @override
   String get locationKindLkpLabel => 'Sist kjent posisjon (LKP)';

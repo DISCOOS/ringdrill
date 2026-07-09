@@ -2043,23 +2043,27 @@
   },
   "variablesSectionValueLabel": "Value",
   "@variablesSectionValueLabel": {
-    "description": "Field label for a variable's default value in the add-variable dialog."
+    "description": "Placeholder for a declaration card's inline type-aware value field (DESIGN-008 follow-up 12)."
   },
   "variablesSectionHintLabel": "Hint (optional)",
   "@variablesSectionHintLabel": {
-    "description": "Field label for a variable's optional hint, shown in the insertion picker."
+    "description": "Field label for a variable's optional hint, shown in the insertion picker and on the declaration card's inline hint field."
   },
   "variablesSectionRenameAction": "Rename",
   "@variablesSectionRenameAction": {
-    "description": "Row overflow-menu action (ADR-0031) that renames a variable, and the title/confirm-button text of the dialogs it opens."
+    "description": "Context-menu action (ADR-0031) that renames a variable, and the title/confirm-button text of the dialogs it opens."
   },
   "variablesSectionDeleteAction": "Delete",
   "@variablesSectionDeleteAction": {
-    "description": "Row overflow-menu action (ADR-0031) that deletes an unreferenced variable."
+    "description": "Context-menu action (ADR-0031) that deletes an unreferenced variable."
   },
-  "variablesSectionEditValueAction": "Edit value",
-  "@variablesSectionEditValueAction": {
-    "description": "Row overflow-menu action (ADR-0031) that edits a variable's value/hint, and the title/confirm-button text of the dialog it opens. The name field in that dialog is read-only."
+  "variablesSectionCustomizeAction": "Customize",
+  "@variablesSectionCustomizeAction": {
+    "description": "Label of the declaration card's expand/collapse disclosure bar (DESIGN-008 follow-up 12, mirroring RolePlayFormScreen's identity-card \"Tilpass\" bar) — reveals the type picker and the inline value/hint fields."
+  },
+  "variablesSectionNoValuePlaceholder": "No value",
+  "@variablesSectionNoValuePlaceholder": {
+    "description": "Collapsed declaration card's subtitle when the variable's value (or location) is empty (DESIGN-008 follow-up 12)."
   },
   "variablesSectionInvalidSlugError": "Must start with a lowercase letter and contain only lowercase letters, numbers and underscores",
   "@variablesSectionInvalidSlugError": {
@@ -2172,10 +2176,6 @@
   "variableLocationCoordinateHint": "Type or paste lat,lng or UTM",
   "@variableLocationCoordinateHint": {
     "description": "Hint of the location-typed variable's coordinate text field — it accepts a decimal lat,lng pair or a UTM string, typed or pasted."
-  },
-  "variablesSectionEditHintAction": "Edit hint",
-  "@variablesSectionEditHintAction": {
-    "description": "Declaration-card menu action that opens the hint-editing dialog (the value itself is edited inline on the card since DESIGN-008 follow-up 11)."
   },
 
   "locationKindLkpLabel": "Last known position (LKP)",

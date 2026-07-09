@@ -1076,23 +1076,27 @@
   },
   "variablesSectionValueLabel": "Verdi",
   "@variablesSectionValueLabel": {
-    "description": "Feltetikett for en variabels standardverdi i ny-variabel-dialogen."
+    "description": "Plassholder for det innebygde type-riktige verdifeltet på deklarasjonskortet (DESIGN-008 oppfølging 12)."
   },
   "variablesSectionHintLabel": "Hint (valgfritt)",
   "@variablesSectionHintLabel": {
-    "description": "Feltetikett for en variabels valgfrie hint, vist i innsettingsmenyen."
+    "description": "Feltetikett for en variabels valgfrie hint, vist i innsettingsmenyen og på deklarasjonskortets innebygde hint-felt."
   },
   "variablesSectionRenameAction": "Gi nytt navn",
   "@variablesSectionRenameAction": {
-    "description": "Radens overflytmeny-handling (ADR-0031) som gir en variabel nytt navn, og tittel/bekreft-knapptekst på dialogene den åpner."
-  },
-  "variablesSectionEditValueAction": "Endre verdi",
-  "@variablesSectionEditValueAction": {
-    "description": "Row overflow-menu action (ADR-0031) that edits a variable's value/hint, and the title/confirm-button text of the dialog it opens. The name field in that dialog is read-only."
+    "description": "Meny-handling (ADR-0031) som gir en variabel nytt navn, og tittel/bekreft-knapptekst på dialogene den åpner."
   },
   "variablesSectionDeleteAction": "Slett",
   "@variablesSectionDeleteAction": {
-    "description": "Radens overflytmeny-handling (ADR-0031) som sletter en ubrukt variabel."
+    "description": "Meny-handling (ADR-0031) som sletter en ubrukt variabel."
+  },
+  "variablesSectionCustomizeAction": "Tilpass",
+  "@variablesSectionCustomizeAction": {
+    "description": "Etikett på deklarasjonskortets utvid/skjul-linje (DESIGN-008 oppfølging 12, speiler RolePlayFormScreens identitetskort sin «Tilpass»-linje) — viser type-velgeren og de innebygde verdi-/hint-feltene."
+  },
+  "variablesSectionNoValuePlaceholder": "Ingen verdi",
+  "@variablesSectionNoValuePlaceholder": {
+    "description": "Undertekst på det sammenslåtte deklarasjonskortet når variabelens verdi (eller lokasjon) er tom (DESIGN-008 oppfølging 12)."
   },
   "variablesSectionInvalidSlugError": "Må starte med en liten bokstav og bare inneholde små bokstaver, tall og understrek",
   "@variablesSectionInvalidSlugError": {
@@ -1205,10 +1209,6 @@
   "variableLocationCoordinateHint": "Skriv eller lim inn lat,lng eller UTM",
   "@variableLocationCoordinateHint": {
     "description": "Hint på koordinat-tekstfeltet til en lokasjon-typet variabel — det godtar et desimalt lat,lng-par eller en UTM-streng, skrevet eller limt inn."
-  },
-  "variablesSectionEditHintAction": "Rediger hint",
-  "@variablesSectionEditHintAction": {
-    "description": "Menyhandling på deklarasjonskortet som åpner hint-redigeringsdialogen (selve verdien redigeres inline på kortet siden DESIGN-008 oppfølging 11)."
   },
 
   "locationKindLkpLabel": "Sist kjent posisjon (LKP)",

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/services/geocoding_service.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/widgets/variable_type_labels.dart';
 import 'package:ringdrill/views/widgets/variable_value_field.dart';
 
@@ -12,13 +13,14 @@ import 'package:ringdrill/views/widgets/variable_value_field.dart';
 /// the *matching* pattern, but both describe the same name shape.
 final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
-/// The DESIGN-008 Stage 5 "Variabler" declaration section, reshaped by
-/// follow-up 11 (typed variables) to a card per declared [DrillVariable]:
-/// the name, a type chip that opens the type picker, a `⋮` menu for
-/// rename/edit-hint/delete (ADR-0031 — never a per-row pencil), and the
-/// type-aware default-value input rendered inline ([VariableValueField]).
-/// A "+ Ny variabel" action and the ADR-0046 publish-warning note frame the
-/// list.
+/// The DESIGN-008 Stage 5 "Variabler" declaration section (reshaped by
+/// follow-up 12 into a collapsible card per declared [DrillVariable],
+/// mirroring `RolePlayFormScreen`'s "Identitet" card): a collapsed summary
+/// (type icon, name, formatted value or an empty placeholder) and a
+/// "Tilpass" disclosure bar that expands to the type picker plus the
+/// inline value and hint fields — see [_VariableCard]. A "+ Ny variabel"
+/// action (name + hint only; the type and value are set afterward on the
+/// card itself) and the ADR-0046 publish-warning note frame the list.
 ///
 /// Presentation-only, mirroring how `_TagsEditor` and `ProgramFormScreen`'s
 /// `_activeSections` are owned by the parent form: [variables] and the
@@ -52,15 +54,16 @@ class VariablesSection extends StatelessWidget {
   final void Function(String oldName, String newName) onRename;
 
   /// Called only when [referenceCount] is zero for this name — the caller
-  /// removes it from its working list. Never called while referenced;
-  /// this widget shows the blocked dialog itself in that case.
+  /// removes it from its working list. Never called while referenced; the
+  /// referenced-guard dialog is shown for both the context-menu delete and
+  /// the swipe-to-dismiss gesture.
   final ValueChanged<String> onDelete;
 
   /// Called with the updated [DrillVariable] (same `name`; new value,
-  /// location, type or hint) on every inline edit — the type-aware value
-  /// field, the type picker and the hint dialog all flow through here. The
-  /// caller replaces the matching entry in its working list, which
-  /// refreshes any live token controllers through `PlanScope`.
+  /// location, type or hint) on every inline edit in the expanded panel —
+  /// the type picker and the type-aware value/hint fields all flow through
+  /// here. The caller replaces the matching entry in its working list,
+  /// which refreshes any live token controllers through `PlanScope`.
   final ValueChanged<DrillVariable> onUpdate;
 
   /// Total `{{var.<name>}}` occurrences plus `variableOverrides` key hits
@@ -93,9 +96,8 @@ class VariablesSection extends StatelessWidget {
               geocodingService: geocodingService,
               onUpdate: onUpdate,
               onPickType: () => _handlePickType(context, l10n, variable),
-              onEditHint: () => _handleEditHint(context, variable),
               onRename: () => _handleRename(context, l10n, variable),
-              onDelete: () => _handleDelete(context, l10n, variable),
+              confirmDelete: () => _handleDelete(context, l10n, variable),
             ),
           const SizedBox(height: 8),
           InkWell(
@@ -127,7 +129,7 @@ class VariablesSection extends StatelessWidget {
   Future<void> _handleAdd(BuildContext context, AppLocalizations l10n) async {
     final created = await showDialog<DrillVariable>(
       context: context,
-      builder: (dialogContext) => _VariableFormDialog(
+      builder: (dialogContext) => _AddVariableDialog(
         existingNames: variables.map((v) => v.name).toSet(),
       ),
     );
@@ -179,20 +181,6 @@ class VariablesSection extends StatelessWidget {
     onUpdate(variable.copyWith(type: picked));
   }
 
-  Future<void> _handleEditHint(
-    BuildContext context,
-    DrillVariable variable,
-  ) async {
-    final updated = await showDialog<DrillVariable>(
-      context: context,
-      builder: (dialogContext) => _VariableFormDialog(
-        existingNames: variables.map((v) => v.name).toSet(),
-        initial: variable,
-      ),
-    );
-    if (updated != null) onUpdate(updated);
-  }
-
   Future<void> _handleRename(
     BuildContext context,
     AppLocalizations l10n,
@@ -233,7 +221,12 @@ class VariablesSection extends StatelessWidget {
     if (confirmed == true) onRename(variable.name, newName);
   }
 
-  Future<void> _handleDelete(
+  /// Shared by the context-menu "Delete" action and the swipe-to-dismiss
+  /// gesture (DESIGN-008 follow-up 12): an unreferenced variable is removed
+  /// immediately (`true`, so `Dismissible` completes the swipe); a
+  /// referenced one shows the blocked dialog and is never removed (`false`,
+  /// so a swipe snaps back).
+  Future<bool> _handleDelete(
     BuildContext context,
     AppLocalizations l10n,
     DrillVariable variable,
@@ -241,7 +234,7 @@ class VariablesSection extends StatelessWidget {
     final count = referenceCount(variable.name);
     if (count == 0) {
       onDelete(variable.name);
-      return;
+      return true;
     }
     await showDialog<void>(
       context: context,
@@ -267,6 +260,7 @@ class VariablesSection extends StatelessWidget {
         ],
       ),
     );
+    return false;
   }
 }
 
@@ -306,114 +300,245 @@ class _PublishNote extends StatelessWidget {
   }
 }
 
-enum _VariableCardAction { editHint, rename, delete }
+enum _VariableCardAction { rename, delete }
 
-/// One declaration card (DESIGN-008 follow-up 11, `typed-variables.html`):
-/// name + type chip + `⋮` on top, the type-aware default-value input below,
-/// and the hint (when set) as a muted caption in between.
-class _VariableCard extends StatelessWidget {
+/// One declaration card (DESIGN-008 follow-up 12), mirroring
+/// `RolePlayFormScreen`'s "Identitet" card: a collapsed summary (a type-icon
+/// avatar, the name, and the formatted value or an empty placeholder) plus
+/// a "Tilpass" disclosure bar that expands to a `⋮` menu (rename/delete —
+/// ADR-0031, never a per-row pencil), the type picker, and the inline
+/// type-aware value and hint fields. Swiping the card also deletes it,
+/// through the same referenced-guard [confirmDelete] the `⋮` menu uses.
+class _VariableCard extends StatefulWidget {
   const _VariableCard({
     super.key,
     required this.variable,
     required this.onUpdate,
     required this.onPickType,
-    required this.onEditHint,
     required this.onRename,
-    required this.onDelete,
+    required this.confirmDelete,
     this.geocodingService,
   });
 
   final DrillVariable variable;
   final ValueChanged<DrillVariable> onUpdate;
   final VoidCallback onPickType;
-  final VoidCallback onEditHint;
   final VoidCallback onRename;
-  final VoidCallback onDelete;
+
+  /// Returns `true` once the variable is actually gone (immediate for an
+  /// unreferenced one) — Dismissible's contract for whether to complete or
+  /// cancel the swipe animation.
+  final Future<bool> Function() confirmDelete;
   final GeocodingService? geocodingService;
+
+  @override
+  State<_VariableCard> createState() => _VariableCardState();
+}
+
+class _VariableCardState extends State<_VariableCard> {
+  bool _expanded = false;
+
+  /// Owned here, not by [VariableValueField]: the hint is a plain string
+  /// field with no canonical/typed encoding, edited only from this card, so
+  /// there is no "outside change" to resync against — unlike
+  /// [VariableValueField]'s own value/location, which a type change can
+  /// also touch.
+  late final _hintController = TextEditingController(
+    text: widget.variable.hint ?? '',
+  );
+
+  @override
+  void dispose() {
+    _hintController.dispose();
+    super.dispose();
+  }
+
+  void _updateHint(String value) {
+    final trimmed = value.trim();
+    widget.onUpdate(
+      widget.variable.copyWith(hint: trimmed.isEmpty ? null : trimmed),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final variable = widget.variable;
+    final formattedValue = formatVariableValue(variable, variableFormatOf(l10n));
+    final panelSurfaceColor = theme.colorScheme.surfaceContainerHighest
+        .withValues(alpha: 0.5);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 4, 12),
+      child: Dismissible(
+        // Distinct from the outer `_VariableCard`'s own `ValueKey(name)`
+        // (set by the caller, for list reconciliation) so `find.byKey` in
+        // tests can target one or the other unambiguously.
+        key: ValueKey('dismiss-${variable.name}'),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (_) => widget.confirmDelete(),
+        background: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.error,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Icon(Icons.delete, color: theme.colorScheme.onError),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          clipBehavior: Clip.antiAlias,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      variable.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.w600,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 17,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      child: Icon(
+                        variable.type.icon,
+                        size: 18,
+                        color: theme.colorScheme.onPrimaryContainer,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            variable.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            formattedValue.isEmpty
+                                ? l10n.variablesSectionNoValuePlaceholder
+                                : formattedValue,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () => setState(() => _expanded = !_expanded),
+                child: Container(
+                  color: panelSurfaceColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
                   ),
-                  _TypeChip(type: variable.type, onTap: onPickType),
-                  PopupMenuButton<_VariableCardAction>(
-                    tooltip: '',
-                    onSelected: (action) => switch (action) {
-                      _VariableCardAction.editHint => onEditHint(),
-                      _VariableCardAction.rename => onRename(),
-                      _VariableCardAction.delete => onDelete(),
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: _VariableCardAction.editHint,
-                        child: Text(l10n.variablesSectionEditHintAction),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.tune,
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      PopupMenuItem(
-                        value: _VariableCardAction.rename,
-                        child: Text(l10n.variablesSectionRenameAction),
+                      const Expanded(child: SizedBox.shrink()),
+                      Text(
+                        l10n.variablesSectionCustomizeAction,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
-                      PopupMenuItem(
-                        value: _VariableCardAction.delete,
-                        child: Text(l10n.variablesSectionDeleteAction),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _expanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        size: 16,
+                        color: theme.colorScheme.primary,
                       ),
                     ],
                   ),
-                ],
-              ),
-              if (variable.hint != null && variable.hint!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    variable.hint!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: VariableValueField(
-                  // Remounts on a type change so the input switches shape
-                  // and re-validates the kept value against the new type.
-                  key: ValueKey('${variable.name}:${variable.type.name}'),
-                  type: variable.type,
-                  value: variable.value,
-                  location: variable.location,
-                  hintText: l10n.variablesSectionValueLabel,
-                  geocodingService: geocodingService,
-                  // `location` stays null on scalar edits, which must not
-                  // clear a location value kept from before a type change
-                  // (nothing is silently dropped).
-                  onChanged: (value, location) => onUpdate(
-                    variable.copyWith(
-                      value: value,
-                      location: location ?? variable.location,
-                    ),
-                  ),
                 ),
               ),
+              if (_expanded)
+                Container(
+                  color: panelSurfaceColor,
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          PopupMenuButton<_VariableCardAction>(
+                            tooltip: '',
+                            onSelected: (action) => switch (action) {
+                              _VariableCardAction.rename => widget.onRename(),
+                              _VariableCardAction.delete =>
+                                widget.confirmDelete(),
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: _VariableCardAction.rename,
+                                child: Text(l10n.variablesSectionRenameAction),
+                              ),
+                              PopupMenuItem(
+                                value: _VariableCardAction.delete,
+                                child: Text(l10n.variablesSectionDeleteAction),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      _TypeChip(type: variable.type, onTap: widget.onPickType),
+                      const SizedBox(height: 8),
+                      VariableValueField(
+                        // Remounts on a type change so the input switches
+                        // shape and re-validates the kept value against the
+                        // new type.
+                        key: ValueKey('${variable.name}:${variable.type.name}'),
+                        type: variable.type,
+                        value: variable.value,
+                        location: variable.location,
+                        hintText: l10n.variablesSectionValueLabel,
+                        geocodingService: widget.geocodingService,
+                        // `location` stays null on scalar edits, which must
+                        // not clear a location value kept from before a
+                        // type change (nothing is silently dropped).
+                        onChanged: (value, location) => widget.onUpdate(
+                          variable.copyWith(
+                            value: value,
+                            location: location ?? variable.location,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _hintController,
+                        decoration: InputDecoration(
+                          labelText: l10n.variablesSectionHintLabel,
+                          isDense: true,
+                        ),
+                        onChanged: _updateHint,
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -422,8 +547,8 @@ class _VariableCard extends StatelessWidget {
   }
 }
 
-/// The pill-shaped type chip on a declaration card — label + chevron,
-/// accent-tinted, opening the type picker.
+/// The pill-shaped type chip in a declaration card's expanded panel — label
+/// + chevron, accent-tinted, opening the type picker.
 class _TypeChip extends StatelessWidget {
   const _TypeChip({required this.type, required this.onTap});
 
@@ -464,41 +589,28 @@ class _TypeChip extends StatelessWidget {
   }
 }
 
-/// Shared dialog behind "+ Ny variabel" and "Rediger hint". Creation
-/// ([initial] null) takes name/value/hint and returns a new string-typed
-/// [DrillVariable] — the type is changed afterward on the card's type chip
-/// (DESIGN-008 follow-up 11: created variables default to `string`).
-/// With [initial] this is the hint-editing dialog: name is shown read-only
-/// and the value is not shown at all — it is edited inline on the card by
-/// the type-aware field, never here.
-/// Rename itself uses [_RenameDialog], a name-only variant, since renaming
-/// has its own plan-wide-rewrite confirmation step the caller handles.
-class _VariableFormDialog extends StatefulWidget {
-  const _VariableFormDialog({required this.existingNames, this.initial});
+/// The "+ Ny variabel" creation dialog (DESIGN-008 follow-up 12): name and
+/// hint only — the type stays `string` and the value stays empty, both set
+/// afterward on the declaration card itself (its "Tilpass" panel).
+/// Rename uses [_RenameDialog], a name-only variant with its own
+/// plan-wide-rewrite confirmation step the caller handles.
+class _AddVariableDialog extends StatefulWidget {
+  const _AddVariableDialog({required this.existingNames});
 
   final Set<String> existingNames;
-  final DrillVariable? initial;
 
   @override
-  State<_VariableFormDialog> createState() => _VariableFormDialogState();
+  State<_AddVariableDialog> createState() => _AddVariableDialogState();
 }
 
-class _VariableFormDialogState extends State<_VariableFormDialog> {
+class _AddVariableDialogState extends State<_AddVariableDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final _nameController = TextEditingController(
-    text: widget.initial?.name ?? '',
-  );
-  final _valueController = TextEditingController();
-  late final _hintController = TextEditingController(
-    text: widget.initial?.hint ?? '',
-  );
-
-  bool get _isEdit => widget.initial != null;
+  final _nameController = TextEditingController();
+  final _hintController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
-    _valueController.dispose();
     _hintController.dispose();
     super.dispose();
   }
@@ -518,22 +630,17 @@ class _VariableFormDialogState extends State<_VariableFormDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final hint = _hintController.text.trim();
     Navigator.of(context).pop(
-      _isEdit
-          ? widget.initial!.copyWith(hint: hint.isEmpty ? null : hint)
-          : DrillVariable(
-              name: _nameController.text.trim(),
-              value: _valueController.text.trim(),
-              hint: hint.isEmpty ? null : hint,
-            ),
+      DrillVariable(
+        name: _nameController.text.trim(),
+        hint: hint.isEmpty ? null : hint,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final title = _isEdit
-        ? l10n.variablesSectionEditHintAction
-        : l10n.variablesSectionAddAction;
+    final title = l10n.variablesSectionAddAction;
     return AlertDialog(
       title: Text(title),
       content: Form(
@@ -543,26 +650,15 @@ class _VariableFormDialogState extends State<_VariableFormDialog> {
           children: [
             TextFormField(
               controller: _nameController,
-              autofocus: !_isEdit,
-              enabled: !_isEdit,
+              autofocus: true,
               decoration: InputDecoration(
                 labelText: l10n.variablesSectionNameLabel,
               ),
-              validator: _isEdit ? null : (value) => _validateName(value, l10n),
+              validator: (value) => _validateName(value, l10n),
             ),
-            if (!_isEdit) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _valueController,
-                decoration: InputDecoration(
-                  labelText: l10n.variablesSectionValueLabel,
-                ),
-              ),
-            ],
             const SizedBox(height: 12),
             TextFormField(
               controller: _hintController,
-              autofocus: _isEdit,
               decoration: InputDecoration(
                 labelText: l10n.variablesSectionHintLabel,
               ),
