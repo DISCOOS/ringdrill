@@ -52,8 +52,8 @@
   .g{flex:1;min-width:0}.t1{font-size:14.5px;font-weight:500}.t2{font-size:12px;color:var(--text-3);margin-top:1px}
   .addinline{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:12px;color:var(--accent)}
   .drag{color:var(--text-3);font-size:18px;align-self:center}
-  /* bottom bar — identical to the compact/narrow bar, just spanning the detail pane */
-  .actionbar{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-2);border-top:1px solid var(--border)}
+  /* bottom bar — the same rounded elevated Card as the compact/narrow bar */
+  .actionbar{display:flex;align-items:center;gap:10px;margin:8px 16px 14px;padding:11px 14px;background:var(--bg-1);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
   .search{flex:1;display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-3)}
   .addbtn{display:flex;align-items:center;gap:5px;font-size:14px;color:var(--accent);white-space:nowrap}
   /* before/after mini note */
@@ -62,7 +62,7 @@
 </head>
 <body>
 <div class="wrap">
-  <p class="cap"><b>Post-editor på wide (master/detail)</b> — tre fikser: (1) ingen duplisert seksjonstittel, skinnen ér tittelen; (2) bunnbaren er samme som i narrow (bg-2 + topp-kant, «Ny person» som aksent-tekst), bare tilpasset detalj-panelet — ingen ny design; (3) venstre-skinnen på samme marine flate-palett (ikke nær-svart), valgt seksjon med aksent-uthevning.</p>
+  <p class="cap"><b>Post-editor på wide (master/detail)</b> — tre fikser: (1) ingen duplisert seksjonstittel, skinnen ér tittelen; (2) bunnbaren er samme avrundede elevert Card som i narrow («Ny person» som aksent-tekst) — ingen ny design, bare fjernet den ytre paddingen som insett den ekstra; (3) venstre-skinnen på samme marine flate-palett (ikke nær-svart), valgt seksjon med aksent-uthevning.</p>
 
   <div class="dlg">
     <div class="bar"><i class="ti ti-x x"></i><span class="p">1a) Turgåer</span><span class="save">Lagre</span></div>
@@ -103,7 +103,7 @@
     </div>
   </div>
 
-  <p class="cap" style="margin-top:14px"><b>Endringene mot dagens wide</b>: <span class="bad">før</span> gjentok detalj-panelet «Personer» som overskrift ved siden av skinnens «Personer», hadde ‹ ›-piler som dupliserte skinnen, en bunnbar som blandet seg med bakgrunnen, og en nær-svart skinne. <span class="good">Nå</span> er tittelen kun i skinnen, ‹ › droppet (⋮ beholdt for seksjonshandlinger), bunnbaren identisk med narrow-baren (bg-2) bare i detalj-panelet, og skinnen integrert i marine-paletten. På compact er alt uendret (AppBar-dropdown som tittel).</p>
+  <p class="cap" style="margin-top:14px"><b>Endringene mot dagens wide</b>: <span class="bad">før</span> gjentok detalj-panelet «Personer» som overskrift ved siden av skinnens «Personer», hadde ‹ ›-piler som dupliserte skinnen, en bunnbar-Card som lå dobbelt-insett i en ekstra margin, og en nær-svart skinne (den lå på `surfaceContainerLow`, frakoblet app-paletten). <span class="good">Nå</span> er tittelen kun i skinnen, ‹ › droppet (⋮ beholdt for seksjonshandlinger), den ytre paddingen fjernet så bunnbar-Card-en spenner panelet som på compact, og skinnen på `colorScheme.surface` med aksent-uthevet valg. På compact er alt uendret (AppBar-dropdown som tittel).</p>
 </div>
 </body>
 </html>
