@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Post-editor: Personer & Lokasjoner som kort-lister (DESIGN-009)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:12px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:340px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px;line-height:1.4}
+  .cap b{color:var(--text-2);font-weight:600}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-height:540px}
+  .bar{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .p{flex:1;font-size:16px;font-weight:600;min-width:0}
+  .bar i{font-size:20px;color:var(--text-2);flex:0 0 auto}
+  .save{font-size:13px;font-weight:600;color:#fff;background:var(--accent);padding:7px 14px;border-radius:8px}
+  .list{flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg-page)}
+  /* card-per-item */
+  .item{display:flex;align-items:flex-start;gap:12px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
+  .av{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .kind{width:38px;height:38px;border-radius:10px;background:var(--bg-3);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .g{flex:1;min-width:0}
+  .t1{font-size:14.5px;font-weight:500}
+  .t2{font-size:12px;color:var(--text-3);margin-top:1px}
+  .mono{font-family:var(--font-mono);font-size:11.5px;color:var(--text-3);margin-top:1px}
+  .mkline{display:flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;background:var(--accent-bg);border-radius:7px;font-size:12px;color:var(--accent)}
+  .mkline i{font-size:14px}
+  .addinline{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:12px;color:var(--accent)}
+  .drag{color:var(--text-3);font-size:18px;flex:0 0 auto;align-self:center}
+  /* bottom chrome */
+  .searchbar{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg-2);border-top:1px solid var(--border)}
+  .searchbar .q{flex:1;font-size:14px;color:var(--text-3);display:flex;align-items:center;gap:8px}
+  .searchbar .add{font-size:14px;color:var(--accent);display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .secbar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-3)}
+  .secbar .cur{flex:1;display:flex;align-items:center;gap:8px;font-size:14px}
+  .secbar .cur i{font-size:18px;color:var(--text-2)}
+  .secbar .nav{display:flex;align-items:center;gap:14px;color:var(--text-2)}
+  .secbar .nav i{font-size:19px}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- ============ PERSONER ============ -->
+  <div class="phone">
+    <p class="cap"><b>Personer-seksjon</b> — hvert listeelement er et kort (som andre RingDrill-lister), og markør-affordansen ligger inne i person-kortet: «Spilles av …» når spilt, ellers «Legg til markør».</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="p">2a) Fisker (Angler)</span><span class="save">Lagre</span></div>
+      <div class="list">
+
+        <div class="item">
+          <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
+          <div class="g">
+            <div class="t1">Einar Hoven · 67 · Mann</div>
+            <div class="t2">Rød jakke, blå bukse</div>
+            <div class="addinline">+ Legg til markør</div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+        <div class="item">
+          <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
+          <div class="g">
+            <div class="t1">Hanne Hovden · 41 · Kvinne</div>
+            <div class="addinline">+ Legg til markør</div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+        <div class="item">
+          <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
+          <div class="g">
+            <div class="t1">Hilde · 34 · Kvinne</div>
+            <div class="t2">160 cm, blondt hår, gul regnjakke</div>
+            <div class="mkline"><i class="ti ti-masks-theater"></i><span style="flex:1">Spilles av Nina</span><i class="ti ti-chevron-right" style="color:var(--text-3)"></i></div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+      </div>
+      <div class="searchbar"><span class="q"><i class="ti ti-search" style="font-size:16px"></i>Søk i personer</span><span class="add"><i class="ti ti-plus" style="font-size:16px"></i>Ny person</span></div>
+      <div class="secbar"><span class="cur"><i class="ti ti-users"></i>Personer<i class="ti ti-chevron-down" style="font-size:15px"></i></span><span class="nav"><i class="ti ti-chevron-left"></i><i class="ti ti-chevron-right"></i><i class="ti ti-dots-vertical"></i></span></div>
+    </div>
+  </div>
+
+  <!-- ============ LOKASJONER ============ -->
+  <div class="phone">
+    <p class="cap"><b>Lokasjoner-seksjon</b> — samme kort-standard. Kind-ikon farget som kart-markørene (ADR-0020), sted/koordinat som undertekst.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x"></i><span class="p">2a) Fisker (Angler)</span><span class="save">Lagre</span></div>
+      <div class="list">
+
+        <div class="item">
+          <div class="kind"><i class="ti ti-home" style="font-size:19px;color:#2e7d32"></i></div>
+          <div class="g">
+            <div class="t1">Bosted</div>
+            <div class="t2">Meiselen 14</div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+        <div class="item">
+          <div class="kind"><i class="ti ti-map-pin" style="font-size:19px;color:#c0392b"></i></div>
+          <div class="g">
+            <div class="t1">Sist kjent posisjon (LKP)</div>
+            <div class="t2">Meiselen 14, 3030 Drammen</div>
+            <div class="mono">32V 0580414E 6552008N</div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+      </div>
+      <div class="searchbar"><span class="q"><i class="ti ti-search" style="font-size:16px"></i>Søk i lokasjoner</span><span class="add"><i class="ti ti-plus" style="font-size:16px"></i>Ny lokasjon</span></div>
+      <div class="secbar"><span class="cur"><i class="ti ti-map-pin"></i>Lokasjoner<i class="ti ti-chevron-down" style="font-size:15px"></i></span><span class="nav"><i class="ti ti-chevron-left"></i><i class="ti ti-chevron-right"></i><i class="ti ti-dots-vertical"></i></span></div>
+    </div>
+  </div>
+
+</div>
+<p style="max-width:720px;margin:16px auto 0;font-size:12px;color:#888780;line-height:1.5;text-align:center">Kort-per-element følger app-standarden (subtil ramme + skygge, avrundet, luft mellom). Trykk et kort åpner person-/lokasjons-skjemaet; swipe sletter, overflow-menyen (⋮) samler sjeldne handlinger (ADR-0031, ingen blyant i rader). «Legg til markør» / «Spilles av …» ligger inne i person-kortet.</p>
+</body>
+</html>

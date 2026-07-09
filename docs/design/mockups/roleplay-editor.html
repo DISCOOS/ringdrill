@@ -91,11 +91,17 @@
 
   <!-- ============ 1 · INHERITED / COLLAPSED ============ -->
   <div class="phone">
-    <p class="cap"><b>Etter · 1</b> Standard: identiteten pakkes inn i ett person-kort. Effektiv identitet vises som lesbar oppsummering — akkurat det markøren spiller.</p>
+    <p class="cap"><b>Etter · 1</b> Statisk tittel «Endre spill» (navnet står i kortet). Post blir et kompakt kort med diskret «Endre», ikke en tung dropdown. Identiteten pakkes inn i ett person-kort.</p>
     <div class="frame">
-      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Hilde</span><span class="save">Lagre</span></div>
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Endre spill</span><span class="save">Lagre</span></div>
       <div class="body">
-        <div class="field"><span class="lbl">Post</span><div class="sel"><span class="code">1.1</span><span class="txt">2a) Fisker (Angler)</span><i class="ti ti-chevron-down" style="font-size:16px;color:var(--text-2)"></i></div></div>
+        <div class="field"><span class="lbl">Post</span>
+          <div style="display:flex;align-items:center;gap:11px;border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px">
+            <span style="font-family:var(--font-mono);font-size:12px;background:var(--bg-3);color:var(--text-2);padding:2px 7px;border-radius:5px">1.1</span>
+            <span style="flex:1;font-size:14px">2a) Fisker (Angler)</span>
+            <span style="font-size:13px;color:var(--accent);display:flex;align-items:center;gap:3px">Endre<i class="ti ti-chevron-right" style="font-size:15px"></i></span>
+          </div>
+        </div>
 
         <div class="field">
           <span class="lbl">Identitet</span>
@@ -109,7 +115,7 @@
               </div>
               <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
             </div>
-            <div class="disc"><i class="ti ti-adjustments" style="font-size:16px"></i><span class="grow">Følger personen</span><span>Tilpass</span><i class="ti ti-chevron-right" style="font-size:15px"></i></div>
+            <div class="disc"><i class="ti ti-adjustments" style="font-size:16px"></i><span class="grow"></span><span style="color:var(--accent)">Tilpass</span><i class="ti ti-chevron-down" style="font-size:15px;color:var(--accent)"></i></div>
           </div>
         </div>
 
@@ -124,19 +130,19 @@
               </div>
               <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
             </div>
-            <div class="disc"><i class="ti ti-map-2" style="font-size:16px"></i><span class="grow">Følger personens lokasjon</span><span>Sett egen</span><i class="ti ti-chevron-right" style="font-size:15px"></i></div>
+            <div class="disc"><i class="ti ti-map-2" style="font-size:16px"></i><span class="grow"></span><span style="color:var(--accent)">Sett egen</span><i class="ti ti-chevron-right" style="font-size:15px"></i></div>
           </div>
         </div>
       </div>
-      <div class="note">Posisjon følger personens lokasjon som standard, og overstyres bare når markøren står et annet sted (samme mønster som identiteten). Atferd, bakgrunn, rekvisitter og markør følger under.</div>
     </div>
+    <p class="cap" style="margin:8px 4px 0">Posisjon følger personens lokasjon som standard, og overstyres bare når markøren står et annet sted (samme mønster som identiteten). Atferd, bakgrunn, rekvisitter og markør følger under.</p>
   </div>
 
   <!-- ============ 2 · CUSTOMIZE EXPANDED ============ -->
   <div class="phone">
-    <p class="cap"><b>Etter · 2</b> «Tilpass» folder ut overstyrings-panelet. Hvert felt følger personen til du endrer det. Kjønn på egen rad.</p>
+    <p class="cap"><b>Etter · 2</b> «Tilpass» + chevron folder panelet ut og inn. Ingen felt-merking, og det du ikke endrer står bare som det er. Kjønn på egen rad.</p>
     <div class="frame">
-      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Hilde</span><span class="save">Lagre</span></div>
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Endre spill</span><span class="save">Lagre</span></div>
       <div class="body">
         <div class="field">
           <span class="lbl">Identitet</span>
@@ -149,12 +155,12 @@
               </div>
               <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
             </div>
-            <div class="disc"><i class="ti ti-adjustments" style="font-size:16px"></i><span class="grow" style="color:var(--accent)">Tilpass for denne markøren</span><i class="ti ti-chevron-down" style="font-size:15px"></i></div>
+            <div class="disc"><i class="ti ti-adjustments" style="font-size:16px"></i><span class="grow"></span><span style="color:var(--accent)">Tilpass</span><i class="ti ti-chevron-up" style="font-size:15px;color:var(--accent)"></i></div>
 
             <div class="panel">
               <div style="display:flex;gap:10px">
                 <div class="field ovrfield" style="flex:1">
-                  <div class="toprow"><span class="lbl" style="margin:0">Navn</span><span class="chip inh">Følger person</span></div>
+                  <div class="toprow"><span class="lbl" style="margin:0">Navn</span></div>
                   <div class="inp">Hilde</div>
                 </div>
                 <div class="field ovrfield" style="width:80px">
@@ -163,26 +169,26 @@
                 </div>
               </div>
               <div class="field ovrfield">
-                <div class="toprow"><span class="lbl" style="margin:0">Kjønn</span><span class="chip inh">Følger person</span></div>
+                <div class="toprow"><span class="lbl" style="margin:0">Kjønn</span></div>
                 <div class="seg"><div class="on">Kvinne</div><div>Mann</div><div>Annet</div></div>
               </div>
               <div class="field ovrfield">
-                <div class="toprow"><span class="lbl" style="margin:0">Signalement</span><span class="chip inh">Følger person</span></div>
+                <div class="toprow"><span class="lbl" style="margin:0">Signalement</span></div>
                 <div class="inp" style="line-height:1.35">160 cm, blondt hår, gul regnjakke og vadere</div>
               </div>
             </div>
           </div>
         </div>
-        <div class="note" style="padding:0">Endrer du et felt her, blir det en overstyring for akkurat denne markøren. Personen og andre markører er urørt.</div>
       </div>
     </div>
+    <p class="cap" style="margin:8px 4px 0">Endrer du et felt her, blir det en overstyring for akkurat denne markøren. Personen og andre markører er urørt.</p>
   </div>
 
   <!-- ============ 3 · WITH OVERRIDE ============ -->
   <div class="phone">
-    <p class="cap"><b>Etter · 3</b> Ett felt overstyrt (navn → «Kari»). Kortet viser tydelig hva som avviker fra personen, med tilbakestilling.</p>
+    <p class="cap"><b>Etter · 3</b> Ett felt overstyrt (navn → «Kari»). Én felles «Tilbakestill» nullstiller alle endringer, ikke per felt.</p>
     <div class="frame">
-      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Kari</span><span class="save">Lagre</span></div>
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Endre spill</span><span class="save">Lagre</span></div>
       <div class="body">
         <div class="field">
           <span class="lbl">Identitet</span>
@@ -192,16 +198,16 @@
               <div style="flex:1;min-width:0">
                 <div class="name">Kari <span class="dot" title="overstyrt"></span></div>
                 <div class="meta">34 år · Kvinne</div>
-                <div class="sig">Portretterer <i>Hilde</i></div>
+                <div class="sig">Tilpasset fra <i>Hilde</i></div>
               </div>
               <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
             </div>
-            <div class="disc"><i class="ti ti-adjustments-check" style="font-size:16px"></i><span class="grow" style="color:var(--accent)">1 felt tilpasset</span><span>Skjul</span><i class="ti ti-chevron-up" style="font-size:15px"></i></div>
+            <div class="disc"><i class="ti ti-adjustments-check" style="font-size:16px"></i><span class="grow"></span><span style="color:var(--accent)">Tilpass</span><i class="ti ti-chevron-up" style="font-size:15px;color:var(--accent)"></i></div>
 
             <div class="panel">
               <div style="display:flex;gap:10px">
                 <div class="field ovrfield" style="flex:1">
-                  <div class="toprow"><span class="lbl" style="margin:0">Navn</span><span class="reset"><i class="ti ti-rotate" style="font-size:13px"></i>Tilbakestill</span></div>
+                  <div class="toprow"><span class="lbl" style="margin:0">Navn</span></div>
                   <div class="inp ovr">Kari</div>
                 </div>
                 <div class="field ovrfield" style="width:80px">
@@ -210,15 +216,16 @@
                 </div>
               </div>
               <div class="field ovrfield">
-                <div class="toprow"><span class="lbl" style="margin:0">Kjønn</span><span class="chip inh">Følger person</span></div>
+                <div class="toprow"><span class="lbl" style="margin:0">Kjønn</span></div>
                 <div class="seg"><div class="on">Kvinne</div><div>Mann</div><div>Annet</div></div>
               </div>
+              <div style="display:flex;justify-content:flex-end;padding-top:2px"><span class="reset"><i class="ti ti-rotate" style="font-size:13px"></i>Tilbakestill</span></div>
             </div>
           </div>
         </div>
-        <div class="note" style="padding:0">På disk lagres alltid den effektive verdien, så leseren av briefen ser aldri blankt (ADR-0047). «Følger person»-felt oppdateres om personen endres senere.</div>
       </div>
     </div>
+    <p class="cap" style="margin:8px 4px 0">På disk lagres alltid den effektive verdien, så leseren av briefen ser aldri blankt (ADR-0047). Felt som ikke er overstyrt oppdateres om personen endres senere.</p>
   </div>
 
 </div>
