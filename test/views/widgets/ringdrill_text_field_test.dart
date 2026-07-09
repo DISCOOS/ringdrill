@@ -179,6 +179,38 @@ void main() {
       expect(find.text('Vinterøvelse'), findsOneWidget);
       expect(find.byType(TokenInsertionMenu), findsNothing);
     });
+
+    testWidgets('showLabel defaults to true: the label renders', (
+      tester,
+    ) async {
+      final controller = TextEditingController(text: 'Hilde');
+      await _pump(
+        tester,
+        RingDrillTextField(controller: controller, label: 'Navn'),
+      );
+
+      expect(find.text('Navn'), findsOneWidget);
+    });
+
+    testWidgets(
+      'showLabel: false suppresses the field\'s own floating label — for '
+      'a caller (e.g. the roleplay identity panel) that already shows the '
+      'label itself right above the field',
+      (tester) async {
+        final controller = TextEditingController(text: 'Hilde');
+        await _pump(
+          tester,
+          RingDrillTextField(
+            controller: controller,
+            label: 'Navn',
+            showLabel: false,
+          ),
+        );
+
+        expect(find.text('Navn'), findsNothing);
+        expect(find.text('Hilde'), findsOneWidget);
+      },
+    );
   });
 
   group('RingDrillTextField — tokenAware: true', () {

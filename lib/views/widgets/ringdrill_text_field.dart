@@ -94,6 +94,7 @@ class RingDrillTextField extends StatefulWidget {
     this.autofocus = false,
     this.hintText,
     this.onChanged,
+    this.showLabel = true,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -102,6 +103,15 @@ class RingDrillTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final FocusNode? focusNode;
+
+  /// Whether [label] renders as the field's own floating `labelText`.
+  /// Default `true` — the normal case, where this field is its own only
+  /// label. Set `false` when a caller already shows [label] itself right
+  /// above the field (e.g. `RolePlayFormScreen`'s identity override panel,
+  /// which labels every facet the same way) — [label] is still required
+  /// so callers keep the value for that outer label, but this field no
+  /// longer duplicates it inside its own decoration.
+  final bool showLabel;
 
   /// Notified on every keystroke. Optional — a caller only needs this when
   /// something *outside* this field's own [controller] must react live
@@ -157,7 +167,7 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
       controller: widget.controller,
       focusNode: widget.tokenAware ? _focusNode : widget.focusNode,
       decoration: InputDecoration(
-        labelText: widget.label,
+        labelText: widget.showLabel ? widget.label : null,
         hintText: widget.hintText,
       ),
       validator: widget.validator,

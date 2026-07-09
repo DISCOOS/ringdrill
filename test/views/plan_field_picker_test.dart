@@ -423,7 +423,7 @@ void main() {
 
         await tester.tap(find.byKey(const Key('identity-disclosure')));
         await tester.pumpAndSettle();
-        final nameField = find.widgetWithText(TextFormField, l.roleName);
+        final nameField = find.widgetWithText(TextFormField, 'Anna Hansen');
         await tester.enterText(nameField, 'x {{roleplay.');
         await tester.pump();
         await tester.pump();
@@ -467,7 +467,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('identity-disclosure')));
       await tester.pumpAndSettle();
-      final nameField = find.widgetWithText(TextFormField, l.roleName);
+      final nameField = find.widgetWithText(TextFormField, 'Anna Hansen');
       await tester.enterText(nameField, 'x {{station.name');
       await tester.pump();
       await tester.pump();
@@ -501,7 +501,7 @@ void main() {
 
         await tester.tap(find.byKey(const Key('identity-disclosure')));
         await tester.pumpAndSettle();
-        final nameField = find.widgetWithText(TextFormField, l.roleName);
+        final nameField = find.widgetWithText(TextFormField, 'Anna Hansen');
         await tester.enterText(nameField, 'x {{roleplay.age');
         await tester.pump();
         await tester.pump();

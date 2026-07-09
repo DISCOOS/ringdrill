@@ -1153,6 +1153,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                               field: RingDrillTextField(
                                 controller: _nameController,
                                 label: l.roleName,
+                                // The panel already labels this facet via
+                                // _identityFacetColumn above — this field's
+                                // own floating label would just duplicate
+                                // "Navn" a second time.
+                                showLabel: false,
                                 tokenAware: true,
                                 overrides: _effectiveVariables,
                                 planFields: planFields,

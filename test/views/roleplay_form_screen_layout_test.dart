@@ -120,8 +120,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('identity-panel')), findsOneWidget);
+      // Matched by its current value, not by a label — the Navn field's
+      // own floating label is suppressed in this panel (DESIGN-009 prompt
+      // 4j follow-up: the outer "Navn" caption above already labels it,
+      // so the field itself no longer duplicates it).
       final nameTop = tester
-          .getTopLeft(find.widgetWithText(TextFormField, l.roleName))
+          .getTopLeft(find.widgetWithText(TextFormField, 'Anne Glemsk'))
           .dy;
       final ageTop = tester.getTopLeft(find.byKey(const Key('age-field'))).dy;
       final genderTop = tester.getTopLeft(find.text(l.roleGender)).dy;
