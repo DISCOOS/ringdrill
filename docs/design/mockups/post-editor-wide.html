@@ -82,7 +82,7 @@
       </div>
 
       <div class="detail">
-        <div class="dhead"><i class="ti ti-dots-vertical" title="Seksjonshandlinger"></i></div>
+        <!-- Personer er en fast seksjon (ikke slettbar) → ingen ⋮/header. ⋮ vises KUN på slettbare (tillagte) seksjoner, kompakt øverst til høyre. -->
         <div class="dbody">
           <div class="item">
             <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
@@ -103,7 +103,7 @@
     </div>
   </div>
 
-  <p class="cap" style="margin-top:14px"><b>Endringene mot dagens wide</b>: <span class="bad">før</span> gjentok detalj-panelet «Personer» som overskrift ved siden av skinnens «Personer», hadde ‹ ›-piler som dupliserte skinnen, en bunnbar-Card som lå dobbelt-insett i en ekstra margin, og en nær-svart skinne (den lå på `surfaceContainerLow`, frakoblet app-paletten). <span class="good">Nå</span> er tittelen kun i skinnen, ‹ › droppet (⋮ beholdt for seksjonshandlinger), den ytre paddingen fjernet så bunnbar-Card-en spenner panelet som på compact, og skinnen på `colorScheme.surface` med aksent-uthevet valg. På compact er alt uendret (AppBar-dropdown som tittel).</p>
+  <p class="cap" style="margin-top:14px"><b>Endringene mot dagens wide</b>: <span class="bad">før</span> gjentok detalj-panelet «Personer» som overskrift ved siden av skinnens «Personer», hadde ‹ ›-piler som dupliserte skinnen, en bunnbar-Card som lå dobbelt-insett i en ekstra margin, og en nær-svart skinne (den lå på `surfaceContainerLow`, frakoblet app-paletten). <span class="good">Nå</span> er tittelen kun i skinnen, ‹ › droppet, ⋮ vises KUN på slettbare (tillagte) seksjoner som en kompakt knapp øverst til høyre — faste seksjoner (Plan/Personer/Lokasjoner/Variabler) har ingen header i det hele tatt (ikke lenger en tom «appbar» med disabled ⋮), den ytre paddingen fjernet så bunnbar-Card-en spenner panelet som på compact, og skinnen på `colorScheme.surface` med aksent-uthevet valg. På compact er alt uendret (AppBar-dropdown som tittel).</p>
 </div>
 </body>
 </html>

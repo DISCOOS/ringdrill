@@ -381,7 +381,9 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                     child: RingDrillTextArea(
                       controller: _controllerFor(section),
                       focusNode: _focusFor(section),
-                      label: _labelFor(section, l),
+                      // No label: the section switcher (compact dropdown /
+                      // wide rail) already names this section, so a field
+                      // label equal to the section name only duplicates it.
                       expands: true,
                       tokenAware: true,
                       planFields: planFields,

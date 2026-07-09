@@ -355,10 +355,12 @@ class _SectionSwitcherSheetState extends State<_SectionSwitcherSheet> {
 
 /// Master/detail body for medium/expanded (DESIGN-008 follow-up 12, ADR-0030,
 /// `post-editor-wide.html`): a left rail listing sections (~210 logical px,
-/// per DESIGN-008's `variables-wide.html` mockup) and a detail pane whose
-/// header is just the `⋮` section-actions menu — the rail's highlighted
-/// item already *is* the title, so the detail pane never repeats it, and
-/// the `‹ ›` prev/next controls are dropped too (redundant with the rail,
+/// per DESIGN-008's `variables-wide.html` mockup) and a detail pane with no
+/// header band — a compact `⋮` section-actions menu appears top-right *only*
+/// on a removable section (the base sections carry no action, so they show
+/// nothing rather than an empty band). The rail's highlighted item already
+/// *is* the title, so the detail pane never repeats it, and the `‹ ›`
+/// prev/next controls are dropped too (redundant with the rail,
 /// unlike compact where they are the only way to move between sections
 /// without opening the switcher sheet).
 ///
@@ -410,34 +412,33 @@ class _WideBody extends StatelessWidget {
         ),
         const VerticalDivider(width: 1),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // The section body fills the whole pane; the only header action is
+          // "remove", which only a removable section has (the base sections —
+          // Plan, Variabler, Personer, Lokasjoner — are never removable). So
+          // the ⋮ is *overlaid* in the top-right corner, rendered solely for a
+          // removable section, and it costs no header row at all (the base
+          // sections used to show an empty "appbar" band with a disabled ⋮,
+          // and even a slim conditional row still pushed the content down).
+          // The field's own label sits top-left, so the corner is clear.
+          child: Stack(
             children: [
-              Padding(
-                // Enough breathing room to read as its own header band (the
-                // mockup's `.dhead{padding:10px 12px}`), with a right inset
-                // matching the AppBar Save button's own right margin above
-                // it, so the ⋮ lines up with the dialog's established
-                // right edge instead of floating loose near the corner.
-                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    PopupMenuButton<String>(
-                      enabled: current.removable,
-                      icon: const Icon(Icons.more_vert),
-                      onSelected: (_) => onRemove(),
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'remove',
-                          child: Text(l10n.formSectionRemoveAction),
-                        ),
-                      ],
-                    ),
-                  ],
+              Positioned.fill(child: current.builder(context)),
+              if (current.removable)
+                Positioned(
+                  top: 0,
+                  right: 4,
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    tooltip: l10n.formSectionRemoveAction,
+                    onSelected: (_) => onRemove(),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'remove',
+                        child: Text(l10n.formSectionRemoveAction),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(child: current.builder(context)),
             ],
           ),
         ),

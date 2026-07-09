@@ -227,7 +227,7 @@ class RingDrillTextArea extends StatefulWidget {
   const RingDrillTextArea({
     super.key,
     required this.controller,
-    required this.label,
+    this.label,
     this.focusNode,
     this.minLines = 2,
     this.maxLines = 8,
@@ -247,7 +247,12 @@ class RingDrillTextArea extends StatefulWidget {
   /// [tokenAware] is true, this must be a [TokenTextEditingController]
   /// (asserted in debug mode) — see [_wrapTokenAware].
   final TextEditingController controller;
-  final String label;
+
+  /// The field's floating label. Omitted (null) where the surrounding
+  /// chrome already names the field — e.g. a markdown section whose name is
+  /// shown by the section switcher (compact dropdown / wide rail), so a
+  /// label equal to the section name would only duplicate it.
+  final String? label;
   final FocusNode? focusNode;
   final int minLines;
   final int maxLines;

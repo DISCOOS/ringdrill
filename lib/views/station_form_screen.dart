@@ -661,7 +661,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
                     child: RingDrillTextArea(
                       controller: _sectionControllers[section]!,
                       focusNode: _sectionFocusNodes[section],
-                      label: _labelFor(section, l),
+                      // No label: the section switcher (compact dropdown /
+                      // wide rail) already names this section, so a field
+                      // label equal to the section name only duplicates it.
                       expands: true,
                       tokenAware: true,
                       overrides: _effectiveAtStationScope,
