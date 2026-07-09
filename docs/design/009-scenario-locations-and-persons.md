@@ -98,7 +98,7 @@ This unifies inline creation across variables, locations and persons, and **un-d
 
 **Visual reference:** [`docs/design/mockups/roleplay-editor.html`](./mockups/roleplay-editor.html) (four frames: before, the inherited/collapsed card, the "Tilpass" panel expanded, and an override).
 
-The RolePlay editor packs the identity fields — `name`, `age`, `gender`, `signalement` — into one **effective-identity card** (prompt 4i), replacing an earlier interleaved-fields layout. The card's header is the **person** selector (`personRef`, required for new/edited roleplays): pick the `Person` this marker portrays from the linked station's list, rendered as the card's own live effective-identity summary rather than a plain name. Collapsed, the card reads as what the marker actually presents — name, "age · gender", and signalement (or, when the name itself is overridden, "Portretterer {person}" so the reader still knows who). A "Tilpass" disclosure reveals the per-facet override panel (Navn+Alder on one row, Kjønn on its own row, Signalement), each facet showing "Følger person" until overridden, with "Tilbakestill" to revert. Inherit-or-override is decided by equality against the Person's current value: a field tracking the Person shows its value and stays in sync as the Person changes; a different value is an override, and the panel auto-expands on open when one already exists. On disk each field always holds the effective value (ADR-0047), so the marker never shows blank. `behavior`, `background`, `propsMd` and the Actor casting are unchanged.
+The RolePlay editor packs the identity fields — `name`, `age`, `gender`, `signalement` — into one **effective-identity card** (prompt 4i), replacing an earlier interleaved-fields layout. The card's header is the **person** selector (`personRef`, required for new/edited roleplays): pick the `Person` this marker portrays from the linked station's list, rendered as the card's own live effective-identity summary rather than a plain name. Collapsed, the card reads as what the marker actually presents — name, "age · gender", and signalement (or, when the name itself is overridden, "Tilpasset fra {person}" so the reader still knows who). A "Tilpass" disclosure reveals the per-facet override panel (Navn+Alder on one row, Kjønn on its own row, Signalement), each facet showing "Følger person" until overridden, with "Tilbakestill" to revert. Inherit-or-override is decided by equality against the Person's current value: a field tracking the Person shows its value and stays in sync as the Person changes; a different value is an override, and the panel auto-expands on open when one already exists. On disk each field always holds the effective value (ADR-0047), so the marker never shows blank. `behavior`, `background`, `propsMd` and the Actor casting are unchanged.
 
 The marker's administrative `position` gets the same inherit/override treatment against the Person's own `loc` location (prompt 4i): a **position card** defaults to "Følger personens lokasjon", showing that location's coordinate, with "Sett egen" to override via the existing map picker. A person with no `loc` (or an uncoordinated one) falls back to the plain picker unchanged. `Person.locSlug` and `RolePlay.position` stay distinct fields — this only changes position's *default*, not the model. Pointing the marker at a *different* one of the station's locations is deferred; `Person → location` stays a single reference for v1.
 
@@ -106,7 +106,7 @@ Creating a roleplay auto-creates its Person on the station from whatever identit
 
 ## Map
 
-The station's locations (including a person's own, via `locSlug`) become map markers via `MapMarkerSpec` ([ADR-0020](../adrs/0020-map-label-and-marker-clutter.md)), styled by `LocationKind`, distinct from the administrative `position` marker. The map, the brief and the editor all read the same locations — the decoupling win, made visual: an LKP is one point, shown and referenced everywhere from one source.
+The station's locations (including a person's own, via `locSlug`) become map markers via `MapMarkerSpec` ([ADR-0020](../adrs/0020-map-label-and-marker-clutter.md)), styled by `LocationKind`, distinct from the administrative `position` marker. The map, the brief and the editor all read the same locations — the decoupling win, made visual: an LKP is one point, shown and referenced everywhere from one source. The Post detail sheet draws the same markers on the shared position panel's map, with a kind legend (DESIGN-010).
 
 ## Behavior
 
@@ -119,6 +119,16 @@ Editing any editable field of a location or person (`label`, `name`, `kind`, coo
 `Station.description` (the "Postbeskrivelse") stops being UI-only and starts rendering in the brief as the station's **lead paragraph** (no heading). It **stays in the base section**, alongside name and position — it is not moved into the section switcher and is not a removable section. So a simple station needs only this one field and it reaches the brief, while a rich station adds the labeled, sometimes audience-gated sections (Situasjon, Oppdrag, `directorNotes`, …) that render with headings below the lead.
 
 The `description` field is **reused as-is** — no new field, no migration, no schema bump; an absent/empty description renders no lead paragraph. When empty in the editor it collapses to a "Legg til beskrivelse" affordance that expands on focus, so a section-rich station shows no empty box in the base section. This resolves the earlier overlap where narrative could sit either in the description or a section: description is the unstructured lead, sections are the structured blocks. The in-app summary surfaces (station list subtitle, coordinator, program view, detail sheet) keep reading `description`, now resolved via the DESIGN-010 scope cascade; the station detail sheet becomes the DESIGN-010 rollup (lead + sections). The brief-template lead paragraph is a small [DESIGN-004](./brief-template.md) change.
+
+## Scenario data in the viewers
+
+**Visual reference:** [`docs/design/mockups/station-and-roleplay-viewers.html`](./mockups/station-and-roleplay-viewers.html).
+
+The Post detail sheet surfaces the station's persons and locations, which have no read-only home today. Each gets a list card ("+ Person", "+ Lokasjon" to add). Because the distinction between a *person* (the scenario character) and a *marker* (the roleplay that enacts one) is opaque to the uninitiated, the two are **not** separate cards: the person is the row, and the enacting marker shows **inline on that person** ("Spilles av {actor}"), tapping through to the Spill viewer. A person not yet enacted offers "Legg til markør", which opens a combined picker — enact an existing person or create a new one in one step — matching "creating a roleplay auto-creates its Person" above. Removing a marker is **not** a viewer action; it stays where markers are managed, with the app's swipe-to-delete ([ADR-0031](../adrs/0031-row-edit-affordances.md)), so the viewer is read-and-add only.
+
+The Spill detail sheet is the marker's order: the effective identity, the play fields, the position, the parent post (shown first), and when the marker is active. It says **nothing** about the person relationship when the marker follows the person — there is no difference to explain — and shows "Tilpasset fra {navn}" only when the identity is overridden, naming the underlying person because the presented identity now differs. Casting ("Spilles av {actor}") is shown freely in-app; the PII boundary is a publishing concern handled at publish time, not in the viewer (ADR-0018).
+
+The `nb` UI never labels the inherit state "Arvet" (too technical): it reads "Følger person(en)", overrides read "Tilpasset" / "Egen", and reverting reads "Tilbakestill". `inherit` / `override` stay as English concept names in the design and code only.
 
 ## Deferred / non-goals
 
@@ -189,6 +199,13 @@ The design and ADR use English concept names throughout. The `nb` UI ships these
 | Station (base section) | Post |
 | RolePlay (editor) | Spill / Rolle |
 | Actor (roster) | Markør / Bemanning |
+| Add marker (per person) | Legg til markør |
+| played by (actor) | Spilles av {navn} |
+| follows the person (identity/position) | Følger person / Følger personen |
+| customized identity | Tilpasset fra {navn} |
+| customize (disclosure) | Tilpass |
+| revert an override | Tilbakestill |
+| own position (override) | Egen posisjon / Sett egen |
 
 Only these labels are Norwegian. Model, field, facet and code names (`Location`, `Person`, `station.loc.*`, `station.person.*`, `personRef`, `slug`, `locSlug`) stay English everywhere.
 

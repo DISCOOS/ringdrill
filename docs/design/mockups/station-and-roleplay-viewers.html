@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Post- og Spill-viewer, forbedret (DESIGN-009/010)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+    --map:#dfe6cf; --amber:#8a6d1f; --amber-bg:#fbf1d6;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;--map:#2f3a2c;--amber:#e6c877;--amber-bg:#332a12;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:340px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px;line-height:1.4}
+  .cap b{color:var(--text-2);font-weight:600}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .tt{flex:1;min-width:0}
+  .bar .p{font-size:16px;font-weight:600;line-height:1.2}
+  .bar .s{font-size:12px;color:var(--text-3)}
+  .bar i{font-size:20px;color:var(--text-2);flex:0 0 auto}
+  .body{padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--bg-page)}
+  .lbl{font-size:11px;color:var(--text-2)}
+  /* generic card */
+  .card{border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-1);overflow:hidden}
+  .card-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .card-h i{font-size:17px;color:var(--accent)}
+  .card-h .ct{flex:1;font-size:12px;font-weight:600;letter-spacing:.02em}
+  .card-h .cnt{font-size:12px;color:var(--text-3)}
+  .card-b{padding:12px;font-size:13px;line-height:1.45}
+  /* markdown-ish rollup */
+  .lead{font-size:13.5px;line-height:1.5}
+  .utm{font-family:var(--font-mono);font-size:12px;background:var(--bg-3);padding:1px 5px;border-radius:4px}
+  .h{font-size:12px;font-weight:700;margin:12px 0 3px;color:var(--text-1)}
+  .sub{font-size:13px;color:var(--text-2);line-height:1.45}
+  .gate{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--amber);background:var(--amber-bg);padding:1px 7px;border-radius:20px;margin-left:6px}
+  .tapedit{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-3);margin-top:4px}
+  /* map */
+  .map{position:relative;height:150px;background:var(--map);overflow:hidden}
+  .scale{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,0.45);border-radius:4px;padding:2px 6px;font-size:11px;color:#fff}
+  .mk{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center}
+  .mk .pin{width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .mk .pin i{transform:rotate(45deg);font-size:13px;color:#fff}
+  .mk .cap2{font-size:9.5px;background:rgba(0,0,0,.6);color:#fff;padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;padding:9px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-2)}
+  .legend span{display:inline-flex;align-items:center;gap:4px}
+  .dotm{width:9px;height:9px;border-radius:50%}
+  .coord{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border)}
+  .coord .v{flex:1;font-family:var(--font-mono);font-size:12px;color:var(--text-2)}
+  /* list rows */
+  .row{display:flex;align-items:center;gap:11px;padding:10px 12px;border-top:1px solid var(--border)}
+  .row:first-child{border-top:none}
+  .row .ic{width:30px;height:30px;border-radius:7px;background:var(--bg-3);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .row .ic i{font-size:16px;color:var(--text-2)}
+  .row .g{flex:1;min-width:0}
+  .row .t1{font-size:13.5px}
+  .row .t2{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .mono{font-family:var(--font-mono);font-size:11px;color:var(--text-3)}
+  .chip{font-size:10px;padding:1px 6px;border-radius:20px;background:var(--bg-3);color:var(--text-3);white-space:nowrap}
+  .addrow{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:12px}
+  .mkline{display:flex;align-items:center;gap:6px;margin-top:6px;padding:6px 9px;background:var(--accent-bg);border-radius:6px;font-size:11.5px;color:var(--accent)}
+  .mkline i{font-size:14px}
+  .addinline{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:11.5px;color:var(--accent)}
+  /* timing table */
+  .tbl{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;font-size:12.5px}
+  .tbl .tr{display:flex;border-top:1px solid var(--border)}
+  .tbl .tr:first-child{border-top:none}
+  .tbl .th{background:var(--bg-2);color:var(--text-2);font-size:11px;font-weight:600}
+  .tbl .c{flex:1;padding:8px 6px;text-align:center}
+  .tbl .c0{flex:1.3;text-align:left;padding-left:12px}
+  .tbl .me{color:var(--accent);font-weight:600}
+  .foot{font-size:11px;color:var(--text-3);line-height:1.4}
+  /* identity card (read) */
+  .pcard .head{display:flex;align-items:flex-start;gap:11px;padding:12px}
+  .pcard .av{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .pcard .nm{font-size:16px;font-weight:600}
+  .pcard .mt{font-size:13px;color:var(--text-2);margin-top:1px}
+  .pcard .sg{font-size:12.5px;color:var(--text-3);margin-top:4px;line-height:1.4}
+  .pcard .foot2{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border);background:var(--bg-2);font-size:12px;color:var(--text-2)}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- ============ POST-VIEWER ============ -->
+  <div class="phone">
+    <p class="cap"><b>Post-viewer</b> — full rollup (ingress + seksjoner, token-oppløst), scenario-data på kart og i lister. Personer er raden; markøren vises inline på personen som spilles (ett kort, ikke to). Løser den rå <span class="utm">{{station.position.utm}}</span>-tokenen. Rendres etter rollen valgt i innstillinger.</p>
+    <div class="frame">
+      <div class="bar">
+        <i class="ti ti-x"></i>
+        <div class="tt"><div class="p">2a) Fisker (Angler)</div><div class="s">Førsteinnsats søk (ringøvelse)</div></div>
+        <i class="ti ti-pencil"></i>
+      </div>
+      <div class="body">
+
+        <!-- rollup: lead + sections, resolved + markdown -->
+        <div class="card">
+          <div class="card-h"><i class="ti ti-file-description"></i><span class="ct">POSTBESKRIVELSE</span></div>
+          <div class="card-b">
+            <div class="lead">Eidene. Kari Fiskeløs, finsøk rundt IPP innenfor R25. Post starter i <span class="utm">32V 0580345E 6551796N</span>.</div>
+            <div class="h">Situasjon</div>
+            <div class="sub">Meldt savnet kl. 08:10. Sist sett ved <span class="utm">32V 0580414E 6552008N</span> (Bosted).</div>
+            <div class="h">Oppdrag</div>
+            <div class="sub">Teiginndelt finsøk. Meld funn av spor på lag-kanal.</div>
+            <div class="h">Notat til øvelsesleder <span class="gate"><i class="ti ti-eye-off" style="font-size:11px"></i>Kun øvelsesleder</span></div>
+            <div class="sub">Markør skal først samarbeide, deretter bli passiv etter 10 min.</div>
+            <div class="tapedit"><i class="ti ti-pencil" style="font-size:13px"></i>Trykk en seksjon for å redigere</div>
+          </div>
+        </div>
+
+        <!-- map with scenario markers -->
+        <div class="card">
+          <div class="map">
+            <div class="mk" style="left:46%;top:40%"><div class="pin" style="background:var(--accent)"><i class="ti ti-flag"></i></div><div class="cap2">Post 2a</div></div>
+            <div class="mk" style="left:64%;top:30%"><div class="pin" style="background:#c0392b"><i class="ti ti-map-pin"></i></div><div class="cap2">LKP</div></div>
+            <div class="mk" style="left:30%;top:60%"><div class="pin" style="background:#2e7d32"><i class="ti ti-home"></i></div><div class="cap2">Bosted</div></div>
+            <div class="mk" style="left:74%;top:62%"><div class="pin" style="background:#6a4caf"><i class="ti ti-eye"></i></div><div class="cap2">Obs 0930</div></div>
+            <div class="scale">250 m</div>
+          </div>
+          <div class="legend">
+            <span><span class="dotm" style="background:var(--accent)"></span>Post</span>
+            <span><span class="dotm" style="background:#c0392b"></span>LKP</span>
+            <span><span class="dotm" style="background:#2e7d32"></span>Bosted</span>
+            <span><span class="dotm" style="background:#6a4caf"></span>Observasjon</span>
+          </div>
+          <div class="coord"><span class="lbl" style="margin:0">Posisjon</span><span class="v" style="text-align:right">32V 6551796N 0580345E</span><i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i></div>
+        </div>
+
+        <!-- persons, marker inline per person -->
+        <div class="card">
+          <div class="card-h"><i class="ti ti-users"></i><span class="ct">PERSONER</span><span class="addrow">+ Person</span></div>
+          <div class="row" style="align-items:flex-start">
+            <div class="ic"><i class="ti ti-user"></i></div>
+            <div class="g">
+              <div class="t1">Hilde · 34 · Kvinne</div>
+              <div class="t2">160 cm, blondt hår, gul regnjakke</div>
+              <div class="mkline"><i class="ti ti-masks-theater"></i><span style="flex:1">Spilles av Nina</span><i class="ti ti-chevron-right" style="color:var(--text-3)"></i></div>
+            </div>
+          </div>
+          <div class="row" style="align-items:flex-start">
+            <div class="ic"><i class="ti ti-user"></i></div>
+            <div class="g">
+              <div class="t1">Kari Fiskeløs · 71 · Kvinne</div>
+              <div class="t2">160 cm, grå anorakk, blå lue</div>
+              <div class="addinline">+ Legg til markør</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- locations -->
+        <div class="card">
+          <div class="card-h"><i class="ti ti-map-pin"></i><span class="ct">LOKASJONER</span><span class="addrow">+ Lokasjon</span></div>
+          <div class="row"><div class="ic"><i class="ti ti-map-pin"></i></div><div class="g"><div class="t1">Sist kjent posisjon (LKP)</div><div class="mono">32V 0580414E 6552008N</div></div></div>
+          <div class="row"><div class="ic"><i class="ti ti-home"></i></div><div class="g"><div class="t1">Bosted</div><div class="t2">Gamlestuen, Eidene</div></div></div>
+          <div class="row"><div class="ic"><i class="ti ti-eye"></i></div><div class="g"><div class="t1">Observasjon kl 0930</div><div class="t2">Ved kjellertrappen</div></div></div>
+        </div>
+
+        <!-- timing -->
+        <div class="card">
+          <div class="card-h"><i class="ti ti-clock-hour-4"></i><span class="ct">TIDSPLAN</span></div>
+          <div class="card-b" style="padding:12px">
+            <div class="tbl">
+              <div class="tr th"><div class="c c0">Lag</div><div class="c">Øve</div><div class="c">Eval</div><div class="c">Rull</div></div>
+              <div class="tr"><div class="c c0 me">Lag 1</div><div class="c">09:45</div><div class="c">10:00</div><div class="c">10:10</div></div>
+              <div class="tr" style="color:var(--text-3);text-decoration:line-through"><div class="c c0">Lag 2</div><div class="c">10:15</div><div class="c">10:30</div><div class="c">10:40</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="cap" style="margin:8px 4px 0">Rendres etter rollen valgt i innstillinger (standard øvelsesleder) — rolle-gatede blokker som notatet vises deretter. Alt token-oppløst likt briefen (DESIGN-010). Kartkortet er samme delte StationPositionPanel/RolePositionPanel (kart + «Posisjon»-stripe + chevron → kartvisning), matet med scenario-markører (MapMarkerSpec, ADR-0020) og en tegnforklaring via slot — ikke et eget kart.</p>
+  </div>
+
+  <!-- ============ SPILL-VIEWER ============ -->
+  <div class="phone">
+    <p class="cap"><b>Spill-viewer</b> — markørens ordre. Effektiv identitet (alder/kjønn/signalement gjennom personen), selve spillet (atferd/bakgrunn/rekvisitter), posisjon som følger personens lokasjon, post-kontekst og når markøren er aktiv.</p>
+    <div class="frame">
+      <div class="bar">
+        <i class="ti ti-x"></i>
+        <div class="tt"><div class="p">Hilde</div><div class="s">Førsteinnsats søk (ringøvelse)</div></div>
+        <i class="ti ti-pencil"></i>
+      </div>
+      <div class="body">
+
+        <!-- station context (top) -->
+        <div class="card">
+          <div class="row" style="border:none"><div class="ic"><i class="ti ti-flag"></i></div><div class="g"><div class="t1">Post 2a) Fisker (Angler)</div><div class="t2">Finsøk rundt IPP innenfor R25</div></div><i class="ti ti-chevron-right" style="font-size:16px;color:var(--text-3)"></i></div>
+        </div>
+
+        <!-- effective identity, read -->
+        <div class="card pcard">
+          <div class="head">
+            <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
+            <div style="flex:1;min-width:0">
+              <div class="nm">Hilde</div>
+              <div class="mt">34 år · Kvinne</div>
+              <div class="sg">160 cm, blondt hår, gul regnjakke og vadere</div>
+            </div>
+          </div>
+          <div class="foot2"><i class="ti ti-masks-theater" style="font-size:15px"></i><span style="flex:1">Spilles av Nina</span></div>
+        </div>
+
+        <!-- the play / order -->
+        <div class="card">
+          <div class="card-h"><i class="ti ti-masks-theater"></i><span class="ct">MARKØRORDRE</span></div>
+          <div class="card-b">
+            <div class="h" style="margin-top:0">Atferd</div>
+            <div class="sub">Rolig, litt forvirret. Svarer på direkte spørsmål, men tar ikke initiativ.</div>
+            <div class="h">Bakgrunn</div>
+            <div class="sub">Var på fisketur og så en eldre kvinne gå mot <span class="utm">32V 0580414E 6552008N</span> ca. kl. 09:15.</div>
+            <div class="h">Rekvisitter</div>
+            <div class="sub">Fiskestang, gul regnjakke, termos.</div>
+          </div>
+        </div>
+
+        <!-- position follows person location -->
+        <div class="card">
+          <div class="map" style="height:120px">
+            <div class="mk" style="left:50%;top:52%"><div class="pin" style="background:var(--accent)"><i class="ti ti-masks-theater"></i></div><div class="cap2">Hilde</div></div>
+            <div class="scale">250 m</div>
+          </div>
+          <div class="coord">
+            <div style="flex:1"><div class="lbl" style="margin:0">Posisjon</div><div style="font-size:11px;color:var(--text-3);margin-top:1px">Følger Bosted</div></div>
+            <span class="v" style="flex:0 0 auto">32V 6551926N 0580317E</span>
+            <i class="ti ti-chevron-right" style="font-size:18px;color:var(--text-3)"></i>
+          </div>
+        </div>
+
+        <!-- when active -->
+        <div class="card">
+          <div class="card-h"><i class="ti ti-clock-hour-4"></i><span class="ct">NÅR AKTIV</span></div>
+          <div class="card-b" style="padding:12px">
+            <div class="tbl">
+              <div class="tr th"><div class="c c0">Lag</div><div class="c">Øve</div><div class="c">Eval</div><div class="c">Rull</div></div>
+              <div class="tr"><div class="c c0 me">Lag 1</div><div class="c">09:45</div><div class="c">10:00</div><div class="c">10:10</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

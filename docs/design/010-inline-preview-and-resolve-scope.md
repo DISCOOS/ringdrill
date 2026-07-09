@@ -83,6 +83,16 @@ The default (base) section of the exercise, station and roleplay editors gains a
 
 Each rendered section in the rollup is **tap-to-edit**: tapping it jumps to that section in the section-navigated switcher (reusing the existing navigation rather than inline editing that would duplicate the editor). The station **detail sheet** is this rollup — the station's lead description plus its sections, resolved (see DESIGN-009, "The station description as the default section").
 
+## Detail sheets — the Post and Spill viewers
+
+The station (Post) and roleplay (Spill) read-only detail sheets are this rollup made concrete, and stage 4's most visible payoff. Both call the field resolver, so every token resolves and renders as markdown. Today `station_screen.dart` prints `station.description` through `substitutePlanVariables` in a `SelectableText`, so `{{station.position.utm}}` shows as literal text; the resolver closes that, and the same fix reaches the roleplay sheet, which currently renders only its own (often inherited-empty) identity fields.
+
+The **Post viewer** stacks the resolved lead and its labeled sections, then surfaces the station's scenario data — its persons and locations (DESIGN-009) — as list cards and draws those points on the map. The **Spill viewer** presents the marker's order: the effective identity, the play (behavior, background, props), the position, the parent post, and when the marker is active.
+
+Both render according to the **role selected in settings** (default director), not an in-view toggle: role-gated sections (the DESIGN-004 audiences) appear per that role. A role selector may later live in the drawer or navigation bar; there is no per-sheet audience switch.
+
+The map in both sheets is the shared `StationPositionPanel` / `RolePositionPanel` — the same card shell (map, then a "Posisjon" coordinate strip, tap to open the interactive map) — fed the scenario markers as `MapMarkerSpec` styled by `LocationKind` ([ADR-0020](../adrs/0020-map-label-and-marker-clutter.md)) plus a legend through a slot, the same domain-agnostic slot mechanism the position field uses for its overlay actions. It is not a bespoke map. Mockup: `docs/design/mockups/station-and-roleplay-viewers.html`.
+
 ## `RingDrillText` upgrade
 
 With the cascade in place, `RingDrillText` moves from `{{var.*}}`-only to full resolution by reading the same scopes and calling the field resolver. Every read-only display surface (lists, headers, the live coordinator UI) then shows the same resolved text the brief does, closing the gap the current variable-only resolver leaves.
