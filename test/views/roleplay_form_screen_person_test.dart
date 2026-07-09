@@ -314,4 +314,40 @@ void main() {
 
     expect(captured.value?.rolePlay.gender, 'woman');
   });
+
+  testWidgets(
+    'a roleplay already diverged from its person auto-expands the panel '
+    'and the collapsed card names the override count',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        persons: const [Person(slug: 'anne', name: 'Anne Glemsk', age: 47)],
+      );
+      // Name and age both differ from the linked person (as if this
+      // roleplay was hand-crafted rather than produced by the normal
+      // personRef-selection sync) — two overridden facets on open.
+      final rolePlay = RolePlay(
+        uuid: 'role-1',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'Kari',
+        age: 30,
+        stationIndex: 0,
+        personRef: 'anne',
+      );
+      await _openForm(
+        tester,
+        rolePlay,
+        _exercise(stations: [station]),
+        _Captured(),
+      );
+
+      // Auto-expanded: the panel's own fields are already mounted, no
+      // "Tilpass" tap needed.
+      expect(find.byKey(const Key('identity-panel')), findsOneWidget);
+      expect(find.text(l.rolePlayIdentityFieldsCustomized(2)), findsOneWidget);
+      expect(find.text(l.rolePlayIdentityFollowsPerson), findsNothing);
+    },
+  );
 }

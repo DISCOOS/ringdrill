@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Spill/Rolle-redigering: effektiv identitet (DESIGN-009)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:330px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px;min-height:30px}
+  .cap b{color:var(--text-2);font-weight:600}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .t{flex:1;font-size:15px;font-weight:500}
+  .save{font-size:13px;font-weight:500;color:#fff;background:var(--accent);padding:7px 14px;border-radius:var(--radius)}
+  .body{padding:14px;display:flex;flex-direction:column;gap:14px}
+  .lbl{font-size:11px;color:var(--text-2);margin:0 0 4px}
+  .inp{border:1px solid var(--border);border-radius:var(--radius);padding:9px 10px;font-size:14px}
+  .seg{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .seg > div{flex:1;text-align:center;font-size:13px;padding:8px 0}
+  .seg .on{background:var(--accent-bg);color:var(--accent);font-weight:500}
+  .field{display:flex;flex-direction:column}
+  /* selector row (Post) */
+  .sel{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--radius);padding:10px 11px}
+  .sel .code{font-family:var(--font-mono);font-size:12px;background:var(--bg-3);color:var(--text-2);padding:2px 7px;border-radius:5px}
+  .sel .txt{flex:1;font-size:14px}
+  /* person identity card */
+  .pcard{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .pcard .head{display:flex;align-items:flex-start;gap:11px;padding:11px 12px}
+  .pcard .av{width:34px;height:34px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .pcard .name{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .pcard .meta{font-size:13px;color:var(--text-2);margin-top:1px}
+  .pcard .sig{font-size:12px;color:var(--text-3);margin-top:3px;line-height:1.35}
+  .pcard .disc{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border);background:var(--bg-2);font-size:13px;color:var(--accent)}
+  .pcard .disc .grow{flex:1;color:var(--text-2)}
+  /* override / inherited chips */
+  .chip{font-size:10.5px;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .chip.inh{background:var(--bg-3);color:var(--text-3)}
+  .chip.ovr{background:var(--accent-bg);color:var(--accent);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+  /* expanded override panel */
+  .panel{border-top:1px solid var(--border);background:var(--bg-2);padding:12px;display:flex;flex-direction:column;gap:12px}
+  .ovrfield .toprow{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .inp.ovr{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  .reset{font-size:12px;color:var(--accent);display:inline-flex;align-items:center;gap:3px}
+  .muted{color:var(--text-3)}
+  .note{font-size:11px;color:var(--text-3);padding:0 14px 14px;line-height:1.4}
+  .stack{display:flex;flex-direction:column;gap:2px;padding:11px 14px;border-top:1px solid var(--border)}
+  .stack .k{font-size:11px;color:var(--text-2)}
+  .stack .v{font-size:13px;color:var(--text-3)}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- ============ 0 · BEFORE ============ -->
+  <div class="phone">
+    <p class="cap"><b>Før</b> · fire redigerbare identitetsfelt, «Arvet fra person» gjentatt 3×. Uklart om man endrer personen eller lager en overstyring.</p>
+    <div class="frame" style="opacity:.72">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Hilde</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div class="field"><span class="lbl">Post</span><div class="sel"><span class="code">1.1</span><span class="txt">2a) Fisker (Angler)</span><i class="ti ti-chevron-down" style="font-size:16px;color:var(--text-2)"></i></div></div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><span class="lbl">Navn</span><div class="inp">Hilde</div><span class="note" style="padding:4px 0 0">Arvet fra person</span></div>
+          <div class="field" style="width:84px"><span class="lbl">Alder</span><div class="inp">34</div></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><span class="lbl">Person</span><div class="inp" style="border:none;border-bottom:2px solid var(--accent);border-radius:0;padding-left:0">Hilde <i class="ti ti-chevron-down" style="float:right;color:var(--text-2)"></i></div></div>
+          <div class="field" style="flex:1"><span class="lbl">Kjønn</span><div class="seg"><div class="on">Kvin&shy;ne</div><div>Mann</div><div>Annet</div></div><span class="note" style="padding:4px 0 0">Arvet fra person</span></div>
+        </div>
+        <div class="field"><span class="lbl">Signalement</span><div class="inp muted">—</div><span class="note" style="padding:4px 0 0">Arvet fra person</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1 · INHERITED / COLLAPSED ============ -->
+  <div class="phone">
+    <p class="cap"><b>Etter · 1</b> Standard: identiteten pakkes inn i ett person-kort. Effektiv identitet vises som lesbar oppsummering — akkurat det markøren spiller.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Hilde</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div class="field"><span class="lbl">Post</span><div class="sel"><span class="code">1.1</span><span class="txt">2a) Fisker (Angler)</span><i class="ti ti-chevron-down" style="font-size:16px;color:var(--text-2)"></i></div></div>
+
+        <div class="field">
+          <span class="lbl">Identitet</span>
+          <div class="pcard">
+            <div class="head">
+              <div class="av"><i class="ti ti-user" style="font-size:19px"></i></div>
+              <div style="flex:1;min-width:0">
+                <div class="name">Hilde</div>
+                <div class="meta">34 år · Kvinne</div>
+                <div class="sig">160 cm, blondt hår, gul regnjakke og vadere</div>
+              </div>
+              <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
+            </div>
+            <div class="disc"><i class="ti ti-adjustments" style="font-size:16px"></i><span class="grow">Følger personen</span><span>Tilpass</span><i class="ti ti-chevron-right" style="font-size:15px"></i></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Posisjon</span>
+          <div class="pcard">
+            <div class="head">
+              <div class="av"><i class="ti ti-map-pin" style="font-size:19px"></i></div>
+              <div style="flex:1;min-width:0">
+                <div class="name" style="font-size:14px;font-weight:500">Bosted <span class="chip inh" style="font-weight:400">Lokasjon</span></div>
+                <div class="meta" style="font-family:var(--font-mono);font-size:12px">32V 0580414 6552008</div>
+              </div>
+              <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
+            </div>
+            <div class="disc"><i class="ti ti-map-2" style="font-size:16px"></i><span class="grow">Følger personens lokasjon</span><span>Sett egen</span><i class="ti ti-chevron-right" style="font-size:15px"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Posisjon følger personens lokasjon som standard, og overstyres bare når markøren står et annet sted (samme mønster som identiteten). Atferd, bakgrunn, rekvisitter og markør følger under.</div>
+    </div>
+  </div>
+
+  <!-- ============ 2 · CUSTOMIZE EXPANDED ============ -->
+  <div class="phone">
+    <p class="cap"><b>Etter · 2</b> «Tilpass» folder ut overstyrings-panelet. Hvert felt følger personen til du endrer det. Kjønn på egen rad.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Hilde</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div class="field">
+          <span class="lbl">Identitet</span>
+          <div class="pcard">
+            <div class="head">
+              <div class="av"><i class="ti ti-user" style="font-size:19px"></i></div>
+              <div style="flex:1;min-width:0">
+                <div class="name">Hilde</div>
+                <div class="meta">34 år · Kvinne</div>
+              </div>
+              <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
+            </div>
+            <div class="disc"><i class="ti ti-adjustments" style="font-size:16px"></i><span class="grow" style="color:var(--accent)">Tilpass for denne markøren</span><i class="ti ti-chevron-down" style="font-size:15px"></i></div>
+
+            <div class="panel">
+              <div style="display:flex;gap:10px">
+                <div class="field ovrfield" style="flex:1">
+                  <div class="toprow"><span class="lbl" style="margin:0">Navn</span><span class="chip inh">Følger person</span></div>
+                  <div class="inp">Hilde</div>
+                </div>
+                <div class="field ovrfield" style="width:80px">
+                  <div class="toprow"><span class="lbl" style="margin:0">Alder</span></div>
+                  <div class="inp">34</div>
+                </div>
+              </div>
+              <div class="field ovrfield">
+                <div class="toprow"><span class="lbl" style="margin:0">Kjønn</span><span class="chip inh">Følger person</span></div>
+                <div class="seg"><div class="on">Kvinne</div><div>Mann</div><div>Annet</div></div>
+              </div>
+              <div class="field ovrfield">
+                <div class="toprow"><span class="lbl" style="margin:0">Signalement</span><span class="chip inh">Følger person</span></div>
+                <div class="inp" style="line-height:1.35">160 cm, blondt hår, gul regnjakke og vadere</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="padding:0">Endrer du et felt her, blir det en overstyring for akkurat denne markøren. Personen og andre markører er urørt.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3 · WITH OVERRIDE ============ -->
+  <div class="phone">
+    <p class="cap"><b>Etter · 3</b> Ett felt overstyrt (navn → «Kari»). Kortet viser tydelig hva som avviker fra personen, med tilbakestilling.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i><span class="t">Kari</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div class="field">
+          <span class="lbl">Identitet</span>
+          <div class="pcard">
+            <div class="head">
+              <div class="av"><i class="ti ti-user" style="font-size:19px"></i></div>
+              <div style="flex:1;min-width:0">
+                <div class="name">Kari <span class="dot" title="overstyrt"></span></div>
+                <div class="meta">34 år · Kvinne</div>
+                <div class="sig">Portretterer <i>Hilde</i></div>
+              </div>
+              <i class="ti ti-selector" style="font-size:18px;color:var(--text-3)"></i>
+            </div>
+            <div class="disc"><i class="ti ti-adjustments-check" style="font-size:16px"></i><span class="grow" style="color:var(--accent)">1 felt tilpasset</span><span>Skjul</span><i class="ti ti-chevron-up" style="font-size:15px"></i></div>
+
+            <div class="panel">
+              <div style="display:flex;gap:10px">
+                <div class="field ovrfield" style="flex:1">
+                  <div class="toprow"><span class="lbl" style="margin:0">Navn</span><span class="reset"><i class="ti ti-rotate" style="font-size:13px"></i>Tilbakestill</span></div>
+                  <div class="inp ovr">Kari</div>
+                </div>
+                <div class="field ovrfield" style="width:80px">
+                  <div class="toprow"><span class="lbl" style="margin:0">Alder</span></div>
+                  <div class="inp">34</div>
+                </div>
+              </div>
+              <div class="field ovrfield">
+                <div class="toprow"><span class="lbl" style="margin:0">Kjønn</span><span class="chip inh">Følger person</span></div>
+                <div class="seg"><div class="on">Kvinne</div><div>Mann</div><div>Annet</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="padding:0">På disk lagres alltid den effektive verdien, så leseren av briefen ser aldri blankt (ADR-0047). «Følger person»-felt oppdateres om personen endres senere.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

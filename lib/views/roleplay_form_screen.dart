@@ -357,6 +357,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final wasSignalementInherited =
         oldPerson == null ||
         _signalementController.text == (oldPerson.signalement ?? '');
+    // Position follows the same inherit-or-override rule (DESIGN-009
+    // prompt 4i): a position that is null, or that matched the *old*
+    // person's location, was following rather than a deliberate choice,
+    // so it re-follows onto the *new* person's location too; any other
+    // non-null position (including one set while the old person had no
+    // location at all) is a manual choice and is left untouched.
+    final oldPersonCoord = _personLocationCoordinate;
+    final wasPositionFollowing =
+        _position == null || _position == oldPersonCoord;
 
     _personRef = slug;
     final person = _personBySlug(slug);
@@ -366,6 +375,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (wasGenderInherited) _gender = person.gender;
     if (wasSignalementInherited) {
       _signalementController.text = person.signalement ?? '';
+    }
+    if (wasPositionFollowing) {
+      final newCoord = _personLocationCoordinate;
+      if (newCoord != null) {
+        _position = newCoord;
+        _positionExpanded = false;
+      }
     }
   }
 

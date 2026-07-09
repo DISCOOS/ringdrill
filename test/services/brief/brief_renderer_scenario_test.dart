@@ -102,7 +102,8 @@ void main() {
         index: 0,
         name: 'Post',
         locations: const [_noPositionLoc],
-        situationMd: 'UTM:[{{station.loc.ko.utm}}] Standard:[{{station.loc.ko}}]',
+        situationMd:
+            'UTM:[{{station.loc.ko.utm}}] Standard:[{{station.loc.ko}}]',
       );
       final program = _emptyProgram().copyWith(
         exercises: [_exerciseWith(station: station)],
@@ -156,11 +157,7 @@ void main() {
     });
 
     test('.loc.utm resolves through locSlug to the location', () async {
-      const anne = Person(
-        slug: 'anne',
-        name: 'Anne Glemsk',
-        locSlug: 'lkp',
-      );
+      const anne = Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp');
       final station = Station(
         index: 0,
         name: 'Post',
@@ -185,72 +182,95 @@ void main() {
       expect(result, contains('HjemmeUTM: `$utm`'));
     });
 
-    test(
-      'a person portrayed by a roleplay whose name differs resolves to the '
-      'roleplay\'s value',
-      () async {
-        const anne = Person(slug: 'anne', name: 'Anne Glemsk', age: 74);
-        final rolePlay = RolePlay(
-          uuid: 'rp-1',
-          index: 0,
-          exerciseUuid: 'ex-1',
-          name: 'Anne Nordmann',
-          stationIndex: 0,
-          personRef: 'anne',
-        );
-        final station = Station(
-          index: 0,
-          name: 'Post',
-          persons: const [anne],
-          situationMd: 'Navn: {{station.person.anne.name}}',
-        );
-        final program = _emptyProgram().copyWith(
-          exercises: [
-            _exerciseWith(station: station, rolePlays: [rolePlay]),
-          ],
-          rolePlays: [rolePlay],
-        );
+    test('.loc.place resolves through locSlug to the location\'s place, '
+        'with no .home anywhere', () async {
+      const anne = Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp');
+      final station = Station(
+        index: 0,
+        name: 'Post',
+        locations: const [_lkp],
+        persons: const [anne],
+        situationMd: 'Sted: {{station.person.anne.loc.place}}',
+      );
+      final program = _emptyProgram().copyWith(
+        exercises: [_exerciseWith(station: station)],
+      );
 
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        expect(result, contains('Navn: Anne Nordmann'));
-        expect(result, isNot(contains('Navn: Anne Glemsk')));
-      },
-    );
+      expect(result, contains('Sted: Fjellheisen'));
+      expect(result, isNot(contains('.home')));
+      expect(result, isNot(contains('{{station.person.anne.loc.place}}')));
+    });
 
-    test(
-      'with no portraying roleplay, a person facet falls back to the '
-      'Person\'s own value',
-      () async {
-        const anne = Person(slug: 'anne', name: 'Anne Glemsk');
-        final station = Station(
-          index: 0,
-          name: 'Post',
-          persons: const [anne],
-          situationMd: 'Navn: {{station.person.anne.name}}',
-        );
-        final program = _emptyProgram().copyWith(
-          exercises: [_exerciseWith(station: station)],
-        );
+    test('a person portrayed by a roleplay whose name differs resolves to the '
+        'roleplay\'s value', () async {
+      const anne = Person(slug: 'anne', name: 'Anne Glemsk', age: 74);
+      final rolePlay = RolePlay(
+        uuid: 'rp-1',
+        index: 0,
+        exerciseUuid: 'ex-1',
+        name: 'Anne Nordmann',
+        stationIndex: 0,
+        personRef: 'anne',
+      );
+      final station = Station(
+        index: 0,
+        name: 'Post',
+        persons: const [anne],
+        situationMd: 'Navn: {{station.person.anne.name}}',
+      );
+      final program = _emptyProgram().copyWith(
+        exercises: [
+          _exerciseWith(station: station, rolePlays: [rolePlay]),
+        ],
+        rolePlays: [rolePlay],
+      );
 
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        expect(result, contains('Navn: Anne Glemsk'));
-      },
-    );
+      expect(result, contains('Navn: Anne Nordmann'));
+      expect(result, isNot(contains('Navn: Anne Glemsk')));
+    });
+
+    test('with no portraying roleplay, a person facet falls back to the '
+        'Person\'s own value', () async {
+      const anne = Person(slug: 'anne', name: 'Anne Glemsk');
+      final station = Station(
+        index: 0,
+        name: 'Post',
+        persons: const [anne],
+        situationMd: 'Navn: {{station.person.anne.name}}',
+      );
+      final program = _emptyProgram().copyWith(
+        exercises: [_exerciseWith(station: station)],
+      );
+
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+
+      expect(result, contains('Navn: Anne Glemsk'));
+    });
 
     test(
       'an empty roleplay override field falls back to the Person\'s value',
       () async {
-        const anne = Person(slug: 'anne', name: 'Anne Glemsk', gender: 'kvinne');
+        const anne = Person(
+          slug: 'anne',
+          name: 'Anne Glemsk',
+          gender: 'kvinne',
+        );
         final rolePlay = RolePlay(
           uuid: 'rp-1',
           index: 0,
@@ -283,27 +303,46 @@ void main() {
       },
     );
 
-    test('a roleplay field resolves station.* against its own station', () async {
-      const anne = Person(slug: 'anne', name: 'Anne Glemsk');
-      final rolePlay = RolePlay(
-        uuid: 'rp-1',
-        index: 0,
-        exerciseUuid: 'ex-1',
-        name: 'Anne Glemsk',
-        stationIndex: 0,
-        personRef: 'anne',
-        behavior: 'Spiller {{station.person.anne.name}}',
-      );
-      final station = Station(
-        index: 0,
-        name: 'Post',
-        persons: const [anne],
-      );
+    test(
+      'a roleplay field resolves station.* against its own station',
+      () async {
+        const anne = Person(slug: 'anne', name: 'Anne Glemsk');
+        final rolePlay = RolePlay(
+          uuid: 'rp-1',
+          index: 0,
+          exerciseUuid: 'ex-1',
+          name: 'Anne Glemsk',
+          stationIndex: 0,
+          personRef: 'anne',
+          behavior: 'Spiller {{station.person.anne.name}}',
+        );
+        final station = Station(index: 0, name: 'Post', persons: const [anne]);
+        final program = _emptyProgram().copyWith(
+          exercises: [
+            _exerciseWith(station: station, rolePlays: [rolePlay]),
+          ],
+          rolePlays: [rolePlay],
+        );
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        expect(result, contains('Spiller Anne Glemsk'));
+      },
+    );
+  });
+
+  group('BriefRenderer — scope and unknown references', () {
+    test('a program field does not resolve station.loc/person (no station in '
+        'scope)', () async {
       final program = _emptyProgram().copyWith(
         exercises: [
-          _exerciseWith(station: station, rolePlays: [rolePlay]),
+          _exerciseWith(station: const Station(index: 0, name: 'Post')),
         ],
-        rolePlays: [rolePlay],
+        briefIntroMd: 'Ingen post her: {{station.loc.lkp}}',
       );
 
       final result = await renderer.render(
@@ -312,56 +351,36 @@ void main() {
         l10n: _l10n,
       );
 
-      expect(result, contains('Spiller Anne Glemsk'));
+      expect(
+        result,
+        isNot(contains(_l10n.briefUnknownReference('station.loc.lkp'))),
+      );
+      expect(result, contains('{{station.loc.lkp}}'));
     });
-  });
 
-  group('BriefRenderer — scope and unknown references', () {
-    test(
-      'a program field does not resolve station.loc/person (no station in '
-      'scope)',
-      () async {
-        final program = _emptyProgram().copyWith(
-          exercises: [
-            _exerciseWith(station: const Station(index: 0, name: 'Post')),
-          ],
-          briefIntroMd: 'Ingen post her: {{station.loc.lkp}}',
-        );
+    test('an exercise field does not resolve station.loc/person (no station in '
+        'scope)', () async {
+      final program = _emptyProgram().copyWith(
+        exercises: [
+          _exerciseWith(
+            station: const Station(index: 0, name: 'Post'),
+            methodMd: 'Ingen post her: {{station.loc.lkp}}',
+          ),
+        ],
+      );
 
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        expect(result, isNot(contains(_l10n.briefUnknownReference('station.loc.lkp'))));
-        expect(result, contains('{{station.loc.lkp}}'));
-      },
-    );
-
-    test(
-      'an exercise field does not resolve station.loc/person (no station in '
-      'scope)',
-      () async {
-        final program = _emptyProgram().copyWith(
-          exercises: [
-            _exerciseWith(
-              station: const Station(index: 0, name: 'Post'),
-              methodMd: 'Ingen post her: {{station.loc.lkp}}',
-            ),
-          ],
-        );
-
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
-
-        expect(result, isNot(contains(_l10n.briefUnknownReference('station.loc.lkp'))));
-        expect(result, contains('{{station.loc.lkp}}'));
-      },
-    );
+      expect(
+        result,
+        isNot(contains(_l10n.briefUnknownReference('station.loc.lkp'))),
+      );
+      expect(result, contains('{{station.loc.lkp}}'));
+    });
 
     test('an unknown location slug renders a visible placeholder', () async {
       final station = Station(
@@ -379,7 +398,10 @@ void main() {
         l10n: _l10n,
       );
 
-      expect(result, contains(_l10n.briefUnknownReference('station.loc.mangler')));
+      expect(
+        result,
+        contains(_l10n.briefUnknownReference('station.loc.mangler')),
+      );
       expect(result, isNot(contains('{{station.loc.mangler}}')));
     });
 
@@ -429,38 +451,33 @@ void main() {
         expect(result, contains('Signalement:[]'));
         expect(
           result,
-          isNot(
-            contains(_l10n.briefUnknownReference('station.person.anne')),
-          ),
+          isNot(contains(_l10n.briefUnknownReference('station.person.anne'))),
         );
       },
     );
   });
 
   group('BriefRenderer — no-scenario regression', () {
-    test(
-      'a plan with no locations/persons renders identically to before this '
-      'prompt',
-      () async {
-        final station = Station(
-          index: 0,
-          name: 'Post',
-          position: const LatLng(58.99, 10.43),
-          situationMd: 'IPP er ved {{station.position.utm}}.',
-        );
-        final program = _emptyProgram().copyWith(
-          exercises: [_exerciseWith(station: station)],
-        );
+    test('a plan with no locations/persons renders identically to before this '
+        'prompt', () async {
+      final station = Station(
+        index: 0,
+        name: 'Post',
+        position: const LatLng(58.99, 10.43),
+        situationMd: 'IPP er ved {{station.position.utm}}.',
+      );
+      final program = _emptyProgram().copyWith(
+        exercises: [_exerciseWith(station: station)],
+      );
 
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        final utm = BriefRenderer.formatUtm(station.position);
-        expect(result, contains('IPP er ved $utm.'));
-      },
-    );
+      final utm = BriefRenderer.formatUtm(station.position);
+      expect(result, contains('IPP er ved $utm.'));
+    });
   });
 }

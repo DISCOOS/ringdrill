@@ -188,4 +188,105 @@ void main() {
       expect(find.text(l.pickALocation), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'switching to a different person re-follows onto their own location',
+    (tester) async {
+      const kariCoord = LatLng(59.9, 10.7);
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        locations: const [
+          Location(slug: 'lkp', label: 'Sist kjent', position: _lkp),
+          Location(slug: 'ipp', label: 'IPP', position: kariCoord),
+        ],
+        persons: const [
+          Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp'),
+          Person(slug: 'kari', name: 'Kari Hansen', locSlug: 'ipp'),
+        ],
+      );
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        const RolePlay(
+          uuid: 'role-1',
+          index: 0,
+          exerciseUuid: 'ex-1',
+          name: 'Anne Glemsk',
+          stationIndex: 0,
+          personRef: 'anne',
+        ),
+        station,
+        captured,
+      );
+
+      // Still following Anne's location before the switch.
+      expect(find.text(l.rolePlayPositionFollowsLocation), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('person-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kari Hansen').last);
+      await tester.pumpAndSettle();
+
+      // Re-follows onto Kari's own location, not left pointing at Anne's.
+      expect(find.text('IPP'), findsOneWidget);
+      expect(find.text(l.rolePlayPositionFollowsLocation), findsOneWidget);
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+      expect(captured.value!.rolePlay.position, kariCoord);
+    },
+  );
+
+  testWidgets(
+    'switching to a different person leaves an already-overridden position '
+    'untouched',
+    (tester) async {
+      const manualCoord = LatLng(60.0, 11.0);
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        locations: const [
+          Location(slug: 'lkp', label: 'Sist kjent', position: _lkp),
+          Location(slug: 'ipp', label: 'IPP', position: LatLng(59.9, 10.7)),
+        ],
+        persons: const [
+          Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp'),
+          Person(slug: 'kari', name: 'Kari Hansen', locSlug: 'ipp'),
+        ],
+      );
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        const RolePlay(
+          uuid: 'role-1',
+          index: 0,
+          exerciseUuid: 'ex-1',
+          name: 'Anne Glemsk',
+          stationIndex: 0,
+          personRef: 'anne',
+          // Differs from Anne's own location — already a deliberate
+          // override before the switch.
+          position: manualCoord,
+        ),
+        station,
+        captured,
+      );
+
+      expect(find.byType(PositionFormField), findsOneWidget);
+      expect(find.text(l.rolePlayPositionFollowsLocation), findsNothing);
+
+      await tester.tap(find.byKey(const Key('person-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kari Hansen').last);
+      await tester.pumpAndSettle();
+
+      // Still the manual override, not re-pointed at Kari's location.
+      expect(find.text(l.rolePlayPositionFollowsLocation), findsNothing);
+
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+      expect(captured.value!.rolePlay.position, manualCoord);
+    },
+  );
 }
