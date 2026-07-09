@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -128,6 +130,63 @@ void main() {
       expect(nameTop, ageTop);
       // Kjønn sits on its own row, below.
       expect(genderTop, greaterThan(nameTop));
+    },
+  );
+
+  testWidgets(
+    'no "Følger person(en)" text anywhere, in nb — collapsed, panel '
+    'expanded, or with an override',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('nb'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: RolePlayFormScreen(rolePlay: _rolePlay(), exercise: _exercise()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Følger'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('identity-disclosure')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Følger'), findsNothing);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Anne Glemsk'),
+        'Kari',
+      );
+      await tester.pump();
+      expect(find.textContaining('Følger'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'no "Følger personens lokasjon" text on the position card, in nb — the '
+    'location name reads as the source instead',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        locations: const [
+          Location(slug: 'lkp', label: 'Bosted', position: LatLng(58.99, 10.43)),
+        ],
+        persons: const [Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp')],
+      );
+      final exercise = _exercise().copyWith(stations: [station]);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('nb'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: RolePlayFormScreen(rolePlay: _rolePlay(), exercise: exercise),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bosted'), findsOneWidget);
+      expect(find.byKey(const Key('position-disclosure')), findsOneWidget);
+      expect(find.textContaining('Følger'), findsNothing);
     },
   );
 }

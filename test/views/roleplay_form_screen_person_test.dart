@@ -190,6 +190,10 @@ void main() {
 
       expect(find.text(l.rolePlayIdentityResetAction), findsOneWidget);
       expect(find.textContaining('Anne (spilt av Kari)'), findsWidgets);
+      // The overridden name reads "Tilpasset fra {navn}" in the collapsed
+      // header, naming the underlying person (DESIGN-009 prompt 4j) —
+      // superseding 4i's "Portraying {name}".
+      expect(find.text(l.rolePlayCustomizedFrom('Anne Glemsk')), findsOneWidget);
     },
   );
 

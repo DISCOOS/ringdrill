@@ -209,6 +209,46 @@ void main() {
     expect(find.text('Post 2'), findsWidgets);
   });
 
+  testWidgets(
+    'the Post is a compact card naming the post, with a discreet "Endre" '
+    'action — not a full-width dropdown',
+    (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final rolePlay = _baseRole().copyWith(stationIndex: 0);
+      await tester.pumpWidget(_buildForm(rolePlay: rolePlay, exercise: _exercise()));
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('station-field')),
+          matching: find.text('Post 1'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('station-field')),
+          matching: find.text(l10n.rolePlayPostEditAction),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(DropdownButtonFormField<int?>), findsNothing);
+
+      // "Endre" opens the same picker and changes the post.
+      await tester.tap(find.byKey(const Key('station-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Post 2').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('station-field')),
+          matching: find.text('Post 2'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('station is required when the exercise has stations', (
     tester,
   ) async {
