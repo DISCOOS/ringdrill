@@ -2235,6 +2235,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personsSectionAddAction => 'New person';
 
   @override
+  String personsSectionEnactedByAction(String name) {
+    return 'Played by $name';
+  }
+
+  @override
+  String get personsSectionAddMarkerAction => 'Add marker';
+
+  @override
   String get personsSectionEditAction => 'Edit';
 
   @override

@@ -11,22 +11,26 @@ import 'package:ringdrill/services/program_service.dart';
 /// additions created inline (the `/`/`{{` picker's "Create …" entries) whose
 /// *owner* the editor does not itself hold (ADR-0047, DESIGN-009 follow-up
 /// 4): new plan variables belong to `Program`; new locations/persons belong
-/// to a target station. The station editor owns its own locations/persons
-/// directly (adds them straight to its working list, see
-/// `StationFormScreen`), so it only ever populates `variables` here; only
-/// the roleplay editor — which edits a `RolePlay` but references its linked
-/// station's scenario data — ever populates `stationLocations`/
-/// `stationPersons`.
+/// to a target station; a new or edited roleplay authored inline from the
+/// post editor's Persons section (DESIGN-009 prompt 4j) belongs to the
+/// plan's roleplay registry, not the station. The station editor owns its
+/// own locations/persons directly (adds them straight to its working
+/// list, see `StationFormScreen`), so it only ever populates `variables`
+/// and (since prompt 4j) `rolePlays` here; only the roleplay editor — which
+/// edits a `RolePlay` but references its linked station's scenario data —
+/// ever populates `stationLocations`/`stationPersons`.
 ///
 /// A Dart 3 named record, not a bespoke `EntityEditResult<T>` class, per
 /// ADR-0047's "one mechanism for all three kinds, not a class per editor"
 /// call. The caller that owns the plan (an `openFormSurface` call site)
 /// applies the entity change and this payload atomically — see
-/// [applyVariableAdditions]/[applyStationAdditions].
+/// [applyVariableAdditions]/[applyStationAdditions]/
+/// [applyPendingRolePlayAdditions].
 typedef PlanAdditions = ({
   List<DrillVariable> variables,
   List<Location> stationLocations,
   List<Person> stationPersons,
+  List<RolePlay> rolePlays,
 });
 
 /// No pending additions — every editor starts here and only grows this as
@@ -35,15 +39,22 @@ const PlanAdditions noPlanAdditions = (
   variables: <DrillVariable>[],
   stationLocations: <Location>[],
   stationPersons: <Person>[],
+  rolePlays: <RolePlay>[],
 );
 
-/// [PlanAdditions] for an editor that can only ever contribute new
-/// variables (Exercise, Station — a station owns its own locations/persons
-/// directly and has no need to write them back to itself).
-PlanAdditions variableAdditions(List<DrillVariable> variables) => (
+/// [PlanAdditions] for an editor that never populates `stationLocations`/
+/// `stationPersons` (a station owns those directly and has no need to
+/// write them back to itself) — Exercise always, Station since it can now
+/// also carry [rolePlays] authored inline from its own Persons section
+/// (DESIGN-009 prompt 4j).
+PlanAdditions variableAdditions(
+  List<DrillVariable> variables, {
+  List<RolePlay> rolePlays = const <RolePlay>[],
+}) => (
   variables: variables,
   stationLocations: const <Location>[],
   stationPersons: const <Person>[],
+  rolePlays: rolePlays,
 );
 
 /// Applies [additions.variables] to [program], skipping any name already
@@ -153,4 +164,23 @@ Future<void> applyRolePlayAdditions(
     stationIndex: rolePlay.stationIndex,
     additions: additions,
   );
+}
+
+/// Persists [additions.rolePlays] via [ProgramService.saveRolePlay]
+/// (DESIGN-009 prompt 4j) — the write-back target for a marker authored
+/// inline from the post editor's Persons section ("Legg til markør" /
+/// re-opening an existing one): unlike a station's own locations/persons, a
+/// `RolePlay` is not nested inside `Station`/`Program`, so each one is
+/// saved directly through the repo, the same as any other roleplay edit —
+/// held in the post editor's own working copy until this call, so an
+/// aborted post edit never leaves a half-saved marker on disk. A no-op
+/// when there is nothing to add.
+Future<void> applyPendingRolePlayAdditions(
+  ProgramService service,
+  AppLocalizations l10n,
+  PlanAdditions additions,
+) async {
+  for (final rolePlay in additions.rolePlays) {
+    await service.saveRolePlay(l10n, rolePlay);
+  }
 }

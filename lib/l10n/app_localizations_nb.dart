@@ -2231,6 +2231,14 @@ class AppLocalizationsNb extends AppLocalizations {
   String get personsSectionAddAction => 'Ny person';
 
   @override
+  String personsSectionEnactedByAction(String name) {
+    return 'Spilles av $name';
+  }
+
+  @override
+  String get personsSectionAddMarkerAction => 'Legg til markør';
+
+  @override
   String get personsSectionEditAction => 'Rediger';
 
   @override

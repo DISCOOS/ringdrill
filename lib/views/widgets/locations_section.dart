@@ -8,13 +8,13 @@ import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 
-/// DESIGN-009 "Lokasjoner" section (follow-up 3b — full-screen forms,
-/// searchable/sortable tile list): a light tile per station-owned
-/// [Location] (kind icon + label + place/UTM summary). Tap opens
-/// [LocationFormScreen] to edit; swipe-to-dismiss deletes, behind a
-/// `confirmDestructive` confirmation (ADR-0031 — no per-row pencil, and no
-/// `⋮` menu now that edit is a tap away); "+ Ny lokasjon" opens the same
-/// form to add.
+/// DESIGN-009 "Lokasjoner" section (follow-up 3b, card-per-item since
+/// prompt 4j): a card per station-owned [Location] (kind icon + label +
+/// place/UTM summary), matching the app's card-per-item list style —
+/// bordered, rounded, spaced. Tap opens [LocationFormScreen] to edit; an
+/// overflow menu and swipe-to-dismiss both delete, behind a
+/// `confirmDestructive` confirmation (ADR-0031 — no per-row pencil, edit
+/// stays a tap away); "+ Ny lokasjon" opens the same form to add.
 ///
 /// Presentation-only, mirroring `VariablesSection`: [locations] and the
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
@@ -87,10 +87,10 @@ class _LocationsSectionState extends State<LocationsSection> {
         children: [
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               children: [
                 for (final location in visible)
-                  _LocationTile(
+                  _LocationCard(
                     key: ValueKey(location.slug),
                     location: location,
                     onTap: () => _openForm(context, location),
@@ -179,8 +179,16 @@ class _SearchAddRow extends StatelessWidget {
   }
 }
 
-class _LocationTile extends StatelessWidget {
-  const _LocationTile({
+enum _LocationCardAction { delete }
+
+/// One card-per-item row (DESIGN-009 prompt 4j, `post-editor-persons.html`):
+/// a kind-colored icon (matching the map markers, ADR-0020), the
+/// label/place/UTM summary, and a trailing overflow menu — bordered,
+/// rounded, spaced, matching the app's other card lists. Tap opens the
+/// location form; swipe or the overflow menu's "Slett" both delete,
+/// guarded by [usagesFor] (ADR-0031, ADR-0047).
+class _LocationCard extends StatelessWidget {
+  const _LocationCard({
     super.key,
     required this.location,
     required this.onTap,
@@ -193,6 +201,28 @@ class _LocationTile extends StatelessWidget {
   final VoidCallback onDelete;
   final List<String> Function(String slug) usagesFor;
 
+  /// The shared guarded-delete check behind both the swipe-to-dismiss and
+  /// the overflow menu's "Slett" — mirrors `_PersonCard`'s own copy.
+  Future<bool> _confirmDelete(BuildContext context, AppLocalizations l10n) async {
+    final displayName = location.label.isEmpty ? location.slug : location.label;
+    final usages = usagesFor(location.slug);
+    if (usages.isNotEmpty) {
+      await showReferenceGuardDialog(
+        context,
+        l10n,
+        title: l10n.stationReferenceGuardTitle(displayName),
+        usages: usages,
+      );
+      return false;
+    }
+    return confirmDestructive(
+      context,
+      title: l10n.confirm,
+      message: l10n.locationsSectionDeleteConfirmMessage(displayName),
+      confirmLabel: l10n.delete,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -201,41 +231,82 @@ class _LocationTile extends StatelessWidget {
     final subtitle = location.place.isNotEmpty
         ? location.place
         : (location.position == null ? '' : _formatUtm(location.position!));
-    return Dismissible(
-      key: ValueKey(location.slug),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: theme.colorScheme.error,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(Icons.delete, color: theme.colorScheme.onError),
-      ),
-      confirmDismiss: (_) async {
-        final usages = usagesFor(location.slug);
-        if (usages.isNotEmpty) {
-          await showReferenceGuardDialog(
-            context,
-            l10n,
-            title: l10n.stationReferenceGuardTitle(displayName),
-            usages: usages,
-          );
-          return false;
-        }
-        return confirmDestructive(
-          context,
-          title: l10n.confirm,
-          message: l10n.locationsSectionDeleteConfirmMessage(displayName),
-          confirmLabel: l10n.delete,
-        );
-      },
-      onDismissed: (_) => onDelete(),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(location.kind.icon, color: location.kind.color),
-        title: Text(displayName, overflow: TextOverflow.ellipsis),
-        subtitle: subtitle.isEmpty
-            ? null
-            : Text(subtitle, overflow: TextOverflow.ellipsis),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Dismissible(
+        key: ValueKey(location.slug),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.error,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Icon(Icons.delete, color: theme.colorScheme.onError),
+        ),
+        confirmDismiss: (_) => _confirmDelete(context, l10n),
+        onDismissed: (_) => onDelete(),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(location.kind.icon, color: location.kind.color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(displayName, overflow: TextOverflow.ellipsis),
+                        if (subtitle.isNotEmpty)
+                          Text(
+                            subtitle,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<_LocationCardAction>(
+                    tooltip: '',
+                    onSelected: (action) async {
+                      switch (action) {
+                        case _LocationCardAction.delete:
+                          if (await _confirmDelete(context, l10n)) onDelete();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: _LocationCardAction.delete,
+                        child: Text(l10n.delete),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

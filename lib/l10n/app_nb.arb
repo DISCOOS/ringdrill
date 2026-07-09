@@ -1347,6 +1347,17 @@
   "@personsSectionAddAction": {
     "description": "«+ Ny person»-handling i Personer-seksjonen, og tittelen på dialogen den åpner."
   },
+  "personsSectionEnactedByAction": "Spilles av {name}",
+  "@personsSectionEnactedByAction": {
+    "description": "Innebygd rad på personens kort i Personer-seksjonen (DESIGN-009 prompt 4j) som navngir markørordren som spiller personen. Trykk åpner den markørordren i redigeringen. {name} er markørordrens eget visningsnavn.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "personsSectionAddMarkerAction": "Legg til markør",
+  "@personsSectionAddMarkerAction": {
+    "description": "Innebygd rad på personens kort i Personer-seksjonen, vist i stedet for personsSectionEnactedByAction når personen ikke har noen markørordre ennå (DESIGN-009 prompt 4j). Åpner markørredigeringen med post og denne personen forhåndsutfylt."
+  },
   "personsSectionEditAction": "Rediger",
   "@personsSectionEditAction": {
     "description": "AppBar-tittel for PersonFormScreen ved redigering av en eksisterende person (DESIGN-009 oppfølging 3b). Referansen genereres automatisk og vises/redigeres aldri; bopel har sin egen velger i skjemaet."

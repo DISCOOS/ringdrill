@@ -2314,6 +2314,17 @@
   "@personsSectionAddAction": {
     "description": "\"+ Ny person\" action label in the Persons section, and the title of the add dialog it opens."
   },
+  "personsSectionEnactedByAction": "Played by {name}",
+  "@personsSectionEnactedByAction": {
+    "description": "Inline row on a person's card in the Persons section (DESIGN-009 prompt 4j) naming the RolePlay that enacts them. Tapping opens that roleplay in the RolePlay editor. {name} is the roleplay's own display name.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "personsSectionAddMarkerAction": "Add marker",
+  "@personsSectionAddMarkerAction": {
+    "description": "Inline row on a person's card in the Persons section, shown instead of personsSectionEnactedByAction when the person has no enacting RolePlay yet (DESIGN-009 prompt 4j). Opens the RolePlay editor with the post and this person pre-set."
+  },
   "personsSectionEditAction": "Edit",
   "@personsSectionEditAction": {
     "description": "AppBar title of PersonFormScreen when editing an existing person (DESIGN-009 follow-up 3b). The reference is auto-generated and never shown/edited; home has its own inline picker in the form."

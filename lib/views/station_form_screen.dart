@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -7,12 +8,15 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
+import 'package:ringdrill/views/roleplay_form_screen.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/locations_section.dart';
 import 'package:ringdrill/views/widgets/persons_section.dart';
@@ -36,10 +40,14 @@ enum _StationSection {
 }
 
 /// [StationFormScreen]'s result: the saved [Station] plus any [PlanAdditions]
-/// created inline this session (ADR-0047, DESIGN-009 follow-up 4). Only
-/// `variables` is ever populated — a station's own new locations/persons go
-/// straight into its returned [Station] (it owns them directly), never
-/// through the write-back payload.
+/// created inline this session (ADR-0047, DESIGN-009 follow-up 4/4j).
+/// `stationLocations`/`stationPersons` are never populated — a station's
+/// own new locations/persons go straight into its returned [Station] (it
+/// owns them directly), never through the write-back payload. `variables`
+/// carries plan variables created inline from a token field; `rolePlays`
+/// (since prompt 4j) carries any marker created or edited from the
+/// Persons section's "Legg til markør" / "Spilles av {navn}" flow — a
+/// `RolePlay` is not nested in `Station`, so it rides this same mechanism.
 typedef StationFormResult = ({Station station, PlanAdditions additions});
 
 /// ADR-0046's declared-variable-name rule — see `ExerciseFormScreen`'s own
@@ -87,6 +95,7 @@ class StationFormScreen extends StatefulWidget {
 
 class _StationFormScreenState extends State<StationFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _programService = ProgramService();
 
   LatLng? _position;
 
@@ -136,6 +145,16 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// variables itself; these are returned as [PlanAdditions] for the caller
   /// to apply to `Program` alongside this station's own save.
   final List<DrillVariable> _pendingVariables = [];
+
+  /// Markers created or edited this session from the Persons section's
+  /// inline marker row (DESIGN-009 prompt 4j), keyed by `uuid`. A `RolePlay`
+  /// is not nested in `Station`, so — unlike locations/persons — the
+  /// author's changes to it live only here until [_saveStation] returns
+  /// them as [PlanAdditions.rolePlays] for the caller to persist alongside
+  /// the station: an aborted post edit never leaves a half-saved marker on
+  /// disk. Overlays [StationFormScreen.roleplays] for display via
+  /// [_rolePlayFor].
+  final Map<String, RolePlay> _pendingRolePlays = {};
 
   /// This station's inherited baseline (ADR-0046): the plan's declared
   /// defaults overlaid by [StationFormScreen.parentExercise]'s overrides —
@@ -290,6 +309,119 @@ class _StationFormScreenState extends State<StationFormScreen> {
       _workingPersons = [..._workingPersons, Person(slug: slug, name: label)];
     });
     return slug;
+  }
+
+  /// The [RolePlay] enacting the person at [slug], if any (DESIGN-009
+  /// prompt 4j) — [_pendingRolePlays]' session edits take priority over
+  /// [widget.roleplays]' persisted ones, so re-pointing a marker away from
+  /// this person or saving a new one is reflected immediately. Assumes at
+  /// most one portraying roleplay per person, matching DESIGN-009's
+  /// documented v1 scope (first/primary wins).
+  RolePlay? _rolePlayFor(String slug) {
+    final merged = <String, RolePlay>{
+      for (final rp in widget.roleplays) rp.uuid: rp,
+      ..._pendingRolePlays,
+    };
+    for (final rp in merged.values) {
+      if (rp.personRef == slug) return rp;
+    }
+    return null;
+  }
+
+  /// [widget.parentExercise] with this station patched to the *working*
+  /// locations/persons/name/position (DESIGN-009 prompt 4j) — what the
+  /// nested [RolePlayFormScreen] resolves its own station scope against, so
+  /// a person just added inline this session (not yet saved to disk) is
+  /// immediately selectable as a marker's `personRef`. Null when opened
+  /// without a parent exercise (defensive; every real call site passes one
+  /// since a roleplay always needs a station to link to).
+  Exercise? get _patchedExercise {
+    final exercise = widget.parentExercise;
+    if (exercise == null) return null;
+    final stations = [...exercise.stations];
+    final idx = stations.indexWhere((s) => s.index == widget.station.index);
+    if (idx < 0) return exercise;
+    stations[idx] = widget.station.copyWith(
+      name: _nameController.text.trim(),
+      position: _position,
+      locations: _workingLocations,
+      persons: _workingPersons,
+    );
+    return exercise.copyWith(stations: stations);
+  }
+
+  /// Opens [rolePlay] (new draft or existing) in the RolePlay editor and
+  /// merges the result into this station editor's own working state
+  /// (DESIGN-009 prompt 4j) — never written to disk directly, so an
+  /// aborted post edit discards it along with everything else unsaved.
+  /// Shared by the Persons section's "Legg til markør" (a fresh draft) and
+  /// "Spilles av {navn}" (an existing one) rows.
+  Future<void> _openRolePlayEditor(RolePlay rolePlay) async {
+    final result = await openFormSurface<RolePlayFormResult>(
+      context,
+      builder: (_) => RolePlayFormScreen(
+        rolePlay: rolePlay,
+        exercise: _patchedExercise,
+        variables: [...widget.variables, ..._pendingVariables],
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      // The nested editor's own inline-created locations/persons/variables
+      // belong to this same station/plan — merge them into this editor's
+      // own working copies rather than writing back separately (they ride
+      // this station's own save instead).
+      final existingLocSlugs = _workingLocations.map((l) => l.slug).toSet();
+      _workingLocations = [
+        ..._workingLocations,
+        ...result.additions.stationLocations.where(
+          (l) => !existingLocSlugs.contains(l.slug),
+        ),
+      ];
+      final existingPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
+      _workingPersons = [
+        ..._workingPersons,
+        ...result.additions.stationPersons.where(
+          (p) => !existingPersonSlugs.contains(p.slug),
+        ),
+      ];
+      final declaredVariableNames = {
+        for (final v in widget.variables) v.name,
+        for (final v in _pendingVariables) v.name,
+      };
+      _pendingVariables.addAll(
+        result.additions.variables.where(
+          (v) => !declaredVariableNames.contains(v.name),
+        ),
+      );
+      _pendingRolePlays[result.rolePlay.uuid] = result.rolePlay;
+    });
+  }
+
+  /// "Legg til markør" (DESIGN-009 prompt 4j): a fresh [RolePlay] draft with
+  /// the post and [person] pre-set, seeded from the person's own current
+  /// identity so the author lands on the play and position — not the
+  /// person picker — the same effective values [_applyPersonSelection]
+  /// (RolePlayFormScreen) would sync onto a freshly-picked person.
+  Future<void> _addMarkerFor(Person person) async {
+    final exercise = widget.parentExercise;
+    if (exercise == null) return;
+    final existingCount = _programService
+        .loadRolePlays()
+        .where((r) => r.exerciseUuid == exercise.uuid)
+        .length;
+    final draft = RolePlay(
+      uuid: nanoid(10),
+      index: existingCount,
+      exerciseUuid: exercise.uuid,
+      name: person.name,
+      age: person.age,
+      gender: person.gender,
+      signalement: person.signalement,
+      stationIndex: widget.station.index,
+      personRef: person.slug,
+    );
+    await _openRolePlayEditor(draft);
   }
 
   /// Wired to every token-aware field's `onCreateVariable` hook (ADR-0047,
@@ -607,6 +739,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
                         .toList(),
                   ),
                   usagesFor: (slug) => _usagesOfPerson(slug, l),
+                  rolePlayFor: _rolePlayFor,
+                  onOpenRolePlay: _openRolePlayEditor,
+                  onAddRolePlay: _addMarkerFor,
                 ),
               ),
               FormSection(
@@ -794,7 +929,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
       Navigator.of(context).pop((
         station: newStation,
-        additions: variableAdditions(_pendingVariables),
+        additions: variableAdditions(
+          _pendingVariables,
+          rolePlays: _pendingRolePlays.values.toList(),
+        ),
       ));
     }
   }

@@ -1690,6 +1690,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         variables: _pendingVariables,
         stationLocations: newLocations,
         stationPersons: newPersons,
+        rolePlays: const <RolePlay>[],
       ),
     ));
   }

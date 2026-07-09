@@ -3812,6 +3812,18 @@ abstract class AppLocalizations {
   /// **'New person'**
   String get personsSectionAddAction;
 
+  /// Inline row on a person's card in the Persons section (DESIGN-009 prompt 4j) naming the RolePlay that enacts them. Tapping opens that roleplay in the RolePlay editor. {name} is the roleplay's own display name.
+  ///
+  /// In en, this message translates to:
+  /// **'Played by {name}'**
+  String personsSectionEnactedByAction(String name);
+
+  /// Inline row on a person's card in the Persons section, shown instead of personsSectionEnactedByAction when the person has no enacting RolePlay yet (DESIGN-009 prompt 4j). Opens the RolePlay editor with the post and this person pre-set.
+  ///
+  /// In en, this message translates to:
+  /// **'Add marker'**
+  String get personsSectionAddMarkerAction;
+
   /// AppBar title of PersonFormScreen when editing an existing person (DESIGN-009 follow-up 3b). The reference is auto-generated and never shown/edited; home has its own inline picker in the form.
   ///
   /// In en, this message translates to:

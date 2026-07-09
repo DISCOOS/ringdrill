@@ -491,6 +491,15 @@ class _StationListViewState extends State<StationListView> {
       _programService,
       result.additions,
     );
+    // A marker authored/edited inline from the Persons section's "Legg til
+    // markør" / "Spilles av {navn}" row (DESIGN-009 prompt 4j) — held in
+    // the post editor's own working copy, written back here alongside the
+    // station's own save.
+    await applyPendingRolePlayAdditions(
+      _programService,
+      localizations,
+      result.additions,
+    );
     // Persist the edited station back into its owning exercise.
     final current = _programService.getExercise(exercise.uuid);
     if (current == null) return;

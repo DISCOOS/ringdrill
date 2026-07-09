@@ -1283,6 +1283,16 @@ class _ExerciseCardState extends State<ExerciseCard> {
       }
       return;
     }
+    // DESIGN-009 prompt 5/4j: the delete-guard, save-block and the Persons
+    // section's inline marker row all need to know which roleplays are
+    // already linked to this station.
+    final roleplays = programService
+        .loadRolePlays()
+        .where(
+          (r) =>
+              r.exerciseUuid == exercise.uuid && r.stationIndex == station.index,
+        )
+        .toList();
     final result = await openFormSurface<StationFormResult>(
       context,
       builder: (_) => StationFormScreen(
@@ -1290,12 +1300,22 @@ class _ExerciseCardState extends State<ExerciseCard> {
         markers: programService.getLocations().toMarkerSpecs(),
         variables: programService.activeProgram?.variables ?? const [],
         parentExercise: exercise,
+        roleplays: roleplays,
       ),
     );
     if (!mounted || result == null) return;
 
     await applyVariableAdditionsToActiveProgram(
       programService,
+      result.additions,
+    );
+    // A marker authored/edited inline from the Persons section's "Legg til
+    // markør" / "Spilles av {navn}" row (DESIGN-009 prompt 4j) — held in
+    // the post editor's own working copy, written back here alongside the
+    // station's own save.
+    await applyPendingRolePlayAdditions(
+      programService,
+      localizations,
       result.additions,
     );
     final current = programService.getExercise(exercise.uuid);

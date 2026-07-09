@@ -1527,6 +1527,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       );
       return;
     }
+    // DESIGN-009 prompt 5/4j: the delete-guard, save-block and the Persons
+    // section's inline marker row all need to know which roleplays are
+    // already linked to this station.
+    final roleplays = _programService
+        .loadRolePlays()
+        .where(
+          (r) =>
+              r.exerciseUuid == _exercise!.uuid &&
+              r.stationIndex == stationIndex,
+        )
+        .toList();
     final result = await openFormSurface<StationFormResult>(
       context,
       builder: (_) => StationFormScreen(
@@ -1534,6 +1545,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         markers: _programService.getLocations().toMarkerSpecs(),
         variables: _programService.activeProgram?.variables ?? const [],
         parentExercise: _exercise,
+        roleplays: roleplays,
       ),
     );
     // No mounted gate on the save: openFormSurface disposes this State when
@@ -1541,6 +1553,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     if (result == null) return;
     await applyVariableAdditionsToActiveProgram(
       _programService,
+      result.additions,
+    );
+    // A marker authored/edited inline from the Persons section's "Legg til
+    // markør" / "Spilles av {navn}" row (DESIGN-009 prompt 4j) — held in
+    // the post editor's own working copy, written back here alongside the
+    // station's own save.
+    await applyPendingRolePlayAdditions(
+      _programService,
+      localizations,
       result.additions,
     );
     final stations = [..._exercise!.stations];

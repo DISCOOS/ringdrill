@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
-/// DESIGN-009 "Personer" section (follow-up 3b — full-screen forms,
-/// searchable/sortable tile list): a light tile per station-owned [Person]
-/// (name + age/gender/signalement summary). Tap opens [PersonFormScreen] to
-/// edit; swipe-to-dismiss deletes, behind a `confirmDestructive`
-/// confirmation (ADR-0031 — no `⋮` menu now that edit is a tap away);
-/// "+ Ny person" opens the same form to add.
+/// DESIGN-009 "Personer" section (follow-up 3b, card-per-item since prompt
+/// 4j): a card per station-owned [Person] (name + age/gender/signalement
+/// summary), matching the app's card-per-item list style — bordered,
+/// rounded, spaced, with a leading avatar. Tap opens [PersonFormScreen] to
+/// edit; an overflow menu and swipe-to-dismiss both delete, behind a
+/// `confirmDestructive` confirmation (ADR-0031 — no pencil in the row, edit
+/// stays a tap away); "+ Ny person" opens the same form to add.
 ///
 /// Presentation-only, mirroring `LocationsSection`: [persons] and the
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
@@ -25,6 +27,11 @@ import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 /// usages, via [usagesFor]. A person's reference (`slug`) is generated once
 /// at creation and never shown; renaming it is out of scope — there is no
 /// rename (ADR-0047).
+///
+/// Each card also carries its enacting marker inline (DESIGN-009 prompt
+/// 4j): "Spilles av {navn}" when [rolePlayFor] finds one, tapping through
+/// to [onOpenRolePlay]; otherwise "Legg til markør" via [onAddRolePlay] —
+/// so an author never needs the read-only Post view to build one.
 class PersonsSection extends StatefulWidget {
   const PersonsSection({
     super.key,
@@ -33,6 +40,9 @@ class PersonsSection extends StatefulWidget {
     required this.onSave,
     required this.onDelete,
     required this.usagesFor,
+    required this.rolePlayFor,
+    required this.onOpenRolePlay,
+    required this.onAddRolePlay,
   });
 
   final List<Person> persons;
@@ -57,6 +67,18 @@ class PersonsSection extends StatefulWidget {
   /// none of which this presentation-only section has access to. An empty
   /// list means the person is safe to delete.
   final List<String> Function(String slug) usagesFor;
+
+  /// The [RolePlay] enacting the person at `slug`, if any (DESIGN-009
+  /// prompt 4j) — the caller knows the station's linked roleplays, which
+  /// this presentation-only section does not.
+  final RolePlay? Function(String slug) rolePlayFor;
+
+  /// Opens [rolePlay] in the RolePlay editor.
+  final ValueChanged<RolePlay> onOpenRolePlay;
+
+  /// Opens the RolePlay editor with the post and [person] pre-set, for a
+  /// person with no enacting marker yet.
+  final ValueChanged<Person> onAddRolePlay;
 
   @override
   State<PersonsSection> createState() => _PersonsSectionState();
@@ -91,14 +113,17 @@ class _PersonsSectionState extends State<PersonsSection> {
         children: [
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               children: [
                 for (final person in visible)
-                  _PersonTile(
+                  _PersonCard(
                     key: ValueKey(person.slug),
                     person: person,
+                    rolePlay: widget.rolePlayFor(person.slug),
                     onTap: () => _openForm(context, person),
                     onDelete: () => widget.onDelete(person.slug),
+                    onOpenRolePlay: widget.onOpenRolePlay,
+                    onAddRolePlay: () => widget.onAddRolePlay(person),
                     usagesFor: widget.usagesFor,
                   ),
               ],
@@ -188,19 +213,57 @@ class _SearchAddRow extends StatelessWidget {
   }
 }
 
-class _PersonTile extends StatelessWidget {
-  const _PersonTile({
+enum _PersonCardAction { delete }
+
+/// One card-per-item row (DESIGN-009 prompt 4j, `post-editor-persons.html`):
+/// a leading avatar, the name/meta/signalement summary, the inline
+/// enacting-marker row, and a trailing overflow menu — bordered, rounded,
+/// spaced, matching the app's other card lists. Tap opens the person form;
+/// swipe or the overflow menu's "Slett" both delete, guarded by
+/// [usagesFor] (ADR-0031, ADR-0047).
+class _PersonCard extends StatelessWidget {
+  const _PersonCard({
     super.key,
     required this.person,
+    required this.rolePlay,
     required this.onTap,
     required this.onDelete,
+    required this.onOpenRolePlay,
+    required this.onAddRolePlay,
     required this.usagesFor,
   });
 
   final Person person;
+  final RolePlay? rolePlay;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final ValueChanged<RolePlay> onOpenRolePlay;
+  final VoidCallback onAddRolePlay;
   final List<String> Function(String slug) usagesFor;
+
+  /// The shared guarded-delete check behind both the swipe-to-dismiss and
+  /// the overflow menu's "Slett" — a person still referenced (ADR-0047,
+  /// DESIGN-009 prompt 5) is blocked with a dialog listing the usages;
+  /// otherwise a plain destructive confirmation.
+  Future<bool> _confirmDelete(BuildContext context, AppLocalizations l10n) async {
+    final displayName = person.name.isEmpty ? person.slug : person.name;
+    final usages = usagesFor(person.slug);
+    if (usages.isNotEmpty) {
+      await showReferenceGuardDialog(
+        context,
+        l10n,
+        title: l10n.stationReferenceGuardTitle(displayName),
+        usages: usages,
+      );
+      return false;
+    }
+    return confirmDestructive(
+      context,
+      title: l10n.confirm,
+      message: l10n.personsSectionDeleteConfirmMessage(displayName),
+      confirmLabel: l10n.delete,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,47 +271,177 @@ class _PersonTile extends StatelessWidget {
     final theme = Theme.of(context);
     final displayName = person.name.isEmpty ? person.slug : person.name;
     final genderLabel = genderLabelFor(person.gender, l10n);
-    final parts = [
+    final metaParts = [
+      displayName,
       if (person.age != null) '${person.age}',
       ?genderLabel,
-      if ((person.signalement ?? '').isNotEmpty) person.signalement!,
     ];
-    return Dismissible(
-      key: ValueKey(person.slug),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: theme.colorScheme.error,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Icon(Icons.delete, color: theme.colorScheme.onError),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Dismissible(
+        key: ValueKey(person.slug),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.error,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Icon(Icons.delete, color: theme.colorScheme.onError),
+        ),
+        confirmDismiss: (_) => _confirmDelete(context, l10n),
+        onDismissed: (_) => onDelete(),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 19,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.person,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          metaParts.join(' · '),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if ((person.signalement ?? '').isNotEmpty)
+                          Text(
+                            person.signalement!,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: InkWell(
+                            onTap: () => rolePlay == null
+                                ? onAddRolePlay()
+                                : onOpenRolePlay(rolePlay!),
+                            child: rolePlay == null
+                                ? _AddMarkerRow(label: l10n.personsSectionAddMarkerAction)
+                                : _EnactedByRow(
+                                    label: l10n.personsSectionEnactedByAction(
+                                      rolePlay!.name,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<_PersonCardAction>(
+                    tooltip: '',
+                    onSelected: (action) async {
+                      switch (action) {
+                        case _PersonCardAction.delete:
+                          if (await _confirmDelete(context, l10n)) onDelete();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: _PersonCardAction.delete,
+                        child: Text(l10n.delete),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-      confirmDismiss: (_) async {
-        final usages = usagesFor(person.slug);
-        if (usages.isNotEmpty) {
-          await showReferenceGuardDialog(
-            context,
-            l10n,
-            title: l10n.stationReferenceGuardTitle(displayName),
-            usages: usages,
-          );
-          return false;
-        }
-        return confirmDestructive(
-          context,
-          title: l10n.confirm,
-          message: l10n.personsSectionDeleteConfirmMessage(displayName),
-          confirmLabel: l10n.delete,
-        );
-      },
-      onDismissed: (_) => onDelete(),
-      child: ListTile(
-        onTap: onTap,
-        leading: const Icon(Icons.person_outline),
-        title: Text(displayName, overflow: TextOverflow.ellipsis),
-        subtitle: parts.isEmpty
-            ? null
-            : Text(parts.join(' · '), overflow: TextOverflow.ellipsis),
+    );
+  }
+}
+
+/// The "Spilles av {navn}" inline row on an enacted person's card
+/// (DESIGN-009 prompt 4j, `post-editor-persons.html`'s `.mkline`).
+class _EnactedByRow extends StatelessWidget {
+  const _EnactedByRow({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(7),
       ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.theater_comedy_outlined,
+            size: 15,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right,
+            size: 15,
+            color: theme.colorScheme.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The "+ Legg til markør" inline affordance on an unenacted person's card
+/// (DESIGN-009 prompt 4j).
+class _AddMarkerRow extends StatelessWidget {
+  const _AddMarkerRow({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.add, size: 15, color: theme.colorScheme.primary),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ],
     );
   }
 }
