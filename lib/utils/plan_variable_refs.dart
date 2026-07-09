@@ -340,18 +340,24 @@ List<PlanVariableReference> variableReferences(Program program, String name) {
   ];
 }
 
-String? _rewrite(String? content, RegExp pattern, String replacement) {
+/// Rewrites every `{{var.<oldName>[.facet]}}` match of [pattern] to the
+/// new name, carrying any facet path (the pattern's group 1, e.g. `.utm`
+/// on a `location`-typed variable — DESIGN-008 follow-up 11) over
+/// unchanged: `{{var.old.utm}}` becomes `{{var.new.utm}}`, never a bare
+/// `{{var.new}}`.
+String? _rewrite(String? content, RegExp pattern, String newName) {
   if (content == null || !pattern.hasMatch(content)) return content;
-  return content.replaceAll(pattern, replacement);
+  return content.replaceAllMapped(
+    pattern,
+    (m) => '{{var.$newName${m.group(1) ?? ''}}}',
+  );
 }
 
 /// Same as [_rewrite], for the non-nullable name/description fields
 /// (`Program.name`/`description`, `Exercise.name`, `Station.name`,
 /// `RolePlay.name` — DESIGN-008 follow-up 10).
-String _rewriteRequired(String content, RegExp pattern, String replacement) =>
-    pattern.hasMatch(content)
-    ? content.replaceAll(pattern, replacement)
-    : content;
+String _rewriteRequired(String content, RegExp pattern, String newName) =>
+    _rewrite(content, pattern, newName)!;
 
 Map<String, String> _renameOverrideKey(
   Map<String, String> overrides,
@@ -378,18 +384,21 @@ Map<String, String> _renameOverrideKey(
 /// per ADR-0046's plan-wide rename requirement.
 Program renameVariable(Program program, String oldName, String newName) {
   final pattern = planVariableTokenPatternFor(oldName);
-  final token = '{{var.$newName}}';
 
   Station rewriteStation(Station station) => station.copyWith(
-    name: _rewriteRequired(station.name, pattern, token),
-    description: _rewrite(station.description, pattern, token),
-    equipmentMd: _rewrite(station.equipmentMd, pattern, token),
-    situationMd: _rewrite(station.situationMd, pattern, token),
-    missionMd: _rewrite(station.missionMd, pattern, token),
-    logisticsMd: _rewrite(station.logisticsMd, pattern, token),
-    criticalQuestionsMd: _rewrite(station.criticalQuestionsMd, pattern, token),
-    leaderAnswersMd: _rewrite(station.leaderAnswersMd, pattern, token),
-    directorNotesMd: _rewrite(station.directorNotesMd, pattern, token),
+    name: _rewriteRequired(station.name, pattern, newName),
+    description: _rewrite(station.description, pattern, newName),
+    equipmentMd: _rewrite(station.equipmentMd, pattern, newName),
+    situationMd: _rewrite(station.situationMd, pattern, newName),
+    missionMd: _rewrite(station.missionMd, pattern, newName),
+    logisticsMd: _rewrite(station.logisticsMd, pattern, newName),
+    criticalQuestionsMd: _rewrite(
+      station.criticalQuestionsMd,
+      pattern,
+      newName,
+    ),
+    leaderAnswersMd: _rewrite(station.leaderAnswersMd, pattern, newName),
+    directorNotesMd: _rewrite(station.directorNotesMd, pattern, newName),
     variableOverrides: _renameOverrideKey(
       station.variableOverrides,
       oldName,
@@ -398,13 +407,13 @@ Program renameVariable(Program program, String oldName, String newName) {
   );
 
   Exercise rewriteExercise(Exercise exercise) => exercise.copyWith(
-    name: _rewriteRequired(exercise.name, pattern, token),
-    methodMd: _rewrite(exercise.methodMd, pattern, token),
-    learningGoalsMd: _rewrite(exercise.learningGoalsMd, pattern, token),
-    trainingFocusMd: _rewrite(exercise.trainingFocusMd, pattern, token),
-    orderFormatMd: _rewrite(exercise.orderFormatMd, pattern, token),
-    executionTipsMd: _rewrite(exercise.executionTipsMd, pattern, token),
-    commsMd: _rewrite(exercise.commsMd, pattern, token),
+    name: _rewriteRequired(exercise.name, pattern, newName),
+    methodMd: _rewrite(exercise.methodMd, pattern, newName),
+    learningGoalsMd: _rewrite(exercise.learningGoalsMd, pattern, newName),
+    trainingFocusMd: _rewrite(exercise.trainingFocusMd, pattern, newName),
+    orderFormatMd: _rewrite(exercise.orderFormatMd, pattern, newName),
+    executionTipsMd: _rewrite(exercise.executionTipsMd, pattern, newName),
+    commsMd: _rewrite(exercise.commsMd, pattern, newName),
     variableOverrides: _renameOverrideKey(
       exercise.variableOverrides,
       oldName,
@@ -414,18 +423,18 @@ Program renameVariable(Program program, String oldName, String newName) {
   );
 
   RolePlay rewriteRolePlay(RolePlay rolePlay) => rolePlay.copyWith(
-    name: _rewriteRequired(rolePlay.name, pattern, token),
-    behavior: _rewrite(rolePlay.behavior, pattern, token),
-    background: _rewrite(rolePlay.background, pattern, token),
-    propsMd: _rewrite(rolePlay.propsMd, pattern, token),
+    name: _rewriteRequired(rolePlay.name, pattern, newName),
+    behavior: _rewrite(rolePlay.behavior, pattern, newName),
+    background: _rewrite(rolePlay.background, pattern, newName),
+    propsMd: _rewrite(rolePlay.propsMd, pattern, newName),
   );
 
   return program.copyWith(
-    name: _rewriteRequired(program.name, pattern, token),
-    description: _rewriteRequired(program.description, pattern, token),
-    briefIntroMd: _rewrite(program.briefIntroMd, pattern, token),
-    commsMd: _rewrite(program.commsMd, pattern, token),
-    beforeRoundMd: _rewrite(program.beforeRoundMd, pattern, token),
+    name: _rewriteRequired(program.name, pattern, newName),
+    description: _rewriteRequired(program.description, pattern, newName),
+    briefIntroMd: _rewrite(program.briefIntroMd, pattern, newName),
+    commsMd: _rewrite(program.commsMd, pattern, newName),
+    beforeRoundMd: _rewrite(program.beforeRoundMd, pattern, newName),
     exercises: program.exercises.map(rewriteExercise).toList(),
     rolePlays: program.rolePlays.map(rewriteRolePlay).toList(),
     variables: [

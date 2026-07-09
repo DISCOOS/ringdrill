@@ -49,9 +49,21 @@ String resolveLocationFacet(Location location, List<String> facets) {
       return location.label;
     case 'utm':
       return _locationUtm(location);
+    case 'latlng':
+      return locationLatLng(location);
     default:
       return _locationDefault(location);
   }
+}
+
+/// `.latlng` facet (DESIGN-008 follow-up 11): the coordinate as a decimal
+/// `lat,lng` pair — 6 decimals, `.` separator — pasteable into a GPS.
+/// Empty when the location has no position.
+String locationLatLng(Location location) {
+  final position = location.position;
+  if (position == null) return '';
+  return '${position.latitude.toStringAsFixed(6)},'
+      '${position.longitude.toStringAsFixed(6)}';
 }
 
 String _locationUtm(Location location) {

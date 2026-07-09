@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_insertion_menu.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
+import 'package:ringdrill/views/widgets/variable_type_labels.dart';
 
 /// Effective [VariableToken] list for a token-aware field: [PlanScope]'s
 /// declared variables, each value shadowed by [overrides] when present —
@@ -13,14 +16,26 @@ import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 /// `variableOverrides`, or none at program scope), so there is no
 /// exercise/station cascade to apply here — the caller already resolved
 /// which single map (if any) applies to this field's scope.
+///
+/// The effective value is the *display* rendering, formatted for the
+/// variable's declared type (DESIGN-008 follow-up 11) — it feeds the
+/// slash-menu preview and the chip's empty/amber state, both of which
+/// should read like the brief renders (canonical → formatted).
 List<VariableToken> _effectiveTokens(
   BuildContext context,
   Map<String, String> overrides,
 ) {
   final declared = PlanScope.of(context).variables;
+  final format = variableFormatOf(AppLocalizations.of(context)!);
   return [
     for (final v in declared)
-      VariableToken(name: v.name, effectiveValue: overrides[v.name] ?? v.value),
+      VariableToken(
+        name: v.name,
+        effectiveValue: formatVariableValue(
+          applyVariableOverride(v, overrides[v.name]),
+          format,
+        ),
+      ),
   ];
 }
 

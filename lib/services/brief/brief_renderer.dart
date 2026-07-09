@@ -15,6 +15,7 @@ import 'package:meta/meta.dart';
 import 'package:mustache_template/mustache_template.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart';
@@ -27,6 +28,9 @@ import 'package:ringdrill/services/brief/template_registry.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/projection.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart'
+    show locationLatLng;
+import 'package:ringdrill/utils/variable_values.dart';
 
 /// Thrown when a brief template asset cannot be loaded from the bundle.
 ///
@@ -452,30 +456,37 @@ class BriefRenderer {
       ) ??
       content;
 
-  /// Declared plan variables, keyed by name, at the program scope.
+  /// Declared plan variables' display values, keyed by name, at the
+  /// program scope — see [effectivePlanVariables].
   @visibleForTesting
   static Map<String, String> programVariables(Program program) =>
-      _programVariables(program);
+      effectivePlanVariables(program);
 
-  /// Effective variable values for a scope: the program's declared values
-  /// overlaid by [exercise]'s overrides, then by [station]'s overrides. See
-  /// ADR-0046 for the resolution chain.
+  /// Effective variable display values for a scope: the program's declared
+  /// values overlaid by [exercise]'s overrides, then by [station]'s
+  /// overrides. See ADR-0046 for the resolution chain.
   @visibleForTesting
   static Map<String, String> effectiveVariables(
     Program program, {
     Exercise? exercise,
     Station? station,
-  }) => _effectiveVariables(program, exercise: exercise, station: station);
+  }) => effectivePlanVariables(program, exercise: exercise, station: station);
 
   /// Replaces every `{{var.<name>}}` token in [content] with its value in
   /// [vars], or with the localized unknown-variable placeholder when
-  /// `<name>` is not a key of [vars].
+  /// `<name>` is not a key of [vars]. The plain string-map substitution —
+  /// the renderer itself resolves through the typed path
+  /// (`resolveTypedPlanVariables`) internally.
   @visibleForTesting
   static String substituteVariables(
     String content,
     Map<String, String> vars,
     AppLocalizations l10n,
-  ) => _substituteVariables(content, vars, l10n);
+  ) => substitutePlanVariables(
+    content,
+    vars,
+    onUnknown: (name) => l10n.briefUnknownVariable(name),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -614,25 +625,29 @@ Map<String, dynamic> _exerciseRefContext(
   },
 };
 
-/// Declared plan variables, keyed by name, at the program scope. Delegates
-/// to the shared `lib/utils/plan_variables.dart` helper (DESIGN-008
-/// follow-up 06) — kept as a private wrapper here so every call site below
-/// (and the `@visibleForTesting` statics) stays unchanged.
-Map<String, String> _programVariables(Program program) =>
-    effectivePlanVariables(program);
+/// Effective *typed* plan variables, keyed by name, at the program scope
+/// (DESIGN-008 follow-up 11). Delegates to the shared
+/// `lib/utils/plan_variables.dart` helper — kept as a private wrapper here
+/// so every call site below stays unchanged.
+Map<String, DrillVariable> _programVariables(Program program) =>
+    effectiveTypedPlanVariables(program);
 
-/// Effective variable values for a scope (ADR-0046) — see
-/// [effectivePlanVariables] for the resolution rule.
-Map<String, String> _effectiveVariables(
+/// Effective typed variables for a scope (ADR-0046) — see
+/// [effectiveTypedPlanVariables] for the resolution rule.
+Map<String, DrillVariable> _effectiveVariables(
   Program program, {
   Exercise? exercise,
   Station? station,
-}) => effectivePlanVariables(program, exercise: exercise, station: station);
+}) =>
+    effectiveTypedPlanVariables(program, exercise: exercise, station: station);
 
-/// Replaces every `{{var.<name>}}` token in [content] with its effective
-/// value, or with the localized unknown-variable placeholder when `<name>`
-/// is not declared. A declared-but-empty variable substitutes the empty
-/// string — that is a valid authoring state, not an error (ADR-0046).
+/// Replaces every `{{var.<name>[.facet]}}` token in [content] with its
+/// effective value — formatted canonically for its declared type
+/// (DESIGN-008 follow-up 11: a date localized, a duration as "1 t 30 min",
+/// a `location` through the shared facet code with the brief's inline-code
+/// UTM styling) — or with the localized unknown-variable placeholder when
+/// `<name>` is not declared. A declared-but-empty variable substitutes the
+/// empty string — that is a valid authoring state, not an error (ADR-0046).
 ///
 /// Runs before the mustache pass (see [_resolveField]), so cross-references
 /// like `{{station.position.utm}}` are still handled by the existing
@@ -644,13 +659,18 @@ Map<String, String> _effectiveVariables(
 /// is left literal once the loop's cap is hit.
 String _substituteVariables(
   String content,
-  Map<String, String> vars,
+  Map<String, DrillVariable> vars,
   AppLocalizations l10n,
 ) {
-  return substitutePlanVariables(
+  return resolveTypedPlanVariables(
     content,
     vars,
+    format: VariableFormat(
+      localeName: l10n.localeName,
+      hourUnit: l10n.variableDurationHourUnit,
+    ),
     onUnknown: (name) => l10n.briefUnknownVariable(name),
+    locationFacetResolver: _resolveLocationFacet,
   );
 }
 
@@ -686,7 +706,7 @@ const _maxResolvePasses = 10;
 /// it, both scoped to that same station's `locations`/`persons`.
 String? _resolveField(
   String? content, {
-  required Map<String, String> vars,
+  required Map<String, DrillVariable> vars,
   required AppLocalizations l10n,
   Map<String, dynamic> refContext = const {},
   Station? scenarioStation,
@@ -717,7 +737,7 @@ String? _resolveField(
 /// substitution was introduced.
 String _resolveFieldOnce(
   String content, {
-  required Map<String, String> vars,
+  required Map<String, DrillVariable> vars,
   required AppLocalizations l10n,
   required Map<String, dynamic> refContext,
   Station? scenarioStation,
@@ -800,7 +820,9 @@ T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
   return null;
 }
 
-/// `{{station.loc.<slug>[.facet]}}` facet resolution. The bare/default and
+/// `{{station.loc.<slug>[.facet]}}` facet resolution — also reused for
+/// `location`-typed `{{var.<name>[.facet]}}` tokens (DESIGN-008 follow-up
+/// 11), which project onto the same `Location` shape. The bare/default and
 /// `.utm` forms render the UTM as inline code (backtick-wrapped), matching
 /// how the brief presents `station.position.utm` elsewhere; empty when the
 /// location has no position.
@@ -812,6 +834,8 @@ String _resolveLocationFacet(Location location, List<String> facets) {
       return location.label;
     case 'utm':
       return _locationUtmCode(location);
+    case 'latlng':
+      return locationLatLng(location);
     default:
       return _locationDefault(location);
   }

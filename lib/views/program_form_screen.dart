@@ -4,6 +4,7 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/utils/plan_variable_refs.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
@@ -21,10 +22,10 @@ const _kTagMaxLength = 40;
 /// menu's looser `\w*` filter capture, not user-typed dialog input.
 final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
-/// Matches `{{var.<name>}}`, tolerating inner whitespace — the same shape
-/// duplicated in `token_text_editing_controller.dart`, `brief_renderer.dart`
-/// and `plan_variable_refs.dart`; keep this in sync if that shape changes.
-final _varTokenPattern = RegExp(r'\{\{\s*var\.([a-z][a-z0-9_]*)\s*\}\}');
+/// The shared `{{var.<name>[.facet]}}` shape — imported rather than
+/// duplicated so a faceted token (`{{var.x.utm}}`, DESIGN-008 follow-up 11)
+/// on an undeclared name is caught by the save gate too.
+final _varTokenPattern = planVariableTokenPattern;
 
 /// Turns a [PlanVariableReference] — deliberately unlocalized, since
 /// `plan_variable_refs.dart` stays Flutter-free — into a display string for

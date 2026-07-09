@@ -1,6 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/variable_type_labels.dart';
 
 /// Read-only counterpart to [Text] that resolves `{{var.<name>}}` tokens
 /// (ADR-0046) before rendering — the display-surface half of DESIGN-008's
@@ -40,11 +43,27 @@ class RingDrillText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = PlanScope.maybeOf(context);
-    final resolved = scope == null
-        ? text
-        : substitutePlanVariables(text, {
-            for (final v in scope.variables) v.name: overrides[v.name] ?? v.value,
-          });
+    // AppLocalizations can be absent in a bare test harness; the typed
+    // formatting (localized dates, duration units — DESIGN-008 follow-up
+    // 11) needs it, so degrade to the plain string substitution without.
+    final l10n = AppLocalizations.of(context);
+    final String resolved;
+    if (scope == null) {
+      resolved = text;
+    } else if (l10n == null) {
+      resolved = substitutePlanVariables(text, {
+        for (final v in scope.variables) v.name: overrides[v.name] ?? v.value,
+      });
+    } else {
+      resolved = resolveTypedPlanVariables(
+        text,
+        {
+          for (final v in scope.variables)
+            v.name: applyVariableOverride(v, overrides[v.name]),
+        },
+        format: variableFormatOf(l10n),
+      );
+    }
     return Text(
       resolved,
       style: style,
