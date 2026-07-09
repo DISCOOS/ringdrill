@@ -33,8 +33,8 @@ class UtmWidget extends StatelessWidget {
                 : null,
             textAlign: TextAlign.right,
             "${utm.zone}${utm.band} "
-            "${utm.northing.toStringAsFixed(0).padLeft(7, '0')}N${wrapped ? "\n" : " "}"
-            "${utm.easting.toStringAsFixed(0).padLeft(7, '0')}E",
+            "${utm.easting.toStringAsFixed(0).padLeft(7, '0')}E${wrapped ? "\n" : " "}"
+            "${utm.northing.toStringAsFixed(0).padLeft(7, '0')}N",
           );
     return useETRS89
         ? Row(
