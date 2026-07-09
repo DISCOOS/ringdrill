@@ -4,6 +4,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
+import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
 /// DESIGN-009 follow-up 3b — `PersonFormScreen` in isolation: the
 /// segmented gender control and the home picker's inline "Ny lokasjon"
@@ -158,6 +159,61 @@ void main() {
       expect(result.person.homeSlug, result.newLocation!.slug);
     },
   );
+
+  testWidgets(
+    'name and age share a row, with the gender control on its own row '
+    'beneath (DESIGN-009 prompt 4g)',
+    (tester) async {
+      final captured = _Captured();
+      await _open(tester, captured);
+
+      final nameField = find.widgetWithText(TextFormField, l.roleName);
+      final ageField = find.widgetWithText(TextFormField, l.roleAge);
+      final genderControl = find.byType(GenderSegmentedControl);
+
+      final nameTop = tester.getTopLeft(nameField).dy;
+      final ageTop = tester.getTopLeft(ageField).dy;
+      final genderTop = tester.getTopLeft(genderControl).dy;
+
+      // Same row: name and age align vertically.
+      expect(nameTop, ageTop);
+      // Own row: the gender control sits strictly below that row.
+      expect(genderTop, greaterThan(nameTop));
+    },
+  );
+
+  testWidgets('the home picker label reads "Lokasjon" (nb)', (tester) async {
+    final lNb = await AppLocalizations.delegate.load(const Locale('nb'));
+    final captured = _Captured();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('nb'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () async {
+              captured.value = await Navigator.push<PersonFormResult>(
+                ctx,
+                MaterialPageRoute(
+                  builder: (_) => const PersonFormScreen(
+                    existingSlugs: {},
+                    locations: [],
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(lNb.personsSectionHomeLabel), findsOneWidget);
+    expect(find.text('Bopel'), findsNothing);
+  });
 
   testWidgets('editing leaves the reference unchanged', (tester) async {
     final captured = _Captured();

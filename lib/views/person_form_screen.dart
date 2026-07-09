@@ -173,15 +173,19 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextFormField(
-                    controller: _nameController,
-                    autofocus: !_isEdit,
-                    decoration: InputDecoration(labelText: l10n.roleName),
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _nameController,
+                          autofocus: !_isEdit,
+                          decoration: InputDecoration(
+                            labelText: l10n.roleName,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       SizedBox(
                         width: 84,
                         child: TextFormField(
@@ -194,28 +198,25 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
                           validator: (value) => _validateAge(value, l10n),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.roleGender,
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.roleGender,
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
-                            const SizedBox(height: 6),
-                            GenderSegmentedControl(
-                              value: _gender,
-                              onChanged: (value) =>
-                                  setState(() => _gender = value),
-                            ),
-                          ],
-                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      GenderSegmentedControl(
+                        value: _gender,
+                        onChanged: (value) => setState(() => _gender = value),
                       ),
                     ],
                   ),

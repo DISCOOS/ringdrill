@@ -2239,7 +2239,7 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get personsSectionHomeLabel => 'Bopel';
+  String get personsSectionHomeLabel => 'Lokasjon';
 
   @override
   String get personsSectionHomeNone => 'Ingen bopel';
