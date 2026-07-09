@@ -3422,6 +3422,12 @@ abstract class AppLocalizations {
   /// **'New variable'**
   String get variablesSectionAddAction;
 
+  /// Placeholder of the Variabler section's bottom search field (DESIGN-008 follow-up 12), matching persons/locations' own search bar. Filters by name and hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search variables'**
+  String get variablesSectionSearchHint;
+
   /// Field label for a variable's name (the slug referenced as {{var.<name>}}) in the add-variable dialog.
   ///
   /// In en, this message translates to:

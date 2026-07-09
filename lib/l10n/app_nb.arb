@@ -1070,6 +1070,10 @@
   "@variablesSectionAddAction": {
     "description": "«+ Ny variabel»-handlingens etikett i Variabler-seksjonen, og tittelen på dialogen den åpner."
   },
+  "variablesSectionSearchHint": "Søk i variabler",
+  "@variablesSectionSearchHint": {
+    "description": "Plassholder for Variabler-seksjonens søkefelt nederst (DESIGN-008 oppfølging 12), som matcher personer/lokasjoners egen søkebar. Filtrerer på navn og hint."
+  },
   "variablesSectionNameLabel": "Navn",
   "@variablesSectionNameLabel": {
     "description": "Feltetikett for en variabels navn (slugen referert som {{var.<navn>}}) i ny-variabel-dialogen."

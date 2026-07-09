@@ -2037,6 +2037,10 @@
   "@variablesSectionAddAction": {
     "description": "\"+ Ny variabel\" action label in the Variabler section, and the title of the dialog it opens."
   },
+  "variablesSectionSearchHint": "Search variables",
+  "@variablesSectionSearchHint": {
+    "description": "Placeholder of the Variabler section's bottom search field (DESIGN-008 follow-up 12), matching persons/locations' own search bar. Filters by name and hint."
+  },
   "variablesSectionNameLabel": "Name",
   "@variablesSectionNameLabel": {
     "description": "Field label for a variable's name (the slug referenced as {{var.<name>}}) in the add-variable dialog."

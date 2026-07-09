@@ -2003,6 +2003,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get variablesSectionAddAction => 'Ny variabel';
 
   @override
+  String get variablesSectionSearchHint => 'Søk i variabler';
+
+  @override
   String get variablesSectionNameLabel => 'Navn';
 
   @override

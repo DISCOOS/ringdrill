@@ -519,6 +519,12 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
       expect(captured.value, isNull);
+      // The blocked-save snackbar sits at the very bottom of the screen —
+      // the same spot the "+ Ny variabel" search/add bar now lives in
+      // (DESIGN-008 follow-up 12) — and `pumpAndSettle` only waits out its
+      // entrance animation, not its multi-second display duration. Let it
+      // fully dismiss before tapping anything down there.
+      await tester.pump(const Duration(seconds: 5));
 
       await _openSwitcherFrom(tester, l.programSectionPlan);
       await tester.tap(find.text(l.variablesSectionTitle));
@@ -832,6 +838,87 @@ void main() {
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
       expect(captured.value?.variables.single.value, 'Kanal 6');
+    },
+  );
+
+  testWidgets(
+    'the bottom search bar filters by name and hint, matching '
+    "Persons/Locations' own bar (DESIGN-008 follow-up 12)",
+    (tester) async {
+      await _openForm(
+        tester,
+        _program(
+          variables: const [
+            DrillVariable(name: 'frekvens', value: 'Kanal 6', hint: 'Radio'),
+            DrillVariable(name: 'talegruppe', value: 'VFOLD'),
+          ],
+        ),
+        _Captured(),
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.text('frekvens'), findsOneWidget);
+      expect(find.text('talegruppe'), findsOneWidget);
+
+      // Matches the name.
+      await tester.enterText(
+        find.widgetWithText(TextField, l.variablesSectionSearchHint),
+        'tale',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('frekvens'), findsNothing);
+      expect(find.text('talegruppe'), findsOneWidget);
+
+      // Matches the hint too.
+      await tester.enterText(
+        find.widgetWithText(TextField, l.variablesSectionSearchHint),
+        'radio',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('frekvens'), findsOneWidget);
+      expect(find.text('talegruppe'), findsNothing);
+
+      // Clearing the query restores the full list.
+      await tester.enterText(
+        find.widgetWithText(TextField, l.variablesSectionSearchHint),
+        '',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('frekvens'), findsOneWidget);
+      expect(find.text('talegruppe'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the "+ Ny variabel" action lives in the bottom search/add bar '
+    '(DESIGN-008 follow-up 12)',
+    (tester) async {
+      await _openForm(
+        tester,
+        _program(
+          variables: const [DrillVariable(name: 'frekvens', value: 'X')],
+        ),
+        _Captured(),
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.ancestor(
+          of: find.text(l.variablesSectionAddAction),
+          matching: find.byType(TextButton),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(TextField, l.variablesSectionSearchHint),
+        findsOneWidget,
+      );
     },
   );
 }

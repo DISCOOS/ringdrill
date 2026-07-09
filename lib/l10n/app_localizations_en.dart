@@ -2006,6 +2006,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get variablesSectionAddAction => 'New variable';
 
   @override
+  String get variablesSectionSearchHint => 'Search variables';
+
+  @override
   String get variablesSectionNameLabel => 'Name';
 
   @override

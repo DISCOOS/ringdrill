@@ -18,9 +18,11 @@ final _slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 /// mirroring `RolePlayFormScreen`'s "Identitet" card): a collapsed summary
 /// (type icon, name, formatted value or an empty placeholder) and a
 /// "Tilpass" disclosure bar that expands to the type picker plus the
-/// inline value and hint fields — see [_VariableCard]. A "+ Ny variabel"
-/// action (name + hint only; the type and value are set afterward on the
-/// card itself) and the ADR-0046 publish-warning note frame the list.
+/// inline value and hint fields — see [_VariableCard]. The ADR-0046
+/// publish-warning note sits above the (searchable) card list; a bottom
+/// search + "+ Ny variabel" bar (name + hint only; the type and value are
+/// set afterward on the card itself) matches `PersonsSection`/
+/// `LocationsSection`'s own bar.
 ///
 /// Presentation-only, mirroring how `_TagsEditor` and `ProgramFormScreen`'s
 /// `_activeSections` are owned by the parent form: [variables] and the
@@ -90,52 +92,66 @@ class _VariablesSectionState extends State<VariablesSection> {
   /// at once. Null when every card is collapsed.
   String? _expandedName;
 
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void _toggleExpanded(String name) {
     setState(() => _expandedName = _expandedName == name ? null : name);
+  }
+
+  /// Matches on name and hint — the same two-field search Persons/Locations
+  /// run against their own primary identifier plus descriptive caption.
+  List<DrillVariable> get _visibleVariables {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return widget.variables;
+    return widget.variables
+        .where(
+          (v) =>
+              v.name.toLowerCase().contains(query) ||
+              (v.hint ?? '').toLowerCase().contains(query),
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
+    final visible = _visibleVariables;
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
         children: [
-          _PublishNote(text: l10n.variablesSectionPublishNote),
-          const SizedBox(height: 12),
-          for (final variable in widget.variables)
-            _VariableCard(
-              key: ValueKey(variable.name),
-              variable: variable,
-              geocodingService: widget.geocodingService,
-              onUpdate: widget.onUpdate,
-              expanded: _expandedName == variable.name,
-              onToggleExpanded: () => _toggleExpanded(variable.name),
-              onRename: () => _handleRename(context, l10n, variable),
-              confirmDelete: () => _handleDelete(context, l10n, variable),
-            ),
-          const SizedBox(height: 8),
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => _handleAdd(context, l10n),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.variablesSectionAddAction,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _PublishNote(text: l10n.variablesSectionPublishNote),
+                const SizedBox(height: 12),
+                for (final variable in visible)
+                  _VariableCard(
+                    key: ValueKey(variable.name),
+                    variable: variable,
+                    geocodingService: widget.geocodingService,
+                    onUpdate: widget.onUpdate,
+                    expanded: _expandedName == variable.name,
+                    onToggleExpanded: () => _toggleExpanded(variable.name),
+                    onRename: () => _handleRename(context, l10n, variable),
+                    confirmDelete: () => _handleDelete(context, l10n, variable),
                   ),
-                ],
-              ),
+              ],
             ),
+          ),
+          _SearchAddRow(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _query = value),
+            searchHint: l10n.variablesSectionSearchHint,
+            addLabel: l10n.variablesSectionAddAction,
+            onAdd: () => _handleAdd(context, l10n),
           ),
         ],
       ),
@@ -234,6 +250,62 @@ class _VariablesSectionState extends State<VariablesSection> {
       ),
     );
     return false;
+  }
+}
+
+/// Card-based bottom row with a search field and an add-action button,
+/// matching the map search field's no-border Card idiom (DESIGN-009
+/// follow-up 3c) and the same bar `PersonsSection`/`LocationsSection` use.
+/// Duplicated rather than shared — those two are presentation-only leaf
+/// widgets with no shared library; a shared helper would need its own file
+/// and import cycle. Three similar lines beats a premature abstraction for
+/// three callers, same reasoning as the persons/locations pair.
+class _SearchAddRow extends StatelessWidget {
+  const _SearchAddRow({
+    required this.controller,
+    required this.onChanged,
+    required this.searchHint,
+    required this.addLabel,
+    required this.onAdd,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final String searchHint;
+  final String addLabel;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                onChanged: onChanged,
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: searchHint,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const VerticalDivider(),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(addLabel),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
