@@ -1440,6 +1440,46 @@
       "references": { "type": "String" }
     }
   },
+  "stationReferenceGuardTitle": "Kan ikke slette «{name}»",
+  "@stationReferenceGuardTitle": {
+    "description": "Tittel på dialogen vist når sletting av en post-eid Location/Person blokkeres fordi den fremdeles er referert (DESIGN-009 prompt 5). {name} er lokasjonens etikett eller personens navn.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "stationReferenceGuardMessage": "Fremdeles referert fra:",
+  "@stationReferenceGuardMessage": {
+    "description": "Innledningslinje over punktlisten med bruksområder i slette-vern-dialogen (DESIGN-009 prompt 5)."
+  },
+  "stationReferenceUsageInField": "I {field}",
+  "@stationReferenceUsageInField": {
+    "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen/personen er referert fra postens eget felt. {field} er felt-/seksjonsetiketten (f.eks. «Situasjon»).",
+    "placeholders": {
+      "field": { "type": "String" }
+    }
+  },
+  "stationReferenceUsageInRoleplayField": "I {roleplay}s {field}",
+  "@stationReferenceUsageInRoleplayField": {
+    "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen/personen er referert fra en lenket markørordres felt. {roleplay} er markørordrens navn, {field} feltetiketten.",
+    "placeholders": {
+      "roleplay": { "type": "String" },
+      "field": { "type": "String" }
+    }
+  },
+  "stationReferenceUsageIsPersonHome": "Er {person}s lokasjon",
+  "@stationReferenceUsageIsPersonHome": {
+    "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): lokasjonen er satt som en persons hjem (Person.homeSlug). {person} er personens navn.",
+    "placeholders": {
+      "person": { "type": "String" }
+    }
+  },
+  "stationReferenceUsagePortrayedBy": "Spilles av {roleplay}",
+  "@stationReferenceUsagePortrayedBy": {
+    "description": "En slette-vern-punktlinje (DESIGN-009 prompt 5): personen spilles av en markørordre (RolePlay.personRef). {roleplay} er markørordrens navn.",
+    "placeholders": {
+      "roleplay": { "type": "String" }
+    }
+  },
 
   "exerciseReorderMode": "Ordne",
   "@exerciseReorderMode": {

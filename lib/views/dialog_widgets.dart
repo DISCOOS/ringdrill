@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/context_extensions.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
@@ -33,6 +34,47 @@ Future<bool> confirmDestructive(
         ),
       ) ??
       false;
+}
+
+/// Informational dialog for DESIGN-009 prompt 5's delete-guard: [usages] is
+/// a non-empty list of human-readable descriptions of why a `Location`/
+/// `Person` cannot be deleted (which fields, which roleplay, or "is a
+/// person's location"). A single "OK" dismisses it — there is nothing to
+/// confirm, the delete is already blocked by the caller not having removed
+/// the entry yet.
+Future<void> showReferenceGuardDialog(
+  BuildContext context,
+  AppLocalizations l10n, {
+  required String title,
+  required List<String> usages,
+}) {
+  return showAdaptiveDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.stationReferenceGuardMessage),
+            const SizedBox(height: 8),
+            for (final usage in usages)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('•  $usage'),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.ok),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Shows [builder] either as a [Dialog] (wide form factor) or as a modal

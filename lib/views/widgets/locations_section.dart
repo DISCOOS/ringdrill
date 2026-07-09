@@ -20,17 +20,19 @@ import 'package:ringdrill/views/widgets/location_kind_style.dart';
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
 /// persists the working list via `Station.copyWith` on save.
 ///
-/// Scope boundary (ADR-0047): this section only adds, edits non-reference
-/// fields, and plain-deletes. A location's reference (`slug`) is generated
-/// once at creation and never shown; renaming it and the station-and-down
-/// reference-rewrite/delete guard are a future action — intentionally not
-/// implemented here.
+/// Scope boundary (ADR-0047): this section only adds and edits
+/// non-reference fields. Deletion is guarded (DESIGN-009 prompt 5): a
+/// location still referenced by a station field, a person's home, or a
+/// roleplay is blocked with a dialog listing the usages, via [usagesFor].
+/// A location's reference (`slug`) is generated once at creation and never
+/// shown; renaming it is out of scope — there is no rename (ADR-0047).
 class LocationsSection extends StatefulWidget {
   const LocationsSection({
     super.key,
     required this.locations,
     required this.onSave,
     required this.onDelete,
+    required this.usagesFor,
   });
 
   final List<Location> locations;
@@ -40,9 +42,17 @@ class LocationsSection extends StatefulWidget {
   /// own working list by `slug`.
   final ValueChanged<Location> onSave;
 
-  /// Called with the `slug` to remove. Plain delete — no reference guard
-  /// yet (a future action, ADR-0047).
+  /// Called with the `slug` to remove — only once [usagesFor] has already
+  /// confirmed it is unreferenced.
   final ValueChanged<String> onDelete;
+
+  /// Human-readable usages of a location's `slug` across the
+  /// station-and-down set (DESIGN-009 prompt 5) — the caller
+  /// (`StationFormScreen`) knows about its own fields, `Person.homeSlug`
+  /// and the linked roleplays, none of which this presentation-only
+  /// section has access to. An empty list means the location is safe to
+  /// delete.
+  final List<String> Function(String slug) usagesFor;
 
   @override
   State<LocationsSection> createState() => _LocationsSectionState();
@@ -85,6 +95,7 @@ class _LocationsSectionState extends State<LocationsSection> {
                     location: location,
                     onTap: () => _openForm(context, location),
                     onDelete: () => widget.onDelete(location.slug),
+                    usagesFor: widget.usagesFor,
                   ),
               ],
             ),
@@ -174,11 +185,13 @@ class _LocationTile extends StatelessWidget {
     required this.location,
     required this.onTap,
     required this.onDelete,
+    required this.usagesFor,
   });
 
   final Location location;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final List<String> Function(String slug) usagesFor;
 
   @override
   Widget build(BuildContext context) {
@@ -197,12 +210,24 @@ class _LocationTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
-      confirmDismiss: (_) => confirmDestructive(
-        context,
-        title: l10n.confirm,
-        message: l10n.locationsSectionDeleteConfirmMessage(displayName),
-        confirmLabel: l10n.delete,
-      ),
+      confirmDismiss: (_) async {
+        final usages = usagesFor(location.slug);
+        if (usages.isNotEmpty) {
+          await showReferenceGuardDialog(
+            context,
+            l10n,
+            title: l10n.stationReferenceGuardTitle(displayName),
+            usages: usages,
+          );
+          return false;
+        }
+        return confirmDestructive(
+          context,
+          title: l10n.confirm,
+          message: l10n.locationsSectionDeleteConfirmMessage(displayName),
+          confirmLabel: l10n.delete,
+        );
+      },
       onDismissed: (_) => onDelete(),
       child: ListTile(
         onTap: onTap,

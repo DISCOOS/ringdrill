@@ -2296,6 +2296,34 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String stationReferenceGuardTitle(String name) {
+    return 'Kan ikke slette «$name»';
+  }
+
+  @override
+  String get stationReferenceGuardMessage => 'Fremdeles referert fra:';
+
+  @override
+  String stationReferenceUsageInField(String field) {
+    return 'I $field';
+  }
+
+  @override
+  String stationReferenceUsageInRoleplayField(String roleplay, String field) {
+    return 'I ${roleplay}s $field';
+  }
+
+  @override
+  String stationReferenceUsageIsPersonHome(String person) {
+    return 'Er ${person}s lokasjon';
+  }
+
+  @override
+  String stationReferenceUsagePortrayedBy(String roleplay) {
+    return 'Spilles av $roleplay';
+  }
+
+  @override
   String get exerciseReorderMode => 'Ordne';
 
   @override

@@ -2300,6 +2300,34 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String stationReferenceGuardTitle(String name) {
+    return 'Can’t delete “$name”';
+  }
+
+  @override
+  String get stationReferenceGuardMessage => 'Still referenced:';
+
+  @override
+  String stationReferenceUsageInField(String field) {
+    return 'In $field';
+  }
+
+  @override
+  String stationReferenceUsageInRoleplayField(String roleplay, String field) {
+    return 'In $roleplay’s $field';
+  }
+
+  @override
+  String stationReferenceUsageIsPersonHome(String person) {
+    return 'Is $person’s location';
+  }
+
+  @override
+  String stationReferenceUsagePortrayedBy(String roleplay) {
+    return 'Portrayed by $roleplay';
+  }
+
+  @override
   String get exerciseReorderMode => 'Reorder';
 
   @override

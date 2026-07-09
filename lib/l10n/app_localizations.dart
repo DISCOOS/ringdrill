@@ -3926,6 +3926,42 @@ abstract class AppLocalizations {
   /// **'Can’t save: {sections} references an unknown location or person: {references}'**
   String saveBlockedUnresolvedReference(String sections, String references);
 
+  /// Title of the dialog shown when deleting a station-owned Location/Person is blocked because it is still referenced (DESIGN-009 prompt 5). {name} is the location's label or person's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t delete “{name}”'**
+  String stationReferenceGuardTitle(String name);
+
+  /// Intro line above the bullet list of usages in the delete-guard dialog (DESIGN-009 prompt 5).
+  ///
+  /// In en, this message translates to:
+  /// **'Still referenced:'**
+  String get stationReferenceGuardMessage;
+
+  /// One delete-guard usage line (DESIGN-009 prompt 5): the location/person is referenced by this station's own field. {field} is the field/section label (e.g. "Situation").
+  ///
+  /// In en, this message translates to:
+  /// **'In {field}'**
+  String stationReferenceUsageInField(String field);
+
+  /// One delete-guard usage line (DESIGN-009 prompt 5): the location/person is referenced by a linked roleplay's field. {roleplay} is the roleplay's name, {field} the field label.
+  ///
+  /// In en, this message translates to:
+  /// **'In {roleplay}’s {field}'**
+  String stationReferenceUsageInRoleplayField(String roleplay, String field);
+
+  /// One delete-guard usage line (DESIGN-009 prompt 5): the location is set as a person's home (Person.homeSlug). {person} is that person's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Is {person}’s location'**
+  String stationReferenceUsageIsPersonHome(String person);
+
+  /// One delete-guard usage line (DESIGN-009 prompt 5): the person is portrayed by a roleplay (RolePlay.personRef). {roleplay} is that roleplay's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Portrayed by {roleplay}'**
+  String stationReferenceUsagePortrayedBy(String roleplay);
+
   /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///
   /// In en, this message translates to:

@@ -736,6 +736,18 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final localizations = AppLocalizations.of(context)!;
     final stations = _exercise.stations.toList();
 
+    // DESIGN-009 prompt 5: the delete-guard and save-block need to know
+    // whether a roleplay linked to this station references a Location/
+    // Person before letting the author remove or leave one dangling.
+    final roleplays = _programService
+        .loadRolePlays()
+        .where(
+          (r) =>
+              r.exerciseUuid == _exercise.uuid &&
+              r.stationIndex == widget.stationIndex,
+        )
+        .toList();
+
     // Navigate to the edit exercise screen
     final result = await openFormSurface<StationFormResult>(
       context,
@@ -744,6 +756,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         markers: _programService.getLocations().toMarkerSpecs(),
         variables: _programService.activeProgram?.variables ?? const [],
         parentExercise: _exercise,
+        roleplays: roleplays,
       ),
     );
     // The previous guard was `newStation != _exercise`, but those are

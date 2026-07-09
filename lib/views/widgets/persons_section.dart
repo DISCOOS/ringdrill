@@ -18,12 +18,13 @@ import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
 /// persists the working list via `Station.copyWith` on save.
 ///
-/// Scope boundary (ADR-0047): this section only adds, edits non-reference
-/// fields, and plain-deletes. A person's reference (`slug`) is generated
-/// once at creation and never shown; renaming it and the station-and-down
-/// reference-rewrite/delete guard (including a dangling `homeSlug` after a
-/// location delete) are a future action — intentionally not implemented
-/// here.
+/// Scope boundary (ADR-0047): this section only adds and edits
+/// non-reference fields. Deletion is guarded (DESIGN-009 prompt 5): a
+/// person still referenced by a station field, a roleplay field, or a
+/// roleplay's `personRef` (portrayal) is blocked with a dialog listing the
+/// usages, via [usagesFor]. A person's reference (`slug`) is generated once
+/// at creation and never shown; renaming it is out of scope — there is no
+/// rename (ADR-0047).
 class PersonsSection extends StatefulWidget {
   const PersonsSection({
     super.key,
@@ -31,6 +32,7 @@ class PersonsSection extends StatefulWidget {
     required this.locations,
     required this.onSave,
     required this.onDelete,
+    required this.usagesFor,
   });
 
   final List<Person> persons;
@@ -45,9 +47,16 @@ class PersonsSection extends StatefulWidget {
   /// list too. The caller upserts both by `slug`.
   final void Function(Person person, Location? newLocation) onSave;
 
-  /// Called with the `slug` to remove. Plain delete — no reference guard
-  /// yet (a future action, ADR-0047).
+  /// Called with the `slug` to remove — only once [usagesFor] has already
+  /// confirmed it is unreferenced.
   final ValueChanged<String> onDelete;
+
+  /// Human-readable usages of a person's `slug` across the station-and-down
+  /// set (DESIGN-009 prompt 5) — the caller (`StationFormScreen`) knows
+  /// about its own fields and the linked roleplays' fields/`personRef`,
+  /// none of which this presentation-only section has access to. An empty
+  /// list means the person is safe to delete.
+  final List<String> Function(String slug) usagesFor;
 
   @override
   State<PersonsSection> createState() => _PersonsSectionState();
@@ -90,6 +99,7 @@ class _PersonsSectionState extends State<PersonsSection> {
                     person: person,
                     onTap: () => _openForm(context, person),
                     onDelete: () => widget.onDelete(person.slug),
+                    usagesFor: widget.usagesFor,
                   ),
               ],
             ),
@@ -184,11 +194,13 @@ class _PersonTile extends StatelessWidget {
     required this.person,
     required this.onTap,
     required this.onDelete,
+    required this.usagesFor,
   });
 
   final Person person;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final List<String> Function(String slug) usagesFor;
 
   @override
   Widget build(BuildContext context) {
@@ -210,12 +222,24 @@ class _PersonTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
-      confirmDismiss: (_) => confirmDestructive(
-        context,
-        title: l10n.confirm,
-        message: l10n.personsSectionDeleteConfirmMessage(displayName),
-        confirmLabel: l10n.delete,
-      ),
+      confirmDismiss: (_) async {
+        final usages = usagesFor(person.slug);
+        if (usages.isNotEmpty) {
+          await showReferenceGuardDialog(
+            context,
+            l10n,
+            title: l10n.stationReferenceGuardTitle(displayName),
+            usages: usages,
+          );
+          return false;
+        }
+        return confirmDestructive(
+          context,
+          title: l10n.confirm,
+          message: l10n.personsSectionDeleteConfirmMessage(displayName),
+          confirmLabel: l10n.delete,
+        );
+      },
       onDismissed: (_) => onDelete(),
       child: ListTile(
         onTap: onTap,

@@ -466,6 +466,15 @@ class _StationListViewState extends State<StationListView> {
       }
       return;
     }
+    // DESIGN-009 prompt 5: the delete-guard and save-block need to know
+    // whether a roleplay linked to this station references a Location/
+    // Person before letting the author remove or leave one dangling.
+    final roleplays = _programService
+        .loadRolePlays()
+        .where(
+          (r) => r.exerciseUuid == exercise.uuid && r.stationIndex == station.index,
+        )
+        .toList();
     final result = await openFormSurface<StationFormResult>(
       context,
       builder: (_) => StationFormScreen(
@@ -473,6 +482,7 @@ class _StationListViewState extends State<StationListView> {
         markers: _programService.getLocations().toMarkerSpecs(),
         variables: _programService.activeProgram?.variables ?? const [],
         parentExercise: exercise,
+        roleplays: roleplays,
       ),
     );
     if (!mounted || result == null) return;

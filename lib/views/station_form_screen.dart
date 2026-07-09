@@ -5,6 +5,7 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
@@ -52,6 +53,7 @@ class StationFormScreen extends StatefulWidget {
     this.markers = const <MapMarkerSpec<(String, int)>>[],
     this.variables = const <DrillVariable>[],
     this.parentExercise,
+    this.roleplays = const <RolePlay>[],
   });
 
   final Station station;
@@ -68,6 +70,16 @@ class StationFormScreen extends StatefulWidget {
   /// exercise's overrides. Optional — a station opened without its parent
   /// exercise in context degrades to a program-only baseline.
   final Exercise? parentExercise;
+
+  /// This station's own linked roleplays (`RolePlay.stationIndex ==
+  /// station.index`), read-only here — DESIGN-009 prompt 5's delete-guard
+  /// and save-block need to know whether a roleplay field or `personRef`
+  /// references a `Location`/`Person` before letting the author remove it.
+  /// A roleplay's own editing happens in `RolePlayFormScreen`; this editor
+  /// never mutates the list. Every call site filters
+  /// `ProgramService.loadRolePlays()` by this station's index and its
+  /// exercise's uuid.
+  final List<RolePlay> roleplays;
 
   @override
   State<StationFormScreen> createState() => _StationFormScreenState();
@@ -406,6 +418,77 @@ class _StationFormScreenState extends State<StationFormScreen> {
     return refs;
   }
 
+  /// Every token-aware text on this station itself, paired with its display
+  /// label — the "station" half of the DESIGN-009 prompt 5 delete-guard
+  /// scan below.
+  Iterable<(String label, String text)> _stationOwnTexts(
+    AppLocalizations l,
+  ) sync* {
+    yield (l.stationName, _nameController.text);
+    yield (l.stationDescription, _descriptionController.text);
+    for (final section in _StationSection.values) {
+      if (_activeSections.contains(section)) {
+        yield (_labelFor(section, l), _sectionControllers[section]!.text);
+      }
+    }
+  }
+
+  /// Every token-aware text on a linked roleplay: its name plus whichever
+  /// markdown fields it carries (`background`/`behavior`/`propsMd` are all
+  /// optional on the model itself, unlike this editor's own active-sections
+  /// set).
+  Iterable<(String label, String text)> _roleplayTexts(
+    RolePlay rp,
+    AppLocalizations l,
+  ) sync* {
+    yield (l.roleName, rp.name);
+    if (rp.background != null) yield (l.roleBackground, rp.background!);
+    if (rp.behavior != null) yield (l.roleBehavior, rp.behavior!);
+    if (rp.propsMd != null) yield (l.catalogDiffFieldProps, rp.propsMd!);
+  }
+
+  /// Human-readable usages of `station.loc.<slug>` across the
+  /// station-and-down set (DESIGN-009 prompt 5): this station's own fields,
+  /// every [Person.homeSlug] pointing at it, and its linked [widget.roleplays]'
+  /// fields. Empty means [slug] is safe to delete. Facet paths key on the
+  /// same slug as the bare token, mirroring the save-block above.
+  List<String> _usagesOfLocation(String slug, AppLocalizations l) {
+    bool references(String text) => stationScenarioTokenPattern
+        .allMatches(text)
+        .any((m) => m.group(1) == 'loc' && m.group(2) == slug);
+    return [
+      for (final (label, text) in _stationOwnTexts(l))
+        if (references(text)) l.stationReferenceUsageInField(label),
+      for (final person in _workingPersons)
+        if (person.homeSlug == slug)
+          l.stationReferenceUsageIsPersonHome(
+            person.name.isEmpty ? person.slug : person.name,
+          ),
+      for (final rp in widget.roleplays)
+        for (final (label, text) in _roleplayTexts(rp, l))
+          if (references(text))
+            l.stationReferenceUsageInRoleplayField(rp.name, label),
+    ];
+  }
+
+  /// [_usagesOfLocation]'s `station.person.<slug>` counterpart, plus a
+  /// roleplay's `personRef` pointing directly at the person (portrayal).
+  List<String> _usagesOfPerson(String slug, AppLocalizations l) {
+    bool references(String text) => stationScenarioTokenPattern
+        .allMatches(text)
+        .any((m) => m.group(1) == 'person' && m.group(2) == slug);
+    return [
+      for (final (label, text) in _stationOwnTexts(l))
+        if (references(text)) l.stationReferenceUsageInField(label),
+      for (final rp in widget.roleplays) ...[
+        if (rp.personRef == slug) l.stationReferenceUsagePortrayedBy(rp.name),
+        for (final (label, text) in _roleplayTexts(rp, l))
+          if (references(text))
+            l.stationReferenceUsageInRoleplayField(rp.name, label),
+      ],
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildSectionNavigated(context);
@@ -523,6 +606,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                         .where((p) => p.slug != slug)
                         .toList(),
                   ),
+                  usagesFor: (slug) => _usagesOfPerson(slug, l),
                 ),
               ),
               FormSection(
@@ -537,6 +621,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                         .where((l) => l.slug != slug)
                         .toList(),
                   ),
+                  usagesFor: (slug) => _usagesOfLocation(slug, l),
                 ),
               ),
               // Markdown sections: the narrative fields that reference
