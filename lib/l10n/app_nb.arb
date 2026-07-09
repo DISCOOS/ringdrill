@@ -1164,13 +1164,6 @@
   "@variableTypeLabelLocation": {
     "description": "Etikett for VariableType.location (et sted med koordinat)."
   },
-  "variableTypePickerTitle": "Type — {name}",
-  "@variableTypePickerTitle": {
-    "description": "Tittel på type-velgeren per variabel, åpnet fra deklarasjonskortets type-chip.",
-    "placeholders": {
-      "name": { "type": "String" }
-    }
-  },
   "variableValueInvalidNumber": "Oppgi et tall",
   "@variableValueInvalidNumber": {
     "description": "Inline-valideringsfeil under et tall-typet variabelverdifelt. En ugyldig verdi blokkerer lagring (DESIGN-008 oppfølging 11)."

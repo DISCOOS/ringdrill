@@ -2086,11 +2086,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get variableTypeLabelLocation => 'Location';
 
   @override
-  String variableTypePickerTitle(String name) {
-    return 'Type — $name';
-  }
-
-  @override
   String get variableValueInvalidNumber => 'Enter a number';
 
   @override

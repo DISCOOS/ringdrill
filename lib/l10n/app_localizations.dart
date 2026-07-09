@@ -3554,12 +3554,6 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get variableTypeLabelLocation;
 
-  /// Title of the per-variable type picker dialog opened from the declaration card's type chip.
-  ///
-  /// In en, this message translates to:
-  /// **'Type — {name}'**
-  String variableTypePickerTitle(String name);
-
   /// Inline validation error under a number-typed variable value field. An invalid value blocks save (DESIGN-008 follow-up 11).
   ///
   /// In en, this message translates to:

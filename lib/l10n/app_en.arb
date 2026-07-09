@@ -2131,13 +2131,6 @@
   "@variableTypeLabelLocation": {
     "description": "VariableType.location label (a place with a coordinate)."
   },
-  "variableTypePickerTitle": "Type — {name}",
-  "@variableTypePickerTitle": {
-    "description": "Title of the per-variable type picker dialog opened from the declaration card's type chip.",
-    "placeholders": {
-      "name": { "type": "String" }
-    }
-  },
   "variableValueInvalidNumber": "Enter a number",
   "@variableValueInvalidNumber": {
     "description": "Inline validation error under a number-typed variable value field. An invalid value blocks save (DESIGN-008 follow-up 11)."

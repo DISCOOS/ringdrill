@@ -95,7 +95,6 @@ class VariablesSection extends StatelessWidget {
               variable: variable,
               geocodingService: geocodingService,
               onUpdate: onUpdate,
-              onPickType: () => _handlePickType(context, l10n, variable),
               onRename: () => _handleRename(context, l10n, variable),
               confirmDelete: () => _handleDelete(context, l10n, variable),
             ),
@@ -134,51 +133,6 @@ class VariablesSection extends StatelessWidget {
       ),
     );
     if (created != null) onAdd(created);
-  }
-
-  Future<void> _handlePickType(
-    BuildContext context,
-    AppLocalizations l10n,
-    DrillVariable variable,
-  ) async {
-    final picked = await showDialog<VariableType>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: Text(l10n.variableTypePickerTitle(variable.name)),
-        children: [
-          for (final type in VariableType.values)
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(dialogContext).pop(type),
-              child: Row(
-                children: [
-                  Icon(type.icon, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(type.label(l10n))),
-                  if (type == variable.type)
-                    const Icon(Icons.check, size: 18)
-                  else
-                    Text(
-                      type.name,
-                      style: Theme.of(dialogContext).textTheme.bodySmall
-                          ?.copyWith(
-                            fontFamily: 'monospace',
-                            color: Theme.of(
-                              dialogContext,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-    if (picked == null || picked == variable.type) return;
-    // The existing value/location is deliberately kept: an incompatible
-    // value re-validates against the new type and surfaces as invalid
-    // (blocking save) rather than being silently dropped (DESIGN-008
-    // follow-up 11).
-    onUpdate(variable.copyWith(type: picked));
   }
 
   Future<void> _handleRename(
@@ -304,17 +258,17 @@ enum _VariableCardAction { rename, delete }
 
 /// One declaration card (DESIGN-008 follow-up 12), mirroring
 /// `RolePlayFormScreen`'s "Identitet" card: a collapsed summary (a type-icon
-/// avatar, the name, and the formatted value or an empty placeholder) plus
-/// a "Tilpass" disclosure bar that expands to a `⋮` menu (rename/delete —
-/// ADR-0031, never a per-row pencil), the type picker, and the inline
-/// type-aware value and hint fields. Swiping the card also deletes it,
+/// avatar, the name, and the formatted value or an empty placeholder), a
+/// `⋮` menu (rename/delete — ADR-0031, never a per-row pencil) in that same
+/// always-visible header, and a "Tilpass" disclosure bar that expands to
+/// the inline type-aware value field (with its type dropdown alongside)
+/// and the hint field. Swiping the card also deletes it,
 /// through the same referenced-guard [confirmDelete] the `⋮` menu uses.
 class _VariableCard extends StatefulWidget {
   const _VariableCard({
     super.key,
     required this.variable,
     required this.onUpdate,
-    required this.onPickType,
     required this.onRename,
     required this.confirmDelete,
     this.geocodingService,
@@ -322,7 +276,6 @@ class _VariableCard extends StatefulWidget {
 
   final DrillVariable variable;
   final ValueChanged<DrillVariable> onUpdate;
-  final VoidCallback onPickType;
   final VoidCallback onRename;
 
   /// Returns `true` once the variable is actually gone (immediate for an
@@ -506,7 +459,7 @@ class _VariableCardState extends State<_VariableCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Expanded(
                             child: VariableValueField(
@@ -534,9 +487,17 @@ class _VariableCardState extends State<_VariableCard> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          _TypeChip(
+                          _TypeDropdown(
                             type: variable.type,
-                            onTap: widget.onPickType,
+                            onChanged: (picked) {
+                              if (picked == variable.type) return;
+                              // The existing value/location is deliberately
+                              // kept: an incompatible value re-validates
+                              // against the new type and surfaces as
+                              // invalid (blocking save) rather than being
+                              // silently dropped (DESIGN-008 follow-up 11).
+                              widget.onUpdate(variable.copyWith(type: picked));
+                            },
                           ),
                         ],
                       ),
@@ -545,7 +506,6 @@ class _VariableCardState extends State<_VariableCard> {
                         controller: _hintController,
                         decoration: InputDecoration(
                           labelText: l10n.variablesSectionHintLabel,
-                          isDense: true,
                         ),
                         onChanged: _updateHint,
                       ),
@@ -560,43 +520,42 @@ class _VariableCardState extends State<_VariableCard> {
   }
 }
 
-/// The pill-shaped type chip in a declaration card's expanded panel — label
-/// + chevron, accent-tinted, opening the type picker.
-class _TypeChip extends StatelessWidget {
-  const _TypeChip({required this.type, required this.onTap});
+/// The type selector beside a declaration card's value field — a standard
+/// [DropdownButtonFormField], sized and aligned to match the value field's
+/// own height (a bespoke pill button previously sat noticeably smaller and
+/// misaligned against it). [IntrinsicWidth] keeps it sized to its content
+/// in the surrounding `Row`, matching `program_form_screen.dart`'s
+/// `_LanguagePicker` — the same pattern already used for a compact,
+/// content-sized dropdown beside another field.
+class _TypeDropdown extends StatelessWidget {
+  const _TypeDropdown({required this.type, required this.onChanged});
 
   final VariableType type;
-  final VoidCallback onTap;
+  final ValueChanged<VariableType> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              type.label(l10n),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
+    return IntrinsicWidth(
+      child: DropdownButtonFormField<VariableType>(
+        initialValue: type,
+        items: [
+          for (final t in VariableType.values)
+            DropdownMenuItem(
+              value: t,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(t.icon, size: 18),
+                  const SizedBox(width: 8),
+                  Text(t.label(l10n)),
+                ],
               ),
             ),
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 14,
-              color: theme.colorScheme.primary,
-            ),
-          ],
-        ),
+        ],
+        onChanged: (picked) {
+          if (picked != null) onChanged(picked);
+        },
       ),
     );
   }

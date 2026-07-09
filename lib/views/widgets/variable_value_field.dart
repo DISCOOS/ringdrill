@@ -14,14 +14,12 @@ import 'package:ringdrill/views/widgets/variable_type_labels.dart';
 /// as `LocationFormScreen`'s (ADR-0047 follow-up 3c).
 const _placeSearchDebounce = Duration(milliseconds: 350);
 
-/// Tight prefix/suffix icon box for a dense (`isDense: true`) field's type
-/// icon and clear action — without this, `InputDecoration`'s default 48x48
-/// minimum tap-target box forces the field taller than its own text, which
-/// both throws the icon and value off-center against each other *and*
-/// pushes the value up off the underline compared to every icon-less field
-/// (the plain string/number inputs). `minHeight: 0` is the important part:
-/// a non-zero minimum here still out-grows the dense text's own line
-/// height and reintroduces the same stretch.
+/// Tight prefix/suffix icon box for a field's type icon and clear action —
+/// without this, `InputDecoration`'s default 48x48 minimum tap-target box
+/// forces the field taller than its own text, throwing the icon and value
+/// off-center against each other. `minHeight: 0` is the important part: a
+/// non-zero minimum here still out-grows the text's own line height and
+/// reintroduces the stretch.
 const _iconConstraints = BoxConstraints(minWidth: 24, minHeight: 0);
 
 /// Type-aware input for one plan variable's value (DESIGN-008 follow-up 11),
@@ -222,12 +220,11 @@ class _VariableValueFieldState extends State<VariableValueField> {
       decoration: _accented(
         InputDecoration(
           hintText: widget.hintText,
-          isDense: true,
           prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
           // Without this, the icon's default 48x48 minimum tap-target box
-          // forces the whole (isDense) field taller than its text, so the
-          // icon sits noticeably off-center against the value — shrink the
-          // box to the icon's own size instead.
+          // forces the field taller than its text, so the icon sits
+          // noticeably off-center against the value — shrink the box to
+          // the icon's own size instead.
           prefixIconConstraints: prefixIcon == null ? null : _iconConstraints,
           suffixText: suffixText,
         ),
@@ -258,11 +255,10 @@ class _VariableValueFieldState extends State<VariableValueField> {
       decoration: _accented(
         InputDecoration(
           hintText: widget.hintText,
-          isDense: true,
           prefixIcon: Icon(widget.type.icon, size: 18),
           // Same fix as `_buildText`'s prefixIcon: shrink both icon boxes to
-          // their own size so the dense field's icons and value text line
-          // up on the same baseline instead of the icons' default 48x48
+          // their own size so the field's icons and value text line up on
+          // the same baseline instead of the icons' default 48x48
           // tap-target box stretching the row taller than the text.
           prefixIconConstraints: _iconConstraints,
           suffixIconConstraints: _iconConstraints,
@@ -363,7 +359,6 @@ class _VariableValueFieldState extends State<VariableValueField> {
             InputDecoration(
               labelText: l10n.locationsSectionPlaceLabel,
               hintText: l10n.locationsSectionPlaceSearchHint,
-              isDense: true,
               suffixIcon: _searchingPlace
                   ? const Padding(
                       padding: EdgeInsets.all(12),
@@ -391,7 +386,6 @@ class _VariableValueFieldState extends State<VariableValueField> {
             InputDecoration(
               labelText: l10n.variableLocationCoordinateLabel,
               hintText: l10n.variableLocationCoordinateHint,
-              isDense: true,
             ),
             theme,
           ),

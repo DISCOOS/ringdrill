@@ -691,16 +691,15 @@ void main() {
       await tester.pumpAndSettle();
       await _expandCard(tester, l, 'frekvens');
 
-      // Change the type via the card's type chip: Text → Number. The kept
-      // value "Kanal 6" no longer reads as the type.
+      // Change the type via the card's type dropdown: Text → Number. The
+      // kept value "Kanal 6" no longer reads as the type.
       await tester.tap(
         find.descendant(
           of: _variableCardOf('frekvens'),
-          matching: find.text(l.variableTypeLabelString),
+          matching: find.byType(DropdownButtonFormField<VariableType>),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text(l.variableTypePickerTitle('frekvens')), findsOneWidget);
       await tester.tap(find.text(l.variableTypeLabelNumber));
       await tester.pumpAndSettle();
 

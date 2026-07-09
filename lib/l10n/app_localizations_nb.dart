@@ -2084,11 +2084,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get variableTypeLabelLocation => 'Lokasjon';
 
   @override
-  String variableTypePickerTitle(String name) {
-    return 'Type — $name';
-  }
-
-  @override
   String get variableValueInvalidNumber => 'Oppgi et tall';
 
   @override
