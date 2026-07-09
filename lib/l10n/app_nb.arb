@@ -1394,14 +1394,6 @@
   "@pleaseSelectPerson": {
     "description": "Valideringsmelding vist når ingen person er valgt for en rollefigur (ADR-0047s obligatoriske personRef, et krav på redigeringsnivå)."
   },
-  "rolePlayIdentityInherited": "Arvet fra person",
-  "@rolePlayIdentityInherited": {
-    "description": "Liten bildetekst under et identitetsfelt (navn/alder/kjønn/signalement) hvis verdi for øyeblikket er lik den valgte personens egen verdi (ADR-0047)."
-  },
-  "rolePlayIdentityOverride": "Overstyrt",
-  "@rolePlayIdentityOverride": {
-    "description": "Liten bildetekst under et identitetsfelt hvis verdi er endret til å avvike fra den valgte personens egen verdi (ADR-0047)."
-  },
   "rolePlayBrokenReferenceWarning": "Brutt referanse etter ny lenking, i: {fields}",
   "@rolePlayBrokenReferenceWarning": {
     "description": "Advarsel vist under Post-velgeren når endring av lenket post har gjort et station.loc/station.person-token i et av denne markørordrens egne felt ubrukelig (DESIGN-009 prompt 5, commit 3). {fields} er en kommaseparert liste over de aktuelle feltetikettene. Lagre er allerede blokkert separat; dette varsler bare tidligere.",
@@ -1409,14 +1401,45 @@
       "fields": { "type": "String" }
     }
   },
-  "rolePlayEffectiveIdentityPreview": "Effektiv identitet: {summary}",
-  "@rolePlayEffectiveIdentityPreview": {
-    "description": "Liten forhåndsvisningslinje som oppsummerer rollefigurens gjeldende effektive identitet (navn, alder, kjønn, signalement) under personvelgeren.",
+  "rolePlayIdentitySectionLabel": "Identitet",
+  "@rolePlayIdentitySectionLabel": {
+    "description": "Liten feltgruppe-etikett over identitetskortet i RolePlayFormScreen (DESIGN-009 prompt 4i), på linje med «Post»/«Posisjon»-etikettene over sine egne velgere."
+  },
+  "rolePlayIdentityFollowsPerson": "Følger personen",
+  "@rolePlayIdentityFollowsPerson": {
+    "description": "Identitetskortets utfoldingsradtekst når ingen felt er tilpasset (DESIGN-009 prompt 4i) -- alle identitetsfelt følger for øyeblikket den valgte personen."
+  },
+  "rolePlayIdentityFollowsPersonChip": "Følger person",
+  "@rolePlayIdentityFollowsPersonChip": {
+    "description": "Liten «chip» ved siden av ett enkelt felt (navn/alder/kjønn/signalement) inne i identitetskortets «Tilpass»-panel, vist mens feltet fremdeles er likt den valgte personens egen verdi (DESIGN-009 prompt 4i)."
+  },
+  "rolePlayIdentityCustomizeAction": "Tilpass",
+  "@rolePlayIdentityCustomizeAction": {
+    "description": "Handlingsetikett på identitetskortets utfoldingsrad som folder ut/inn «Tilpass»-panelet (DESIGN-009 prompt 4i); samme etikett brukes begge veier, med chevron-ikonet som viser hvilken tilstand det er i."
+  },
+  "rolePlayIdentityResetAction": "Tilbakestill",
+  "@rolePlayIdentityResetAction": {
+    "description": "Handling ved siden av et tilpasset felt inne i identitetskortets panel som fjerner tilpasningen og lar feltet følge den valgte personens gjeldende verdi igjen (DESIGN-009 prompt 4i)."
+  },
+  "rolePlayIdentityFieldsCustomized": "{count, plural, =1{1 felt tilpasset} other{{count} felt tilpasset}}",
+  "@rolePlayIdentityFieldsCustomized": {
+    "description": "Identitetskortets utfoldingsradtekst når minst ett felt er tilpasset (DESIGN-009 prompt 4i). {count} er antall tilpassede felt.",
     "placeholders": {
-      "summary": {
-        "type": "String",
-        "example": "Anne Glemsk, 47, kvinne"
-      }
+      "count": { "type": "int" }
+    }
+  },
+  "rolePlayPortraying": "Portretterer {name}",
+  "@rolePlayPortraying": {
+    "description": "Identitetskortets tredje linje i sammenslått tilstand, vist i stedet for signalement når rollefigurens viste navn selv er en tilpasning (DESIGN-009 prompt 4i), slik at leseren fremdeles vet hvem som faktisk portretteres. {name} er den personens eget navn.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "rolePlayAgeYears": "{age, plural, =1{1 år} other{{age} år}}",
+  "@rolePlayAgeYears": {
+    "description": "Alder med enhet, brukt i identitetskortets sammenslåtte meta-linje (DESIGN-009 prompt 4i), f.eks. «34 år · Kvinne».",
+    "placeholders": {
+      "age": { "type": "int" }
     }
   },
   "genderWomanLabel": "Kvinne",

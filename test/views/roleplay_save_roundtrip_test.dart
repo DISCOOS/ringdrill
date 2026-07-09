@@ -45,6 +45,14 @@ void main() {
   }) async {
     await tester.tap(find.byTooltip(l10n.roleSection));
     await tester.pumpAndSettle();
+    // Navn lives inside the identity card's "Tilpass" override panel
+    // (DESIGN-009 prompt 4i), only mounted while expanded — already open
+    // on round 2, since the round-1 rename left the name overridden
+    // (auto-expand-on-open), so only tap if it isn't already.
+    if (find.byKey(const Key('identity-panel')).evaluate().isEmpty) {
+      await tester.tap(find.byKey(const Key('identity-disclosure')));
+      await tester.pumpAndSettle();
+    }
     await tester.enterText(find.widgetWithText(TextFormField, from), to);
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();

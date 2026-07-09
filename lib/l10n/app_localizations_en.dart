@@ -2270,19 +2270,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseSelectPerson => 'Please select a person';
 
   @override
-  String get rolePlayIdentityInherited => 'Inherited from person';
-
-  @override
-  String get rolePlayIdentityOverride => 'Overridden';
-
-  @override
   String rolePlayBrokenReferenceWarning(String fields) {
     return 'Broken reference after re-linking, in: $fields';
   }
 
   @override
-  String rolePlayEffectiveIdentityPreview(String summary) {
-    return 'Effective identity: $summary';
+  String get rolePlayIdentitySectionLabel => 'Identity';
+
+  @override
+  String get rolePlayIdentityFollowsPerson => 'Follows the person';
+
+  @override
+  String get rolePlayIdentityFollowsPersonChip => 'Follows person';
+
+  @override
+  String get rolePlayIdentityCustomizeAction => 'Customize';
+
+  @override
+  String get rolePlayIdentityResetAction => 'Reset';
+
+  @override
+  String rolePlayIdentityFieldsCustomized(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fields customized',
+      one: '1 field customized',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rolePlayPortraying(String name) {
+    return 'Portraying $name';
+  }
+
+  @override
+  String rolePlayAgeYears(int age) {
+    String _temp0 = intl.Intl.pluralLogic(
+      age,
+      locale: localeName,
+      other: '$age years',
+      one: '1 year',
+    );
+    return '$_temp0';
   }
 
   @override

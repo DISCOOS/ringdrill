@@ -2361,14 +2361,6 @@
   "@pleaseSelectPerson": {
     "description": "Validation message shown when no person is selected for a roleplay (ADR-0047's mandatory personRef, an editor-level invariant)."
   },
-  "rolePlayIdentityInherited": "Inherited from person",
-  "@rolePlayIdentityInherited": {
-    "description": "Small caption under an identity field (name/age/gender/signalement) whose value currently equals the selected Person's own value (ADR-0047)."
-  },
-  "rolePlayIdentityOverride": "Overridden",
-  "@rolePlayIdentityOverride": {
-    "description": "Small caption under an identity field whose value has been changed to differ from the selected Person's own value (ADR-0047)."
-  },
   "rolePlayBrokenReferenceWarning": "Broken reference after re-linking, in: {fields}",
   "@rolePlayBrokenReferenceWarning": {
     "description": "Inline warning shown under the Post selector when switching the linked station has left a station.loc/station.person token in one of this roleplay's own fields unresolved (DESIGN-009 prompt 5, commit 3). {fields} is a comma-joined list of the offending field labels. Save is already blocked separately; this only surfaces the problem earlier.",
@@ -2376,14 +2368,45 @@
       "fields": { "type": "String" }
     }
   },
-  "rolePlayEffectiveIdentityPreview": "Effective identity: {summary}",
-  "@rolePlayEffectiveIdentityPreview": {
-    "description": "Small preview line summarizing the roleplay's current effective identity (name, age, gender, signalement) below the person selector.",
+  "rolePlayIdentitySectionLabel": "Identity",
+  "@rolePlayIdentitySectionLabel": {
+    "description": "Small field-group label above the effective-identity card in RolePlayFormScreen (DESIGN-009 prompt 4i), matching the \"Post\"/\"Position\" labels above their own selectors."
+  },
+  "rolePlayIdentityFollowsPerson": "Follows the person",
+  "@rolePlayIdentityFollowsPerson": {
+    "description": "Identity card's disclosure-row text when no facet is overridden (DESIGN-009 prompt 4i) -- every identity field currently tracks the selected Person."
+  },
+  "rolePlayIdentityFollowsPersonChip": "Follows person",
+  "@rolePlayIdentityFollowsPersonChip": {
+    "description": "Small chip next to a single facet (name/age/gender/signalement) inside the identity card's \"Tilpass\" override panel, shown while that facet still equals the selected Person's own value (DESIGN-009 prompt 4i)."
+  },
+  "rolePlayIdentityCustomizeAction": "Customize",
+  "@rolePlayIdentityCustomizeAction": {
+    "description": "Trailing action label on the identity card's disclosure row that expands/collapses the \"Tilpass\" override panel (DESIGN-009 prompt 4i); the same label is used in both directions, with the chevron icon showing which state it is in."
+  },
+  "rolePlayIdentityResetAction": "Reset",
+  "@rolePlayIdentityResetAction": {
+    "description": "Action next to an overridden facet inside the identity card's override panel that clears the override back to the selected Person's current value (DESIGN-009 prompt 4i)."
+  },
+  "rolePlayIdentityFieldsCustomized": "{count, plural, =1{1 field customized} other{{count} fields customized}}",
+  "@rolePlayIdentityFieldsCustomized": {
+    "description": "Identity card's disclosure-row text when at least one facet is overridden (DESIGN-009 prompt 4i). {count} is the number of overridden facets.",
     "placeholders": {
-      "summary": {
-        "type": "String",
-        "example": "Anne Glemsk, 47, woman"
-      }
+      "count": { "type": "int" }
+    }
+  },
+  "rolePlayPortraying": "Portraying {name}",
+  "@rolePlayPortraying": {
+    "description": "Identity card's collapsed-header third line, shown instead of the signalement when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4i), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "rolePlayAgeYears": "{age, plural, =1{1 year} other{{age} years}}",
+  "@rolePlayAgeYears": {
+    "description": "Age with its unit, used in the identity card's collapsed-header meta line (DESIGN-009 prompt 4i), e.g. \"34 years · Woman\".",
+    "placeholders": {
+      "age": { "type": "int" }
     }
   },
   "genderWomanLabel": "Woman",

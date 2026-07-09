@@ -3878,29 +3878,59 @@ abstract class AppLocalizations {
   /// **'Please select a person'**
   String get pleaseSelectPerson;
 
-  /// Small caption under an identity field (name/age/gender/signalement) whose value currently equals the selected Person's own value (ADR-0047).
-  ///
-  /// In en, this message translates to:
-  /// **'Inherited from person'**
-  String get rolePlayIdentityInherited;
-
-  /// Small caption under an identity field whose value has been changed to differ from the selected Person's own value (ADR-0047).
-  ///
-  /// In en, this message translates to:
-  /// **'Overridden'**
-  String get rolePlayIdentityOverride;
-
   /// Inline warning shown under the Post selector when switching the linked station has left a station.loc/station.person token in one of this roleplay's own fields unresolved (DESIGN-009 prompt 5, commit 3). {fields} is a comma-joined list of the offending field labels. Save is already blocked separately; this only surfaces the problem earlier.
   ///
   /// In en, this message translates to:
   /// **'Broken reference after re-linking, in: {fields}'**
   String rolePlayBrokenReferenceWarning(String fields);
 
-  /// Small preview line summarizing the roleplay's current effective identity (name, age, gender, signalement) below the person selector.
+  /// Small field-group label above the effective-identity card in RolePlayFormScreen (DESIGN-009 prompt 4i), matching the "Post"/"Position" labels above their own selectors.
   ///
   /// In en, this message translates to:
-  /// **'Effective identity: {summary}'**
-  String rolePlayEffectiveIdentityPreview(String summary);
+  /// **'Identity'**
+  String get rolePlayIdentitySectionLabel;
+
+  /// Identity card's disclosure-row text when no facet is overridden (DESIGN-009 prompt 4i) -- every identity field currently tracks the selected Person.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows the person'**
+  String get rolePlayIdentityFollowsPerson;
+
+  /// Small chip next to a single facet (name/age/gender/signalement) inside the identity card's "Tilpass" override panel, shown while that facet still equals the selected Person's own value (DESIGN-009 prompt 4i).
+  ///
+  /// In en, this message translates to:
+  /// **'Follows person'**
+  String get rolePlayIdentityFollowsPersonChip;
+
+  /// Trailing action label on the identity card's disclosure row that expands/collapses the "Tilpass" override panel (DESIGN-009 prompt 4i); the same label is used in both directions, with the chevron icon showing which state it is in.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize'**
+  String get rolePlayIdentityCustomizeAction;
+
+  /// Action next to an overridden facet inside the identity card's override panel that clears the override back to the selected Person's current value (DESIGN-009 prompt 4i).
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get rolePlayIdentityResetAction;
+
+  /// Identity card's disclosure-row text when at least one facet is overridden (DESIGN-009 prompt 4i). {count} is the number of overridden facets.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field customized} other{{count} fields customized}}'**
+  String rolePlayIdentityFieldsCustomized(int count);
+
+  /// Identity card's collapsed-header third line, shown instead of the signalement when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4i), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.
+  ///
+  /// In en, this message translates to:
+  /// **'Portraying {name}'**
+  String rolePlayPortraying(String name);
+
+  /// Age with its unit, used in the identity card's collapsed-header meta line (DESIGN-009 prompt 4i), e.g. "34 years · Woman".
+  ///
+  /// In en, this message translates to:
+  /// **'{age, plural, =1{1 year} other{{age} years}}'**
+  String rolePlayAgeYears(int age);
 
   /// GenderSegmentedControl option label for the stable code "woman" (DESIGN-009 follow-up 3b, ADR-0047). Shared by Person.gender and, from prompt 4, RolePlay.gender.
   ///

@@ -182,8 +182,10 @@ void main() {
     await tester.tap(find.text(l10n.addRolePlay));
     await tester.pumpAndSettle();
 
-    // RolePlayFormScreen pushed; AppBar title = newRolePlayTitle (draft name empty)
-    expect(find.text(l10n.newRolePlayTitle), findsOneWidget);
+    // RolePlayFormScreen pushed; AppBar title = newRolePlayTitle (draft name
+    // empty) — shown both there and as the collapsed identity card's
+    // header placeholder (DESIGN-009 prompt 4i).
+    expect(find.text(l10n.newRolePlayTitle), findsAtLeastNWidgets(1));
     expect(find.byType(RolePlayFormScreen), findsOneWidget);
   });
 

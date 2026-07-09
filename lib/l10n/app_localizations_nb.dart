@@ -2266,19 +2266,50 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pleaseSelectPerson => 'Velg en person';
 
   @override
-  String get rolePlayIdentityInherited => 'Arvet fra person';
-
-  @override
-  String get rolePlayIdentityOverride => 'Overstyrt';
-
-  @override
   String rolePlayBrokenReferenceWarning(String fields) {
     return 'Brutt referanse etter ny lenking, i: $fields';
   }
 
   @override
-  String rolePlayEffectiveIdentityPreview(String summary) {
-    return 'Effektiv identitet: $summary';
+  String get rolePlayIdentitySectionLabel => 'Identitet';
+
+  @override
+  String get rolePlayIdentityFollowsPerson => 'Følger personen';
+
+  @override
+  String get rolePlayIdentityFollowsPersonChip => 'Følger person';
+
+  @override
+  String get rolePlayIdentityCustomizeAction => 'Tilpass';
+
+  @override
+  String get rolePlayIdentityResetAction => 'Tilbakestill';
+
+  @override
+  String rolePlayIdentityFieldsCustomized(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count felt tilpasset',
+      one: '1 felt tilpasset',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rolePlayPortraying(String name) {
+    return 'Portretterer $name';
+  }
+
+  @override
+  String rolePlayAgeYears(int age) {
+    String _temp0 = intl.Intl.pluralLogic(
+      age,
+      locale: localeName,
+      other: '$age år',
+      one: '1 år',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -266,12 +266,17 @@ void main() {
         captured,
       );
 
+      // Navn and Signalement live inside the identity card's "Tilpass"
+      // override panel (DESIGN-009 prompt 4i), only mounted while expanded.
+      await tester.tap(find.byKey(const Key('identity-disclosure')));
+      await tester.pumpAndSettle();
+
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Anna Hansen'),
         'Renamed',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.roleSignalement),
+        find.byKey(const Key('signalement-field')),
         '180 cm, mørkt hår',
       );
 

@@ -7,12 +7,13 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 
-/// DESIGN-009 follow-up 4, commit 3 — `RolePlayFormScreen`'s Person binding:
-/// the `personRef` selector, inherit-or-override identity fields, the
-/// effective-identity preview, and the mandatory-personRef-once-a-station-
-/// is-selected invariant (ADR-0047). No default surface size is set: the
-/// default `flutter_test` surface (800x600) lands in the wide/medium window
-/// class, matching `roleplay_form_screen_variables_test.dart`.
+/// DESIGN-009 follow-up 4, commit 3 (superseded in shape by prompt 4i's
+/// identity card) — `RolePlayFormScreen`'s Person binding: the `personRef`
+/// picker (now a tap-to-choose dialog, not a dropdown), inherit-or-override
+/// identity facets packed into one card, and the mandatory-personRef-once-
+/// a-station-is-selected invariant (ADR-0047). No default surface size is
+/// set: the default `flutter_test` surface (800x600) lands in the wide/
+/// medium window class, matching `roleplay_form_screen_variables_test.dart`.
 
 RolePlay _rolePlay({
   String name = 'Anna Hansen',
@@ -75,6 +76,21 @@ Future<void> _openForm(
   await tester.pumpAndSettle();
 }
 
+/// Taps the identity card's header (opens the person-picker dialog) and
+/// picks the entry with [name].
+Future<void> _pickPerson(WidgetTester tester, String name) async {
+  await tester.tap(find.byKey(const Key('person-field')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(name).last);
+  await tester.pumpAndSettle();
+}
+
+/// Expands the identity card's "Tilpass" override panel.
+Future<void> _expandIdentity(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('identity-disclosure')));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late AppLocalizations l;
 
@@ -95,8 +111,8 @@ void main() {
         captured,
       );
 
-      // The dropdown already has a selection (no validation error) even
-      // though the station started with zero persons.
+      // The identity card already has a person (auto-created), so save
+      // succeeds even though the station started with zero persons.
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
 
@@ -105,45 +121,50 @@ void main() {
     },
   );
 
-  testWidgets('selecting an existing person fills inherited identity fields', (
-    tester,
-  ) async {
-    final station = Station(
-      index: 0,
-      name: 'Post 1',
-      persons: const [
-        Person(
-          slug: 'anne',
-          name: 'Anne Glemsk',
-          age: 47,
-          gender: 'woman',
-          signalement: 'Rød jakke',
+  testWidgets(
+    'selecting an existing person fills the collapsed identity card with '
+    'its inherited summary',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        persons: const [
+          Person(
+            slug: 'anne',
+            name: 'Anne Glemsk',
+            age: 47,
+            gender: 'woman',
+            signalement: 'Rød jakke',
+          ),
+        ],
+      );
+      await _openForm(
+        tester,
+        _rolePlay(name: '', stationIndex: 0),
+        _exercise(stations: [station]),
+        _Captured(),
+      );
+
+      await _pickPerson(tester, 'Anne Glemsk');
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('person-field')),
+          matching: find.text('Anne Glemsk'),
         ),
-      ],
-    );
-    await _openForm(
-      tester,
-      _rolePlay(name: '', stationIndex: 0),
-      _exercise(stations: [station]),
-      _Captured(),
-    );
-
-    await tester.tap(find.byKey(const Key('person-field')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Anne Glemsk').last);
-    await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(TextFormField, 'Anne Glemsk'), findsOneWidget);
-    expect(find.text('47'), findsOneWidget);
-    expect(find.widgetWithText(TextFormField, 'Rød jakke'), findsOneWidget);
-    // Every field still matches the person's own value: inherited, not
-    // overridden.
-    expect(find.text(l.rolePlayIdentityOverride), findsNothing);
-  });
+        findsOneWidget,
+      );
+      expect(find.textContaining(l.rolePlayAgeYears(47)), findsOneWidget);
+      expect(find.text('Rød jakke'), findsOneWidget);
+      // Every facet still matches the person's own value: inherited, not
+      // overridden — the card stays collapsed.
+      expect(find.text(l.rolePlayIdentityFollowsPerson), findsOneWidget);
+      expect(find.byKey(const Key('identity-panel')), findsNothing);
+    },
+  );
 
   testWidgets(
-    'typing a different name after selecting a person marks it overridden, '
-    'and the effective preview reflects the typed value',
+    'typing a different name after selecting a person marks it overridden',
     (tester) async {
       final station = Station(
         index: 0,
@@ -157,10 +178,8 @@ void main() {
         _Captured(),
       );
 
-      await tester.tap(find.byKey(const Key('person-field')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Anne Glemsk').last);
-      await tester.pumpAndSettle();
+      await _pickPerson(tester, 'Anne Glemsk');
+      await _expandIdentity(tester);
 
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Anne Glemsk'),
@@ -168,7 +187,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text(l.rolePlayIdentityOverride), findsOneWidget);
+      expect(find.text(l.rolePlayIdentityResetAction), findsOneWidget);
       expect(find.textContaining('Anne (spilt av Kari)'), findsWidgets);
     },
   );
@@ -189,10 +208,8 @@ void main() {
       captured,
     );
 
-    await tester.tap(find.byKey(const Key('person-field')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Anne Glemsk').last);
-    await tester.pumpAndSettle();
+    await _pickPerson(tester, 'Anne Glemsk');
+    await _expandIdentity(tester);
 
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Anne Glemsk'),
@@ -250,17 +267,23 @@ void main() {
       await tester.pumpAndSettle();
 
       // Station B's own person is offered; the old selection ("anne", a
-      // Post 1 person) is not among the dropdown's items.
-      expect(find.text('Ola Nordmann'), findsWidgets);
+      // Post 1 person) is not among the dialog's options.
       expect(
         find.descendant(
-          of: find.byType(DropdownMenuItem<String>),
+          of: find.byType(SimpleDialog),
+          matching: find.text('Ola Nordmann'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(SimpleDialog),
           matching: find.text('Anne Glemsk'),
         ),
         findsNothing,
       );
 
-      // Close the dropdown without picking anything: the old personRef was
+      // Close the dialog without picking anything: the old personRef was
       // cleared by the station switch, so save is now blocked again.
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
@@ -280,6 +303,7 @@ void main() {
       captured,
     );
 
+    await _expandIdentity(tester);
     expect(find.text(l.roleGender), findsOneWidget);
 
     await tester.tap(find.text(l.genderWomanLabel));

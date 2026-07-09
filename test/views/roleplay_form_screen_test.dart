@@ -38,6 +38,14 @@ Exercise _exercise() => Exercise(
   endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
 );
 
+/// Expands the identity card's "Tilpass" override panel — DESIGN-009
+/// prompt 4i moved Navn/Alder/Kjønn/Signalement inside it, only mounted
+/// while expanded.
+Future<void> _expandIdentity(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('identity-disclosure')));
+  await tester.pumpAndSettle();
+}
+
 Widget _buildForm({RolePlay? rolePlay, Exercise? exercise}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -53,6 +61,7 @@ void main() {
   testWidgets('name field is required', (tester) async {
     await tester.pumpWidget(_buildForm());
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await _expandIdentity(tester);
 
     // Clear the name field
     final nameField = find.widgetWithText(TextFormField, 'Anna Hansen');
@@ -67,6 +76,7 @@ void main() {
   testWidgets('age outside 0–120 shows validation error', (tester) async {
     await tester.pumpWidget(_buildForm());
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await _expandIdentity(tester);
 
     await tester.enterText(find.byKey(const Key('age-field')), '200');
 
@@ -79,6 +89,7 @@ void main() {
   testWidgets('valid age passes validation', (tester) async {
     await tester.pumpWidget(_buildForm());
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await _expandIdentity(tester);
 
     await tester.enterText(find.byKey(const Key('age-field')), '35');
 
@@ -114,6 +125,7 @@ void main() {
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
+    await _expandIdentity(tester);
 
     // Change name
     final nameField = find.widgetWithText(TextFormField, 'Anna Hansen');
@@ -137,7 +149,9 @@ void main() {
     await tester.pumpWidget(_buildForm(rolePlay: emptyRole));
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    expect(find.text(l10n.newRolePlayTitle), findsOneWidget);
+    // Shows both in the AppBar title and, as a placeholder, in the
+    // collapsed identity card's header (DESIGN-009 prompt 4i).
+    expect(find.text(l10n.newRolePlayTitle), findsAtLeastNWidgets(1));
   });
 
   testWidgets('AppBar title shows role name when name is non-empty', (
@@ -154,8 +168,10 @@ void main() {
     await tester.pumpWidget(_buildForm());
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    // signalement is always visible in the base "Rolle" section; background
-    // and behavior are addable sections, listed once revealed.
+    // Signalement lives inside the identity card's "Tilpass" override
+    // panel (DESIGN-009 prompt 4i); background and behavior are addable
+    // sections, listed once revealed.
+    await _expandIdentity(tester);
     expect(find.text(l10n.roleSignalement), findsOneWidget);
     await tester.tap(find.text(l10n.formSectionAddAction));
     await tester.pumpAndSettle();

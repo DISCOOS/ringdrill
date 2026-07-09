@@ -16,6 +16,7 @@ import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
@@ -76,12 +77,6 @@ class RolePlayFormScreen extends StatefulWidget {
 }
 
 class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
-  /// Below this width, the Person selector and the Kjønn segmented control
-  /// (DESIGN-009 prompt 4g) stack instead of sharing a row — a dropdown
-  /// plus a 3-segment control is too tight to force onto one line on a
-  /// narrow phone.
-  static const double _kPersonGenderBreakpoint = 360;
-
   final _formKey = GlobalKey<FormState>();
   final _programService = ProgramService();
 
@@ -129,6 +124,14 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// [_autoCreatePersonFromIdentity]), so mandatory `personRef` adds no
   /// extra authoring step.
   String? _personRef;
+
+  /// Whether the identity card's "Tilpass" override panel is open
+  /// (DESIGN-009 prompt 4i). Set once in [initState] — auto-expanded when
+  /// the roleplay already has at least one facet overridden, otherwise
+  /// collapsed, so an untouched marker reads as one clean summary line.
+  /// Toggled afterward by the disclosure row, independent of override
+  /// count.
+  bool _identityExpanded = false;
 
   /// Working copies of [_parentStation]'s `locations`/`persons` — a
   /// roleplay does not own a station's collections, so anything created
@@ -235,6 +238,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (_personRef == null) {
       _autoCreatePersonFromIdentity();
     }
+    final selectedPerson = _personBySlug(_personRef);
+    _identityExpanded =
+        selectedPerson != null && _identityOverrideCount(selectedPerson) > 0;
   }
 
   /// A new roleplay, or a legacy one opened with `personRef == null`, gets a
@@ -347,12 +353,59 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     setState(() => _applyPersonSelection(slug));
   }
 
+  /// The identity card header's tap target (DESIGN-009 prompt 4i): a
+  /// plain pick-one dialog over [_workingPersons], since
+  /// `DropdownButtonFormField`'s own menu can't host the header's
+  /// multi-line summary in its closed state (see [_buildIdentityCard]).
+  Future<void> _showPersonPicker(BuildContext context, AppLocalizations l) async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l.rolePlayPersonLabel),
+        children: [
+          for (final person in _workingPersons)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(person.slug),
+              child: Text(person.name.isEmpty ? person.slug : person.name),
+            ),
+        ],
+      ),
+    );
+    if (selected != null) _onPersonChanged(selected);
+  }
+
   /// True when [fieldValue] currently equals [personValue] — i.e. the field
   /// is inherited from the selected Person rather than overridden
   /// (ADR-0047). Shown as a small per-field caption; a field with no
   /// selected person at all shows neither state.
   bool _isInherited(String fieldValue, String? personValue) =>
       fieldValue == (personValue ?? '');
+
+  /// [_isInherited]'s age counterpart — age is an `int?`, not a `String`,
+  /// so it compares parsed values rather than raw text.
+  bool _isAgeInherited(Person person) {
+    final ageText = _ageController.text.trim();
+    final age = ageText.isEmpty ? null : int.tryParse(ageText);
+    return age == person.age;
+  }
+
+  /// The [Person] currently selected via [_personRef], or null.
+  Person? get _selectedPerson => _personBySlug(_personRef);
+
+  /// How many of the four identity facets (name/age/gender/signalement)
+  /// currently differ from [person]'s own value (DESIGN-009 prompt 4i) —
+  /// drives the identity card's collapsed summary ("N felt tilpasset") and
+  /// whether the override panel auto-expands on open.
+  int _identityOverrideCount(Person person) {
+    var count = 0;
+    if (!_isInherited(_nameController.text, person.name)) count++;
+    if (!_isAgeInherited(person)) count++;
+    if (!_isInherited(_gender ?? '', person.gender)) count++;
+    if (!_isInherited(_signalementController.text, person.signalement)) {
+      count++;
+    }
+    return count;
+  }
 
   /// [StationScope.portrayerOf]: for this roleplay's own [_personRef], the
   /// effective identity is whatever the author is typing *right now* —
@@ -780,176 +833,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               ),
               ?_buildUnresolvedReferenceWarning(l),
               const SizedBox(height: 16),
-              // 2. Navn + Alder — the effective identity, inherited.
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: RingDrillTextField(
-                      controller: _nameController,
-                      label: l.roleName,
-                      autofocus: true,
-                      tokenAware: true,
-                      overrides: _effectiveVariables,
-                      planFields: planFields,
-                      // Rebuilds this screen so the effective-identity
-                      // preview and the field's own inherited/override
-                      // caption stay live as the author types — the
-                      // controller's own notifyListeners() only repaints
-                      // the field itself (DESIGN-009 follow-up 4).
-                      onChanged: (_) => setState(() {}),
-                      onCreateVariable: _createVariableInline,
-                      onCreateLocation: _createLocationInline,
-                      onCreatePerson: _createPersonInline,
-                      validator: (value) =>
-                          value != null && value.trim().isNotEmpty
-                          ? null
-                          : l.pleaseEnterAName,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 80,
-                    child: TextFormField(
-                      key: const Key('age-field'),
-                      controller: _ageController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(labelText: l.roleAge),
-                      onChanged: (_) => setState(() {}),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return null;
-                        final age = int.tryParse(value);
-                        if (age == null || age < 0 || age > 120) {
-                          return l.ageRange;
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              if (_personRef != null)
-                _identityCaption(
-                  context,
-                  l,
-                  inherited: _isInherited(
-                    _nameController.text,
-                    _personBySlug(_personRef)?.name,
-                  ),
-                ),
+              // 2. Identity card (DESIGN-009 prompt 4i) — the effective
+              // name/age/gender/signalement packed into one inherit/
+              // override card, replacing the interleaved fields and 4g's
+              // Person + Kjønn row.
+              _buildIdentityCard(context, l, planFields),
               const SizedBox(height: 16),
-              // 3. Person + Kjønn on one row where it fits, stacked on a
-              // narrow width (DESIGN-009 prompt 4g). The explicit
-              // "Effektiv identitet:" preview is dropped here — with these
-              // fields now interleaved with the selectors, the per-field
-              // "Arvet fra person"/"Overstyrt" captions already carry that
-              // meaning.
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final personField = DropdownButtonFormField<String>(
-                    key: const Key('person-field'),
-                    initialValue: _personRef,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: l.rolePlayPersonLabel,
-                    ),
-                    items: [
-                      for (final person in _workingPersons)
-                        DropdownMenuItem(
-                          value: person.slug,
-                          child: Text(
-                            person.name.isEmpty ? person.slug : person.name,
-                          ),
-                        ),
-                    ],
-                    // Mandatory personRef is scoped to "a station is
-                    // selected" (ADR-0047): persons are station-owned, so
-                    // there is nothing to require a selection *from*
-                    // without one — mirrors the station dropdown's own
-                    // `stations.isNotEmpty && v == null` conditioning
-                    // above.
-                    validator: (_) =>
-                        _parentStation != null && _personRef == null
-                        ? l.pleaseSelectPerson
-                        : null,
-                    onChanged: _onPersonChanged,
-                  );
-                  final genderField = Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        l.roleGender,
-                        style: Theme.of(context).textTheme.labelSmall
-                            ?.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      GenderSegmentedControl(
-                        value: _gender,
-                        onChanged: (value) => setState(() {
-                          _gender = value;
-                        }),
-                      ),
-                      if (_personRef != null)
-                        _identityCaption(
-                          context,
-                          l,
-                          inherited: _isInherited(
-                            _gender ?? '',
-                            _personBySlug(_personRef)?.gender,
-                          ),
-                        ),
-                    ],
-                  );
-                  if (constraints.maxWidth < _kPersonGenderBreakpoint) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        personField,
-                        const SizedBox(height: 16),
-                        genderField,
-                      ],
-                    );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(flex: 3, child: personField),
-                      const SizedBox(width: 12),
-                      Expanded(flex: 2, child: genderField),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              // 4. Signalement.
-              TextFormField(
-                controller: _signalementController,
-                onChanged: (_) => setState(() {}),
-                keyboardType: TextInputType.multiline,
-                minLines: 1,
-                maxLines: 6,
-                decoration: InputDecoration(
-                  labelText: l.roleSignalement,
-                  alignLabelWithHint: true,
-                ),
-              ),
-              if (_personRef != null)
-                _identityCaption(
-                  context,
-                  l,
-                  inherited: _isInherited(
-                    _signalementController.text,
-                    _personBySlug(_personRef)?.signalement,
-                  ),
-                ),
-              const SizedBox(height: 16),
-              // 5. Posisjon — unchanged existing PositionFormField row
+              // 3. Posisjon — unchanged existing PositionFormField row
               // variant.
               PositionFormField(
                 key: ValueKey(_position),
@@ -969,29 +859,490 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     );
   }
 
-  /// Small "Arvet fra person"/"Overstyrt" tag under an identity field
-  /// (ADR-0047) — see [_isInherited].
-  Widget _identityCaption(
+  /// The effective-identity card (DESIGN-009 prompt 4i): the Person
+  /// selector as its own header — same [DropdownButtonFormField] and
+  /// `person-field` key as before, now rendered richly via
+  /// [DropdownButtonFormField.selectedItemBuilder] instead of a plain
+  /// name — a disclosure footer, and the "Tilpass" override panel with
+  /// Navn+Alder, Kjønn and Signalement.
+  Widget _buildIdentityCard(
+    BuildContext context,
+    AppLocalizations l,
+    List<PlanFieldToken> planFields,
+  ) {
+    final theme = Theme.of(context);
+    final person = _selectedPerson;
+    final overrideCount = person == null ? 0 : _identityOverrideCount(person);
+    final panelSurfaceColor = theme.colorScheme.surfaceContainerHighest
+        .withValues(alpha: 0.5);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.rolePlayIdentitySectionLabel,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // The Person selector, as the card's own header. A plain
+              // tap-to-pick dialog rather than DropdownButtonFormField:
+              // that widget's `selectedItemBuilder` closed-state area is
+              // capped to a single-line height regardless of `itemHeight`,
+              // too short for this three-line (name/meta/signalement)
+              // summary. `pleaseSelectPerson` is enforced manually in
+              // [_save] instead of via a FormField validator.
+              InkWell(
+                key: const Key('person-field'),
+                onTap: () => _showPersonPicker(context, l),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _buildIdentityHeaderSummary(context, l, person),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, left: 4),
+                        child: Icon(
+                          Icons.unfold_more,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () =>
+                    setState(() => _identityExpanded = !_identityExpanded),
+                child: Container(
+                  key: const Key('identity-disclosure'),
+                  color: panelSurfaceColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        overrideCount == 0
+                            ? Icons.tune
+                            : Icons.fact_check_outlined,
+                        size: 16,
+                        color: overrideCount == 0
+                            ? theme.colorScheme.onSurfaceVariant
+                            : theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          overrideCount == 0
+                              ? l.rolePlayIdentityFollowsPerson
+                              : l.rolePlayIdentityFieldsCustomized(
+                                  overrideCount,
+                                ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: overrideCount == 0
+                                ? theme.colorScheme.onSurfaceVariant
+                                : theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        l.rolePlayIdentityCustomizeAction,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _identityExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.chevron_right,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_identityExpanded)
+                Container(
+                  key: const Key('identity-panel'),
+                  color: panelSurfaceColor,
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _identityFacetColumn(
+                              context,
+                              l,
+                              label: l.roleName,
+                              inherited:
+                                  person == null ||
+                                  _isInherited(
+                                    _nameController.text,
+                                    person.name,
+                                  ),
+                              onReset: person == null
+                                  ? null
+                                  : () => setState(
+                                      () => _nameController.text = person.name,
+                                    ),
+                              field: RingDrillTextField(
+                                controller: _nameController,
+                                label: l.roleName,
+                                tokenAware: true,
+                                overrides: _effectiveVariables,
+                                planFields: planFields,
+                                // Rebuilds this screen so the card's
+                                // summary/override chips stay live as the
+                                // author types — the controller's own
+                                // notifyListeners() only repaints the
+                                // field itself (DESIGN-009 follow-up 4).
+                                onChanged: (_) => setState(() {}),
+                                onCreateVariable: _createVariableInline,
+                                onCreateLocation: _createLocationInline,
+                                onCreatePerson: _createPersonInline,
+                                validator: (value) =>
+                                    value != null && value.trim().isNotEmpty
+                                    ? null
+                                    : l.pleaseEnterAName,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 84,
+                            child: _identityFacetColumn(
+                              context,
+                              l,
+                              label: l.roleAge,
+                              inherited:
+                                  person == null || _isAgeInherited(person),
+                              onReset: person == null
+                                  ? null
+                                  : () => setState(
+                                      () => _ageController.text =
+                                          person.age?.toString() ?? '',
+                                    ),
+                              showStatus: false,
+                              field: TextFormField(
+                                key: const Key('age-field'),
+                                controller: _ageController,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                onChanged: (_) => setState(() {}),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return null;
+                                  }
+                                  final age = int.tryParse(value);
+                                  if (age == null || age < 0 || age > 120) {
+                                    return l.ageRange;
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _identityFacetColumn(
+                        context,
+                        l,
+                        label: l.roleGender,
+                        inherited:
+                            person == null ||
+                            _isInherited(_gender ?? '', person.gender),
+                        onReset: person == null
+                            ? null
+                            : () =>
+                                  setState(() => _gender = person.gender),
+                        field: GenderSegmentedControl(
+                          value: _gender,
+                          onChanged: (value) =>
+                              setState(() => _gender = value),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _identityFacetColumn(
+                        context,
+                        l,
+                        label: l.roleSignalement,
+                        inherited:
+                            person == null ||
+                            _isInherited(
+                              _signalementController.text,
+                              person.signalement,
+                            ),
+                        onReset: person == null
+                            ? null
+                            : () => setState(
+                                () => _signalementController.text =
+                                    person.signalement ?? '',
+                              ),
+                        field: TextFormField(
+                          key: const Key('signalement-field'),
+                          controller: _signalementController,
+                          onChanged: (_) => setState(() {}),
+                          keyboardType: TextInputType.multiline,
+                          minLines: 1,
+                          maxLines: 4,
+                          decoration: const InputDecoration(isDense: true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The identity card's collapsed-header content: this roleplay's own
+  /// live effective identity, not [person]'s raw fields — a bold name
+  /// (with a small accent dot when any facet is overridden), an "age ·
+  /// gender" meta line, and either the signalement or, when the *name*
+  /// itself is overridden, "Portretterer {person.name}" so the reader
+  /// still knows who is actually being portrayed.
+  Widget _buildIdentityHeaderSummary(
+    BuildContext context,
+    AppLocalizations l,
+    Person? person,
+  ) {
+    final theme = Theme.of(context);
+    final overrideCount = person == null ? 0 : _identityOverrideCount(person);
+    final nameOverridden =
+        person != null && !_isInherited(_nameController.text, person.name);
+    final age = int.tryParse(_ageController.text.trim());
+    final genderLabel = genderLabelFor(_gender, l);
+    final metaParts = [
+      if (age != null) l.rolePlayAgeYears(age),
+      ?genderLabel,
+    ];
+    final signalementText = _signalementController.text.trim();
+    final displayName = _nameController.text.trim();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 17,
+          backgroundColor: theme.colorScheme.primaryContainer,
+          child: Icon(
+            Icons.person,
+            size: 18,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      displayName.isEmpty ? l.newRolePlayTitle : displayName,
+                      style: theme.textTheme.titleSmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (overrideCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (metaParts.isNotEmpty)
+                Text(
+                  metaParts.join(' · '),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              if (nameOverridden)
+                Text(
+                  l.rolePlayPortraying(person.name),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              else if (signalementText.isNotEmpty)
+                Text(
+                  signalementText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// One override-panel row: [label] plus either a "Følger person" chip
+  /// (inherited) or a "Tilbakestill" reset action (overridden), above
+  /// [field] itself.
+  Widget _identityFacetColumn(
     BuildContext context,
     AppLocalizations l, {
+    required String label,
     required bool inherited,
+    required VoidCallback? onReset,
+    required Widget field,
+    // The Age column is only 84px wide — too narrow for a status chip or
+    // reset link beside the label (DESIGN-009 prompt 4i, matching the
+    // mockup's own omission there); its own value is still an override
+    // once it differs, just without this row-level indicator.
+    bool showStatus = true,
   }) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 2, bottom: 4),
-      child: Text(
-        inherited ? l.rolePlayIdentityInherited : l.rolePlayIdentityOverride,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontStyle: FontStyle.italic,
+    final Widget status;
+    if (!showStatus) {
+      status = const SizedBox.shrink();
+    } else if (inherited) {
+      status = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
         ),
-      ),
+        child: Text(
+          l.rolePlayIdentityFollowsPersonChip,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    } else if (onReset != null) {
+      status = InkWell(
+        onTap: onReset,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.replay, size: 13, color: theme.colorScheme.primary),
+            const SizedBox(width: 3),
+            Text(
+              l.rolePlayIdentityResetAction,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      status = const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          // Fixed height regardless of [showStatus] so a field's own input
+          // box lines up with its row-mate's even when one column shows no
+          // chip/reset (the narrow Alder column, DESIGN-009 prompt 4i).
+          height: 20,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              status,
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        field,
+      ],
     );
   }
 
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final l = AppLocalizations.of(context)!;
+
+    // Mandatory personRef is scoped to "a station is selected" (ADR-0047):
+    // persons are station-owned, so there is nothing to require a
+    // selection *from* without one. Enforced manually (not a FormField
+    // validator) since the identity card's header is a plain tap target,
+    // not a DropdownButtonFormField (DESIGN-009 prompt 4i).
+    if (_parentStation != null && _personRef == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.pleaseSelectPerson)));
+      return;
+    }
+
+    // The identity card's Navn/Alder fields only exist in the widget tree
+    // (and so only get their own FormField validation) while the "Tilpass"
+    // panel is expanded (DESIGN-009 prompt 4i). Check both manually too, so
+    // an empty name or an out-of-range age typed while the panel was open
+    // still blocks save after the author collapses it again.
+    if (_nameController.text.trim().isEmpty) {
+      setState(() => _identityExpanded = true);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.pleaseEnterAName)));
+      return;
+    }
+    final typedAgeText = _ageController.text.trim();
+    if (typedAgeText.isNotEmpty) {
+      final typedAge = int.tryParse(typedAgeText);
+      if (typedAge == null || typedAge < 0 || typedAge > 120) {
+        setState(() => _identityExpanded = true);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l.ageRange)));
+        return;
+      }
+    }
+
     final offending = [
       if (_nameHasUndeclaredTokens()) l.roleName,
       ..._sectionsWithUndeclaredTokens().map((s) => _mdLabelFor(s, l)),
