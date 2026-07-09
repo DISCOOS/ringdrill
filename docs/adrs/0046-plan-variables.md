@@ -145,3 +145,52 @@ DESIGN-008 is fully implemented on `design-008`: the model above, `BriefRenderer
 Deferred, intentionally, both revisit-if-needed rather than committed to: **local-only variables** (option B, if the plan-level list grows noisy with single-use variables) and **variable creation from sub-editors** (DESIGN-008's `VariablesSection` spec gives `Exercise`/`Station`'s override surface its own "+ Ny variabel" action with a record-based result contract; that surface-level create action was not built — the only create paths shipped are `Program`'s declaration surface and the slash-menu's inline "Opprett variabel «x»", both available everywhere including `Exercise`/`Station`/`RolePlay` fields).
 
 This ADR's status is now `Accepted`.
+
+## Addendum (2026-07-09): typed variables (DESIGN-008 follow-up 11)
+
+`DrillVariable` gains a **type** that drives a type-aware editor input,
+validation and a canonical stored encoding. Everything is additive — no
+schema bump, `KNOWN_SCHEMA_MAX` stays `1.2` — and `string` is the
+back-compatible default, so a 1.0–1.2 archive (or a type written by a newer
+client) loads and renders exactly as before:
+
+```dart
+@Default(VariableType.string)
+@JsonKey(unknownEnumValue: VariableType.string)
+VariableType type,        // string | number | time | date | duration | location
+
+VariableLocation? location,   // used only when type == location
+```
+
+**Canonical value encodings.** The scalar types keep the ADR's string
+`value`, canonically encoded: `number` as a decimal string (`.` separator,
+no grouping), `time` as 24-hour `HH:MM`, `date` as ISO `yyyy-MM-dd`,
+`duration` as whole minutes. Display formatting (localized dates, locale
+decimal separators, `"1 t 30 min"`) happens at render time, canonical →
+formatted, in the brief, the slash-menu previews and the override tables'
+parenthesized defaults alike.
+
+**The location value.** `location` carries more than a scalar — a place
+text plus a coordinate, the `Location` geo shape minus `kind` — so the
+*declaration* stores it in a structured sub-value (`VariableLocation`:
+`place` + nullable `LatLng position`), kept alongside the string `value`
+(which stays empty for this type). The `variableOverrides` maps on
+`Exercise`/`Station` remain `Map<String, String>` per this ADR, so a
+location *override* is carried in a canonical string encoding of the same
+value: `lat,lng` (6-decimal) followed by a space and the place text; a
+string with no leading coordinate is all place text. The encoding is
+human-readable on purpose — an older client that substitutes it literally
+degrades to something legible. Location variables expose the same facets
+as a `Location` (`.place`, `.utm`, `.latlng`) through the shared DESIGN-009
+facet code; the bare token renders place + UTM.
+
+**Validation.** A third save-blocking state joins the two above: a value
+(default or override) that does not read as its declared type blocks save
+exactly as an undeclared reference does, surfaced inline on the offending
+field. Changing a variable's type keeps the existing value and re-validates
+it — an incompatible value surfaces as invalid rather than being silently
+dropped. The empty value stays a soft (amber) state, as before.
+
+`ProgramX.computeContentHash` picks the new fields up automatically through
+`DrillVariable.toJson()`, so a type or location change produces a new
+version.
