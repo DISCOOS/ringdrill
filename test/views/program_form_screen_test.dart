@@ -117,10 +117,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.briefSectionProgramIntro));
     await tester.pumpAndSettle();
-    final introField = find.widgetWithText(
-      TextFormField,
-      l10n.briefSectionProgramIntro,
-    );
+    // The section field has no floating label (8d7acf9 dropped it as a
+    // dup of the switcher/rail name); only one section is mounted at a
+    // time, so its field is the sole TextFormField in the tree.
+    final introField = find.byType(TextFormField);
     expect(introField, findsOneWidget);
     await tester.enterText(introField, 'Generelt om spillet ...');
 
@@ -175,11 +175,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('gammel intro'), findsOneWidget);
 
-    // Replace the content and save.
-    await tester.enterText(
-      find.widgetWithText(TextFormField, l10n.briefSectionProgramIntro),
-      'ny intro',
-    );
+    // Replace the content and save. The section field has no floating
+    // label (8d7acf9 dropped it as a dup of the switcher/rail name); only
+    // one section is mounted at a time, so its field is the sole
+    // TextFormField in the tree.
+    await tester.enterText(find.byType(TextFormField), 'ny intro');
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
 

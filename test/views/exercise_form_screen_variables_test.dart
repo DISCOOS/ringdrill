@@ -273,10 +273,10 @@ void main() {
       await _openSwitcherFrom(tester, l.exercise(1));
       await tester.tap(find.text(l.briefSectionExerciseMethod));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.briefSectionExerciseMethod),
-        'Bruk radio',
-      );
+      // The section field has no floating label (8d7acf9 dropped it as a
+      // dup of the switcher/rail name); only one section is mounted at a
+      // time, so its field is the sole TextFormField in the tree.
+      await tester.enterText(find.byType(TextFormField), 'Bruk radio');
 
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
@@ -334,8 +334,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.briefSectionExerciseMethod));
       await tester.pumpAndSettle();
+      // The section field has no floating label (8d7acf9 dropped it as a
+      // dup of the switcher/rail name); only one section is mounted at a
+      // time, so its field is the sole TextFormField in the tree.
       await tester.enterText(
-        find.widgetWithText(TextFormField, l.briefSectionExerciseMethod),
+        find.byType(TextFormField),
         'Metode {{var.frekvens}}',
       );
 

@@ -138,11 +138,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // The newly-activated section is selected and its (empty) field is
-        // editable.
-        final field = find.widgetWithText(
-          TextFormField,
-          l.briefSectionProgramComms,
-        );
+        // editable. It has no floating label (8d7acf9 dropped it as a dup
+        // of the switcher/rail name); only one section is mounted at a
+        // time, so its field is the sole TextFormField in the tree.
+        final field = find.byType(TextFormField);
         expect(field, findsOneWidget);
         await tester.enterText(field, 'nye talegrupper');
         await tester.tap(find.text(l.save));
@@ -264,10 +263,10 @@ void main() {
         await tester.tap(find.text(l.briefSectionProgramIntro));
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.widgetWithText(TextFormField, l.briefSectionProgramIntro),
-          'ny intro',
-        );
+        // The section field has no floating label (8d7acf9 dropped it as a
+        // dup of the switcher/rail name); only one section is mounted at a
+        // time, so its field is the sole TextFormField in the tree.
+        await tester.enterText(find.byType(TextFormField), 'ny intro');
 
         await tester.tap(find.text(l.save));
         await tester.pumpAndSettle();

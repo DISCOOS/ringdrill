@@ -171,15 +171,37 @@ void main() {
     'wide: no duplicated section title and no ‹ › — the rail is the '
     'navigation, only ⋮ remains (DESIGN-008 follow-up 12)',
     (tester) async {
-      await _pump(tester, sections: _sections(), size: const Size(900, 800));
+      // The ⋮ overlay only renders for a removable section (a base
+      // section shows no header at all), so select one here to assert
+      // it's present.
+      await _pump(
+        tester,
+        sections: [
+          FormSection(
+            id: 'a',
+            label: 'Section A',
+            icon: Icons.description_outlined,
+            builder: (_) => const Text('Body A'),
+          ),
+          FormSection(
+            id: 'b',
+            label: 'Section B',
+            icon: Icons.description_outlined,
+            removable: true,
+            builder: (_) => const Text('Body B'),
+          ),
+        ],
+        initialSectionId: 'b',
+        size: const Size(900, 800),
+      );
 
-      // "Section A" appears once — in the rail — never repeated as a
+      // "Section B" appears once — in the rail — never repeated as a
       // heading in the detail pane.
-      expect(find.text('Section A'), findsOneWidget);
+      expect(find.text('Section B'), findsOneWidget);
       expect(find.byIcon(Icons.chevron_left), findsNothing);
       expect(find.byIcon(Icons.chevron_right), findsNothing);
       expect(find.byType(PopupMenuButton<String>), findsOneWidget);
-      expect(find.text('Body A'), findsOneWidget);
+      expect(find.text('Body B'), findsOneWidget);
     },
   );
 

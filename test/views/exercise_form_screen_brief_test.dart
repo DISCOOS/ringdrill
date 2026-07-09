@@ -62,11 +62,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Gruppevis øving utendørs'), findsOneWidget);
 
-    // Replace the method content and save.
-    await tester.enterText(
-      find.widgetWithText(TextFormField, l10n.briefSectionExerciseMethod),
-      'Skogsøving',
-    );
+    // Replace the method content and save. The section field has no
+    // floating label (8d7acf9 dropped it as a dup of the switcher/rail
+    // name); only one section is mounted at a time, so its field is the
+    // sole TextFormField in the tree.
+    await tester.enterText(find.byType(TextFormField), 'Skogsøving');
     await tester.tap(find.text(l10n.save));
     await tester.pumpAndSettle();
 

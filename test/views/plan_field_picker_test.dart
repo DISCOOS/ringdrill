@@ -78,10 +78,10 @@ void main() {
 
       await tester.tap(find.text(l.briefSectionProgramIntro));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextFormField, l.briefSectionProgramIntro),
-        'x {{',
-      );
+      // The section field has no floating label (8d7acf9 dropped it as a
+      // dup of the switcher/rail name); only one section is mounted at a
+      // time, so its field is the sole TextFormField in the tree.
+      await tester.enterText(find.byType(TextFormField), 'x {{');
       await tester.pump();
       await tester.pump();
 
