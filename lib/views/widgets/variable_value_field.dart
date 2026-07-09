@@ -14,6 +14,12 @@ import 'package:ringdrill/views/widgets/variable_type_labels.dart';
 /// as `LocationFormScreen`'s (ADR-0047 follow-up 3c).
 const _placeSearchDebounce = Duration(milliseconds: 350);
 
+/// Tight prefix/suffix icon box for a dense (`isDense: true`) field's type
+/// icon and clear action — without this, `InputDecoration`'s default 48x48
+/// minimum tap-target box forces the field taller than its own text,
+/// throwing the icon and value off-center against each other.
+const _iconConstraints = BoxConstraints(minWidth: 32, minHeight: 32);
+
 /// Type-aware input for one plan variable's value (DESIGN-008 follow-up 11),
 /// shared by the declaration surface's default-value field and the
 /// exercise/station override surfaces' local-value field.
@@ -190,6 +196,11 @@ class _VariableValueFieldState extends State<VariableValueField> {
         hintText: widget.hintText,
         isDense: true,
         prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
+        // Without this, the icon's default 48x48 minimum tap-target box
+        // forces the whole (isDense) field taller than its text, so the
+        // icon sits noticeably off-center against the value — shrink the
+        // box to the icon's own size instead.
+        prefixIconConstraints: prefixIcon == null ? null : _iconConstraints,
         suffixText: suffixText,
       ),
       autovalidateMode: AutovalidateMode.always,
@@ -218,12 +229,21 @@ class _VariableValueFieldState extends State<VariableValueField> {
         hintText: widget.hintText,
         isDense: true,
         prefixIcon: Icon(widget.type.icon, size: 18),
+        // Same fix as `_buildText`'s prefixIcon: shrink both icon boxes to
+        // their own size so the dense field's icons and value text line up
+        // on the same baseline instead of the icons' default 48x48
+        // tap-target box stretching the row taller than the text.
+        prefixIconConstraints: _iconConstraints,
+        suffixIconConstraints: _iconConstraints,
         suffixIcon: widget.value.isEmpty
             ? null
             : IconButton(
                 icon: const Icon(Icons.clear, size: 18),
                 tooltip: l10n.variableOverridesSectionResetAction,
                 onPressed: () => _reportScalar(''),
+                iconSize: 18,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
               ),
       ),
       autovalidateMode: AutovalidateMode.always,
