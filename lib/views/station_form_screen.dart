@@ -8,6 +8,7 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
@@ -352,6 +353,59 @@ class _StationFormScreenState extends State<StationFormScreen> {
     ];
   }
 
+  /// The `station.loc.<slug>`/`station.person.<slug>` references in [text]
+  /// (DESIGN-009 prompt 5) whose slug is absent from this station's own
+  /// working `locations`/`persons` — mirrors the `{{var.*}}` undeclared-name
+  /// check above for the scenario namespace. Facet paths are not
+  /// validated, only the slug (the renderer's facet switch already
+  /// defaults, and the editor's chip logic keys on the slug too).
+  Iterable<String> _unresolvedReferencesIn(String text) {
+    return stationScenarioTokenPattern.allMatches(text).where((m) {
+      final slug = m.group(2)!;
+      return m.group(1) == 'loc'
+          ? !_workingLocations.any((loc) => loc.slug == slug)
+          : !_workingPersons.any((p) => p.slug == slug);
+    }).map((m) => 'station.${m.group(1)}.${m.group(2)}');
+  }
+
+  /// [_StationSection]s whose text has an unresolved scenario reference —
+  /// mirrors [_sectionsWithUndeclaredTokens].
+  List<_StationSection> _sectionsWithUnresolvedReferences() {
+    return [
+      for (final section in _StationSection.values)
+        if (_activeSections.contains(section) &&
+            _unresolvedReferencesIn(_sectionControllers[section]!.text)
+                .isNotEmpty)
+          section,
+    ];
+  }
+
+  /// Base field labels with an unresolved scenario reference — mirrors
+  /// [_baseFieldLabelsWithUndeclaredTokens].
+  List<String> _baseFieldLabelsWithUnresolvedReferences(AppLocalizations l) {
+    return [
+      if (_unresolvedReferencesIn(_nameController.text).isNotEmpty)
+        l.stationName,
+      if (_unresolvedReferencesIn(_descriptionController.text).isNotEmpty)
+        l.stationDescription,
+    ];
+  }
+
+  /// The distinct broken references across every token-aware base field and
+  /// active section, named in the save-blocked snackbar.
+  Set<String> _unresolvedReferences() {
+    final refs = <String>{
+      ..._unresolvedReferencesIn(_nameController.text),
+      ..._unresolvedReferencesIn(_descriptionController.text),
+    };
+    for (final section in _StationSection.values) {
+      if (_activeSections.contains(section)) {
+        refs.addAll(_unresolvedReferencesIn(_sectionControllers[section]!.text));
+      }
+    }
+    return refs;
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildSectionNavigated(context);
@@ -609,6 +663,23 @@ class _StationFormScreenState extends State<StationFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+          ),
+        );
+        return;
+      }
+
+      final unresolvedOffending = [
+        ..._baseFieldLabelsWithUnresolvedReferences(l),
+        ..._sectionsWithUnresolvedReferences().map((s) => _labelFor(s, l)),
+      ];
+      if (unresolvedOffending.isNotEmpty) {
+        final sections = unresolvedOffending.join(', ');
+        final references = _unresolvedReferences().join(', ');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l.saveBlockedUnresolvedReference(sections, references),
+            ),
           ),
         );
         return;

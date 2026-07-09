@@ -2291,6 +2291,11 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String saveBlockedUnresolvedReference(String sections, String references) {
+    return 'Kan ikke lagre: $sections refererer til en ukjent lokasjon eller person: $references';
+  }
+
+  @override
   String get exerciseReorderMode => 'Ordne';
 
   @override

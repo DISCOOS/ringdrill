@@ -1432,6 +1432,14 @@
       "sections": { "type": "String" }
     }
   },
+  "saveBlockedUnresolvedReference": "Kan ikke lagre: {sections} refererer til en ukjent lokasjon eller person: {references}",
+  "@saveBlockedUnresolvedReference": {
+    "description": "Snackbar vist når Lagre blokkeres fordi et post- eller markørordre-felt inneholder et {{station.loc.<slug>}}/{{station.person.<slug>}}-token hvis referanse ikke finnes blant (den lenkede) postens egne lokasjoner/personer (DESIGN-009 prompt 5). {sections} er en kommaseparert liste over de aktuelle felt-/seksjonsetikettene, {references} en kommaseparert liste over de brutte referansene (f.eks. station.loc.ghost).",
+    "placeholders": {
+      "sections": { "type": "String" },
+      "references": { "type": "String" }
+    }
+  },
 
   "exerciseReorderMode": "Ordne",
   "@exerciseReorderMode": {

@@ -2295,6 +2295,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String saveBlockedUnresolvedReference(String sections, String references) {
+    return 'Can’t save: $sections references an unknown location or person: $references';
+  }
+
+  @override
   String get exerciseReorderMode => 'Reorder';
 
   @override

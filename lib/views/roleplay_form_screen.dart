@@ -463,6 +463,49 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         .any((m) => !declared.contains(m.group(1)));
   }
 
+  /// The `station.loc.<slug>`/`station.person.<slug>` references in [text]
+  /// (DESIGN-009 prompt 5) whose slug is absent from the linked station's
+  /// `locations`/`persons` — [_workingLocations]/[_workingPersons] are that
+  /// station's own working copy (ADR-0047), the same source `StationScope`
+  /// below reads. Mirrors `StationFormScreen`'s own copy of this check.
+  /// Facet paths are not validated, only the slug.
+  Iterable<String> _unresolvedReferencesIn(String text) {
+    return stationScenarioTokenPattern.allMatches(text).where((m) {
+      final slug = m.group(2)!;
+      return m.group(1) == 'loc'
+          ? !_workingLocations.any((loc) => loc.slug == slug)
+          : !_workingPersons.any((p) => p.slug == slug);
+    }).map((m) => 'station.${m.group(1)}.${m.group(2)}');
+  }
+
+  /// Whether the name field has an unresolved scenario reference — mirrors
+  /// [_nameHasUndeclaredTokens].
+  bool _nameHasUnresolvedReference() =>
+      _unresolvedReferencesIn(_nameController.text).isNotEmpty;
+
+  /// [_MdSection]s whose text has an unresolved scenario reference —
+  /// mirrors [_sectionsWithUndeclaredTokens].
+  List<_MdSection> _sectionsWithUnresolvedReferences() {
+    return [
+      for (final section in _MdSection.values)
+        if (_activeMdSections.contains(section) &&
+            _unresolvedReferencesIn(_mdControllerFor(section).text).isNotEmpty)
+          section,
+    ];
+  }
+
+  /// The distinct broken references across the name field and every active
+  /// markdown section, named in the save-blocked snackbar.
+  Set<String> _unresolvedReferences() {
+    final refs = <String>{..._unresolvedReferencesIn(_nameController.text)};
+    for (final section in _MdSection.values) {
+      if (_activeMdSections.contains(section)) {
+        refs.addAll(_unresolvedReferencesIn(_mdControllerFor(section).text));
+      }
+    }
+    return refs;
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildSectionNavigated(context);
@@ -910,6 +953,21 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l.programSaveBlockedUndeclaredVariable(sections)),
+        ),
+      );
+      return;
+    }
+
+    final unresolvedOffending = [
+      if (_nameHasUnresolvedReference()) l.roleName,
+      ..._sectionsWithUnresolvedReferences().map((s) => _mdLabelFor(s, l)),
+    ];
+    if (unresolvedOffending.isNotEmpty) {
+      final sections = unresolvedOffending.join(', ');
+      final references = _unresolvedReferences().join(', ');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.saveBlockedUnresolvedReference(sections, references)),
         ),
       );
       return;

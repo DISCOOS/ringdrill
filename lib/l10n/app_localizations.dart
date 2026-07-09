@@ -3920,6 +3920,12 @@ abstract class AppLocalizations {
   /// **'Can’t save: {sections} contains an unknown variable'**
   String programSaveBlockedUndeclaredVariable(String sections);
 
+  /// Snackbar shown when Save is blocked because a station or roleplay field contains a {{station.loc.<slug>}}/{{station.person.<slug>}} token whose slug does not resolve against the (linked) station's own locations/persons (DESIGN-009 prompt 5). {sections} is a comma-joined list of the offending field/section labels, {references} a comma-joined list of the broken reference tokens (e.g. station.loc.ghost).
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t save: {sections} references an unknown location or person: {references}'**
+  String saveBlockedUnresolvedReference(String sections, String references);
+
   /// List-header toggle that enters exercise reorder mode (drag handles appear, drag-to-reorder becomes active).
   ///
   /// In en, this message translates to:
