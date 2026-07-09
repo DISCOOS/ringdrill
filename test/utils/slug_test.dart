@@ -1,44 +1,41 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/utils/slug.dart';
 
-/// DESIGN-009 follow-up 3b — `generateSlug` derives a
-/// `^[a-z][a-z0-9_]*$` reference from a display label/name, breaking ties
-/// with a numeric suffix so callers never have to type one manually.
+/// DESIGN-009 follow-up 4h — `randomSlug` generates a short random
+/// `^[a-z][a-z0-9_]*$` reference, derived from no field, so it never drifts
+/// out of sync with a display label/name that changes later.
 void main() {
   final slugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
-  test('lowercases and joins words with underscores', () {
-    expect(generateSlug('Sist kjente posisjon', (_) => false), 'sist_kjente_posisjon');
-  });
-
-  test('folds common Norwegian letters to ASCII', () {
-    expect(generateSlug('Bosted på Gården', (_) => false), 'bosted_pa_garden');
-  });
-
-  test('falls back to x for input with no usable letters/digits', () {
-    expect(generateSlug('', (_) => false), 'x');
-    expect(generateSlug('!!!', (_) => false), 'x');
-  });
-
-  test('prefixes with x_ when the input starts with a digit', () {
-    final slug = generateSlug('39 år', (_) => false);
+  test('matches the slug rule: leading letter, then [a-z0-9]', () {
+    final slug = randomSlug((_) => false);
     expect(slug, matches(slugPattern));
-    expect(slug, startsWith('x_'));
   });
 
-  test('suffixes _2, _3, ... until isTaken returns false', () {
-    final taken = {'anne', 'anne_2'};
-    expect(generateSlug('Anne', taken.contains), 'anne_3');
-  });
-
-  test('two same-named entries get distinct references', () {
+  test('repeated calls against an accumulating isTaken set are all distinct', () {
     final existing = <String>{};
-    final first = generateSlug('Anne', existing.contains);
-    existing.add(first);
-    final second = generateSlug('Anne', existing.contains);
+    for (var i = 0; i < 50; i++) {
+      final slug = randomSlug(existing.contains);
+      expect(slug, matches(slugPattern));
+      expect(existing, isNot(contains(slug)));
+      existing.add(slug);
+    }
+  });
 
-    expect(first, isNot(second));
-    expect(first, matches(slugPattern));
-    expect(second, matches(slugPattern));
+  test('a collision forces a fresh value, not a _2 suffix', () {
+    final calls = <String>[];
+    var first = true;
+    final slug = randomSlug((candidate) {
+      calls.add(candidate);
+      if (first) {
+        first = false;
+        return true; // force a retry on the first candidate
+      }
+      return false;
+    });
+    expect(calls, hasLength(2));
+    expect(slug, isNot(calls.first));
+    expect(slug, matches(slugPattern));
+    expect(slug, isNot(endsWith('_2')));
   });
 }

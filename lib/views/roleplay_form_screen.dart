@@ -250,10 +250,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final ageText = _ageController.text.trim();
     final signalement = _signalementController.text.trim();
     final created = Person(
-      slug: generateSlug(
-        name.isEmpty ? 'person' : name,
-        existingSlugs.contains,
-      ),
+      slug: randomSlug(existingSlugs.contains),
       name: name,
       age: ageText.isEmpty ? null : int.tryParse(ageText),
       gender: _gender,
@@ -270,8 +267,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// which this editor does not own — [_save] diffs [_workingLocations]
   /// against [_originalLocationSlugs] to carry it up as a write-back.
   String _createLocationInline(String label) {
-    final slug = generateSlug(
-      label,
+    final slug = randomSlug(
       (candidate) => _workingLocations.any((l) => l.slug == candidate),
     );
     setState(() {
@@ -285,8 +281,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
   /// [_createLocationInline]'s [_workingPersons] counterpart.
   String _createPersonInline(String label) {
-    final slug = generateSlug(
-      label,
+    final slug = randomSlug(
       (candidate) => _workingPersons.any((p) => p.slug == candidate),
     );
     setState(() {

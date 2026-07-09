@@ -22,10 +22,10 @@ const _placeSearchDebounce = Duration(milliseconds: 350);
 /// on narrow, dialog on wide (ADR-0030). Pops with the saved [Location], or
 /// null on cancel.
 ///
-/// The reference (`slug`) is never shown: it is generated from [label] at
-/// creation via [generateSlug] against [existingSlugs] and carries through
-/// unchanged when [initial] is edited (a reference rename is a future
-/// action, ADR-0047 — not built here). `place` is a geocoder-backed search
+/// The reference (`slug`) is never shown: it is a random id generated at
+/// creation via [randomSlug] against [existingSlugs] (DESIGN-009 follow-up
+/// 4h — derived from no field) and carries through unchanged when [initial]
+/// is edited (there is no rename, ADR-0047). `place` is a geocoder-backed search
 /// (DESIGN-009 follow-up 3c): typing debounces into a forward-geocode
 /// lookup whose suggestions set both `place` and `position`; setting a
 /// position with an empty `place` reverse-geocodes to fill it. Both
@@ -193,9 +193,7 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     _formKey.currentState!.save();
     final note = _noteController.text.trim();
-    final slug =
-        widget.initial?.slug ??
-        generateSlug(_labelController.text.trim(), widget.existingSlugs.contains);
+    final slug = widget.initial?.slug ?? randomSlug(widget.existingSlugs.contains);
     Navigator.of(context).pop(
       Location(
         slug: slug,

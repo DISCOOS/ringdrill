@@ -27,10 +27,10 @@ typedef PersonFormResult = ({Person person, Location? newLocation});
 /// on narrow, dialog on wide (ADR-0030). Pops with a [PersonFormResult], or
 /// null on cancel.
 ///
-/// The reference (`slug`) is never shown: it is generated from [name] at
-/// creation via [generateSlug] against [existingSlugs] and carries through
-/// unchanged when [initial] is edited (a reference rename is a future
-/// action, ADR-0047 — not built here).
+/// The reference (`slug`) is never shown: it is a random id generated at
+/// creation via [randomSlug] against [existingSlugs] (DESIGN-009 follow-up
+/// 4h — derived from no field) and carries through unchanged when [initial]
+/// is edited (there is no rename, ADR-0047).
 class PersonFormScreen extends StatefulWidget {
   const PersonFormScreen({
     super.key,
@@ -126,9 +126,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final signalement = _signalementController.text.trim();
     final notes = _notesController.text.trim();
-    final slug =
-        widget.initial?.slug ??
-        generateSlug(_nameController.text.trim(), widget.existingSlugs.contains);
+    final slug = widget.initial?.slug ?? randomSlug(widget.existingSlugs.contains);
     final person = Person(
       slug: slug,
       name: _nameController.text.trim(),

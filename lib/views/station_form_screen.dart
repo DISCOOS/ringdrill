@@ -256,8 +256,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// owns its own locations directly — straight into [_workingLocations],
   /// no write-back needed.
   String _createLocationInline(String label) {
-    final slug = generateSlug(
-      label,
+    final slug = randomSlug(
       (candidate) => _workingLocations.any((l) => l.slug == candidate),
     );
     setState(() {
@@ -271,8 +270,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
 
   /// [_createLocationInline]'s [_workingPersons] counterpart.
   String _createPersonInline(String label) {
-    final slug = generateSlug(
-      label,
+    final slug = randomSlug(
       (candidate) => _workingPersons.any((p) => p.slug == candidate),
     );
     setState(() {
