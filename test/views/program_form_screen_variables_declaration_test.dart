@@ -150,9 +150,8 @@ Future<void> _expandCard(
   await tester.pumpAndSettle();
 }
 
-/// The `⋮` context menu inside [name]'s *expanded* card (DESIGN-008 follow-up
-/// 12 — rename/delete moved off the always-visible header into the
-/// expanded panel).
+/// The `⋮` context menu in [name]'s always-visible header (DESIGN-008
+/// follow-up 12: rename/delete, never gated behind "Tilpass").
 Finder _variableCardMenu(String name) => find.descendant(
   of: _variableCardOf(name),
   matching: find.byIcon(Icons.more_vert),
@@ -267,6 +266,33 @@ void main() {
     },
   );
 
+  testWidgets(
+    'the ⋮ menu is reachable in the collapsed header, before expanding '
+    '(DESIGN-008 follow-up 12)',
+    (tester) async {
+      await _openForm(
+        tester,
+        _program(
+          variables: const [DrillVariable(name: 'frekvens', value: 'X')],
+        ),
+        _Captured(),
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      // Not expanded: no "Tilpass" panel content (type chip/value/hint
+      // fields) is showing yet.
+      expect(find.byType(VariableValueField), findsNothing);
+
+      await tester.tap(_variableCardMenu('frekvens'));
+      await tester.pumpAndSettle();
+      expect(find.text(l.variablesSectionRenameAction), findsOneWidget);
+      expect(find.text(l.variablesSectionDeleteAction), findsOneWidget);
+    },
+  );
+
   testWidgets('renaming a variable rewrites every reference in the editor', (
     tester,
   ) async {
@@ -283,8 +309,6 @@ void main() {
     await _openSwitcherFrom(tester, l.programSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
-
-    await _expandCard(tester, l, 'frekvens');
     await tester.tap(_variableCardMenu('frekvens'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.variablesSectionRenameAction));
@@ -339,7 +363,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Referenced: blocked.
-      await _expandCard(tester, l, 'frekvens');
       await tester.tap(_variableCardMenu('frekvens'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
@@ -351,7 +374,6 @@ void main() {
       expect(find.text('frekvens'), findsOneWidget);
 
       // Unreferenced: removes immediately.
-      await _expandCard(tester, l, 'ubrukt');
       await tester.tap(_variableCardMenu('ubrukt'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l.variablesSectionDeleteAction));
@@ -423,8 +445,6 @@ void main() {
     await _openSwitcherFrom(tester, l.programSectionPlan);
     await tester.tap(find.text(l.variablesSectionTitle));
     await tester.pumpAndSettle();
-
-    await _expandCard(tester, l, 'frekvens');
     await tester.tap(_variableCardMenu('frekvens'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(l.variablesSectionDeleteAction));

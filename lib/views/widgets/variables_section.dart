@@ -438,6 +438,29 @@ class _VariableCardState extends State<_VariableCard> {
                         ],
                       ),
                     ),
+                    // Rename/delete live in the always-visible header, not
+                    // gated behind "Tilpass" — explicit Icons.more_vert
+                    // rather than PopupMenuButton's platform-adaptive
+                    // default, which renders horizontal dots on
+                    // iOS/macOS-style platforms.
+                    PopupMenuButton<_VariableCardAction>(
+                      tooltip: '',
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (action) => switch (action) {
+                        _VariableCardAction.rename => widget.onRename(),
+                        _VariableCardAction.delete => widget.confirmDelete(),
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: _VariableCardAction.rename,
+                          child: Text(l10n.variablesSectionRenameAction),
+                        ),
+                        PopupMenuItem(
+                          value: _VariableCardAction.delete,
+                          child: Text(l10n.variablesSectionDeleteAction),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -483,49 +506,39 @@ class _VariableCardState extends State<_VariableCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          PopupMenuButton<_VariableCardAction>(
-                            tooltip: '',
-                            onSelected: (action) => switch (action) {
-                              _VariableCardAction.rename => widget.onRename(),
-                              _VariableCardAction.delete =>
-                                widget.confirmDelete(),
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: _VariableCardAction.rename,
-                                child: Text(l10n.variablesSectionRenameAction),
+                          Expanded(
+                            child: VariableValueField(
+                              // Remounts on a type change so the input
+                              // switches shape and re-validates the kept
+                              // value against the new type.
+                              key: ValueKey(
+                                '${variable.name}:${variable.type.name}',
                               ),
-                              PopupMenuItem(
-                                value: _VariableCardAction.delete,
-                                child: Text(l10n.variablesSectionDeleteAction),
+                              type: variable.type,
+                              value: variable.value,
+                              location: variable.location,
+                              hintText: l10n.variablesSectionValueLabel,
+                              geocodingService: widget.geocodingService,
+                              // `location` stays null on scalar edits,
+                              // which must not clear a location value kept
+                              // from before a type change (nothing is
+                              // silently dropped).
+                              onChanged: (value, location) => widget.onUpdate(
+                                variable.copyWith(
+                                  value: value,
+                                  location: location ?? variable.location,
+                                ),
                               ),
-                            ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _TypeChip(
+                            type: variable.type,
+                            onTap: widget.onPickType,
                           ),
                         ],
-                      ),
-                      _TypeChip(type: variable.type, onTap: widget.onPickType),
-                      const SizedBox(height: 8),
-                      VariableValueField(
-                        // Remounts on a type change so the input switches
-                        // shape and re-validates the kept value against the
-                        // new type.
-                        key: ValueKey('${variable.name}:${variable.type.name}'),
-                        type: variable.type,
-                        value: variable.value,
-                        location: variable.location,
-                        hintText: l10n.variablesSectionValueLabel,
-                        geocodingService: widget.geocodingService,
-                        // `location` stays null on scalar edits, which must
-                        // not clear a location value kept from before a
-                        // type change (nothing is silently dropped).
-                        onChanged: (value, location) => widget.onUpdate(
-                          variable.copyWith(
-                            value: value,
-                            location: location ?? variable.location,
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
