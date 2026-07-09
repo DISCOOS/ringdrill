@@ -15,7 +15,7 @@ import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
-import 'package:ringdrill/utils/projection.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Unified spec for a single map marker. The [child] widget is the icon
@@ -1192,33 +1192,17 @@ class _MapViewState<K> extends State<MapView<K>> {
     }
 
     try {
-      // Try parsing LatLng
-      if (input.contains(",")) {
-        final parts = input.split(",");
-        final lat = double.tryParse(parts[0]);
-        final lon = double.tryParse(parts[1]);
-        if (lat != null && lon != null && lat.isFinite && lon.isFinite) {
-          final result = LatLng(lat, lon);
-          _mapController.move(result, _mapController.camera.zoom);
-          setState(() {
-            _isSearching = false;
-          });
-          return;
-        }
-      }
-
-      // Try parsing UTM using coordinate_converter. proj4dart can hand
-      // back NaN on near-singular inputs, which would crash flutter_map
-      // the moment it tries to project the result. Drop those silently
-      // and let the geocoder branch have a shot at the same query.
-      final result = input.toLatLngFromUtm();
-      if (result != null &&
-          result.latitude.isFinite &&
-          result.longitude.isFinite) {
-        _mapController.move(result, _mapController.camera.zoom);
+      // Coordinate input — a decimal lat,lng pair or a UTM string, including
+      // the app's own "…E …N" display format — is parsed by the shared
+      // parseCoordinateInput (bounds-checked, NaN-guarded). A null result
+      // falls through to the search targets and the geocoder below.
+      final coordinate = parseCoordinateInput(input);
+      if (coordinate != null) {
+        _mapController.move(coordinate, _mapController.camera.zoom);
         setState(() {
           _isSearching = false;
         });
+        return;
       }
 
       // Try search targets supplied by the parent (e.g. stations and
