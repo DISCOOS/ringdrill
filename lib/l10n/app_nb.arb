@@ -1442,6 +1442,14 @@
       "age": { "type": "int" }
     }
   },
+  "rolePlayPositionFollowsLocation": "Følger personens lokasjon",
+  "@rolePlayPositionFollowsLocation": {
+    "description": "Posisjonskortets utfoldingsradtekst når markørens posisjon fremdeles er lik den valgte personens egen lokasjonskoordinat (DESIGN-009 prompt 4i)."
+  },
+  "rolePlayPositionSetOwnAction": "Sett egen",
+  "@rolePlayPositionSetOwnAction": {
+    "description": "Handling på posisjonskortets utfoldingsrad som viser den vanlige posisjonsvelgeren, slik at forfatteren kan overstyre markørens posisjon bort fra personens lokasjon (DESIGN-009 prompt 4i)."
+  },
   "genderWomanLabel": "Kvinne",
   "@genderWomanLabel": {
     "description": "GenderSegmentedControl-alternativ for den stabile koden «woman» (DESIGN-009 oppfølging 3b, ADR-0047). Delt av Person.gender og, fra prompt 4, RolePlay.gender."

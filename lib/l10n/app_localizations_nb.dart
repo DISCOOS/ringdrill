@@ -2313,6 +2313,12 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get rolePlayPositionFollowsLocation => 'Følger personens lokasjon';
+
+  @override
+  String get rolePlayPositionSetOwnAction => 'Sett egen';
+
+  @override
   String get genderWomanLabel => 'Kvinne';
 
   @override

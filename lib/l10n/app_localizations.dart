@@ -3932,6 +3932,18 @@ abstract class AppLocalizations {
   /// **'{age, plural, =1{1 year} other{{age} years}}'**
   String rolePlayAgeYears(int age);
 
+  /// Position card's disclosure-row text when the marker's position still equals the selected person's own location coordinate (DESIGN-009 prompt 4i).
+  ///
+  /// In en, this message translates to:
+  /// **'Follows the person\'s location'**
+  String get rolePlayPositionFollowsLocation;
+
+  /// Trailing action on the position card's disclosure row that reveals the raw position picker so the author can override the marker's position away from the person's location (DESIGN-009 prompt 4i).
+  ///
+  /// In en, this message translates to:
+  /// **'Set own'**
+  String get rolePlayPositionSetOwnAction;
+
   /// GenderSegmentedControl option label for the stable code "woman" (DESIGN-009 follow-up 3b, ADR-0047). Shared by Person.gender and, from prompt 4, RolePlay.gender.
   ///
   /// In en, this message translates to:

@@ -15,6 +15,7 @@ import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
+import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -111,6 +112,13 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   // default we may keep updating). Cleared once the user picks a spot on the
   // map, so we never overwrite a manual fine-tune.
   bool _positionFromStation = false;
+
+  /// Whether the position section shows the raw [PositionFormField] picker
+  /// rather than the collapsed "Følger personens lokasjon" card (DESIGN-009
+  /// prompt 4i). Set once in [initState] from whether there is a person
+  /// location to collapse behind at all; toggled true afterward by the
+  /// "Sett egen" action, and back to false by "Tilbakestill".
+  bool _positionExpanded = false;
 
   /// New on `RolePlay` (ADR-0047, DESIGN-009 follow-up 4) — the
   /// `roleGender`-labeled counterpart of `Person.gender`, reusing
@@ -212,16 +220,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     _behaviorController.text = _rolePlay.behavior ?? '';
     _propsController.text = _rolePlay.propsMd ?? '';
     _stationIndex = _rolePlay.stationIndex;
-    _position = _rolePlay.position;
-    // When a markør is added to a post without its own position yet, default
-    // to the post's location so the user fine-tunes from there.
-    if (_position == null && _stationIndex != null) {
-      final stationPos = _stationPosition(_stationIndex!);
-      if (stationPos != null) {
-        _position = stationPos;
-        _positionFromStation = true;
-      }
-    }
     _activeMdSections = {
       if (_rolePlay.background != null) _MdSection.background,
       if (_rolePlay.behavior != null) _MdSection.behavior,
@@ -241,6 +239,28 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final selectedPerson = _personBySlug(_personRef);
     _identityExpanded =
         selectedPerson != null && _identityOverrideCount(selectedPerson) > 0;
+
+    _position = _rolePlay.position;
+    // When a markør has no position of its own yet, default it — preferring
+    // the selected person's own location (DESIGN-009 prompt 4i) over the
+    // post's location (the pre-existing fallback) so the user fine-tunes
+    // from the most specific default available.
+    if (_position == null && _stationIndex != null) {
+      final personCoord = _personLocationCoordinate;
+      if (personCoord != null) {
+        _position = personCoord;
+      } else {
+        final stationPos = _stationPosition(_stationIndex!);
+        if (stationPos != null) {
+          _position = stationPos;
+          _positionFromStation = true;
+        }
+      }
+    }
+    // Show the raw picker right away unless there is a person location to
+    // collapse behind (DESIGN-009 prompt 4i) — no inheritable coordinate
+    // means no card, no regression from the pre-existing behavior above.
+    _positionExpanded = _personLocationCoordinate == null;
   }
 
   /// A new roleplay, or a legacy one opened with `personRef == null`, gets a
@@ -391,6 +411,35 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
   /// The [Person] currently selected via [_personRef], or null.
   Person? get _selectedPerson => _personBySlug(_personRef);
+
+  /// The [Location] [_selectedPerson]'s `locSlug` references on this
+  /// station, or null when there is no selected person, no `locSlug`, or
+  /// the slug is dangling (DESIGN-009 prompt 4i).
+  Location? get _selectedPersonLocation {
+    final locSlug = _selectedPerson?.locSlug;
+    if (locSlug == null) return null;
+    for (final location in _workingLocations) {
+      if (location.slug == locSlug) return location;
+    }
+    return null;
+  }
+
+  /// [_selectedPersonLocation]'s own coordinate, or null when there is no
+  /// such location or it has no coordinate set — the "no inheritable
+  /// coordinate" case that keeps the position section as the plain
+  /// picker, unchanged (DESIGN-009 prompt 4i).
+  LatLng? get _personLocationCoordinate => _selectedPersonLocation?.position;
+
+  /// Whether [_position] currently matches [_personLocationCoordinate] —
+  /// the ADR-0047 inherit/override equality rule applied to position
+  /// (DESIGN-009 prompt 4i). Recomputed live, so a later edit to the
+  /// person's own location is picked up automatically, same as re-opening
+  /// this editor would. False when there is nothing to follow.
+  bool get _positionFollowsPerson {
+    final personCoord = _personLocationCoordinate;
+    return personCoord != null &&
+        (_position == null || _position == personCoord);
+  }
 
   /// How many of the four identity facets (name/age/gender/signalement)
   /// currently differ from [person]'s own value (DESIGN-009 prompt 4i) —
@@ -839,19 +888,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               // Person + Kjønn row.
               _buildIdentityCard(context, l, planFields),
               const SizedBox(height: 16),
-              // 3. Posisjon — unchanged existing PositionFormField row
-              // variant.
-              PositionFormField(
-                key: ValueKey(_position),
-                initialValue: _position,
-                onChanged: (pos) {
-                  _position = pos;
-                  _positionFromStation = false;
-                },
-                onSaved: (pos) {
-                  _rolePlay = _rolePlay.copyWith(position: pos);
-                },
-              ),
+              // 3. Posisjon — follows the person's location by default
+              // (DESIGN-009 prompt 4i).
+              _buildPositionSection(context, l),
             ],
           ),
         ),
@@ -1121,6 +1160,179 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  /// The position section (DESIGN-009 prompt 4i): follows the selected
+  /// person's own location by default, mirroring the identity card's
+  /// inherit/override pattern but with a single facet (the coordinate)
+  /// instead of four. Falls through to the plain, unchanged
+  /// [PositionFormField] when there is no inheritable coordinate — no
+  /// card, no regression from the pre-existing "defaults to the post's
+  /// position" behavior.
+  Widget _buildPositionSection(BuildContext context, AppLocalizations l) {
+    final personCoord = _personLocationCoordinate;
+    if (personCoord == null) {
+      return PositionFormField(
+        key: ValueKey(_position),
+        initialValue: _position,
+        onChanged: (pos) => setState(() {
+          _position = pos;
+          _positionFromStation = false;
+        }),
+        onSaved: (pos) => _rolePlay = _rolePlay.copyWith(position: pos),
+      );
+    }
+
+    final theme = Theme.of(context);
+    final location = _selectedPersonLocation!;
+    final locationLabel = location.label.isEmpty
+        ? location.slug
+        : location.label;
+    final following = _positionFollowsPerson;
+
+    if (!_positionExpanded && following) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.position,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 20,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              locationLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            PositionWidget(
+                              format: PositionFormat.utm,
+                              position: personCoord,
+                              wrapped: false,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                InkWell(
+                  key: const Key('position-disclosure'),
+                  onTap: () => setState(() => _positionExpanded = true),
+                  child: Container(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.map_outlined,
+                          size: 16,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l.rolePlayPositionFollowsLocation,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          l.rolePlayPositionSetOwnAction,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PositionFormField(
+          key: ValueKey(_position),
+          initialValue: _position,
+          onChanged: (pos) => setState(() {
+            _position = pos;
+            _positionFromStation = false;
+          }),
+          onSaved: (pos) => _rolePlay = _rolePlay.copyWith(position: pos),
+        ),
+        if (!following)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: InkWell(
+              onTap: () => setState(() {
+                _position = personCoord;
+                _positionExpanded = false;
+              }),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.replay,
+                    size: 13,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    l.rolePlayIdentityResetAction,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1396,6 +1608,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       // that effective value, computed live by the inherit/override sync
       // in `_applyPersonSelection`/the fields' own `onChanged`.
       personRef: _personRef,
+      // Explicit rather than relying on PositionFormField's own `onSaved`
+      // (DESIGN-009 prompt 4i): that FormField isn't even mounted while
+      // the position card shows its collapsed "Følger personens lokasjon"
+      // summary instead of the picker, so its onSaved would never fire.
+      // [_position] is the single source of truth regardless.
+      position: _position,
     );
 
     // Write-back (ADR-0047, DESIGN-009 follow-up 4): only entries created

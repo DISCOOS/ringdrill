@@ -2317,6 +2317,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get rolePlayPositionFollowsLocation =>
+      'Follows the person\'s location';
+
+  @override
+  String get rolePlayPositionSetOwnAction => 'Set own';
+
+  @override
   String get genderWomanLabel => 'Woman';
 
   @override
