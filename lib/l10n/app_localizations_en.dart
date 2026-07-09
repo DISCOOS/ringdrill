@@ -2281,31 +2281,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rolePlayIdentitySectionLabel => 'Identity';
 
   @override
-  String get rolePlayIdentityFollowsPerson => 'Follows the person';
-
-  @override
-  String get rolePlayIdentityFollowsPersonChip => 'Follows person';
-
-  @override
   String get rolePlayIdentityCustomizeAction => 'Customize';
 
   @override
   String get rolePlayIdentityResetAction => 'Reset';
 
   @override
-  String rolePlayIdentityFieldsCustomized(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count fields customized',
-      one: '1 field customized',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String rolePlayPortraying(String name) {
-    return 'Portraying $name';
+  String rolePlayCustomizedFrom(String name) {
+    return 'Customized from $name';
   }
 
   @override
@@ -2318,10 +2301,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get rolePlayPositionFollowsLocation =>
-      'Follows the person\'s location';
 
   @override
   String get rolePlayPositionSetOwnAction => 'Set own';

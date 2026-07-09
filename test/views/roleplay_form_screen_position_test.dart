@@ -10,11 +10,11 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 
-/// DESIGN-009 prompt 4i, commit 3 — the position section defaults to the
-/// selected person's own `loc` location: a collapsed "Følger personens
-/// lokasjon" card showing that location's coordinate, "Sett egen" to
-/// override via the existing picker, and a plain unchanged picker when
-/// there is nothing to follow.
+/// DESIGN-009 prompt 4i, commit 3 (label dropped in prompt 4j) — the
+/// position section defaults to the selected person's own `loc` location: a
+/// collapsed card (`position-disclosure`) showing that location's name and
+/// coordinate, "Sett egen" to override via the existing picker, and a plain
+/// unchanged picker when there is nothing to follow.
 
 const _lkp = LatLng(58.99, 10.43);
 
@@ -105,7 +105,7 @@ void main() {
       );
 
       expect(find.text('Sist kjent'), findsOneWidget);
-      expect(find.text(l.rolePlayPositionFollowsLocation), findsOneWidget);
+      expect(find.byKey(const Key('position-disclosure')), findsOneWidget);
       expect(find.byType(PositionFormField), findsNothing);
 
       await tester.tap(find.text(l.save));
@@ -148,7 +148,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(PositionFormField), findsOneWidget);
-    expect(find.text(l.rolePlayPositionFollowsLocation), findsNothing);
+    expect(find.byKey(const Key('position-disclosure')), findsNothing);
 
     // Not touching the map itself here (a separate picker route); saving
     // with the still-following coordinate simply persists that value.
@@ -184,7 +184,7 @@ void main() {
       );
 
       expect(find.byType(PositionFormField), findsOneWidget);
-      expect(find.text(l.rolePlayPositionFollowsLocation), findsNothing);
+      expect(find.byKey(const Key('position-disclosure')), findsNothing);
       expect(find.text(l.pickALocation), findsOneWidget);
     },
   );
@@ -221,7 +221,7 @@ void main() {
       );
 
       // Still following Anne's location before the switch.
-      expect(find.text(l.rolePlayPositionFollowsLocation), findsOneWidget);
+      expect(find.byKey(const Key('position-disclosure')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('person-field')));
       await tester.pumpAndSettle();
@@ -230,7 +230,7 @@ void main() {
 
       // Re-follows onto Kari's own location, not left pointing at Anne's.
       expect(find.text('IPP'), findsOneWidget);
-      expect(find.text(l.rolePlayPositionFollowsLocation), findsOneWidget);
+      expect(find.byKey(const Key('position-disclosure')), findsOneWidget);
 
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
@@ -274,7 +274,7 @@ void main() {
       );
 
       expect(find.byType(PositionFormField), findsOneWidget);
-      expect(find.text(l.rolePlayPositionFollowsLocation), findsNothing);
+      expect(find.byKey(const Key('position-disclosure')), findsNothing);
 
       await tester.tap(find.byKey(const Key('person-field')));
       await tester.pumpAndSettle();
@@ -282,7 +282,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Still the manual override, not re-pointed at Kari's location.
-      expect(find.text(l.rolePlayPositionFollowsLocation), findsNothing);
+      expect(find.byKey(const Key('position-disclosure')), findsNothing);
 
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();

@@ -86,8 +86,8 @@ void main() {
   });
 
   testWidgets(
-    'a fully-inherited identity starts collapsed: header shows the '
-    'person summary, footer reads "Follows the person", no override dot',
+    'a fully-inherited identity starts collapsed: header shows the person '
+    'summary, "Tilpass" disclosure, no override dot',
     (tester) async {
       await _open(tester);
 
@@ -100,7 +100,9 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text(l.rolePlayIdentityFollowsPerson), findsOneWidget);
+      // No "Følger person(en)" text anywhere (DESIGN-009 prompt 4j) — just
+      // the "Tilpass" disclosure.
+      expect(find.text(l.rolePlayIdentityCustomizeAction), findsOneWidget);
       expect(find.byType(GenderSegmentedControl), findsNothing);
       expect(find.byKey(const Key('identity-panel')), findsNothing);
     },

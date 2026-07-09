@@ -1409,32 +1409,17 @@
   "@rolePlayIdentitySectionLabel": {
     "description": "Liten feltgruppe-etikett over identitetskortet i RolePlayFormScreen (DESIGN-009 prompt 4i), på linje med «Post»/«Posisjon»-etikettene over sine egne velgere."
   },
-  "rolePlayIdentityFollowsPerson": "Følger personen",
-  "@rolePlayIdentityFollowsPerson": {
-    "description": "Identitetskortets utfoldingsradtekst når ingen felt er tilpasset (DESIGN-009 prompt 4i) -- alle identitetsfelt følger for øyeblikket den valgte personen."
-  },
-  "rolePlayIdentityFollowsPersonChip": "Følger person",
-  "@rolePlayIdentityFollowsPersonChip": {
-    "description": "Liten «chip» ved siden av ett enkelt felt (navn/alder/kjønn/signalement) inne i identitetskortets «Tilpass»-panel, vist mens feltet fremdeles er likt den valgte personens egen verdi (DESIGN-009 prompt 4i)."
-  },
   "rolePlayIdentityCustomizeAction": "Tilpass",
   "@rolePlayIdentityCustomizeAction": {
-    "description": "Handlingsetikett på identitetskortets utfoldingsrad som folder ut/inn «Tilpass»-panelet (DESIGN-009 prompt 4i); samme etikett brukes begge veier, med chevron-ikonet som viser hvilken tilstand det er i."
+    "description": "Handlingsetikett på identitetskortets utfoldingsrad som folder ut/inn «Tilpass»-panelet (DESIGN-009 prompt 4i/4j) -- den eneste vekslingen for panelet, med en chevron (ned lukket / opp åpen) som viser hvilken tilstand det er i. Ingen annen utfoldingstekst (DESIGN-009 prompt 4j): et felt forfatteren ikke rører leses bare som det er."
   },
   "rolePlayIdentityResetAction": "Tilbakestill",
   "@rolePlayIdentityResetAction": {
-    "description": "Handling ved siden av et tilpasset felt inne i identitetskortets panel som fjerner tilpasningen og lar feltet følge den valgte personens gjeldende verdi igjen (DESIGN-009 prompt 4i)."
+    "description": "Samlet handling nederst i identitetskortets panel (DESIGN-009 prompt 4j) som nullstiller alle tilpassede felt samtidig til den valgte personens gjeldende verdier -- avløser 4is per-felt-tilbakestilling."
   },
-  "rolePlayIdentityFieldsCustomized": "{count, plural, =1{1 felt tilpasset} other{{count} felt tilpasset}}",
-  "@rolePlayIdentityFieldsCustomized": {
-    "description": "Identitetskortets utfoldingsradtekst når minst ett felt er tilpasset (DESIGN-009 prompt 4i). {count} er antall tilpassede felt.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "rolePlayPortraying": "Portretterer {name}",
-  "@rolePlayPortraying": {
-    "description": "Identitetskortets tredje linje i sammenslått tilstand, vist i stedet for signalement når rollefigurens viste navn selv er en tilpasning (DESIGN-009 prompt 4i), slik at leseren fremdeles vet hvem som faktisk portretteres. {name} er den personens eget navn.",
+  "rolePlayCustomizedFrom": "Tilpasset fra {name}",
+  "@rolePlayCustomizedFrom": {
+    "description": "Identitetskortets tredje linje i sammenslått tilstand, vist i stedet for signalement når rollefigurens viste navn selv er en tilpasning (DESIGN-009 prompt 4j, avløser 4is «Portretterer {name}»), slik at leseren fremdeles vet hvem som faktisk portretteres. {name} er den personens eget navn.",
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -1445,10 +1430,6 @@
     "placeholders": {
       "age": { "type": "int" }
     }
-  },
-  "rolePlayPositionFollowsLocation": "Følger personens lokasjon",
-  "@rolePlayPositionFollowsLocation": {
-    "description": "Posisjonskortets utfoldingsradtekst når markørens posisjon fremdeles er lik den valgte personens egen lokasjonskoordinat (DESIGN-009 prompt 4i)."
   },
   "rolePlayPositionSetOwnAction": "Sett egen",
   "@rolePlayPositionSetOwnAction": {

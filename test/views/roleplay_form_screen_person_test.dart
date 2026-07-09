@@ -157,8 +157,9 @@ void main() {
       expect(find.textContaining(l.rolePlayAgeYears(47)), findsOneWidget);
       expect(find.text('Rød jakke'), findsOneWidget);
       // Every facet still matches the person's own value: inherited, not
-      // overridden — the card stays collapsed.
-      expect(find.text(l.rolePlayIdentityFollowsPerson), findsOneWidget);
+      // overridden — the card stays collapsed with just the "Tilpass"
+      // disclosure, no per-facet text (DESIGN-009 prompt 4j).
+      expect(find.text(l.rolePlayIdentityCustomizeAction), findsOneWidget);
       expect(find.byKey(const Key('identity-panel')), findsNothing);
     },
   );
@@ -317,7 +318,7 @@ void main() {
 
   testWidgets(
     'a roleplay already diverged from its person auto-expands the panel '
-    'and the collapsed card names the override count',
+    'with a single collective reset action, no per-field labels',
     (tester) async {
       final station = Station(
         index: 0,
@@ -344,10 +345,25 @@ void main() {
       );
 
       // Auto-expanded: the panel's own fields are already mounted, no
-      // "Tilpass" tap needed.
+      // "Tilpass" tap needed. A single collective "Tilbakestill" covers
+      // both overridden facets at once (DESIGN-009 prompt 4j) — not a
+      // per-field count or label.
       expect(find.byKey(const Key('identity-panel')), findsOneWidget);
-      expect(find.text(l.rolePlayIdentityFieldsCustomized(2)), findsOneWidget);
-      expect(find.text(l.rolePlayIdentityFollowsPerson), findsNothing);
+      expect(find.text(l.rolePlayIdentityResetAction), findsOneWidget);
+
+      await tester.ensureVisible(find.text(l.rolePlayIdentityResetAction));
+      await tester.tap(find.text(l.rolePlayIdentityResetAction));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kari'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('person-field')),
+          matching: find.text('Anne Glemsk'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining(l.rolePlayAgeYears(47)), findsOneWidget);
     },
   );
 }

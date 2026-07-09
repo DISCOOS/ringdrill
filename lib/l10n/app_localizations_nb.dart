@@ -2277,31 +2277,14 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rolePlayIdentitySectionLabel => 'Identitet';
 
   @override
-  String get rolePlayIdentityFollowsPerson => 'Følger personen';
-
-  @override
-  String get rolePlayIdentityFollowsPersonChip => 'Følger person';
-
-  @override
   String get rolePlayIdentityCustomizeAction => 'Tilpass';
 
   @override
   String get rolePlayIdentityResetAction => 'Tilbakestill';
 
   @override
-  String rolePlayIdentityFieldsCustomized(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count felt tilpasset',
-      one: '1 felt tilpasset',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String rolePlayPortraying(String name) {
-    return 'Portretterer $name';
+  String rolePlayCustomizedFrom(String name) {
+    return 'Tilpasset fra $name';
   }
 
   @override
@@ -2314,9 +2297,6 @@ class AppLocalizationsNb extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get rolePlayPositionFollowsLocation => 'Følger personens lokasjon';
 
   @override
   String get rolePlayPositionSetOwnAction => 'Sett egen';

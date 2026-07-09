@@ -114,8 +114,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   bool _positionFromStation = false;
 
   /// Whether the position section shows the raw [PositionFormField] picker
-  /// rather than the collapsed "Følger personens lokasjon" card (DESIGN-009
-  /// prompt 4i). Set once in [initState] from whether there is a person
+  /// rather than the collapsed location card (DESIGN-009 prompt 4i/4j).
+  /// Set once in [initState] from whether there is a person
   /// location to collapse behind at all; toggled true afterward by the
   /// "Sett egen" action, and back to false by "Tilbakestill".
   bool _positionExpanded = false;
@@ -1092,6 +1092,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   ),
                 ),
               ),
+              // "Tilpass" is the only toggle here (DESIGN-009 prompt 4j) —
+              // no inherit-state or override-count label of any kind, since
+              // a field the author does not touch simply reads as it is.
+              // The chevron alone signals open/closed state.
               InkWell(
                 onTap: () =>
                     setState(() => _identityExpanded = !_identityExpanded),
@@ -1113,21 +1117,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                             ? theme.colorScheme.onSurfaceVariant
                             : theme.colorScheme.primary,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          overrideCount == 0
-                              ? l.rolePlayIdentityFollowsPerson
-                              : l.rolePlayIdentityFieldsCustomized(
-                                  overrideCount,
-                                ),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: overrideCount == 0
-                                ? theme.colorScheme.onSurfaceVariant
-                                : theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
+                      const Expanded(child: SizedBox.shrink()),
                       Text(
                         l.rolePlayIdentityCustomizeAction,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -1138,7 +1128,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       Icon(
                         _identityExpanded
                             ? Icons.keyboard_arrow_up
-                            : Icons.chevron_right,
+                            : Icons.keyboard_arrow_down,
                         size: 16,
                         color: theme.colorScheme.primary,
                       ),
@@ -1159,20 +1149,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                         children: [
                           Expanded(
                             child: _identityFacetColumn(
-                              context,
-                              l,
                               label: l.roleName,
-                              inherited:
-                                  person == null ||
-                                  _isInherited(
-                                    _nameController.text,
-                                    person.name,
-                                  ),
-                              onReset: person == null
-                                  ? null
-                                  : () => setState(
-                                      () => _nameController.text = person.name,
-                                    ),
                               field: RingDrillTextField(
                                 controller: _nameController,
                                 label: l.roleName,
@@ -1180,7 +1157,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                                 overrides: _effectiveVariables,
                                 planFields: planFields,
                                 // Rebuilds this screen so the card's
-                                // summary/override chips stay live as the
+                                // summary/override dot stays live as the
                                 // author types — the controller's own
                                 // notifyListeners() only repaints the
                                 // field itself (DESIGN-009 follow-up 4).
@@ -1199,18 +1176,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                           SizedBox(
                             width: 84,
                             child: _identityFacetColumn(
-                              context,
-                              l,
                               label: l.roleAge,
-                              inherited:
-                                  person == null || _isAgeInherited(person),
-                              onReset: person == null
-                                  ? null
-                                  : () => setState(
-                                      () => _ageController.text =
-                                          person.age?.toString() ?? '',
-                                    ),
-                              showStatus: false,
                               field: TextFormField(
                                 key: const Key('age-field'),
                                 controller: _ageController,
@@ -1236,16 +1202,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       ),
                       const SizedBox(height: 12),
                       _identityFacetColumn(
-                        context,
-                        l,
                         label: l.roleGender,
-                        inherited:
-                            person == null ||
-                            _isInherited(_gender ?? '', person.gender),
-                        onReset: person == null
-                            ? null
-                            : () =>
-                                  setState(() => _gender = person.gender),
                         field: GenderSegmentedControl(
                           value: _gender,
                           onChanged: (value) =>
@@ -1254,21 +1211,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       ),
                       const SizedBox(height: 12),
                       _identityFacetColumn(
-                        context,
-                        l,
                         label: l.roleSignalement,
-                        inherited:
-                            person == null ||
-                            _isInherited(
-                              _signalementController.text,
-                              person.signalement,
-                            ),
-                        onReset: person == null
-                            ? null
-                            : () => setState(
-                                () => _signalementController.text =
-                                    person.signalement ?? '',
-                              ),
                         field: TextFormField(
                           key: const Key('signalement-field'),
                           controller: _signalementController,
@@ -1279,6 +1222,45 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                           decoration: const InputDecoration(isDense: true),
                         ),
                       ),
+                      // Single collective reset (DESIGN-009 prompt 4j),
+                      // superseding 4i's per-field one — clears every
+                      // overridden facet at once, including age (which had
+                      // no per-field reset at all under the old layout).
+                      if (person != null && overrideCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: InkWell(
+                              onTap: () => setState(() {
+                                _nameController.text = person.name;
+                                _ageController.text =
+                                    person.age?.toString() ?? '';
+                                _gender = person.gender;
+                                _signalementController.text =
+                                    person.signalement ?? '';
+                              }),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.replay,
+                                    size: 13,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    l.rolePlayIdentityResetAction,
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -1388,14 +1370,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            l.rolePlayPositionFollowsLocation,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
+                        // No inherit-state label here (DESIGN-009 prompt
+                        // 4j) — the location name above already reads
+                        // as the source.
+                        const Expanded(child: SizedBox.shrink()),
                         Text(
                           l.rolePlayPositionSetOwnAction,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -1466,8 +1444,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// live effective identity, not [person]'s raw fields — a bold name
   /// (with a small accent dot when any facet is overridden), an "age ·
   /// gender" meta line, and either the signalement or, when the *name*
-  /// itself is overridden, "Portretterer {person.name}" so the reader
-  /// still knows who is actually being portrayed.
+  /// itself is overridden, "Tilpasset fra {person.name}" (DESIGN-009
+  /// prompt 4j) so the reader still knows who is actually being portrayed.
   Widget _buildIdentityHeaderSummary(
     BuildContext context,
     AppLocalizations l,
@@ -1537,7 +1515,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 ),
               if (nameOverridden)
                 Text(
-                  l.rolePlayPortraying(person.name),
+                  l.rolePlayCustomizedFrom(person.name),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
@@ -1559,79 +1537,19 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     );
   }
 
-  /// One override-panel row: [label] plus either a "Følger person" chip
-  /// (inherited) or a "Tilbakestill" reset action (overridden), above
-  /// [field] itself.
-  Widget _identityFacetColumn(
-    BuildContext context,
-    AppLocalizations l, {
-    required String label,
-    required bool inherited,
-    required VoidCallback? onReset,
-    required Widget field,
-    // The Age column is only 84px wide — too narrow for a status chip or
-    // reset link beside the label (DESIGN-009 prompt 4i, matching the
-    // mockup's own omission there); its own value is still an override
-    // once it differs, just without this row-level indicator.
-    bool showStatus = true,
-  }) {
+  /// One override-panel row: [label] above [field] itself. No per-facet
+  /// inherit chip and no per-field reset action (DESIGN-009 prompt 4j) —
+  /// a field the author does not touch simply reads as it is;
+  /// the panel foot's single collective reset covers all of them at once.
+  Widget _identityFacetColumn({required String label, required Widget field}) {
     final theme = Theme.of(context);
-    final Widget status;
-    if (!showStatus) {
-      status = const SizedBox.shrink();
-    } else if (inherited) {
-      status = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          l.rolePlayIdentityFollowsPersonChip,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    } else if (onReset != null) {
-      status = InkWell(
-        onTap: onReset,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.replay, size: 13, color: theme.colorScheme.primary),
-            const SizedBox(width: 3),
-            Text(
-              l.rolePlayIdentityResetAction,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      status = const SizedBox.shrink();
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          // Fixed height regardless of [showStatus] so a field's own input
-          // box lines up with its row-mate's even when one column shows no
-          // chip/reset (the narrow Alder column, DESIGN-009 prompt 4i).
-          height: 20,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              status,
-            ],
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 4),
@@ -1746,9 +1664,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       personRef: _personRef,
       // Explicit rather than relying on PositionFormField's own `onSaved`
       // (DESIGN-009 prompt 4i): that FormField isn't even mounted while
-      // the position card shows its collapsed "Følger personens lokasjon"
-      // summary instead of the picker, so its onSaved would never fire.
-      // [_position] is the single source of truth regardless.
+      // the position card shows its collapsed location summary instead of
+      // the picker, so its onSaved would never fire. [_position] is the
+      // single source of truth regardless.
       position: _position,
     );
 

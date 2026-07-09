@@ -3896,53 +3896,29 @@ abstract class AppLocalizations {
   /// **'Identity'**
   String get rolePlayIdentitySectionLabel;
 
-  /// Identity card's disclosure-row text when no facet is overridden (DESIGN-009 prompt 4i) -- every identity field currently tracks the selected Person.
-  ///
-  /// In en, this message translates to:
-  /// **'Follows the person'**
-  String get rolePlayIdentityFollowsPerson;
-
-  /// Small chip next to a single facet (name/age/gender/signalement) inside the identity card's "Tilpass" override panel, shown while that facet still equals the selected Person's own value (DESIGN-009 prompt 4i).
-  ///
-  /// In en, this message translates to:
-  /// **'Follows person'**
-  String get rolePlayIdentityFollowsPersonChip;
-
-  /// Trailing action label on the identity card's disclosure row that expands/collapses the "Tilpass" override panel (DESIGN-009 prompt 4i); the same label is used in both directions, with the chevron icon showing which state it is in.
+  /// Trailing action label on the identity card's disclosure row that expands/collapses the "Tilpass" override panel (DESIGN-009 prompt 4i/4j) -- the only toggle for the panel, with a chevron (down closed / up open) showing which state it is in. There is no other disclosure text (DESIGN-009 prompt 4j): an untouched field simply reads as it is.
   ///
   /// In en, this message translates to:
   /// **'Customize'**
   String get rolePlayIdentityCustomizeAction;
 
-  /// Action next to an overridden facet inside the identity card's override panel that clears the override back to the selected Person's current value (DESIGN-009 prompt 4i).
+  /// Single collective action at the foot of the identity card's override panel (DESIGN-009 prompt 4j) that clears every overridden facet at once back to the selected Person's current values -- superseding 4i's per-field reset.
   ///
   /// In en, this message translates to:
   /// **'Reset'**
   String get rolePlayIdentityResetAction;
 
-  /// Identity card's disclosure-row text when at least one facet is overridden (DESIGN-009 prompt 4i). {count} is the number of overridden facets.
+  /// Identity card's collapsed-header third line, shown instead of the signalement when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4j, superseding 4i's "Portraying {name}"), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 field customized} other{{count} fields customized}}'**
-  String rolePlayIdentityFieldsCustomized(int count);
-
-  /// Identity card's collapsed-header third line, shown instead of the signalement when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4i), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.
-  ///
-  /// In en, this message translates to:
-  /// **'Portraying {name}'**
-  String rolePlayPortraying(String name);
+  /// **'Customized from {name}'**
+  String rolePlayCustomizedFrom(String name);
 
   /// Age with its unit, used in the identity card's collapsed-header meta line (DESIGN-009 prompt 4i), e.g. "34 years · Woman".
   ///
   /// In en, this message translates to:
   /// **'{age, plural, =1{1 year} other{{age} years}}'**
   String rolePlayAgeYears(int age);
-
-  /// Position card's disclosure-row text when the marker's position still equals the selected person's own location coordinate (DESIGN-009 prompt 4i).
-  ///
-  /// In en, this message translates to:
-  /// **'Follows the person\'s location'**
-  String get rolePlayPositionFollowsLocation;
 
   /// Trailing action on the position card's disclosure row that reveals the raw position picker so the author can override the marker's position away from the person's location (DESIGN-009 prompt 4i).
   ///
