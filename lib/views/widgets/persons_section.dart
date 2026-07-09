@@ -213,14 +213,12 @@ class _SearchAddRow extends StatelessWidget {
   }
 }
 
-enum _PersonCardAction { delete }
-
 /// One card-per-item row (DESIGN-009 prompt 4j, `post-editor-persons.html`):
-/// a leading avatar, the name/meta/signalement summary, the inline
-/// enacting-marker row, and a trailing overflow menu — bordered, rounded,
-/// spaced, matching the app's other card lists. Tap opens the person form;
-/// swipe or the overflow menu's "Slett" both delete, guarded by
-/// [usagesFor] (ADR-0031, ADR-0047).
+/// a leading avatar and the name/meta/signalement/marker summary —
+/// bordered, rounded, spaced, matching the app's other card lists. Tap
+/// opens the person form; swipe deletes, guarded by [usagesFor] (ADR-0031
+/// — no overflow menu, no per-row pencil; edit stays a tap and delete a
+/// swipe, the app's one established row-action pattern, ADR-0047).
 class _PersonCard extends StatelessWidget {
   const _PersonCard({
     super.key,
@@ -241,8 +239,7 @@ class _PersonCard extends StatelessWidget {
   final VoidCallback onAddRolePlay;
   final List<String> Function(String slug) usagesFor;
 
-  /// The shared guarded-delete check behind both the swipe-to-dismiss and
-  /// the overflow menu's "Slett" — a person still referenced (ADR-0047,
+  /// The swipe-to-dismiss guard: a person still referenced (ADR-0047,
   /// DESIGN-009 prompt 5) is blocked with a dialog listing the usages;
   /// otherwise a plain destructive confirmation.
   Future<bool> _confirmDelete(BuildContext context, AppLocalizations l10n) async {
@@ -302,15 +299,16 @@ class _PersonCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
-                    radius: 19,
+                    radius: 17,
                     backgroundColor: theme.colorScheme.primaryContainer,
                     child: Icon(
                       Icons.person,
+                      size: 18,
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
@@ -332,7 +330,7 @@ class _PersonCard extends StatelessWidget {
                             ),
                           ),
                         Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.only(top: 4),
                           child: InkWell(
                             onTap: () => rolePlay == null
                                 ? onAddRolePlay()
@@ -348,21 +346,6 @@ class _PersonCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                  PopupMenuButton<_PersonCardAction>(
-                    tooltip: '',
-                    onSelected: (action) async {
-                      switch (action) {
-                        case _PersonCardAction.delete:
-                          if (await _confirmDelete(context, l10n)) onDelete();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: _PersonCardAction.delete,
-                        child: Text(l10n.delete),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -385,17 +368,17 @@ class _EnactedByRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.theater_comedy_outlined,
-            size: 15,
+            size: 14,
             color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 6),

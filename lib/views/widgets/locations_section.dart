@@ -179,14 +179,13 @@ class _SearchAddRow extends StatelessWidget {
   }
 }
 
-enum _LocationCardAction { delete }
-
 /// One card-per-item row (DESIGN-009 prompt 4j, `post-editor-persons.html`):
-/// a kind-colored icon (matching the map markers, ADR-0020), the
-/// label/place/UTM summary, and a trailing overflow menu — bordered,
-/// rounded, spaced, matching the app's other card lists. Tap opens the
-/// location form; swipe or the overflow menu's "Slett" both delete,
-/// guarded by [usagesFor] (ADR-0031, ADR-0047).
+/// a kind-colored icon (matching the map markers, ADR-0020) and the
+/// label/place/UTM summary — bordered, rounded, spaced, matching the
+/// app's other card lists. Tap opens the location form; swipe deletes,
+/// guarded by [usagesFor] (ADR-0031 — no overflow menu, no per-row pencil;
+/// edit stays a tap and delete a swipe, the app's one established
+/// row-action pattern, ADR-0047).
 class _LocationCard extends StatelessWidget {
   const _LocationCard({
     super.key,
@@ -201,8 +200,7 @@ class _LocationCard extends StatelessWidget {
   final VoidCallback onDelete;
   final List<String> Function(String slug) usagesFor;
 
-  /// The shared guarded-delete check behind both the swipe-to-dismiss and
-  /// the overflow menu's "Slett" — mirrors `_PersonCard`'s own copy.
+  /// The swipe-to-dismiss guard — mirrors `_PersonCard`'s own copy.
   Future<bool> _confirmDelete(BuildContext context, AppLocalizations l10n) async {
     final displayName = location.label.isEmpty ? location.slug : location.label;
     final usages = usagesFor(location.slug);
@@ -257,18 +255,22 @@ class _LocationCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 34,
+                    height: 34,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                     ),
-                    child: Icon(location.kind.icon, color: location.kind.color),
+                    child: Icon(
+                      location.kind.icon,
+                      size: 19,
+                      color: location.kind.color,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -286,21 +288,6 @@ class _LocationCard extends StatelessWidget {
                           ),
                       ],
                     ),
-                  ),
-                  PopupMenuButton<_LocationCardAction>(
-                    tooltip: '',
-                    onSelected: (action) async {
-                      switch (action) {
-                        case _LocationCardAction.delete:
-                          if (await _confirmDelete(context, l10n)) onDelete();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: _LocationCardAction.delete,
-                        child: Text(l10n.delete),
-                      ),
-                    ],
                   ),
                 ],
               ),
