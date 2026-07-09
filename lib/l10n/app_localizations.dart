@@ -2822,7 +2822,7 @@ abstract class AppLocalizations {
   /// **'New role'**
   String get newRolePlayTitle;
 
-  /// AppBar title in RolePlayFormScreen when editing an existing role (unused fallback — title shows role name).
+  /// AppBar title in RolePlayFormScreen when editing an existing role (DESIGN-009 prompt 4j) — a static type title; the marker's own name lives in the identity card, not the AppBar.
   ///
   /// In en, this message translates to:
   /// **'Edit role'**

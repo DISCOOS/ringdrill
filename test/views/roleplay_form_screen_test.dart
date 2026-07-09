@@ -137,7 +137,7 @@ void main() {
     expect(result?.rolePlay.name, 'Maria Olsen');
   });
 
-  testWidgets('AppBar title shows newRolePlayTitle when name is empty', (
+  testWidgets('AppBar title is the static "New role" for a new draft', (
     tester,
   ) async {
     final emptyRole = const RolePlay(
@@ -149,20 +149,40 @@ void main() {
     await tester.pumpWidget(_buildForm(rolePlay: emptyRole));
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    // Shows both in the AppBar title and, as a placeholder, in the
-    // collapsed identity card's header (DESIGN-009 prompt 4i).
-    expect(find.text(l10n.newRolePlayTitle), findsAtLeastNWidgets(1));
+    // Also shows as a placeholder in the collapsed identity card's header
+    // (DESIGN-009 prompt 4i), so this is scoped to the AppBar.
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(l10n.newRolePlayTitle),
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('AppBar title shows role name when name is non-empty', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_buildForm());
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  testWidgets(
+    'AppBar title is the static "Edit role", not the role name '
+    '(DESIGN-009 prompt 4j)',
+    (tester) async {
+      await tester.pumpWidget(_buildForm());
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    expect(find.text('Anna Hansen'), findsAtLeastNWidgets(1));
-    expect(find.text(l10n.newRolePlayTitle), findsNothing);
-  });
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text(l10n.editRolePlayTitle),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Anna Hansen'),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('localized form labels render', (tester) async {
     await tester.pumpWidget(_buildForm());

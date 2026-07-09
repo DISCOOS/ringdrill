@@ -1596,7 +1596,7 @@
   },
   "editRolePlayTitle": "Edit role",
   "@editRolePlayTitle": {
-    "description": "AppBar title in RolePlayFormScreen when editing an existing role (unused fallback — title shows role name)."
+    "description": "AppBar title in RolePlayFormScreen when editing an existing role (DESIGN-009 prompt 4j) — a static type title; the marker's own name lives in the identity card, not the AppBar."
   },
   "roleplaySectionRole": "Role",
   "@roleplaySectionRole": {

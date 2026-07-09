@@ -694,13 +694,13 @@
   "@addRolePlay": {
     "description": "Knappetikett i Markørordre-seksjonen på StationExerciseScreen."
   },
-  "newRolePlayTitle": "Ny markørordre",
+  "newRolePlayTitle": "Nytt spill",
   "@newRolePlayTitle": {
-    "description": "AppBar-tittel i RolePlayFormScreen når rollen ikke har navn ennå."
+    "description": "AppBar-tittel i RolePlayFormScreen når rollen ikke har navn ennå (DESIGN-009 prompt 4j) — statisk typetittel; markørens eget navn vises i identitetskortet, ikke i AppBar."
   },
-  "editRolePlayTitle": "Rediger markørordre",
+  "editRolePlayTitle": "Endre spill",
   "@editRolePlayTitle": {
-    "description": "AppBar-tittel i RolePlayFormScreen ved redigering av eksisterende rolle."
+    "description": "AppBar-tittel i RolePlayFormScreen ved redigering av eksisterende rolle (DESIGN-009 prompt 4j) — statisk typetittel; markørens eget navn vises i identitetskortet, ikke i AppBar."
   },
   "roleplaySectionRole": "Rolle",
   "@roleplaySectionRole": {

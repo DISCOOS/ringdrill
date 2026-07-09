@@ -649,9 +649,12 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// overrides nothing (ADR-0046).
   Widget _buildSectionNavigated(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    // Static type title (DESIGN-009 prompt 4j) — the marker's own name
+    // already sits in the identity card's header, so the AppBar just names
+    // what kind of screen this is, new vs. existing.
     final titleText = widget.rolePlay.name.trim().isEmpty
         ? l.newRolePlayTitle
-        : widget.rolePlay.name;
+        : l.editRolePlayTitle;
     // Additive to the station.loc/person entries StationScope already
     // supplies below (DESIGN-009 follow-up 4) — those come through
     // StationScope, not planFields, so both coexist (follow-up 4b). The full
