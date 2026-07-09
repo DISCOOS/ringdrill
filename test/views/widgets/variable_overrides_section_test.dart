@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
@@ -111,6 +112,58 @@ void main() {
 
     expect(find.byType(PopupMenuButton<Object?>), findsNothing);
     expect(find.byIcon(Icons.add), findsNothing);
+  });
+
+  testWidgets(
+    'the parenthesized inherited default is formatted per type — a time as '
+    '12:00, a location as its UTM (DESIGN-008 follow-up 11)',
+    (tester) async {
+      await _pump(
+        tester,
+        variables: const [
+          DrillVariable(name: 'tid', type: VariableType.time, value: '09:05'),
+          DrillVariable(
+            name: 'oppmote',
+            type: VariableType.location,
+            location: VariableLocation(position: LatLng(59.7445, 10.2045)),
+          ),
+        ],
+        inherited: const {
+          'tid': '09:05',
+          'oppmote': '59.744500,10.204500',
+        },
+        overrides: const {},
+        onChanged: (_) {},
+      );
+
+      expect(find.text('(09:05)'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'\(32V .+E .+N\)')), findsOneWidget);
+    },
+  );
+
+  testWidgets('a typed local value is stored in its canonical encoding', (
+    tester,
+  ) async {
+    Map<String, String>? captured;
+    await _pump(
+      tester,
+      variables: const [
+        DrillVariable(name: 'tid', type: VariableType.time, value: '09:05'),
+      ],
+      inherited: const {'tid': '09:05'},
+      overrides: const {},
+      onChanged: (updated) => captured = updated,
+    );
+
+    // A time field is picker-driven; drive the state through the widget's
+    // own onChanged contract by tapping the picker and confirming.
+    await tester.tap(find.byType(TextFormField));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(captured, isNotNull);
+    expect(captured!['tid'], matches(RegExp(r'^\d{2}:\d{2}$')));
   });
 
   testWidgets('shows the empty state when the plan has no variables', (

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations_nb.dart';
 import 'package:ringdrill/models/drill_variable.dart';
@@ -645,6 +646,112 @@ void main() {
         // Reaching here at all proves the fixpoint loop terminated; the cap's
         // fail-safe leaves the unresolvable cycle as a visible literal token.
         expect(result, contains('{{program.'));
+      },
+    );
+  });
+
+  group('BriefRenderer — typed variables (DESIGN-008 follow-up 11)', () {
+    setUpAll(() async {
+      // Localized date rendering needs the nb date symbols; the app gets
+      // them from flutter_localizations, a bare test loads them itself.
+      await initializeDateFormatting('nb');
+    });
+
+    Program typedProgram() => _emptyProgram().copyWith(
+      variables: const [
+        DrillVariable(name: 'tid', type: VariableType.time, value: '12:00'),
+        DrillVariable(
+          name: 'dato',
+          type: VariableType.date,
+          value: '2026-05-17',
+        ),
+        DrillVariable(
+          name: 'varighet',
+          type: VariableType.duration,
+          value: '90',
+        ),
+        DrillVariable(name: 'pi', type: VariableType.number, value: '3.14'),
+        DrillVariable(
+          name: 'oppmote',
+          type: VariableType.location,
+          location: VariableLocation(
+            place: 'Meiselen 14',
+            position: LatLng(59.7445, 10.2045),
+          ),
+        ),
+        // Back-compat: an untyped (string) variable renders exactly its
+        // value, as before typed variables existed.
+        DrillVariable(name: 'frekvens', value: 'Kanal 6'),
+      ],
+      briefIntroMd:
+          'Oppmøte kl {{var.tid}} den {{var.dato}}, varer {{var.varighet}}. '
+          'Pi er {{var.pi}}. Kanal {{var.frekvens}}. '
+          'Sted: {{var.oppmote}} — UTM {{var.oppmote.utm}}, '
+          'adresse {{var.oppmote.place}}, GPS {{var.oppmote.latlng}}.',
+    );
+
+    test('formats each type canonically for display in the brief', () async {
+      final result = await renderer.render(
+        program: typedProgram(),
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+
+      expect(result, contains('kl 12:00'));
+      expect(result, contains('den 17. mai 2026'));
+      expect(result, contains('varer 1 t 30 min'));
+      expect(result, contains('Pi er 3,14'));
+      expect(result, contains('Kanal Kanal 6'));
+    });
+
+    test(
+      'resolves location facets, with the brief\'s inline-code UTM styling',
+      () async {
+        final result = await renderer.render(
+          program: typedProgram(),
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        // Bare token: place + UTM, UTM as an inline-code chip.
+        expect(result, contains(RegExp(r'Sted: Meiselen 14 \(`32V [^`]+`\)')));
+        expect(result, contains(RegExp(r'UTM `32V [^`]+`')));
+        expect(result, contains('adresse Meiselen 14'));
+        expect(result, contains('GPS 59.744500,10.204500'));
+      },
+    );
+
+    test(
+      'a station-scope override on a typed variable resolves per type',
+      () async {
+        final station = Station(
+          index: 0,
+          name: 'Post A',
+          situationMd: 'Post-tid {{var.tid}}',
+          variableOverrides: const {'tid': '14:30'},
+        );
+        final exercise = Exercise(
+          uuid: 'ex-1',
+          name: 'Exercise',
+          startTime: _start,
+          endTime: _end,
+          numberOfTeams: 1,
+          numberOfRounds: 1,
+          executionTime: 10,
+          evaluationTime: 5,
+          rotationTime: 5,
+          stations: [station],
+          schedule: const [],
+        );
+        final program = typedProgram().copyWith(exercises: [exercise]);
+
+        final result = await renderer.render(
+          program: program,
+          audience: BriefAudience.participant,
+          l10n: _l10n,
+        );
+
+        expect(result, contains('Post-tid 14:30'));
       },
     );
   });

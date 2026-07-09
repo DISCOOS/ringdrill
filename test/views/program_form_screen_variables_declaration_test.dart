@@ -586,6 +586,67 @@ void main() {
   });
 
   testWidgets(
+    'changing a type re-validates the kept default: an incompatible value '
+    'blocks save inline, cross-section via the snackbar, and a fixed value '
+    'saves canonical (DESIGN-008 follow-up 11)',
+    (tester) async {
+      final captured = _Captured();
+      await _openForm(
+        tester,
+        _program(
+          variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+        ),
+        captured,
+      );
+
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+
+      // Change the type via the card's type chip: Text → Number. The kept
+      // value "Kanal 6" no longer reads as the type.
+      await tester.tap(find.text(l.variableTypeLabelString));
+      await tester.pumpAndSettle();
+      expect(find.text(l.variableTypePickerTitle('frekvens')), findsOneWidget);
+      await tester.tap(find.text(l.variableTypeLabelNumber));
+      await tester.pumpAndSettle();
+
+      // Surfaced inline rather than silently dropped, and save is blocked.
+      expect(find.text(l.variableValueInvalidNumber), findsOneWidget);
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+      expect(captured.value, isNull);
+
+      // Blocked from another section too — the state-level gate, since the
+      // Variabler section (and its inline validator) is no longer mounted.
+      await _openSwitcherFrom(tester, l.variablesSectionTitle);
+      await tester.tap(find.text(l.programSectionPlan));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+      expect(captured.value, isNull);
+      expect(
+        find.text(l.variableSaveBlockedInvalidValue('frekvens')),
+        findsOneWidget,
+      );
+
+      // A valid value unblocks; "3,14" stores canonical "3.14".
+      await _openSwitcherFrom(tester, l.programSectionPlan);
+      await tester.tap(find.text(l.variablesSectionTitle));
+      await tester.pumpAndSettle();
+      await tester.enterText(_variableValueFieldOf('frekvens'), '3,14');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.save));
+      await tester.pumpAndSettle();
+
+      final saved = captured.value;
+      expect(saved, isNotNull);
+      expect(saved!.variables.single.type, VariableType.number);
+      expect(saved.variables.single.value, '3.14');
+    },
+  );
+
+  testWidgets(
     'create-inline then edit-value closes the loop without ever deleting',
     (tester) async {
       final captured = _Captured();

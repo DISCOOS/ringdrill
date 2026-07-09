@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/l10n/app_localizations_en.dart';
 import 'package:ringdrill/models/drill_variable.dart';
@@ -122,6 +123,36 @@ void main() {
       expect(decoded.variables, unorderedEquals([freq, meetingPoint]));
     });
 
+    test('typed variables round-trip through the real DrillFile archive '
+        '(DESIGN-008 follow-up 11)', () {
+      const typed = [
+        DrillVariable(name: 'tid', type: VariableType.time, value: '12:00'),
+        DrillVariable(
+          name: 'varighet',
+          type: VariableType.duration,
+          value: '90',
+        ),
+        DrillVariable(
+          name: 'oppmote',
+          type: VariableType.location,
+          location: VariableLocation(
+            place: 'Meiselen 14',
+            position: LatLng(59.7445, 10.2045),
+          ),
+        ),
+      ];
+      final program = base().copyWith(variables: typed);
+
+      final decoded = DrillFile.fromProgram(program, 'test').program();
+
+      expect(decoded.variables, unorderedEquals(typed));
+      final location = decoded.variables
+          .singleWhere((v) => v.name == 'oppmote')
+          .location!;
+      expect(location.place, 'Meiselen 14');
+      expect(location.position!.latitude, closeTo(59.7445, 1e-9));
+    });
+
     test('Exercise and Station variableOverrides round-trip through the '
         'archive', () {
       final station = Station(
@@ -158,6 +189,14 @@ void main() {
   });
 
   group('content hash sensitivity', () {
+    test('changes when a variable type changes (DESIGN-008 follow-up 11)', () {
+      final prog = base().copyWith(variables: [freq]);
+      final changed = prog.copyWith(
+        variables: [freq.copyWith(type: VariableType.number)],
+      );
+      expect(prog.computeContentHash(), isNot(changed.computeContentHash()));
+    });
+
     test('changes when a variable value changes', () {
       final prog = base().copyWith(variables: [freq]);
       final changed = prog.copyWith(

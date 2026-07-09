@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/variable_values.dart';
 
 Program _emptyProgram() {
   final now = DateTime(2026);
@@ -168,6 +170,180 @@ void main() {
 
     test('a plan with no declared variables returns an empty map', () {
       expect(effectivePlanVariables(_emptyProgram()), <String, String>{});
+    });
+
+    test(
+      'a location-typed variable renders its bare place + UTM display, '
+      'not the raw structured value (DESIGN-008 follow-up 11)',
+      () {
+        final program = _emptyProgram().copyWith(
+          variables: const [
+            DrillVariable(
+              name: 'oppmote',
+              type: VariableType.location,
+              location: VariableLocation(
+                place: 'Meiselen 14',
+                position: LatLng(59.7445, 10.2045),
+              ),
+            ),
+          ],
+        );
+        final value = effectivePlanVariables(program)['oppmote']!;
+        expect(value, startsWith('Meiselen 14 ('));
+        expect(value, contains('32V'));
+      },
+    );
+  });
+
+  group('facet-aware token pattern (DESIGN-008 follow-up 11)', () {
+    test('captures the name and the facet path', () {
+      final match = planVariableTokenPattern.firstMatch(
+        'Møt på {{var.oppmote.utm}}',
+      )!;
+      expect(match.group(1), 'oppmote');
+      expect(planVariableTokenFacets(match), ['utm']);
+    });
+
+    test('the bare token has an empty facet list', () {
+      final match = planVariableTokenPattern.firstMatch('{{var.oppmote}}')!;
+      expect(planVariableTokenFacets(match), isEmpty);
+    });
+
+    test('planVariableTokenPatternFor matches a faceted token too', () {
+      final pattern = planVariableTokenPatternFor('oppmote');
+      expect(pattern.hasMatch('{{var.oppmote.utm}}'), isTrue);
+      expect(pattern.hasMatch('{{var.oppmote}}'), isTrue);
+      expect(pattern.hasMatch('{{var.oppmote2}}'), isFalse);
+    });
+  });
+
+  group('effectiveTypedPlanVariables', () {
+    test('a location override string decodes into the structured value', () {
+      final program = _emptyProgram().copyWith(
+        variables: const [
+          DrillVariable(
+            name: 'oppmote',
+            type: VariableType.location,
+            location: VariableLocation(place: 'Standard sted'),
+          ),
+        ],
+      );
+      final exercise = _exercise(
+        variableOverrides: const {
+          'oppmote': '59.744500,10.204500 Lokalt sted',
+        },
+      );
+      final effective = effectiveTypedPlanVariables(
+        program,
+        exercise: exercise,
+      )['oppmote']!;
+      expect(effective.type, VariableType.location);
+      expect(effective.location!.place, 'Lokalt sted');
+      expect(effective.location!.position, isNotNull);
+    });
+
+    test('a scalar override keeps the declared type', () {
+      final program = _emptyProgram().copyWith(
+        variables: const [
+          DrillVariable(name: 'tid', type: VariableType.time, value: '00:00'),
+        ],
+      );
+      final exercise = _exercise(variableOverrides: const {'tid': '12:00'});
+      final effective = effectiveTypedPlanVariables(
+        program,
+        exercise: exercise,
+      )['tid']!;
+      expect(effective.type, VariableType.time);
+      expect(effective.value, '12:00');
+    });
+  });
+
+  group('resolveTypedPlanVariables', () {
+    const format = VariableFormat(localeName: 'nb', hourUnit: 't');
+    const oppmote = DrillVariable(
+      name: 'oppmote',
+      type: VariableType.location,
+      location: VariableLocation(
+        place: 'Meiselen 14',
+        position: LatLng(59.7445, 10.2045),
+      ),
+    );
+
+    test('formats a scalar for display (duration)', () {
+      const vars = {
+        'varighet': DrillVariable(
+          name: 'varighet',
+          type: VariableType.duration,
+          value: '90',
+        ),
+      };
+      expect(
+        resolveTypedPlanVariables('Tar {{var.varighet}}', vars, format: format),
+        'Tar 1 t 30 min',
+      );
+    });
+
+    test('a facet on a scalar renders the bare formatted value', () {
+      const vars = {
+        'tid': DrillVariable(
+          name: 'tid',
+          type: VariableType.time,
+          value: '12:00',
+        ),
+      };
+      expect(
+        resolveTypedPlanVariables('Kl {{var.tid.utm}}', vars, format: format),
+        'Kl 12:00',
+      );
+    });
+
+    test('resolves location facets .place/.utm/.latlng and bare', () {
+      const vars = {'oppmote': oppmote};
+      expect(
+        resolveTypedPlanVariables(
+          '{{var.oppmote.place}}',
+          vars,
+          format: format,
+        ),
+        'Meiselen 14',
+      );
+      final utm = resolveTypedPlanVariables(
+        '{{var.oppmote.utm}}',
+        vars,
+        format: format,
+      );
+      expect(utm, contains('32V'));
+      expect(
+        resolveTypedPlanVariables(
+          '{{var.oppmote.latlng}}',
+          vars,
+          format: format,
+        ),
+        '59.744500,10.204500',
+      );
+      final bare = resolveTypedPlanVariables(
+        '{{var.oppmote}}',
+        vars,
+        format: format,
+      );
+      expect(bare, startsWith('Meiselen 14 ('));
+      expect(bare, contains('32V'));
+    });
+
+    test('an unknown name goes through onUnknown, or stays literal', () {
+      expect(
+        resolveTypedPlanVariables(
+          '{{var.ukjent}}',
+          const {},
+          format: format,
+          onUnknown: (name) => '<$name?>',
+        ),
+        '<ukjent?>',
+      );
+      expect(
+        resolveTypedPlanVariables('{{var.ukjent}}', const {}, format: format),
+        '{{var.ukjent}}',
+      );
     });
   });
 }

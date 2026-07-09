@@ -156,7 +156,13 @@ LatLng? parseCoordinateInput(String input) {
     }
     return null;
   }
-  final fromUtm = trimmed.toLatLngFromUtm();
+  // The app's own UTM display ("32V 0580414E 6552008N") suffixes easting/
+  // northing with E/N; `toLatLngFromUtm`'s grammar takes bare numbers, so a
+  // string pasted straight out of a brief needs those stripped first.
+  final normalized = trimmed
+      .replaceAll(RegExp(r'(?<=\d)\s*[eE](?=[\s,]|$)'), '')
+      .replaceAll(RegExp(r'(?<=\d)\s*[nN](?=[\s,]|$)'), '');
+  final fromUtm = normalized.toLatLngFromUtm();
   if (fromUtm != null &&
       fromUtm.latitude.isFinite &&
       fromUtm.longitude.isFinite) {

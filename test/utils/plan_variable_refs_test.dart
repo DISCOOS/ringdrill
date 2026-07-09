@@ -282,6 +282,24 @@ void main() {
 
   group('renameVariable', () {
     test(
+      'carries a facet path over unchanged (DESIGN-008 follow-up 11): '
+      '{{var.old.utm}} becomes {{var.new.utm}}, never a bare token',
+      () {
+        final program = _emptyProgram().copyWith(
+          variables: const [
+            DrillVariable(name: 'oppmote', type: VariableType.location),
+          ],
+          briefIntroMd: 'Møt på {{var.oppmote.utm}} ({{var.oppmote.place}})',
+        );
+        final renamed = renameVariable(program, 'oppmote', 'moetested');
+        expect(
+          renamed.briefIntroMd,
+          'Møt på {{var.moetested.utm}} ({{var.moetested.place}})',
+        );
+      },
+    );
+
+    test(
       'rewrites every markdown field and override key, and the registry entry',
       () {
         final rolePlay = RolePlay(
