@@ -10,12 +10,13 @@ import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
 /// DESIGN-009 "Personer" section (follow-up 3b, card-per-item since prompt
 /// 4j): a card per station-owned [Person] (name + age/gender/signalement
-/// summary), matching the app's card-per-item list style — bordered,
-/// rounded, spaced, with a leading avatar. Tap opens [PersonFormScreen] to
-/// edit; swipe-to-dismiss deletes, behind a `confirmDestructive`
-/// confirmation (ADR-0031 — no overflow menu, no pencil in the row; edit
-/// stays a tap away and delete a swipe, the app's one established
-/// row-action pattern); "+ Ny person" opens the same form to add.
+/// summary), matching the app's card-per-item list style — the same
+/// elevated `Card` (no border) `ExpandableTile` uses elsewhere in the app,
+/// with a leading avatar. Tap opens [PersonFormScreen] to edit;
+/// swipe-to-dismiss deletes, behind a `confirmDestructive` confirmation
+/// (ADR-0031 — no overflow menu, no pencil in the row; edit stays a tap
+/// away and delete a swipe, the app's one established row-action
+/// pattern); "+ Ny person" opens the same form to add.
 ///
 /// Presentation-only, mirroring `LocationsSection`: [persons] and the
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
@@ -216,8 +217,9 @@ class _SearchAddRow extends StatelessWidget {
 }
 
 /// One card-per-item row (DESIGN-009 prompt 4j, `post-editor-persons.html`):
-/// a leading avatar and the name/meta/signalement/marker summary —
-/// bordered, rounded, spaced, matching the app's other card lists. Tap
+/// a leading avatar and the name/meta/signalement/marker summary — an
+/// elevated `Card` (no border), matching the app's other card lists
+/// (`ExpandableTile`), not a hand-decorated bordered `Container`. Tap
 /// opens the person form; swipe deletes, guarded by [usagesFor] (ADR-0031
 /// — no overflow menu, no per-row pencil; edit stays a tap and delete a
 /// swipe, the app's one established row-action pattern, ADR-0047).
@@ -283,7 +285,7 @@ class _PersonCard extends StatelessWidget {
         background: Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.error,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -291,12 +293,11 @@ class _PersonCard extends StatelessWidget {
         ),
         confirmDismiss: (_) => _confirmDelete(context, l10n),
         onDismissed: (_) => onDelete(),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        // A plain themed [Card] (elevation, no border) rather than a
+        // hand-decorated `Container` — the same look every other RingDrill
+        // list uses (`ExpandableTile`, itself a `Card`), not a bespoke one.
+        child: Card(
+          margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,

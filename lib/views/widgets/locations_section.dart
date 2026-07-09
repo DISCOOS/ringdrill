@@ -10,11 +10,12 @@ import 'package:ringdrill/views/widgets/location_kind_style.dart';
 
 /// DESIGN-009 "Lokasjoner" section (follow-up 3b, card-per-item since
 /// prompt 4j): a card per station-owned [Location] (kind icon + label +
-/// place/UTM summary), matching the app's card-per-item list style —
-/// bordered, rounded, spaced. Tap opens [LocationFormScreen] to edit; an
-/// overflow menu and swipe-to-dismiss both delete, behind a
-/// `confirmDestructive` confirmation (ADR-0031 — no per-row pencil, edit
-/// stays a tap away); "+ Ny lokasjon" opens the same form to add.
+/// place/UTM summary), matching the app's card-per-item list style — the
+/// same elevated `Card` (no border) `ExpandableTile` uses elsewhere in the
+/// app. Tap opens [LocationFormScreen] to edit; swipe-to-dismiss deletes,
+/// behind a `confirmDestructive` confirmation (ADR-0031 — no overflow
+/// menu, no per-row pencil, edit stays a tap away); "+ Ny lokasjon" opens
+/// the same form to add.
 ///
 /// Presentation-only, mirroring `VariablesSection`: [locations] and the
 /// mutation callbacks are owned by the caller (`StationFormScreen`), which
@@ -181,8 +182,9 @@ class _SearchAddRow extends StatelessWidget {
 
 /// One card-per-item row (DESIGN-009 prompt 4j, `post-editor-persons.html`):
 /// a kind-colored icon (matching the map markers, ADR-0020) and the
-/// label/place/UTM summary — bordered, rounded, spaced, matching the
-/// app's other card lists. Tap opens the location form; swipe deletes,
+/// label/place/UTM summary — an elevated `Card` (no border), matching the
+/// app's other card lists (`ExpandableTile`), not a hand-decorated
+/// bordered `Container`. Tap opens the location form; swipe deletes,
 /// guarded by [usagesFor] (ADR-0031 — no overflow menu, no per-row pencil;
 /// edit stays a tap and delete a swipe, the app's one established
 /// row-action pattern, ADR-0047).
@@ -237,7 +239,7 @@ class _LocationCard extends StatelessWidget {
         background: Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.error,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -245,12 +247,11 @@ class _LocationCard extends StatelessWidget {
         ),
         confirmDismiss: (_) => _confirmDelete(context, l10n),
         onDismissed: (_) => onDelete(),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        // A plain themed [Card] (elevation, no border) rather than a
+        // hand-decorated `Container` — the same look every other RingDrill
+        // list uses (`ExpandableTile`, itself a `Card`), not a bespoke one.
+        child: Card(
+          margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
