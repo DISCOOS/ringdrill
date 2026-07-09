@@ -1288,6 +1288,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (personCoord == null) {
       return PositionFormField(
         key: ValueKey(_position),
+        variant: PositionFieldVariant.card,
         initialValue: _position,
         onChanged: (pos) => setState(() {
           _position = pos;
@@ -1407,6 +1408,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       children: [
         PositionFormField(
           key: ValueKey(_position),
+          variant: PositionFieldVariant.card,
           initialValue: _position,
           onChanged: (pos) => setState(() {
             _position = pos;

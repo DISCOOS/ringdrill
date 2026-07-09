@@ -833,7 +833,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
               ),
               const SizedBox(height: 16),
               PositionFormField(
-                variant: PositionFieldVariant.row,
+                variant: PositionFieldVariant.card,
                 initialValue: _position,
                 markers: markers,
                 onSaved: (position) => _position = position,

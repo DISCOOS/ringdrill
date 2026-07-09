@@ -90,6 +90,7 @@ class _TeamFormScreenState extends State<TeamFormScreen> {
                   ),
                   const SizedBox(height: 16),
                   PositionFormField(
+                    variant: PositionFieldVariant.card,
                     initialValue: _team.position,
                     onSaved: (position) {
                       _team = _team.copyWith(position: position);

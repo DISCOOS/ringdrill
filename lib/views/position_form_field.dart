@@ -13,10 +13,12 @@ export 'package:ringdrill/views/widgets/position_card.dart'
     show PositionFieldVariant;
 
 /// Position pick field (docs/prompts/position-card-reflow.md). Renders the
-/// shared [PositionCard] surface — [PositionFieldVariant.row] for the
-/// station form, [PositionFieldVariant.card] for the location form — and
-/// wires it into [FormField] save/validate. Tapping anywhere on the surface
-/// opens [MapPickerScreen]; there is no separate map icon.
+/// shared [PositionCard] surface in either [PositionFieldVariant] and wires
+/// it into [FormField] save/validate. Every position-editing form (station,
+/// team, location, roleplay) now uses [PositionFieldVariant.card] for visual
+/// consistency; [PositionFieldVariant.row] remains available for a caller
+/// that needs the more compact horizontal layout. Tapping anywhere on the
+/// surface opens [MapPickerScreen]; there is no separate map icon.
 class PositionFormField<K> extends FormField<LatLng> {
   PositionFormField({
     super.key,
