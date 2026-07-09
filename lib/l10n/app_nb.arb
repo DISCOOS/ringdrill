@@ -1362,9 +1362,9 @@
   "@personsSectionHomeLabel": {
     "description": "Feltetikett for en persons bopel-velger (setter Person.homeSlug til en av postens egne lokasjoner) på Personer-seksjonens rad."
   },
-  "personsSectionHomeNone": "Ingen bopel",
+  "personsSectionHomeNone": "Ingen lokasjon",
   "@personsSectionHomeNone": {
-    "description": "«Ingen bopel valgt»-alternativet i bopel-nedtrekket, og vist når en person ikke har homeSlug."
+    "description": "«Ingen lokasjon valgt»-alternativet i lokasjon-nedtrekket, og vist når en person ikke har homeSlug."
   },
   "personsSectionNotesLabel": "Notater",
   "@personsSectionNotesLabel": {

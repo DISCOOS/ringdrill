@@ -2242,7 +2242,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get personsSectionHomeLabel => 'Lokasjon';
 
   @override
-  String get personsSectionHomeNone => 'Ingen bopel';
+  String get personsSectionHomeNone => 'Ingen lokasjon';
 
   @override
   String get personsSectionNotesLabel => 'Notater';
