@@ -1,8 +1,9 @@
 ---
 id: DESIGN-009
 title: Scenario locations and persons
-status: Proposed
+status: Accepted
 started: 2026-07-03
+accepted: 2026-07-10
 owners: ["kengu"]
 related_code:
   - lib/models/station.dart
