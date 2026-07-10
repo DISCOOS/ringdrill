@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -15,66 +16,63 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
-// Fixtures
+// Fixtures — DESIGN-010 stage 3b: the Post viewer's "roles" list is now the
+// Personer card (one row per station-owned Person, the enacting RolePlay
+// shown inline via `personRef`), not a flat RolePlay list.
 // ---------------------------------------------------------------------------
 
 const _programUuid = 'prog-x';
 const _exerciseUuid = 'ex-x';
 
-// Only station 0 has a role; station 1 has none — used for empty-state test.
-const _roleAtStation0 = RolePlay(
-  uuid: 'role-s0',
+// Station 0 has two persons: one enacted (Hilde, personRef'd by a RolePlay),
+// one not. Station 1 has none — used for the empty-state test.
+const _hilde = Person(
+  slug: 'hilde',
+  name: 'Hilde',
+  age: 34,
+  gender: 'female',
+  signalement: 'Gul regnjakke',
+);
+const _kari = Person(slug: 'kari', name: 'Kari Fiskeløs', age: 71);
+
+const _roleForHilde = RolePlay(
+  uuid: 'role-hilde',
   index: 0,
   exerciseUuid: _exerciseUuid,
   stationIndex: 0,
-  name: 'Pasient A',
+  name: 'Hilde',
+  personRef: 'hilde',
 );
 
-// Role with age set — used to verify age suffix in title.
-const _actorAUuid = 'actor-a';
-final _actorA = Actor(uuid: _actorAUuid, realName: 'Kari Nordmann');
-
-const _roleWithAge = RolePlay(
-  uuid: 'role-age',
-  index: 1,
-  exerciseUuid: _exerciseUuid,
-  stationIndex: 0,
-  name: 'Olav Berg',
-  age: 45,
-);
-
-// Role cast to actorA — used to verify castedByLine subtitle.
-const _roleCast = RolePlay(
-  uuid: 'role-cast',
-  index: 2,
-  exerciseUuid: _exerciseUuid,
-  stationIndex: 0,
-  name: 'Vitne Y',
-  actorUuid: _actorAUuid,
-);
+const _lkp = Location(slug: 'lkp', label: 'LKP', kind: LocationKind.lkp);
 
 Exercise _exercise() => Exercise(
-      uuid: _exerciseUuid,
-      name: 'Test Exercise',
-      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
-      numberOfTeams: 1,
-      numberOfRounds: 1,
-      executionTime: 10,
-      evaluationTime: 5,
-      rotationTime: 2,
-      stations: const [
-        Station(index: 0, name: 'Post 1'),
-        Station(index: 1, name: 'Post 2'),
-      ],
-      schedule: const [
-        [
-          SimpleTimeOfDay(hour: 8, minute: 0),
-          SimpleTimeOfDay(hour: 8, minute: 10),
-          SimpleTimeOfDay(hour: 8, minute: 15),
-        ],
-      ],
-      endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
-    );
+  uuid: _exerciseUuid,
+  name: 'Test Exercise',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+  numberOfTeams: 1,
+  numberOfRounds: 1,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 2,
+  stations: const [
+    Station(
+      index: 0,
+      name: 'Post 1',
+      persons: [_hilde, _kari],
+      locations: [_lkp],
+    ),
+    Station(index: 1, name: 'Post 2'),
+  ],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 0),
+      SimpleTimeOfDay(hour: 8, minute: 10),
+      SimpleTimeOfDay(hour: 8, minute: 15),
+    ],
+  ],
+  endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
+);
 
 Map<String, Object> _basePrefs() {
   final ex = _exercise();
@@ -96,15 +94,10 @@ Map<String, Object> _basePrefs() {
       'rolePlays': [],
       'actors': [],
     }),
-    // Exercises are stored with 'pe:' prefix keys, not inline in program JSON
     'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
-    // Only station 0 gets roles; station 1 stays empty for empty-state test
-    'pr:$_programUuid:${_roleAtStation0.uuid}':
-        jsonEncode(_roleAtStation0.toJson()),
-    'pr:$_programUuid:${_roleWithAge.uuid}': jsonEncode(_roleWithAge.toJson()),
-    'pr:$_programUuid:${_roleCast.uuid}': jsonEncode(_roleCast.toJson()),
-    // Actor cast to _roleCast
-    'pa:$_programUuid:$_actorAUuid': jsonEncode(_actorA.toJson()),
+    'pr:$_programUuid:${_roleForHilde.uuid}': jsonEncode(
+      _roleForHilde.toJson(),
+    ),
   };
 }
 
@@ -124,14 +117,6 @@ Widget _buildScreen({int stationIndex = 0}) {
           stationIndex: stationIndex,
           uuid: _exerciseUuid,
         ),
-        routes: [
-          GoRoute(
-            path: 'roleplays/:uuid',
-            builder: (context, state) => Scaffold(
-              body: Text('RolePlay ${state.pathParameters['uuid']}'),
-            ),
-          ),
-        ],
       ),
     ],
   );
@@ -142,169 +127,9 @@ Widget _buildScreen({int stationIndex = 0}) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-void main() {
-  setUp(() async {
-    await _seedAndInit();
-  });
-
-  testWidgets('section renders only roles matching (exerciseUuid, stationIndex)',
-      (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    // Role for station 0 is visible
-    expect(find.text('Pasient A'), findsOneWidget);
-    // Station 1 has no roles, so empty hint is not shown here
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.noRolesAtThisStation), findsNothing);
-  });
-
-  testWidgets('empty-state hint appears when no roles match station',
-      (tester) async {
-    // Station 1 has no roles in the base seed — empty state shows.
-    await tester.pumpWidget(_buildScreen(stationIndex: 1));
-    await tester.pumpAndSettle();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-
-    expect(find.text(l10n.noRolesAtThisStation), findsOneWidget);
-  });
-
-  testWidgets('tapping add button pushes RolePlayFormScreen with correct draft',
-      (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-
-    await tester.tap(find.text(l10n.addRolePlay));
-    await tester.pumpAndSettle();
-
-    // RolePlayFormScreen pushed; AppBar title = newRolePlayTitle (draft name
-    // empty) — shown both there and as the collapsed identity card's
-    // header placeholder (DESIGN-009 prompt 4i).
-    expect(find.text(l10n.newRolePlayTitle), findsAtLeastNWidgets(1));
-    expect(find.byType(RolePlayFormScreen), findsOneWidget);
-  });
-
-  testWidgets('tapping row body opens role sheet via ContextSheet', (tester) async {
-    // Tap path now calls ContextSheet.of(context).replace(RoleSheetTarget(...))
-    // instead of pushing a GoRouter route, so the screen must be hosted inside
-    // an open ContextSheet for the replace assertion to hold.
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const _StationSheetHarness(stationIndex: 0),
-    ));
-    await tester.pump(); // post-frame callback fires → show()
-    await tester.pump(); // showModalBottomSheet starts
-    await tester.pumpAndSettle();
-
-    // The InkWell wrapping row content (title text is tappable)
-    await tester.tap(find.text('Pasient A'));
-    await tester.pumpAndSettle();
-
-    // Stub body builder renders the UUID after replace(RoleSheetTarget(...)).
-    expect(find.text('RolePlay ${_roleAtStation0.uuid}'), findsOneWidget);
-  });
-
-  testWidgets('swipe opens edit form; row does not dismiss', (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    // Fling right (startToEnd) past the dismiss threshold
-    await tester.fling(find.text('Pasient A'), const Offset(500, 0), 800);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(RolePlayFormScreen), findsOneWidget);
-
-    // Pop without saving
-    final NavigatorState navigator = tester.state(find.byType(Navigator).last);
-    navigator.pop();
-    await tester.pumpAndSettle();
-
-    // Row is still present (not dismissed)
-    expect(find.text('Pasient A'), findsOneWidget);
-  });
-
-  testWidgets('no Icons.delete and no DismissDirection.endToStart on role row',
-      (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    expect(find.byIcon(Icons.delete), findsNothing);
-
-    final dismissibles =
-        tester.widgetList<Dismissible>(find.byType(Dismissible));
-    for (final d in dismissibles) {
-      expect(
-        d.direction,
-        isNot(DismissDirection.endToStart),
-        reason: 'Role row must not have an endToStart (delete) swipe',
-      );
-    }
-  });
-
-  testWidgets('row title shows age suffix when age is set', (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    // _roleWithAge has name 'Olav Berg' and age 45
-    expect(find.text('Olav Berg, 45'), findsOneWidget);
-  });
-
-  testWidgets('row title shows no age suffix when age is null', (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    // _roleAtStation0 has name 'Pasient A' and no age — exact text match
-    expect(find.text('Pasient A'), findsOneWidget);
-  });
-
-  testWidgets('subtitle shows castedByLine when actor is cast', (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    // _roleCast is cast to _actorA
-    expect(find.text(l10n.castedByLine(_actorA.realName)), findsOneWidget);
-  });
-
-  testWidgets('subtitle shows noCastLine when no actor is cast', (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    // _roleAtStation0 and _roleWithAge are uncast — noCastLine appears for each
-    expect(find.text(l10n.noCastLine), findsWidgets);
-  });
-
-  testWidgets('uncast subtitle is italic', (tester) async {
-    await tester.pumpWidget(_buildScreen(stationIndex: 0));
-    await tester.pumpAndSettle();
-
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    // Find a Text widget displaying noCastLine and verify italic style
-    final noCastWidgets = tester.widgetList<Text>(
-      find.text(l10n.noCastLine),
-    );
-    for (final w in noCastWidgets) {
-      final style = w.style;
-      expect(
-        style?.fontStyle,
-        FontStyle.italic,
-        reason: 'Uncast subtitle must be italic',
-      );
-    }
-  });
-}
-
-/// Hosts [StationExerciseScreen] inside an open [ContextSheet] so role-row
-/// taps that call `ContextSheet.of(context).replace(RoleSheetTarget(...))`
-/// resolve and update the sheet body. The body builder maps RoleSheetTarget
-/// to a plain Text widget so the test can assert against the UUID.
+/// Hosts [StationExerciseScreen] inside an open [ContextSheet] so the
+/// enacted-person tap that calls `ContextSheet.of(context).replace(...)`
+/// resolves and updates the sheet body.
 class _StationSheetHarness extends StatefulWidget {
   const _StationSheetHarness({required this.stationIndex});
 
@@ -352,4 +177,105 @@ class _StationSheetHarnessState extends State<_StationSheetHarness> {
       child: const Scaffold(body: SizedBox.shrink()),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+void main() {
+  setUp(() async {
+    await _seedAndInit();
+  });
+
+  testWidgets('Personer card lists the station\'s persons', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsOneWidget);
+    expect(find.textContaining('Hilde'), findsWidgets);
+    expect(find.textContaining('Kari Fiskeløs'), findsWidgets);
+  });
+
+  testWidgets(
+    'Personer/Lokasjoner cards are omitted when the station has none',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen(stationIndex: 1));
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.personsSectionTitle.toUpperCase()), findsNothing);
+      expect(find.text(l10n.locationsSectionTitle.toUpperCase()), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'an enacted person shows "Played by <name>" and taps into the role sheet',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const _StationSheetHarness(stationIndex: 0),
+        ),
+      );
+      await tester.pump(); // post-frame callback fires → show()
+      await tester.pump(); // showModalBottomSheet starts
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.text(l10n.personsSectionEnactedByAction(_roleForHilde.name)),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.text(l10n.personsSectionEnactedByAction(_roleForHilde.name)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('RolePlay ${_roleForHilde.uuid}'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'an unenacted person shows "Add role" and opens a pre-filled RolePlayFormScreen',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen(stationIndex: 0));
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.personsSectionAddMarkerAction), findsOneWidget);
+
+      await tester.tap(find.text(l10n.personsSectionAddMarkerAction));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RolePlayFormScreen), findsOneWidget);
+      // The draft is pre-filled from Kari (the unenacted person), including
+      // her age — the name field shows it as part of the identity text.
+      expect(find.textContaining('Kari Fiskeløs'), findsWidgets);
+    },
+  );
+
+  testWidgets('Lokasjoner card lists the station\'s locations', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.locationsSectionTitle.toUpperCase()), findsOneWidget);
+    expect(find.text('LKP'), findsWidgets);
+  });
+
+  testWidgets('Tidsplan card shows the team schedule table', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(
+      find.text(l10n.stationTimingCardTitle.toUpperCase()),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Team 1'), findsWidgets);
+  });
 }

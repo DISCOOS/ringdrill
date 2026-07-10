@@ -5,31 +5,36 @@ import 'package:flutter/services.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/phase_headers.dart';
-import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/location_form_screen.dart';
+import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
-import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
-import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
+import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
+import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/narrative_rollup_card.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
+import 'package:ringdrill/views/widgets/team_schedule_table.dart';
 
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
@@ -197,48 +202,28 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
               stream: _exerciseService.events,
               initialData: _initialData(),
               builder: (context, asyncSnapshot) {
-                return OrientationBuilder(
-                  builder: (context, orientation) {
-                    final isPortrait = orientation == Orientation.portrait;
-                    final event = asyncSnapshot.data!;
-                    final station = _exercise.stations[widget.stationIndex];
-                    final stationInfo = _buildStationInfo(station);
-                    final rolesSection = _buildRolesSection(station);
-                    final rotations = _buildTeamRotations(event);
-                    // One outer SingleChildScrollView so the screen has a
-                    // single scroll context. Sub-sections (station info,
-                    // team rotations) are non-scrolling Columns sized to
-                    // their content and laid out side-by-side in landscape,
-                    // stacked in portrait.
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildStationStatus(station, event),
-                          const SizedBox(height: 8),
-                          if (isPortrait) ...[
-                            stationInfo,
-                            const SizedBox(height: 8),
-                            rolesSection,
-                            const SizedBox(height: 8),
-                            rotations,
-                          ] else ...[
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: stationInfo),
-                                const SizedBox(width: 8),
-                                Expanded(child: rotations),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            rolesSection,
-                          ],
-                        ],
-                      ),
-                    );
-                  },
+                final event = asyncSnapshot.data!;
+                final station = _exercise.stations[widget.stationIndex];
+                // DESIGN-010 stage 3b: the rebuilt Post viewer is a single
+                // linear stack of cards (Postbeskrivelse, map, Personer,
+                // Lokasjoner, Tidsplan), matching the mockup — the old
+                // side-by-side landscape split had no natural place for the
+                // new persons/locations/schedule cards, and the sheet
+                // already gets wide-screen room from the master-detail
+                // shell (ADR-0030), not an in-body Row.
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStationStatus(station, event),
+                      const SizedBox(height: 8),
+                      _buildStationInfo(station),
+                      _buildPersonsCard(station),
+                      _buildLocationsCard(station),
+                      _buildTimingCard(station, event),
+                    ],
+                  ),
                 );
               },
             ),
@@ -402,185 +387,49 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     );
   }
 
-  /// Per-round phase tiles. Sized to its content (no inner
-  /// scrollable) so the outer SingleChildScrollView in [build] owns
-  /// the whole screen's scroll context.
-  ///
-  /// At narrow widths (e.g. bottom sheet half-snap ≈ 200 px) the
-  /// PhaseHeaders + PhaseTile band cannot fit: PhaseHeaders alone
-  /// requires ~264 px (78 px title + 3×62 px header cells), and
-  /// PhaseTile's fixed phase columns + dividers require ~192 px before
-  /// the title. We swap to a compact stacked rendering below the
-  /// breakpoint so the rotation data stays readable instead of
-  /// overflowing.
-  static const double _compactRotationBreakpoint = 270;
-
-  Widget _buildTeamRotations(ExerciseEvent event) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < _compactRotationBreakpoint) {
-          return _buildTeamRotationsCompact(event);
-        }
-        return _buildTeamRotationsTable(event);
-      },
-    );
-  }
-
-  Widget _buildTeamRotationsTable(ExerciseEvent event) {
-    final localizations = AppLocalizations.of(context)!;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        PhaseHeaders(
-          expand: true,
-          titleWidth: 78,
-          title: localizations.schedule,
-          mainAxisAlignment: MainAxisAlignment.start,
-        ),
-        const SizedBox(height: 8),
-        ...List.generate(_exercise.schedule.length, (index) {
-          final teamIndex = _exercise.teamIndex(widget.stationIndex, index);
-          final none = teamIndex == -1;
-          final title =
-              '${localizations.team(1)} '
-              '${none ? '×' : teamIndex + 1}';
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: none
-                  ? null
-                  : () {
-                      ContextSheet.of(context).replace(
-                        TeamSheetTarget(
-                          exerciseUuid: _exercise.uuid,
-                          teamIndex: teamIndex,
-                        ),
-                      );
-                    },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: PhaseTile(
-                  event: event,
-                  title: title,
-                  roundIndex: index,
-                  exercise: _exercise,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  decoration: none ? TextDecoration.lineThrough : null,
+  /// Tidsplan card (DESIGN-010): the per-team drill/eval/roll clock times
+  /// for this station across every round, from the same `Exercise.schedule`
+  /// + `teamIndex`/`stationIndex` data the live rotation tables read — a
+  /// static table (`TeamScheduleTable`), not `PhaseTile`'s live-progress
+  /// rendering (that stays the coordinator/team surfaces' own job).
+  Widget _buildTimingCard(Station station, ExerciseEvent event) {
+    final l10n = AppLocalizations.of(context)!;
+    final rows = List.generate(_exercise.schedule.length, (roundIndex) {
+      final teamIndex = _exercise.teamIndex(widget.stationIndex, roundIndex);
+      final phases = _exercise.schedule[roundIndex];
+      return TeamScheduleRow(
+        roundIndex: roundIndex,
+        teamIndex: teamIndex,
+        phaseTimes: [for (final phase in phases) phase.toMaterial().formal()],
+        current: event.isRunning && roundIndex == event.currentRound,
+        onTap: teamIndex == -1
+            ? null
+            : () => ContextSheet.of(context).replace(
+                TeamSheetTarget(
+                  exerciseUuid: _exercise.uuid,
+                  teamIndex: teamIndex,
                 ),
               ),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  /// Compact per-round layout used when the surrounding container
-  /// (typically a bottom sheet half-snap) is too narrow to fit the
-  /// table. Each round renders as a card with a title row and one row
-  /// per phase (label + time).
-  Widget _buildTeamRotationsCompact(ExerciseEvent event) {
-    final localizations = AppLocalizations.of(context)!;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(_exercise.schedule.length, (index) {
-        final teamIndex = _exercise.teamIndex(widget.stationIndex, index);
-        final none = teamIndex == -1;
-        final title =
-            '${localizations.team(1)} '
-            '${none ? '×' : teamIndex + 1}';
-        final isCurrent = event.isRunning && index == event.currentRound;
-        final decoration = none ? TextDecoration.lineThrough : null;
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: InkWell(
-            onTap: none
-                ? null
-                : () {
-                    ContextSheet.of(context).replace(
-                      TeamSheetTarget(
-                        exerciseUuid: _exercise.uuid,
-                        teamIndex: teamIndex,
-                      ),
-                    );
-                  },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isCurrent ? Colors.blueAccent : Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: isCurrent
-                            ? FontWeight.bold
-                            : FontWeight.w600,
-                        color: isCurrent ? Colors.white : null,
-                        decoration: decoration,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  ..._compactPhaseRows(
-                    event: event,
-                    roundIndex: index,
-                    decoration: decoration,
-                    localizations: localizations,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  List<Widget> _compactPhaseRows({
-    required ExerciseEvent event,
-    required int roundIndex,
-    required TextDecoration? decoration,
-    required AppLocalizations localizations,
-  }) {
-    final phases = _exercise.schedule[roundIndex];
-    final isCurrentRound = event.isRunning && roundIndex == event.currentRound;
-    return List<Widget>.generate(phases.length, (phaseIndex) {
-      final isCurrentPhase =
-          isCurrentRound && phaseIndex == event.phase.index - 1;
-      final label = switch (phaseIndex) {
-        0 => localizations.drill,
-        1 => localizations.eval,
-        2 => localizations.roll,
-        _ => '${phaseIndex + 1}',
-      };
-      final time = phases[phaseIndex].toMaterial().formal();
-      final style = TextStyle(
-        fontWeight: isCurrentPhase ? FontWeight.bold : FontWeight.normal,
-        decoration: decoration,
-      );
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-        child: Row(
-          children: [
-            SizedBox(width: 64, child: Text(label.toUpperCase(), style: style)),
-            Text(time, style: style),
-          ],
-        ),
       );
     });
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CardSectionHeader(
+            icon: Icons.access_time_filled,
+            title: l10n.stationTimingCardTitle,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TeamScheduleTable(rows: rows),
+          ),
+        ],
+      ),
+    );
   }
 
   ExerciseEvent _initialData() {
@@ -589,164 +438,229 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     return ExerciseEvent.pending(_exercise);
   }
 
-  Widget _buildRolesSection(Station station) {
-    final localizations = AppLocalizations.of(context)!;
-    final roles = _programService
+  /// Personer card (DESIGN-009/010): one row per station-owned [Person] —
+  /// the row *is* the person, with the marker portraying them (if any)
+  /// shown inline via `personsSectionEnactedByAction` (the same label
+  /// `PersonsSection`'s own editor row uses) rather than a separate marker
+  /// list. Omitted entirely when the station has none.
+  Widget _buildPersonsCard(Station station) {
+    if (station.persons.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CardSectionHeader(
+            icon: Icons.people,
+            title: l10n.personsSectionTitle,
+            trailing: _HeaderAddAction(
+              label: l10n.personsSectionAddAction,
+              onTap: () => _addPerson(station),
+            ),
+          ),
+          for (final person in station.persons)
+            _buildPersonRow(station, person),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonRow(Station station, Person person) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final rolePlay = _programService
         .loadRolePlays()
         .where(
           (r) =>
               r.exerciseUuid == _exercise.uuid &&
-              r.stationIndex == widget.stationIndex,
+              r.stationIndex == widget.stationIndex &&
+              r.personRef == person.slug,
         )
-        .toList();
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        .firstOrNull;
+    final displayName = person.name.isEmpty ? person.slug : person.name;
+    final genderLabel = genderLabelFor(person.gender, l10n);
+    final metaParts = [
+      displayName,
+      if (person.age != null) '${person.age}',
+      ?genderLabel,
+    ];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Icon(
+              Icons.person,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  localizations.stationRolesSection,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                TextButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: Text(localizations.addRolePlay),
-                  onPressed: () => _addRolePlay(station),
+                Text(metaParts.join(' · '), overflow: TextOverflow.ellipsis),
+                if ((person.signalement ?? '').isNotEmpty)
+                  Text(
+                    person.signalement!,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: rolePlay == null
+                      ? () => _addRolePlayForPerson(station, person)
+                      : () => _openRolePlay(rolePlay),
+                  child: rolePlay == null
+                      ? _AddMarkerPill(
+                          label: l10n.personsSectionAddMarkerAction,
+                        )
+                      : _EnactedByPill(
+                          label: l10n.personsSectionEnactedByAction(
+                            rolePlay.name,
+                          ),
+                        ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            if (roles.isEmpty)
-              Text(
-                localizations.noRolesAtThisStation,
-                style: Theme.of(context).textTheme.bodySmall,
-              )
-            else
-              ...roles.map((r) => _buildRoleRow(r)),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildRoleRow(RolePlay r) {
-    final localizations = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final actor = r.actorUuid != null
-        ? _programService.getActor(r.actorUuid!)
-        : null;
-    final titleText = r.age != null ? '${r.name}, ${r.age}' : r.name;
-    final subtitleText = actor != null
-        ? localizations.castedByLine(actor.realName)
-        : localizations.noCastLine;
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
-      color: actor != null
-          ? colorScheme.onSurfaceVariant
-          : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-      fontStyle: actor != null ? FontStyle.normal : FontStyle.italic,
-    );
-
-    return Dismissible(
-      key: ValueKey('role-row-${r.uuid}'),
-      direction: DismissDirection.startToEnd,
-      background: Container(
-        color: colorScheme.secondaryContainer,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: [
-            Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
-            const SizedBox(width: 8),
-            Text(
-              localizations.stationRolesSection,
-              style: TextStyle(color: colorScheme.onSecondaryContainer),
+  /// Lokasjoner card (DESIGN-009/010): one row per station-owned [Location],
+  /// styled by [LocationKind] (ADR-0020) — the same kind icon/color the map
+  /// card's markers and legend use. Omitted entirely when the station has
+  /// none.
+  Widget _buildLocationsCard(Station station) {
+    if (station.locations.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CardSectionHeader(
+            icon: Icons.map,
+            title: l10n.locationsSectionTitle,
+            trailing: _HeaderAddAction(
+              label: l10n.locationsSectionAddAction,
+              onTap: () => _addLocation(station),
             ),
-          ],
-        ),
-      ),
-      confirmDismiss: (_) async {
-        final localizations = AppLocalizations.of(context)!;
-        final result = await openFormSurface<RolePlayFormResult>(
-          context,
-          builder: (_) => RolePlayFormScreen(
-            rolePlay: r,
-            exercise: _exercise,
-            variables: _programService.activeProgram?.variables ?? const [],
           ),
-        );
-        if (result != null) {
-          await applyRolePlayAdditions(
-            _programService,
-            localizations,
-            result.rolePlay,
-            result.additions,
-          );
-          await _programService.saveRolePlay(localizations, result.rolePlay);
-          if (mounted) setState(() {});
-        }
-        return false;
-      },
-      child: InkWell(
-        onTap: () => ContextSheet.of(
-          context,
-        ).replace(RoleSheetTarget(rolePlayUuid: r.uuid)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.theater_comedy,
-                size: 20,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      titleText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      subtitleText,
-                      style: subtitleStyle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  actor != null ? Icons.person : Icons.person_add_outlined,
-                  color: actor != null
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                ),
-                tooltip: actor != null
-                    ? localizations.editCast
-                    : localizations.addCast,
-                onPressed: () => _openCastPicker(r),
-              ),
-            ],
-          ),
-        ),
+          for (final location in station.locations) _buildLocationRow(location),
+        ],
       ),
     );
   }
 
-  Future<void> _addRolePlay(Station station) async {
+  Widget _buildLocationRow(Location location) {
+    final theme = Theme.of(context);
+    final displayName = location.label.isEmpty ? location.slug : location.label;
+    final subtitle = location.place.isNotEmpty
+        ? location.place
+        : (location.position == null ? '' : formatUtm(location.position));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Icon(
+              location.kind.icon,
+              size: 16,
+              color: location.kind.color,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(displayName, overflow: TextOverflow.ellipsis),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addPerson(Station station) async {
+    final localizations = AppLocalizations.of(context)!;
+    final result = await openFormSurface<PersonFormResult>(
+      context,
+      builder: (_) => PersonFormScreen(
+        existingSlugs: station.persons.map((p) => p.slug).toSet(),
+        locations: station.locations,
+      ),
+    );
+    if (result == null) return;
+    final updated = station.copyWith(
+      persons: [...station.persons, result.person],
+      locations: result.newLocation == null
+          ? station.locations
+          : [...station.locations, result.newLocation!],
+    );
+    await _saveStation(localizations, updated);
+  }
+
+  Future<void> _addLocation(Station station) async {
+    final localizations = AppLocalizations.of(context)!;
+    final saved = await openFormSurface<Location>(
+      context,
+      builder: (_) => LocationFormScreen(
+        existingSlugs: station.locations.map((l) => l.slug).toSet(),
+      ),
+    );
+    if (saved == null) return;
+    final updated = station.copyWith(locations: [...station.locations, saved]);
+    await _saveStation(localizations, updated);
+  }
+
+  /// Opens the RolePlay editor pre-set with [person]'s own identity and
+  /// `personRef` (mirroring `PersonsSection.onAddRolePlay`'s editor
+  /// counterpart) — a new marker for a person nobody plays yet.
+  Future<void> _addRolePlayForPerson(Station station, Person person) async {
     final localizations = AppLocalizations.of(context)!;
     final existing = _programService
         .loadRolePlays()
@@ -757,7 +671,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       index: existing,
       exerciseUuid: _exercise.uuid,
       stationIndex: station.index,
-      name: '',
+      name: person.name,
+      age: person.age,
+      gender: person.gender,
+      signalement: person.signalement,
+      personRef: person.slug,
     );
     final result = await openFormSurface<RolePlayFormResult>(
       context,
@@ -779,19 +697,22 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     }
   }
 
-  Future<void> _openCastPicker(RolePlay r) async {
-    final localizations = AppLocalizations.of(context)!;
-    final result = await showCastPickerSheet(context, rolePlay: r);
-    if (result == null || !mounted) return;
-    final updated = switch (result) {
-      CastPickerSelect(:final actorUuid) =>
-        actorUuid == r.actorUuid ? null : r.copyWith(actorUuid: actorUuid),
-      CastPickerClear() =>
-        r.actorUuid == null ? null : r.copyWith(actorUuid: null),
-    };
-    if (updated == null) return;
-    await _programService.saveRolePlay(localizations, updated);
-    if (mounted) setState(() {});
+  void _openRolePlay(RolePlay rolePlay) {
+    ContextSheet.of(
+      context,
+    ).replace(RoleSheetTarget(rolePlayUuid: rolePlay.uuid));
+  }
+
+  Future<void> _saveStation(
+    AppLocalizations localizations,
+    Station updated,
+  ) async {
+    final stations = _exercise.stations.toList()
+      ..[widget.stationIndex] = updated;
+    final newExercise = _exercise.copyWith(stations: stations);
+    await _programService.saveExercise(localizations, newExercise);
+    if (!mounted) return;
+    setState(() => _exercise = newExercise);
   }
 
   /// Function to handle editing the exercise. [initialSectionId] jumps the
@@ -846,5 +767,107 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     setState(() {
       _exercise = newExercise;
     });
+  }
+}
+
+/// A card header's compact "+ Action" affordance (mockup's `.addrow`) —
+/// smaller than a `TextButton.icon`'s default tap target, matching the
+/// mockup's inline link style rather than a full button.
+class _HeaderAddAction extends StatelessWidget {
+  const _HeaderAddAction({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add, size: 15, color: theme.colorScheme.primary),
+            const SizedBox(width: 3),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A person row's "Spilles av {navn}" pill (mockup's `.mkline`) — mirrors
+/// `PersonsSection`'s own `_EnactedByRow` visual (that one is private to
+/// `persons_section.dart`).
+class _EnactedByPill extends StatelessWidget {
+  const _EnactedByPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.theater_comedy_outlined,
+            size: 14,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A person row's "+ Legg til markør" affordance (mockup's `.addinline`) —
+/// mirrors `PersonsSection`'s own `_AddMarkerRow` visual.
+class _AddMarkerPill extends StatelessWidget {
+  const _AddMarkerPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.add, size: 15, color: theme.colorScheme.primary),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ],
+    );
   }
 }
