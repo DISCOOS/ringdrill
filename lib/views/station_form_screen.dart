@@ -768,10 +768,15 @@ class _StationFormScreenState extends State<StationFormScreen> {
             initialSectionId: 'station',
             sections: [
               // Base section: structural fields (name, position, description).
+              // The name field and PositionFormField are never preview
+              // targets — only the description (the base section's
+              // token-aware markdown body) flips to rendered.
               FormSection(
                 id: 'station',
                 label: l.station(1),
                 icon: Icons.place,
+                preview: _previewSections.contains('station'),
+                onPreviewChanged: (value) => _togglePreview('station', value),
                 builder: (ctx) => _buildStationSectionBody(ctx, l),
               ),
               // Persons before Locations so the author can name the subject
@@ -898,6 +903,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       tokenAware: true,
                       overrides: _workingOverrides,
                       planFields: planFields,
+                      preview: _previewSections.contains('station'),
                       onCreateVariable: _createVariableInline,
                       onCreateLocation: _createLocationInline,
                       onCreatePerson: _createPersonInline,
