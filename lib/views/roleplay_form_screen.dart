@@ -1087,6 +1087,14 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                     // station name above already yields to ellipsis first,
                     // but this label's own fixed width could still overflow
                     // the row on its own — shrink-with-ellipsis instead.
+                    // A visible gap can appear here at very narrow widths
+                    // when the station name is short enough to leave its
+                    // Expanded box mostly empty — a known, minor cosmetic
+                    // trade-off for overflow safety, distinct from (and much
+                    // less visible than) the identity card's "Tilpass" row,
+                    // which this same pattern used to cause a much more
+                    // prominent version of before that row was rebuilt
+                    // (single Expanded, right-aligned, see below).
                     Flexible(
                       child: Text(
                         l.rolePlayPostEditAction,
@@ -1207,28 +1215,41 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                             ? theme.colorScheme.onSurfaceVariant
                             : theme.colorScheme.primary,
                       ),
-                      const Expanded(child: SizedBox.shrink()),
-                      // Flexible (not a bare Text): at narrow widths the
-                      // leading icon + this label + the trailing chevron
-                      // can together exceed the row's width — shrink with
-                      // ellipsis rather than overflow.
-                      Flexible(
-                        child: Text(
-                          l.rolePlayIdentityCustomizeAction,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
+                      // The *sole* flex participant, absorbing all
+                      // remaining space, with its own child right-aligned
+                      // inside it: a sibling Flexible on the label below
+                      // (as this used to be) would instead split that
+                      // space evenly between this box and the label
+                      // regardless of what the label actually needs,
+                      // leaving it short of the row's edge with dead space
+                      // after it. Nesting the label in an end-aligned Row
+                      // *inside* the sole Expanded keeps it flush right
+                      // whenever there's room, while its own Flexible still
+                      // ellipsis-shrinks it if the row is ever too narrow.
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                l.rolePlayIdentityCustomizeAction,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              _identityExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        _identityExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        size: 16,
-                        color: theme.colorScheme.primary,
                       ),
                     ],
                   ),

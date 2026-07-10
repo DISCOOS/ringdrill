@@ -209,4 +209,29 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'the identity "Tilpass" disclosure row sits flush against the row\'s '
+    'own right edge, not shifted left with dead space after it',
+    (tester) async {
+      await _open(tester);
+
+      final disclosureRect = tester.getRect(
+        find.byKey(const Key('identity-disclosure')),
+      );
+      final chevronRect = tester.getRect(
+        find.descendant(
+          of: find.byKey(const Key('identity-disclosure')),
+          matching: find.byIcon(Icons.keyboard_arrow_down),
+        ),
+      );
+      // The row's own horizontal padding is 12 (see `_buildIdentityCard`):
+      // the chevron's right edge should sit exactly that far from the
+      // container's right edge — not further left with unclaimed space
+      // in between, which a sibling Flexible on the label used to cause
+      // (splitting free space evenly with the spacer regardless of what
+      // the label actually needed).
+      expect(disclosureRect.right - chevronRect.right, 12.0);
+    },
+  );
 }
