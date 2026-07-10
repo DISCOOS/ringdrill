@@ -503,14 +503,28 @@ class BriefMarkdown extends StatelessWidget {
             constraints: BoxConstraints(
               maxWidth: theme.spacing.readingColumnMax,
             ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
-              // SelectionArea sits *inside* the scroll view, wrapping the
-              // non-scrolling Column. See class doc / issue #115787.
-              child: SelectionArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: widgets,
+            // Forces the column to actually fill up to readingColumnMax
+            // instead of shrink-wrapping to its content's own (narrower)
+            // width — otherwise short content sizes smaller than the cap,
+            // and Align then visibly centers that shrunk box instead of
+            // sitting it flush left. A SizedBox(width: infinity) inside a
+            // maxWidth-constrained ancestor clamps to that max (or to the
+            // available width on a narrower screen, where the cap never
+            // applies), so the reading column is always genuinely that
+            // wide — on a very wide screen it is centered as a full
+            // 720px-ish column (the intended effect), and on a narrower one
+            // it simply fills the screen, making Align's centering moot.
+            child: SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+                // SelectionArea sits *inside* the scroll view, wrapping the
+                // non-scrolling Column. See class doc / issue #115787.
+                child: SelectionArea(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: widgets,
+                  ),
                 ),
               ),
             ),

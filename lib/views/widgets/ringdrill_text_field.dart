@@ -166,6 +166,40 @@ class _ResolvedFieldPreviewState extends State<_ResolvedFieldPreview> {
   }
 }
 
+/// Wraps [content] with [label] rendered as a caption above it, matching
+/// the field's own floating `labelText` position when editing — preview
+/// swaps the editable input for read-only resolved text, but per DESIGN-010
+/// that is the *only* visual change; the field's label is chrome, not
+/// editable content, so it must stay. Returns [content] unchanged when
+/// [label] is null (the caller already suppressed it, or the field has
+/// none). [expands] wraps [content] in [Expanded] so it still fills a
+/// bounded ancestor the way the editable field would with `expands: true`.
+Widget _previewWithLabel({
+  required BuildContext context,
+  required String? label,
+  required Widget content,
+  required bool expands,
+}) {
+  if (label == null) return content;
+  final caption = Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      label,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    ),
+  );
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: expands ? MainAxisSize.max : MainAxisSize.min,
+    children: [
+      caption,
+      expands ? Expanded(child: content) : content,
+    ],
+  );
+}
+
 /// Single-line counterpart to [RingDrillTextArea] — same token-aware
 /// behavior, shared with it via [_wrapTokenAware], for name/description-like
 /// fields. First wired to a call site in DESIGN-008 follow-up 09: every
@@ -274,9 +308,14 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
         controller: widget.controller,
         overrides: widget.overrides,
         roleplayFacets: widget.roleplayFacets,
-        builder: (context, resolved) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(resolved, style: Theme.of(context).textTheme.bodyLarge),
+        builder: (context, resolved) => _previewWithLabel(
+          context: context,
+          label: widget.showLabel ? widget.label : null,
+          expands: false,
+          content: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(resolved, style: Theme.of(context).textTheme.bodyLarge),
+          ),
         ),
       );
     }
@@ -430,13 +469,18 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
         controller: widget.controller,
         overrides: widget.overrides,
         roleplayFacets: widget.roleplayFacets,
-        builder: (context, resolved) => resolved.isEmpty
-            ? const SizedBox.shrink()
-            : BriefMarkdown(
-                data: resolved,
-                theme: BriefTheme.of(context),
-                controller: previewController,
-              ),
+        builder: (context, resolved) => _previewWithLabel(
+          context: context,
+          label: widget.label,
+          expands: widget.expands,
+          content: resolved.isEmpty
+              ? const SizedBox.shrink()
+              : BriefMarkdown(
+                  data: resolved,
+                  theme: BriefTheme.of(context),
+                  controller: previewController,
+                ),
+        ),
       );
     }
     final field = TextFormField(
