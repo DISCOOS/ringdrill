@@ -2812,5 +2812,25 @@
   "buildFlagKindPermanent": "Permanent",
   "@buildFlagKindPermanent": {
     "description": "Chip label for a build-time flag that is part of permanent infrastructure (typically dev tools)."
+  },
+  "pickerSelectStationTitle": "Select post",
+  "@pickerSelectStationTitle": {
+    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) when picking a RolePlayFormScreen post/station."
+  },
+  "pickerSelectPersonTitle": "Select person",
+  "@pickerSelectPersonTitle": {
+    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) when picking a RolePlayFormScreen person."
+  },
+  "pickerSelectExerciseTitle": "Select exercise",
+  "@pickerSelectExerciseTitle": {
+    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by showExercisePickerSheet, superseding exercisePickerTitle."
+  },
+  "pickerSelectRolePlayTitle": "Select marker",
+  "@pickerSelectRolePlayTitle": {
+    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by CastPickerSheet, superseding castPickerTitle."
+  },
+  "pickerSearchHint": "Search",
+  "@pickerSearchHint": {
+    "description": "Hint text of the search field the adaptive selector picker (ADR-0049, showRingdrillPicker) shows once a list passes its search threshold."
   }
 }

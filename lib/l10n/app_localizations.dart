@@ -4495,6 +4495,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Permanent'**
   String get buildFlagKindPermanent;
+
+  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) when picking a RolePlayFormScreen post/station.
+  ///
+  /// In en, this message translates to:
+  /// **'Select post'**
+  String get pickerSelectStationTitle;
+
+  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) when picking a RolePlayFormScreen person.
+  ///
+  /// In en, this message translates to:
+  /// **'Select person'**
+  String get pickerSelectPersonTitle;
+
+  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by showExercisePickerSheet, superseding exercisePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select exercise'**
+  String get pickerSelectExerciseTitle;
+
+  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) used by CastPickerSheet, superseding castPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select marker'**
+  String get pickerSelectRolePlayTitle;
+
+  /// Hint text of the search field the adaptive selector picker (ADR-0049, showRingdrillPicker) shows once a list passes its search threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get pickerSearchHint;
 }
 
 class _AppLocalizationsDelegate

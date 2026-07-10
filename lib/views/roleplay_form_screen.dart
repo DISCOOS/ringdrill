@@ -25,6 +25,7 @@ import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 import 'package:ringdrill/views/widgets/section_rollup.dart';
@@ -47,10 +48,6 @@ typedef RolePlayFormResult = ({RolePlay rolePlay, PlanAdditions additions});
 /// ADR-0046's declared-variable-name rule — see `ExerciseFormScreen`'s own
 /// copy of this same one-line RegExp for why it is duplicated per editor.
 final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
-
-/// Sentinel returned by the person picker's inline "+ Ny person" entry —
-/// distinct from every real [Person.slug] (which never contains a colon).
-const _createPersonValue = ':create-person:';
 
 /// Edit form for a single [RolePlay].
 ///
@@ -412,50 +409,43 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     setState(() => _applyPersonSelection(slug));
   }
 
-  /// The identity card header's tap target (DESIGN-009 prompt 4i): a
-  /// plain pick-one dialog over [_workingPersons], since
+  /// The identity card header's tap target (DESIGN-009 prompt 4i,
+  /// ADR-0049): the adaptive selector picker over [_workingPersons], since
   /// `DropdownButtonFormField`'s own menu can't host the header's
   /// multi-line summary in its closed state (see [_buildIdentityCard]).
+  /// "+ Ny person" (ADR-0047, amended 2026-07-10) rides as a footer action
+  /// that dismisses the picker and opens the Person form directly, instead
+  /// of a placeholder being auto-created.
   Future<void> _showPersonPicker(
     BuildContext context,
     AppLocalizations l,
   ) async {
     final theme = Theme.of(context);
-    final selected = await showDialog<String>(
+    final selected = await showRingdrillPicker<Person>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l.rolePlayPersonLabel),
-        children: [
-          for (final person in _workingPersons)
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop(person.slug),
-              child: Text(person.name.isEmpty ? person.slug : person.name),
-            ),
-          // "+ Ny person" (ADR-0047, amended 2026-07-10): opens the Person
-          // form so the author creates the portrayed Person explicitly,
-          // instead of a placeholder being auto-created.
-          SimpleDialogOption(
-            onPressed: () => Navigator.of(context).pop(_createPersonValue),
-            child: Row(
-              children: [
-                Icon(Icons.add, size: 20, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  l.personsSectionAddAction,
-                  style: TextStyle(color: theme.colorScheme.primary),
-                ),
-              ],
-            ),
-          ),
-        ],
+      title: l.pickerSelectPersonTitle,
+      items: _workingPersons,
+      itemBuilder: (context, person, onTap) => ListTile(
+        title: Text(person.name.isEmpty ? person.slug : person.name),
+        onTap: onTap,
       ),
+      searchText: (person) => person.name.isEmpty ? person.slug : person.name,
+      searchHint: l.pickerSearchHint,
+      footerActions: [
+        ListTile(
+          leading: Icon(Icons.add, color: theme.colorScheme.primary),
+          title: Text(
+            l.personsSectionAddAction,
+            style: TextStyle(color: theme.colorScheme.primary),
+          ),
+          onTap: () {
+            Navigator.of(context).pop();
+            _createPersonViaForm();
+          },
+        ),
+      ],
     );
-    if (selected == null) return;
-    if (selected == _createPersonValue) {
-      await _createPersonViaForm();
-      return;
-    }
-    _onPersonChanged(selected);
+    if (selected != null) _onPersonChanged(selected.slug);
   }
 
   /// Opens [PersonFormScreen] to create a new station [Person], adds it (and
@@ -1111,11 +1101,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     });
   }
 
-  /// The Post picker (DESIGN-009 prompt 4j): a plain pick-one dialog over
-  /// [stations], mirroring [_showPersonPicker] — re-pointing a marker's
-  /// post after creation is rare, so this sits behind the compact card's
-  /// discreet "Endre" action rather than a full-width dropdown always on
-  /// screen.
+  /// The Post picker (DESIGN-009 prompt 4j, ADR-0049): the adaptive
+  /// selector picker over [stations], mirroring [_showPersonPicker] —
+  /// re-pointing a marker's post after creation is rare, so this sits
+  /// behind the compact card's discreet "Endre" action rather than a
+  /// full-width dropdown always on screen.
   Future<void> _showStationPicker(
     BuildContext context,
     AppLocalizations l,
@@ -1123,32 +1113,25 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     required int exerciseIndex,
     required StationNumberFormat stationNumberFormat,
   }) async {
-    final selected = await showDialog<int>(
+    final selected = await showRingdrillPicker<Station>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l.stationLabel),
-        children: [
-          for (var i = 0; i < stations.length; i++)
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop(i),
-              child: Row(
-                children: [
-                  StationNumberBadge(
-                    label: Numbering.station(
-                      stationNumberFormat,
-                      exerciseNumber: exerciseIndex < 0 ? 1 : exerciseIndex + 1,
-                      stationIndex: i,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(stations[i].name)),
-                ],
-              ),
-            ),
-        ],
+      title: l.pickerSelectStationTitle,
+      items: stations,
+      itemBuilder: (context, station, onTap) => ListTile(
+        leading: StationNumberBadge(
+          label: Numbering.station(
+            stationNumberFormat,
+            exerciseNumber: exerciseIndex < 0 ? 1 : exerciseIndex + 1,
+            stationIndex: station.index,
+          ),
+        ),
+        title: Text(station.name),
+        onTap: onTap,
       ),
+      searchText: (station) => station.name,
+      searchHint: l.pickerSearchHint,
     );
-    if (selected != null) _onStationChanged(selected);
+    if (selected != null) _onStationChanged(selected.index);
   }
 
   /// The Post selector as a compact card (DESIGN-009 prompt 4j): the

@@ -2622,4 +2622,19 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get buildFlagKindPermanent => 'Permanent';
+
+  @override
+  String get pickerSelectStationTitle => 'Velg post';
+
+  @override
+  String get pickerSelectPersonTitle => 'Velg person';
+
+  @override
+  String get pickerSelectExerciseTitle => 'Velg øvelse';
+
+  @override
+  String get pickerSelectRolePlayTitle => 'Velg markør';
+
+  @override
+  String get pickerSearchHint => 'Søk';
 }

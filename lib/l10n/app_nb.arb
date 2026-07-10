@@ -1845,5 +1845,25 @@
   "buildFlagKindPermanent": "Permanent",
   "@buildFlagKindPermanent": {
     "description": "Merkelapp for et build-time-flagg som er del av permanent infrastruktur (typisk dev-tools)."
+  },
+  "pickerSelectStationTitle": "Velg post",
+  "@pickerSelectStationTitle": {
+    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) når man velger RolePlayFormScreens post/stasjon."
+  },
+  "pickerSelectPersonTitle": "Velg person",
+  "@pickerSelectPersonTitle": {
+    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) når man velger RolePlayFormScreens person."
+  },
+  "pickerSelectExerciseTitle": "Velg øvelse",
+  "@pickerSelectExerciseTitle": {
+    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av showExercisePickerSheet, som erstatter exercisePickerTitle."
+  },
+  "pickerSelectRolePlayTitle": "Velg markør",
+  "@pickerSelectRolePlayTitle": {
+    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) brukt av CastPickerSheet, som erstatter castPickerTitle."
+  },
+  "pickerSearchHint": "Søk",
+  "@pickerSearchHint": {
+    "description": "Hint-tekst i søkefeltet den adaptive velger-picker (ADR-0049, showRingdrillPicker) viser når en liste passerer søketerskelen."
   }
 }

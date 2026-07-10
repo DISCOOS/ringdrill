@@ -152,12 +152,14 @@ void main() {
       expect(find.byKey(const Key('person-field')), findsOneWidget);
 
       // The picker offers the inline create entry alongside the station's
-      // own persons.
+      // own persons. ADR-0049: the plain SimpleDialog is now the adaptive
+      // picker (a Dialog at this test's default 800x600 surface, which
+      // lands in the medium/hasMasterDetail window class).
       await tester.tap(find.byKey(const Key('person-field')));
       await tester.pumpAndSettle();
       expect(
         find.descendant(
-          of: find.byType(SimpleDialog),
+          of: find.byType(Dialog),
           matching: find.text(l.personsSectionAddAction),
         ),
         findsOneWidget,
@@ -319,14 +321,14 @@ void main() {
       // Post 1 person) is not among the dialog's options.
       expect(
         find.descendant(
-          of: find.byType(SimpleDialog),
+          of: find.byType(Dialog),
           matching: find.text('Ola Nordmann'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
-          of: find.byType(SimpleDialog),
+          of: find.byType(Dialog),
           matching: find.text('Anne Glemsk'),
         ),
         findsNothing,

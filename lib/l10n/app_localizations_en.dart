@@ -2624,4 +2624,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get buildFlagKindPermanent => 'Permanent';
+
+  @override
+  String get pickerSelectStationTitle => 'Select post';
+
+  @override
+  String get pickerSelectPersonTitle => 'Select person';
+
+  @override
+  String get pickerSelectExerciseTitle => 'Select exercise';
+
+  @override
+  String get pickerSelectRolePlayTitle => 'Select marker';
+
+  @override
+  String get pickerSearchHint => 'Search';
 }
