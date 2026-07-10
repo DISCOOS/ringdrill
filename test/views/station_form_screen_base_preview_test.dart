@@ -75,6 +75,12 @@ void main() {
       expect(find.widgetWithText(TextFormField, 'Post 1'), findsOneWidget);
       expect(find.byType(BriefMarkdown), findsNothing);
 
+      // Captured before toggling: the label and the input text's own
+      // position in edit mode — the bar every preview position is measured
+      // against.
+      final labelRectEdit = tester.getRect(find.text(l.stationDescription));
+      final inputRectEdit = tester.getRect(find.textContaining('Bruk'));
+
       await tester.tap(find.byTooltip(l.formSectionPreviewAction));
       await tester.pumpAndSettle();
 
@@ -82,23 +88,21 @@ void main() {
       expect(find.byType(BriefMarkdown), findsOneWidget);
       expect(find.textContaining('Bruk Kanal 8'), findsOneWidget);
       // ...its own label stays visible (preview only swaps the editable
-      // content, not the field's chrome), directly above the resolved
-      // text, both flush left at (near) the same x — not offset by
-      // BriefMarkdown's own brief-page gutter (a 24px mismatch a looser
-      // tolerance here would miss entirely).
-      final labelRect = tester.getRect(find.text(l.stationDescription));
-      final contentRect = tester.getRect(
+      // content, not the field's chrome) and does not move at all —
+      // InputDecorator positions it identically whether its child is the
+      // editable TextFormField or the read-only preview.
+      final labelRectPreview = tester.getRect(find.text(l.stationDescription));
+      expect(labelRectPreview, labelRectEdit);
+      // ...and the resolved text starts at exactly the same position the
+      // typed text occupied — the *only* thing that changed is what that
+      // position now shows, per DESIGN-010.
+      final contentRectPreview = tester.getRect(
         find.descendant(
           of: find.byType(BriefMarkdown),
           matching: find.textContaining('Bruk Kanal 8'),
         ),
       );
-      expect(contentRect.left, closeTo(labelRect.left, 2));
-      // ...and the vertical gap between the label and the resolved text
-      // matches the label-to-input gap in edit mode (4px) — not the extra
-      // ~8px MarkdownGenerator's default linesMargin would otherwise add
-      // around a single-paragraph block with nothing else around it.
-      expect(contentRect.top - labelRect.bottom, closeTo(4, 1));
+      expect(contentRectPreview.topLeft, inputRectEdit.topLeft);
       // ...while the name field and the position picker are untouched.
       expect(find.widgetWithText(TextFormField, 'Post 1'), findsOneWidget);
       expect(find.byTooltip(l.formSectionEditAction), findsOneWidget);

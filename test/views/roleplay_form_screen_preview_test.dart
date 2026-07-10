@@ -64,6 +64,12 @@ void main() {
       await tester.tap(find.text(l.roleBackground));
       await tester.pumpAndSettle();
 
+      // Captured before toggling: the label and the input text's own
+      // position in edit mode — `.last`: the wide rail's own tile also
+      // shows this same label text, and comes first in the tree.
+      final labelRectEdit = tester.getRect(find.text(l.roleBackground).last);
+      final inputRectEdit = tester.getRect(find.textContaining('{{var.name}}'));
+
       await tester.tap(find.byTooltip(l.formSectionPreviewAction));
       await tester.pumpAndSettle();
 
@@ -71,25 +77,22 @@ void main() {
       expect(find.textContaining('Hilde er hovedpersonen'), findsOneWidget);
       // The section's own label stays visible — preview only swaps the
       // editable content for resolved text, not the field's chrome — and
-      // sits directly above the resolved text, both flush left at (near)
-      // the same x — not offset by BriefMarkdown's own brief-page gutter (a
-      // 24px mismatch a looser tolerance here would miss entirely). Before
-      // the fix, the resolved text (short) shrink-wrapped and Align
-      // centered it well to the right of the label. `.last`: the wide
-      // rail's own tile also shows this same label text.
-      final labelRect = tester.getRect(find.text(l.roleBackground).last);
-      final contentRect = tester.getRect(
+      // does not move at all: InputDecorator positions it identically
+      // whether its child is the editable field or the read-only preview.
+      // Before this fix, a hand-built caption above the resolved text could
+      // not match TextFormField's own label position pixel-for-pixel.
+      final labelRectPreview = tester.getRect(find.text(l.roleBackground).last);
+      expect(labelRectPreview, labelRectEdit);
+      // The resolved text starts at exactly the same position the typed
+      // text (with its still-literal {{var.name}} token) occupied — the
+      // *only* thing that changed is what that position now shows.
+      final contentRectPreview = tester.getRect(
         find.descendant(
           of: find.byType(BriefMarkdown),
           matching: find.textContaining('Hilde er hovedpersonen'),
         ),
       );
-      expect(contentRect.left, closeTo(labelRect.left, 2));
-      // The vertical gap between the label and the resolved text matches
-      // the label-to-input gap editing would show (a few px), not the
-      // extra ~8px MarkdownGenerator's default linesMargin would otherwise
-      // add around a single-paragraph block with nothing else around it.
-      expect(contentRect.top - labelRect.bottom, lessThan(8));
+      expect(contentRectPreview.topLeft, inputRectEdit.topLeft);
     },
   );
 }

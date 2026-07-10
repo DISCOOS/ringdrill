@@ -166,14 +166,23 @@ class _ResolvedFieldPreviewState extends State<_ResolvedFieldPreview> {
   }
 }
 
-/// Wraps [content] with [label] rendered as a caption above it, matching
-/// the field's own floating `labelText` position when editing — preview
-/// swaps the editable input for read-only resolved text, but per DESIGN-010
-/// that is the *only* visual change; the field's label is chrome, not
-/// editable content, so it must stay. Returns [content] unchanged when
-/// [label] is null (the caller already suppressed it, or the field has
-/// none). [expands] wraps [content] in [Expanded] so it still fills a
-/// bounded ancestor the way the editable field would with `expands: true`.
+/// Wraps [content] in the *same* [InputDecorator] chrome the editable field
+/// uses for its floating [label] — rather than a hand-built caption, which
+/// cannot match `TextFormField`'s own label position pixel-for-pixel
+/// (content padding, floating-label transition height, baseline alignment
+/// all live inside `InputDecorator`, not something worth reimplementing).
+/// Preview swaps the editable input for read-only resolved text, but per
+/// DESIGN-010 that is the *only* visual change: the label must sit exactly
+/// where it sits when editing, not shift because preview approximated the
+/// chrome around it. `border: InputBorder.none` drops the underline —
+/// there is nothing to focus or validate in a read-only preview, so a
+/// stray input line under it would be misleading.
+///
+/// Returns [content] unchanged when [label] is null (the caller already
+/// suppressed it, or the field has none), matching the editable field's own
+/// "no label, no reserved space" behaviour. [expands] mirrors the editable
+/// field's own `expands` so the decorator fills a bounded ancestor the same
+/// way.
 Widget _previewWithLabel({
   required BuildContext context,
   required String? label,
@@ -181,22 +190,11 @@ Widget _previewWithLabel({
   required bool expands,
 }) {
   if (label == null) return content;
-  final caption = Padding(
-    padding: const EdgeInsets.only(bottom: 4),
-    child: Text(
-      label,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-    ),
-  );
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    mainAxisSize: expands ? MainAxisSize.max : MainAxisSize.min,
-    children: [
-      caption,
-      expands ? Expanded(child: content) : content,
-    ],
+  return InputDecorator(
+    decoration: InputDecoration(labelText: label, border: InputBorder.none),
+    isEmpty: false,
+    expands: expands,
+    child: content,
   );
 }
 
@@ -479,17 +477,18 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
                   data: resolved,
                   theme: BriefTheme.of(context),
                   controller: previewController,
-                  // No extra gutter: this sits directly under the field's
-                  // own label/caption (see _previewWithLabel), which has no
-                  // inset of its own — BriefMarkdown's default (brief-page)
-                  // gutter would otherwise shift the text right of it.
+                  // No extra gutter: this sits inside the same
+                  // InputDecorator the editable field uses (see
+                  // _previewWithLabel), whose own contentPadding already
+                  // insets it correctly — BriefMarkdown's brief-page gutter
+                  // would double that inset.
                   gutter: 0,
                   // No extra top/bottom margin either: the brief-page
                   // default gives every block breathing room from its
-                  // neighbours, but here the only "neighbour" above is the
-                  // caption this same function just placed 4px above —
-                  // the default would push the text noticeably further
-                  // from it than the field's own label-to-input gap.
+                  // neighbours, but here the "neighbour" is the
+                  // InputDecorator's own label, positioned by that same
+                  // decorator — the default would push the text lower than
+                  // where the editable field's own input text sits.
                   linesMargin: EdgeInsets.zero,
                 ),
         ),
