@@ -85,7 +85,7 @@ Each rendered section in the rollup is **tap-to-edit**: tapping it jumps to that
 
 ## Detail sheets — the Post and Spill viewers
 
-The station (Post) and roleplay (Spill) read-only detail sheets are this rollup made concrete, and stage 4's most visible payoff. Both call the field resolver, so every token resolves and renders as markdown. Today `station_screen.dart` prints `station.description` through `substitutePlanVariables` in a `SelectableText`, so `{{station.position.utm}}` shows as literal text; the resolver closes that, and the same fix reaches the roleplay sheet, which currently renders only its own (often inherited-empty) identity fields.
+The station (Post) and roleplay (Spill) read-only detail sheets are this rollup made concrete, and stage 3's most visible payoff. Both call the field resolver, so every token resolves and renders as markdown. Today `station_screen.dart` prints `station.description` through `substitutePlanVariables` in a `SelectableText`, so `{{station.position.utm}}` shows as literal text; the resolver closes that, and the same fix reaches the roleplay sheet, which currently renders only its own (often inherited-empty) identity fields.
 
 The **Post viewer** stacks the resolved lead and its labeled sections, then surfaces the station's scenario data — its persons and locations (DESIGN-009) — as list cards and draws those points on the map. The **Spill viewer** presents the marker's order: the effective identity, the play (behavior, background, props), the position, the parent post, and when the marker is active.
 
@@ -97,7 +97,7 @@ The map in both sheets is the shared `StationPositionPanel` / `RolePositionPanel
 
 With the cascade in place, `RingDrillText` moves from `{{var.*}}`-only to full resolution by reading the same scopes and calling the field resolver. Every read-only display surface (lists, headers, the live coordinator UI) then shows the same resolved text the brief does, closing the gap the current variable-only resolver leaves.
 
-Stage 4 must also catch the surfaces that call `substitutePlanVariables` **directly** rather than through `RingDrillText` — notably the station detail view (`station_screen.dart` renders `station.description` in a `SelectableText` via `substitutePlanVariables`, so `{{station.position.utm}}` shows literal today), and likely the station list, coordinator and program views. These are migrated to the field resolver too, so the var-only gap closes everywhere, not just where `RingDrillText` is used.
+Stage 3 must also catch the surfaces that call `substitutePlanVariables` **directly** rather than through `RingDrillText` — notably the station detail view (`station_screen.dart` renders `station.description` in a `SelectableText` via `substitutePlanVariables`, so `{{station.position.utm}}` shows literal today), and likely the station list, coordinator and program views. These are migrated to the field resolver too, so the var-only gap closes everywhere, not just where `RingDrillText` is used.
 
 ## DESIGN-009 leaf fields (follow-up 4e) as a consumer
 
@@ -126,10 +126,11 @@ The model type is `Program`; the UI and these scopes/helpers already lean on "Pl
 Staged, each a separate PR, all additive and Flutter-layer only except the resolver extraction (which is behaviour-preserving for the renderer). No schema bump.
 
 1. **Resolver + cascade foundation (ADR-0048).** Extract the Flutter-free field resolver from `BriefRenderer` (renderer keeps calling it, unit tests unchanged). Extend `PlanScope` with the program facets, add `ExerciseScope`, provide them at the program-scoped route and the exercise editor, and re-provide all resolve scopes across `openFormSurface`. No visible change yet; tested by a resolver round-trip and a scope-presence test.
-2. **Preview mode.** `preview` state on the token-aware fields, the per-section toggle in `SectionNavigatedForm`, rendered via `BriefMarkdown`, live with debounce.
-3. **Section rollup.** Read-only stacked preview under the default section, behind its own toggle, in the exercise/station/roleplay editors.
-4. **`RingDrillText` upgrade.** Switch it to the field resolver + scopes; audit display call sites for the now-fuller resolution.
-5. **DESIGN-009 4e.** Make the scenario leaf fields token-aware on top of the re-provided scopes (self-reference rule from DESIGN-009).
+2. **Preview and rollup.** One rendering primitive, built together (the rollup is preview applied to every section): the per-section `preview` toggle on token-aware fields (rendered via `BriefMarkdown`, live with debounce), and the read-only section rollup under the default section (narrow inline continuation / wide side-by-side pane, tap-to-edit).
+3. **`RingDrillText`, display callers and detail sheets.** Switch `RingDrillText` and the direct `substitutePlanVariables` callers to the field resolver + scopes; the Post and Spill read-only detail sheets become the resolved rollup made concrete.
+4. **DESIGN-009 4e.** Make the scenario leaf fields token-aware on top of the re-provided scopes (self-reference rule from DESIGN-009).
+
+(Consolidated from five stages to four: preview and rollup, which share one render-resolved-section primitive, are built together.)
 
 All user-facing strings in `app_en.arb` / `app_nb.arb`; run `make i18n`.
 
