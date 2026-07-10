@@ -7,10 +7,12 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 
-/// DESIGN-010 prompt 2b fix 1 — the per-section preview eye must be enabled
-/// on the base section too (not just the addable markdown sections), since
-/// the station description is a token-aware markdown body living there.
-/// The name field and PositionFormField stay editable regardless.
+/// DESIGN-010 (revised 2026-07-10) — the base section's preview eye swaps
+/// the WHOLE section between its editable fields and the rollup preview
+/// (which renders the description as lead plus every section), rather than
+/// previewing just the description field inline. This replaced the old
+/// bottom "Vis detaljer" toggle + side-by-side pane, which squeezed the
+/// fields on medium-wide and hid the toggle below the fold on narrow.
 void main() {
   Future<void> useWideSurface(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
@@ -49,8 +51,8 @@ void main() {
   }
 
   testWidgets(
-    'the base section eye is enabled and previews the description, while '
-    'the name field and position stay editable',
+    'the base section eye swaps the whole section to the rollup preview and '
+    'back',
     (tester) async {
       await useWideSurface(tester);
       final station = Station(
@@ -61,8 +63,7 @@ void main() {
       );
       final l = await openStation(tester, station);
 
-      // Enabled — not disabled like a base section with no previewable
-      // field would be.
+      // Enabled on the base section — its eye toggles the rollup preview.
       final toggle = tester.widget<IconButton>(
         find.ancestor(
           of: find.byIcon(Icons.visibility_outlined),
@@ -72,45 +73,25 @@ void main() {
       expect(toggle.onPressed, isNotNull);
       expect(toggle.tooltip, l.formSectionPreviewAction);
 
+      // Edit mode: the structural name field is shown, nothing rendered.
       expect(find.widgetWithText(TextFormField, 'Post 1'), findsOneWidget);
-      expect(find.byType(BriefMarkdown), findsNothing);
-
-      // Captured before toggling: the label and the input text's own
-      // position in edit mode — the bar every preview position is measured
-      // against.
-      final labelRectEdit = tester.getRect(find.text(l.stationDescription));
-      final inputRectEdit = tester.getRect(find.textContaining('Bruk'));
+      expect(find.byType(BriefMarkdownBlock), findsNothing);
 
       await tester.tap(find.byTooltip(l.formSectionPreviewAction));
       await tester.pumpAndSettle();
 
-      // The description resolves and renders via BriefMarkdown...
-      expect(find.byType(BriefMarkdown), findsOneWidget);
+      // The whole section is now the rollup: the description resolves and
+      // renders (as lead), and the structural name field is swapped out.
+      expect(find.byType(BriefMarkdownBlock), findsWidgets);
       expect(find.textContaining('Bruk Kanal 8'), findsOneWidget);
-      // ...its own label stays visible (preview only swaps the editable
-      // content, not the field's chrome) and does not move at all —
-      // InputDecorator positions it identically whether its child is the
-      // editable TextFormField or the read-only preview.
-      final labelRectPreview = tester.getRect(find.text(l.stationDescription));
-      expect(labelRectPreview, labelRectEdit);
-      // ...and the resolved text starts at exactly the same position the
-      // typed text occupied — the *only* thing that changed is what that
-      // position now shows, per DESIGN-010.
-      final contentRectPreview = tester.getRect(
-        find.descendant(
-          of: find.byType(BriefMarkdown),
-          matching: find.textContaining('Bruk Kanal 8'),
-        ),
-      );
-      expect(contentRectPreview.topLeft, inputRectEdit.topLeft);
-      // ...while the name field and the position picker are untouched.
-      expect(find.widgetWithText(TextFormField, 'Post 1'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Post 1'), findsNothing);
       expect(find.byTooltip(l.formSectionEditAction), findsOneWidget);
 
+      // Back to edit restores the fields.
       await tester.tap(find.byTooltip(l.formSectionEditAction));
       await tester.pumpAndSettle();
 
-      expect(find.byType(BriefMarkdown), findsNothing);
+      expect(find.byType(BriefMarkdownBlock), findsNothing);
       expect(find.widgetWithText(TextFormField, 'Post 1'), findsOneWidget);
     },
   );

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
-import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
@@ -137,7 +136,22 @@ class _SectionRollupState extends State<SectionRollup> {
         ),
       );
     }
-    if (blocks.isEmpty) return const SizedBox.shrink();
+    if (blocks.isEmpty) {
+      // The base section's preview is a whole-section swap now (DESIGN-010,
+      // revised 2026-07-10), so an empty rollup shows a muted placeholder
+      // rather than a blank pane.
+      final l10n = AppLocalizations.of(context)!;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Text(
+          l10n.rollupEmptyPreview,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: blocks,
@@ -145,88 +159,36 @@ class _SectionRollupState extends State<SectionRollup> {
   }
 }
 
-/// Composes an entity editor's default-section body with the DESIGN-010
-/// rollup toggle and, when shown, the rollup itself — shared by the
-/// Exercise/Station/RolePlay editors so the narrow/wide layout split lives
-/// in one place. [fields] is the editor's existing default-section body
-/// (its own `SafeArea`/scroll/`Column` of structural fields), passed
-/// through unchanged.
+/// Renders an entity editor's default-section body as EITHER its editable
+/// [fields] or, when [showRollup] is on, the read-only rollup preview —
+/// shared by the Exercise/Station/RolePlay editors (DESIGN-010, revised
+/// 2026-07-10). [fields] is the editor's existing default-section body (its
+/// own `SafeArea`/scroll/`Column` of structural fields), passed through
+/// unchanged.
 ///
-/// Narrow ([WindowSizeClass.hasMasterDetail] false): an inline continuation
-/// — [fields], the toggle, then (if shown) the rollup, all inside one outer
-/// scroll (nesting `fields`' own scroll view inside it is safe: given
-/// unbounded height it sizes to its content instead of scrolling
-/// independently, so the whole thing reads as a single page).
-///
-/// Wide: a side-by-side pane — [fields] on the left (still scrolling on its
-/// own within its bounded half), the rollup on the right in its own
-/// scrollable pane, split like the master/detail layout (ADR-0030).
+/// The whole section swaps between edit and preview, driven by the section's
+/// own preview toggle in the `SectionNavigatedForm` app bar (the same eye/
+/// pencil the markdown sections use) — not a separate bottom button or a
+/// side-by-side pane. The old side-by-side pane squeezed the fields on the
+/// narrower (medium) wide layouts, and the old bottom toggle was only
+/// reachable after scrolling the whole form on narrow; a full-section swap
+/// fixes both, and the rollup already includes the description/sections so
+/// it reads as a complete preview.
 Widget withSectionRollup({
   required BuildContext context,
   required Widget fields,
   required List<RollupSection> rollupSections,
   required bool showRollup,
-  required ValueChanged<bool> onShowRollupChanged,
 }) {
-  final l10n = AppLocalizations.of(context)!;
-  final toggle = Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: () => onShowRollupChanged(!showRollup),
-        icon: Icon(
-          showRollup
-              ? Icons.visibility_off_outlined
-              : Icons.visibility_outlined,
-        ),
-        label: Text(showRollup ? l10n.rollupHideAction : l10n.rollupShowAction),
+  if (!showRollup) return fields;
+  return SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: SectionRollup(
+        sections: rollupSections,
+        onTapSection: (id) =>
+            SectionNavigator.maybeOf(context)?.selectSection(id),
       ),
     ),
-  );
-
-  final rollup = SectionRollup(
-    sections: rollupSections,
-    onTapSection: (id) => SectionNavigator.maybeOf(context)?.selectSection(id),
-  );
-
-  if (!WindowSizeClass.of(context).hasMasterDetail) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          fields,
-          toggle,
-          if (showRollup)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: rollup,
-            ),
-        ],
-      ),
-    );
-  }
-
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Expanded(
-        child: Column(
-          children: [
-            Expanded(child: fields),
-            toggle,
-          ],
-        ),
-      ),
-      if (showRollup) ...[
-        const VerticalDivider(width: 1),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: rollup,
-          ),
-        ),
-      ],
-    ],
   );
 }

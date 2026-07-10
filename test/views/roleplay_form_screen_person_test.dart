@@ -99,25 +99,69 @@ void main() {
   });
 
   testWidgets(
-    'a brand-new roleplay on a station with no persons auto-creates one '
-    'from the typed identity — no extra authoring step',
+    'a brand-new roleplay does not auto-create a person; save is blocked '
+    'until one is selected (ADR-0047, amended 2026-07-10)',
     (tester) async {
       final station = Station(index: 0, name: 'Post 1');
       final captured = _Captured();
+      // A brand-new roleplay is constructed with an empty name.
       await _openForm(
         tester,
-        _rolePlay(name: 'Esel', stationIndex: 0),
+        _rolePlay(name: '', stationIndex: 0),
         _exercise(stations: [station]),
         captured,
       );
 
-      // The identity card already has a person (auto-created), so save
-      // succeeds even though the station started with zero persons.
+      // No placeholder Person was manufactured, so the identity header
+      // reads as a prompt and save is blocked on the mandatory personRef.
+      expect(find.text(l.rolePlaySelectPersonPrompt), findsOneWidget);
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
 
-      expect(captured.value, isNotNull);
-      expect(captured.value!.rolePlay.personRef, isNotNull);
+      expect(captured.value, isNull);
+      expect(find.text(l.pleaseSelectPerson), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'identity and position are gated until a Post is selected, and the '
+    'person picker offers a "+ Ny person" entry',
+    (tester) async {
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+      );
+      await _openForm(
+        tester,
+        _rolePlay(name: '', stationIndex: null),
+        _exercise(stations: [station]),
+        _Captured(),
+      );
+
+      // No Post chosen: the base section shows only the hint, not the
+      // identity card or position picker.
+      expect(find.text(l.rolePlayPostRequiredHint), findsOneWidget);
+      expect(find.byKey(const Key('person-field')), findsNothing);
+
+      // Choose the Post — identity card now appears.
+      await tester.tap(find.byKey(const Key('station-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Post 1').last);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('person-field')), findsOneWidget);
+
+      // The picker offers the inline create entry alongside the station's
+      // own persons.
+      await tester.tap(find.byKey(const Key('person-field')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(SimpleDialog),
+          matching: find.text(l.personsSectionAddAction),
+        ),
+        findsOneWidget,
+      );
     },
   );
 
@@ -299,15 +343,21 @@ void main() {
   );
 
   testWidgets('the gender field renders and is saved', (tester) async {
-    final station = Station(index: 0, name: 'Post 1');
+    final station = Station(
+      index: 0,
+      name: 'Post 1',
+      persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+    );
     final captured = _Captured();
     await _openForm(
       tester,
-      _rolePlay(name: 'Esel', stationIndex: 0),
+      _rolePlay(name: '', stationIndex: 0),
       _exercise(stations: [station]),
       captured,
     );
 
+    // A Person must be selected before the "Tilpass" panel is available.
+    await _pickPerson(tester, 'Anne Glemsk');
     await _expandIdentity(tester);
     expect(find.text(l.roleGender), findsOneWidget);
 

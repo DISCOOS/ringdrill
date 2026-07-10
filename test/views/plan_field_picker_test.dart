@@ -295,6 +295,9 @@ void main() {
   });
 
   group('RolePlayFormScreen', () {
+    // Portrays a station Person (ADR-0047, amended 2026-07-10 — no
+    // auto-created placeholder); the name matches so identity starts
+    // inherited and the "Tilpass" panel opens on the disclosure tap.
     RolePlay rolePlay() => const RolePlay(
       uuid: 'role-1',
       index: 0,
@@ -302,8 +305,12 @@ void main() {
       name: 'Anna Hansen',
       stationIndex: 0,
       behavior: 'x',
+      personRef: 'anne',
     );
 
+    // Ensures the passed station carries the portrayed person (slug 'anne')
+    // so `personRef` above resolves — without clobbering a person the test's
+    // own station already supplies under that slug.
     Exercise exercise(Station station) => Exercise(
       uuid: 'ex-1',
       name: 'Exercise',
@@ -314,7 +321,15 @@ void main() {
       executionTime: 10,
       evaluationTime: 5,
       rotationTime: 5,
-      stations: [station],
+      stations: [
+        station.copyWith(
+          persons: [
+            ...station.persons,
+            if (!station.persons.any((p) => p.slug == 'anne'))
+              const Person(slug: 'anne', name: 'Anna Hansen'),
+          ],
+        ),
+      ],
       schedule: const [],
     );
 

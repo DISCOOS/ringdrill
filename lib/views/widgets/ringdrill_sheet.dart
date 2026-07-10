@@ -111,12 +111,18 @@ Future<T?> showRingdrillFormDialog<T>({
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 8,
         insetPadding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 720,
-            maxHeight: viewport.height * 0.88,
+        // Scope a ScaffoldMessenger to the dialog so a form's SnackBar (e.g.
+        // "Velg en person") shows only inside the dialog's own Scaffold. The
+        // root messenger otherwise displays it in every registered Scaffold
+        // at once — both here and on the main screen behind the barrier.
+        child: ScaffoldMessenger(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 720,
+              maxHeight: viewport.height * 0.88,
+            ),
+            child: _withDefaultPlanScope(builder(context)),
           ),
-          child: _withDefaultPlanScope(builder(context)),
         ),
       );
     },

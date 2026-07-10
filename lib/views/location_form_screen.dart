@@ -394,13 +394,20 @@ class _KindCategoryGridState extends State<_KindCategoryGrid> {
           ),
         ),
         const SizedBox(height: 6),
-        GridView.count(
-          crossAxisCount: 2,
+        GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 3.6,
+          // Width-robust: tiles keep a fixed size and the column count grows
+          // with the available width, instead of two fixed columns whose
+          // fixed aspect ratio ballooned the tile height inside the wide
+          // `showRingdrillFormDialog` (maxWidth 720) surface. Same component
+          // now renders identically on narrow and wide.
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 220,
+            mainAxisExtent: 48,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+          ),
           children: [
             for (final kind in visible)
               _KindCard(

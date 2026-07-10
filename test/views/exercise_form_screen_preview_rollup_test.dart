@@ -94,49 +94,44 @@ void main() {
   );
 
   testWidgets(
-    'the preview toggle is disabled on the default (non-previewable) section',
+    'the default section eye swaps the whole section to the rollup preview '
+    '(DESIGN-010, revised 2026-07-10)',
     (tester) async {
-      await _pumpWideEditor(tester);
+      final l = await _pumpWideEditor(tester);
 
-      final toggle = tester.widget<IconButton>(
-        find.ancestor(
-          of: find.byIcon(Icons.visibility_outlined),
-          matching: find.byType(IconButton),
-        ),
-      );
-      expect(toggle.onPressed, isNull);
-      expect(toggle.tooltip, isNull);
+      // The default section is now previewable: its eye is enabled and, when
+      // tapped, replaces the structural fields with the rollup.
+      expect(find.byTooltip(l.formSectionPreviewAction), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, l.exerciseName), findsOneWidget);
+
+      await tester.tap(find.byTooltip(l.formSectionPreviewAction));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Method for World'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, l.exerciseName), findsNothing);
+      expect(find.byTooltip(l.formSectionEditAction), findsOneWidget);
     },
   );
 
   testWidgets(
-    'the rollup lists the active section resolved, and tapping it navigates '
-    'to that section in the switcher (tap-to-edit)',
+    'the default-section preview shows the rollup, and tapping a block '
+    'navigates to that section (tap-to-edit)',
     (tester) async {
       final l = await _pumpWideEditor(tester);
 
-      // The rollup toggle lives on the default section, which is where the
-      // editor opens.
-      expect(find.text(l.rollupShowAction), findsOneWidget);
-      await tester.tap(find.text(l.rollupShowAction));
+      await tester.tap(find.byTooltip(l.formSectionPreviewAction));
       await tester.pumpAndSettle();
 
-      expect(find.text(l.rollupHideAction), findsOneWidget);
+      // Whole-section swap: the rollup is shown, the structural name field
+      // is not.
       expect(find.textContaining('Method for World'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, l.exerciseName), findsNothing);
 
-      // Still on the default section — its own name field is visible.
-      expect(
-        find.widgetWithText(TextFormField, l.exerciseName),
-        findsOneWidget,
-      );
-
-      // Tapping the rendered block jumps to the Method section: the
-      // detail pane now shows Method's own body (no longer the default
-      // section's structural fields), and the rail highlights Method.
+      // Tapping the rendered block jumps to the Method section: its own body
+      // shows and the rail highlights Method.
       await tester.tap(find.textContaining('Method for World'));
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(TextFormField, l.exerciseName), findsNothing);
       final methodTile = tester.widget<ListTile>(
         find.ancestor(
           of: find.text(l.briefSectionExerciseMethod),
@@ -147,10 +142,8 @@ void main() {
     },
   );
 
-  testWidgets('narrow renders the rollup as an inline continuation below the '
-      'structural fields, in one scroll, with no layout exception', (
-    tester,
-  ) async {
+  testWidgets('narrow swaps the default section to the rollup preview via the '
+      'app-bar eye, with no layout exception', (tester) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -168,13 +161,13 @@ void main() {
     await tester.pumpAndSettle();
     final l = await AppLocalizations.delegate.load(const Locale('en'));
 
-    await tester.tap(find.text(l.rollupShowAction));
+    await tester.tap(find.byTooltip(l.formSectionPreviewAction));
     await tester.pumpAndSettle();
 
-    // No rail on narrow — both the structural field and the resolved
-    // rollup content coexist in the same (single) scrollable body.
+    // No rail on narrow; the whole section swaps to the rollup, so the
+    // structural field is replaced by the resolved content.
     expect(find.byType(ListTile), findsNothing);
-    expect(find.widgetWithText(TextFormField, l.exerciseName), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, l.exerciseName), findsNothing);
     expect(find.textContaining('Method for World'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

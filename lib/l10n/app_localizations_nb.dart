@@ -1984,6 +1984,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rollupHideAction => 'Skjul detaljer';
 
   @override
+  String get rollupEmptyPreview => 'Ingenting å forhåndsvise ennå';
+
+  @override
   String get tokenMenuEmpty => 'Ingen treff';
 
   @override
@@ -2335,6 +2338,12 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get rolePlayPersonLabel => 'Person';
+
+  @override
+  String get rolePlayPostRequiredHint => 'Velg post for å fortsette';
+
+  @override
+  String get rolePlaySelectPersonPrompt => 'Velg eller opprett person';
 
   @override
   String get pleaseSelectPerson => 'Velg en person';

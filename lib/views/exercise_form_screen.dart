@@ -324,6 +324,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
             id: 'exercise',
             label: l.exercise(1),
             icon: Icons.update,
+            // The base section's app-bar eye swaps the whole section between
+            // its fields and the rollup preview (DESIGN-010, revised
+            // 2026-07-10) — same toggle the markdown sections use.
+            preview: _showRollup,
+            onPreviewChanged: (value) => setState(() => _showRollup = value),
             builder: (ctx) => _buildExerciseSectionBody(ctx, l),
           ),
           ...activeMdSections,
@@ -514,7 +519,6 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
             ),
       ],
       showRollup: _showRollup,
-      onShowRollupChanged: (value) => setState(() => _showRollup = value),
     );
   }
 

@@ -15,9 +15,11 @@ import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart'
     show EffectivePersonIdentity, stationScenarioTokenPattern;
+import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/position_widget.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -45,6 +47,10 @@ typedef RolePlayFormResult = ({RolePlay rolePlay, PlanAdditions additions});
 /// ADR-0046's declared-variable-name rule — see `ExerciseFormScreen`'s own
 /// copy of this same one-line RegExp for why it is duplicated per editor.
 final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
+
+/// Sentinel returned by the person picker's inline "+ Ny person" entry —
+/// distinct from every real [Person.slug] (which never contains a colon).
+const _createPersonValue = ':create-person:';
 
 /// Edit form for a single [RolePlay].
 ///
@@ -146,12 +152,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// [GenderSegmentedControl]. Not token-aware, like `signalement`.
   String? _gender;
 
-  /// Slug of the [Person] this roleplay portrays. Required for a new or
-  /// edited roleplay (an editor-level invariant, not a wire constraint —
-  /// ADR-0047); a legacy roleplay opened with `personRef == null` gets one
-  /// auto-created from its current identity in [initState] (see
-  /// [_autoCreatePersonFromIdentity]), so mandatory `personRef` adds no
-  /// extra authoring step.
+  /// Slug of the [Person] this roleplay portrays. Required for a saved
+  /// roleplay (an editor-level invariant, not a wire constraint — ADR-0047).
+  /// A brand-new roleplay starts null and the author picks or creates the
+  /// Person explicitly, gated behind Post selection (ADR-0047, amended
+  /// 2026-07-10 — no auto-created placeholder Person).
   String? _personRef;
 
   /// Whether the identity card's "Tilpass" override panel is open
@@ -164,11 +169,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
   /// Working copies of [_parentStation]'s `locations`/`persons` — a
   /// roleplay does not own a station's collections, so anything created
-  /// here this session ([_autoCreatePersonFromIdentity]'s bootstrap Person,
-  /// or a "Create location/person «x»" picked from a markdown field's
-  /// insertion menu) is a pending write-back the caller applies to the
-  /// station via the returned [RolePlayFormResult.additions] (ADR-0047,
-  /// DESIGN-009 follow-up 4). Also feeds [StationScope] so
+  /// here this session (a Person made via the "+ Ny person" picker entry
+  /// ([_createPersonViaForm]), or a "Create location/person «x»" picked from
+  /// a markdown field's insertion menu) is a pending write-back the caller
+  /// applies to the station via the returned [RolePlayFormResult.additions]
+  /// (ADR-0047, DESIGN-009 follow-up 4). Also feeds [StationScope] so
   /// `station.loc`/`station.person` chips and the picker see it live, the
   /// same "editor resolves against a working copy" pattern
   /// `LocationFormScreen`/`PersonFormScreen` already use.
@@ -272,9 +277,11 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     _workingPersons = List<Person>.of(_parentStation?.persons ?? const []);
     _originalLocationSlugs = _workingLocations.map((l) => l.slug).toSet();
     _originalPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
-    if (_personRef == null) {
-      _autoCreatePersonFromIdentity();
-    }
+    // No auto-created placeholder Person (ADR-0047, amended 2026-07-10): a
+    // roleplay keeps whatever `personRef` it was opened with (none, for a
+    // brand-new one), and the author picks or creates the portrayed Person
+    // explicitly, gated behind Post selection. The app is unpublished, so
+    // there is no pre-`personRef` roleplay to migrate.
     final selectedPerson = _personBySlug(_personRef);
     _identityExpanded =
         selectedPerson != null && _identityOverrideCount(selectedPerson) > 0;
@@ -300,29 +307,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     // collapse behind (DESIGN-009 prompt 4i) — no inheritable coordinate
     // means no card, no regression from the pre-existing behavior above.
     _positionExpanded = _personLocationCoordinate == null;
-  }
-
-  /// A new roleplay, or a legacy one opened with `personRef == null`, gets a
-  /// [Person] auto-created on its station from whatever identity fields it
-  /// currently carries (ADR-0047): "creating a roleplay auto-creates its
-  /// Person... so mandatory `personRef` adds no authoring step". A no-op
-  /// without a station selected yet — retried from the station dropdown's
-  /// `onChanged` once one is picked.
-  void _autoCreatePersonFromIdentity() {
-    if (_parentStation == null) return;
-    final existingSlugs = _workingPersons.map((p) => p.slug).toSet();
-    final name = _nameController.text.trim();
-    final ageText = _ageController.text.trim();
-    final signalement = _signalementController.text.trim();
-    final created = Person(
-      slug: randomSlug(existingSlugs.contains),
-      name: name,
-      age: ageText.isEmpty ? null : int.tryParse(ageText),
-      gender: _gender,
-      signalement: signalement.isEmpty ? null : signalement,
-    );
-    _workingPersons = [..._workingPersons, created];
-    _personRef = created.slug;
   }
 
   /// Wired to a markdown field's `onCreateLocation` hook (ADR-0047,
@@ -436,6 +420,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     BuildContext context,
     AppLocalizations l,
   ) async {
+    final theme = Theme.of(context);
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
@@ -446,10 +431,56 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               onPressed: () => Navigator.of(context).pop(person.slug),
               child: Text(person.name.isEmpty ? person.slug : person.name),
             ),
+          // "+ Ny person" (ADR-0047, amended 2026-07-10): opens the Person
+          // form so the author creates the portrayed Person explicitly,
+          // instead of a placeholder being auto-created.
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop(_createPersonValue),
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  l.personsSectionAddAction,
+                  style: TextStyle(color: theme.colorScheme.primary),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
-    if (selected != null) _onPersonChanged(selected);
+    if (selected == null) return;
+    if (selected == _createPersonValue) {
+      await _createPersonViaForm();
+      return;
+    }
+    _onPersonChanged(selected);
+  }
+
+  /// Opens [PersonFormScreen] to create a new station [Person], adds it (and
+  /// any location it created inline) to the working copies as a write-back
+  /// (ADR-0047, amended 2026-07-10), and selects it. The station's own list
+  /// is not owned by this editor, so the new person rides out in
+  /// [_save]'s `additions.stationPersons` diff, same as an inline-created one.
+  /// Uses the State's own `context` (no cross-method BuildContext hand-off).
+  Future<void> _createPersonViaForm() async {
+    final result = await openFormSurface<PersonFormResult>(
+      context,
+      builder: (_) => PersonFormScreen(
+        existingSlugs: _workingPersons.map((p) => p.slug).toSet(),
+        locations: _workingLocations,
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _workingPersons = [..._workingPersons, result.person];
+      final newLocation = result.newLocation;
+      if (newLocation != null) {
+        _workingLocations = [..._workingLocations, newLocation];
+      }
+      _applyPersonSelection(result.person.slug);
+    });
   }
 
   /// True when [fieldValue] currently equals [personValue] — i.e. the field
@@ -814,11 +845,23 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 id: 'roleplay',
                 label: l.roleplaySectionRole,
                 icon: Icons.theater_comedy,
+                // The base section's app-bar eye toggles the whole section
+                // between its fields and the rollup preview (DESIGN-010,
+                // revised 2026-07-10) — same toggle the markdown sections use.
+                preview: _showRollup,
+                onPreviewChanged: (value) =>
+                    setState(() => _showRollup = value),
                 builder: (ctx) => _buildRoleplaySectionBody(ctx, l),
               ),
               ...activeMdSections,
             ],
-            addable: addableSections,
+            // Post-first gate (ADR-0047, amended 2026-07-10): description
+            // sections (Bakgrunn/Adferd/Rekvisitter) can't be added until a
+            // Post is chosen, matching the identity/position lock in the base
+            // section. No stations to choose from at all leaves them addable.
+            addable: (_stations.isNotEmpty && _stationIndex == null)
+                ? const <FormSection>[]
+                : addableSections,
             onAdd: (id) => _addMdSection(_MdSection.values.byName(id)),
             onRemove: (id) => _removeMdSection(_MdSection.values.byName(id)),
             onSave: _save,
@@ -858,6 +901,33 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// The Post-first gate's placeholder (ADR-0047, amended 2026-07-10): a
+  /// quiet inline hint shown in place of the identity/position sections
+  /// until a Post is selected, so the empty state reads as "choose a post
+  /// first" rather than a broken form.
+  Widget _buildPostRequiredHint(BuildContext context, AppLocalizations l) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            l.rolePlayPostRequiredHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -906,16 +976,29 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 stationNumberFormat: stationNumberFormat,
               ),
               ?_buildUnresolvedReferenceWarning(l),
-              const SizedBox(height: 16),
-              // 2. Identity card (DESIGN-009 prompt 4i) — the effective
-              // name/age/gender/signalement packed into one inherit/
-              // override card, replacing the interleaved fields and 4g's
-              // Person + Kjønn row.
-              _buildIdentityCard(context, l, planFields),
-              const SizedBox(height: 16),
-              // 3. Posisjon — follows the person's location by default
-              // (DESIGN-009 prompt 4i).
-              _buildPositionSection(context, l),
+              // Post-first gate (ADR-0047, amended 2026-07-10): identity and
+              // position are overrides scoped to a station's Person, so
+              // nothing below the Post card is active until a Post is chosen.
+              // When the editor is opened without an exercise (no stations to
+              // choose from at all) the gate does not apply — same edge the
+              // save-time station check already carves out.
+              if (stations.isNotEmpty && _stationIndex == null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: _buildPostRequiredHint(context, l),
+                )
+              else ...[
+                const SizedBox(height: 16),
+                // 2. Identity card (DESIGN-009 prompt 4i) — the effective
+                // name/age/gender/signalement packed into one inherit/
+                // override card, replacing the interleaved fields and 4g's
+                // Person + Kjønn row.
+                _buildIdentityCard(context, l, planFields),
+                const SizedBox(height: 16),
+                // 3. Posisjon — follows the person's location by default
+                // (DESIGN-009 prompt 4i).
+                _buildPositionSection(context, l),
+              ],
             ],
           ),
         ),
@@ -937,7 +1020,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
             ),
       ],
       showRollup: _showRollup,
-      onShowRollupChanged: (value) => setState(() => _showRollup = value),
     );
   }
 
@@ -959,12 +1041,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       // Persons/locations are station-owned (ADR-0047): a new station
       // means a new person/location list, so the working copies and
       // personRef follow the selection, same as [_parentStation] does.
-      // Deliberately does NOT re-run [_autoCreatePersonFromIdentity] —
-      // that bootstrap is an [initState]-only nicety for a fresh/legacy
-      // roleplay's *first* load; once the author is interactively
-      // switching stations, the mandatory-personRef validator should make
-      // them pick from the new station's own list, not silently
-      // manufacture a duplicate from whatever is currently typed.
+      // personRef is cleared, and the author must pick or create a Person
+      // from the new station's own list (ADR-0047, amended 2026-07-10 — no
+      // auto-created placeholder from whatever is currently typed).
       _workingLocations = List<Location>.of(
         _parentStation?.locations ?? const [],
       );
@@ -1225,69 +1304,75 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               // "Tilpass" is the only toggle here (DESIGN-009 prompt 4j) —
               // no inherit-state or override-count label of any kind, since
               // a field the author does not touch simply reads as it is.
-              // The chevron alone signals open/closed state.
-              InkWell(
-                onTap: () =>
-                    setState(() => _identityExpanded = !_identityExpanded),
-                child: Container(
-                  key: const Key('identity-disclosure'),
-                  color: panelSurfaceColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 9,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        overrideCount == 0
-                            ? Icons.tune
-                            : Icons.fact_check_outlined,
-                        size: 16,
-                        color: overrideCount == 0
-                            ? theme.colorScheme.onSurfaceVariant
-                            : theme.colorScheme.primary,
-                      ),
-                      // The *sole* flex participant, absorbing all
-                      // remaining space, with its own child right-aligned
-                      // inside it: a sibling Flexible on the label below
-                      // (as this used to be) would instead split that
-                      // space evenly between this box and the label
-                      // regardless of what the label actually needs,
-                      // leaving it short of the row's edge with dead space
-                      // after it. Nesting the label in an end-aligned Row
-                      // *inside* the sole Expanded keeps it flush right
-                      // whenever there's room, while its own Flexible still
-                      // ellipsis-shrinks it if the row is ever too narrow.
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                l.rolePlayIdentityCustomizeAction,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary,
+              // The chevron alone signals open/closed state. Gated on a
+              // selected Person (ADR-0047, amended 2026-07-10): identity
+              // fields are overrides of that Person, so there is nothing to
+              // customise until one is picked or created via the header.
+              // The scenario-less edge (no exercise, so no stations and no
+              // persons to pick) keeps it available for direct inline editing.
+              if (person != null || _stations.isEmpty)
+                InkWell(
+                  onTap: () =>
+                      setState(() => _identityExpanded = !_identityExpanded),
+                  child: Container(
+                    key: const Key('identity-disclosure'),
+                    color: panelSurfaceColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          overrideCount == 0
+                              ? Icons.tune
+                              : Icons.fact_check_outlined,
+                          size: 16,
+                          color: overrideCount == 0
+                              ? theme.colorScheme.onSurfaceVariant
+                              : theme.colorScheme.primary,
+                        ),
+                        // The *sole* flex participant, absorbing all
+                        // remaining space, with its own child right-aligned
+                        // inside it: a sibling Flexible on the label below
+                        // (as this used to be) would instead split that
+                        // space evenly between this box and the label
+                        // regardless of what the label actually needs,
+                        // leaving it short of the row's edge with dead space
+                        // after it. Nesting the label in an end-aligned Row
+                        // *inside* the sole Expanded keeps it flush right
+                        // whenever there's room, while its own Flexible still
+                        // ellipsis-shrinks it if the row is ever too narrow.
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  l.rolePlayIdentityCustomizeAction,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              _identityExpanded
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                              size: 16,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Icon(
+                                _identityExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (_identityExpanded)
+              if ((person != null || _stations.isEmpty) && _identityExpanded)
                 Container(
                   key: const Key('identity-panel'),
                   color: panelSurfaceColor,
@@ -1380,7 +1465,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       // Single collective reset (DESIGN-009 prompt 4j),
                       // superseding 4i's per-field one — clears every
                       // overridden facet at once, including age (which had
-                      // no per-field reset at all under the old layout).
+                      // no per-field reset at all under the old layout). Only
+                      // ever shown with a selected person; the scenario-less
+                      // edge (no stations) has overrideCount == 0.
                       if (person != null && overrideCount > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
@@ -1617,9 +1704,21 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     final metaParts = [if (age != null) l.rolePlayAgeYears(age), ?genderLabel];
     final signalementText = _signalementController.text.trim();
     final displayName = _nameController.text.trim();
+    // A station is selected but no person picked yet (ADR-0047, amended
+    // 2026-07-10): the header reads as a prompt to choose or create one, not
+    // a nameless marker. The scenario-less edge (no stations) has no person
+    // to pick, so it falls through to the name.
+    final needsPerson = person == null && _stations.isNotEmpty;
+    // A one-line summary (the prompt, or a bare name with no meta/signalement)
+    // centers against the avatar; a multi-line one top-aligns so the name
+    // sits beside the avatar's top.
+    final singleLine =
+        metaParts.isEmpty && !nameOverridden && signalementText.isEmpty;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: singleLine
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         CircleAvatar(
           radius: 17,
@@ -1640,8 +1739,16 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 children: [
                   Flexible(
                     child: Text(
-                      displayName.isEmpty ? l.newRolePlayTitle : displayName,
-                      style: theme.textTheme.titleSmall,
+                      needsPerson
+                          ? l.rolePlaySelectPersonPrompt
+                          : (displayName.isEmpty
+                                ? l.newRolePlayTitle
+                                : displayName),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: needsPerson
+                            ? theme.colorScheme.onSurfaceVariant
+                            : null,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

@@ -20,6 +20,7 @@ RolePlay _rolePlay({
   String name = 'Anna Hansen',
   int? stationIndex,
   String? behavior,
+  String? personRef,
 }) => RolePlay(
   uuid: 'role-1',
   index: 0,
@@ -27,6 +28,7 @@ RolePlay _rolePlay({
   name: name,
   stationIndex: stationIndex,
   behavior: behavior,
+  personRef: personRef,
 );
 
 Exercise _exercise({
@@ -183,11 +185,23 @@ void main() {
     'up as write-back additions for the linked station (ADR-0047, '
     'DESIGN-009 follow-up 4) — the roleplay editor does not own the station',
     (tester) async {
-      final station = Station(index: 0, name: 'Post 1');
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        persons: const [Person(slug: 'anne', name: 'Anne Glemsk')],
+      );
       final captured = _Captured();
       await _openForm(
         tester,
-        _rolePlay(name: 'Esel', stationIndex: 0, behavior: 'x'),
+        // A Person must be selected for save to pass (ADR-0047, amended
+        // 2026-07-10 — no auto-created placeholder); it is already on the
+        // station, so it is not part of the write-back.
+        _rolePlay(
+          name: 'Esel',
+          stationIndex: 0,
+          behavior: 'x',
+          personRef: 'anne',
+        ),
         _exercise(stations: [station]),
         const [],
         captured,
@@ -212,10 +226,10 @@ void main() {
         additions.stationLocations.map((l) => l.label),
         contains('Sentrum'),
       );
-      // The mandatory-personRef bootstrap (ADR-0047) also creates a Person
-      // on this same station this session, so it too rides along in the
-      // write-back — this editor owns neither.
-      expect(additions.stationPersons, isNotEmpty);
+      // The selected person was already on the station, so it is not part of
+      // the write-back (ADR-0047, amended 2026-07-10 — no auto-created
+      // placeholder Person this session).
+      expect(additions.stationPersons, isEmpty);
     },
   );
 
@@ -257,10 +271,17 @@ void main() {
     'save round-trips a name edit, signalement, a markdown field and props',
     (tester) async {
       final captured = _Captured();
-      final station = Station(index: 0, name: 'Post 1');
+      // The person's name matches the roleplay's, so every facet starts
+      // inherited and the "Tilpass" panel opens collapsed (ADR-0047, amended
+      // 2026-07-10 — a Person must be selected before the panel is available).
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        persons: const [Person(slug: 'anne', name: 'Anna Hansen')],
+      );
       await _openForm(
         tester,
-        _rolePlay(stationIndex: 0),
+        _rolePlay(stationIndex: 0, personRef: 'anne'),
         _exercise(stations: [station]),
         const [],
         captured,

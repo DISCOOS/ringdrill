@@ -80,9 +80,10 @@ Future<double> _showRollupAndGetContentX(
     ),
   );
   await tester.pumpAndSettle();
-  final l = await AppLocalizations.delegate.load(const Locale('en'));
 
-  await tester.tap(find.text(l.rollupShowAction));
+  // The base section swaps to its rollup preview via the app-bar eye
+  // (DESIGN-010, revised 2026-07-10) — no separate bottom toggle anymore.
+  await tester.tap(find.byIcon(Icons.visibility_outlined));
   await tester.pumpAndSettle();
 
   final finder = find.descendant(

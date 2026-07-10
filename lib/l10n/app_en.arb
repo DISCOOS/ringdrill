@@ -2010,6 +2010,10 @@
   "@rollupHideAction": {
     "description": "DESIGN-010 default-section rollup toggle label shown while the rollup is visible — tapping hides it again."
   },
+  "rollupEmptyPreview": "Nothing to preview yet",
+  "@rollupEmptyPreview": {
+    "description": "Placeholder in the base section's preview (DESIGN-010, revised 2026-07-10) when none of the entity's sections have content to show yet."
+  },
 
   "tokenMenuEmpty": "No matches",
   "@tokenMenuEmpty": {
@@ -2451,6 +2455,14 @@
   "rolePlayPersonLabel": "Person",
   "@rolePlayPersonLabel": {
     "description": "Dropdown label for the personRef selector in RolePlayFormScreen (ADR-0047, DESIGN-009 follow-up 4)."
+  },
+  "rolePlayPostRequiredHint": "Select a post to continue",
+  "@rolePlayPostRequiredHint": {
+    "description": "Inline hint shown in place of the identity and position sections in RolePlayFormScreen while no post is selected (ADR-0047, amended 2026-07-10). Identity and position are overrides scoped to a post's person, so nothing below the Post card is active until a post is chosen."
+  },
+  "rolePlaySelectPersonPrompt": "Select or create a person",
+  "@rolePlaySelectPersonPrompt": {
+    "description": "Placeholder text in the identity card header when no person is selected yet (ADR-0047, amended 2026-07-10) -- reads as a prompt to pick or create a person, not as a nameless marker."
   },
   "pleaseSelectPerson": "Please select a person",
   "@pleaseSelectPerson": {

@@ -1043,6 +1043,10 @@
   "@rollupHideAction": {
     "description": "DESIGN-010 standardseksjonens rollup-knapp vist mens rollupen vises — trykk skjuler den igjen."
   },
+  "rollupEmptyPreview": "Ingenting å forhåndsvise ennå",
+  "@rollupEmptyPreview": {
+    "description": "Plassholder i base-seksjonens forhåndsvisning (DESIGN-010, revidert 2026-07-10) når ingen av enhetens seksjoner har innhold å vise ennå."
+  },
 
   "tokenMenuEmpty": "Ingen treff",
   "@tokenMenuEmpty": {
@@ -1484,6 +1488,14 @@
   "rolePlayPersonLabel": "Person",
   "@rolePlayPersonLabel": {
     "description": "Nedtrekksetikett for personRef-velgeren i RolePlayFormScreen (ADR-0047, DESIGN-009 oppfølging 4)."
+  },
+  "rolePlayPostRequiredHint": "Velg post for å fortsette",
+  "@rolePlayPostRequiredHint": {
+    "description": "Inline-hint vist i stedet for identitets- og posisjonsseksjonene i RolePlayFormScreen så lenge ingen post er valgt (ADR-0047, endret 2026-07-10). Identitet og posisjon er overstyringer knyttet til en posts person, så ingenting under Post-kortet er aktivt før en post er valgt."
+  },
+  "rolePlaySelectPersonPrompt": "Velg eller opprett person",
+  "@rolePlaySelectPersonPrompt": {
+    "description": "Plassholdertekst i identitetskortets topptekst når ingen person er valgt ennå (ADR-0047, endret 2026-07-10) -- leses som en oppfordring om å velge eller opprette en person, ikke som en navnløs markør."
   },
   "pleaseSelectPerson": "Velg en person",
   "@pleaseSelectPerson": {

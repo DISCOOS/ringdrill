@@ -777,8 +777,14 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 id: 'station',
                 label: l.station(1),
                 icon: Icons.place,
-                preview: _previewSections.contains('station'),
-                onPreviewChanged: (value) => _togglePreview('station', value),
+                // The base section's app-bar eye swaps the whole section
+                // between its fields and the rollup preview (DESIGN-010,
+                // revised 2026-07-10) — the rollup already renders the
+                // description (as lead) plus every section, so this replaces
+                // the old per-field description preview.
+                preview: _showRollup,
+                onPreviewChanged: (value) =>
+                    setState(() => _showRollup = value),
                 builder: (ctx) => _buildStationSectionBody(ctx, l),
               ),
               // Persons before Locations so the author can name the subject
@@ -905,7 +911,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       tokenAware: true,
                       overrides: _workingOverrides,
                       planFields: planFields,
-                      preview: _previewSections.contains('station'),
+                      // Preview of the description (and every section) now
+                      // lives in the whole-section rollup swap, not inline.
+                      preview: false,
                       onCreateVariable: _createVariableInline,
                       onCreateLocation: _createLocationInline,
                       onCreatePerson: _createPersonInline,
@@ -940,7 +948,6 @@ class _StationFormScreenState extends State<StationFormScreen> {
             ),
       ],
       showRollup: _showRollup,
-      onShowRollupChanged: (value) => setState(() => _showRollup = value),
     );
   }
 

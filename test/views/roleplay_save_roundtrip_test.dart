@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -20,9 +21,20 @@ void main() {
 
   setUp(() async {
     await initActivePlan('Roleplay roundtrip plan');
+    // The roleplay must portray a station Person (ADR-0047, amended
+    // 2026-07-10 — no auto-created placeholder). Seed one on station 0 whose
+    // name matches, so the identity starts inherited (panel collapsed).
+    final base = makeExercise(uuid: 'ex-rt-rp', name: 'Roleplay Exercise');
     await ProgramService().saveExercise(
       l10n,
-      makeExercise(uuid: 'ex-rt-rp', name: 'Roleplay Exercise'),
+      base.copyWith(
+        stations: [
+          base.stations.first.copyWith(
+            persons: const [Person(slug: 'pasient', name: 'Pasient A')],
+          ),
+          ...base.stations.skip(1),
+        ],
+      ),
     );
     await ProgramService().saveRolePlay(
       l10n,
@@ -32,6 +44,7 @@ void main() {
         exerciseUuid: 'ex-rt-rp',
         stationIndex: 0,
         name: 'Pasient A',
+        personRef: 'pasient',
       ),
     );
   });

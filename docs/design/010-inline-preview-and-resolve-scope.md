@@ -115,7 +115,7 @@ DESIGN-009's token-aware scenario leaf fields (`Location.place`/`note`, `Person.
 1. **Program level = `PlanScope`.** No `ProgramScope`. The existing `PlanScope` is extended to carry program facets alongside variables (decided 2026-07-08).
 2. **Resolver extraction gets its own ADR-0048.** Moving the field resolver out of `BriefRenderer` into a Flutter-free layer is an architectural decision, recorded separately and landed with stage 1.
 3. **Preview toggle is per section, not editor-wide.** Each section owns its edit/preview state; the choice is remembered per section within a session, not shared across sections or scopes.
-4. **Rollup layout.** Inline continuation of the default section on narrow (one scroll: fields, then the resolved sections), and a side-by-side live-preview pane on wide (edit left, preview right — master/detail, ADR-0030). Decided 2026-07-08.
+4. **Rollup layout.** ~~Inline continuation of the default section on narrow (one scroll: fields, then the resolved sections), and a side-by-side live-preview pane on wide (edit left, preview right — master/detail, ADR-0030). Decided 2026-07-08.~~ **Revised 2026-07-10:** the default section's rollup is no longer a separate bottom toggle plus a side-by-side/inline pane — it is the default section's own **per-section preview**, driven by the same app-bar eye every other section uses, swapping the *whole* section between its editable fields and the rollup. The side-by-side pane squeezed the fields on the narrower (medium) wide layout, and the bottom toggle sat below the fold on narrow; a full-section swap fixes both, and since the rollup already renders the lead description plus every section it reads as a complete preview. An empty rollup shows a muted placeholder (`rollupEmptyPreview`).
 
 ## Naming (`Program` → `Plan`), separate refactor
 
@@ -131,6 +131,12 @@ Staged, each a separate PR, all additive and Flutter-layer only except the resol
 4. **DESIGN-009 4e.** Make the scenario leaf fields token-aware on top of the re-provided scopes (self-reference rule from DESIGN-009).
 
 (Consolidated from five stages to four: preview and rollup, which share one render-resolved-section primitive, are built together.)
+
+**Progress (2026-07-10).** Stages 1 and 2 have landed on `design-010`; stages 3 and 4 remain.
+
+* *Stage 1* — the Flutter-free field resolver is extracted (`lib/services/brief/field_resolver.dart`, [ADR-0048](../adrs/0048-flutter-free-field-resolver.md), still `proposed`), `PlanScope` carries the program facets, `ExerciseScope` is added, and the resolve scopes are re-provided across `openFormSurface` (`lib/views/shell/open_form_surface.dart`). Covered by resolver-parity and scope-presence tests; no visible change.
+* *Stage 2 (including follow-up 2b)* — the per-section preview toggle and the read-only default-section rollup are built (`resolve_scoped_field.dart`, `section_rollup.dart`), with `StationScope` extended to carry the station's own facets. Follow-up 2b wired preview onto the base-section body and relabelled the rollup toggle to "Vis/Skjul detaljer". Tested.
+* *Remaining* — **Stage 3**: migrate `RingDrillText` and the direct `substitutePlanVariables` callers to the resolver, and build the Post/Spill detail-sheet rollups (specified above, mockup `mockups/station-and-roleplay-viewers.html`, not yet implemented). **Stage 4** is **DESIGN-009 follow-up 4e** — token-aware scenario leaf fields on the re-provided scopes. DESIGN-008 (variables, section editor) and DESIGN-009 (locations/persons, `personRef`, now *Accepted*) are the foundations these stages consume.
 
 All user-facing strings in `app_en.arb` / `app_nb.arb`; run `make i18n`.
 

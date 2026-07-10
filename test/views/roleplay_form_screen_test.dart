@@ -288,18 +288,24 @@ void main() {
     expect(find.byType(PositionWidget), findsOneWidget);
   });
 
-  testWidgets('markør without a post keeps Pick a Location', (tester) async {
-    final exercise = _exercise().copyWith(
-      stations: const [
-        Station(index: 0, name: 'Post 1', position: LatLng(59.911, 10.757)),
-      ],
-    );
-    // No stationIndex assigned yet.
-    await tester.pumpWidget(_buildForm(exercise: exercise));
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  testWidgets(
+    'markør without a post is gated: no position section, a post-required '
+    'hint instead (ADR-0047, amended 2026-07-10)',
+    (tester) async {
+      final exercise = _exercise().copyWith(
+        stations: const [
+          Station(index: 0, name: 'Post 1', position: LatLng(59.911, 10.757)),
+        ],
+      );
+      // No stationIndex assigned yet — identity and position are gated
+      // behind Post selection, so the position picker is not shown.
+      await tester.pumpWidget(_buildForm(exercise: exercise));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    expect(find.text(l10n.pickALocation), findsOneWidget);
-  });
+      expect(find.text(l10n.rolePlayPostRequiredHint), findsOneWidget);
+      expect(find.text(l10n.pickALocation), findsNothing);
+    },
+  );
 
   testWidgets('AppBar subtitle is not shown', (tester) async {
     await tester.pumpWidget(_buildForm(exercise: _exercise()));

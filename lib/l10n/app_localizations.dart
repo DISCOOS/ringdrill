@@ -3398,6 +3398,12 @@ abstract class AppLocalizations {
   /// **'Hide details'**
   String get rollupHideAction;
 
+  /// Placeholder in the base section's preview (DESIGN-010, revised 2026-07-10) when none of the entity's sections have content to show yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to preview yet'**
+  String get rollupEmptyPreview;
+
   /// Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter.
   ///
   /// In en, this message translates to:
@@ -4009,6 +4015,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Person'**
   String get rolePlayPersonLabel;
+
+  /// Inline hint shown in place of the identity and position sections in RolePlayFormScreen while no post is selected (ADR-0047, amended 2026-07-10). Identity and position are overrides scoped to a post's person, so nothing below the Post card is active until a post is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a post to continue'**
+  String get rolePlayPostRequiredHint;
+
+  /// Placeholder text in the identity card header when no person is selected yet (ADR-0047, amended 2026-07-10) -- reads as a prompt to pick or create a person, not as a nameless marker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select or create a person'**
+  String get rolePlaySelectPersonPrompt;
 
   /// Validation message shown when no person is selected for a roleplay (ADR-0047's mandatory personRef, an editor-level invariant).
   ///

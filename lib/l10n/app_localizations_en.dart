@@ -1987,6 +1987,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rollupHideAction => 'Hide details';
 
   @override
+  String get rollupEmptyPreview => 'Nothing to preview yet';
+
+  @override
   String get tokenMenuEmpty => 'No matches';
 
   @override
@@ -2337,6 +2340,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rolePlayPersonLabel => 'Person';
+
+  @override
+  String get rolePlayPostRequiredHint => 'Select a post to continue';
+
+  @override
+  String get rolePlaySelectPersonPrompt => 'Select or create a person';
 
   @override
   String get pleaseSelectPerson => 'Please select a person';
