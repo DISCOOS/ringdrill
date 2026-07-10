@@ -280,6 +280,26 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     // explicitly, gated behind Post selection. The app is unpublished, so
     // there is no pre-`personRef` roleplay to migrate.
     final selectedPerson = _personBySlug(_personRef);
+    // A roleplay created through the normal picker flow always has its own
+    // denormalized facets synced from the person by `_applyPersonSelection`
+    // — but one constructed directly (a legacy/imported archive, or a
+    // hand-built fixture) can carry a `personRef` with its own name/age/
+    // gender/signalement left unset. Backfill only the facets still empty,
+    // so the header reads as inherited from the person instead of blank,
+    // without touching any facet that already has its own value (a genuine
+    // override, or an already-synced denormalized copy).
+    if (selectedPerson != null) {
+      if (_nameController.text.isEmpty) {
+        _nameController.text = selectedPerson.name;
+      }
+      if (_ageController.text.trim().isEmpty) {
+        _ageController.text = selectedPerson.age?.toString() ?? '';
+      }
+      _gender ??= selectedPerson.gender;
+      if (_signalementController.text.isEmpty) {
+        _signalementController.text = selectedPerson.signalement ?? '';
+      }
+    }
     _identityExpanded =
         selectedPerson != null && _identityOverrideCount(selectedPerson) > 0;
 
