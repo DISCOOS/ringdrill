@@ -642,24 +642,27 @@ class BriefMarkdownBlock extends StatelessWidget {
       data,
       config: _briefMarkdownConfig(theme, onAnchorTap: onAnchorTap),
     );
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: theme.spacing.readingColumnMax),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
-          // Deliberately no SelectionArea, unlike BriefMarkdown: the section
-          // rollup wraps each block in its own tap-to-edit InkWell, and a
-          // descendant SelectionArea's own tap/long-press recognizers win
-          // the gesture arena over an ancestor InkWell's onTap, silently
-          // breaking that navigation. This surface trades text selection
-          // for a working tap target — read-only preview text, not the
-          // brief's own reading surface.
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: widgets,
-          ),
-        ),
+    // No Align/ConstrainedBox reading-column cap here, unlike BriefMarkdown:
+    // that combination centers a Column that doesn't otherwise stretch to
+    // fill the available width, so short content (a one-line heading plus
+    // a short sentence — the common case for a rollup block) visibly
+    // shifted to the middle instead of sitting flush left. BriefMarkdown's
+    // own full-page reading surface is wide enough that the effect goes
+    // unnoticed; a compact rollup block is exactly where it shows up. The
+    // rollup's own container already caps/pads the available width
+    // (withSectionRollup), so this block just fills whatever it is given.
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+      // Deliberately no SelectionArea, unlike BriefMarkdown: the section
+      // rollup wraps each block in its own tap-to-edit InkWell, and a
+      // descendant SelectionArea's own tap/long-press recognizers win
+      // the gesture arena over an ancestor InkWell's onTap, silently
+      // breaking that navigation. This surface trades text selection
+      // for a working tap target — read-only preview text, not the
+      // brief's own reading surface.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
       ),
     );
   }
