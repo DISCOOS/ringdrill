@@ -1443,13 +1443,6 @@
       "name": { "type": "String" }
     }
   },
-  "castPickerTitle": "Cast: {role}",
-  "@castPickerTitle": {
-    "description": "Title of the cast picker bottom sheet. Displays the role name.",
-    "placeholders": {
-      "role": { "type": "String" }
-    }
-  },
   "castPrivateHint": "Stays on this device",
   "@castPrivateHint": {
     "description": "Persistent hint below the Cast section header. Positively framed: the actor data stays local and is never published."

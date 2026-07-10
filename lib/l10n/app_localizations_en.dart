@@ -1568,11 +1568,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String castPickerTitle(String role) {
-    return 'Cast: $role';
-  }
-
-  @override
   String get castPrivateHint => 'Stays on this device';
 
   @override

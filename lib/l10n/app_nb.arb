@@ -553,13 +553,6 @@
       "name": { "type": "String" }
     }
   },
-  "castPickerTitle": "Markør: {role}",
-  "@castPickerTitle": {
-    "description": "Title of the cast picker bottom sheet.",
-    "placeholders": {
-      "role": { "type": "String" }
-    }
-  },
   "castPrivateHint": "Lagres lokalt",
   "@castPrivateHint": {
     "description": "Vedvarende hint under seksjonsoverskriften. Positivt formulert: aktørdata lagres lokalt og publiseres aldri."

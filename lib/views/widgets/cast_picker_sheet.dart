@@ -5,6 +5,40 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+
+/// Opens [CastPickerSheet] through ADR-0049's adaptive surface split — a
+/// bottom sheet on compact, a dialog reusing the form-dialog's rounded
+/// chrome on medium/expanded — same as every other selector.
+///
+/// [CastPickerResult] carries a select-or-clear choice, which does not fit
+/// [showRingdrillPicker]'s "tap an item, pop with it" contract (clearing
+/// and creating a new actor are not list items), so this keeps
+/// [CastPickerSheet]'s own bespoke body (search field, sticky "New actor"
+/// and "Clear" rows) rather than forcing it through that primitive — only
+/// the surface choice is shared.
+Future<CastPickerResult?> showCastPickerSheet(
+  BuildContext context, {
+  required RolePlay rolePlay,
+}) {
+  final wide = WindowSizeClass.of(context).hasMasterDetail;
+  Widget builder(BuildContext context) =>
+      CastPickerSheet(rolePlay: rolePlay, showCloseButton: wide);
+
+  if (wide) {
+    return showRingdrillDialogShell<CastPickerResult>(
+      context: context,
+      builder: builder,
+      maxWidth: 480,
+      maxHeightFraction: 0.7,
+    );
+  }
+  return showRingdrillActionSheet<CastPickerResult>(
+    context: context,
+    builder: builder,
+  );
+}
 
 /// Bottom sheet for assigning an [Actor] to a [RolePlay].
 ///
@@ -18,15 +52,21 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 ///
 /// Usage:
 /// ```dart
-/// final result = await showRingdrillActionSheet<CastPickerResult>(
-///   context: context,
-///   builder: (context) => CastPickerSheet(rolePlay: rolePlay),
-/// );
+/// final result = await showCastPickerSheet(context, rolePlay: rolePlay);
 /// ```
 class CastPickerSheet extends StatefulWidget {
-  const CastPickerSheet({super.key, required this.rolePlay});
+  const CastPickerSheet({
+    super.key,
+    required this.rolePlay,
+    this.showCloseButton = false,
+  });
 
   final RolePlay rolePlay;
+
+  /// Shows a header close (X) affordance, matching the picker primitive's
+  /// dialog path (ADR-0049) — set by [showCastPickerSheet] on
+  /// medium/expanded, left off on the compact sheet path (drag handle only).
+  final bool showCloseButton;
 
   @override
   State<CastPickerSheet> createState() => _CastPickerSheetState();
@@ -125,12 +165,24 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
       height: sheetHeight,
       child: Column(
         children: [
-          // Title
+          // Title (ADR-0049: static "Velg markør", matching every other
+          // selector's title instead of naming the role being cast).
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              localizations.castPickerTitle(widget.rolePlay.name),
-              style: Theme.of(context).textTheme.titleMedium,
+            padding: const EdgeInsets.fromLTRB(16, 8, 4, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    localizations.pickerSelectRolePlayTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                if (widget.showCloseButton)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+              ],
             ),
           ),
 
@@ -140,7 +192,7 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: localizations.castRoster,
+                hintText: localizations.pickerSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 isDense: true,
                 border: const OutlineInputBorder(),

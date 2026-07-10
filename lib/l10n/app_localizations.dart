@@ -2624,12 +2624,6 @@ abstract class AppLocalizations {
   /// **'Already cast as {name}'**
   String alreadyCastAs(String name);
 
-  /// Title of the cast picker bottom sheet. Displays the role name.
-  ///
-  /// In en, this message translates to:
-  /// **'Cast: {role}'**
-  String castPickerTitle(String role);
-
   /// Persistent hint below the Cast section header. Positively framed: the actor data stays local and is never published.
   ///
   /// In en, this message translates to:

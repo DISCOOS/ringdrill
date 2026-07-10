@@ -261,4 +261,62 @@ void main() {
       ),
     );
   });
+
+  group('showCastPickerSheet (ADR-0049 adaptive surface)', () {
+    Future<void> open(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () async {
+                await showCastPickerSheet(ctx, rolePlay: _roleA);
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows the static "Velg markør" title', (tester) async {
+      await open(tester, 1000);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);
+    });
+
+    testWidgets('compact width opens as a bottom sheet, no close button', (
+      tester,
+    ) async {
+      await open(tester, 400);
+
+      expect(
+        find.byKey(const Key('ringdrill-sheet-drag-handle')),
+        findsOneWidget,
+      );
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byIcon(Icons.close), findsNothing);
+    });
+
+    testWidgets('expanded width opens as a dialog with a close button', (
+      tester,
+    ) async {
+      await open(tester, 1000);
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(
+        find.byKey(const Key('ringdrill-sheet-drag-handle')),
+        findsNothing,
+      );
+      expect(find.byIcon(Icons.close), findsOneWidget);
+    });
+  });
 }

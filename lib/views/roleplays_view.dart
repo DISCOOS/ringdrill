@@ -503,10 +503,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Future<void> _openCastPicker(RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
-    final result = await showRingdrillActionSheet<CastPickerResult>(
-      context: context,
-      builder: (context) => CastPickerSheet(rolePlay: rolePlay),
-    );
+    final result = await showCastPickerSheet(context, rolePlay: rolePlay);
     if (result == null || !mounted) return;
     final updated = switch (result) {
       CastPickerSelect(:final actorUuid) =>

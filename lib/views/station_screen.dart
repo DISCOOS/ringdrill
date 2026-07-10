@@ -22,7 +22,6 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
-import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 
@@ -710,10 +709,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   Future<void> _openCastPicker(RolePlay r) async {
     final localizations = AppLocalizations.of(context)!;
-    final result = await showRingdrillActionSheet<CastPickerResult>(
-      context: context,
-      builder: (context) => CastPickerSheet(rolePlay: r),
-    );
+    final result = await showCastPickerSheet(context, rolePlay: r);
     if (result == null || !mounted) return;
     final updated = switch (result) {
       CastPickerSelect(:final actorUuid) =>

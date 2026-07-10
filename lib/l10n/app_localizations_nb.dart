@@ -1564,11 +1564,6 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String castPickerTitle(String role) {
-    return 'Markør: $role';
-  }
-
-  @override
   String get castPrivateHint => 'Lagres lokalt';
 
   @override
