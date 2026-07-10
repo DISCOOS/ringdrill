@@ -1978,10 +1978,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get formSectionEditAction => 'Rediger';
 
   @override
-  String get rollupShowAction => 'Vis forhåndsvisning';
+  String get rollupShowAction => 'Vis detaljer';
 
   @override
-  String get rollupHideAction => 'Skjul forhåndsvisning';
+  String get rollupHideAction => 'Skjul detaljer';
 
   @override
   String get tokenMenuEmpty => 'Ingen treff';

@@ -1981,10 +1981,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get formSectionEditAction => 'Edit';
 
   @override
-  String get rollupShowAction => 'Show preview';
+  String get rollupShowAction => 'Show details';
 
   @override
-  String get rollupHideAction => 'Hide preview';
+  String get rollupHideAction => 'Hide details';
 
   @override
   String get tokenMenuEmpty => 'No matches';

@@ -3386,16 +3386,16 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get formSectionEditAction;
 
-  /// DESIGN-010 default-section rollup toggle label shown while the rollup is hidden — tapping shows the whole entity's active sections resolved, stacked under the structural fields.
+  /// DESIGN-010 default-section rollup toggle label shown while the rollup is hidden — tapping shows the whole entity's active sections resolved, stacked under the structural fields. Deliberately not "preview" (that word is reserved for the per-section eye toggle) and not "brief" (the rollup is one post/marker's slice, not the exported document).
   ///
   /// In en, this message translates to:
-  /// **'Show preview'**
+  /// **'Show details'**
   String get rollupShowAction;
 
   /// DESIGN-010 default-section rollup toggle label shown while the rollup is visible — tapping hides it again.
   ///
   /// In en, this message translates to:
-  /// **'Hide preview'**
+  /// **'Hide details'**
   String get rollupHideAction;
 
   /// Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter.
