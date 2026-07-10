@@ -648,11 +648,16 @@ class BriefMarkdownBlock extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: theme.spacing.readingColumnMax),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
-          child: SelectionArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widgets,
-            ),
+          // Deliberately no SelectionArea, unlike BriefMarkdown: the section
+          // rollup wraps each block in its own tap-to-edit InkWell, and a
+          // descendant SelectionArea's own tap/long-press recognizers win
+          // the gesture arena over an ancestor InkWell's onTap, silently
+          // breaking that navigation. This surface trades text selection
+          // for a working tap target — read-only preview text, not the
+          // brief's own reading surface.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: widgets,
           ),
         ),
       ),
