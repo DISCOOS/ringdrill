@@ -1,22 +1,30 @@
 import 'package:flutter/widgets.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
-import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
-import 'package:ringdrill/views/widgets/variable_type_labels.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 
-/// Read-only counterpart to [Text] that resolves `{{var.<name>}}` tokens
-/// (ADR-0046) before rendering — the display-surface half of DESIGN-008's
-/// token-aware fields, with no chip rendering or insertion menu (that is
-/// [RingDrillTextField]/[RingDrillTextArea]'s job for editing).
+/// Read-only counterpart to [Text] that resolves the full DESIGN-010 token
+/// pipeline before rendering — `{{var.<name>}}` (ADR-0046), plus whatever
+/// `{{program.*}}`/`{{exercise.*}}`/`{{station.*}}`/`{{roleplay.*}}`
+/// cross-references the ancestor scopes offer — the display-surface half of
+/// DESIGN-008's token-aware fields, with no chip rendering or insertion menu
+/// (that is [RingDrillTextField]/[RingDrillTextArea]'s job for editing).
+/// Delegates to [resolveScopedField] (ADR-0048), the same cascade the
+/// per-section preview and rollup already read, so a surface using this
+/// widget never falls behind the brief.
 ///
 /// Reads [PlanScope.maybeOf], not [PlanScope.of]: a surface outside a
 /// program context (e.g. a global list with no active plan resolved yet)
 /// has no scope to read, and must degrade to plain, unresolved [text] rather
-/// than throw. [overrides] shadows a declared value the same way an
+/// than throw. Likewise a missing `ExerciseScope`/`StationScope` simply
+/// leaves that level's cross-references unresolved (ADR-0048) — never a
+/// crash. [overrides] shadows a declared value the same way an
 /// [Exercise]/[Station]'s `variableOverrides` does for [BriefRenderer] and
 /// the token-aware fields — omit it where the entity has none (e.g. a
-/// program or roleplay name).
+/// program or roleplay name). [roleplayFacets] is this text's own
+/// roleplay's `roleplay.*` facets (DESIGN-010 folds these into the field's
+/// context rather than a scope) — omit it outside a roleplay display.
 ///
 /// An undeclared token is left as literal `{{var.name}}` text
 /// (`substitutePlanVariables`'s default when no `onUnknown` is given) —
@@ -27,6 +35,7 @@ class RingDrillText extends StatelessWidget {
     this.text, {
     super.key,
     this.overrides = const {},
+    this.roleplayFacets,
     this.style,
     this.maxLines,
     this.overflow,
@@ -35,6 +44,7 @@ class RingDrillText extends StatelessWidget {
 
   final String text;
   final Map<String, String> overrides;
+  final Map<String, dynamic>? roleplayFacets;
   final TextStyle? style;
   final int? maxLines;
   final TextOverflow? overflow;
@@ -43,9 +53,9 @@ class RingDrillText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = PlanScope.maybeOf(context);
-    // AppLocalizations can be absent in a bare test harness; the typed
-    // formatting (localized dates, duration units — DESIGN-008 follow-up
-    // 11) needs it, so degrade to the plain string substitution without.
+    // AppLocalizations can be absent in a bare test harness; the resolver
+    // needs it (typed variable formatting, cross-reference placeholders), so
+    // degrade to the plain string substitution without.
     final l10n = AppLocalizations.of(context);
     final String resolved;
     if (scope == null) {
@@ -55,14 +65,14 @@ class RingDrillText extends StatelessWidget {
         for (final v in scope.variables) v.name: overrides[v.name] ?? v.value,
       });
     } else {
-      resolved = resolveTypedPlanVariables(
-        text,
-        {
-          for (final v in scope.variables)
-            v.name: applyVariableOverride(v, overrides[v.name]),
-        },
-        format: variableFormatOf(l10n),
-      );
+      resolved =
+          resolveScopedField(
+            context,
+            text,
+            overrides: overrides,
+            roleplayFacets: roleplayFacets,
+          ) ??
+          text;
     }
     return Text(
       resolved,
