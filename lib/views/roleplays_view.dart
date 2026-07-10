@@ -25,7 +25,7 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
-import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _CastAction { edit, clear }
@@ -736,11 +736,28 @@ class RolePlaysController extends ScreenController {
       return;
     }
 
-    // Pick the exercise to create the role in.
-    final exercise = await showRingdrillActionSheet<Exercise>(
+    // Pick the exercise to create the role in — adaptive picker (ADR-0049):
+    // bottom sheet on compact, dialog on medium/expanded.
+    final exerciseFormat =
+        service.activeProgram?.exerciseNumberFormat ??
+        ExerciseNumberFormat.hash;
+    final exercise = await showRingdrillPicker<Exercise>(
       context: context,
-      builder: (sheetContext) =>
-          _buildExercisePickerSheet(sheetContext, localizations, exercises),
+      title: localizations.pickExerciseForRole,
+      items: exercises,
+      itemBuilder: (context, ex, onTap) {
+        final index = exercises.indexWhere((e) => e.uuid == ex.uuid);
+        return ListTile(
+          leading: ExerciseNumberBadge(
+            label: Numbering.exercise(exerciseFormat, index + 1),
+            size: 36,
+          ),
+          title: Text(ex.name),
+          onTap: onTap,
+        );
+      },
+      searchText: (ex) => ex.name,
+      searchHint: localizations.pickerSearchHint,
     );
     if (exercise == null || !context.mounted) return;
 
@@ -774,47 +791,6 @@ class RolePlaysController extends ScreenController {
     await service.saveRolePlay(localizations, result.rolePlay);
   }
 
-  Widget _buildExercisePickerSheet(
-    BuildContext context,
-    AppLocalizations localizations,
-    List<Exercise> exercises,
-  ) {
-    final exerciseFormat =
-        ProgramService().activeProgram?.exerciseNumberFormat ??
-        ExerciseNumberFormat.hash;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            localizations.pickExerciseForRole,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-        const Divider(height: 1),
-        Flexible(
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: exercises.length,
-            itemBuilder: (context, index) {
-              final ex = exercises[index];
-              return ListTile(
-                leading: ExerciseNumberBadge(
-                  label: Numbering.exercise(exerciseFormat, index + 1),
-                  size: 32,
-                ),
-                title: Text(ex.name),
-                onTap: () => Navigator.pop(context, ex),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
     final localizations = AppLocalizations.of(context)!;
@@ -846,64 +822,46 @@ class RolePlaysController extends ScreenController {
     final exerciseFormat =
         program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
     final current = filterExerciseUuid.value;
-    final selected = await showRingdrillActionSheet<_FilterChoice>(
+    // "All exercises" first, then one choice per exercise. Adaptive picker
+    // (ADR-0049): bottom sheet on compact, dialog on medium/expanded. Tap
+    // applies the filter (a check marks the active one) — no radios.
+    final choices = <_FilterChoice>[
+      const _FilterChoice.all(),
+      for (final ex in exercises) _FilterChoice.one(ex.uuid),
+    ];
+    final selected = await showRingdrillPicker<_FilterChoice>(
       context: context,
-      builder: (sheetContext) {
-        final groupValue = current == null
-            ? const _FilterChoice.all()
-            : _FilterChoice.one(current);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: RadioGroup<_FilterChoice>(
-            groupValue: groupValue,
-            onChanged: (choice) {
-              if (choice == null) return;
-              Navigator.pop(sheetContext, choice);
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Radio<_FilterChoice>(
-                    value: _FilterChoice.all(),
-                  ),
-                  title: Text(localizations.allExercises),
-                  onTap: () =>
-                      Navigator.pop(sheetContext, const _FilterChoice.all()),
-                ),
-                const Divider(height: 1),
-                Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: exercises.length,
-                    itemBuilder: (context, index) {
-                      final ex = exercises[index];
-                      final choice = _FilterChoice.one(ex.uuid);
-                      return ListTile(
-                        leading: Radio<_FilterChoice>(value: choice),
-                        title: Row(
-                          children: [
-                            ExerciseNumberBadge(
-                              label: Numbering.exercise(
-                                exerciseFormat,
-                                index + 1,
-                              ),
-                              size: 32,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text(ex.name)),
-                          ],
-                        ),
-                        onTap: () => Navigator.pop(sheetContext, choice),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+      title: localizations.pickerFilterByExerciseTitle,
+      items: choices,
+      itemBuilder: (context, choice, onTap) {
+        final theme = Theme.of(context);
+        final isActive = choice.uuid == current;
+        final check = isActive
+            ? Icon(Icons.check, color: theme.colorScheme.primary)
+            : null;
+        if (choice.uuid == null) {
+          return ListTile(
+            leading: const Icon(Icons.clear_all),
+            title: Text(localizations.allExercises),
+            trailing: check,
+            onTap: onTap,
+          );
+        }
+        final index = exercises.indexWhere((e) => e.uuid == choice.uuid);
+        return ListTile(
+          leading: ExerciseNumberBadge(
+            label: Numbering.exercise(exerciseFormat, index + 1),
+            size: 36,
           ),
+          title: Text(exercises[index].name),
+          trailing: check,
+          onTap: onTap,
         );
       },
+      searchText: (choice) => choice.uuid == null
+          ? localizations.allExercises
+          : exercises.firstWhere((e) => e.uuid == choice.uuid).name,
+      searchHint: localizations.pickerSearchHint,
     );
     if (selected != null) {
       filterExerciseUuid.value = selected.uuid;

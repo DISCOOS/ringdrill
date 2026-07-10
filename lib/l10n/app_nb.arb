@@ -1854,5 +1854,9 @@
   "pickerSearchHint": "Søk",
   "@pickerSearchHint": {
     "description": "Hint-tekst i søkefeltet den adaptive velger-picker (ADR-0049, showRingdrillPicker) viser når en liste passerer søketerskelen."
+  },
+  "pickerFilterByExerciseTitle": "Filtrer på øvelse",
+  "@pickerFilterByExerciseTitle": {
+    "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) som filtrerer markørlista på øvelse; første valg er «Alle øvelser», resten er én per øvelse."
   }
 }

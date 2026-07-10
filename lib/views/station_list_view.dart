@@ -19,7 +19,7 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
-import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
@@ -633,64 +633,46 @@ class StationListController extends ScreenController {
     final exerciseFormat =
         program?.exerciseNumberFormat ?? ExerciseNumberFormat.hash;
     final current = filterExerciseUuid.value;
-    final selected = await showRingdrillActionSheet<_FilterChoice>(
+    // Adaptive picker (ADR-0049): bottom sheet on compact, dialog on
+    // medium/expanded. Tap applies the filter (a check marks the active
+    // one) — no radios. "All exercises" first, then one per exercise.
+    final choices = <_FilterChoice>[
+      const _FilterChoice.all(),
+      for (final ex in exercises) _FilterChoice.one(ex.uuid),
+    ];
+    final selected = await showRingdrillPicker<_FilterChoice>(
       context: context,
-      builder: (sheetContext) {
-        final groupValue = current == null
-            ? const _FilterChoice.all()
-            : _FilterChoice.one(current);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: RadioGroup<_FilterChoice>(
-            groupValue: groupValue,
-            onChanged: (choice) {
-              if (choice == null) return;
-              Navigator.pop(sheetContext, choice);
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Radio<_FilterChoice>(
-                    value: _FilterChoice.all(),
-                  ),
-                  title: Text(localizations.allExercises),
-                  onTap: () =>
-                      Navigator.pop(sheetContext, const _FilterChoice.all()),
-                ),
-                const Divider(height: 1),
-                Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: exercises.length,
-                    itemBuilder: (context, index) {
-                      final ex = exercises[index];
-                      final choice = _FilterChoice.one(ex.uuid);
-                      return ListTile(
-                        leading: Radio<_FilterChoice>(value: choice),
-                        title: Row(
-                          children: [
-                            ExerciseNumberBadge(
-                              label: Numbering.exercise(
-                                exerciseFormat,
-                                index + 1,
-                              ),
-                              size: 32,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text(ex.name)),
-                          ],
-                        ),
-                        onTap: () => Navigator.pop(sheetContext, choice),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+      title: localizations.pickerFilterByExerciseTitle,
+      items: choices,
+      itemBuilder: (context, choice, onTap) {
+        final theme = Theme.of(context);
+        final isActive = choice.uuid == current;
+        final check = isActive
+            ? Icon(Icons.check, color: theme.colorScheme.primary)
+            : null;
+        if (choice.uuid == null) {
+          return ListTile(
+            leading: const Icon(Icons.clear_all),
+            title: Text(localizations.allExercises),
+            trailing: check,
+            onTap: onTap,
+          );
+        }
+        final index = exercises.indexWhere((e) => e.uuid == choice.uuid);
+        return ListTile(
+          leading: ExerciseNumberBadge(
+            label: Numbering.exercise(exerciseFormat, index + 1),
+            size: 36,
           ),
+          title: Text(exercises[index].name),
+          trailing: check,
+          onTap: onTap,
         );
       },
+      searchText: (choice) => choice.uuid == null
+          ? localizations.allExercises
+          : exercises.firstWhere((e) => e.uuid == choice.uuid).name,
+      searchHint: localizations.pickerSearchHint,
     );
     if (selected != null) {
       filterExerciseUuid.value = selected.uuid;

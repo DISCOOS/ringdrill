@@ -272,6 +272,36 @@ void main() {
     });
   });
 
+  group('Adaptive selectors (ADR-0049)', () {
+    testWidgets('the exercise filter opens the adaptive picker', (tester) async {
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.byIcon(Icons.filter_list));
+      await tester.pumpAndSettle();
+
+      // Title + "All exercises" + the seeded exercise, via showRingdrillPicker
+      // (no radios). The default 800×600 test surface is medium → a dialog.
+      expect(find.text(l10n.pickerFilterByExerciseTitle), findsOneWidget);
+      expect(find.text(l10n.allExercises), findsOneWidget);
+      expect(find.text('Test Exercise RV'), findsWidgets);
+    });
+
+    testWidgets('"Nytt spill" opens the adaptive exercise picker',
+        (tester) async {
+      await tester.pumpWidget(_buildView());
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text(l10n.newPlay));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.pickExerciseForRole), findsOneWidget);
+      expect(find.text('Test Exercise RV'), findsWidgets);
+    });
+  });
+
   group('Collapsed tile — subtitle and title (Step 3)', () {
     testWidgets(
         'subtitle shows roleSubtitleStation when stationIndex is set',

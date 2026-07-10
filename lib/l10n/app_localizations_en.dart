@@ -2631,4 +2631,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickerSearchHint => 'Search';
+
+  @override
+  String get pickerFilterByExerciseTitle => 'Filter by exercise';
 }

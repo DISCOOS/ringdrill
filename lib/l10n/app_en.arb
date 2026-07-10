@@ -2821,5 +2821,9 @@
   "pickerSearchHint": "Search",
   "@pickerSearchHint": {
     "description": "Hint text of the search field the adaptive selector picker (ADR-0049, showRingdrillPicker) shows once a list passes its search threshold."
+  },
+  "pickerFilterByExerciseTitle": "Filter by exercise",
+  "@pickerFilterByExerciseTitle": {
+    "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) that filters the marker list by exercise; the first choice is \"All exercises\", the rest one per exercise."
   }
 }

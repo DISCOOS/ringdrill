@@ -2629,4 +2629,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get pickerSearchHint => 'Søk';
+
+  @override
+  String get pickerFilterByExerciseTitle => 'Filtrer på øvelse';
 }

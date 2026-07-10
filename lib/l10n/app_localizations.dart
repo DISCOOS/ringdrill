@@ -4513,6 +4513,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get pickerSearchHint;
+
+  /// Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) that filters the marker list by exercise; the first choice is "All exercises", the rest one per exercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by exercise'**
+  String get pickerFilterByExerciseTitle;
 }
 
 class _AppLocalizationsDelegate
