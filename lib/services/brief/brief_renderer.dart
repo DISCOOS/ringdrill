@@ -17,20 +17,15 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' as resolver;
 import 'package:ringdrill/services/brief/template_registry.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
-import 'package:ringdrill/utils/projection.dart';
-import 'package:ringdrill/utils/station_scenario_tokens.dart'
-    show locationLatLng;
-import 'package:ringdrill/utils/variable_values.dart';
 
 /// Thrown when a brief template asset cannot be loaded from the bundle.
 ///
@@ -110,8 +105,12 @@ class BriefRenderer {
 
     final programVars = _programVariables(program);
     final programRefContext = _programRefContext(program);
-    final programName = _substituteVariables(program.name, programVars, l10n);
-    final programDescription = _substituteVariables(
+    final programName = resolver.substituteTypedVariables(
+      program.name,
+      programVars,
+      l10n,
+    );
+    final programDescription = resolver.substituteTypedVariables(
       program.description,
       programVars,
       l10n,
@@ -133,13 +132,13 @@ class BriefRenderer {
       'program': {
         'name': programName,
         'description': programDescription.isEmpty ? null : programDescription,
-        'briefIntroMd': _resolveField(
+        'briefIntroMd': resolver.resolveField(
           program.briefIntroMd,
           vars: programVars,
           l10n: l10n,
           refContext: programRefContext,
         ),
-        'commsMd': _resolveField(
+        'commsMd': resolver.resolveField(
           program.commsMd,
           vars: programVars,
           l10n: l10n,
@@ -178,7 +177,7 @@ class BriefRenderer {
       ...programRefContext,
       ..._exerciseRefContext(exercise, l10n),
     };
-    final effectiveComms = _resolveField(
+    final effectiveComms = resolver.resolveField(
       _effectiveCommsMd(program, exercise),
       vars: exerciseVars,
       l10n: l10n,
@@ -202,7 +201,7 @@ class BriefRenderer {
       );
     }).toList();
 
-    final exerciseName = _substituteVariables(
+    final exerciseName = resolver.substituteTypedVariables(
       exercise.name,
       exerciseVars,
       l10n,
@@ -218,31 +217,31 @@ class BriefRenderer {
       'exerciseAnchor': exerciseAnchor,
       'exerciseTimeLabel': _exerciseTimeLabel(exercise),
       'exerciseDurationLabel': _exerciseDurationLabel(exercise, l10n),
-      'methodMd': _resolveField(
+      'methodMd': resolver.resolveField(
         exercise.methodMd,
         vars: exerciseVars,
         l10n: l10n,
         refContext: exerciseRefContext,
       ),
-      'learningGoalsMd': _resolveField(
+      'learningGoalsMd': resolver.resolveField(
         exercise.learningGoalsMd,
         vars: exerciseVars,
         l10n: l10n,
         refContext: exerciseRefContext,
       ),
-      'trainingFocusMd': _resolveField(
+      'trainingFocusMd': resolver.resolveField(
         exercise.trainingFocusMd,
         vars: exerciseVars,
         l10n: l10n,
         refContext: exerciseRefContext,
       ),
-      'orderFormatMd': _resolveField(
+      'orderFormatMd': resolver.resolveField(
         exercise.orderFormatMd,
         vars: exerciseVars,
         l10n: l10n,
         refContext: exerciseRefContext,
       ),
-      'executionTipsMd': _resolveField(
+      'executionTipsMd': resolver.resolveField(
         exercise.executionTipsMd,
         vars: exerciseVars,
         l10n: l10n,
@@ -271,7 +270,7 @@ class BriefRenderer {
       exerciseNumber: exerciseNumber,
       stationIndex: station.index,
     );
-    final utmStr = _formatUtm(station.position);
+    final utmStr = resolver.formatUtm(station.position);
     // Pre-formatted markdown for the "Post Nx plassering:" value. Renders as
     // an inline-code chip when the station has a UTM position, or as a
     // muted italic "no position" label when the position is null/empty.
@@ -301,13 +300,13 @@ class BriefRenderer {
       exercise: exercise,
       station: station,
     );
-    final resolvedStationName = _substituteVariables(
+    final resolvedStationName = resolver.substituteTypedVariables(
       cleanName,
       stationVars,
       l10n,
     );
 
-    String? resolveField(String? content) => _resolveField(
+    String? resolveField(String? content) => resolver.resolveField(
       content,
       vars: stationVars,
       l10n: l10n,
@@ -324,7 +323,11 @@ class BriefRenderer {
           actorContext = {'realName': actor.realName, 'phone': actor.phone};
         }
       }
-      final resolvedRpName = _substituteVariables(rp.name, stationVars, l10n);
+      final resolvedRpName = resolver.substituteTypedVariables(
+        rp.name,
+        stationVars,
+        l10n,
+      );
       // Cascades station (+ exercise + program) on top of this roleplay's
       // own {{roleplay.*}} — roleplay fields resolve through the station's
       // effective variables too, per DESIGN-008 ("a roleplay reads through
@@ -335,10 +338,10 @@ class BriefRenderer {
           'name': rp.name,
           'age': rp.age,
           'signalement': rp.signalement,
-          'position': {'utm': _formatUtm(rp.position)},
+          'position': {'utm': resolver.formatUtm(rp.position)},
         },
       };
-      String? resolveRoleplayField(String? content) => _resolveField(
+      String? resolveRoleplayField(String? content) => resolver.resolveField(
         content,
         vars: stationVars,
         l10n: l10n,
@@ -427,7 +430,7 @@ class BriefRenderer {
   /// Formats [latLng] as "32V 0580414E 6552008N" (UTM, easting before
   /// northing). Returns empty string when [latLng] is null.
   @visibleForTesting
-  static String formatUtm(LatLng? latLng) => _formatUtm(latLng);
+  static String formatUtm(LatLng? latLng) => resolver.formatUtm(latLng);
 
   /// Converts [heading] to the same GitHub-flavored anchor id the template
   /// emits as link targets in the in-doc table of contents (lowercase,
@@ -448,7 +451,7 @@ class BriefRenderer {
     String content,
     AppLocalizations l10n,
   ) =>
-      _resolveField(
+      resolver.resolveField(
         content,
         vars: _programVariables(program),
         l10n: l10n,
@@ -491,7 +494,10 @@ class BriefRenderer {
 
 // ---------------------------------------------------------------------------
 // Private helpers (top-level functions for testability via @visibleForTesting
-// static wrappers above)
+// static wrappers above). The token-resolution pipeline itself
+// (`resolveField`/`substituteTypedVariables`/`formatUtm` and the scenario
+// facet resolution) lives in `field_resolver.dart` (ADR-0048) — this file
+// only assembles the resolution context and delegates to it.
 // ---------------------------------------------------------------------------
 
 // Matches leading "Nx) " or "Nxy) " station-name prefixes.
@@ -548,7 +554,7 @@ String _organisationBlock(
       '_(${l10n.rotationShareLegendPhases})_',
     )
     ..writeln();
-  final beforeRound = _resolveField(
+  final beforeRound = resolver.resolveField(
     program.beforeRoundMd,
     vars: _programVariables(program),
     l10n: l10n,
@@ -570,17 +576,6 @@ String _organisationBlock(
   return buf.toString().trimRight();
 }
 
-/// Formats a UTM coordinate as "32V 0580414E 6552008N" — zone+band, then
-/// zero-padded 7-digit easting with 'E', then zero-padded 7-digit northing
-/// with 'N'.  Returns empty string when [latLng] is null.
-String _formatUtm(LatLng? latLng) {
-  if (latLng == null) return '';
-  final utm = latLng.utm();
-  final e = utm.easting.toStringAsFixed(0).padLeft(7, '0');
-  final n = utm.northing.toStringAsFixed(0).padLeft(7, '0');
-  return '${utm.zone}${utm.band} ${e}E ${n}N';
-}
-
 String? _effectiveCommsMd(Program program, Exercise exercise) {
   return exercise.commsMd ?? program.commsMd;
 }
@@ -591,9 +586,9 @@ String? _effectiveCommsMd(Program program, Exercise exercise) {
 ///
 /// Without this, `{{program.name}}` has no key to resolve against —
 /// `mustache_template` throws "Value was missing for variable tag" for an
-/// absent key (not a silent empty string), which `_resolveField`'s
-/// catch-all then turns into "leave the field's mustache pass unrendered",
-/// so the literal `{{program.name}}` stayed in the output instead of being
+/// absent key (not a silent empty string), which `resolveField`'s catch-all
+/// then turns into "leave the field's mustache pass unrendered", so the
+/// literal `{{program.name}}` stayed in the output instead of being
 /// substituted.
 Map<String, dynamic> _programRefContext(Program program) => {
   'program': {'name': program.name, 'description': program.description},
@@ -640,265 +635,6 @@ Map<String, DrillVariable> _effectiveVariables(
   Station? station,
 }) =>
     effectiveTypedPlanVariables(program, exercise: exercise, station: station);
-
-/// Replaces every `{{var.<name>[.facet]}}` token in [content] with its
-/// effective value — formatted canonically for its declared type
-/// (DESIGN-008 follow-up 11: a date localized, a duration as "1 t 30 min",
-/// a `location` through the shared facet code with the brief's inline-code
-/// UTM styling) — or with the localized unknown-variable placeholder when
-/// `<name>` is not declared. A declared-but-empty variable substitutes the
-/// empty string — that is a valid authoring state, not an error (ADR-0046).
-///
-/// Runs before the mustache pass (see [_resolveField]), so cross-references
-/// like `{{station.position.utm}}` are still handled by the existing
-/// `Template(...).renderString(...)` call afterwards. A variable *value*
-/// that itself contains `{{...}}` is inserted literally here and picked up
-/// by a later pass of [_resolveField]'s fixpoint loop: a `{{var.*}}` value
-/// resolves on the next iteration, a cross-reference token in it on the
-/// mustache pass. A self- or mutually-referential value never converges and
-/// is left literal once the loop's cap is hit.
-String _substituteVariables(
-  String content,
-  Map<String, DrillVariable> vars,
-  AppLocalizations l10n,
-) {
-  return resolveTypedPlanVariables(
-    content,
-    vars,
-    format: VariableFormat(
-      localeName: l10n.localeName,
-      hourUnit: l10n.variableDurationHourUnit,
-    ),
-    onUnknown: (name) => l10n.briefUnknownVariable(name),
-    locationFacetResolver: _resolveLocationFacet,
-  );
-}
-
-/// Upper bound on [_resolveField]'s fixpoint iterations. Each successful
-/// resolution removes tokens, so a well-formed field converges in one or two
-/// passes; this cap only bites on a circular reference (e.g. a name that
-/// references a description that references the name), guaranteeing
-/// termination instead of an infinite loop. Any tokens still present when
-/// the cap is reached are left as visible literal text, which surfaces the
-/// cycle to the author rather than hanging the render.
-const _maxResolvePasses = 10;
-
-/// Resolves a markdown field for rendering by running the full token
-/// pipeline — `{{var.<name>}}`, then (when [scenarioStation] is given)
-/// `{{station.loc/person.<slug>}}`, then the mustache cross-reference pass
-/// against [refContext] — repeatedly until the string stops changing
-/// (bounded by [_maxResolvePasses]).
-///
-/// The loop is what makes *nested* tokens resolve: any of the three systems
-/// can inject a value that itself contains further tokens. A `{{var.year}}`
-/// living inside `program.name` and reached through `{{program.name}}`, or a
-/// `{{program.name}}` living inside `program.description` and reached through
-/// `{{program.description}}`, only appears in the text after the pass that
-/// injected it, so a single pass would leave it literal. Re-running the
-/// whole pipeline on each pass' output resolves the next layer down. This
-/// also means the cross-reference source values in the various `refContext`
-/// maps can stay raw (unresolved) — the following pass' `{{var.*}}`
-/// substitution catches whatever they inject.
-///
-/// [scenarioStation] is omitted (null) for program- and exercise-scope
-/// fields, which have no station in scope and so never resolve
-/// `station.loc.*`/`station.person.*`; only station and roleplay fields pass
-/// it, both scoped to that same station's `locations`/`persons`.
-String? _resolveField(
-  String? content, {
-  required Map<String, DrillVariable> vars,
-  required AppLocalizations l10n,
-  Map<String, dynamic> refContext = const {},
-  Station? scenarioStation,
-  List<RolePlay> scenarioRolePlays = const [],
-}) {
-  if (content == null) return null;
-  var current = content;
-  for (var pass = 0; pass < _maxResolvePasses; pass++) {
-    final next = _resolveFieldOnce(
-      current,
-      vars: vars,
-      l10n: l10n,
-      refContext: refContext,
-      scenarioStation: scenarioStation,
-      scenarioRolePlays: scenarioRolePlays,
-    );
-    if (next == current) return next;
-    current = next;
-  }
-  return current;
-}
-
-/// One iteration of the [_resolveField] pipeline: `{{var.<name>}}`
-/// substitution, then optional `{{station.loc/person.<slug>}}` resolution,
-/// then the mustache cross-reference pass. Falls back to the (variable- and
-/// scenario-substituted, but not mustache-rendered) content if that pass
-/// throws — the same fallback behaviour the renderer had before variable
-/// substitution was introduced.
-String _resolveFieldOnce(
-  String content, {
-  required Map<String, DrillVariable> vars,
-  required AppLocalizations l10n,
-  required Map<String, dynamic> refContext,
-  Station? scenarioStation,
-  List<RolePlay> scenarioRolePlays = const [],
-}) {
-  final withVars = _substituteVariables(content, vars, l10n);
-  final withScenario = scenarioStation == null
-      ? withVars
-      : _resolveStationScenarioTokens(
-          withVars,
-          station: scenarioStation,
-          rolePlays: scenarioRolePlays,
-          l10n: l10n,
-        );
-  try {
-    return Template(
-      withScenario,
-      htmlEscapeValues: false,
-    ).renderString(refContext);
-  } catch (_) {
-    return withScenario;
-  }
-}
-
-/// Matches `{{station.loc.<slug>}}` / `{{station.person.<slug>}}`, with an
-/// optional dotted facet path (`.place`, `.utm`, `.loc.utm`, ...). Group 1
-/// is `loc`/`person`, group 2 the slug, group 3 the facet path including its
-/// leading dots (empty for the bare token).
-final _stationScenarioTokenPattern = RegExp(
-  r'\{\{\s*station\.(loc|person)\.([a-z][a-z0-9_]*)((?:\.[a-zA-Z]+)*)\s*\}\}',
-);
-
-/// Replaces every `{{station.loc.<slug>}}` / `{{station.person.<slug>}}`
-/// token (with facets) in [content] against [station]'s own
-/// `locations`/`persons` — the station-and-down scope ADR-0047 defines.
-/// [rolePlays] are the roleplays on this same station, used to resolve a
-/// person facet's effective (denormalized) identity. An unknown slug
-/// renders the same kind of visible, localized placeholder an undeclared
-/// `{{var.x}}` does; a known slug with an empty facet renders empty, which
-/// is a valid authoring state, not an error.
-///
-/// Runs pre-mustache, alongside `{{var.<name>}}` substitution — this is a
-/// second registry-like lookup, not mustache's fixed derived context, so it
-/// stays on the same pre-pass rather than growing a second parser. The
-/// remaining `{{station.position.*}}` etc. are untouched here and still
-/// resolved by the subsequent mustache pass against `refContext`.
-String _resolveStationScenarioTokens(
-  String content, {
-  required Station station,
-  required List<RolePlay> rolePlays,
-  required AppLocalizations l10n,
-}) {
-  return content.replaceAllMapped(_stationScenarioTokenPattern, (match) {
-    final kind = match.group(1)!;
-    final slug = match.group(2)!;
-    final facets = (match.group(3) ?? '')
-        .split('.')
-        .where((s) => s.isNotEmpty)
-        .toList();
-    if (kind == 'loc') {
-      final location = _bySlug(station.locations, slug, (l) => l.slug);
-      if (location == null) {
-        return l10n.briefUnknownReference('station.loc.$slug');
-      }
-      return _resolveLocationFacet(location, facets);
-    }
-    final person = _bySlug(station.persons, slug, (p) => p.slug);
-    if (person == null) {
-      return l10n.briefUnknownReference('station.person.$slug');
-    }
-    final portrayer = _bySlug(rolePlays, slug, (rp) => rp.personRef ?? '');
-    return _resolvePersonFacet(person, portrayer, station, facets);
-  });
-}
-
-T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
-  for (final item in items) {
-    if (slugOf(item) == slug) return item;
-  }
-  return null;
-}
-
-/// `{{station.loc.<slug>[.facet]}}` facet resolution — also reused for
-/// `location`-typed `{{var.<name>[.facet]}}` tokens (DESIGN-008 follow-up
-/// 11), which project onto the same `Location` shape. The bare/default and
-/// `.utm` forms render the UTM as inline code (backtick-wrapped), matching
-/// how the brief presents `station.position.utm` elsewhere; empty when the
-/// location has no position.
-String _resolveLocationFacet(Location location, List<String> facets) {
-  switch (facets.isEmpty ? null : facets.first) {
-    case 'place':
-      return location.place;
-    case 'label':
-      return location.label;
-    case 'utm':
-      return _locationUtmCode(location);
-    case 'latlng':
-      return locationLatLng(location);
-    default:
-      return _locationDefault(location);
-  }
-}
-
-String _locationUtmCode(Location location) {
-  final utm = _formatUtm(location.position);
-  return utm.isEmpty ? '' : '`$utm`';
-}
-
-/// Sensible bare-token default: `place` plus, when a position is set, the
-/// inline-code UTM.
-String _locationDefault(Location location) {
-  final utmCode = _locationUtmCode(location);
-  if (location.place.isEmpty) return utmCode;
-  if (utmCode.isEmpty) return location.place;
-  return '${location.place} ($utmCode)';
-}
-
-/// `{{station.person.<slug>[.facet]}}` facet resolution. [portrayer] is the
-/// roleplay on [station] whose `personRef` names this person, if any — its
-/// identity fields take precedence over [person]'s own when set (the
-/// effective, denormalized identity from ADR-0047); `.loc` resolves
-/// [Person.locSlug] to a location on the same station and applies the
-/// remaining facet path to it.
-String _resolvePersonFacet(
-  Person person,
-  RolePlay? portrayer,
-  Station station,
-  List<String> facets,
-) {
-  switch (facets.isEmpty ? null : facets.first) {
-    case 'age':
-      final age = portrayer?.age ?? person.age;
-      return age == null ? '' : '$age';
-    case 'gender':
-      return _effectiveField(portrayer?.gender, person.gender) ?? '';
-    case 'signalement':
-      return _effectiveField(portrayer?.signalement, person.signalement) ??
-          '';
-    case 'loc':
-      final locSlug = person.locSlug;
-      final loc = locSlug == null
-          ? null
-          : _bySlug(station.locations, locSlug, (l) => l.slug);
-      return loc == null
-          ? ''
-          : _resolveLocationFacet(loc, facets.skip(1).toList());
-    case 'name':
-    default:
-      return _effectivePersonName(person, portrayer);
-  }
-}
-
-String _effectivePersonName(Person person, RolePlay? portrayer) =>
-    _effectiveField(portrayer?.name, person.name) ?? '';
-
-/// The portraying roleplay's value when non-empty, otherwise the person's
-/// own value (ADR-0047's effective-identity rule).
-String? _effectiveField(String? roleplayValue, String? personValue) {
-  if (roleplayValue != null && roleplayValue.isNotEmpty) return roleplayValue;
-  return personValue;
-}
 
 /// Converts a heading string to a GitHub-flavored markdown anchor id:
 /// lowercase, trim, replace spaces and special chars with hyphens.
