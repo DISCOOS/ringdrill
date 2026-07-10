@@ -103,11 +103,9 @@ void main() {
       await tester.tap(find.text('Post B').last);
       await tester.pumpAndSettle();
 
-      // The inline warning now names the Behaviour field.
-      expect(
-        find.textContaining(l.rolePlayBrokenReferenceWarning(l.roleBehavior)),
-        findsOneWidget,
-      );
+      // The inline warning now shows a chip for the Behaviour field.
+      expect(find.text(l.rolePlayBrokenReferencePrefix), findsOneWidget);
+      expect(find.widgetWithText(ActionChip, l.roleBehavior), findsOneWidget);
 
       // Pick the new station's person to satisfy the required-personRef
       // validator, then attempt to save.
@@ -133,10 +131,7 @@ void main() {
       await tester.tap(find.text('Post A').last);
       await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining(l.rolePlayBrokenReferenceWarning(l.roleBehavior)),
-        findsNothing,
-      );
+      expect(find.text(l.rolePlayBrokenReferencePrefix), findsNothing);
 
       await tester.tap(find.byKey(const Key('person-field')));
       await tester.pumpAndSettle();
@@ -151,6 +146,31 @@ void main() {
         captured.value!.rolePlay.behavior,
         'Sier hei ved {{station.loc.lkp}}.',
       );
+    },
+  );
+
+  testWidgets(
+    'tapping a broken-reference chip opens that section to fix it',
+    (tester) async {
+      await _open(tester, _Captured());
+
+      // Re-link to Post B so the Behaviour token breaks and the chip shows.
+      await tester.tap(find.byKey(const Key('station-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Post B').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ActionChip, l.roleBehavior));
+      await tester.pumpAndSettle();
+
+      // The Behaviour section is now selected in the rail.
+      final tile = tester.widget<ListTile>(
+        find.ancestor(
+          of: find.text(l.roleBehavior),
+          matching: find.byType(ListTile),
+        ),
+      );
+      expect(tile.selected, isTrue);
     },
   );
 }

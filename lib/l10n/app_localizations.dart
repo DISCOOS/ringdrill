@@ -4034,11 +4034,11 @@ abstract class AppLocalizations {
   /// **'Please select a person'**
   String get pleaseSelectPerson;
 
-  /// Inline warning shown under the Post selector when switching the linked station has left a station.loc/station.person token in one of this roleplay's own fields unresolved (DESIGN-009 prompt 5, commit 3). {fields} is a comma-joined list of the offending field labels. Save is already blocked separately; this only surfaces the problem earlier.
+  /// Lead-in to the warning shown under the Post selector when switching the linked station has left a station.loc/station.person token unresolved in one of this roleplay's own fields (DESIGN-009 prompt 5). Followed by one chip per affected section; each chip opens that section so the author can fix it. Save is already blocked separately; this only surfaces the problem earlier.
   ///
   /// In en, this message translates to:
-  /// **'Broken reference after re-linking, in: {fields}'**
-  String rolePlayBrokenReferenceWarning(String fields);
+  /// **'Broken reference in'**
+  String get rolePlayBrokenReferencePrefix;
 
   /// Trailing action on the Post card (DESIGN-009 prompt 4j) that opens the station picker dialog to change which post a marker is linked to — a discreet action rather than a full-width dropdown, since re-pointing a marker's post after creation is rare.
   ///

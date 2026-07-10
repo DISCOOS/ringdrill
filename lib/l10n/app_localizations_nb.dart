@@ -2349,9 +2349,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pleaseSelectPerson => 'Velg en person';
 
   @override
-  String rolePlayBrokenReferenceWarning(String fields) {
-    return 'Brutt referanse etter ny lenking, i: $fields';
-  }
+  String get rolePlayBrokenReferencePrefix => 'Brutt referanse i';
 
   @override
   String get rolePlayPostEditAction => 'Endre';

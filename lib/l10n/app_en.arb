@@ -2468,12 +2468,9 @@
   "@pleaseSelectPerson": {
     "description": "Validation message shown when no person is selected for a roleplay (ADR-0047's mandatory personRef, an editor-level invariant)."
   },
-  "rolePlayBrokenReferenceWarning": "Broken reference after re-linking, in: {fields}",
-  "@rolePlayBrokenReferenceWarning": {
-    "description": "Inline warning shown under the Post selector when switching the linked station has left a station.loc/station.person token in one of this roleplay's own fields unresolved (DESIGN-009 prompt 5, commit 3). {fields} is a comma-joined list of the offending field labels. Save is already blocked separately; this only surfaces the problem earlier.",
-    "placeholders": {
-      "fields": { "type": "String" }
-    }
+  "rolePlayBrokenReferencePrefix": "Broken reference in",
+  "@rolePlayBrokenReferencePrefix": {
+    "description": "Lead-in to the warning shown under the Post selector when switching the linked station has left a station.loc/station.person token unresolved in one of this roleplay's own fields (DESIGN-009 prompt 5). Followed by one chip per affected section; each chip opens that section so the author can fix it. Save is already blocked separately; this only surfaces the problem earlier."
   },
   "rolePlayPostEditAction": "Edit",
   "@rolePlayPostEditAction": {

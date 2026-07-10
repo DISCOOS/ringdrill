@@ -1501,12 +1501,9 @@
   "@pleaseSelectPerson": {
     "description": "Valideringsmelding vist når ingen person er valgt for en rollefigur (ADR-0047s obligatoriske personRef, et krav på redigeringsnivå)."
   },
-  "rolePlayBrokenReferenceWarning": "Brutt referanse etter ny lenking, i: {fields}",
-  "@rolePlayBrokenReferenceWarning": {
-    "description": "Advarsel vist under Post-velgeren når endring av lenket post har gjort et station.loc/station.person-token i et av denne markørordrens egne felt ubrukelig (DESIGN-009 prompt 5, commit 3). {fields} er en kommaseparert liste over de aktuelle feltetikettene. Lagre er allerede blokkert separat; dette varsler bare tidligere.",
-    "placeholders": {
-      "fields": { "type": "String" }
-    }
+  "rolePlayBrokenReferencePrefix": "Brutt referanse i",
+  "@rolePlayBrokenReferencePrefix": {
+    "description": "Innledning til advarselen vist under Post-velgeren når endring av lenket post har gjort et station.loc/station.person-token ubrukelig i et av markørordrens egne felt (DESIGN-009 prompt 5). Etterfølges av én chip per berørt seksjon; hver chip åpner seksjonen så forfatteren kan rette den. Lagre er allerede blokkert separat; dette varsler bare tidligere."
   },
   "rolePlayPostEditAction": "Endre",
   "@rolePlayPostEditAction": {

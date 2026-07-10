@@ -880,23 +880,71 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// [_unresolvedReferenceFieldLabels] regardless — this only surfaces the
   /// problem without waiting for a Save attempt. Never rewrites or clears
   /// the author's text.
-  Widget? _buildUnresolvedReferenceWarning(AppLocalizations l) {
-    final offending = _unresolvedReferenceFieldLabels(l);
-    if (offending.isEmpty) return null;
+  // [context] is the section builder's context (below `SectionNavigator`),
+  // not the State's — the chips' `selectSection` needs it to find the
+  // navigator, which the State context (an ancestor of the navigator) cannot.
+  Widget? _buildUnresolvedReferenceWarning(
+    BuildContext context,
+    AppLocalizations l,
+  ) {
+    // Each offending field paired with the section id that owns it, so its
+    // chip can jump straight there to fix the broken token (DESIGN-009
+    // prompt 5). The name field lives in the base section's identity panel,
+    // so its chip also opens that panel.
+    final targets = <({String label, VoidCallback onTap})>[
+      if (_nameHasUnresolvedReference())
+        (
+          label: l.roleName,
+          onTap: () {
+            SectionNavigator.maybeOf(context)?.selectSection('roleplay');
+            setState(() => _identityExpanded = true);
+          },
+        ),
+      for (final section in _sectionsWithUnresolvedReferences())
+        (
+          label: _mdLabelFor(section, l),
+          onTap: () =>
+              SectionNavigator.maybeOf(context)?.selectSection(section.name),
+        ),
+    ];
+    if (targets.isEmpty) return null;
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(Icons.error_outline, size: 18, color: theme.colorScheme.error),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              l.rolePlayBrokenReferenceWarning(offending.join(', ')),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  l.rolePlayBrokenReferencePrefix,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+                for (final target in targets)
+                  ActionChip(
+                    label: Text(target.label),
+                    onPressed: target.onTap,
+                    labelStyle: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                    side: BorderSide(
+                      color: theme.colorScheme.error.withValues(alpha: 0.5),
+                    ),
+                    backgroundColor: theme.colorScheme.error.withValues(
+                      alpha: 0.08,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+              ],
             ),
           ),
         ],
@@ -975,7 +1023,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 exerciseIndex: exerciseIndex,
                 stationNumberFormat: stationNumberFormat,
               ),
-              ?_buildUnresolvedReferenceWarning(l),
+              ?_buildUnresolvedReferenceWarning(context, l),
               // Post-first gate (ADR-0047, amended 2026-07-10): identity and
               // position are overrides scoped to a station's Person, so
               // nothing below the Post card is active until a Post is chosen.

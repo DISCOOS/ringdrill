@@ -2351,9 +2351,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseSelectPerson => 'Please select a person';
 
   @override
-  String rolePlayBrokenReferenceWarning(String fields) {
-    return 'Broken reference after re-linking, in: $fields';
-  }
+  String get rolePlayBrokenReferencePrefix => 'Broken reference in';
 
   @override
   String get rolePlayPostEditAction => 'Edit';
