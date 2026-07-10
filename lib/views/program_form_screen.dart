@@ -381,9 +381,11 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
                     child: RingDrillTextArea(
                       controller: _controllerFor(section),
                       focusNode: _focusFor(section),
-                      // No label: the section switcher (compact dropdown /
-                      // wide rail) already names this section, so a field
-                      // label equal to the section name only duplicates it.
+                      // Shown, matching the roleplay editor's own markdown
+                      // sections (e.g. "Bakgrunn") — consistent chrome
+                      // across every section-navigated editor, not just the
+                      // ones whose author happened to pass a label.
+                      label: _labelFor(section, l),
                       expands: true,
                       tokenAware: true,
                       planFields: planFields,
