@@ -82,14 +82,11 @@ void main() {
       expect(find.byType(BriefMarkdown), findsOneWidget);
       expect(find.textContaining('Bruk Kanal 8'), findsOneWidget);
       // ...its own label stays visible (preview only swaps the editable
-      // content, not the field's chrome)...
-      expect(find.text(l.stationDescription), findsOneWidget);
-      // ...and it starts flush left, close to the name field's own left
-      // edge (both live in the same padded structural-fields column), not
-      // centered somewhere in the middle of the available width.
-      final nameLeft = tester
-          .getTopLeft(find.widgetWithText(TextFormField, 'Post 1'))
-          .dx;
+      // content, not the field's chrome), directly above the resolved
+      // text, both flush left at (near) the same x — not offset by
+      // BriefMarkdown's own brief-page gutter (a 24px mismatch a looser
+      // tolerance here would miss entirely).
+      final labelLeft = tester.getTopLeft(find.text(l.stationDescription)).dx;
       final contentLeft = tester
           .getTopLeft(
             find.descendant(
@@ -98,7 +95,7 @@ void main() {
             ),
           )
           .dx;
-      expect(contentLeft, lessThan(nameLeft + 40));
+      expect(contentLeft, closeTo(labelLeft, 2));
       // ...while the name field and the position picker are untouched.
       expect(find.widgetWithText(TextFormField, 'Post 1'), findsOneWidget);
       expect(find.byTooltip(l.formSectionEditAction), findsOneWidget);

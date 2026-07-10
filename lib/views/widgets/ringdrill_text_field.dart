@@ -479,6 +479,11 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
                   data: resolved,
                   theme: BriefTheme.of(context),
                   controller: previewController,
+                  // No extra gutter: this sits directly under the field's
+                  // own label/caption (see _previewWithLabel), which has no
+                  // inset of its own — BriefMarkdown's default (brief-page)
+                  // gutter would otherwise shift the text right of it.
+                  gutter: 0,
                 ),
         ),
       );

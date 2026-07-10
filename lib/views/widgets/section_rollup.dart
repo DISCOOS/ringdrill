@@ -127,6 +127,11 @@ class _SectionRollupState extends State<SectionRollup> {
             child: BriefMarkdownBlock(
               data: '## ${s.label}\n\n$resolved',
               theme: theme,
+              // No extra gutter: withSectionRollup's own container already
+              // insets this to line up with the structural fields and the
+              // rollup toggle above it — BriefMarkdownBlock's default
+              // (brief-page) gutter would otherwise shift it further right.
+              gutter: 0,
             ),
           ),
         ),

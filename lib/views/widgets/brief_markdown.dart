@@ -387,11 +387,21 @@ class BriefMarkdown extends StatelessWidget {
     required this.controller,
     this.currentMatchKey,
     this.onAnchorTap,
+    this.gutter,
   });
 
   final String data;
   final BriefTheme theme;
   final BriefMarkdownController controller;
+
+  /// Horizontal inset around the reading column. Defaults to
+  /// [BriefSpacing.gutter] — the brief page's own margin, generous because
+  /// nothing else shares that page's left edge. A caller embedding this
+  /// next to other chrome that shares an edge (DESIGN-010's per-section
+  /// preview sits directly under the field's own label, at that label's own
+  /// x) should override this to `0` so the two align, rather than the
+  /// resolved text sitting further right than everything around it.
+  final double? gutter;
 
   /// Optional [GlobalKey] attached to the active search-match widget so
   /// callers can call `Scrollable.ensureVisible` against it. Only used when
@@ -517,7 +527,9 @@ class BriefMarkdown extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+                padding: EdgeInsets.symmetric(
+                  horizontal: gutter ?? theme.spacing.gutter,
+                ),
                 // SelectionArea sits *inside* the scroll view, wrapping the
                 // non-scrolling Column. See class doc / issue #115787.
                 child: SelectionArea(
@@ -633,11 +645,18 @@ class BriefMarkdownBlock extends StatelessWidget {
     required this.data,
     required this.theme,
     this.onAnchorTap,
+    this.gutter,
   });
 
   final String data;
   final BriefTheme theme;
   final ValueChanged<String>? onAnchorTap;
+
+  /// Horizontal inset around the content — see [BriefMarkdown.gutter].
+  /// Defaults to [BriefSpacing.gutter]; the section rollup overrides this
+  /// to `0` since its own container already insets the available width to
+  /// match the structural fields and the rollup toggle above it.
+  final double? gutter;
 
   @override
   Widget build(BuildContext context) {
@@ -666,7 +685,7 @@ class BriefMarkdownBlock extends StatelessWidget {
     // rollup's own container already caps/pads the available width
     // (withSectionRollup), so this block just fills whatever it is given.
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+      padding: EdgeInsets.symmetric(horizontal: gutter ?? theme.spacing.gutter),
       // Deliberately no SelectionArea, unlike BriefMarkdown: the section
       // rollup wraps each block in its own tap-to-edit InkWell, and a
       // descendant SelectionArea's own tap/long-press recognizers win

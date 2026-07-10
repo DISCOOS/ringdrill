@@ -72,9 +72,11 @@ void main() {
       // The section's own label stays visible — preview only swaps the
       // editable content for resolved text, not the field's chrome — and
       // sits directly above the resolved text, both flush left at (near)
-      // the same x. Before the fix, the resolved text (short) shrink-wrapped
-      // and Align centered it well to the right of the label. `.last`: the
-      // wide rail's own tile also shows this same label text.
+      // the same x — not offset by BriefMarkdown's own brief-page gutter (a
+      // 24px mismatch a looser tolerance here would miss entirely). Before
+      // the fix, the resolved text (short) shrink-wrapped and Align
+      // centered it well to the right of the label. `.last`: the wide
+      // rail's own tile also shows this same label text.
       final labelLeft = tester.getTopLeft(find.text(l.roleBackground).last).dx;
       final contentLeft = tester
           .getTopLeft(
@@ -84,7 +86,7 @@ void main() {
             ),
           )
           .dx;
-      expect(contentLeft, lessThan(labelLeft + 40));
+      expect(contentLeft, closeTo(labelLeft, 2));
     },
   );
 }
