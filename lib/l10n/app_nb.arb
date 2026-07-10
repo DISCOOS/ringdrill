@@ -719,6 +719,10 @@
   "@roleBehavior": {
     "description": "Feltetikett for oppførsel-feltet i RolePlayFormScreen."
   },
+  "roleProps": "Rekvisitter",
+  "@roleProps": {
+    "description": "DESIGN-010 stage 3b: Spill-viewerens Markørordre-kort tredje seksjon — RolePlay.propsMd, ikke tidligere vist på denne skjermen."
+  },
 
   "castedByLine": "Spilles av {name}",
   "@castedByLine": {

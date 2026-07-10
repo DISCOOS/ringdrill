@@ -1698,6 +1698,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleBehavior => 'Behaviour';
 
   @override
+  String get roleProps => 'Props';
+
+  @override
   String castedByLine(String name) {
     return 'Played by $name';
   }

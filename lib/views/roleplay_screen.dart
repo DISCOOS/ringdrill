@@ -3,25 +3,32 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
+import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
+import 'package:ringdrill/views/widgets/narrative_rollup_card.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
+import 'package:ringdrill/views/widgets/team_schedule_table.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -89,6 +96,31 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
       'utm': rolePlay.position == null ? '' : formatUtm(rolePlay.position),
     },
   };
+
+  /// The scenario [Person] this roleplay portrays, via `personRef`, or
+  /// null when unlinked (a legacy/orphaned roleplay with only its own bare
+  /// fields, ADR-0047).
+  Person? _personFor(Station? station, RolePlay rolePlay) {
+    final personRef = rolePlay.personRef;
+    if (station == null || personRef == null) return null;
+    return station.persons.where((p) => p.slug == personRef).firstOrNull;
+  }
+
+  /// The label of the [Location] this roleplay's position was copied from
+  /// (DESIGN-009: `roleplay_form_screen.dart`'s `_applyPersonSelection`
+  /// copies a "following" position from the linked person's own
+  /// `locSlug`) — null when unlinked, so the position card's bar falls
+  /// back to a single-line "Posisjon" label.
+  String? _positionSourceLabel(Station? station, RolePlay rolePlay) {
+    final person = _personFor(station, rolePlay);
+    final locSlug = person?.locSlug;
+    if (station == null || locSlug == null) return null;
+    final location = station.locations
+        .where((l) => l.slug == locSlug)
+        .firstOrNull;
+    if (location == null) return null;
+    return location.label.isEmpty ? location.slug : location.label;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -184,79 +216,66 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
               // AppBar via `SheetTitle`. The body starts directly at the
               // first content card.
 
-              // Scenario fields — only shown when at least one is present
-              if (rolePlay.signalement?.isNotEmpty == true ||
-                  rolePlay.background?.isNotEmpty == true ||
-                  rolePlay.behavior?.isNotEmpty == true)
-                Card(
-                  elevation: 1,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.theater_comedy,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              localizations.roleSection,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (rolePlay.signalement?.isNotEmpty == true) ...[
-                          _FieldBlock(
-                            label: localizations.roleSignalement,
-                            text: rolePlay.signalement!,
-                            overrides: roleOverrides,
-                            roleplayFacets: _roleplayFacets(rolePlay),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        if (rolePlay.background?.isNotEmpty == true) ...[
-                          _FieldBlock(
-                            label: localizations.roleBackground,
-                            text: rolePlay.background!,
-                            overrides: roleOverrides,
-                            roleplayFacets: _roleplayFacets(rolePlay),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        if (rolePlay.behavior?.isNotEmpty == true)
-                          _FieldBlock(
-                            label: localizations.roleBehavior,
-                            text: rolePlay.behavior!,
-                            overrides: roleOverrides,
-                            roleplayFacets: _roleplayFacets(rolePlay),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              // Station card
-              Card(
-                elevation: 1,
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _StationRow(
-                    stationIndex: rolePlay.stationIndex,
-                    exercise: exercise,
-                    noStation: localizations.noStationAssigned,
-                    overrides: roleOverrides,
-                  ),
-                ),
+              // Station context card — parent post, chevron through.
+              _StationContextCard(
+                station: station,
+                exercise: exercise,
+                overrides: roleOverrides,
               ),
 
-              // Position card. asCard: true — this page has no ambient
-              // card around the panel, so it draws its own Card.
+              // Effective identity card — the person's own fields,
+              // overridden by this roleplay's non-empty ones (ADR-0047):
+              // the same rule the brief and the editor's chip resolution
+              // already apply, computed here for display instead of
+              // assuming `rolePlay`'s own fields are already effective.
+              _EffectiveIdentityCard(
+                rolePlay: rolePlay,
+                person: _personFor(station, rolePlay),
+                actor: rolePlay.actorUuid == null
+                    ? null
+                    : _programService.getActor(rolePlay.actorUuid!),
+                overrides: roleOverrides,
+                roleplayFacets: _roleplayFacets(rolePlay),
+              ),
+
+              // Markørordre card — the play itself (behavior/background/
+              // props), resolved. Signalement moved to the identity card
+              // above (DESIGN-010 mockup) since it's part of *who*, not
+              // *what the marker does*.
+              if (rolePlay.background?.isNotEmpty == true ||
+                  rolePlay.behavior?.isNotEmpty == true ||
+                  rolePlay.propsMd?.isNotEmpty == true)
+                NarrativeRollupCard(
+                  icon: Icons.theater_comedy,
+                  title: localizations.roleSection,
+                  sections: [
+                    NarrativeSection(
+                      id: 'behavior',
+                      label: localizations.roleBehavior,
+                      text: rolePlay.behavior,
+                      overrides: roleOverrides,
+                      roleplayFacets: _roleplayFacets(rolePlay),
+                    ),
+                    NarrativeSection(
+                      id: 'background',
+                      label: localizations.roleBackground,
+                      text: rolePlay.background,
+                      overrides: roleOverrides,
+                      roleplayFacets: _roleplayFacets(rolePlay),
+                    ),
+                    NarrativeSection(
+                      id: 'props',
+                      label: localizations.roleProps,
+                      text: rolePlay.propsMd,
+                      overrides: roleOverrides,
+                      roleplayFacets: _roleplayFacets(rolePlay),
+                    ),
+                  ],
+                ),
+
+              // Position card — follows the portrayed person's location
+              // (copied onto rolePlay.position at selection time). asCard:
+              // true — this page has no ambient card around the panel.
               if (rolePlay.position != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -275,10 +294,16 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                             roleplayFacets: _roleplayFacets(rolePlay),
                           ) ??
                           rolePlay.name,
+                      sourceLabel: _positionSourceLabel(station, rolePlay),
                       asCard: true,
                     ),
                   ),
                 ),
+
+              // Når aktiv card — the round(s) this station is staffed by a
+              // team, from the same Exercise.schedule + teamIndex data the
+              // Post viewer's Tidsplan card reads.
+              _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
             ],
           ),
         ),
@@ -334,82 +359,270 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
   }
 }
 
-class _FieldBlock extends StatelessWidget {
-  const _FieldBlock({
-    required this.label,
-    required this.text,
+/// Station context card (DESIGN-010's Spill viewer): the parent post's
+/// name and a one-line description excerpt, tapping through to the Post
+/// sheet — bare row, no card header, matching the mockup. Falls back to
+/// [AppLocalizations.noStationAssigned] for an unassigned/out-of-range
+/// roleplay (ADR-0046, DESIGN-008 follow-up 07's scope-resolution note).
+class _StationContextCard extends StatelessWidget {
+  const _StationContextCard({
+    required this.station,
+    required this.exercise,
     this.overrides = const {},
-    this.roleplayFacets,
   });
 
-  final String label;
-  final String text;
+  final Station? station;
+  final Exercise? exercise;
   final Map<String, String> overrides;
-  final Map<String, dynamic>? roleplayFacets;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 2),
-        RingDrillText(
-          text,
-          overrides: overrides,
-          roleplayFacets: roleplayFacets,
-        ),
-      ],
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final station = this.station;
+    final exercise = this.exercise;
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: station == null || exercise == null
+          ? Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                l10n.noStationAssigned,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            )
+          : InkWell(
+              onTap: () => ContextSheet.of(context).replace(
+                StationSheetTarget(
+                  exerciseUuid: exercise.uuid,
+                  stationIndex: station.index,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.flag, color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RingDrillText(station.name, overrides: overrides),
+                          if ((station.description ?? '').isNotEmpty)
+                            RingDrillText(
+                              station.description!,
+                              overrides: overrides,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }
 
-class _StationRow extends StatelessWidget {
-  const _StationRow({
-    required this.stationIndex,
-    required this.noStation,
-    this.exercise,
+/// Effective identity card (DESIGN-010's Spill viewer): the marker's
+/// name/age/gender/signalement, each the linked [Person]'s own value
+/// unless [rolePlay] overrides it non-empty (ADR-0047's effective-identity
+/// rule — the same rule `resolvePersonFacet` applies for `{{station.person.*}}`
+/// tokens and the brief itself), plus a "Played by" footer naming the cast
+/// actor. No card header, matching the mockup's bare `.pcard`.
+class _EffectiveIdentityCard extends StatelessWidget {
+  const _EffectiveIdentityCard({
+    required this.rolePlay,
+    required this.person,
+    required this.actor,
     this.overrides = const {},
+    this.roleplayFacets,
   });
 
-  final int? stationIndex;
-  final dynamic exercise;
-  final String noStation;
+  final RolePlay rolePlay;
+  final Person? person;
+  final Actor? actor;
   final Map<String, String> overrides;
+  final Map<String, dynamic>? roleplayFacets;
+
+  /// ADR-0047's effective-identity rule: the roleplay's own non-empty
+  /// value wins over the linked person's, mirroring
+  /// `station_scenario_tokens.dart`'s private `_effectiveField` (not
+  /// reusable here — that helper is private to its own file).
+  static String? _effective(String? roleplayValue, String? personValue) =>
+      (roleplayValue != null && roleplayValue.isNotEmpty)
+      ? roleplayValue
+      : personValue;
 
   @override
   Widget build(BuildContext context) {
-    if (stationIndex == null || exercise == null) {
-      return Text(
-        noStation,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontStyle: FontStyle.italic,
-        ),
-      );
-    }
-    final stations = exercise.stations as List<dynamic>;
-    if (stationIndex! >= stations.length) return Text(noStation);
-    final station = stations[stationIndex!];
-    return InkWell(
-      onTap: () => ContextSheet.of(context).replace(
-        StationSheetTarget(
-          exerciseUuid: exercise.uuid as String,
-          stationIndex: stationIndex!,
-        ),
-      ),
-      child: Row(
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final person = this.person;
+    final name = _effective(rolePlay.name, person?.name) ?? rolePlay.name;
+    final age = rolePlay.age ?? person?.age;
+    final gender = _effective(rolePlay.gender, person?.gender);
+    final signalement = _effective(rolePlay.signalement, person?.signalement);
+    final genderLabel = genderLabelFor(gender, l10n);
+    final metaParts = [
+      if (age != null) l10n.rolePlayAgeYears(age),
+      ?genderLabel,
+    ];
+
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.place, size: 18),
-          const SizedBox(width: 8),
-          RingDrillText(
-            'Post: ${station.name as String}',
-            overrides: overrides,
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 19,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  child: Icon(
+                    Icons.person,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RingDrillText(
+                        name,
+                        overrides: overrides,
+                        roleplayFacets: roleplayFacets,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      if (metaParts.isNotEmpty)
+                        Text(
+                          metaParts.join(' · '),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      if ((signalement ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        RingDrillText(
+                          signalement!,
+                          overrides: overrides,
+                          roleplayFacets: roleplayFacets,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (actor != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHigh,
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.theater_comedy_outlined,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.castedByLine(actor!.realName),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Når aktiv card (DESIGN-010's Spill viewer): the round(s) this roleplay's
+/// station is staffed by a team, from `Exercise.schedule` +
+/// `teamIndex`/`stationIndex` — filtered to only the active round(s)
+/// (unlike the Post viewer's Tidsplan card, which shows every round). No
+/// live-current highlight here: this card is a static "when", not a
+/// running-exercise indicator.
+class _ActiveScheduleCard extends StatelessWidget {
+  const _ActiveScheduleCard({required this.exercise, required this.rolePlay});
+
+  final Exercise? exercise;
+  final RolePlay rolePlay;
+
+  @override
+  Widget build(BuildContext context) {
+    final exercise = this.exercise;
+    final stationIndex = rolePlay.stationIndex;
+    if (exercise == null || stationIndex == null) {
+      return const SizedBox.shrink();
+    }
+    final rows = <TeamScheduleRow>[
+      for (
+        var roundIndex = 0;
+        roundIndex < exercise.schedule.length;
+        roundIndex++
+      )
+        if (exercise.teamIndex(stationIndex, roundIndex) != -1)
+          TeamScheduleRow(
+            roundIndex: roundIndex,
+            teamIndex: exercise.teamIndex(stationIndex, roundIndex),
+            phaseTimes: [
+              for (final phase in exercise.schedule[roundIndex])
+                phase.toMaterial().formal(),
+            ],
+          ),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CardSectionHeader(
+            icon: Icons.access_time_filled,
+            title: l10n.roleActiveScheduleCardTitle,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TeamScheduleTable(rows: rows),
           ),
         ],
       ),

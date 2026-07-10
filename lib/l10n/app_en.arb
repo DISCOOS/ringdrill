@@ -1615,6 +1615,10 @@
   "@roleBehavior": {
     "description": "Form field label for the behavior field in RolePlayFormScreen."
   },
+  "roleProps": "Props",
+  "@roleProps": {
+    "description": "DESIGN-010 stage 3b: the Spill viewer's Markørordre card third section — RolePlay.propsMd, not previously shown on this screen."
+  },
 
   "castedByLine": "Played by {name}",
   "@castedByLine": {

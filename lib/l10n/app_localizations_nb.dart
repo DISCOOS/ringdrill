@@ -1695,6 +1695,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get roleBehavior => 'Oppførsel';
 
   @override
+  String get roleProps => 'Rekvisitter';
+
+  @override
   String castedByLine(String name) {
     return 'Spilles av $name';
   }

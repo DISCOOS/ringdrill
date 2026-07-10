@@ -2858,6 +2858,12 @@ abstract class AppLocalizations {
   /// **'Behaviour'**
   String get roleBehavior;
 
+  /// DESIGN-010 stage 3b: the Spill viewer's Markørordre card third section — RolePlay.propsMd, not previously shown on this screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Props'**
+  String get roleProps;
+
   /// Subtitle on a role row when an actor is cast. Used on the Station-screen Markørordre section and browse summaries.
   ///
   /// In en, this message translates to:
