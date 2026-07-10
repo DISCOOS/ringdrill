@@ -2002,6 +2002,14 @@
   "@formSectionEditAction": {
     "description": "DESIGN-010 SectionNavigatedForm AppBar toggle tooltip shown while a previewable section is showing its resolved-markdown preview — tapping switches it back to the editable (chip) state."
   },
+  "rollupShowAction": "Show preview",
+  "@rollupShowAction": {
+    "description": "DESIGN-010 default-section rollup toggle label shown while the rollup is hidden — tapping shows the whole entity's active sections resolved, stacked under the structural fields."
+  },
+  "rollupHideAction": "Hide preview",
+  "@rollupHideAction": {
+    "description": "DESIGN-010 default-section rollup toggle label shown while the rollup is visible — tapping hides it again."
+  },
 
   "tokenMenuEmpty": "No matches",
   "@tokenMenuEmpty": {

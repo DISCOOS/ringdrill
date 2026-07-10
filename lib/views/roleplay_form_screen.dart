@@ -25,6 +25,7 @@ import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
+import 'package:ringdrill/views/widgets/section_rollup.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
@@ -118,6 +119,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       _previewSections.remove(sectionId);
     }
   });
+
+  /// Whether the default section's read-only rollup is shown (DESIGN-010).
+  /// Default off, to keep the default section compact.
+  bool _showRollup = false;
 
   int? _stationIndex;
   // Tracks the current position; updated by PositionFormField.onSaved
@@ -880,7 +885,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         _programService.activeProgram?.stationNumberFormat ??
         StationNumberFormat.dotted;
 
-    return SafeArea(
+    final fields = SafeArea(
       child: DismissKeyboard(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -915,6 +920,24 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           ),
         ),
       ),
+    );
+
+    return withSectionRollup(
+      context: context,
+      fields: fields,
+      rollupSections: [
+        for (final section in _MdSection.values)
+          if (_activeMdSections.contains(section))
+            RollupSection(
+              id: section.name,
+              label: _mdLabelFor(section, l),
+              controller: _mdControllerFor(section),
+              overrides: _effectiveVariables,
+              roleplayFacets: _roleplayFacets,
+            ),
+      ],
+      showRollup: _showRollup,
+      onShowRollupChanged: (value) => setState(() => _showRollup = value),
     );
   }
 

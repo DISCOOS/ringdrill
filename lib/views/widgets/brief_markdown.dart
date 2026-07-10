@@ -168,7 +168,7 @@ class _CodeChip extends StatelessWidget {
 
 class _HighlightInlineSyntax extends m.InlineSyntax {
   _HighlightInlineSyntax({required this.tag, required String pattern})
-      : super(pattern, caseSensitive: false);
+    : super(pattern, caseSensitive: false);
 
   final String tag;
 
@@ -191,9 +191,8 @@ class _HighlightNode extends ElementNode {
   final Color highlight;
 
   @override
-  TextStyle get style => (parentStyle ?? const TextStyle()).copyWith(
-        backgroundColor: highlight,
-      );
+  TextStyle get style =>
+      (parentStyle ?? const TextStyle()).copyWith(backgroundColor: highlight);
 
   @override
   InlineSpan build() => TextSpan(style: style, text: text);
@@ -421,10 +420,7 @@ class BriefMarkdown extends StatelessWidget {
           tag: 'curr-mark',
           pattern: r'<curr-mark>(.*?)</curr-mark>',
         ),
-        _HighlightInlineSyntax(
-          tag: 'mark',
-          pattern: r'<mark>(.*?)</mark>',
-        ),
+        _HighlightInlineSyntax(tag: 'mark', pattern: r'<mark>(.*?)</mark>'),
       ],
       generators: [
         // Override default `<code>` rendering with the padded-chip
@@ -524,76 +520,142 @@ class BriefMarkdown extends StatelessWidget {
     );
   }
 
-  MarkdownConfig _buildConfig() {
-    final t = theme;
+  MarkdownConfig _buildConfig() =>
+      _briefMarkdownConfig(theme, onAnchorTap: onAnchorTap);
+}
 
-    return MarkdownConfig(
-      configs: [
-        // Headings — style from theme, no built-in dividers
-        _BriefH1Config(style: t.typography.h1.copyWith(color: t.text.heading)),
-        _BriefH2Config(style: t.typography.h2.copyWith(color: t.text.heading)),
-        _BriefH3Config(style: t.typography.h3.copyWith(color: t.text.heading)),
-        H4Config(style: t.typography.h4.copyWith(color: t.text.heading)),
-        // Paragraphs
-        PConfig(textStyle: t.typography.body.copyWith(color: t.text.body)),
-        // Links — body color with thin underline; distinction is the
-        // underline opacity, not a different hue. The onTap callback
-        // intercepts `#anchor` URLs and forwards them to [onAnchorTap]
-        // rather than letting the default LinkConfig dispatch a real
-        // navigation (which would reload the whole page on web).
-        LinkConfig(
-          style: TextStyle(
-            color: t.link.color,
-            decoration: TextDecoration.underline,
-            decorationColor: t.link.color.withValues(
-              alpha: t.link.underlineOpacity,
+/// The heading/link/code/table styling both [BriefMarkdown] (the full-page
+/// brief reading surface, with search highlighting) and [BriefMarkdownBlock]
+/// (DESIGN-010's section rollup/preview, no search) apply — a shared builder
+/// so both stay visually identical to the brief.
+MarkdownConfig _briefMarkdownConfig(
+  BriefTheme theme, {
+  ValueChanged<String>? onAnchorTap,
+}) {
+  final t = theme;
+
+  return MarkdownConfig(
+    configs: [
+      // Headings — style from theme, no built-in dividers
+      _BriefH1Config(style: t.typography.h1.copyWith(color: t.text.heading)),
+      _BriefH2Config(style: t.typography.h2.copyWith(color: t.text.heading)),
+      _BriefH3Config(style: t.typography.h3.copyWith(color: t.text.heading)),
+      H4Config(style: t.typography.h4.copyWith(color: t.text.heading)),
+      // Paragraphs
+      PConfig(textStyle: t.typography.body.copyWith(color: t.text.body)),
+      // Links — body color with thin underline; distinction is the
+      // underline opacity, not a different hue. The onTap callback
+      // intercepts `#anchor` URLs and forwards them to [onAnchorTap]
+      // rather than letting the default LinkConfig dispatch a real
+      // navigation (which would reload the whole page on web).
+      LinkConfig(
+        style: TextStyle(
+          color: t.link.color,
+          decoration: TextDecoration.underline,
+          decorationColor: t.link.color.withValues(
+            alpha: t.link.underlineOpacity,
+          ),
+        ),
+        onTap: (url) {
+          if (url.startsWith('#')) {
+            onAnchorTap?.call(url.substring(1));
+            return;
+          }
+          // Non-anchor links fall through to the package's default
+          // url_launcher behaviour by re-dispatching to the LinkNode's
+          // internal handler. The simplest path: just launch directly
+          // here using the same logic.
+          // ignore: discarded_futures
+          _launchExternalLink(url);
+        },
+      ),
+      // Inline code
+      CodeConfig(
+        style: t.typography.code.copyWith(
+          color: t.code.foreground,
+          backgroundColor: t.code.background,
+        ),
+      ),
+      // Fenced code blocks
+      PreConfig(
+        textStyle: t.typography.code.copyWith(color: t.code.foreground),
+        decoration: BoxDecoration(
+          color: t.code.background,
+          border: Border.all(color: t.code.border),
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+        ),
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+      ),
+      // Blockquotes
+      BlockquoteConfig(sideColor: t.borders.subtle, textColor: t.text.muted),
+      // Tables
+      TableConfig(
+        border: TableBorder.all(color: t.borders.subtle),
+        headerStyle: TextStyle(
+          color: t.text.heading,
+          fontWeight: FontWeight.bold,
+        ),
+        bodyStyle: TextStyle(color: t.text.body),
+      ),
+      // Horizontal rules
+      HrConfig(color: t.borders.subtle, height: 1),
+    ],
+  );
+}
+
+/// Renders [data] with the same [BriefTheme] styling [BriefMarkdown] uses
+/// (headings, links, the inline-code UTM chip), but without its own scroll
+/// view or [BriefMarkdownController] — for embedding inline inside an
+/// already-scrollable ancestor, e.g. DESIGN-010's section rollup on narrow,
+/// where the resolved sections are a continuation of the same page scroll
+/// as the structural fields above them, not an independent scrollable
+/// island. [BriefMarkdown] itself (its own scroll, TOC, search
+/// highlighting) is still the right choice for a bounded pane that should
+/// scroll on its own — e.g. the rollup's wide side-by-side preview pane.
+class BriefMarkdownBlock extends StatelessWidget {
+  const BriefMarkdownBlock({
+    super.key,
+    required this.data,
+    required this.theme,
+    this.onAnchorTap,
+  });
+
+  final String data;
+  final BriefTheme theme;
+  final ValueChanged<String>? onAnchorTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final generator = MarkdownGenerator(
+      generators: [
+        // Same inline-code chip treatment as BriefMarkdown — no search
+        // highlighting here, this surface never has a search query.
+        SpanNodeGeneratorWithTag(
+          tag: MarkdownTag.code.name,
+          generator: (e, config, _) =>
+              _CodeChipNode(e.textContent, config.code),
+        ),
+      ],
+    );
+    final widgets = generator.buildWidgets(
+      data,
+      config: _briefMarkdownConfig(theme, onAnchorTap: onAnchorTap),
+    );
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: theme.spacing.readingColumnMax),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: theme.spacing.gutter),
+          child: SelectionArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: widgets,
             ),
           ),
-          onTap: (url) {
-            if (url.startsWith('#')) {
-              onAnchorTap?.call(url.substring(1));
-              return;
-            }
-            // Non-anchor links fall through to the package's default
-            // url_launcher behaviour by re-dispatching to the LinkNode's
-            // internal handler. The simplest path: just launch directly
-            // here using the same logic.
-            // ignore: discarded_futures
-            _launchExternalLink(url);
-          },
         ),
-        // Inline code
-        CodeConfig(
-          style: t.typography.code.copyWith(
-            color: t.code.foreground,
-            backgroundColor: t.code.background,
-          ),
-        ),
-        // Fenced code blocks
-        PreConfig(
-          textStyle: t.typography.code.copyWith(color: t.code.foreground),
-          decoration: BoxDecoration(
-            color: t.code.background,
-            border: Border.all(color: t.code.border),
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-          ),
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.symmetric(vertical: 8),
-        ),
-        // Blockquotes
-        BlockquoteConfig(sideColor: t.borders.subtle, textColor: t.text.muted),
-        // Tables
-        TableConfig(
-          border: TableBorder.all(color: t.borders.subtle),
-          headerStyle: TextStyle(
-            color: t.text.heading,
-            fontWeight: FontWeight.bold,
-          ),
-          bodyStyle: TextStyle(color: t.text.body),
-        ),
-        // Horizontal rules
-        HrConfig(color: t.borders.subtle, height: 1),
-      ],
+      ),
     );
   }
 }

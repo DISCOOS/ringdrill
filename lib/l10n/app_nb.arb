@@ -1035,6 +1035,14 @@
   "@formSectionEditAction": {
     "description": "DESIGN-010 SectionNavigatedForm AppBar-verktøytips vist mens en forhåndsvisbar seksjon viser sin resolverte markdown-forhåndsvisning — trykk bytter tilbake til redigerbar (chip) tilstand."
   },
+  "rollupShowAction": "Vis forhåndsvisning",
+  "@rollupShowAction": {
+    "description": "DESIGN-010 standardseksjonens rollup-knapp vist mens rollupen er skjult — trykk viser hele enhetens aktive seksjoner resolvert, stablet under de strukturelle feltene."
+  },
+  "rollupHideAction": "Skjul forhåndsvisning",
+  "@rollupHideAction": {
+    "description": "DESIGN-010 standardseksjonens rollup-knapp vist mens rollupen vises — trykk skjuler den igjen."
+  },
 
   "tokenMenuEmpty": "Ingen treff",
   "@tokenMenuEmpty": {

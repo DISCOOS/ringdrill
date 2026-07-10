@@ -17,6 +17,7 @@ import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
+import 'package:ringdrill/views/widgets/section_rollup.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
 
@@ -118,6 +119,10 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   /// (DESIGN-010) rather than the editable chip field — remembered for the
   /// session, per section, not editor-wide (DESIGN-010's settled decisions).
   final Set<String> _previewSections = {};
+
+  /// Whether the default section's read-only rollup is shown (DESIGN-010).
+  /// Default off, to keep the default section compact.
+  bool _showRollup = false;
 
   void _togglePreview(String sectionId, bool preview) => setState(() {
     if (preview) {
@@ -380,7 +385,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       ...PlanFieldTokens.program(l),
       ...PlanFieldTokens.exercise(l),
     ];
-    return SafeArea(
+    final fields = SafeArea(
       child: DismissKeyboard(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -491,6 +496,23 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
           ),
         ),
       ),
+    );
+
+    return withSectionRollup(
+      context: context,
+      fields: fields,
+      rollupSections: [
+        for (final section in _ExerciseSection.values)
+          if (_activeSections.contains(section))
+            RollupSection(
+              id: section.name,
+              label: _labelFor(section, l),
+              controller: _sectionControllers[section]!,
+              overrides: _workingOverrides,
+            ),
+      ],
+      showRollup: _showRollup,
+      onShowRollupChanged: (value) => setState(() => _showRollup = value),
     );
   }
 

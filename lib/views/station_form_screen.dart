@@ -27,6 +27,7 @@ import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
+import 'package:ringdrill/views/widgets/section_rollup.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
@@ -142,6 +143,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
       _previewSections.remove(sectionId);
     }
   });
+
+  /// Whether the default section's read-only rollup is shown (DESIGN-010).
+  /// Default off, to keep the default section compact.
+  bool _showRollup = false;
 
   /// Working copy of `station.variableOverrides` (DESIGN-008 follow-up 07),
   /// edited by [VariableOverridesSection] and read by [_saveStation].
@@ -850,7 +855,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
     final markers = _position == null
         ? widget.markers
         : widget.markers.where((e) => e.point == _position).toList();
-    return SafeArea(
+    final fields = SafeArea(
       child: DismissKeyboard(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -902,6 +907,32 @@ class _StationFormScreenState extends State<StationFormScreen> {
           ),
         ),
       ),
+    );
+
+    return withSectionRollup(
+      context: context,
+      fields: fields,
+      // The lead description first, matching the eventual Post detail
+      // sheet's "lead description plus its sections" shape (DESIGN-009/010),
+      // then the active markdown sections in order.
+      rollupSections: [
+        RollupSection(
+          id: 'station',
+          label: l.stationDescription,
+          controller: _descriptionController,
+          overrides: _workingOverrides,
+        ),
+        for (final section in _StationSection.values)
+          if (_activeSections.contains(section))
+            RollupSection(
+              id: section.name,
+              label: _labelFor(section, l),
+              controller: _sectionControllers[section]!,
+              overrides: _effectiveAtStationScope,
+            ),
+      ],
+      showRollup: _showRollup,
+      onShowRollupChanged: (value) => setState(() => _showRollup = value),
     );
   }
 

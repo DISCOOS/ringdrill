@@ -44,6 +44,29 @@ class FormSection {
   final ValueChanged<bool>? onPreviewChanged;
 }
 
+/// Exposes [SectionNavigatedForm]'s section-selection to any section's own
+/// body (DESIGN-010) — a section's `builder` only gets a `BuildContext`, so
+/// the default section's read-only rollup reads this to jump to (select)
+/// another section when the author taps one of the rollup's rendered
+/// blocks ("tap-to-edit"), reusing the same [_selectOrAdd] logic the
+/// compact switcher and the wide rail already call.
+class SectionNavigator extends InheritedWidget {
+  const SectionNavigator({
+    super.key,
+    required this.selectSection,
+    required super.child,
+  });
+
+  final ValueChanged<String> selectSection;
+
+  static SectionNavigator? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SectionNavigator>();
+
+  @override
+  bool updateShouldNotify(SectionNavigator oldWidget) =>
+      selectSection != oldWidget.selectSection;
+}
+
 /// Shared DESIGN-008 section-navigated editor shell: a dropdown switcher on
 /// compact, a master/detail rail on medium/expanded
 /// ([WindowSizeClass.hasMasterDetail], ADR-0030).
@@ -232,15 +255,18 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
               onNext: () => _step(current, 1),
               onRemove: () => _removeCurrent(current),
             ),
-      body: wide
-          ? _WideBody(
-              sections: widget.sections,
-              addable: widget.addable,
-              current: current,
-              onSelect: _selectOrAdd,
-              onRemove: () => _removeCurrent(current),
-            )
-          : SafeArea(child: current.builder(context)),
+      body: SectionNavigator(
+        selectSection: _selectOrAdd,
+        child: wide
+            ? _WideBody(
+                sections: widget.sections,
+                addable: widget.addable,
+                current: current,
+                onSelect: _selectOrAdd,
+                onRemove: () => _removeCurrent(current),
+              )
+            : SafeArea(child: current.builder(context)),
+      ),
     );
   }
 }
