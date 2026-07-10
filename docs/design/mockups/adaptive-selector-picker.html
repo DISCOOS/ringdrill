@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Adaptiv selektor-picker (ADR-0049)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .intro{max-width:940px;margin:0 auto 22px;font-size:13px;color:var(--text-2);line-height:1.5}
+  .intro b{color:var(--text-1)}
+  .grid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column}
+  .compact{width:330px}
+  .wide{width:460px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px}
+  /* Bottom-sheet chrome: rounded top only, drag handle. Dialog chrome: fully
+     rounded card with a header close (X). Both share the body below. */
+  .sheet{background:var(--bg-1);border:1px solid var(--border);border-radius:18px 18px 0 0;border-bottom:none;overflow:hidden}
+  .dialog{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.28)}
+  .handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:10px auto 4px}
+  .head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .head .t{flex:1;font-size:16px;font-weight:600}
+  .head .count{font-size:12px;color:var(--text-3)}
+  .search{display:flex;align-items:center;gap:8px;margin:10px 12px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius)}
+  .search i{font-size:16px;color:var(--text-3)}
+  .search span{font-size:14px;color:var(--text-3);flex:1}
+  .list{overflow:hidden}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:none}
+  .row .main{flex:1;min-width:0}
+  .row .name{font-size:14px}
+  .row .meta{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .sel{font-weight:600}
+  .av{width:34px;height:34px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .av i{font-size:18px}
+  .badge{width:38px;height:34px;border-radius:6px;background:var(--bg-3);color:var(--text-1);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+  .footer{display:flex;align-items:center;gap:8px;color:var(--accent);padding:13px 16px;border-top:1px solid var(--border)}
+  .footer i{font-size:17px}
+  .footer span{font-size:14px;font-weight:500}
+  .note{font-size:11px;color:var(--text-3);margin:6px 4px 0}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <b>ADR-0049 — adaptiv selektor-picker.</b> Samme «velg fra liste»-innhold i to overflater, valgt på vindusbredde (samme <code>WindowSizeClass.hasMasterDetail</code>-regel som skjemaene, ADR-0030): <b>bunnark på compact</b>, <b>dialog på medium/expanded</b>. Gjenbruker sheet-chrome (ADR-0027) og form-dialog-skallet — ikke <code>SimpleDialog</code>. Tittel «Velg …», søkefelt kun når lista er lang (≥ ~8), og valgfri footer-handling (f.eks. «+ Ny person»). Hake på gjeldende valg.
+</div>
+
+<div class="grid">
+
+  <!-- 1. Compact sheet · person · search + footer -->
+  <div class="col compact">
+    <p class="cap">1 · compact — bunnark · Velg person (søk + «+ Ny person»)</p>
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="head"><span class="t">Velg person</span><span class="count">9</span></div>
+      <div class="search"><i class="ti ti-search"></i><span>Søk</span></div>
+      <div class="list">
+        <div class="row"><div class="av"><i class="ti ti-user"></i></div><div class="main"><div class="name sel">Anne Glemsk</div><div class="meta">39 år · Kvinne · grått hår, blå anorakk</div></div><i class="ti ti-check" style="font-size:18px;color:var(--accent)"></i></div>
+        <div class="row"><div class="av"><i class="ti ti-user"></i></div><div class="main"><div class="name">Harald Hårfagre</div><div class="meta">101 år · Mann · rødt skjegg</div></div></div>
+        <div class="row"><div class="av"><i class="ti ti-user"></i></div><div class="main"><div class="name">Kari Nordmann</div><div class="meta">27 år · Kvinne</div></div></div>
+        <div class="row"><div class="av"><i class="ti ti-user"></i></div><div class="main"><div class="name">Ola Turgåer</div><div class="meta">53 år · Mann</div></div></div>
+      </div>
+      <div class="footer"><i class="ti ti-plus"></i><span>Ny person</span></div>
+    </div>
+    <p class="note">Drag-handle + avrundet topp. Footer-handling åpner person-skjemaet, velger så den nye personen.</p>
+  </div>
+
+  <!-- 2. Wide dialog · person · same content -->
+  <div class="col wide">
+    <p class="cap">2 · medium/expanded — dialog · samme innhold (X i header, ~480 bred)</p>
+    <div class="dialog">
+      <div class="head"><span class="t">Velg person</span><span class="count" style="margin-right:8px">9</span><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i></div>
+      <div class="search"><i class="ti ti-search"></i><span>Søk</span></div>
+      <div class="list">
+        <div class="row"><div class="av"><i class="ti ti-user"></i></div><div class="main"><div class="name sel">Anne Glemsk</div><div class="meta">39 år · Kvinne · grått hår, blå anorakk</div></div><i class="ti ti-check" style="font-size:18px;color:var(--accent)"></i></div>
+        <div class="row"><div class="av"><i class="ti ti-user"></i></div><div class="main"><div class="name">Harald Hårfagre</div><div class="meta">101 år · Mann · rødt skjegg</div></div></div>
+        <div class="row"><div class="av"><i class="ti ti-user"></i></div><div class="main"><div class="name">Kari Nordmann</div><div class="meta">27 år · Kvinne</div></div></div>
+      </div>
+      <div class="footer"><i class="ti ti-plus"></i><span>Ny person</span></div>
+    </div>
+    <p class="note">Gjenbruker form-dialogens avrundede skall (rounded 16, elevation) — høyde-cap ~70 % av viewport, egen scroll i lista.</p>
+  </div>
+
+  <!-- 3. Compact sheet · post · short list · NO search (below threshold) -->
+  <div class="col compact">
+    <p class="cap">3 · compact — bunnark · Velg post (kort liste → ingen søk)</p>
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="head"><span class="t">Velg post</span><span class="count">2</span></div>
+      <div class="list">
+        <div class="row"><div class="badge">1.1</div><div class="main"><div class="name sel">1a) Turgåer</div></div><i class="ti ti-check" style="font-size:18px;color:var(--accent)"></i></div>
+        <div class="row"><div class="badge">1.2</div><div class="main"><div class="name">1b) Rusmisbruk</div></div></div>
+      </div>
+    </div>
+    <p class="note">Under terskelen (~8) vises ikke søkefeltet — ingen søkeboks over to rader.</p>
+  </div>
+
+  <!-- 4. Wide dialog · exercise · long list WITH search + current check -->
+  <div class="col wide">
+    <p class="cap">4 · expanded — dialog · Velg øvelse (lang liste → søk, hake på gjeldende)</p>
+    <div class="dialog">
+      <div class="head"><span class="t">Velg øvelse</span><span class="count" style="margin-right:8px">6</span><i class="ti ti-x" style="font-size:20px;color:var(--text-2)"></i></div>
+      <div class="search"><i class="ti ti-search"></i><span>Søk</span></div>
+      <div class="list">
+        <div class="row"><div class="badge">#1</div><div class="main"><div class="name sel">Søk og redning (ringøvelse)</div><div class="meta">17:15 – 18:55</div></div><i class="ti ti-check" style="font-size:18px;color:var(--accent)"></i></div>
+        <div class="row"><div class="badge">#2</div><div class="main"><div class="name">Førsteinnsats søk (ringøvelse)</div><div class="meta">19:15 – 20:30</div></div></div>
+        <div class="row"><div class="badge">#3</div><div class="main"><div class="name">Samband og ledelse</div><div class="meta">09:00 – 10:20</div></div></div>
+        <div class="row"><div class="badge">#4</div><div class="main"><div class="name">Evakuering</div><div class="meta">10:45 – 11:30</div></div></div>
+      </div>
+    </div>
+    <p class="note">Badge + navn + tid, gjenbrukt fra dagens øvelse-picker. Samme primitiv dekker post, person, øvelse og markør.</p>
+  </div>
+
+</div>
+</body>
+</html>
