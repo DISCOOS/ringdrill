@@ -4,15 +4,38 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 
 Future<T?> openFormSurface<T>(
   BuildContext context, {
   required WidgetBuilder builder,
 }) async {
+  // Capture the ancestor resolve scopes (DESIGN-010's PlanScope/
+  // ExerciseScope/StationScope cascade) up front, before any `await` — both
+  // push paths below land on the root Navigator's Overlay, a sibling of (not
+  // a descendant of) the calling context's InheritedWidget ancestry, so an
+  // ancestor scope never reaches the pushed child without being re-provided
+  // here. This is the single mechanism every form opened through this
+  // choke point relies on for resolve-scope continuity — a snapshot at push
+  // is correct, since these surfaces are modal.
+  final planScope = PlanScope.maybeOf(context);
+  final exerciseScope = ExerciseScope.maybeOf(context);
+  final stationScope = StationScope.maybeOf(context);
+  final wrappedBuilder = _reprovideScopes(
+    builder,
+    planScope: planScope,
+    exerciseScope: exerciseScope,
+    stationScope: stationScope,
+  );
+
   if (WindowSizeClass.of(context).hasMasterDetail) {
-    return showRingdrillFormDialog<T>(context: context, builder: builder);
+    return showRingdrillFormDialog<T>(
+      context: context,
+      builder: wrappedBuilder,
+    );
   }
 
   // If we're inside a ContextSheet bottom sheet, dismiss it before pushing
@@ -42,10 +65,7 @@ Future<T?> openFormSurface<T>(
       // This route sits on the root Navigator's Overlay, a sibling of
       // MainScreen (DESIGN-008 follow-up 11) — the PlanScope wrapping
       // MainScreen never reaches it without a scope of its own.
-      builder: (ctx) => PlanScope(
-        variables: ProgramService().activeProgram?.variables ?? const [],
-        child: builder(ctx),
-      ),
+      builder: wrappedBuilder,
     ),
   );
 
@@ -66,4 +86,45 @@ Future<T?> openFormSurface<T>(
   }
 
   return result;
+}
+
+/// Wraps [builder] so the pushed surface sees the same resolve scopes
+/// (whichever were present) as the calling context did — re-provided from
+/// scratch since the push lands outside the ancestor `InheritedWidget` tree.
+/// [planScope] falls back to the active program's variables (no program
+/// facets) when absent, matching this choke point's pre-DESIGN-010
+/// behaviour for callers with no ambient `PlanScope` at all.
+WidgetBuilder _reprovideScopes(
+  WidgetBuilder builder, {
+  required PlanScope? planScope,
+  required ExerciseScope? exerciseScope,
+  required StationScope? stationScope,
+}) {
+  return (context) {
+    Widget child = builder(context);
+    if (stationScope != null) {
+      child = StationScope(
+        locations: stationScope.locations,
+        persons: stationScope.persons,
+        portrayerOf: stationScope.portrayerOf,
+        child: child,
+      );
+    }
+    if (exerciseScope != null) {
+      child = ExerciseScope(
+        exercise: exerciseScope.exercise,
+        variableOverrides: exerciseScope.variableOverrides,
+        child: child,
+      );
+    }
+    return PlanScope(
+      variables:
+          planScope?.variables ??
+          ProgramService().activeProgram?.variables ??
+          const [],
+      programName: planScope?.programName,
+      programDescription: planScope?.programDescription,
+      child: child,
+    );
+  };
 }
