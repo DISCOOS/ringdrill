@@ -14,9 +14,24 @@ import 'package:ringdrill/models/drill_variable.dart';
 /// program-scoped routes for the live app, so read-only display surfaces
 /// can resolve `{{var.name}}` too.
 class PlanScope extends InheritedWidget {
-  const PlanScope({super.key, required this.variables, required super.child});
+  const PlanScope({
+    super.key,
+    required this.variables,
+    this.programName,
+    this.programDescription,
+    required super.child,
+  });
 
   final List<DrillVariable> variables;
+
+  /// The program's `{{program.name}}`/`{{program.description}}`
+  /// cross-reference facets (DESIGN-010's resolve-context cascade — the
+  /// program level of the cascade `BriefRenderer`'s `refContext` already
+  /// mirrors). Null where the provider has no program in scope to source
+  /// them from; the program-scoped route (ADR-0032) always sets both,
+  /// since it sits highest in the tree, where the active program is known.
+  final String? programName;
+  final String? programDescription;
 
   /// The nearest enclosing [PlanScope], or `null` outside one — for callers
   /// that tolerate having no plan-variable registry available (e.g. the
@@ -44,5 +59,7 @@ class PlanScope extends InheritedWidget {
   // scope.
   @override
   bool updateShouldNotify(PlanScope oldWidget) =>
-      !listEquals(variables, oldWidget.variables);
+      !listEquals(variables, oldWidget.variables) ||
+      programName != oldWidget.programName ||
+      programDescription != oldWidget.programDescription;
 }

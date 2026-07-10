@@ -298,6 +298,11 @@ class _MainScreenState extends State<MainScreen>
     );
     return PlanScope(
       variables: ProgramService().activeProgram?.variables ?? const [],
+      // The program-scoped route (ADR-0032): the active program is known
+      // here, so this is where PlanScope's program facets (DESIGN-010's
+      // resolve-context cascade) get their real values instead of null.
+      programName: ProgramService().activeProgram?.name,
+      programDescription: ProgramService().activeProgram?.description,
       child: LayoutBuilder(
         builder: (context, constraints) {
           // The rail + master/detail layout only earns its keep when there is

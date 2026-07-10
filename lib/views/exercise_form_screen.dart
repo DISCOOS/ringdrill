@@ -12,6 +12,7 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/widgets/adaptive_time_picker.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
@@ -290,47 +291,61 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       for (final v in widget.variables) v.name: canonicalVariableValue(v),
     };
 
+    final form = Form(
+      key: _formKey,
+      child: SectionNavigatedForm(
+        title: widget.exercise == null ? l.createExercise : l.editExercise,
+        initialSectionId: 'exercise',
+        sections: [
+          FormSection(
+            id: 'exercise',
+            label: l.exercise(1),
+            icon: Icons.update,
+            builder: (ctx) => _buildExerciseSectionBody(ctx, l),
+          ),
+          ...activeMdSections,
+          // Last, matching ProgramFormScreen: Variabler reads better as
+          // the section you land on after the fields you reference
+          // {{var.<name>}} from, not before.
+          FormSection(
+            id: 'variables',
+            label: l.variablesSectionTitle,
+            icon: Icons.data_object,
+            builder: (_) => VariableOverridesSection(
+              variables: widget.variables,
+              inherited: inherited,
+              overrides: _workingOverrides,
+              onChanged: (updated) =>
+                  setState(() => _workingOverrides = updated),
+            ),
+          ),
+        ],
+        addable: addableSections,
+        onAdd: (id) => _addSection(_ExerciseSection.values.byName(id)),
+        onRemove: (id) => _removeSection(_ExerciseSection.values.byName(id)),
+        onSave: _saveExercise,
+        onClose: () => Navigator.of(context).pop(),
+      ),
+    );
+
+    // Only a saved exercise has facets worth carrying (DESIGN-010's
+    // resolve-context cascade) — a brand-new exercise has no {{exercise.*}}
+    // yet for a later field to reference.
+    final existingExercise = widget.exercise;
+    final scoped = existingExercise == null
+        ? form
+        : ExerciseScope(
+            exercise: existingExercise,
+            variableOverrides: _workingOverrides,
+            child: form,
+          );
+
     return PlanScope(
       // Declared variables plus anything created inline this session, so a
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
       variables: [...widget.variables, ..._pendingVariables],
-      child: Form(
-        key: _formKey,
-        child: SectionNavigatedForm(
-          title: widget.exercise == null ? l.createExercise : l.editExercise,
-          initialSectionId: 'exercise',
-          sections: [
-            FormSection(
-              id: 'exercise',
-              label: l.exercise(1),
-              icon: Icons.update,
-              builder: (ctx) => _buildExerciseSectionBody(ctx, l),
-            ),
-            ...activeMdSections,
-            // Last, matching ProgramFormScreen: Variabler reads better as
-            // the section you land on after the fields you reference
-            // {{var.<name>}} from, not before.
-            FormSection(
-              id: 'variables',
-              label: l.variablesSectionTitle,
-              icon: Icons.data_object,
-              builder: (_) => VariableOverridesSection(
-                variables: widget.variables,
-                inherited: inherited,
-                overrides: _workingOverrides,
-                onChanged: (updated) =>
-                    setState(() => _workingOverrides = updated),
-              ),
-            ),
-          ],
-          addable: addableSections,
-          onAdd: (id) => _addSection(_ExerciseSection.values.byName(id)),
-          onRemove: (id) => _removeSection(_ExerciseSection.values.byName(id)),
-          onSave: _saveExercise,
-          onClose: () => Navigator.of(context).pop(),
-        ),
-      ),
+      child: scoped,
     );
   }
 
