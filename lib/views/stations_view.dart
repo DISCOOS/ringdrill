@@ -17,7 +17,9 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_marker.dart';
 
 import '../models/exercise.dart' show Exercise, ExerciseX, StationLocation;
@@ -214,12 +216,16 @@ class _StationsViewState extends State<StationsView>
               id: (rp.exerciseUuid, rp.index),
               label: () {
                 final exercise = _programService.getExercise(rp.exerciseUuid);
-                return exercise == null
-                    ? rp.name
-                    : substitutePlanVariables(
-                        rp.name,
-                        _overridesFor(exercise, stationIndex: rp.stationIndex),
-                      );
+                if (exercise == null) return rp.name;
+                return resolveScopedField(
+                      context,
+                      rp.name,
+                      overrides: _overridesFor(
+                        exercise,
+                        stationIndex: rp.stationIndex,
+                      ),
+                    ) ??
+                    rp.name;
               }(),
               point: rp.position!,
               child: const RoleMarker(),
@@ -526,8 +532,9 @@ class _StationsViewState extends State<StationsView>
                             ),
                             size: 32,
                           ),
-                          title: Text(
-                            substitutePlanVariables(ex.name, _overridesFor(ex)),
+                          title: RingDrillText(
+                            ex.name,
+                            overrides: _overridesFor(ex),
                           ),
                           onChanged: (value) {
                             setSheetState(() {
@@ -779,7 +786,12 @@ class _StationsViewState extends State<StationsView>
       final exerciseOverrides = _overridesFor(exercise);
       targets.add(
         SearchResult.points(
-          substitutePlanVariables(exercise.name, exerciseOverrides),
+          resolveScopedField(
+                context,
+                exercise.name,
+                overrides: exerciseOverrides,
+              ) ??
+              exercise.name,
           exercisePoints,
           kind: SearchResultKind.exercise,
         ),
@@ -804,8 +816,8 @@ class _StationsViewState extends State<StationsView>
           stationIndex: stationIndex,
         );
         final label =
-            '${substitutePlanVariables(exercise.name, stationOverrides)} '
-            '| ${substitutePlanVariables(station.name, stationOverrides)}';
+            '${resolveScopedField(context, exercise.name, overrides: stationOverrides) ?? exercise.name} '
+            '| ${resolveScopedField(context, station.name, overrides: stationOverrides) ?? station.name}';
         targets.add(
           SearchResult.points(
             label,

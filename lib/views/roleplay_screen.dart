@@ -6,6 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -15,9 +16,12 @@ import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -72,6 +76,20 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     );
   }
 
+  /// This roleplay's own `roleplay.*` facets (DESIGN-010's resolve-context
+  /// cascade — the same shape `RolePlayFormScreen._roleplayFacets` builds
+  /// for its live preview), passed to `resolveScopedField`'s
+  /// `roleplayFacets` rather than a scope (DESIGN-010: "small enough...
+  /// than a separate scope").
+  Map<String, dynamic> _roleplayFacets(RolePlay rolePlay) => {
+    'name': rolePlay.name,
+    'age': rolePlay.age,
+    'signalement': rolePlay.signalement ?? '',
+    'position': {
+      'utm': rolePlay.position == null ? '' : formatUtm(rolePlay.position),
+    },
+  };
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -105,7 +123,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
         : null;
     final roleOverrides = _effectiveVariables(exercise, station: station);
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -197,6 +215,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                             label: localizations.roleSignalement,
                             text: rolePlay.signalement!,
                             overrides: roleOverrides,
+                            roleplayFacets: _roleplayFacets(rolePlay),
                           ),
                           const SizedBox(height: 8),
                         ],
@@ -205,6 +224,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                             label: localizations.roleBackground,
                             text: rolePlay.background!,
                             overrides: roleOverrides,
+                            roleplayFacets: _roleplayFacets(rolePlay),
                           ),
                           const SizedBox(height: 8),
                         ],
@@ -213,6 +233,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                             label: localizations.roleBehavior,
                             text: rolePlay.behavior!,
                             overrides: roleOverrides,
+                            roleplayFacets: _roleplayFacets(rolePlay),
                           ),
                       ],
                     ),
@@ -239,13 +260,23 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
               if (rolePlay.position != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: RolePositionPanel(
-                    position: rolePlay.position!,
-                    label: substitutePlanVariables(
-                      rolePlay.name,
-                      roleOverrides,
+                  // A Builder, not the outer `build` context: the scopes
+                  // are wrapped around this whole Scaffold below, which
+                  // sits *above* `build`'s own context in the tree, so
+                  // resolveScopedField needs a context from inside it.
+                  child: Builder(
+                    builder: (context) => RolePositionPanel(
+                      position: rolePlay.position!,
+                      label:
+                          resolveScopedField(
+                            context,
+                            rolePlay.name,
+                            overrides: roleOverrides,
+                            roleplayFacets: _roleplayFacets(rolePlay),
+                          ) ??
+                          rolePlay.name,
+                      asCard: true,
                     ),
-                    asCard: true,
                   ),
                 ),
             ],
@@ -275,6 +306,31 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             )
           : null,
     );
+
+    // DESIGN-010 stage 3 (ADR-0048): wrap in the linked station's/parent
+    // exercise's resolve-context scopes, mirroring station_screen.dart —
+    // both are optional here (an orphaned or unassigned roleplay has
+    // neither), so each wrap is skipped rather than passed empty/fake data.
+    Widget scoped = scaffold;
+    if (station != null) {
+      scoped = StationScope(
+        locations: station.locations,
+        persons: station.persons,
+        name: station.name,
+        description: station.description,
+        variantSuffix: station.variantSuffix,
+        positionUtm: formatUtm(station.position),
+        child: scoped,
+      );
+    }
+    if (exercise != null) {
+      scoped = ExerciseScope(
+        exercise: exercise,
+        variableOverrides: exercise.variableOverrides,
+        child: scoped,
+      );
+    }
+    return scoped;
   }
 }
 
@@ -283,11 +339,13 @@ class _FieldBlock extends StatelessWidget {
     required this.label,
     required this.text,
     this.overrides = const {},
+    this.roleplayFacets,
   });
 
   final String label;
   final String text;
   final Map<String, String> overrides;
+  final Map<String, dynamic>? roleplayFacets;
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +359,11 @@ class _FieldBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        RingDrillText(text, overrides: overrides),
+        RingDrillText(
+          text,
+          overrides: overrides,
+          roleplayFacets: roleplayFacets,
+        ),
       ],
     );
   }

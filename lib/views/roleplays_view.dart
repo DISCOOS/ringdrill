@@ -21,6 +21,7 @@ import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
@@ -282,6 +283,14 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        // Deliberately NOT RingDrillText: this subtitle resolves from
+        // ProgramService().activeProgram via `_overridesFor`'s full
+        // effective-value map regardless of any PlanScope ancestor (unlike
+        // the role-name title above, which needs one) — see
+        // roleplays_view_variables_test.dart. Only `{{var.*}}` is in scope
+        // here; a `resolveScopedField` swap would make this resolve nothing
+        // at all outside a PlanScope, a regression this call site's test
+        // guards against.
         subtitle: Text(
           (rolePlay.stationIndex != null &&
                   rolePlay.stationIndex! < exercise.stations.length)
@@ -381,10 +390,13 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           RolePositionPanel(
             key: ValueKey('role-map-${rolePlay.uuid}'),
             position: rolePlay.position!,
-            label: substitutePlanVariables(
-              rolePlay.name,
-              _overridesFor(exercise, rolePlay),
-            ),
+            label:
+                resolveScopedField(
+                  context,
+                  rolePlay.name,
+                  overrides: _overridesFor(exercise, rolePlay),
+                ) ??
+                rolePlay.name,
             mapHeight: 140,
           ),
         ],
@@ -596,18 +608,14 @@ class RolePlaysFilterBanner extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      localizations.showingRolesIn(
-                        ProgramService().activeProgram == null
-                            ? exercise.name
-                            : substitutePlanVariables(
-                                exercise.name,
-                                effectivePlanVariables(
-                                  ProgramService().activeProgram!,
-                                  exercise: exercise,
-                                ),
-                              ),
-                      ),
+                    child: RingDrillText(
+                      localizations.showingRolesIn(exercise.name),
+                      overrides: ProgramService().activeProgram == null
+                          ? const {}
+                          : effectivePlanVariables(
+                              ProgramService().activeProgram!,
+                              exercise: exercise,
+                            ),
                       style: TextStyle(
                         color: theme.colorScheme.onSecondaryContainer,
                       ),

@@ -22,8 +22,12 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
@@ -117,118 +121,138 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     // ("1a) Turgåer"), and the body's own heading uses the same
     // string, so any synthetic prefix here would double up.
     final station = _exercise.stations[widget.stationIndex];
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () {
-            if (MasterDetailScope.maybeOf(context) != null) {
-              ContextSheet.of(context).close();
-            } else {
-              Navigator.pop(context);
-            }
-          },
-          tooltip: localizations.briefClose,
-        ),
-        toolbarHeight: 72,
-        title: SheetTitle(
-          primary: station.name,
-          secondary: _exercise.name,
-          primaryOverrides: _overridesFor(_exercise, station: station),
-          secondaryOverrides: _overridesFor(_exercise),
-        ),
-        actions: [
-          // Edit Exercise Button
-          IconButton(
-            icon: const Icon(Icons.edit),
-            padding: const EdgeInsets.all(8.0),
-            onPressed: _isStarted ? null : () => _editStation(context),
-            tooltip: _isStarted
-                ? localizations.stopExerciseFirst(
-                    substitutePlanVariables(
-                      _exercise.name,
-                      _overridesFor(_exercise),
-                    ),
-                  )
-                : localizations.editExercise,
-          ),
-        ],
-        actionsPadding: EdgeInsets.only(right: 16.0),
-      ),
-      body: SafeArea(
-        child: StreamBuilder(
-          stream: _exerciseService.events,
-          initialData: _initialData(),
-          builder: (context, asyncSnapshot) {
-            return OrientationBuilder(
-              builder: (context, orientation) {
-                final isPortrait = orientation == Orientation.portrait;
-                final event = asyncSnapshot.data!;
-                final station = _exercise.stations[widget.stationIndex];
-                final stationInfo = _buildStationInfo(station);
-                final rolesSection = _buildRolesSection(station);
-                final rotations = _buildTeamRotations(event);
-                // One outer SingleChildScrollView so the screen has a
-                // single scroll context. Sub-sections (station info,
-                // team rotations) are non-scrolling Columns sized to
-                // their content and laid out side-by-side in landscape,
-                // stacked in portrait.
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStationStatus(station, event),
-                      const SizedBox(height: 8),
-                      if (isPortrait) ...[
-                        stationInfo,
-                        const SizedBox(height: 8),
-                        rolesSection,
-                        const SizedBox(height: 8),
-                        rotations,
-                      ] else ...[
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: stationInfo),
-                            const SizedBox(width: 8),
-                            Expanded(child: rotations),
-                          ],
+    // DESIGN-010 stage 3: this station/exercise are already loaded here, so
+    // wrap the sheet in the same resolve-context scopes an editor provides
+    // (ADR-0048). Every widget built *below* this point (`SheetTitle`,
+    // `RingDrillText`, the `Builder` in `_buildDescription`) then resolves
+    // the full `{{station.*}}`/`{{exercise.*}}` cascade, not just
+    // `{{var.*}}` — `context` captured here in `build` stays above the
+    // scope (it is `State.context`, an ancestor of whatever `build`
+    // returns), so it cannot see these two itself.
+    return ExerciseScope(
+      exercise: _exercise,
+      variableOverrides: _exercise.variableOverrides,
+      child: StationScope(
+        locations: station.locations,
+        persons: station.persons,
+        name: station.name,
+        description: station.description,
+        variantSuffix: station.variantSuffix,
+        positionUtm: formatUtm(station.position),
+        child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                if (MasterDetailScope.maybeOf(context) != null) {
+                  ContextSheet.of(context).close();
+                } else {
+                  Navigator.pop(context);
+                }
+              },
+              tooltip: localizations.briefClose,
+            ),
+            toolbarHeight: 72,
+            title: SheetTitle(
+              primary: station.name,
+              secondary: _exercise.name,
+              primaryOverrides: _overridesFor(_exercise, station: station),
+              secondaryOverrides: _overridesFor(_exercise),
+            ),
+            actions: [
+              // Edit Exercise Button
+              IconButton(
+                icon: const Icon(Icons.edit),
+                padding: const EdgeInsets.all(8.0),
+                onPressed: _isStarted ? null : () => _editStation(context),
+                tooltip: _isStarted
+                    ? localizations.stopExerciseFirst(
+                        substitutePlanVariables(
+                          _exercise.name,
+                          _overridesFor(_exercise),
                         ),
-                        const SizedBox(height: 8),
-                        rolesSection,
-                      ],
-                    ],
-                  ),
+                      )
+                    : localizations.editExercise,
+              ),
+            ],
+            actionsPadding: EdgeInsets.only(right: 16.0),
+          ),
+          body: SafeArea(
+            child: StreamBuilder(
+              stream: _exerciseService.events,
+              initialData: _initialData(),
+              builder: (context, asyncSnapshot) {
+                return OrientationBuilder(
+                  builder: (context, orientation) {
+                    final isPortrait = orientation == Orientation.portrait;
+                    final event = asyncSnapshot.data!;
+                    final station = _exercise.stations[widget.stationIndex];
+                    final stationInfo = _buildStationInfo(station);
+                    final rolesSection = _buildRolesSection(station);
+                    final rotations = _buildTeamRotations(event);
+                    // One outer SingleChildScrollView so the screen has a
+                    // single scroll context. Sub-sections (station info,
+                    // team rotations) are non-scrolling Columns sized to
+                    // their content and laid out side-by-side in landscape,
+                    // stacked in portrait.
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStationStatus(station, event),
+                          const SizedBox(height: 8),
+                          if (isPortrait) ...[
+                            stationInfo,
+                            const SizedBox(height: 8),
+                            rolesSection,
+                            const SizedBox(height: 8),
+                            rotations,
+                          ] else ...[
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: stationInfo),
+                                const SizedBox(width: 8),
+                                Expanded(child: rotations),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            rolesSection,
+                          ],
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
-            );
-          },
+            ),
+          ),
+          // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
+          // the parent exercise so the user can start it directly from the
+          // station view (modal context sheet in narrow). In master-detail
+          // (wide) the docked bar lives in the master column instead, so we
+          // skip it here. The bar self-hides when an unrelated exercise is
+          // already running.
+          bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
+              ? DrillMiniPlayer(
+                  exercise: _exercise,
+                  height: 64,
+                  applyBottomInset: true,
+                  // We are already inside the station sheet; tapping the bar
+                  // body should not try to re-open something.
+                  onOpen: () {},
+                  onPlay: () {
+                    unawaited(HapticFeedback.mediumImpact());
+                    _exerciseService.start(_exercise);
+                  },
+                  onPickExercise: (picked) => ContextSheet.of(
+                    context,
+                  ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+                )
+              : null,
         ),
       ),
-      // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
-      // the parent exercise so the user can start it directly from the
-      // station view (modal context sheet in narrow). In master-detail
-      // (wide) the docked bar lives in the master column instead, so we
-      // skip it here. The bar self-hides when an unrelated exercise is
-      // already running.
-      bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
-          ? DrillMiniPlayer(
-              exercise: _exercise,
-              height: 64,
-              applyBottomInset: true,
-              // We are already inside the station sheet; tapping the bar
-              // body should not try to re-open something.
-              onOpen: () {},
-              onPlay: () {
-                unawaited(HapticFeedback.mediumImpact());
-                _exerciseService.start(_exercise);
-              },
-              onPickExercise: (picked) => ContextSheet.of(
-                context,
-              ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
-            )
-          : null,
     );
   }
 
@@ -312,14 +336,29 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: SelectableText(
-                    station.description == null
-                        ? localizations.noDescription
-                        : substitutePlanVariables(
-                            station.description!,
-                            _overridesFor(_exercise, station: station),
-                          ),
-                    style: Theme.of(context).textTheme.bodyLarge,
+                  // A Builder, not `this.context`: `build` wrapped the
+                  // Scaffold in ExerciseScope/StationScope, but that
+                  // ancestor is invisible to State.context, which sits
+                  // above it in the tree. Builder gets a context from
+                  // *inside* the returned subtree, so resolveScopedField
+                  // can actually see the two scopes and resolve
+                  // `{{station.position.utm}}` and friends instead of
+                  // leaving them literal.
+                  child: Builder(
+                    builder: (context) => SelectableText(
+                      station.description == null
+                          ? localizations.noDescription
+                          : resolveScopedField(
+                                  context,
+                                  station.description!,
+                                  overrides: _overridesFor(
+                                    _exercise,
+                                    station: station,
+                                  ),
+                                ) ??
+                                station.description!,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                 ),
               ],

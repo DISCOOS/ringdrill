@@ -17,6 +17,7 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
@@ -721,10 +722,13 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       markers.add(
         MapMarkerSpec<int>(
           id: station.index,
-          label: substitutePlanVariables(
-            station.name,
-            _overridesFor(_exercise!, station: station),
-          ),
+          label:
+              resolveScopedField(
+                context,
+                station.name,
+                overrides: _overridesFor(_exercise!, station: station),
+              ) ??
+              station.name,
           point: station.position!,
           highlighted: isLive,
           child: Icon(

@@ -1073,13 +1073,11 @@ class _ExerciseCardState extends State<ExerciseCard> {
       accent: accent,
       selected: widget.selected,
       leading: leading,
-      title: Text(
-        widget.program == null
-            ? exercise.name
-            : substitutePlanVariables(
-                exercise.name,
-                effectivePlanVariables(widget.program!, exercise: exercise),
-              ),
+      title: RingDrillText(
+        exercise.name,
+        overrides: widget.program == null
+            ? const {}
+            : effectivePlanVariables(widget.program!, exercise: exercise),
         style: TextStyle(fontWeight: FontWeight.bold, color: accent.foreground),
       ),
       subtitle: Text(subtitleParts.join(' | '), style: accent.textStyle),
@@ -1176,16 +1174,14 @@ class _ExerciseCardState extends State<ExerciseCard> {
               : Theme.of(context).colorScheme.surfaceContainerHigh,
           accent: accent,
           leading: leading,
-          title: Text(
-            program == null
-                ? station.name
-                : substitutePlanVariables(
-                    station.name,
-                    effectivePlanVariables(
-                      program,
-                      exercise: exercise,
-                      station: station,
-                    ),
+          title: RingDrillText(
+            station.name,
+            overrides: program == null
+                ? const {}
+                : effectivePlanVariables(
+                    program,
+                    exercise: exercise,
+                    station: station,
                   ),
             // ADR-0037 drillAccent: centralised size instead of hardcoded 18.
             style: TextStyle(
@@ -1290,7 +1286,8 @@ class _ExerciseCardState extends State<ExerciseCard> {
         .loadRolePlays()
         .where(
           (r) =>
-              r.exerciseUuid == exercise.uuid && r.stationIndex == station.index,
+              r.exerciseUuid == exercise.uuid &&
+              r.stationIndex == station.index,
         )
         .toList();
     final result = await openFormSurface<StationFormResult>(
@@ -1344,16 +1341,14 @@ class _ExerciseCardState extends State<ExerciseCard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (description != null && description.trim().isNotEmpty) ...[
-          Text(
-            program == null
-                ? description
-                : substitutePlanVariables(
-                    description,
-                    effectivePlanVariables(
-                      program,
-                      exercise: exercise,
-                      station: station,
-                    ),
+          RingDrillText(
+            description,
+            overrides: program == null
+                ? const {}
+                : effectivePlanVariables(
+                    program,
+                    exercise: exercise,
+                    station: station,
                   ),
             style: theme.textTheme.bodyMedium,
           ),

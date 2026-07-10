@@ -341,8 +341,9 @@ class _StationListViewState extends State<StationListView> {
           overrides: _overridesFor(exercise, station),
           style: accent.textStyle,
         ),
-        subtitle: Text(
-          '${localizations.exercise(1)}: ${substitutePlanVariables(exercise.name, _overridesFor(exercise, station))}',
+        subtitle: RingDrillText(
+          '${localizations.exercise(1)}: ${exercise.name}',
+          overrides: _overridesFor(exercise, station),
           style: accent.textStyle,
         ),
         accent: accent,
@@ -383,8 +384,9 @@ class _StationListViewState extends State<StationListView> {
           overrides: _overridesFor(exercise, station),
           style: accent.textStyle,
         ),
-        subtitle: Text(
-          '${localizations.exercise(1)}: ${substitutePlanVariables(exercise.name, _overridesFor(exercise, station))}',
+        subtitle: RingDrillText(
+          '${localizations.exercise(1)}: ${exercise.name}',
+          overrides: _overridesFor(exercise, station),
           style: accent.textStyle,
         ),
         accent: accent,
@@ -472,7 +474,9 @@ class _StationListViewState extends State<StationListView> {
     final roleplays = _programService
         .loadRolePlays()
         .where(
-          (r) => r.exerciseUuid == exercise.uuid && r.stationIndex == station.index,
+          (r) =>
+              r.exerciseUuid == exercise.uuid &&
+              r.stationIndex == station.index,
         )
         .toList();
     final result = await openFormSurface<StationFormResult>(
@@ -551,18 +555,14 @@ class StationFilterBanner extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      localizations.showingStationsIn(
-                        substitutePlanVariables(
-                          exercise.name,
-                          ProgramService().activeProgram == null
-                              ? const {}
-                              : effectivePlanVariables(
-                                  ProgramService().activeProgram!,
-                                  exercise: exercise,
-                                ),
-                        ),
-                      ),
+                    child: RingDrillText(
+                      localizations.showingStationsIn(exercise.name),
+                      overrides: ProgramService().activeProgram == null
+                          ? const {}
+                          : effectivePlanVariables(
+                              ProgramService().activeProgram!,
+                              exercise: exercise,
+                            ),
                       style: TextStyle(
                         color: theme.colorScheme.onSecondaryContainer,
                       ),
