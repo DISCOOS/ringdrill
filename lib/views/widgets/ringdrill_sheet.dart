@@ -98,9 +98,16 @@ Future<T?> showRingdrillActionSheet<T>({
   );
 }
 
-Future<T?> showRingdrillFormDialog<T>({
+/// Shared rounded-`Dialog` chrome (clip, corner radius, elevation, inset
+/// padding) for every "modal dialog on medium/expanded" surface — forms
+/// via [showRingdrillFormDialog] and the picker primitive's wide path
+/// (ADR-0049, `showRingdrillPicker`), which just cap [maxWidth] and
+/// [maxHeightFraction] narrower/shorter for a list instead of a form.
+Future<T?> showRingdrillDialogShell<T>({
   required BuildContext context,
   required WidgetBuilder builder,
+  required double maxWidth,
+  required double maxHeightFraction,
 }) {
   final viewport = MediaQuery.sizeOf(context);
   return showDialog<T>(
@@ -118,14 +125,26 @@ Future<T?> showRingdrillFormDialog<T>({
         child: ScaffoldMessenger(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: 720,
-              maxHeight: viewport.height * 0.88,
+              maxWidth: maxWidth,
+              maxHeight: viewport.height * maxHeightFraction,
             ),
             child: _withDefaultPlanScope(builder(context)),
           ),
         ),
       );
     },
+  );
+}
+
+Future<T?> showRingdrillFormDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  return showRingdrillDialogShell<T>(
+    context: context,
+    builder: builder,
+    maxWidth: 720,
+    maxHeightFraction: 0.88,
   );
 }
 
