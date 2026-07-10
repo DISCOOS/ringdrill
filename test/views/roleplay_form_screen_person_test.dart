@@ -342,6 +342,46 @@ void main() {
     },
   );
 
+  testWidgets('switching post clears the denormalized identity summary', (
+    tester,
+  ) async {
+    final stationA = Station(
+      index: 0,
+      name: 'Post 1',
+      persons: const [
+        Person(
+          slug: 'anne',
+          name: 'Anne Glemsk',
+          age: 47,
+          gender: 'woman',
+          signalement: 'Rød jakke',
+        ),
+      ],
+    );
+    final stationB = Station(index: 1, name: 'Post 2');
+    await _openForm(
+      tester,
+      _rolePlay(name: 'Anne Glemsk', stationIndex: 0, personRef: 'anne'),
+      _exercise(stations: [stationA, stationB]),
+      _Captured(),
+    );
+
+    // The selected person's identity shows in the header.
+    expect(find.textContaining(l.rolePlayAgeYears(47)), findsOneWidget);
+    expect(find.text('Rød jakke'), findsOneWidget);
+
+    // Switch to Post 2 (no persons): the stale identity must clear, leaving
+    // the pick-a-person prompt rather than the previous age/signalement.
+    await tester.tap(find.byKey(const Key('station-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Post 2').last);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining(l.rolePlayAgeYears(47)), findsNothing);
+    expect(find.text('Rød jakke'), findsNothing);
+    expect(find.text(l.rolePlaySelectPersonPrompt), findsOneWidget);
+  });
+
   testWidgets('the gender field renders and is saved', (tester) async {
     final station = Station(
       index: 0,

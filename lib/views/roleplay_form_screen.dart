@@ -1051,6 +1051,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       _originalLocationSlugs = _workingLocations.map((l) => l.slug).toSet();
       _originalPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
       _personRef = null;
+      // Clear the denormalized identity too: it mirrored the old station's
+      // person, which no longer applies once personRef is cleared, so the
+      // header must not keep showing the previous age/gender/signalement.
+      // The author picks or creates a person on the new station.
+      _nameController.clear();
+      _ageController.clear();
+      _gender = null;
+      _signalementController.clear();
+      _identityExpanded = false;
     });
   }
 
