@@ -199,8 +199,40 @@ void main() {
     'the Post card row and the identity "Tilpass" disclosure row (collapsed) '
     'do not overflow at narrow (compact) widths',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(400, 800));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      // `tester.binding.setSurfaceSize` (not used here) resizes the render
+      // surface but does not update `MediaQuery`, which still reports
+      // flutter_test's default ~800x600 — so `WindowSizeClass.hasMasterDetail`
+      // would keep rendering the 210px-wide rail (`_WideBody`) regardless of
+      // this size, squeezing content far narrower than any real device at
+      // this width ever would (a real device this narrow reports the same
+      // width to MediaQuery, which drops the rail entirely — see
+      // WindowSizeClass.of). `tester.view.physicalSize` keeps layout and
+      // MediaQuery consistent, so this test exercises the real compact
+      // (rail-less) layout its name promises.
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await _open(tester);
+
+      expect(find.byKey(const Key('station-field')), findsOneWidget);
+      expect(find.byKey(const Key('identity-disclosure')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'the Post card row and the identity "Tilpass" disclosure row (collapsed) '
+    'do not overflow at the narrowest real width with a rail (medium '
+    'breakpoint)',
+    (tester) async {
+      // 600px is [WindowSizeClass.medium]'s own threshold — the narrowest
+      // width a real device shows the 210px rail (`_WideBody`) alongside
+      // content, and so the tightest content width this layout ever has to
+      // support (compact widths below it never show a rail at all).
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
 
       await _open(tester);
 
@@ -232,6 +264,33 @@ void main() {
       // (splitting free space evenly with the spacer regardless of what
       // the label actually needed).
       expect(disclosureRect.right - chevronRect.right, 12.0);
+    },
+  );
+
+  testWidgets(
+    'the Post card row keeps its chevron flush against the row\'s own '
+    'right edge even when the station name is short',
+    (tester) async {
+      await _open(tester);
+
+      final stationRect = tester.getRect(
+        find.byKey(const Key('station-field')),
+      );
+      final chevronRect = tester.getRect(
+        find.descendant(
+          of: find.byKey(const Key('station-field')),
+          matching: find.byIcon(Icons.chevron_right),
+        ),
+      );
+      // The row's own horizontal padding is 12 (see `_buildPostCard`): the
+      // chevron's right edge should sit exactly that far from the card's
+      // right edge — not further left with unclaimed space in between,
+      // which a sibling Flexible on the "Edit"/"Rediger" label used to
+      // cause for a short station name like "Post 1" (splitting free
+      // space evenly with the name's Expanded regardless of what the
+      // label actually needed — the same regression the identity card's
+      // "Tilpass" row had, fixed here via `LayoutBuilder` instead).
+      expect(stationRect.right - chevronRect.right, 12.0);
     },
   );
 }

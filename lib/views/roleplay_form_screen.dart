@@ -1062,56 +1062,88 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   horizontal: 12,
                   vertical: 11,
                 ),
-                child: Row(
-                  children: [
-                    if (station != null && stationIndex != null) ...[
-                      StationNumberBadge(
-                        label: Numbering.station(
-                          stationNumberFormat,
-                          exerciseNumber: exerciseIndex < 0
-                              ? 1
-                              : exerciseIndex + 1,
-                          stationIndex: stationIndex,
+                // LayoutBuilder (rather than a sibling Flexible on the
+                // trailing label): a Flexible sibling would share the row's
+                // free space with the station name's Expanded 50/50
+                // regardless of what either actually needs, leaving the
+                // trailing label+chevron short of the row's right edge
+                // whenever the name is short — the same regression the
+                // identity card's "Tilpass" row had (fixed in e6e4689),
+                // just less visible here since a station name is rarely as
+                // short as a fixed UI label. Measuring the trailing block's
+                // own natural width lets it stay a plain, non-flex Text
+                // (guaranteeing it — and the chevron — sit flush at the
+                // true right edge) whenever there's room, and only turns it
+                // Flexible as a last resort when the row is genuinely too
+                // narrow for the fixed content alone, regardless of what
+                // the station name does.
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final hasBadge = station != null && stationIndex != null;
+                    final trailingStyle = theme.textTheme.bodyMedium
+                        ?.copyWith(color: theme.colorScheme.primary);
+                    final trailingWidth =
+                        (TextPainter(
+                              text: TextSpan(
+                                text: l.rolePlayPostEditAction,
+                                style: trailingStyle,
+                              ),
+                              textDirection: Directionality.of(context),
+                              maxLines: 1,
+                            )..layout())
+                            .width;
+                    // Everything except the station name: the minimum
+                    // width the row needs even if the name shrinks to
+                    // nothing. If that alone doesn't fit, the trailing
+                    // label must become flexible to avoid overflowing.
+                    const badgeWidth = 40.0;
+                    const badgeGap = 12.0;
+                    const trailingGap = 4.0;
+                    const chevronWidth = 18.0;
+                    final fixedCost =
+                        (hasBadge ? badgeWidth + badgeGap : 0) +
+                        trailingWidth +
+                        trailingGap +
+                        chevronWidth;
+                    final trailingLabel = Text(
+                      l.rolePlayPostEditAction,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: trailingStyle,
+                    );
+                    return Row(
+                      children: [
+                        if (hasBadge) ...[
+                          StationNumberBadge(
+                            label: Numbering.station(
+                              stationNumberFormat,
+                              exerciseNumber: exerciseIndex < 0
+                                  ? 1
+                                  : exerciseIndex + 1,
+                              stationIndex: stationIndex,
+                            ),
+                          ),
+                          const SizedBox(width: badgeGap),
+                        ],
+                        Expanded(
+                          child: Text(
+                            station?.name ?? l.noStationAssigned,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      child: Text(
-                        station?.name ?? l.noStationAssigned,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    // Flexible (not a bare Text): at narrow widths the
-                    // station name above already yields to ellipsis first,
-                    // but this label's own fixed width could still overflow
-                    // the row on its own — shrink-with-ellipsis instead.
-                    // A visible gap can appear here at very narrow widths
-                    // when the station name is short enough to leave its
-                    // Expanded box mostly empty — a known, minor cosmetic
-                    // trade-off for overflow safety, distinct from (and much
-                    // less visible than) the identity card's "Tilpass" row,
-                    // which this same pattern used to cause a much more
-                    // prominent version of before that row was rebuilt
-                    // (single Expanded, right-aligned, see below).
-                    Flexible(
-                      child: Text(
-                        l.rolePlayPostEditAction,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        fixedCost <= constraints.maxWidth
+                            ? trailingLabel
+                            : Flexible(child: trailingLabel),
+                        const SizedBox(width: trailingGap),
+                        Icon(
+                          Icons.chevron_right,
+                          size: chevronWidth,
                           color: theme.colorScheme.primary,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right,
-                      size: 18,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

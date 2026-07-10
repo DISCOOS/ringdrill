@@ -55,8 +55,18 @@ Future<double> _showRollupAndGetContentX(
   Size size,
   String content,
 ) async {
-  await tester.binding.setSurfaceSize(size);
-  addTearDown(() => tester.binding.setSurfaceSize(null));
+  // `tester.binding.setSurfaceSize` (not used here) resizes the render
+  // surface but does not update `MediaQuery`, which would keep reporting
+  // flutter_test's default ~800x600 regardless of `size` — so a "narrow"
+  // (sub-600) size here would still make `WindowSizeClass.hasMasterDetail`
+  // read as true, rendering both the rollup's wide (side-by-side) layout
+  // and the editor's own rail, neither of which a real device this narrow
+  // would ever show. `tester.view.physicalSize` keeps layout and
+  // MediaQuery consistent, so "narrow" tests below exercise the real
+  // inline rollup + rail-less editor layout their names promise.
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
 
   // A fresh UniqueKey forces a brand-new Element/State on every call: two
   // calls within the same test otherwise reuse the previous StationFormScreen/
