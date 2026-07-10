@@ -77,16 +77,19 @@ void main() {
       // the fix, the resolved text (short) shrink-wrapped and Align
       // centered it well to the right of the label. `.last`: the wide
       // rail's own tile also shows this same label text.
-      final labelLeft = tester.getTopLeft(find.text(l.roleBackground).last).dx;
-      final contentLeft = tester
-          .getTopLeft(
-            find.descendant(
-              of: find.byType(BriefMarkdown),
-              matching: find.textContaining('Hilde er hovedpersonen'),
-            ),
-          )
-          .dx;
-      expect(contentLeft, closeTo(labelLeft, 2));
+      final labelRect = tester.getRect(find.text(l.roleBackground).last);
+      final contentRect = tester.getRect(
+        find.descendant(
+          of: find.byType(BriefMarkdown),
+          matching: find.textContaining('Hilde er hovedpersonen'),
+        ),
+      );
+      expect(contentRect.left, closeTo(labelRect.left, 2));
+      // The vertical gap between the label and the resolved text matches
+      // the label-to-input gap editing would show (a few px), not the
+      // extra ~8px MarkdownGenerator's default linesMargin would otherwise
+      // add around a single-paragraph block with nothing else around it.
+      expect(contentRect.top - labelRect.bottom, lessThan(8));
     },
   );
 }

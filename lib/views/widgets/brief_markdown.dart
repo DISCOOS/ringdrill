@@ -388,6 +388,7 @@ class BriefMarkdown extends StatelessWidget {
     this.currentMatchKey,
     this.onAnchorTap,
     this.gutter,
+    this.linesMargin,
   });
 
   final String data;
@@ -402,6 +403,17 @@ class BriefMarkdown extends StatelessWidget {
   /// x) should override this to `0` so the two align, rather than the
   /// resolved text sitting further right than everything around it.
   final double? gutter;
+
+  /// Vertical margin `MarkdownGenerator` wraps around *every* top-level
+  /// block (heading, paragraph, ...), including the first/last — defaults
+  /// to the package's own `EdgeInsets.symmetric(vertical: 8)`, generous
+  /// breathing room between blocks on the brief's own reading page. A
+  /// single-paragraph preview sitting directly under external chrome (the
+  /// per-section preview's own label) should override this to
+  /// `EdgeInsets.zero`: that 8px top margin otherwise pushes the text away
+  /// from the label above it, even though nothing else about their spacing
+  /// changed.
+  final EdgeInsets? linesMargin;
 
   /// Optional [GlobalKey] attached to the active search-match widget so
   /// callers can call `Scrollable.ensureVisible` against it. Only used when
@@ -422,6 +434,7 @@ class BriefMarkdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final generator = MarkdownGenerator(
+      linesMargin: linesMargin ?? const EdgeInsets.symmetric(vertical: 8),
       // Register HTML-like `<mark>` and `<curr-mark>` inline syntaxes so
       // BriefScreen's search-highlight wrapping renders as styled spans
       // instead of plain literal text.

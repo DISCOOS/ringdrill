@@ -484,6 +484,13 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
                   // inset of its own — BriefMarkdown's default (brief-page)
                   // gutter would otherwise shift the text right of it.
                   gutter: 0,
+                  // No extra top/bottom margin either: the brief-page
+                  // default gives every block breathing room from its
+                  // neighbours, but here the only "neighbour" above is the
+                  // caption this same function just placed 4px above —
+                  // the default would push the text noticeably further
+                  // from it than the field's own label-to-input gap.
+                  linesMargin: EdgeInsets.zero,
                 ),
         ),
       );
