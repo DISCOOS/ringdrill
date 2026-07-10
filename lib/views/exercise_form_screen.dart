@@ -266,9 +266,11 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                     child: RingDrillTextArea(
                       controller: _sectionControllers[section]!,
                       focusNode: _sectionFocusNodes[section],
-                      // No label: the section switcher (compact dropdown /
-                      // wide rail) already names this section, so a field
-                      // label equal to the section name only duplicates it.
+                      // Shown, matching the roleplay editor's own markdown
+                      // sections (e.g. "Bakgrunn") — consistent chrome
+                      // across every section-navigated editor, not just the
+                      // ones whose author happened to pass a label.
+                      label: _labelFor(section, l),
                       expands: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
