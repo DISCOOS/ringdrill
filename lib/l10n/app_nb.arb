@@ -1037,6 +1037,27 @@
     "description": "Plassholder i base-seksjonens forhåndsvisning (DESIGN-010, revidert 2026-07-10) når ingen av enhetens seksjoner har innhold å vise ennå."
   },
 
+  "postDescriptionCardTitle": "Postbeskrivelse",
+  "@postDescriptionCardTitle": {
+    "description": "DESIGN-010 stage 3b: Post-viewerens første kort — den oppløste ingressen pluss dens merkede seksjoner."
+  },
+  "directorOnlyBadge": "Kun øvelsesleder",
+  "@directorOnlyBadge": {
+    "description": "DESIGN-010 stage 3b: liten pille ved siden av en rolle-gatet seksjons overskrift i Post-viewerens rollup-kort, vist sammen med directorNotesMd (vises kun i det hele tatt når rollen i innstillinger er øvelsesleder)."
+  },
+  "tapSectionToEditHint": "Trykk en seksjon for å redigere",
+  "@tapSectionToEditHint": {
+    "description": "DESIGN-010 stage 3b: hint under Post-viewerens rollup-kort, som forteller forfatteren at et trykk på en oppløst seksjon hopper inn i den seksjonen i post-editoren."
+  },
+  "stationTimingCardTitle": "Tidsplan",
+  "@stationTimingCardTitle": {
+    "description": "DESIGN-010 stage 3b: Post-viewerens tidsplankort-tittel — lagenes øve/eval/rull-klokkeslett for denne posten."
+  },
+  "roleActiveScheduleCardTitle": "Når aktiv",
+  "@roleActiveScheduleCardTitle": {
+    "description": "DESIGN-010 stage 3b: Spill-viewerens tidsplankort-tittel — runden(e) denne markørens post er bemannet av et lag."
+  },
+
   "tokenMenuEmpty": "Ingen treff",
   "@tokenMenuEmpty": {
     "description": "Tom-tilstand-tekst i DESIGN-008 Stage 4 sin token-innsettingsmeny (/-kommandomenyen og {{-autofullføringen) når ingen variabel eller planfelt matcher det innskrevne filteret."

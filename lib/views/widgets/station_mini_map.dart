@@ -76,11 +76,18 @@ class StationMiniMap extends StatelessWidget {
     required this.station,
     this.height = 140,
     this.borderRadius = const BorderRadius.all(Radius.circular(8)),
+    this.markers,
   });
 
   final Exercise exercise;
   final Station station;
   final double height;
+
+  /// Overrides the default administrative-only [stationMarkers] with a
+  /// richer scenario set (DESIGN-010's Post viewer: the station's own
+  /// position plus its [Location]s, `LocationKind`-styled). Null (the
+  /// default) keeps every other call site's existing behaviour.
+  final List<MapMarkerSpec<int>>? markers;
 
   /// Rounds the preview's own corners. `StationPositionPanel` passes a
   /// top-only radius when embedding this as a card's thumbnail — the map
@@ -117,7 +124,7 @@ class StationMiniMap extends StatelessWidget {
               withClustering: false,
               initialZoom: 15,
               initialCenter: position,
-              markers: stationMarkers(exercise, station),
+              markers: markers ?? stationMarkers(exercise, station),
             ),
           ),
         ),

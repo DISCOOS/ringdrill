@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
 import 'package:ringdrill/views/widgets/station_mini_map.dart';
@@ -29,11 +30,23 @@ class StationPositionPanel extends StatelessWidget {
     this.miniMapKey,
     this.padding = EdgeInsets.zero,
     this.asCard = false,
+    this.markers,
+    this.legend,
   });
 
   final Exercise exercise;
   final Station station;
   final double mapHeight;
+
+  /// Overrides the embedded [StationMiniMap]'s default administrative-only
+  /// marker with a richer scenario set (DESIGN-010's Post viewer). Null
+  /// keeps every other call site's existing single-marker behaviour.
+  final List<MapMarkerSpec<int>>? markers;
+
+  /// A legend strip under the map, above the coordinate bar — forwarded to
+  /// [PositionCardShell]'s own `legend` slot. Null omits it (every call
+  /// site but the Post viewer).
+  final Widget? legend;
 
   /// Optional key forwarded to the embedded [StationMiniMap]. Useful
   /// when several stations are rendered together (e.g. inside a list
@@ -82,6 +95,7 @@ class StationPositionPanel extends StatelessWidget {
                 exercise: exercise,
                 station: station,
                 height: mapHeight,
+                markers: markers,
                 // Square bottom corners: the map sits flush above the
                 // coordinate bar, and PositionCardShell's own outer
                 // rounding already handles the card's top corners.
@@ -90,6 +104,7 @@ class StationPositionPanel extends StatelessWidget {
                 ),
               ),
               thumbnailHeight: mapHeight,
+              legend: legend,
               barLabel: Text(
                 localizations.position,
                 style: theme.textTheme.bodyMedium?.copyWith(

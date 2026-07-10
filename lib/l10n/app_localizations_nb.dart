@@ -1979,6 +1979,21 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rollupEmptyPreview => 'Ingenting å forhåndsvise ennå';
 
   @override
+  String get postDescriptionCardTitle => 'Postbeskrivelse';
+
+  @override
+  String get directorOnlyBadge => 'Kun øvelsesleder';
+
+  @override
+  String get tapSectionToEditHint => 'Trykk en seksjon for å redigere';
+
+  @override
+  String get stationTimingCardTitle => 'Tidsplan';
+
+  @override
+  String get roleActiveScheduleCardTitle => 'Når aktiv';
+
+  @override
   String get tokenMenuEmpty => 'Ingen treff';
 
   @override

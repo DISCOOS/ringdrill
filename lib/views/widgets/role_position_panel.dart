@@ -21,6 +21,7 @@ class RolePositionPanel extends StatelessWidget {
     required this.label,
     this.mapHeight = 200,
     this.asCard = false,
+    this.sourceLabel,
   });
 
   final LatLng position;
@@ -29,6 +30,12 @@ class RolePositionPanel extends StatelessWidget {
   final String label;
 
   final double mapHeight;
+
+  /// The scenario `Location` this position was taken from (DESIGN-010's
+  /// Spill viewer: "the marker's position follows the portrayed person's
+  /// location") — shown as a small second line under the "Posisjon" bar
+  /// label. Null (every other call site) keeps the single-line label.
+  final String? sourceLabel;
 
   /// Forwarded to [PositionCardShell]. Defaults to `false` because most
   /// call sites embed this panel inside an `ExpandableTile` body — itself
@@ -51,12 +58,26 @@ class RolePositionPanel extends StatelessWidget {
         height: mapHeight,
       ),
       thumbnailHeight: mapHeight,
-      barLabel: Text(
-        localizations.position,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+      barLabel: sourceLabel == null
+          ? Text(
+              localizations.position,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  localizations.position,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(sourceLabel!, style: theme.textTheme.bodySmall),
+              ],
+            ),
       barChild: Align(
         alignment: Alignment.centerRight,
         child: PositionWidget(

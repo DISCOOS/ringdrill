@@ -2004,6 +2004,27 @@
     "description": "Placeholder in the base section's preview (DESIGN-010, revised 2026-07-10) when none of the entity's sections have content to show yet."
   },
 
+  "postDescriptionCardTitle": "Post Description",
+  "@postDescriptionCardTitle": {
+    "description": "DESIGN-010 stage 3b: the Post viewer's first card — the resolved lead description plus its labeled sections."
+  },
+  "directorOnlyBadge": "Director only",
+  "@directorOnlyBadge": {
+    "description": "DESIGN-010 stage 3b: small pill next to a role-gated section's heading in the Post viewer's rollup card, shown alongside directorNotesMd (only rendered at all when the settings role is director)."
+  },
+  "tapSectionToEditHint": "Tap a section to edit",
+  "@tapSectionToEditHint": {
+    "description": "DESIGN-010 stage 3b: hint under the Post viewer's rollup card, telling the author that tapping a resolved section jumps into that section of the station editor."
+  },
+  "stationTimingCardTitle": "Timing",
+  "@stationTimingCardTitle": {
+    "description": "DESIGN-010 stage 3b: the Post viewer's schedule card title — the per-team drill/eval/roll clock times for this station."
+  },
+  "roleActiveScheduleCardTitle": "When Active",
+  "@roleActiveScheduleCardTitle": {
+    "description": "DESIGN-010 stage 3b: the Spill viewer's schedule card title — the round(s) this roleplay's station is staffed by a team."
+  },
+
   "tokenMenuEmpty": "No matches",
   "@tokenMenuEmpty": {
     "description": "Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter."

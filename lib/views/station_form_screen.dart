@@ -66,6 +66,7 @@ class StationFormScreen extends StatefulWidget {
     this.variables = const <DrillVariable>[],
     this.parentExercise,
     this.roleplays = const <RolePlay>[],
+    this.initialSectionId,
   });
 
   final Station station;
@@ -92,6 +93,13 @@ class StationFormScreen extends StatefulWidget {
   /// `ProgramService.loadRolePlays()` by this station's index and its
   /// exercise's uuid.
   final List<RolePlay> roleplays;
+
+  /// Opens the editor scrolled/switched straight to this section id (one of
+  /// `_StationSection.values`' names, or `'station'` for the base section) —
+  /// DESIGN-010's Post viewer rollup card wires this so tapping a resolved
+  /// section jumps into that section rather than always opening on the
+  /// base section. Null (every other call site) keeps the base section.
+  final String? initialSectionId;
 
   @override
   State<StationFormScreen> createState() => _StationFormScreenState();
@@ -767,7 +775,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
             entityName: _nameController.text.trim().isNotEmpty
                 ? _nameController.text.trim()
                 : null,
-            initialSectionId: 'station',
+            initialSectionId: widget.initialSectionId ?? 'station',
             sections: [
               // Base section: structural fields (name, position, description).
               // The name field and PositionFormField are never preview

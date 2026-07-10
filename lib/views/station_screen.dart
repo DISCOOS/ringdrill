@@ -7,6 +7,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -23,10 +24,11 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
-import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
+import 'package:ringdrill/views/widgets/narrative_rollup_card.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 class StationExerciseScreen extends StatefulWidget {
@@ -50,6 +52,18 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   final _exerciseService = ExerciseService();
   final _subscribers = <StreamSubscription>[];
 
+  // DESIGN-010 stage 3b: the Postbeskrivelse card renders per the settings
+  // role (director sees the gated directorNotesMd section too), not an
+  // in-sheet toggle. Defaults to director (participants do not use the
+  // app) until the async load resolves, mirroring BriefScreen's own
+  // `_loadStoredRole` default/override pattern.
+  AppUserRole _role = AppUserRole.director;
+
+  Future<void> _loadStoredRole() async {
+    final role = await loadStoredAppUserRole();
+    if (mounted) setState(() => _role = role);
+  }
+
   /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
   /// optionally narrowed to [station]'s — the active plan's declared
   /// values overlaid by [exercise]'s overrides, then [station]'s. Empty
@@ -69,6 +83,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   void initState() {
     _exercise = _programService.getExercise(widget.uuid)!;
     _isStarted = _exerciseService.isStartedOn(_exercise.uuid);
+    _loadStoredRole();
 
     // Listen to ExerciseService state changes
     _subscribers.add(
@@ -285,87 +300,105 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     );
   }
 
-  /// Description + position + mini-map. Sized to its content (no
-  /// inner scrollable) so the outer SingleChildScrollView in [build]
-  /// owns the whole screen's scroll context.
-  ///
-  /// Uses the shared [StationPositionPanel] so the "Posisjon ... pin
-  /// coords" label row and the tap-to-open-bottom-sheet mini-map stay
-  /// consistent with the other station surfaces (coordinator screen
-  /// and the Stations tab).
+  /// Postbeskrivelse (rollup) + map cards. Sized to its content (no inner
+  /// scrollable) so the outer SingleChildScrollView in [build] owns the
+  /// whole screen's scroll context.
   Widget _buildStationInfo(Station station) {
-    final localizations = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildDescription(station, localizations),
-        // asCard: true — this page has no ambient card around the panel
-        // (unlike the ExpandableTile-body call sites), so the panel draws
-        // its own Card instead of a bare rounded thumbnail.
+        _buildPostDescriptionCard(station),
         Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: StationPositionPanel(
-            exercise: _exercise,
-            station: station,
-            asCard: true,
-            miniMapKey: ValueKey<String>(
-              'station-screen-map-${_exercise.uuid}-${station.index}',
-            ),
-          ),
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _buildMapCard(station),
         ),
       ],
     );
   }
 
-  Card _buildDescription(Station station, AppLocalizations localizations) {
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.description,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  // A Builder, not `this.context`: `build` wrapped the
-                  // Scaffold in ExerciseScope/StationScope, but that
-                  // ancestor is invisible to State.context, which sits
-                  // above it in the tree. Builder gets a context from
-                  // *inside* the returned subtree, so resolveScopedField
-                  // can actually see the two scopes and resolve
-                  // `{{station.position.utm}}` and friends instead of
-                  // leaving them literal.
-                  child: Builder(
-                    builder: (context) => SelectableText(
-                      station.description == null
-                          ? localizations.noDescription
-                          : resolveScopedField(
-                                  context,
-                                  station.description!,
-                                  overrides: _overridesFor(
-                                    _exercise,
-                                    station: station,
-                                  ),
-                                ) ??
-                                station.description!,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+  /// The rollup made concrete (DESIGN-010): the lead description then every
+  /// active labeled section, resolved and markdown-rendered, closing the
+  /// literal `{{station.position.utm}}` bug this stage started from.
+  /// `directorNotesMd` is the mockup's "Notat til øvelsesleder" — gated on
+  /// the settings role being director (a stricter gate than the brief's own
+  /// `BriefAudience.includesDirectorNotes`, which also includes instructor:
+  /// this is the author's own live planning note, not the printed brief).
+  /// Tapping a section opens the station editor scrolled straight to it.
+  Widget _buildPostDescriptionCard(Station station) {
+    final l10n = AppLocalizations.of(context)!;
+    final overrides = _overridesFor(_exercise, station: station);
+    return NarrativeRollupCard(
+      icon: Icons.description,
+      title: l10n.postDescriptionCardTitle,
+      leadText: station.description,
+      leadOverrides: overrides,
+      leadId: 'station',
+      sections: [
+        NarrativeSection(
+          id: 'equipment',
+          label: l10n.briefSectionStationEquipment,
+          text: station.equipmentMd,
+          overrides: overrides,
         ),
+        NarrativeSection(
+          id: 'situation',
+          label: l10n.briefSectionStationSituation,
+          text: station.situationMd,
+          overrides: overrides,
+        ),
+        NarrativeSection(
+          id: 'mission',
+          label: l10n.briefSectionStationMission,
+          text: station.missionMd,
+          overrides: overrides,
+        ),
+        NarrativeSection(
+          id: 'logistics',
+          label: l10n.briefSectionStationLogistics,
+          text: station.logisticsMd,
+          overrides: overrides,
+        ),
+        NarrativeSection(
+          id: 'criticalQuestions',
+          label: l10n.briefSectionStationCriticalQuestions,
+          text: station.criticalQuestionsMd,
+          overrides: overrides,
+        ),
+        NarrativeSection(
+          id: 'leaderAnswers',
+          label: l10n.briefSectionStationLeaderAnswers,
+          text: station.leaderAnswersMd,
+          overrides: overrides,
+        ),
+        if (_role == AppUserRole.director)
+          NarrativeSection(
+            id: 'directorNotes',
+            label: l10n.briefSectionStationDirectorNotes,
+            text: station.directorNotesMd,
+            overrides: overrides,
+            gated: true,
+          ),
+      ],
+      onTapSection: (id) => _editStation(context, initialSectionId: id),
+      showHint: true,
+    );
+  }
+
+  /// The scenario map card: the station's own position plus its DESIGN-009
+  /// `Location`s, styled by `LocationKind` (ADR-0020), with the legend slot
+  /// — richer than `StationPositionPanel`'s administrative-only default,
+  /// which every other station surface keeps.
+  Widget _buildMapCard(Station station) {
+    return StationPositionPanel(
+      exercise: _exercise,
+      station: station,
+      asCard: true,
+      miniMapKey: ValueKey<String>(
+        'station-screen-map-${_exercise.uuid}-${station.index}',
       ),
+      markers: stationScenarioMarkers(context, station),
+      legend: StationScenarioLegend(station: station),
     );
   }
 
@@ -761,8 +794,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     if (mounted) setState(() {});
   }
 
-  /// Function to handle editing the exercise
-  void _editStation(BuildContext context) async {
+  /// Function to handle editing the exercise. [initialSectionId] jumps the
+  /// editor straight to that section (DESIGN-010's rollup card tap-to-edit)
+  /// instead of always opening on the base section.
+  void _editStation(BuildContext context, {String? initialSectionId}) async {
     // Captured before the await: in compact layout openFormSurface dismisses
     // the hosting context sheet around the form push, which disposes this
     // State — the context is gone by the time the form pops. The save must
@@ -792,6 +827,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         variables: _programService.activeProgram?.variables ?? const [],
         parentExercise: _exercise,
         roleplays: roleplays,
+        initialSectionId: initialSectionId,
       ),
     );
     // The previous guard was `newStation != _exercise`, but those are

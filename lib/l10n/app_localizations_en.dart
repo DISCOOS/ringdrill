@@ -1982,6 +1982,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rollupEmptyPreview => 'Nothing to preview yet';
 
   @override
+  String get postDescriptionCardTitle => 'Post Description';
+
+  @override
+  String get directorOnlyBadge => 'Director only';
+
+  @override
+  String get tapSectionToEditHint => 'Tap a section to edit';
+
+  @override
+  String get stationTimingCardTitle => 'Timing';
+
+  @override
+  String get roleActiveScheduleCardTitle => 'When Active';
+
+  @override
   String get tokenMenuEmpty => 'No matches';
 
   @override

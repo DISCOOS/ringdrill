@@ -173,11 +173,7 @@ class PositionCard<K> extends StatelessWidget {
 
   Widget _buildCoordinate(ThemeData theme) {
     return position == null
-        ? Text(
-            emptyLabel ?? '',
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          )
+        ? Text(emptyLabel ?? '', overflow: TextOverflow.ellipsis, maxLines: 1)
         : PositionWidget(
             position: position,
             format: PositionFormat.utm,
@@ -203,6 +199,7 @@ class PositionCardShell extends StatelessWidget {
     this.thumbnail,
     this.thumbnailHeight = 120.0,
     this.overlayActions = const [],
+    this.legend,
     this.barLabel,
     required this.barChild,
     this.barTrailing,
@@ -212,14 +209,22 @@ class PositionCardShell extends StatelessWidget {
   final VoidCallback onTap;
 
   /// The mini-map (or placeholder) content. Null omits the whole
-  /// thumbnail section — and with it, [overlayActions], which have
-  /// nowhere to sit without a thumbnail to float over.
+  /// thumbnail section — and with it, [overlayActions] and [legend], which
+  /// have nowhere to sit without a thumbnail above them.
   final Widget? thumbnail;
   final double thumbnailHeight;
 
   /// Rendered top-right over [thumbnail] in a [Stack]. Ignored when
   /// [thumbnail] is null.
   final List<Widget> overlayActions;
+
+  /// A full-width strip between [thumbnail] and the coordinate bar — the
+  /// domain-agnostic slot for a map legend (DESIGN-010's Post/Spill
+  /// viewers: a wrapping row of colored dots + labels for the scenario
+  /// markers, ADR-0020), the same "extra content the caller owns, the
+  /// shell just reserves the spot" pattern as [overlayActions]. Ignored
+  /// when [thumbnail] is null (nothing to sit a legend under).
+  final Widget? legend;
 
   /// Optional leading label in the coordinate bar (e.g. "Position" on the
   /// read-only panels; the pick surfaces omit it — their label sits above
@@ -266,6 +271,16 @@ class PositionCardShell extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+        if (thumbnail != null && legend != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            child: legend!,
           ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

@@ -1,4 +1,6 @@
 import 'package:ringdrill/services/brief/brief_audience.dart';
+import 'package:ringdrill/utils/app_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// The role the person holding *this* device has in the exercise.
 ///
@@ -23,4 +25,17 @@ enum AppUserRole {
     AppUserRole.director => BriefAudience.director,
     AppUserRole.instructor => BriefAudience.instructor,
   };
+}
+
+/// Reads the stored [AppUserRole] preference, defaulting to [AppUserRole.director]
+/// when nothing is stored or the stored value is unrecognized — participants
+/// do not use the app, so director (full content) is the safe default,
+/// mirroring `BriefScreen._loadStoredRole`'s own default.
+Future<AppUserRole> loadStoredAppUserRole() async {
+  final prefs = await SharedPreferences.getInstance();
+  final roleStr = prefs.getString(AppConfig.keyAppUserRole);
+  final role = roleStr == null
+      ? null
+      : AppUserRole.values.where((r) => r.name == roleStr).firstOrNull;
+  return role ?? AppUserRole.director;
 }

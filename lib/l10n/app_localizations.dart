@@ -3392,6 +3392,36 @@ abstract class AppLocalizations {
   /// **'Nothing to preview yet'**
   String get rollupEmptyPreview;
 
+  /// DESIGN-010 stage 3b: the Post viewer's first card — the resolved lead description plus its labeled sections.
+  ///
+  /// In en, this message translates to:
+  /// **'Post Description'**
+  String get postDescriptionCardTitle;
+
+  /// DESIGN-010 stage 3b: small pill next to a role-gated section's heading in the Post viewer's rollup card, shown alongside directorNotesMd (only rendered at all when the settings role is director).
+  ///
+  /// In en, this message translates to:
+  /// **'Director only'**
+  String get directorOnlyBadge;
+
+  /// DESIGN-010 stage 3b: hint under the Post viewer's rollup card, telling the author that tapping a resolved section jumps into that section of the station editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a section to edit'**
+  String get tapSectionToEditHint;
+
+  /// DESIGN-010 stage 3b: the Post viewer's schedule card title — the per-team drill/eval/roll clock times for this station.
+  ///
+  /// In en, this message translates to:
+  /// **'Timing'**
+  String get stationTimingCardTitle;
+
+  /// DESIGN-010 stage 3b: the Spill viewer's schedule card title — the round(s) this roleplay's station is staffed by a team.
+  ///
+  /// In en, this message translates to:
+  /// **'When Active'**
+  String get roleActiveScheduleCardTitle;
+
   /// Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter.
   ///
   /// In en, this message translates to:
