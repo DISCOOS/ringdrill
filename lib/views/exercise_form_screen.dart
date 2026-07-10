@@ -340,11 +340,18 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
             child: form,
           );
 
+    // Forwards the ambient PlanScope's program facets (DESIGN-010) — this
+    // editor shadows PlanScope with its own (for the live variables list),
+    // which would otherwise strand {{program.name}} at null below here.
+    final ambientPlan = PlanScope.maybeOf(context);
+
     return PlanScope(
       // Declared variables plus anything created inline this session, so a
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
       variables: [...widget.variables, ..._pendingVariables],
+      programName: ambientPlan?.programName,
+      programDescription: ambientPlan?.programDescription,
       child: scoped,
     );
   }
@@ -639,9 +646,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       // An invalid typed override blocks save exactly as an unknown token
       // does (DESIGN-008 follow-up 11). State-level, not just the Form
       // validators: the Variabler section may not be the mounted one.
-      final declaredTypes = {
-        for (final v in widget.variables) v.name: v.type,
-      };
+      final declaredTypes = {for (final v in widget.variables) v.name: v.type};
       final invalidOverrides = [
         for (final entry in _workingOverrides.entries)
           if (!isVariableValueValid(

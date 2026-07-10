@@ -8,10 +8,12 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
-import 'package:ringdrill/utils/station_scenario_tokens.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart'
+    show stationScenarioTokenPattern;
 import 'package:ringdrill/utils/variable_values.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/plan_additions.dart';
@@ -510,12 +512,15 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// validated, only the slug (the renderer's facet switch already
   /// defaults, and the editor's chip logic keys on the slug too).
   Iterable<String> _unresolvedReferencesIn(String text) {
-    return stationScenarioTokenPattern.allMatches(text).where((m) {
-      final slug = m.group(2)!;
-      return m.group(1) == 'loc'
-          ? !_workingLocations.any((loc) => loc.slug == slug)
-          : !_workingPersons.any((p) => p.slug == slug);
-    }).map((m) => 'station.${m.group(1)}.${m.group(2)}');
+    return stationScenarioTokenPattern
+        .allMatches(text)
+        .where((m) {
+          final slug = m.group(2)!;
+          return m.group(1) == 'loc'
+              ? !_workingLocations.any((loc) => loc.slug == slug)
+              : !_workingPersons.any((p) => p.slug == slug);
+        })
+        .map((m) => 'station.${m.group(1)}.${m.group(2)}');
   }
 
   /// [_StationSection]s whose text has an unresolved scenario reference —
@@ -524,8 +529,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
     return [
       for (final section in _StationSection.values)
         if (_activeSections.contains(section) &&
-            _unresolvedReferencesIn(_sectionControllers[section]!.text)
-                .isNotEmpty)
+            _unresolvedReferencesIn(
+              _sectionControllers[section]!.text,
+            ).isNotEmpty)
           section,
     ];
   }
@@ -550,7 +556,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
     };
     for (final section in _StationSection.values) {
       if (_activeSections.contains(section)) {
-        refs.addAll(_unresolvedReferencesIn(_sectionControllers[section]!.text));
+        refs.addAll(
+          _unresolvedReferencesIn(_sectionControllers[section]!.text),
+        );
       }
     }
     return refs;
@@ -698,12 +706,18 @@ class _StationFormScreenState extends State<StationFormScreen> {
     ];
 
     final inherited = _inheritedAtExerciseScope;
+    // Forwards the ambient PlanScope's program facets (DESIGN-010) — this
+    // editor shadows PlanScope with its own (for the live variables list),
+    // which would otherwise strand {{program.name}} at null below here.
+    final ambientPlan = PlanScope.maybeOf(context);
 
     return PlanScope(
       // Declared variables plus anything created inline this session, so a
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
       variables: [...widget.variables, ..._pendingVariables],
+      programName: ambientPlan?.programName,
+      programDescription: ambientPlan?.programDescription,
       child: StationScope(
         // The station editor owns its locations/persons directly (unlike
         // the roleplay editor's linked-station copy), so it needs no
@@ -712,6 +726,17 @@ class _StationFormScreenState extends State<StationFormScreen> {
         // roleplay's fields might differ from the Person's (ADR-0047).
         locations: _workingLocations,
         persons: _workingPersons,
+        // This station's own cross-reference facets (DESIGN-010), read
+        // live from the same controllers/state the "structural" default
+        // section edits — so a {{station.name}} reference elsewhere
+        // previews the name as it is being typed, not just the last save.
+        // stationCode is left null (see StationScope's own doc comment):
+        // its brief value needs Program.stationNumberFormat and this
+        // exercise's number, neither available here.
+        name: _nameController.text.trim(),
+        description: _descriptionController.text,
+        variantSuffix: widget.station.variantSuffix,
+        positionUtm: _position == null ? null : formatUtm(_position),
         child: Form(
           key: _formKey,
           child: SectionNavigatedForm(
@@ -837,8 +862,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 initialValue: _position,
                 markers: markers,
                 onSaved: (position) => _position = position,
-                onChanged: (position) =>
-                    setState(() => _position = position),
+                onChanged: (position) => setState(() => _position = position),
               ),
               const SizedBox(height: 16),
               _descriptionRevealed
@@ -916,9 +940,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
       // An invalid typed override blocks save exactly as an unknown token
       // does (DESIGN-008 follow-up 11). State-level, not just the Form
       // validators: the Variabler section may not be the mounted one.
-      final declaredTypes = {
-        for (final v in widget.variables) v.name: v.type,
-      };
+      final declaredTypes = {for (final v in widget.variables) v.name: v.type};
       final invalidOverrides = [
         for (final entry in _workingOverrides.entries)
           if (!isVariableValueValid(

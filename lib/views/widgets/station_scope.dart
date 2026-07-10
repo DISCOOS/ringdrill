@@ -26,11 +26,43 @@ class StationScope extends InheritedWidget {
     required this.locations,
     required this.persons,
     this.portrayerOf,
+    this.name,
+    this.stationCode,
+    this.description,
+    this.variantSuffix,
+    this.positionUtm,
     required super.child,
   });
 
   final List<Location> locations;
   final List<Person> persons;
+
+  /// This station's own cross-reference facets (`station.*`, DESIGN-010's
+  /// resolve-context cascade — the same set `BriefRenderer`'s
+  /// `stationRefContext` builds) — carried alongside [locations]/[persons]
+  /// so a `{{station.name}}`/`{{station.position.utm}}` etc. reference
+  /// resolves in preview the same way it does in the brief. A null
+  /// [name]/[description]/[variantSuffix]/[positionUtm] resolves to an
+  /// empty string, exactly like the brief itself does for a null
+  /// `Station.variantSuffix` etc. — this is not a limitation, since a
+  /// present-but-null field never throws mustache's "missing" case, only a
+  /// genuinely absent `StationScope` (no key at all) does, which leaves
+  /// `{{station.*}}` literal (ADR-0048) the same way it would with no
+  /// station in scope server-side.
+  ///
+  /// [stationCode] is the one facet this scope cannot compute the same way:
+  /// its brief value needs the exercise's 1-based position in
+  /// `Program.exercises` and `Program.stationNumberFormat`, neither of
+  /// which any DESIGN-010 scope carries, and the brief itself never leaves
+  /// it null. Duplicating `Numbering.station`'s cascade here to recover
+  /// them would risk exactly the drift ADR-0048 exists to avoid, so
+  /// `{{station.stationCode}}` previews empty and only shows the real code
+  /// once the brief itself is generated.
+  final String? name;
+  final String? stationCode;
+  final String? description;
+  final String? variantSuffix;
+  final String? positionUtm;
 
   /// Given a person's slug, returns the effective-identity source that
   /// overrides that [Person]'s own fields (ADR-0047) — e.g. the currently
@@ -99,7 +131,12 @@ class StationScope extends InheritedWidget {
   @override
   bool updateShouldNotify(StationScope oldWidget) =>
       !listEquals(locations, oldWidget.locations) ||
-      !listEquals(persons, oldWidget.persons);
+      !listEquals(persons, oldWidget.persons) ||
+      name != oldWidget.name ||
+      stationCode != oldWidget.stationCode ||
+      description != oldWidget.description ||
+      variantSuffix != oldWidget.variantSuffix ||
+      positionUtm != oldWidget.positionUtm;
 }
 
 T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {

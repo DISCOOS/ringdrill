@@ -25,6 +25,13 @@ import 'package:ringdrill/services/brief/brief_audience.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' as resolver;
 import 'package:ringdrill/services/brief/template_registry.dart';
 import 'package:ringdrill/utils/exercise_share_format.dart';
+// Aliased alongside the unprefixed import above: exerciseTimeLabel/
+// exerciseDurationLabel share a name with BriefRenderer's own
+// @visibleForTesting static wrappers of the same name, so an unqualified
+// call from inside the class body would resolve to the static method
+// itself (infinite self-recursion) rather than this shared util —
+// mirrors field_resolver.dart's `as resolver` import for the same reason.
+import 'package:ringdrill/utils/exercise_share_format.dart' as exercise_format;
 import 'package:ringdrill/utils/plan_variables.dart';
 
 /// Thrown when a brief template asset cannot be loaded from the bundle.
@@ -215,8 +222,11 @@ class BriefRenderer {
       'name': exerciseName,
       'exerciseNumber': exNum,
       'exerciseAnchor': exerciseAnchor,
-      'exerciseTimeLabel': _exerciseTimeLabel(exercise),
-      'exerciseDurationLabel': _exerciseDurationLabel(exercise, l10n),
+      'exerciseTimeLabel': exercise_format.exerciseTimeLabel(exercise),
+      'exerciseDurationLabel': exercise_format.exerciseDurationLabel(
+        exercise,
+        l10n,
+      ),
       'methodMd': resolver.resolveField(
         exercise.methodMd,
         vars: exerciseVars,
@@ -404,7 +414,7 @@ class BriefRenderer {
   /// "Tid" in copy is reserved for clock-time, never duration.
   @visibleForTesting
   static String exerciseTimeLabel(Exercise exercise) =>
-      _exerciseTimeLabel(exercise);
+      exercise_format.exerciseTimeLabel(exercise);
 
   /// Total duration plus per-round breakdown for the exercise.
   /// Examples: "2 timer (60 min pr oppdrag)", "90 min (30 min pr oppdrag)".
@@ -412,7 +422,7 @@ class BriefRenderer {
   static String exerciseDurationLabel(
     Exercise exercise,
     AppLocalizations l10n,
-  ) => _exerciseDurationLabel(exercise, l10n);
+  ) => exercise_format.exerciseDurationLabel(exercise, l10n);
 
   /// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
   @visibleForTesting
@@ -509,31 +519,9 @@ int _exerciseNumber(Program program, Exercise exercise) {
   return idx < 0 ? 1 : idx + 1;
 }
 
-/// Clock-time span for the exercise: "08:30–10:30".
-/// "Tid" in copy is reserved for clock-time, never duration.
-String _exerciseTimeLabel(Exercise exercise) {
-  return '${exercise.startTime}–${exercise.endTime}';
-}
-
-/// Total duration with per-round breakdown.
-/// "2 timer (60 min pr oppdrag)" when total is a whole number of hours,
-/// "90 min (30 min pr oppdrag)" otherwise. Single-round exercises show
-/// just the total without the per-round suffix.
-String _exerciseDurationLabel(Exercise exercise, AppLocalizations l10n) {
-  final round =
-      exercise.executionTime + exercise.evaluationTime + exercise.rotationTime;
-  final total = exercise.numberOfRounds * round;
-  final totalStr = (total >= 60 && total % 60 == 0)
-      ? l10n.hour(total ~/ 60)
-      : '$total min';
-  if (exercise.numberOfRounds <= 1) return totalStr;
-  return '$totalStr ($round min ${l10n.briefPerStation})';
-}
-
 /// Per-round duration with phase breakdown for a station: "30 min (15 | 10 | 5)".
 String _stationDurationLabel(Exercise exercise) {
-  final round =
-      exercise.executionTime + exercise.evaluationTime + exercise.rotationTime;
+  final round = rotationRoundMinutes(exercise);
   return '$round min (${rotationPhaseBreakdown(exercise)})';
 }
 
@@ -611,8 +599,8 @@ Map<String, dynamic> _exerciseRefContext(
     'numberOfRounds': exercise.numberOfRounds,
     'startTime': exercise.startTime.toString(),
     'endTime': exercise.endTime.toString(),
-    'timeLabel': _exerciseTimeLabel(exercise),
-    'durationLabel': _exerciseDurationLabel(exercise, l10n),
+    'timeLabel': exerciseTimeLabel(exercise),
+    'durationLabel': exerciseDurationLabel(exercise, l10n),
     'executionTime': exercise.executionTime,
     'evaluationTime': exercise.evaluationTime,
     'rotationTime': exercise.rotationTime,

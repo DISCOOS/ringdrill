@@ -419,6 +419,12 @@ class _ProgramFormScreenState extends State<ProgramFormScreen> {
     // (Stages 4-5's approach before PlanScope existed).
     return PlanScope(
       variables: _variables,
+      // This editor edits program.name/description directly (DESIGN-010):
+      // its own live controllers are the program facets, not the ambient
+      // PlanScope's last-saved ones, so a {{program.name}} reference in
+      // e.g. briefIntroMd previews the name as it is currently being typed.
+      programName: _nameController.text,
+      programDescription: _descriptionController.text,
       child: Form(
         key: _formKey,
         child: SectionNavigatedForm(

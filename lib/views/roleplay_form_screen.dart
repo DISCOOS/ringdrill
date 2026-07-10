@@ -9,10 +9,12 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
-import 'package:ringdrill/utils/station_scenario_tokens.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart'
+    show EffectivePersonIdentity, stationScenarioTokenPattern;
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/position_widget.dart';
@@ -396,7 +398,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// plain pick-one dialog over [_workingPersons], since
   /// `DropdownButtonFormField`'s own menu can't host the header's
   /// multi-line summary in its closed state (see [_buildIdentityCard]).
-  Future<void> _showPersonPicker(BuildContext context, AppLocalizations l) async {
+  Future<void> _showPersonPicker(
+    BuildContext context,
+    AppLocalizations l,
+  ) async {
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
@@ -591,12 +596,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// below reads. Mirrors `StationFormScreen`'s own copy of this check.
   /// Facet paths are not validated, only the slug.
   Iterable<String> _unresolvedReferencesIn(String text) {
-    return stationScenarioTokenPattern.allMatches(text).where((m) {
-      final slug = m.group(2)!;
-      return m.group(1) == 'loc'
-          ? !_workingLocations.any((loc) => loc.slug == slug)
-          : !_workingPersons.any((p) => p.slug == slug);
-    }).map((m) => 'station.${m.group(1)}.${m.group(2)}');
+    return stationScenarioTokenPattern
+        .allMatches(text)
+        .where((m) {
+          final slug = m.group(2)!;
+          return m.group(1) == 'loc'
+              ? !_workingLocations.any((loc) => loc.slug == slug)
+              : !_workingPersons.any((p) => p.slug == slug);
+        })
+        .map((m) => 'station.${m.group(1)}.${m.group(2)}');
   }
 
   /// Whether the name field has an unresolved scenario reference — mirrors
@@ -723,11 +731,19 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           ),
     ];
 
+    // Forwards the ambient PlanScope's program facets (DESIGN-010) — this
+    // editor shadows PlanScope with its own (for the live variables list),
+    // which would otherwise strand {{program.name}} at null below here.
+    final ambientPlan = PlanScope.maybeOf(context);
+    final parentStation = _parentStation;
+
     return PlanScope(
       // Declared variables plus anything created inline this session, so a
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
       variables: [...widget.variables, ..._pendingVariables],
+      programName: ambientPlan?.programName,
+      programDescription: ambientPlan?.programDescription,
       // The linked station's own locations/persons, plus anything created
       // inline this session (ADR-0047, DESIGN-009 follow-up 4) — a
       // roleplay does not own a station's collections, so it always reads
@@ -740,6 +756,16 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         locations: _workingLocations,
         persons: _workingPersons,
         portrayerOf: _portrayerOf,
+        // The parent station's own facets (DESIGN-010) — the last-saved
+        // Station this roleplay is linked to, not live (this editor does
+        // not own the station's own fields; see ExerciseScope's own
+        // "reflects the last save" note in DESIGN-010 stage 1).
+        name: parentStation?.name,
+        description: parentStation?.description,
+        variantSuffix: parentStation?.variantSuffix,
+        positionUtm: parentStation?.position == null
+            ? null
+            : formatUtm(parentStation!.position),
         child: Form(
           key: _formKey,
           child: SectionNavigatedForm(
@@ -1210,8 +1236,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                         label: l.roleGender,
                         field: GenderSegmentedControl(
                           value: _gender,
-                          onChanged: (value) =>
-                              setState(() => _gender = value),
+                          onChanged: (value) => setState(() => _gender = value),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1256,10 +1281,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                                   const SizedBox(width: 3),
                                   Text(
                                     l.rolePlayIdentityResetAction,
-                                    style: theme.textTheme.labelSmall
-                                        ?.copyWith(
-                                          color: theme.colorScheme.primary,
-                                        ),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1362,8 +1386,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                   key: const Key('position-disclosure'),
                   onTap: () => setState(() => _positionExpanded = true),
                   child: Container(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 9,
@@ -1464,10 +1489,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         person != null && !_isInherited(_nameController.text, person.name);
     final age = int.tryParse(_ageController.text.trim());
     final genderLabel = genderLabelFor(_gender, l);
-    final metaParts = [
-      if (age != null) l.rolePlayAgeYears(age),
-      ?genderLabel,
-    ];
+    final metaParts = [if (age != null) l.rolePlayAgeYears(age), ?genderLabel];
     final signalementText = _signalementController.text.trim();
     final displayName = _nameController.text.trim();
 

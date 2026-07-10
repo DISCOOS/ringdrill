@@ -107,6 +107,11 @@ WidgetBuilder _reprovideScopes(
         locations: stationScope.locations,
         persons: stationScope.persons,
         portrayerOf: stationScope.portrayerOf,
+        name: stationScope.name,
+        stationCode: stationScope.stationCode,
+        description: stationScope.description,
+        variantSuffix: stationScope.variantSuffix,
+        positionUtm: stationScope.positionUtm,
         child: child,
       );
     }

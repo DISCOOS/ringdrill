@@ -47,6 +47,36 @@ String rotationPhaseBreakdown(Exercise exercise) =>
     '${exercise.evaluationTime} | '
     '${exercise.rotationTime}';
 
+/// Clock-time span for [exercise]: "08:30–10:30". "Tid" in copy is reserved
+/// for clock-time, never duration. Shared by `BriefRenderer` (the
+/// `{{exercise.timeLabel}}` brief facet) and DESIGN-010's view-layer field
+/// resolution, so both read the same string — see `rotationPhaseBreakdown`
+/// above for the same one-function-two-callers shape.
+String exerciseTimeLabel(Exercise exercise) =>
+    '${exercise.startTime}–${exercise.endTime}';
+
+/// Total duration with per-round breakdown for [exercise].
+/// "2 timer (60 min pr oppdrag)" when total is a whole number of hours,
+/// "90 min (30 min pr oppdrag)" otherwise. Single-round exercises show
+/// just the total without the per-round suffix. Shared by `BriefRenderer`
+/// (`{{exercise.durationLabel}}`) and DESIGN-010's view-layer resolution.
+String exerciseDurationLabel(Exercise exercise, AppLocalizations l10n) {
+  final round = rotationRoundMinutes(exercise);
+  final total = exercise.numberOfRounds * round;
+  final totalStr = (total >= 60 && total % 60 == 0)
+      ? l10n.hour(total ~/ 60)
+      : '$total min';
+  if (exercise.numberOfRounds <= 1) return totalStr;
+  return '$totalStr ($round min ${l10n.briefPerStation})';
+}
+
+/// Sum of one round's three phases (execution + evaluation + rotation), in
+/// minutes — the repeated `executionTime + evaluationTime + rotationTime`
+/// expression `exerciseDurationLabel` and `BriefRenderer._stationDurationLabel`
+/// both need.
+int rotationRoundMinutes(Exercise exercise) =>
+    exercise.executionTime + exercise.evaluationTime + exercise.rotationTime;
+
 /// Formats [exercise] as a single multi-line string suitable for pasting
 /// into chat clients like Slack, Microsoft Teams or Messenger.
 ///
