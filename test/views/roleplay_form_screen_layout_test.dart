@@ -79,9 +79,7 @@ void main() {
     final identityTop = tester
         .getTopLeft(find.byKey(const Key('person-field')))
         .dy;
-    final positionTop = tester
-        .getTopLeft(find.byType(PositionFormField))
-        .dy;
+    final positionTop = tester.getTopLeft(find.byType(PositionFormField)).dy;
 
     expect(postTop, lessThan(identityTop));
     expect(identityTop, lessThan(positionTop));
@@ -137,33 +135,30 @@ void main() {
     },
   );
 
-  testWidgets(
-    'no "Følger person(en)" text anywhere, in nb — collapsed, panel '
-    'expanded, or with an override',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('nb'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: RolePlayFormScreen(rolePlay: _rolePlay(), exercise: _exercise()),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Følger'), findsNothing);
+  testWidgets('no "Følger person(en)" text anywhere, in nb — collapsed, panel '
+      'expanded, or with an override', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('nb'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: RolePlayFormScreen(rolePlay: _rolePlay(), exercise: _exercise()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Følger'), findsNothing);
 
-      await tester.tap(find.byKey(const Key('identity-disclosure')));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Følger'), findsNothing);
+    await tester.tap(find.byKey(const Key('identity-disclosure')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Følger'), findsNothing);
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Anne Glemsk'),
-        'Kari',
-      );
-      await tester.pump();
-      expect(find.textContaining('Følger'), findsNothing);
-    },
-  );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Anne Glemsk'),
+      'Kari',
+    );
+    await tester.pump();
+    expect(find.textContaining('Følger'), findsNothing);
+  });
 
   testWidgets(
     'no "Følger personens lokasjon" text on the position card, in nb — the '
@@ -173,9 +168,15 @@ void main() {
         index: 0,
         name: 'Post 1',
         locations: const [
-          Location(slug: 'lkp', label: 'Bosted', position: LatLng(58.99, 10.43)),
+          Location(
+            slug: 'lkp',
+            label: 'Bosted',
+            position: LatLng(58.99, 10.43),
+          ),
         ],
-        persons: const [Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp')],
+        persons: const [
+          Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp'),
+        ],
       );
       final exercise = _exercise().copyWith(stations: [station]);
       await tester.pumpWidget(
@@ -191,6 +192,21 @@ void main() {
       expect(find.text('Bosted'), findsOneWidget);
       expect(find.byKey(const Key('position-disclosure')), findsOneWidget);
       expect(find.textContaining('Følger'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'the Post card row and the identity "Tilpass" disclosure row (collapsed) '
+    'do not overflow at narrow (compact) widths',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _open(tester);
+
+      expect(find.byKey(const Key('station-field')), findsOneWidget);
+      expect(find.byKey(const Key('identity-disclosure')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 }

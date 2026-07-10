@@ -1083,10 +1083,18 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      l.rolePlayPostEditAction,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.primary,
+                    // Flexible (not a bare Text): at narrow widths the
+                    // station name above already yields to ellipsis first,
+                    // but this label's own fixed width could still overflow
+                    // the row on its own — shrink-with-ellipsis instead.
+                    Flexible(
+                      child: Text(
+                        l.rolePlayPostEditAction,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -1200,10 +1208,18 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                             : theme.colorScheme.primary,
                       ),
                       const Expanded(child: SizedBox.shrink()),
-                      Text(
-                        l.rolePlayIdentityCustomizeAction,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
+                      // Flexible (not a bare Text): at narrow widths the
+                      // leading icon + this label + the trailing chevron
+                      // can together exceed the row's width — shrink with
+                      // ellipsis rather than overflow.
+                      Flexible(
+                        child: Text(
+                          l.rolePlayIdentityCustomizeAction,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
