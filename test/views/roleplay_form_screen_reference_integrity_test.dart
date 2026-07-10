@@ -131,7 +131,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(captured.value, isNull);
 
-    await tester.tap(find.text(l.roleBehavior));
+    // The failed save now also shows a broken-reference warning chip
+    // labeled "Behaviour" (ADR-0049 follow-up), so `find.text(l.roleBehavior)`
+    // alone is ambiguous — it also matches the chip. Scope to the section
+    // rail's own ListTile (the chip has no ListTile ancestor), same
+    // disambiguation `roleplay_form_screen_relink_test.dart` already uses.
+    await tester.tap(
+      find.ancestor(
+        of: find.text(l.roleBehavior),
+        matching: find.byType(ListTile),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, l.roleBehavior),
