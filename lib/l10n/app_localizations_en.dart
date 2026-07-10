@@ -1854,9 +1854,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pickExerciseForRole => 'Select exercise';
 
   @override
-  String get exercisePickerTitle => 'Switch exercise';
-
-  @override
   String get detailEmptyTeam => 'Select a team';
 
   @override

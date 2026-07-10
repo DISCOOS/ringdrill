@@ -1851,9 +1851,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pickExerciseForRole => 'Velg øvelse';
 
   @override
-  String get exercisePickerTitle => 'Bytt øvelse';
-
-  @override
   String get detailEmptyTeam => 'Velg et lag';
 
   @override
