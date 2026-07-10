@@ -1027,6 +1027,14 @@
   "@formSectionNext": {
     "description": "Verktøytips på DESIGN-008 SectionNavigatedForm sin neste-seksjon-pil. Deaktivert på den siste aktive seksjonen."
   },
+  "formSectionPreviewAction": "Forhåndsvis",
+  "@formSectionPreviewAction": {
+    "description": "DESIGN-010 SectionNavigatedForm AppBar-verktøytips vist mens en forhåndsvisbar seksjon er i redigerbar (chip) tilstand — trykk bytter til den resolverte markdown-forhåndsvisningen."
+  },
+  "formSectionEditAction": "Rediger",
+  "@formSectionEditAction": {
+    "description": "DESIGN-010 SectionNavigatedForm AppBar-verktøytips vist mens en forhåndsvisbar seksjon viser sin resolverte markdown-forhåndsvisning — trykk bytter tilbake til redigerbar (chip) tilstand."
+  },
 
   "tokenMenuEmpty": "Ingen treff",
   "@tokenMenuEmpty": {

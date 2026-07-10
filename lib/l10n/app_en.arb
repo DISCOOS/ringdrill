@@ -1994,6 +1994,14 @@
   "@formSectionNext": {
     "description": "Tooltip on DESIGN-008 SectionNavigatedForm's next-section arrow. Disabled on the last active section."
   },
+  "formSectionPreviewAction": "Preview",
+  "@formSectionPreviewAction": {
+    "description": "DESIGN-010 SectionNavigatedForm AppBar toggle tooltip shown while a previewable section is in its editable (chip) state — tapping switches it to the resolved-markdown preview."
+  },
+  "formSectionEditAction": "Edit",
+  "@formSectionEditAction": {
+    "description": "DESIGN-010 SectionNavigatedForm AppBar toggle tooltip shown while a previewable section is showing its resolved-markdown preview — tapping switches it back to the editable (chip) state."
+  },
 
   "tokenMenuEmpty": "No matches",
   "@tokenMenuEmpty": {

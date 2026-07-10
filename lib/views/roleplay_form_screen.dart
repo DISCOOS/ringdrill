@@ -105,6 +105,20 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   final _propsFocus = FocusNode();
 
   late Set<_MdSection> _activeMdSections;
+
+  /// Section ids currently showing their resolved-markdown preview
+  /// (DESIGN-010) rather than the editable chip field — remembered for the
+  /// session, per section, not editor-wide (DESIGN-010's settled decisions).
+  final Set<String> _previewSections = {};
+
+  void _togglePreview(String sectionId, bool preview) => setState(() {
+    if (preview) {
+      _previewSections.add(sectionId);
+    } else {
+      _previewSections.remove(sectionId);
+    }
+  });
+
   int? _stationIndex;
   // Tracks the current position; updated by PositionFormField.onSaved
   late RolePlay _rolePlay;
@@ -213,6 +227,21 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     }
     return vars;
   }
+
+  /// This roleplay's own `roleplay.*` cross-reference facets (DESIGN-010),
+  /// read live from the same controllers the "Rolle" default section edits
+  /// — so a `{{roleplay.name}}` reference in e.g. `background` previews the
+  /// identity as it is currently being typed, not just the last save.
+  /// Folded directly into `resolveScopedField`'s context (via
+  /// `RingDrillTextArea.roleplayFacets`) rather than a scope — small enough,
+  /// and only this roleplay's own fields ever need it (DESIGN-010's "The
+  /// resolve-context cascade").
+  Map<String, dynamic> get _roleplayFacets => {
+    'name': _nameController.text,
+    'age': int.tryParse(_ageController.text.trim()),
+    'signalement': _signalementController.text,
+    'position': {'utm': _position == null ? '' : formatUtm(_position)},
+  };
 
   @override
   void initState() {
@@ -687,6 +716,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
             label: _mdLabelFor(section, l),
             icon: Icons.description_outlined,
             removable: true,
+            preview: _previewSections.contains(section.name),
+            onPreviewChanged: (value) => _togglePreview(section.name, value),
             builder: (_) => Padding(
               key: ValueKey(section.name),
               padding: const EdgeInsets.all(16),
@@ -698,6 +729,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       focusNode: _mdFocusFor(section),
                       label: _mdLabelFor(section, l),
                       expands: true,
+                      preview: _previewSections.contains(section.name),
+                      roleplayFacets: _roleplayFacets,
                       tokenAware: true,
                       overrides: _effectiveVariables,
                       planFields: planFields,

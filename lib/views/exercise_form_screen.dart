@@ -114,6 +114,19 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   };
   final Set<_ExerciseSection> _activeSections = {};
 
+  /// Section ids currently showing their resolved-markdown preview
+  /// (DESIGN-010) rather than the editable chip field — remembered for the
+  /// session, per section, not editor-wide (DESIGN-010's settled decisions).
+  final Set<String> _previewSections = {};
+
+  void _togglePreview(String sectionId, bool preview) => setState(() {
+    if (preview) {
+      _previewSections.add(sectionId);
+    } else {
+      _previewSections.remove(sectionId);
+    }
+  });
+
   /// Working copy of `exercise.variableOverrides` (DESIGN-008 follow-up 06),
   /// edited by [VariableOverridesSection] and read by [_saveExercise].
   late Map<String, String> _workingOverrides;
@@ -235,6 +248,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
             label: _labelFor(section, l),
             icon: Icons.description_outlined,
             removable: true,
+            preview: _previewSections.contains(section.name),
+            onPreviewChanged: (value) => _togglePreview(section.name, value),
             // Keyed by section so switching sections always mounts a fresh
             // field — see ProgramFormScreen's identical reasoning.
             builder: (_) => Padding(
@@ -253,6 +268,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       tokenAware: true,
                       overrides: _workingOverrides,
                       planFields: planFields,
+                      preview: _previewSections.contains(section.name),
                       // An Exercise cannot declare a plan variable itself
                       // (DESIGN-008 follow-up 06's settled scope), but can
                       // now create one inline for the write-back

@@ -16,6 +16,8 @@ class FormSection {
     required this.icon,
     required this.builder,
     this.removable = false,
+    this.preview,
+    this.onPreviewChanged,
   });
 
   final String id;
@@ -23,6 +25,23 @@ class FormSection {
   final IconData icon;
   final WidgetBuilder builder;
   final bool removable;
+
+  /// Whether this section is currently showing its resolved-markdown
+  /// preview instead of the editable field (DESIGN-010). Null — the
+  /// default — means this section has no single previewable field (the
+  /// default/structural section, Variables, Locations/Persons): the
+  /// [SectionNavigatedForm] preview toggle is disabled rather than hidden
+  /// for it, matching this widget's existing "always render, disable"
+  /// convention for the removable-section overflow action (avoids the
+  /// `AppBar.actions` row visibly resizing on every section switch).
+  final bool? preview;
+
+  /// Notified with the new preview state when the author taps the toggle.
+  /// Non-null exactly when [preview] is non-null — the caller (an entity
+  /// editor) owns which section id is currently previewing, remembered for
+  /// the session, and passes the same bool back into the markdown field's
+  /// own `preview` param so the toggle and the field body agree.
+  final ValueChanged<bool>? onPreviewChanged;
 }
 
 /// Shared DESIGN-008 section-navigated editor shell: a dropdown switcher on
@@ -167,12 +186,31 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
         // the author always sees which entity they are editing — the base
         // section keeps [title] since that is where the name is edited.
         title: Text(
-          widget.entityName != null &&
-                  current.id != widget.sections.first.id
+          widget.entityName != null && current.id != widget.sections.first.id
               ? widget.entityName!
               : widget.title,
         ),
         actions: [
+          // Always rendered, disabled via `onPressed: null` when the current
+          // section has no preview state — never conditionally mounted, for
+          // the same reason `_CompactBottomBar`'s overflow action is: a
+          // fixed-width `AppBar.actions` icon appearing/disappearing on
+          // every section switch would make the flexible title visibly jump.
+          IconButton(
+            icon: Icon(
+              current.preview == true
+                  ? Icons.edit_outlined
+                  : Icons.visibility_outlined,
+            ),
+            tooltip: current.preview == null
+                ? null
+                : (current.preview!
+                      ? l10n.formSectionEditAction
+                      : l10n.formSectionPreviewAction),
+            onPressed: current.preview == null
+                ? null
+                : () => current.onPreviewChanged!(!current.preview!),
+          ),
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 16),
             child: ElevatedButton(

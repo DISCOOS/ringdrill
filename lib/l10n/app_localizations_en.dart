@@ -1975,6 +1975,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get formSectionNext => 'Next section';
 
   @override
+  String get formSectionPreviewAction => 'Preview';
+
+  @override
+  String get formSectionEditAction => 'Edit';
+
+  @override
   String get tokenMenuEmpty => 'No matches';
 
   @override

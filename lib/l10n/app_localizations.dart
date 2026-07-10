@@ -3374,6 +3374,18 @@ abstract class AppLocalizations {
   /// **'Next section'**
   String get formSectionNext;
 
+  /// DESIGN-010 SectionNavigatedForm AppBar toggle tooltip shown while a previewable section is in its editable (chip) state — tapping switches it to the resolved-markdown preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get formSectionPreviewAction;
+
+  /// DESIGN-010 SectionNavigatedForm AppBar toggle tooltip shown while a previewable section is showing its resolved-markdown preview — tapping switches it back to the editable (chip) state.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get formSectionEditAction;
+
   /// Empty-state text in the DESIGN-008 Stage 4 token insertion menu (the `/` command menu and `{{` autocomplete) when no variable or plan field matches the typed filter.
   ///
   /// In en, this message translates to:

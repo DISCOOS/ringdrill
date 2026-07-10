@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/variable_values.dart';
+import 'package:ringdrill/views/widgets/brief_markdown.dart';
+import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_insertion_menu.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
@@ -89,6 +94,78 @@ Widget _wrapTokenAware({
   );
 }
 
+/// The DESIGN-010 per-section preview toggle's shared primitive: listens to
+/// [controller], debounces its changes (resolution is cheap string work, but
+/// re-resolving on every keystroke synchronously is still wasted work while
+/// the author is mid-edit), and rebuilds so [builder] always renders the
+/// latest [resolveScopedField] result for [controller]'s current text. Used
+/// by both [RingDrillTextArea] (renders via [BriefMarkdown]) and
+/// [RingDrillTextField] (renders plain resolved `Text`) so the two share one
+/// listen-debounce-resolve path rather than each reimplementing it.
+class _ResolvedFieldPreview extends StatefulWidget {
+  const _ResolvedFieldPreview({
+    required this.controller,
+    required this.overrides,
+    this.roleplayFacets,
+    required this.builder,
+  });
+
+  final TextEditingController controller;
+  final Map<String, String> overrides;
+  final Map<String, dynamic>? roleplayFacets;
+  final Widget Function(BuildContext context, String resolved) builder;
+
+  @override
+  State<_ResolvedFieldPreview> createState() => _ResolvedFieldPreviewState();
+}
+
+class _ResolvedFieldPreviewState extends State<_ResolvedFieldPreview> {
+  static const _debounceDelay = Duration(milliseconds: 200);
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_scheduleRebuild);
+  }
+
+  @override
+  void didUpdateWidget(_ResolvedFieldPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_scheduleRebuild);
+      widget.controller.addListener(_scheduleRebuild);
+    }
+  }
+
+  void _scheduleRebuild() {
+    _debounce?.cancel();
+    _debounce = Timer(_debounceDelay, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    widget.controller.removeListener(_scheduleRebuild);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved =
+        resolveScopedField(
+          context,
+          widget.controller.text,
+          overrides: widget.overrides,
+          roleplayFacets: widget.roleplayFacets,
+        ) ??
+        '';
+    return widget.builder(context, resolved);
+  }
+}
+
 /// Single-line counterpart to [RingDrillTextArea] — same token-aware
 /// behavior, shared with it via [_wrapTokenAware], for name/description-like
 /// fields. First wired to a call site in DESIGN-008 follow-up 09: every
@@ -110,6 +187,8 @@ class RingDrillTextField extends StatefulWidget {
     this.hintText,
     this.onChanged,
     this.showLabel = true,
+    this.preview = false,
+    this.roleplayFacets,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -160,6 +239,18 @@ class RingDrillTextField extends StatefulWidget {
   /// Placeholder shown while the field is empty, e.g. a name's example text.
   final String? hintText;
 
+  /// DESIGN-010: when true, renders [controller]'s text resolved (via
+  /// [resolveScopedField]) as read-only `Text` instead of the editable
+  /// field — the per-section preview toggle's single-line counterpart to
+  /// [RingDrillTextArea]'s [BriefMarkdown] rendering. Ignored when
+  /// [tokenAware] is false (a plain field has nothing to resolve).
+  final bool preview;
+
+  /// This roleplay's own `roleplay.*` facets, folded into the preview's
+  /// resolution context — see `resolveScopedField`'s own doc comment. Only
+  /// the roleplay editor ever sets this.
+  final Map<String, dynamic>? roleplayFacets;
+
   @override
   State<RingDrillTextField> createState() => _RingDrillTextFieldState();
 }
@@ -178,6 +269,17 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.tokenAware && widget.preview) {
+      return _ResolvedFieldPreview(
+        controller: widget.controller,
+        overrides: widget.overrides,
+        roleplayFacets: widget.roleplayFacets,
+        builder: (context, resolved) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(resolved, style: Theme.of(context).textTheme.bodyLarge),
+        ),
+      );
+    }
     final field = TextFormField(
       controller: widget.controller,
       focusNode: widget.tokenAware ? _focusNode : widget.focusNode,
@@ -241,6 +343,8 @@ class RingDrillTextArea extends StatefulWidget {
     this.onCreatePerson,
     this.hintText,
     this.hintMaxLines,
+    this.preview = false,
+    this.roleplayFacets,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -285,6 +389,17 @@ class RingDrillTextArea extends StatefulWidget {
   final String Function(String label)? onCreateLocation;
   final String Function(String label)? onCreatePerson;
 
+  /// DESIGN-010: when true, renders [controller]'s text resolved (via
+  /// [resolveScopedField]) via [BriefMarkdown] instead of the editable
+  /// field — the per-section preview toggle. Ignored when [tokenAware] is
+  /// false.
+  final bool preview;
+
+  /// This roleplay's own `roleplay.*` facets, folded into the preview's
+  /// resolution context — see `resolveScopedField`'s own doc comment. Only
+  /// the roleplay editor ever sets this.
+  final Map<String, dynamic>? roleplayFacets;
+
   @override
   State<RingDrillTextArea> createState() => _RingDrillTextAreaState();
 }
@@ -292,17 +407,38 @@ class RingDrillTextArea extends StatefulWidget {
 class _RingDrillTextAreaState extends State<RingDrillTextArea> {
   FocusNode? _ownedFocusNode;
 
+  /// Created lazily on first preview — most fields never preview, so most
+  /// instances never need one.
+  BriefMarkdownController? _previewController;
+
   FocusNode get _focusNode =>
       widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
 
   @override
   void dispose() {
     _ownedFocusNode?.dispose();
+    _previewController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.tokenAware && widget.preview) {
+      final previewController = _previewController ??=
+          BriefMarkdownController();
+      return _ResolvedFieldPreview(
+        controller: widget.controller,
+        overrides: widget.overrides,
+        roleplayFacets: widget.roleplayFacets,
+        builder: (context, resolved) => resolved.isEmpty
+            ? const SizedBox.shrink()
+            : BriefMarkdown(
+                data: resolved,
+                theme: BriefTheme.of(context),
+                controller: previewController,
+              ),
+      );
+    }
     final field = TextFormField(
       controller: widget.controller,
       focusNode: widget.tokenAware ? _focusNode : widget.focusNode,

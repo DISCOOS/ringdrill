@@ -130,6 +130,19 @@ class _StationFormScreenState extends State<StationFormScreen> {
   };
   final Set<_StationSection> _activeSections = {};
 
+  /// Section ids currently showing their resolved-markdown preview
+  /// (DESIGN-010) rather than the editable chip field — remembered for the
+  /// session, per section, not editor-wide (DESIGN-010's settled decisions).
+  final Set<String> _previewSections = {};
+
+  void _togglePreview(String sectionId, bool preview) => setState(() {
+    if (preview) {
+      _previewSections.add(sectionId);
+    } else {
+      _previewSections.remove(sectionId);
+    }
+  });
+
   /// Working copy of `station.variableOverrides` (DESIGN-008 follow-up 07),
   /// edited by [VariableOverridesSection] and read by [_saveStation].
   late Map<String, String> _workingOverrides;
@@ -660,6 +673,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
             label: _labelFor(section, l),
             icon: Icons.description_outlined,
             removable: true,
+            preview: _previewSections.contains(section.name),
+            onPreviewChanged: (value) => _togglePreview(section.name, value),
             builder: (_) => Padding(
               key: ValueKey(section.name),
               padding: const EdgeInsets.all(16),
@@ -676,6 +691,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
                       tokenAware: true,
                       overrides: _effectiveAtStationScope,
                       planFields: planFields,
+                      preview: _previewSections.contains(section.name),
                       // A Station cannot declare a plan variable itself
                       // (DESIGN-008 follow-up 07's settled scope, matching
                       // Exercise), but can now create one inline for the

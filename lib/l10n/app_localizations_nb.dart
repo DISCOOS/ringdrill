@@ -1972,6 +1972,12 @@ class AppLocalizationsNb extends AppLocalizations {
   String get formSectionNext => 'Neste seksjon';
 
   @override
+  String get formSectionPreviewAction => 'Forhåndsvis';
+
+  @override
+  String get formSectionEditAction => 'Rediger';
+
+  @override
   String get tokenMenuEmpty => 'Ingen treff';
 
   @override
