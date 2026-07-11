@@ -14,8 +14,12 @@ import 'package:ringdrill/views/vertical_divider_widget.dart';
 /// aktiv") as well as [MiniRoundRow] in the drill player mini-bar.
 ///
 /// [muted] marks a row whose entity isn't in use this round (e.g. a post no
-/// team visits) — it renders struck-through and never takes the current-round
-/// treatment, even if [roundIndex] happens to equal [event]'s running round.
+/// team visits) — it renders struck-through with a muted text color and
+/// never takes the current-round treatment, even if [roundIndex] happens to
+/// equal [event]'s running round. [struckThrough] is the lighter-weight,
+/// decoration-only variant (e.g. the coordinator's team-detail rows for a
+/// round with no assigned station): the label/time text is struck through
+/// but the row's color and current-round eligibility are unaffected.
 class ScheduleRow extends StatelessWidget {
   const ScheduleRow({
     super.key,
@@ -24,6 +28,7 @@ class ScheduleRow extends StatelessWidget {
     required this.exercise,
     required this.roundIndex,
     this.muted = false,
+    this.struckThrough = false,
     this.mainAxisSize = MainAxisSize.max,
     this.mainAxisAlignment = MainAxisAlignment.center,
     this.labelWidth,
@@ -41,13 +46,16 @@ class ScheduleRow extends StatelessWidget {
   /// struck-through, and never eligible for the current-round treatment.
   final bool muted;
 
+  /// Decoration-only strike-through, independent of [muted] (see class doc).
+  final bool struckThrough;
+
   final MainAxisSize mainAxisSize;
   final MainAxisAlignment mainAxisAlignment;
 
-  /// See `PhaseTile.titleWidth`: `null` sizes the label cell to its text
-  /// (rows with similar-length labels, e.g. "Runde 1"/"Runde 2"); non-null
-  /// makes it an [Expanded] minimum width so labels of varying length (team
-  /// or station names) line up across rows.
+  /// `null` sizes the label cell to its text (rows with similar-length
+  /// labels, e.g. "Runde 1"/"Runde 2"); non-null makes it an [Expanded]
+  /// minimum width so labels of varying length (team or station names) line
+  /// up across rows.
   final double? labelWidth;
 
   /// Width per phase cell — 56 matches the round-table cell width; the
@@ -65,7 +73,7 @@ class ScheduleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isCurrent = !muted && event.isRunning && roundIndex == event.currentRound;
-    final decoration = muted ? TextDecoration.lineThrough : null;
+    final decoration = (muted || struckThrough) ? TextDecoration.lineThrough : null;
     final mutedColor = muted ? theme.colorScheme.onSurfaceVariant : null;
 
     final textStyle = TextStyle(

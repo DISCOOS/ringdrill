@@ -13,9 +13,9 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/drill_player/mini_round_row.dart';
 import 'package:ringdrill/views/phase_headers.dart';
-import 'package:ringdrill/views/phase_tile.dart';
 import 'package:ringdrill/views/phase_widget.dart';
 import 'package:ringdrill/theme.dart' show kRingdrillHeaderHeight;
+import 'package:ringdrill/views/widgets/schedule_row.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 
 // ---------------------------------------------------------------------------
@@ -97,10 +97,10 @@ void main() {
 
   final exercise = _makeExercise();
 
-  // ── klynge B/C: PhaseTile (phase_tile.dart) ─────────────────────────────
+  // ── klynge B/C: ScheduleRow (widgets/schedule_row.dart) ──────────────────
 
   for (final scale in [1.0, 1.3]) {
-    testWidgets('PhaseTile has no overflow at ${scale}x text scale',
+    testWidgets('ScheduleRow has no overflow at ${scale}x text scale',
         (tester) async {
       addTearDown(tester.view.reset);
       _setPhoneViewport(tester);
@@ -108,12 +108,12 @@ void main() {
       final event = _makeEvent(exercise);
       await tester.pumpWidget(_harness(
         scale,
-        PhaseTile(
-          title: 'Runde 1',
+        ScheduleRow(
+          label: 'Runde 1',
           event: event,
           exercise: exercise,
           roundIndex: 0,
-          titleWidth: 80,
+          labelWidth: 80,
         ),
       ));
       await tester.pump();

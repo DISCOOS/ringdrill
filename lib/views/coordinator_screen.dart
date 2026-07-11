@@ -22,8 +22,8 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/phase_headers.dart';
-import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/widgets/schedule_row.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
@@ -1093,7 +1093,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Round table keeps its natural width. We need
-                  // IntrinsicWidth here because PhaseTile and
+                  // IntrinsicWidth here because ScheduleRow and
                   // PhaseHeaders are `Row` widgets with the default
                   // `MainAxisSize.max`, which would otherwise try to fill
                   // the unbounded width that Row gives non-flex children.
@@ -1275,27 +1275,22 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       behavior: HitTestBehavior.opaque,
       onLongPress: () => _copyExerciseToClipboard(localizations),
       child: Container(
-        padding: EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            PhaseHeaders(
-              titleWidth: 90,
-              title: localizations.schedule,
-              mainAxisAlignment: MainAxisAlignment.center,
-            ),
-            SizedBox(height: 8),
-            ...List<Widget>.generate(_exercise!.schedule.length, (roundIndex) {
-              // Determine whether this round is completed or current
-              return PhaseTile(
-                title:
-                    "${AppLocalizations.of(context)!.round(1)} "
-                    "${roundIndex + 1}",
-                event: event,
-                exercise: _exercise!,
+        padding: const EdgeInsets.all(8.0),
+        child: ScheduleTable(
+          headerLabel: localizations.schedule,
+          labelWidth: 90,
+          event: event,
+          exercise: _exercise!,
+          rows: [
+            for (
+              var roundIndex = 0;
+              roundIndex < _exercise!.schedule.length;
+              roundIndex++
+            )
+              ScheduleTableRow(
                 roundIndex: roundIndex,
-                isPortrait: isPortrait,
-              );
-            }),
+                label: '${localizations.round(1)} ${roundIndex + 1}',
+              ),
           ],
         ),
       ),
@@ -1806,17 +1801,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                       ),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: PhaseTile(
+                  child: ScheduleRow(
                     event: event,
-                    title: title,
+                    label: title,
                     // Fixed width keeps station-name cells aligned across
                     // rounds so the drill/eval/roll columns line up
                     // vertically. Names longer than this are ellipsed.
-                    titleWidth: 120,
+                    labelWidth: 120,
                     roundIndex: roundIndex,
                     exercise: _exercise!,
                     mainAxisAlignment: MainAxisAlignment.start,
-                    decoration: none ? TextDecoration.lineThrough : null,
+                    struckThrough: none,
                   ),
                 ),
               ),

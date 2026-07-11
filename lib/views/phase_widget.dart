@@ -41,12 +41,12 @@ class PhasesWidget extends StatelessWidget {
   final Color? color;
 
   /// Width per phase cell. Default 56 matches the round-table cell width in
-  /// PhaseTile. Smaller values are used by embedded contexts like the
+  /// `ScheduleRow`. Smaller values are used by embedded contexts like the
   /// DrillPlayer mini-bar.
   final double cellSize;
 
   /// Font size for the phase time label. Defaults to [kDrillAccentFontSize]
-  /// (ADR-0037) so the round-table times match the PhaseTile labels; the
+  /// (ADR-0037) so the round-table times match `ScheduleRow`'s labels; the
   /// DrillPlayer mini-bar overrides this so the time text stops dominating the
   /// compact row.
   final double fontSize;

@@ -8,7 +8,7 @@ import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/theme.dart'
     show kDrillAccentFontSize, RingDrillColors;
 import 'package:ringdrill/views/phase_headers.dart';
-import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/widgets/schedule_row.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
@@ -244,8 +244,8 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
                 onTap: () => onStationTap(stationIndex),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: PhaseTile(
-                    title: exercise.stations[stationIndex].name,
+                  child: ScheduleRow(
+                    label: exercise.stations[stationIndex].name,
                     event: event,
                     roundIndex: roundIndex,
                     exercise: exercise,

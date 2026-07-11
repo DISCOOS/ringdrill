@@ -11,7 +11,7 @@ import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/phase_headers.dart';
-import 'package:ringdrill/views/phase_tile.dart';
+import 'package:ringdrill/views/widgets/schedule_row.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
@@ -192,8 +192,8 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
           child: GestureDetector(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: PhaseTile(
-                title: program == null
+              child: ScheduleRow(
+                label: program == null
                     ? station.name
                     : substitutePlanVariables(
                         station.name,
