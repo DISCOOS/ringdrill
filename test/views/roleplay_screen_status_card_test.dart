@@ -1,0 +1,148 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/roleplay_screen.dart';
+import 'package:ringdrill/views/widgets/player_status_card.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// ---------------------------------------------------------------------------
+// DESIGN-010 follow-up: player-status-card — the Spill (marker) player's
+// now/next is the team at the marker's post now/next, from
+// Exercise.teamIndex, falling back to "Not active now" when the post has
+// no team that round.
+//
+// 3 stations, 2 teams, 3 rounds — Exercise.teamIndex(stationIndex, round):
+//   round0: s0->team0 s1->team1 s2->none   (marker placed at station 2)
+//   round1: s0->none  s1->team0 s2->team1
+//   round2: s0->team1 s1->none  s2->team0
+// ---------------------------------------------------------------------------
+
+const _programUuid = 'prog-role-status-card';
+const _exerciseUuid = 'ex-role-status-card';
+const _roleUuid = 'role-status-card';
+
+Exercise _exercise({required SimpleTimeOfDay startTime}) => Exercise(
+  uuid: _exerciseUuid,
+  index: 0,
+  name: 'Role Status Card Test Exercise',
+  startTime: startTime,
+  numberOfTeams: 2,
+  numberOfRounds: 3,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 5,
+  stations: const [
+    Station(index: 0, name: 'Post 1'),
+    Station(index: 1, name: 'Post 2'),
+    Station(index: 2, name: 'Post 3'),
+  ],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 0),
+      SimpleTimeOfDay(hour: 8, minute: 10),
+      SimpleTimeOfDay(hour: 8, minute: 15),
+    ],
+    [
+      SimpleTimeOfDay(hour: 8, minute: 20),
+      SimpleTimeOfDay(hour: 8, minute: 30),
+      SimpleTimeOfDay(hour: 8, minute: 35),
+    ],
+    [
+      SimpleTimeOfDay(hour: 8, minute: 40),
+      SimpleTimeOfDay(hour: 8, minute: 50),
+      SimpleTimeOfDay(hour: 8, minute: 55),
+    ],
+  ],
+  endTime: const SimpleTimeOfDay(hour: 12, minute: 0),
+);
+
+const _rolePlay = RolePlay(
+  uuid: _roleUuid,
+  index: 0,
+  exerciseUuid: _exerciseUuid,
+  stationIndex: 2,
+  name: 'Hilde',
+);
+
+Program _shell() {
+  final now = DateTime.utc(2026, 1, 1);
+  return Program(
+    uuid: _programUuid,
+    name: 'Test Program',
+    description: '',
+    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    teams: const [],
+    sessions: const [],
+    exercises: const [],
+  );
+}
+
+Future<void> _seedAndInit(Exercise exercise) async {
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  final repo = ProgramRepository(prefs);
+  await repo.saveProgramShell(_shell());
+  await repo.setActiveProgramUuid(_programUuid);
+  await repo.saveExercise(exercise);
+  await repo.saveRolePlay(_rolePlay);
+  await ProgramService().init();
+}
+
+Widget _buildScreen() => const MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: RolePlayScreen(rolePlayUuid: _roleUuid),
+);
+
+void main() {
+  late AppLocalizations l10n;
+
+  setUpAll(() async {
+    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  });
+
+  testWidgets(
+    'running: marker at station 2 (no team round0) shows "Not active now", '
+    'then "Team 2" for the next active round',
+    (tester) async {
+      final past = DateTime.now().subtract(const Duration(minutes: 3));
+      final exercise = _exercise(
+        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
+      );
+      await _seedAndInit(exercise);
+      ExerciseService().start(exercise);
+
+      await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+
+      final cardFinder = find.byType(PlayerStatusCard);
+      expect(cardFinder, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text(l10n.statusNotActiveNow),
+        ),
+        findsOneWidget,
+      );
+      // Round 1's teamIndex(2, 1) = team1 -> "Team 2".
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text('${l10n.team(1)} 2'),
+        ),
+        findsOneWidget,
+      );
+
+      ExerciseService().stop();
+      await tester.pump();
+    },
+  );
+}

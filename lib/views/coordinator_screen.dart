@@ -1085,33 +1085,33 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           // spare width to distribute symmetrically; any leftover space now
           // falls on both sides instead of only to the right.
           return Center(
-            child: IntrinsicHeight(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                // `stretch` makes the shorter card grow to the table's
-                // height so the status panel reads as a full-height tile,
-                // and its own `mainAxisAlignment.center` centers the
-                // content vertically within that tile.
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Round table keeps its natural width. We need
-                  // IntrinsicWidth here because ScheduleRow and
-                  // PhaseHeaders are `Row` widgets with the default
-                  // `MainAxisSize.max`, which would otherwise try to fill
-                  // the unbounded width that Row gives non-flex children.
-                  // IntrinsicWidth measures the table's natural width and
-                  // supplies it as a tight constraint so those inner rows
-                  // have something finite to fill.
-                  IntrinsicWidth(child: _buildRoundTable(event, true)),
-                  const SizedBox(width: 12),
-                  // Fixed-width sidebar so the typography stays stable
-                  // regardless of how wide the parent is.
-                  SizedBox(
-                    width: _kHeroSidebarWidth,
-                    child: _buildCombinedHeroCard(event),
-                  ),
-                ],
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              // `center`, not `stretch`: the status card's now/next values
+              // auto-size via a `LayoutBuilder` (`_MeasuredFitText`), and
+              // `LayoutBuilder` cannot sit below an `IntrinsicHeight` — the
+              // widget that `stretch` would otherwise need here to give the
+              // shorter side a matching, bounded height. Centering the two
+              // on their natural heights avoids that without crashing.
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Round table keeps its natural width. We need
+                // IntrinsicWidth here because ScheduleRow and
+                // PhaseHeaders are `Row` widgets with the default
+                // `MainAxisSize.max`, which would otherwise try to fill
+                // the unbounded width that Row gives non-flex children.
+                // IntrinsicWidth measures the table's natural width and
+                // supplies it as a tight constraint so those inner rows
+                // have something finite to fill.
+                IntrinsicWidth(child: _buildRoundTable(event, true)),
+                const SizedBox(width: 12),
+                // Fixed-width sidebar so the typography stays stable
+                // regardless of how wide the parent is.
+                SizedBox(
+                  width: _kHeroSidebarWidth,
+                  child: _buildCombinedHeroCard(event),
+                ),
+              ],
             ),
           );
         }

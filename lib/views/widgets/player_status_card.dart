@@ -251,19 +251,41 @@ class PlayerStatusCard extends StatelessWidget {
                 top: BorderSide(color: theme.colorScheme.outlineVariant),
               ),
             ),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: _buildCell(context, theme, leadingCell)),
-                  VerticalDivider(
-                    width: 1,
-                    thickness: 1,
-                    color: theme.colorScheme.outlineVariant,
+            // A `Stack`, not `IntrinsicHeight` + stretch: `_MeasuredFitText`
+            // (inside `_buildCell`) uses a `LayoutBuilder` to measure the
+            // available width, and `LayoutBuilder` cannot sit below an
+            // `IntrinsicHeight` (it doesn't support computing intrinsic
+            // dimensions). The Stack's own height comes from the (non-
+            // positioned) cell row; the divider is a second, `Positioned.fill`
+            // row stretched to that already-resolved height — a `Positioned`
+            // child never contributes to the Stack's own sizing pass, so no
+            // intrinsics are involved.
+            child: Stack(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildCell(context, theme, leadingCell)),
+                    Expanded(child: _buildCell(context, theme, trailingCell)),
+                  ],
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Expanded(child: SizedBox.shrink()),
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                        const Expanded(child: SizedBox.shrink()),
+                      ],
+                    ),
                   ),
-                  Expanded(child: _buildCell(context, theme, trailingCell)),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
       ],
