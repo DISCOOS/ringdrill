@@ -10,6 +10,14 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Finder _pencilFor(String realName) => find.descendant(
+  of: find.ancestor(
+    of: find.text(realName),
+    matching: find.byType(ListTile),
+  ),
+  matching: find.byIcon(Icons.edit_outlined),
+);
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -318,5 +326,72 @@ void main() {
       );
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
+  });
+
+  // ---------------------------------------------------------------------
+  // DESIGN-010 browser tile polish (Fix 4) — the sheet is the one
+  // marker-management surface: no `⋮` context menu anywhere, and every
+  // actor row carries its own edit pencil in addition to add/remove/change.
+  // ---------------------------------------------------------------------
+  group('per-row edit (Fix 4: no context menu, edit lives in the sheet)', () {
+    testWidgets('no PopupMenuButton exists in the sheet', (tester) async {
+      await tester.pumpWidget(_buildPicker(_roleA));
+      await tester.pump();
+
+      expect(
+        find.byWidgetPredicate((w) => w is PopupMenuButton),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+      'the pencil opens ActorFormScreen for that row\'s own actor and '
+      'saving updates the name in place without closing the sheet',
+      (tester) async {
+        await tester.pumpWidget(_buildPicker(_roleA));
+        await tester.pump();
+
+        await tester.tap(_pencilFor(_actorUncast.realName));
+        await tester.pumpAndSettle();
+
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        await tester.enterText(
+          find.widgetWithText(TextFormField, _actorUncast.realName),
+          'Anna Skog',
+        );
+        await tester.tap(find.text(l10n.save));
+        await tester.pumpAndSettle();
+
+        // Still the sheet, not popped — the new name shows in the list.
+        expect(find.text('Anna Skog'), findsOneWidget);
+        expect(find.text(_actorUncast.realName), findsNothing);
+        expect(find.byType(CastPickerSheet), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'deleting an actor who is still cast to a role is blocked, sheet '
+      'stays open',
+      (tester) async {
+        await tester.pumpWidget(_buildPicker(_roleA));
+        await tester.pump();
+
+        // _actorCast is cast to _roleB — still blocked even from _roleA's
+        // own sheet, since the guard is "cast to any role", not just this one.
+        await tester.tap(_pencilFor(_actorCast.realName));
+        await tester.pumpAndSettle();
+
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        await tester.tap(find.byIcon(Icons.delete));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.delete));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.castDeleteBlocked(1)), findsOneWidget);
+        expect(find.byType(CastPickerSheet), findsOneWidget);
+        // Still listed — the delete never went through.
+        expect(find.text(_actorCast.realName), findsOneWidget);
+      },
+    );
   });
 }

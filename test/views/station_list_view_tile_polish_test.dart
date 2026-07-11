@@ -17,7 +17,8 @@ import 'support/save_roundtrip_harness.dart';
 // ---------------------------------------------------------------------------
 // DESIGN-010 "browser tile polish" — Poster tile (station_list_view.dart).
 // Covers: uniform section dividers (Fix 1), distinct marker header/row
-// icons (Fix 2), and per-tile StationScope token resolution (Fix 5).
+// icons (Fix 2), unified marker management on the shared bottom sheet
+// (Fix 4), and per-tile StationScope token resolution (Fix 5).
 // ---------------------------------------------------------------------------
 
 const _stationPosition = LatLng(59.91, 10.75);
@@ -122,6 +123,29 @@ void main() {
       expect(find.byIcon(Icons.theater_comedy), findsOneWidget);
       // ...the row now uses a person icon instead of repeating it.
       expect(find.byIcon(Icons.person), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Fix 4: the marker row\'s cast-state icon opens the shared marker '
+    'sheet instead of the Spill viewer',
+    (tester) async {
+      await expandFirstStation(tester);
+
+      // No `⋮` menu anywhere in this tile either.
+      expect(
+        find.byWidgetPredicate((w) => w is PopupMenuButton),
+        findsNothing,
+      );
+
+      // The role seeded in setUp() is uncast, so the trailing cast-state
+      // icon is the "add" glyph — tapping it opens the shared marker sheet
+      // (not RoleSheetTarget/the Spill viewer).
+      await tester.tap(find.byIcon(Icons.person_add_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);
+      expect(find.text(l10n.newActor), findsOneWidget);
     },
   );
 

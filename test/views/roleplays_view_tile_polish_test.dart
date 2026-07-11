@@ -18,8 +18,9 @@ import 'support/save_roundtrip_harness.dart';
 // ---------------------------------------------------------------------------
 // DESIGN-010 "browser tile polish" — Spill tile (roleplays_view.dart).
 // Covers: uniform section dividers (Fix 1), the "Spilles av {realName}"
-// Cast line with no castPrivateHint (Fix 3), the portrait overflow ellipsis
-// (Fix 4), and per-tile StationScope token resolution (Fix 5).
+// Cast line with no castPrivateHint (Fix 3), unified marker management on
+// the shared bottom sheet with no context menu (Fix 4), and per-tile
+// StationScope token resolution (Fix 5).
 // ---------------------------------------------------------------------------
 
 const _exerciseUuid = 'ex-role-tile-polish';
@@ -133,20 +134,27 @@ void main() {
     },
   );
 
-  testWidgets('Fix 4: the Cast overflow uses the portrait ellipsis', (
-    tester,
-  ) async {
-    await expandFirstRole(tester);
+  testWidgets(
+    'Fix 4: no marker context menu remains; the cast chip (the one '
+    'person-icon) opens the shared marker sheet',
+    (tester) async {
+      await expandFirstRole(tester);
 
-    expect(
-      find.descendant(
-        of: find.byWidgetPredicate((w) => w is PopupMenuButton),
-        matching: find.byIcon(Icons.more_vert),
-      ),
-      findsOneWidget,
-    );
-    expect(find.byIcon(Icons.more_horiz), findsNothing);
-  });
+      // No `⋮` menu anywhere in the tile.
+      expect(
+        find.byWidgetPredicate((w) => w is PopupMenuButton),
+        findsNothing,
+      );
+
+      // The cast chip (Icons.person, this role is cast) opens the shared
+      // marker sheet — the one consistent affordance, unified with Poster.
+      await tester.tap(find.byIcon(Icons.person));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);
+      expect(find.text(l10n.clearCast), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'Fix 5: {{station.position.utm}} and {{station.loc.*}} resolve per '
