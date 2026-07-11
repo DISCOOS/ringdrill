@@ -4,6 +4,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/phase_headers.dart';
+import 'package:ringdrill/views/phase_widget.dart';
 import 'package:ringdrill/views/widgets/schedule_row.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 
@@ -272,6 +273,58 @@ void main() {
             'the coordinator round table minimizes instead of stretching '
             'to the parent width',
       );
+    },
+  );
+
+  testWidgets(
+    'DRILL/EVAL/ROLL center over their time columns in both width modes',
+    (tester) async {
+      final event = _makeEvent(
+        exercise: exercise,
+        phase: ExercisePhase.pending,
+      );
+      Widget build({required bool fillWidth}) => MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: ScheduleTable(
+              headerLabel: 'Round',
+              event: event,
+              exercise: exercise,
+              fillWidth: fillWidth,
+              rows: [const ScheduleTableRow(roundIndex: 0, label: 'Round 1')],
+            ),
+          ),
+        ),
+      );
+
+      Future<void> expectCentered() async {
+        for (final entry in const [
+          ('DRILL', 0),
+          ('EVAL', 1),
+          ('ROLL', 2),
+        ]) {
+          final (text, phaseIndex) = entry;
+          final headerX = tester.getCenter(find.text(text)).dx;
+          final cellX = tester
+              .getCenter(find.byType(PhasesWidget).at(phaseIndex))
+              .dx;
+          expect(
+            headerX,
+            closeTo(cellX, 0.5),
+            reason: '$text should center over phase column $phaseIndex',
+          );
+        }
+      }
+
+      await tester.pumpWidget(build(fillWidth: true));
+      await expectCentered();
+
+      await tester.pumpWidget(build(fillWidth: false));
+      await expectCentered();
     },
   );
 }

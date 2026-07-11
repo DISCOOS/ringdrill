@@ -1,16 +1,30 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/views/team_exercise_screen.dart';
+import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/phase_headers.dart';
+import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// ---------------------------------------------------------------------------
+// Fixtures — DESIGN-010 stage 3e: team_screen.dart's per-exercise schedule
+// migrated from PhaseHeaders + Card-wrapped ScheduleRows onto the shared
+// ScheduleCard.
+// ---------------------------------------------------------------------------
+
+const _programUuid = 'prog-team-screen';
+const _exerciseUuid = 'ex-team-screen';
 
 Exercise _exercise() => Exercise(
-  uuid: 'team-view-ex',
-  name: 'Team View Test Exercise',
+  uuid: _exerciseUuid,
+  name: 'Team Screen Test Exercise',
   startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
   numberOfTeams: 1,
   numberOfRounds: 2,
@@ -36,6 +50,35 @@ Exercise _exercise() => Exercise(
   endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
 );
 
+Map<String, Object> _basePrefs() {
+  final ex = _exercise();
+  return {
+    'app:activeProgram:v1': _programUuid,
+    'app:librarySchema:v1': '1',
+    'p:$_programUuid': jsonEncode({
+      'uuid': _programUuid,
+      'name': 'Test Program',
+      'description': '',
+      'metadata': {
+        'created': '2024-01-01T00:00:00.000Z',
+        'updated': '2024-01-01T00:00:00.000Z',
+        'version': '1.1',
+      },
+      'exercises': [],
+      'teams': [],
+      'sessions': [],
+      'rolePlays': [],
+      'actors': [],
+    }),
+    'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
+  };
+}
+
+Future<void> _seedAndInit() async {
+  SharedPreferences.setMockInitialValues(_basePrefs());
+  await ProgramService().init();
+}
+
 Widget _harness(Widget widget) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
@@ -43,21 +86,27 @@ Widget _harness(Widget widget) => MaterialApp(
 );
 
 void main() {
+  setUp(() async {
+    await _seedAndInit();
+  });
+
   testWidgets(
-    'renders the schedule via the shared ScheduleTable, not ScheduleRow-in-Card',
+    'the per-exercise schedule renders via the shared ScheduleCard, not '
+    'PhaseHeaders + Card-wrapped ScheduleRows',
     (tester) async {
-      final exercise = _exercise();
-      await tester.pumpWidget(
-        _harness(TeamExerciseScreen(teamIndex: 0, exercise: exercise)),
-      );
+      await tester.pumpWidget(_harness(const TeamScreen(teamIndex: 0)));
       await tester.pumpAndSettle();
 
-      // Renders through the shared ScheduleCard (CardSectionHeader + bordered
-      // ScheduleTable), matching the Post/Spill viewers — not the old bare
-      // bordered table with no title.
+      // Expand the exercise tile (chevron) — the schedule only renders once
+      // expanded.
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
       expect(find.byType(ScheduleCard), findsOneWidget);
       expect(find.byType(CardSectionHeader), findsOneWidget);
       expect(find.byType(ScheduleTable), findsOneWidget);
+      // No standalone PhaseHeaders left above the table.
+      expect(find.byType(PhaseHeaders), findsOneWidget); // the table's own
       expect(
         find.descendant(
           of: find.byType(ScheduleTable),
@@ -67,11 +116,8 @@ void main() {
         reason: 'the old per-round Card-wrapped rows are gone',
       );
 
-      // Both stations' rounds are listed, in order.
       expect(find.text('Post 1'), findsOneWidget);
       expect(find.text('Post 2'), findsOneWidget);
-
-      // One shared header, not a duplicate standalone PhaseHeaders above it.
       expect(find.text('DRILL'), findsOneWidget);
       expect(find.text('EVAL'), findsOneWidget);
       expect(find.text('ROLL'), findsOneWidget);
