@@ -8,6 +8,31 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
+/// Opens the marker sheet for [rolePlay] and applies whatever the user chose
+/// (select/clear) via [ProgramService.saveRolePlay] — the one apply step
+/// every marker-management affordance shares (DESIGN-010 browser tile
+/// polish: unify on the bottom sheet). Both the Poster tile's marker-row
+/// icon (`StationRoleSummary.onTapMarker`) and the Spill tile's cast chip
+/// (`RolePlaysView._buildCastChip`) call this instead of each re-deriving
+/// the select-vs-clear-vs-noop `copyWith` themselves.
+Future<void> openCastPickerAndApply(
+  BuildContext context,
+  AppLocalizations localizations,
+  RolePlay rolePlay,
+) async {
+  final result = await showCastPickerSheet(context, rolePlay: rolePlay);
+  if (result == null) return;
+  final updated = switch (result) {
+    CastPickerSelect(:final actorUuid) => actorUuid == rolePlay.actorUuid
+        ? null
+        : rolePlay.copyWith(actorUuid: actorUuid),
+    CastPickerClear() =>
+      rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
+  };
+  if (updated == null) return;
+  await ProgramService().saveRolePlay(localizations, updated);
+}
+
 /// Opens [CastPickerSheet] through ADR-0049's adaptive surface split — a
 /// bottom sheet on compact, a dialog reusing the form-dialog's rounded
 /// chrome on medium/expanded — same as every other selector.
@@ -40,15 +65,21 @@ Future<CastPickerResult?> showCastPickerSheet(
   );
 }
 
-/// Bottom sheet for assigning an [Actor] to a [RolePlay].
+/// The one marker-management surface (DESIGN-010 browser tile polish):
+/// assigns an [Actor] to a [RolePlay], and does everything else a marker
+/// needs too, so neither tile carries its own separate `⋮` context menu.
 ///
 /// Shows a searchable list of all [Actor] records. If the actor is already
 /// cast to another role in the same exercise an [alreadyCastAs] annotation
 /// appears below their name (still selectable). A sticky "New actor" row at
-/// the top lets the user create an actor inline via [ActorFormScreen].
+/// the top lets the user create an actor inline via [ActorFormScreen]
+/// (add); a sticky "Clear" row unlinks the current actor (remove); tapping
+/// a row selects that actor (change) — the currently cast one shows a
+/// check; and each row's pencil opens [ActorFormScreen] for *that* actor
+/// (edit), independent of which one is currently cast to this role.
 ///
 /// Returns [CastPickerSelect] when an actor is selected, [CastPickerClear]
-/// when the current actor is removed, or null on cancel.
+/// when the current actor is removed, or null on cancel/after only editing.
 ///
 /// Usage:
 /// ```dart
@@ -144,6 +175,42 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
       if (!mounted) return;
       Navigator.of(context).pop(CastPickerSelect(actor.uuid));
     }
+  }
+
+  /// Edits (or deletes) [actor]'s own record — the "Rediger markør"
+  /// affordance folded into this sheet (DESIGN-010 browser tile polish),
+  /// replacing the `⋮` context menu the Spill tile used to carry
+  /// separately. Reloads the list in place rather than popping the sheet,
+  /// so the user can keep browsing/selecting after editing. A delete is
+  /// blocked (matching the previous overflow-menu behaviour) when the
+  /// actor is still cast to any role — including this one, so clearing the
+  /// cast first is required before an actor can be deleted from here.
+  Future<void> _editActor(Actor actor) async {
+    final localizations = AppLocalizations.of(context)!;
+    final result = await openFormSurface<ActorFormResult>(
+      context,
+      builder: (_) => ActorFormScreen(actor: actor),
+    );
+    if (result == null || !mounted) return;
+    switch (result) {
+      case ActorFormSave(:final actor):
+        await _service.saveActor(localizations, actor);
+      case ActorFormDelete(:final actor):
+        final roles = _service.loadRolePlays().where(
+          (rolePlay) => rolePlay.actorUuid == actor.uuid,
+        );
+        if (roles.isNotEmpty) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.castDeleteBlocked(roles.length)),
+            ),
+          );
+          return;
+        }
+        await _service.deleteActor(actor.uuid);
+    }
+    if (mounted) _reload();
   }
 
   void _select(String actorUuid) {
@@ -247,7 +314,21 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
                               ),
                         )
                       : (actor.phone != null ? Text(actor.phone!) : null),
-                  trailing: isSelected ? const Icon(Icons.check) : null,
+                  // The pencil is its own IconButton (not the row's onTap)
+                  // so editing a *different* actor than the currently cast
+                  // one never accidentally selects it — tapping the row
+                  // body still selects/changes; only the pencil edits.
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSelected) const Icon(Icons.check),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: localizations.editCast,
+                        onPressed: () => _editActor(actor),
+                      ),
+                    ],
+                  ),
                   onTap: () => _select(actor.uuid),
                 );
               },

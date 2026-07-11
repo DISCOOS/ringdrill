@@ -12,7 +12,6 @@ import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
-import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
@@ -33,8 +32,6 @@ import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/tile_section_divider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-enum _CastAction { edit, clear }
 
 /// Flat list of all [RolePlay] rows across all exercises, sorted by
 /// exercise order then role index. Each row uses [ExpandableTile].
@@ -472,66 +469,37 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         label: Text(localizations.addCast),
       );
     }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    // No `⋮` menu here (DESIGN-010 browser tile polish): edit/clear moved
+    // into the marker sheet itself (CastPickerSheet), reachable from the
+    // collapsed tile's cast chip regardless of expand state.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // "Spilles av {realName}" (castedByLine) — the same "Played
-              // by …" wording the detail sheet uses, not the bare actor
-              // name. castPrivateHint ("Stays on this device") is
-              // deliberately dropped: deprecated wording the app has moved
-              // away from.
-              Text(
-                localizations.castedByLine(actor.realName),
-                style: theme.textTheme.bodyMedium,
+        // "Spilles av {realName}" (castedByLine) — the same "Played by …"
+        // wording the detail sheet uses, not the bare actor name.
+        // castPrivateHint ("Stays on this device") is deliberately
+        // dropped: deprecated wording the app has moved away from.
+        Text(
+          localizations.castedByLine(actor.realName),
+          style: theme.textTheme.bodyMedium,
+        ),
+        if (actor.phone != null)
+          InkWell(
+            onTap: () => launchUrl(Uri.parse('tel:${actor.phone}')),
+            child: Text(
+              actor.phone!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.primary,
               ),
-              if (actor.phone != null)
-                InkWell(
-                  onTap: () => launchUrl(Uri.parse('tel:${actor.phone}')),
-                  child: Text(
-                    actor.phone!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.primary,
-                    ),
-                  ),
-                ),
-              if (actor.notes != null && actor.notes!.isNotEmpty)
-                Text(
-                  actor.notes!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
-        PopupMenuButton<_CastAction>(
-          // Explicit Icons.more_vert rather than PopupMenuButton's
-          // platform-adaptive default, which renders horizontal dots on
-          // iOS/macOS-style platforms (matches variables_section.dart /
-          // section_navigated_form.dart).
-          icon: const Icon(Icons.more_vert),
-          onSelected: (action) async {
-            if (action == _CastAction.clear) {
-              await _clearCast(rolePlay);
-            } else {
-              await _editCast(actor, rolePlay);
-            }
-          },
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: _CastAction.edit,
-              child: Text(localizations.editCast),
+        if (actor.notes != null && actor.notes!.isNotEmpty)
+          Text(
+            actor.notes!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
             ),
-            PopupMenuItem(
-              value: _CastAction.clear,
-              child: Text(localizations.clearCast),
-            ),
-          ],
-        ),
+          ),
       ],
     );
   }
@@ -578,56 +546,12 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     if (mounted) setState(() {});
   }
 
+  // Select/clear/edit/add all live in the marker sheet itself now
+  // (CastPickerSheet, DESIGN-010 browser tile polish) — this just opens it
+  // and applies the resulting select-or-clear choice via the shared helper.
   Future<void> _openCastPicker(RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
-    final result = await showCastPickerSheet(context, rolePlay: rolePlay);
-    if (result == null || !mounted) return;
-    final updated = switch (result) {
-      CastPickerSelect(:final actorUuid) =>
-        actorUuid == rolePlay.actorUuid
-            ? null
-            : rolePlay.copyWith(actorUuid: actorUuid),
-      CastPickerClear() =>
-        rolePlay.actorUuid == null ? null : rolePlay.copyWith(actorUuid: null),
-    };
-    if (updated == null) return;
-    await _service.saveRolePlay(localizations, updated);
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _clearCast(RolePlay rolePlay) async {
-    final localizations = AppLocalizations.of(context)!;
-    await _service.saveRolePlay(
-      localizations,
-      rolePlay.copyWith(actorUuid: null),
-    );
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _editCast(Actor actor, RolePlay rolePlay) async {
-    final localizations = AppLocalizations.of(context)!;
-    final result = await openFormSurface<ActorFormResult>(
-      context,
-      builder: (_) => ActorFormScreen(actor: actor),
-    );
-    if (result == null || !mounted) return;
-    switch (result) {
-      case ActorFormSave(:final actor):
-        await _service.saveActor(localizations, actor);
-      case ActorFormDelete(:final actor):
-        final roles = _service.loadRolePlays().where(
-          (rolePlay) => rolePlay.actorUuid == actor.uuid,
-        );
-        if (roles.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localizations.castDeleteBlocked(roles.length)),
-            ),
-          );
-          return;
-        }
-        await _service.deleteActor(actor.uuid);
-    }
+    await openCastPickerAndApply(context, localizations, rolePlay);
     if (mounted) setState(() {});
   }
 }

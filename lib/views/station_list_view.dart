@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
@@ -15,6 +16,7 @@ import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -466,7 +468,14 @@ class _StationListViewState extends State<StationListView> {
         ),
       ),
       if (hasRoles)
-        StationRoleSummary(exercise: exercise, stationIndex: station.index),
+        StationRoleSummary(
+          exercise: exercise,
+          stationIndex: station.index,
+          // DESIGN-010 browser tile polish Fix 4: the marker-row icon opens
+          // the shared marker sheet here (unified with the Spill tile's
+          // cast chip) instead of the Spill viewer.
+          onTapMarker: (role) => _openMarkerSheet(context, role),
+        ),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,6 +497,14 @@ class _StationListViewState extends State<StationListView> {
         stationIndex: station.index,
       ),
     );
+  }
+
+  /// Opens the shared marker sheet for [role] (DESIGN-010 browser tile
+  /// polish, Fix 4) — the Poster tile's `StationRoleSummary.onTapMarker`
+  /// hook, mirroring the Spill tile's own cast chip via the same helper.
+  Future<void> _openMarkerSheet(BuildContext context, RolePlay role) async {
+    final localizations = AppLocalizations.of(context)!;
+    await openCastPickerAndApply(context, localizations, role);
   }
 
   Future<void> _openStationForm(Exercise exercise, Station station) async {

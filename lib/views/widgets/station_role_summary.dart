@@ -12,19 +12,32 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 /// matching role. Returns [SizedBox.shrink] when no roles match, so callers
 /// can drop this into any vertical layout without a local empty-check.
 ///
-/// This widget is intentionally **non-interactive** except for the row-body
-/// tap that opens the role sheet. There is no cast affordance, no
-/// swipe-to-edit, and no overflow menu. Authoring stays on the dedicated
-/// Station screen and the Markører tab.
+/// The row body's tap always opens the role sheet. [onTapMarker], when
+/// supplied, gives the row's own cast-state icon a second, independent
+/// affordance: opening the shared marker bottom sheet
+/// (`showCastPickerSheet`/`openCastPickerAndApply`, DESIGN-010 browser tile
+/// polish) to add/remove/change/edit that role's cast — the same
+/// affordance the Spill tile's cast chip already offers, unified here so
+/// the Poster tile's marker icon no longer opens the Spill viewer instead.
+/// Left null (the default) for every call site but the Poster tile
+/// (`station_list_view.dart`) — `program_view.dart`'s and
+/// `coordinator_screen.dart`'s station detail stay exactly as read-only as
+/// before, with no cast affordance and no overflow menu.
 class StationRoleSummary extends StatelessWidget {
   const StationRoleSummary({
     super.key,
     required this.exercise,
     required this.stationIndex,
+    this.onTapMarker,
   });
 
   final Exercise exercise;
   final int stationIndex;
+
+  /// Opens the marker bottom sheet for the tapped row's [RolePlay]. Null
+  /// (default) keeps the row's cast-state icon a plain, non-interactive
+  /// indicator.
+  final void Function(RolePlay role)? onTapMarker;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +81,11 @@ class StationRoleSummary extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         ...roles.map(
-          (r) => _RoleSummaryRow(role: r, actor: actors[r.actorUuid]),
+          (r) => _RoleSummaryRow(
+            role: r,
+            actor: actors[r.actorUuid],
+            onTapMarker: onTapMarker,
+          ),
         ),
       ],
     );
@@ -76,10 +93,15 @@ class StationRoleSummary extends StatelessWidget {
 }
 
 class _RoleSummaryRow extends StatelessWidget {
-  const _RoleSummaryRow({required this.role, required this.actor});
+  const _RoleSummaryRow({
+    required this.role,
+    required this.actor,
+    this.onTapMarker,
+  });
 
   final RolePlay role;
   final Actor? actor;
+  final void Function(RolePlay role)? onTapMarker;
 
   @override
   Widget build(BuildContext context) {
@@ -129,13 +151,32 @@ class _RoleSummaryRow extends StatelessWidget {
                 ],
               ),
             ),
-            // Non-interactive cast-state indicator — no IconButton wrapper.
-            Icon(
-              actor != null ? Icons.person : Icons.person_add_outlined,
-              color: actor != null
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
+            // Cast-state indicator, matching the Spill tile's cast chip
+            // icon/meaning exactly. A bare Icon (no IconButton) when
+            // onTapMarker is null (program_view.dart/coordinator_screen.dart
+            // stay read-only); the Poster tile's marker-row wraps it as the
+            // one consistent "open the marker sheet" affordance shared with
+            // Spill (DESIGN-010 browser tile polish, Fix 4).
+            if (onTapMarker == null)
+              Icon(
+                actor != null ? Icons.person : Icons.person_add_outlined,
+                color: actor != null
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              )
+            else
+              IconButton(
+                tooltip: actor != null
+                    ? localizations.editCast
+                    : localizations.addCast,
+                icon: Icon(
+                  actor != null ? Icons.person : Icons.person_add_outlined,
+                  color: actor != null
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+                onPressed: () => onTapMarker!(role),
+              ),
           ],
         ),
       ),

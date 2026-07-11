@@ -182,36 +182,39 @@ void main() {
       expect(find.text(_actorA.notes!), findsOneWidget);
     });
 
-    testWidgets('overflow menu exists and contains editCast and clearCast',
-        (tester) async {
+    testWidgets(
+      'no overflow menu remains; the cast chip opens the marker sheet, '
+      'which exposes both editCast (pencil) and clearCast',
+      (tester) async {
+        await tester.pumpWidget(_buildView());
+        await tester.pumpAndSettle();
+        await _expandTileAt(tester, 0);
+
+        // DESIGN-010 browser tile polish (Fix 4): no `⋮` context menu.
+        expect(
+          find.byWidgetPredicate((w) => w is PopupMenuButton),
+          findsNothing,
+        );
+
+        // The collapsed tile's cast chip (Icons.person, role A is cast) is
+        // the one marker-management affordance now.
+        await tester.tap(find.byIcon(Icons.person).first);
+        await tester.pumpAndSettle();
+
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        expect(find.text(l10n.clearCast), findsOneWidget);
+        expect(find.byIcon(Icons.edit_outlined), findsWidgets);
+        expect(find.byTooltip(l10n.editCast), findsWidgets);
+      },
+    );
+
+    testWidgets('"Fjern markør" (in the marker sheet) clears the cast for '
+        'role A', (tester) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 0);
 
-      expect(
-        find.byWidgetPredicate((w) => w is PopupMenuButton),
-        findsWidgets,
-      );
-
-      // Open the first popup (role A's cast section)
-      await tester.tap(
-        find.byWidgetPredicate((w) => w is PopupMenuButton).first,
-      );
-      await tester.pumpAndSettle();
-
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.editCast), findsOneWidget);
-      expect(find.text(l10n.clearCast), findsOneWidget);
-    });
-
-    testWidgets('"Fjern markør" clears the cast for role A', (tester) async {
-      await tester.pumpWidget(_buildView());
-      await tester.pumpAndSettle();
-      await _expandTileAt(tester, 0);
-
-      await tester.tap(
-        find.byWidgetPredicate((w) => w is PopupMenuButton).first,
-      );
+      await tester.tap(find.byIcon(Icons.person).first);
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
