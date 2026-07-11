@@ -553,10 +553,6 @@
       "name": { "type": "String" }
     }
   },
-  "castPrivateHint": "Lagres lokalt",
-  "@castPrivateHint": {
-    "description": "Vedvarende hint under seksjonsoverskriften. Positivt formulert: aktørdata lagres lokalt og publiseres aldri."
-  },
   "roleSubtitleStation": "Post: {name}",
   "@roleSubtitleStation": {
     "description": "Undertittel på sammenfoldet flis når rollen har stationIndex satt. Viser postnavnet.",

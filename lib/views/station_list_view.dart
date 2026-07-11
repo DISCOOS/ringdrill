@@ -5,6 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -16,6 +17,7 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
@@ -24,7 +26,9 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
+import 'package:ringdrill/views/widgets/tile_section_divider.dart';
 
 class StationListView extends StatefulWidget {
   const StationListView({super.key, required this.controller});
@@ -333,8 +337,9 @@ class _StationListViewState extends State<StationListView> {
     );
 
     // Reorder mode: show drag handle, suspend gestures (no swipe/long-press).
+    final Widget tile;
     if (reordering) {
-      return ExpandableTile(
+      tile = ExpandableTile(
         leading: badge,
         title: RingDrillText(
           station.name,
@@ -351,54 +356,79 @@ class _StationListViewState extends State<StationListView> {
         trailing: dragHandle,
         // No onOpen, onLongPress, onToggle — gestures suspended in reorder mode.
       );
+    } else {
+      tile = Dismissible(
+        key: ValueKey('station-row-${exercise.uuid}-${station.index}'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          color: colorScheme.secondaryContainer,
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                localizations.editStation,
+                style: TextStyle(color: colorScheme.onSecondaryContainer),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
+            ],
+          ),
+        ),
+        confirmDismiss: (_) async {
+          await _openStationForm(exercise, station);
+          return false;
+        },
+        child: ExpandableTile(
+          onLongPress: () => _openStationForm(exercise, station),
+          leading: badge,
+          title: RingDrillText(
+            station.name,
+            overrides: _overridesFor(exercise, station),
+            style: accent.textStyle,
+          ),
+          subtitle: RingDrillText(
+            '${localizations.exercise(1)}: ${exercise.name}',
+            overrides: _overridesFor(exercise, station),
+            style: accent.textStyle,
+          ),
+          accent: accent,
+          selected: selected,
+          expanded: expanded,
+          onOpen: () => _openStation(exercise, station),
+          onToggle: () {
+            setState(() {
+              _expandedRowKey = expanded ? null : rowKey;
+            });
+          },
+          body: _buildExpandedBody(
+            context,
+            localizations,
+            exercise,
+            station,
+            hasRoles: hasRoles,
+          ),
+        ),
+      );
     }
 
-    return Dismissible(
-      key: ValueKey('station-row-${exercise.uuid}-${station.index}'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: colorScheme.secondaryContainer,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              localizations.editStation,
-              style: TextStyle(color: colorScheme.onSecondaryContainer),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.edit, color: colorScheme.onSecondaryContainer),
-          ],
-        ),
-      ),
-      confirmDismiss: (_) async {
-        await _openStationForm(exercise, station);
-        return false;
-      },
-      child: ExpandableTile(
-        onLongPress: () => _openStationForm(exercise, station),
-        leading: badge,
-        title: RingDrillText(
-          station.name,
-          overrides: _overridesFor(exercise, station),
-          style: accent.textStyle,
-        ),
-        subtitle: RingDrillText(
-          '${localizations.exercise(1)}: ${exercise.name}',
-          overrides: _overridesFor(exercise, station),
-          style: accent.textStyle,
-        ),
-        accent: accent,
-        selected: selected,
-        expanded: expanded,
-        onOpen: () => _openStation(exercise, station),
-        onToggle: () {
-          setState(() {
-            _expandedRowKey = expanded ? null : rowKey;
-          });
-        },
-        body: _buildExpandedBody(context, localizations, exercise, station),
+    // DESIGN-010 browser tile polish: each row lists a different station, so
+    // it seeds its own ExerciseScope/StationScope (mirroring station_screen.
+    // dart's detail sheet) rather than sharing one ancestor — this is what
+    // lets `{{station.*}}` (e.g. `{{station.position.utm}}`) resolve inside
+    // the tile's title/subtitle/body instead of showing literally.
+    return ExerciseScope(
+      exercise: exercise,
+      variableOverrides: exercise.variableOverrides,
+      child: StationScope(
+        locations: station.locations,
+        persons: station.persons,
+        name: station.name,
+        description: station.description,
+        variantSuffix: station.variantSuffix,
+        positionUtm: formatUtm(station.position),
+        child: tile,
       ),
     );
   }
@@ -407,37 +437,45 @@ class _StationListViewState extends State<StationListView> {
     BuildContext context,
     AppLocalizations localizations,
     Exercise exercise,
-    Station station,
-  ) {
+    Station station, {
+    required bool hasRoles,
+  }) {
     final hasDescription =
         station.description != null && station.description!.trim().isNotEmpty;
     final theme = Theme.of(context);
+    // One shared TileSectionDivider between each present section — never a
+    // leading or trailing one — so Description/Position/Markers read as
+    // consistently divided regardless of which are present for this station.
+    final sections = <Widget>[
+      if (hasDescription)
+        RingDrillText(
+          station.description!,
+          overrides: _overridesFor(exercise, station),
+          style: theme.textTheme.bodyMedium,
+        ),
+      // Shared "Posisjon" label + pin/coords row + tappable mini-map
+      // (140 px tall to match the previous inline layout). Keeping the
+      // 140 px height — instead of falling back to the widget's 200 px
+      // default — preserves the compact look this list relies on.
+      StationPositionPanel(
+        exercise: exercise,
+        station: station,
+        mapHeight: 140,
+        miniMapKey: ValueKey<String>(
+          'stations-list-map-${exercise.uuid}-${station.index}',
+        ),
+      ),
+      if (hasRoles)
+        StationRoleSummary(exercise: exercise, stationIndex: station.index),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (hasDescription) ...[
-          RingDrillText(
-            station.description!,
-            overrides: _overridesFor(exercise, station),
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
+        for (var i = 0; i < sections.length; i++) ...[
+          if (i > 0) const TileSectionDivider(),
+          sections[i],
         ],
-        // Shared "Posisjon" label + pin/coords row + tappable mini-map
-        // (140 px tall to match the previous inline layout). Keeping the
-        // 140 px height — instead of falling back to the widget's 200 px
-        // default — preserves the compact look this list relies on.
-        StationPositionPanel(
-          exercise: exercise,
-          station: station,
-          mapHeight: 140,
-          miniMapKey: ValueKey<String>(
-            'stations-list-map-${exercise.uuid}-${station.index}',
-          ),
-        ),
-        const SizedBox(height: 12),
-        StationRoleSummary(exercise: exercise, stationIndex: station.index),
       ],
     );
   }

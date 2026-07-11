@@ -1568,9 +1568,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get castPrivateHint => 'Stays on this device';
-
-  @override
   String roleSubtitleStation(String name) {
     return 'Station: $name';
   }

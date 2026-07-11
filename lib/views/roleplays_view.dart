@@ -7,6 +7,8 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -20,13 +22,16 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
+import 'package:ringdrill/views/widgets/tile_section_divider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _CastAction { edit, clear }
@@ -68,6 +73,20 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       exercise: exercise,
       station: station,
     );
+  }
+
+  /// The station [rolePlay] is assigned to, or `null` when unassigned/out of
+  /// range (mirrors `RolePlayScreen`'s own station resolution) — the tile's
+  /// `StationScope` seed for Fix 5 (`{{station.*}}` resolution).
+  Station? _stationFor(Exercise exercise, RolePlay rolePlay) {
+    final stationIndex = rolePlay.stationIndex;
+    final stations = exercise.stations;
+    if (stationIndex == null ||
+        stationIndex < 0 ||
+        stationIndex >= stations.length) {
+      return null;
+    }
+    return stations[stationIndex];
   }
 
   RolePlaysController get _controller => widget.controller;
@@ -241,8 +260,9 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     final actor = rolePlay.actorUuid != null
         ? _service.getActor(rolePlay.actorUuid!)
         : null;
+    final station = _stationFor(exercise, rolePlay);
 
-    return Dismissible(
+    final tile = Dismissible(
       key: ValueKey('role-row-${rolePlay.uuid}'),
       direction: DismissDirection.endToStart,
       background: Container(
@@ -324,6 +344,30 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         ),
       ),
     );
+
+    // DESIGN-010 browser tile polish: each row is a different roleplay, so
+    // it seeds its own ExerciseScope/(optional) StationScope from the
+    // linked station — mirroring RolePlayScreen's detail sheet — so
+    // `{{station.*}}` resolves inside the tile instead of showing literally.
+    // Both are skipped rather than passed fake data when absent (an
+    // orphaned/unassigned roleplay has neither).
+    Widget scoped = tile;
+    if (station != null) {
+      scoped = StationScope(
+        locations: station.locations,
+        persons: station.persons,
+        name: station.name,
+        description: station.description,
+        variantSuffix: station.variantSuffix,
+        positionUtm: formatUtm(station.position),
+        child: scoped,
+      );
+    }
+    return ExerciseScope(
+      exercise: exercise,
+      variableOverrides: exercise.variableOverrides,
+      child: scoped,
+    );
   }
 
   Widget _buildCastChip(
@@ -351,122 +395,143 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     RolePlay rolePlay,
     Actor? actor,
   ) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    // Scenario fields — labeled, matching the RolePlayScreen card style.
+    // Collected as one "section" (own internal 8px gaps, not full section
+    // dividers) so the tile shows at most one divider between it and the
+    // position panel/Cast, not one per field.
+    final scenarioBlocks = <Widget>[];
+    void addScenarioBlock(String label, String? text) {
+      if (text == null || text.isEmpty) return;
+      if (scenarioBlocks.isNotEmpty) {
+        scenarioBlocks.add(const SizedBox(height: 8));
+      }
+      scenarioBlocks.add(
+        _ExpandedFieldBlock(
+          label: label,
+          text: text,
+          overrides: _overridesFor(exercise, rolePlay),
+        ),
+      );
+    }
+
+    addScenarioBlock(localizations.roleSignalement, rolePlay.signalement);
+    addScenarioBlock(localizations.roleBackground, rolePlay.background);
+    addScenarioBlock(localizations.roleBehavior, rolePlay.behavior);
+
+    // One shared TileSectionDivider between each present section — never a
+    // leading or trailing one — so Scenario/Position/Cast read as
+    // consistently divided regardless of which are present for this role.
+    final sections = <Widget>[
+      if (scenarioBlocks.isNotEmpty)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: scenarioBlocks,
+        ),
+      if (rolePlay.position != null)
+        RolePositionPanel(
+          key: ValueKey('role-map-${rolePlay.uuid}'),
+          position: rolePlay.position!,
+          label:
+              resolveScopedField(
+                context,
+                rolePlay.name,
+                overrides: _overridesFor(exercise, rolePlay),
+              ) ??
+              rolePlay.name,
+          mapHeight: 140,
+        ),
+      _buildCastSection(context, localizations, rolePlay, actor),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Scenario fields — labeled, matching the RolePlayScreen card style
-        if (rolePlay.signalement?.isNotEmpty == true) ...[
-          _ExpandedFieldBlock(
-            label: localizations.roleSignalement,
-            text: rolePlay.signalement!,
-            overrides: _overridesFor(exercise, rolePlay),
-          ),
-          const SizedBox(height: 8),
+        for (var i = 0; i < sections.length; i++) ...[
+          if (i > 0) const TileSectionDivider(),
+          sections[i],
         ],
-        if (rolePlay.background?.isNotEmpty == true) ...[
-          _ExpandedFieldBlock(
-            label: localizations.roleBackground,
-            text: rolePlay.background!,
-            overrides: _overridesFor(exercise, rolePlay),
-          ),
-          const SizedBox(height: 8),
-        ],
-        if (rolePlay.behavior?.isNotEmpty == true) ...[
-          _ExpandedFieldBlock(
-            label: localizations.roleBehavior,
-            text: rolePlay.behavior!,
-            overrides: _overridesFor(exercise, rolePlay),
-          ),
-          const SizedBox(height: 8),
-        ],
+      ],
+    );
+  }
 
-        // Position panel (label row + mini-map)
-        if (rolePlay.position != null) ...[
-          const Divider(height: 16),
-          RolePositionPanel(
-            key: ValueKey('role-map-${rolePlay.uuid}'),
-            position: rolePlay.position!,
-            label:
-                resolveScopedField(
-                  context,
-                  rolePlay.name,
-                  overrides: _overridesFor(exercise, rolePlay),
-                ) ??
-                rolePlay.name,
-            mapHeight: 140,
-          ),
-        ],
+  Widget _buildCastSection(
+    BuildContext context,
+    AppLocalizations localizations,
+    RolePlay rolePlay,
+    Actor? actor,
+  ) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
-        const Divider(height: 16),
-
-        // Cast
-        if (actor == null)
-          TextButton.icon(
-            onPressed: () => _openCastPicker(rolePlay),
-            icon: const Icon(Icons.person_add_outlined, size: 18),
-            label: Text(localizations.addCast),
-          )
-        else
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+    if (actor == null) {
+      return TextButton.icon(
+        onPressed: () => _openCastPicker(rolePlay),
+        icon: const Icon(Icons.person_add_outlined, size: 18),
+        label: Text(localizations.addCast),
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(actor.realName, style: theme.textTheme.bodyMedium),
-                    if (actor.phone != null)
-                      InkWell(
-                        onTap: () => launchUrl(Uri.parse('tel:${actor.phone}')),
-                        child: Text(
-                          actor.phone!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.primary,
-                          ),
-                        ),
-                      ),
-                    if (actor.notes != null && actor.notes!.isNotEmpty)
-                      Text(
-                        actor.notes!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    Text(
-                      localizations.castPrivateHint,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                      ),
+              // "Spilles av {realName}" (castedByLine) — the same "Played
+              // by …" wording the detail sheet uses, not the bare actor
+              // name. castPrivateHint ("Stays on this device") is
+              // deliberately dropped: deprecated wording the app has moved
+              // away from.
+              Text(
+                localizations.castedByLine(actor.realName),
+                style: theme.textTheme.bodyMedium,
+              ),
+              if (actor.phone != null)
+                InkWell(
+                  onTap: () => launchUrl(Uri.parse('tel:${actor.phone}')),
+                  child: Text(
+                    actor.phone!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.primary,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              PopupMenuButton<_CastAction>(
-                onSelected: (action) async {
-                  if (action == _CastAction.clear) {
-                    await _clearCast(rolePlay);
-                  } else {
-                    await _editCast(actor, rolePlay);
-                  }
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: _CastAction.edit,
-                    child: Text(localizations.editCast),
+              if (actor.notes != null && actor.notes!.isNotEmpty)
+                Text(
+                  actor.notes!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
-                  PopupMenuItem(
-                    value: _CastAction.clear,
-                    child: Text(localizations.clearCast),
-                  ),
-                ],
-              ),
+                ),
             ],
           ),
+        ),
+        PopupMenuButton<_CastAction>(
+          // Explicit Icons.more_vert rather than PopupMenuButton's
+          // platform-adaptive default, which renders horizontal dots on
+          // iOS/macOS-style platforms (matches variables_section.dart /
+          // section_navigated_form.dart).
+          icon: const Icon(Icons.more_vert),
+          onSelected: (action) async {
+            if (action == _CastAction.clear) {
+              await _clearCast(rolePlay);
+            } else {
+              await _editCast(actor, rolePlay);
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: _CastAction.edit,
+              child: Text(localizations.editCast),
+            ),
+            PopupMenuItem(
+              value: _CastAction.clear,
+              child: Text(localizations.clearCast),
+            ),
+          ],
+        ),
       ],
     );
   }

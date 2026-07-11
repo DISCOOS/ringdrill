@@ -2624,12 +2624,6 @@ abstract class AppLocalizations {
   /// **'Already cast as {name}'**
   String alreadyCastAs(String name);
 
-  /// Persistent hint below the Cast section header. Positively framed: the actor data stays local and is never published.
-  ///
-  /// In en, this message translates to:
-  /// **'Stays on this device'**
-  String get castPrivateHint;
-
   /// Collapsed-tile subtitle when the role has a stationIndex set. Displays the station name.
   ///
   /// In en, this message translates to:

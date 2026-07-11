@@ -1564,9 +1564,6 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get castPrivateHint => 'Lagres lokalt';
-
-  @override
   String roleSubtitleStation(String name) {
     return 'Post: $name';
   }

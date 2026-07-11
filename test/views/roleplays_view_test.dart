@@ -164,7 +164,8 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 0);
-      expect(find.text(_actorA.realName), findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.castedByLine(_actorA.realName)), findsOneWidget);
     });
 
     testWidgets('phone is rendered when actor has phone', (tester) async {
@@ -227,7 +228,8 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 1);
-      expect(find.text(_actorB.realName), findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
     });
 
     testWidgets('phone number not rendered when actor.phone is null',
@@ -237,7 +239,8 @@ void main() {
       await _expandTileAt(tester, 1);
 
       // Actor name is present
-      expect(find.text(_actorB.realName), findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
       // The phone number of actor A must not appear in role B's section
       expect(find.text(_actorA.phone!), findsNothing);
     });

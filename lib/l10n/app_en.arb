@@ -1443,10 +1443,6 @@
       "name": { "type": "String" }
     }
   },
-  "castPrivateHint": "Stays on this device",
-  "@castPrivateHint": {
-    "description": "Persistent hint below the Cast section header. Positively framed: the actor data stays local and is never published."
-  },
   "roleSubtitleStation": "Station: {name}",
   "@roleSubtitleStation": {
     "description": "Collapsed-tile subtitle when the role has a stationIndex set. Displays the station name.",
