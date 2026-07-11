@@ -9,6 +9,7 @@ class PhaseHeaders extends StatelessWidget {
     required this.mainAxisAlignment,
     this.cellSize = 62,
     this.expand = false,
+    this.expandTitle = false,
   });
 
   final bool expand;
@@ -17,6 +18,15 @@ class PhaseHeaders extends StatelessWidget {
   final double titleWidth;
 
   final MainAxisAlignment mainAxisAlignment;
+
+  /// Grows the title cell to fill the row's leftover width instead of
+  /// sitting at a fixed [titleWidth] — the header-side half of
+  /// `ScheduleTable`'s width mode (see `ScheduleRow.labelWidth`, which grows
+  /// the row's label cell the same way so the header bar and the rows
+  /// always agree on total width and the phase columns stay aligned).
+  /// Independent of [expand] (an unrelated trailing filler used by callers
+  /// outside `ScheduleTable`).
+  final bool expandTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -33,22 +43,27 @@ class PhaseHeaders extends StatelessWidget {
     // scale-driven version (IntrinsicHeight + stretch) is the path to a 1.5
     // cap, deferred to that raise.
     const headerHeight = 28.0;
+    final titleCell = Container(
+      height: headerHeight,
+      width: expandTitle ? null : titleWidth,
+      constraints: expandTitle
+          ? BoxConstraints(minWidth: titleWidth)
+          : null,
+      color: color,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Text(title),
+        ),
+      ),
+    );
     return Row(
+      mainAxisSize: expandTitle ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: mainAxisAlignment,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          height: headerHeight,
-          width: titleWidth,
-          color: color,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Text(title),
-            ),
-          ),
-        ),
+        expandTitle ? Expanded(child: titleCell) : titleCell,
         Container(
           height: headerHeight,
           width: cellSize,

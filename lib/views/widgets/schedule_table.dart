@@ -35,6 +35,14 @@ class ScheduleTableRow {
 /// [bordered] draws the boxed-table chrome (outer border, per-row
 /// separators) the Post/Spill cards use; the live exercise/team tables,
 /// already embedded in their own surface, render without it.
+///
+/// [fillWidth] is the one width mode shared by the header and every row:
+/// `true` (the default — the Post/Spill cards' existing look) grows the
+/// title/label cell to fill the surrounding width; `false` shrink-wraps the
+/// whole table to its content width, the way the coordinator round table
+/// looked before it moved onto this shared widget. Driving both `PhaseHeaders`
+/// and every `ScheduleRow` from the same flag keeps the header bar and the
+/// rows — and their phase columns — the same width in either mode.
 class ScheduleTable extends StatelessWidget {
   const ScheduleTable({
     super.key,
@@ -44,6 +52,7 @@ class ScheduleTable extends StatelessWidget {
     required this.exercise,
     this.labelWidth = 90,
     this.bordered = false,
+    this.fillWidth = true,
   });
 
   final String headerLabel;
@@ -52,6 +61,7 @@ class ScheduleTable extends StatelessWidget {
   final Exercise exercise;
   final double labelWidth;
   final bool bordered;
+  final bool fillWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +70,7 @@ class ScheduleTable extends StatelessWidget {
       title: headerLabel,
       titleWidth: labelWidth,
       mainAxisAlignment: MainAxisAlignment.center,
+      expandTitle: fillWidth,
     );
     final rowWidgets = [
       for (final row in rows)
@@ -70,7 +81,8 @@ class ScheduleTable extends StatelessWidget {
           roundIndex: row.roundIndex,
           muted: row.muted,
           onTap: row.onTap,
-          labelWidth: labelWidth,
+          labelWidth: fillWidth ? labelWidth : null,
+          mainAxisSize: fillWidth ? MainAxisSize.max : MainAxisSize.min,
         ),
     ];
 
