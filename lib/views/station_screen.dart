@@ -14,7 +14,6 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
-import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
@@ -30,6 +29,7 @@ import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/narrative_rollup_card.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
+import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
@@ -257,33 +257,73 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     );
   }
 
+  /// The shared [PlayerStatusCard] (DESIGN-010 follow-up: player-status-
+  /// card). The station name lives in the sheet's AppBar
+  /// (`SheetTitle.primary`), so this card only carries running-state info.
+  /// Gated on [_isStarted] (scoped to this exercise, not the global
+  /// `ExerciseService().isStarted`) so a different exercise running
+  /// elsewhere never renders this station's card with foreign data.
   Widget _buildStationStatus(Station station, ExerciseEvent event) {
-    final localizations = AppLocalizations.of(context)!;
-    // The station name lives in the sheet's AppBar (`SheetTitle.primary`),
-    // so this status row only carries running-state info. When the
-    // exercise has not started yet there is nothing to report and the
-    // row collapses to `SizedBox.shrink`.
-    if (!_exerciseService.isStarted) return const SizedBox.shrink();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          event.getState(localizations),
-          // ADR-0037: themed titleLarge (20) instead of a hardcoded 24.
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          event.isPending
-              ? DateTimeX.fromMinutes(event.remainingTime).formal(localizations)
-              : localizations.minute(event.remainingTime),
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-      ],
+    if (!_isStarted) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    return PlayerStatusCard(
+      event: event,
+      preStartSubline: l10n.statusPreStartSubline(
+        _exercise.startTime.toString(),
+        _exercise.numberOfRounds,
+      ),
+      leadingCell: _teamAtPostCell(
+        l10n,
+        roundIndex: event.currentRound,
+        isNow: true,
+      ),
+      trailingCell: _nextTeamAtPostCell(l10n, event),
     );
+  }
+
+  /// "Nå"/"Neste" team-at-post cell for [roundIndex], from
+  /// `Exercise.teamIndex` — the same rotation math `_buildTimingCard`'s
+  /// schedule rows read. `null` team ("Ikke aktiv nå") for [isNow]; a
+  /// missing round for "Neste" is handled by [_nextTeamAtPostCell]
+  /// returning `null` instead.
+  PlayerStatusCell _teamAtPostCell(
+    AppLocalizations l10n, {
+    required int roundIndex,
+    required bool isNow,
+  }) {
+    final teamIndex = _exercise.teamIndex(widget.stationIndex, roundIndex);
+    return PlayerStatusCell(
+      icon: Icons.groups,
+      label: isNow ? l10n.statusNow : l10n.nextLabel,
+      value: teamIndex == -1
+          ? l10n.statusNotActiveNow
+          : '${l10n.team(1)} ${teamIndex + 1}',
+      isNow: isNow,
+    );
+  }
+
+  /// The next round (after [event.currentRound]) that assigns a team to
+  /// this station, or `null` once no later round does (last active
+  /// round already running).
+  PlayerStatusCell? _nextTeamAtPostCell(
+    AppLocalizations l10n,
+    ExerciseEvent event,
+  ) {
+    for (
+      var roundIndex = event.currentRound + 1;
+      roundIndex < _exercise.schedule.length;
+      roundIndex++
+    ) {
+      final teamIndex = _exercise.teamIndex(widget.stationIndex, roundIndex);
+      if (teamIndex == -1) continue;
+      return PlayerStatusCell(
+        icon: Icons.arrow_forward,
+        label: l10n.nextLabel,
+        time: _exercise.schedule[roundIndex][0].toString(),
+        value: '${l10n.team(1)} ${teamIndex + 1}',
+      );
+    }
+    return null;
   }
 
   /// Postbeskrivelse (rollup) + map cards. Sized to its content (no inner

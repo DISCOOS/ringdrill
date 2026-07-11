@@ -35,6 +35,7 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/notification_permission_help.dart';
+import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
@@ -45,11 +46,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'exercise_form_screen.dart';
 import 'plan_additions.dart';
 
-/// Width of the combined hero card when it's used as a sidebar to the
-/// right of the round table. Below this the colour squares plus the
-/// label/time pair become hard to read, so the layout falls back to
-/// the stacked variant.
-const double _kHeroSidebarWidth = 150;
+/// Width of the status card when it's used as a sidebar to the right of
+/// the round table. The running state's countdown/meta row and now/next
+/// cells need more breathing room than the old hero card did, so this is
+/// wider than before — below it the layout falls back to the stacked
+/// variant.
+const double _kHeroSidebarWidth = 260;
 const double _kCoordinatorTwoColumnViewportWidth = 1120;
 const double _kCoordinatorTwoColumnContentWidth = 900;
 const double _kCoordinatorBodyPadding = 16;
@@ -1106,7 +1108,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   // regardless of how wide the parent is.
                   SizedBox(
                     width: _kHeroSidebarWidth,
-                    child: _buildCombinedHeroCard(event, isSidebar: true),
+                    child: _buildCombinedHeroCard(event),
                   ),
                 ],
               ),
@@ -1119,7 +1121,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildCombinedHeroCard(event, isSidebar: false),
+            _buildCombinedHeroCard(event),
             const SizedBox(height: 12),
             Center(child: _buildRoundTable(event, true)),
           ],
@@ -1128,122 +1130,70 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  /// One combined card that stacks the Phase Now and Next sections,
-  /// separated by a divider. Replaces the two-card layout we had before
-  /// so the sidebar reads as a single unit. See the user-supplied
-  /// design with the card placed to the right of the round table.
-  Widget _buildCombinedHeroCard(ExerciseEvent event, {bool isSidebar = false}) {
-    // Pin the background to `colorScheme.surface` instead of inheriting the
-    // ambient `cardTheme.color`. The wide master/detail layout deliberately
-    // hijacks `cardTheme.color` to `brandDeep` for the master pane (see
-    // MainScreen._buildWideBody). If that theme scope ever reaches this tile
-    // — e.g. through element reuse while the desktop window is resized — the
-    // card would paint `brandDeep`, the same tone as the scaffold, and the
-    // status tile would visually disappear. `colorScheme` is never
-    // overridden, so reading the surface from it keeps the tile stable in
-    // every layout and across resizes.
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 2,
-      color: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [_buildPhaseNowSection(event, isSidebar: isSidebar)],
-        ),
-      ),
-    );
-  }
-
-  /// Top half of the combined hero card. Pure content (no Card or
-  /// padding) so it composes cleanly inside any container the layout
-  /// puts it in.
-  Widget _buildPhaseNowSection(ExerciseEvent event, {required bool isSidebar}) {
+  /// The coordinator's [PlayerStatusCard] — no "Nå" cell (the current
+  /// phase is already in the countdown line), so both now/next cells are
+  /// forward-looking: "Neste fase" (the next phase and its start time)
+  /// and "Neste runde" (the next round and its start time). Both are
+  /// omitted once there is no further phase/round to report (the last
+  /// phase of the last round).
+  Widget _buildCombinedHeroCard(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final phaseIdx = event.isPending ? -1 : event.phase.index - 1;
-    final isPending = phaseIdx < 0;
-    final caption = isPending
-        ? event.getState(localizations)
-        : localizations
-              .remainingInPhase(event.getState(localizations))
-              .toUpperCase();
-    final endTime = isPending
-        ? _exercise!.startTime
-        : _exercise!.phaseEndTime(event.currentRound, phaseIdx);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        _buildRemainingTime(event.remainingTime, theme, isSidebar: isSidebar),
-        const SizedBox(height: 6),
-        Text(
-          caption,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.outline,
-            letterSpacing: 0.5,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        if (endTime != null) ...[
-          const SizedBox(height: 2),
-          Text(
-            localizations.phaseEndsAt(endTime.toString()),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ],
+    final exercise = _exercise!;
+    final (nextPhase, nextRound) = _coordinatorNowNext(event, localizations);
+    return PlayerStatusCard(
+      event: event,
+      preStartSubline: localizations.statusPreStartSubline(
+        exercise.startTime.toString(),
+        exercise.numberOfRounds,
+      ),
+      leadingCell: nextPhase,
+      trailingCell: nextRound,
     );
   }
 
-  /// Renders the dominant remaining-time element in the Phase Now
-  /// section. For short durations (< 60 min) we use "X" big plus
-  /// " min" small so the unit reads naturally; for longer durations —
-  /// which only happen during the pending state when the start time is
-  /// more than an hour away — we collapse to a timer-style "H:MM" so
-  /// the number stays compact instead of growing into something like
-  /// "826 min".
-  Widget _buildRemainingTime(
-    int minutes,
-    ThemeData theme, {
-    required bool isSidebar,
-  }) {
-    final bigStyle = theme.textTheme.displaySmall?.copyWith(
-      fontWeight: FontWeight.w500,
-      fontFeatures: const [FontFeature.tabularFigures()],
-      height: 1.0,
-    );
-    if (minutes < 60) {
-      return Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: '$minutes', style: bigStyle),
-            TextSpan(
-              text: ' min',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.outline,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        textAlign: TextAlign.center,
+  /// Computes the coordinator's "Neste fase"/"Neste runde" cells from
+  /// `Exercise.schedule` — the next phase in the current round (or, for
+  /// the last phase, the next round's first phase) and the next round
+  /// after the current one. Either (or both) is `null` once there is
+  /// nothing further to report (last phase of the last round / last
+  /// round already running).
+  (PlayerStatusCell?, PlayerStatusCell?) _coordinatorNowNext(
+    ExerciseEvent event,
+    AppLocalizations localizations,
+  ) {
+    if (!event.isRunning) return (null, null);
+    final exercise = _exercise!;
+    final phaseIdx = event.phase.index - 1;
+    final roundIdx = event.currentRound;
+    final isLastRound = roundIdx >= exercise.numberOfRounds - 1;
+
+    PlayerStatusCell? nextPhaseCell;
+    if (phaseIdx < 2 || !isLastRound) {
+      final nextPhaseIdx = phaseIdx < 2 ? phaseIdx + 1 : 0;
+      final nextPhaseRound = phaseIdx < 2 ? roundIdx : roundIdx + 1;
+      final nextPhaseName = switch (nextPhaseIdx) {
+        0 => localizations.drill,
+        1 => localizations.eval,
+        _ => localizations.roll,
+      }.toUpperCase();
+      nextPhaseCell = PlayerStatusCell(
+        icon: Icons.arrow_forward,
+        label: localizations.statusNextPhase,
+        time: exercise.schedule[nextPhaseRound][nextPhaseIdx].toString(),
+        value: nextPhaseName,
       );
     }
-    final h = minutes ~/ 60;
-    final m = (minutes % 60).toString().padLeft(2, '0');
-    return Text('$h:$m', style: bigStyle, textAlign: TextAlign.center);
+
+    PlayerStatusCell? nextRoundCell;
+    if (!isLastRound) {
+      nextRoundCell = PlayerStatusCell(
+        icon: Icons.repeat,
+        label: localizations.statusNextRound,
+        time: exercise.schedule[roundIdx + 1][0].toString(),
+        value: '${localizations.round(1)} ${roundIdx + 2}',
+      );
+    }
+    return (nextPhaseCell, nextRoundCell);
   }
 
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {

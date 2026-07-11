@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
-import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
@@ -144,32 +145,82 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     );
   }
 
+  /// The shared [PlayerStatusCard] (DESIGN-010 follow-up: player-status-
+  /// card). The team label lives in the sheet's AppBar
+  /// (`SheetTitle.primary`), so this card only carries running-state info.
+  /// Gated on `isStartedOn` (scoped to this exercise) so a different
+  /// exercise running elsewhere never renders this team's card with
+  /// foreign data.
   Widget _buildTeamStatus(ExerciseEvent event) {
-    final localizations = AppLocalizations.of(context)!;
-    // The team label lives in the sheet's AppBar (`SheetTitle.primary`),
-    // so this status row only carries running-state info. When the
-    // exercise has not started yet there is nothing to report and the
-    // row collapses to `SizedBox.shrink`.
-    if (!ExerciseService().isStarted) return const SizedBox.shrink();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          event.getState(localizations),
-          // ADR-0037: themed titleLarge (20) instead of a hardcoded 24.
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          event.isPending
-              ? DateTimeX.fromMinutes(event.remainingTime).formal(localizations)
-              : localizations.minute(event.remainingTime),
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-      ],
+    if (!_exerciseService.isStartedOn(widget.exercise.uuid)) {
+      return const SizedBox.shrink();
+    }
+    final l10n = AppLocalizations.of(context)!;
+    return PlayerStatusCard(
+      event: event,
+      preStartSubline: l10n.statusPreStartSubline(
+        widget.exercise.startTime.toString(),
+        widget.exercise.numberOfRounds,
+      ),
+      leadingCell: _postAtRoundCell(l10n, event.currentRound, isNow: true),
+      trailingCell: _nextPostCell(l10n, event),
+    );
+  }
+
+  /// "Nå"/"Neste" post-the-team-is-at cell for [roundIndex], from
+  /// `Exercise.stationIndex` — the same rotation math [_buildScheduleCard]
+  /// reads. A team is always assigned a station every round, so — unlike
+  /// the Post/Spill "team at post" cells — there is no "not active" case.
+  PlayerStatusCell _postAtRoundCell(
+    AppLocalizations l10n,
+    int roundIndex, {
+    required bool isNow,
+    String? time,
+  }) {
+    final stationIndex = widget.exercise.stationIndex(
+      widget.teamIndex,
+      roundIndex,
+    );
+    final station = widget.exercise.stations[stationIndex];
+    final program = _programService.activeProgram;
+    final exerciseNumber =
+        _programService.loadExercises().indexWhere(
+          (e) => e.uuid == widget.exercise.uuid,
+        ) +
+        1;
+    return PlayerStatusCell(
+      icon: Icons.location_on,
+      label: isNow ? l10n.statusNow : l10n.nextLabel,
+      time: time,
+      badge: Numbering.station(
+        program?.stationNumberFormat ?? StationNumberFormat.dotted,
+        exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
+        stationIndex: stationIndex,
+      ),
+      value: program == null
+          ? station.name
+          : substitutePlanVariables(
+              station.name,
+              effectivePlanVariables(
+                program,
+                exercise: widget.exercise,
+                station: station,
+              ),
+            ),
+      isNow: isNow,
+    );
+  }
+
+  /// The next round's post, or `null` once the current round is the last
+  /// one (no further round to report).
+  PlayerStatusCell? _nextPostCell(AppLocalizations l10n, ExerciseEvent event) {
+    final nextRound = event.currentRound + 1;
+    if (nextRound >= widget.exercise.numberOfRounds) return null;
+    return _postAtRoundCell(
+      l10n,
+      nextRound,
+      isNow: false,
+      time: widget.exercise.schedule[nextRound][0].toString(),
     );
   }
 

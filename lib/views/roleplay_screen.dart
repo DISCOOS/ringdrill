@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -17,6 +18,7 @@ import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -214,6 +216,13 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
               // Identity (name + parent exercise) lives in the sheet's
               // AppBar via `SheetTitle`. The body starts directly at the
               // first content card.
+
+              // Shared status card (DESIGN-010 follow-up: player-status-
+              // card): "Nå"/"Neste" is the team this marker's post meets,
+              // from the same rotation math the "Når aktiv" card below
+              // reads. Omitted for an unassigned/orphaned roleplay.
+              if (station != null && exercise != null && stationIndex != null)
+                _MarkerStatusCard(exercise: exercise, stationIndex: stationIndex),
 
               // Station context card — parent post, chevron through.
               _StationContextCard(
@@ -567,6 +576,116 @@ class _EffectiveIdentityCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// The shared [PlayerStatusCard] for the Spill (marker) player (DESIGN-010
+/// follow-up: player-status-card): "Nå"/"Neste" is the team [stationIndex]'s
+/// post meets now/next, from `Exercise.teamIndex` — the same rotation math
+/// [_ActiveScheduleCard] reads below — falling back to "Ikke aktiv nå" when
+/// the post has no team assigned this round. Wrapped in its own
+/// `StreamBuilder`, like [_ActiveScheduleCard], since [RolePlayScreen] has
+/// no single event stream of its own.
+class _MarkerStatusCard extends StatelessWidget {
+  const _MarkerStatusCard({required this.exercise, required this.stationIndex});
+
+  final Exercise exercise;
+  final int stationIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final exerciseService = ExerciseService();
+    if (!exerciseService.isStartedOn(exercise.uuid)) {
+      return const SizedBox.shrink();
+    }
+    final lastEvent = exerciseService.last;
+    return StreamBuilder<ExerciseEvent>(
+      stream: exerciseService.events,
+      initialData: lastEvent?.exercise.uuid == exercise.uuid
+          ? lastEvent
+          : ExerciseEvent.pending(exercise),
+      builder: (context, snapshot) {
+        final event = snapshot.data!;
+        final l10n = AppLocalizations.of(context)!;
+        return PlayerStatusCard(
+          event: event,
+          preStartSubline: l10n.statusPreStartSublineMarker(
+            _activeFrom().toString(),
+            Numbering.station(
+              ProgramService().activeProgram?.stationNumberFormat ??
+                  StationNumberFormat.dotted,
+              exerciseNumber: _exerciseNumber(),
+              stationIndex: stationIndex,
+            ),
+          ),
+          leadingCell: _teamAtPostCell(l10n, event.currentRound, isNow: true),
+          trailingCell: _nextTeamAtPostCell(l10n, event),
+        );
+      },
+    );
+  }
+
+  /// Start time of the first round this post is staffed by a team, for the
+  /// pre-start subline's "aktiv fra HH:MM" — falls back to the exercise's
+  /// own start time when the post is never staffed (a marker with no active
+  /// round at all).
+  SimpleTimeOfDay _activeFrom() {
+    for (
+      var roundIndex = 0;
+      roundIndex < exercise.schedule.length;
+      roundIndex++
+    ) {
+      if (exercise.teamIndex(stationIndex, roundIndex) != -1) {
+        return exercise.schedule[roundIndex][0];
+      }
+    }
+    return exercise.startTime;
+  }
+
+  int _exerciseNumber() =>
+      ProgramService().loadExercises().indexWhere(
+        (e) => e.uuid == exercise.uuid,
+      ) +
+      1;
+
+  PlayerStatusCell _teamAtPostCell(
+    AppLocalizations l10n,
+    int roundIndex, {
+    required bool isNow,
+  }) {
+    final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
+    return PlayerStatusCell(
+      icon: Icons.theater_comedy,
+      label: isNow ? l10n.statusNow : l10n.nextLabel,
+      value: teamIndex == -1
+          ? l10n.statusNotActiveNow
+          : '${l10n.team(1)} ${teamIndex + 1}',
+      isNow: isNow,
+    );
+  }
+
+  /// The next round (after [event.currentRound]) this post is staffed by a
+  /// team, or `null` once no later round is (last active round already
+  /// running).
+  PlayerStatusCell? _nextTeamAtPostCell(
+    AppLocalizations l10n,
+    ExerciseEvent event,
+  ) {
+    for (
+      var roundIndex = event.currentRound + 1;
+      roundIndex < exercise.schedule.length;
+      roundIndex++
+    ) {
+      final teamIndex = exercise.teamIndex(stationIndex, roundIndex);
+      if (teamIndex == -1) continue;
+      return PlayerStatusCell(
+        icon: Icons.arrow_forward,
+        label: l10n.nextLabel,
+        time: exercise.schedule[roundIndex][0].toString(),
+        value: '${l10n.team(1)} ${teamIndex + 1}',
+      );
+    }
+    return null;
   }
 }
 
