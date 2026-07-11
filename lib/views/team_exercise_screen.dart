@@ -10,6 +10,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -112,9 +113,9 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
                   // Team Info
                   _buildTeamStatus(event),
                   const SizedBox(height: 8),
-                  // Schedule Details — the shared table (its own PhaseHeaders
-                  // is the header, no separate one above it).
-                  Expanded(child: _buildScheduleTable(event)),
+                  // Schedule Details — the shared schedule card, matching
+                  // the Post/Spill viewers' Tidsplan/Når aktiv cards.
+                  Expanded(child: _buildScheduleCard(event)),
                 ],
               ),
             );
@@ -172,7 +173,8 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     );
   }
 
-  Widget _buildScheduleTable(ExerciseEvent event) {
+  Widget _buildScheduleCard(ExerciseEvent event) {
+    final localizations = AppLocalizations.of(context)!;
     final program = _programService.activeProgram;
     final rows = List.generate(widget.exercise.schedule.length, (index) {
       final stationIndex = widget.exercise.stationIndex(
@@ -201,12 +203,12 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
       );
     });
     return SingleChildScrollView(
-      child: ScheduleTable(
-        headerLabel: AppLocalizations.of(context)!.schedule,
+      child: ScheduleCard(
+        title: localizations.stationTimingCardTitle,
+        headerLabel: localizations.schedule,
         labelWidth: 78,
         event: event,
         exercise: widget.exercise,
-        bordered: true,
         rows: rows,
       ),
     );

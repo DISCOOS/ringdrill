@@ -5,10 +5,9 @@ import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
-import 'package:ringdrill/theme.dart'
-    show kDrillAccentFontSize, RingDrillColors;
-import 'package:ringdrill/views/phase_headers.dart';
-import 'package:ringdrill/views/widgets/schedule_row.dart';
+import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
+import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
@@ -219,43 +218,24 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
         TeamSheetTarget(exerciseUuid: exercise.uuid, teamIndex: teamIndex),
       ),
       onToggle: _toggleExpanded,
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PhaseHeaders(
-            expand: true,
-            titleWidth: 78,
-            title: localizations.schedule,
-            mainAxisAlignment: MainAxisAlignment.start,
-          ),
-          const SizedBox(height: 4),
-          ...List.generate(roundCount, (roundIndex) {
-            final stationIndex = exercise.stationIndex(teamIndex, roundIndex);
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              // Match the exercise card's expanded station tiles: the darker
-              // brandDeep surface in dark mode (surfaceContainerHigh in light)
-              // rather than the default card colour.
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? RingDrillColors.brandDeep
-                  : Theme.of(context).colorScheme.surfaceContainerHigh,
-              child: InkWell(
-                onTap: () => onStationTap(stationIndex),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ScheduleRow(
-                    label: exercise.stations[stationIndex].name,
-                    event: event,
-                    roundIndex: roundIndex,
-                    exercise: exercise,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                  ),
-                ),
-              ),
-            );
-          }),
-        ],
+      body: ScheduleCard(
+        title: localizations.stationTimingCardTitle,
+        headerLabel: localizations.schedule,
+        labelWidth: 78,
+        event: event,
+        exercise: exercise,
+        rows: List.generate(roundCount, (roundIndex) {
+          final stationIndex = exercise.stationIndex(teamIndex, roundIndex);
+          final none = stationIndex < 0;
+          return ScheduleTableRow(
+            roundIndex: roundIndex,
+            label: none
+                ? '${localizations.station(1)} ×'
+                : exercise.stations[stationIndex].name,
+            muted: none,
+            onTap: none ? null : () => onStationTap(stationIndex),
+          );
+        }),
       ),
     );
   }

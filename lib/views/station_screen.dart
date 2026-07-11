@@ -34,6 +34,7 @@ import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 
 class StationExerciseScreen extends StatefulWidget {
@@ -413,29 +414,12 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
               ),
       );
     });
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CardSectionHeader(
-            icon: Icons.access_time_filled,
-            title: l10n.stationTimingCardTitle,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: ScheduleTable(
-              headerLabel: l10n.team(1),
-              rows: rows,
-              event: event,
-              exercise: _exercise,
-              bordered: true,
-            ),
-          ),
-        ],
-      ),
+    return ScheduleCard(
+      title: l10n.stationTimingCardTitle,
+      headerLabel: l10n.team(1),
+      rows: rows,
+      event: event,
+      exercise: _exercise,
     );
   }
 

@@ -17,7 +17,7 @@ import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
-import 'package:ringdrill/views/widgets/card_section_header.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -617,29 +617,12 @@ class _ActiveScheduleCard extends StatelessWidget {
           : ExerciseEvent.pending(exercise),
       builder: (context, snapshot) {
         final event = snapshot.data!;
-        return Card(
-          elevation: 1,
-          margin: const EdgeInsets.only(bottom: 8),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CardSectionHeader(
-                icon: Icons.access_time_filled,
-                title: l10n.roleActiveScheduleCardTitle,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: ScheduleTable(
-                  headerLabel: l10n.team(1),
-                  rows: rows,
-                  event: event,
-                  exercise: exercise,
-                  bordered: true,
-                ),
-              ),
-            ],
-          ),
+        return ScheduleCard(
+          title: l10n.roleActiveScheduleCardTitle,
+          headerLabel: l10n.team(1),
+          rows: rows,
+          event: event,
+          exercise: exercise,
         );
       },
     );
