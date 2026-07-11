@@ -78,15 +78,14 @@ class ScheduleTable extends StatelessWidget {
   /// behaviour for its compact "R1" label) — so it can end up wider than a
   /// row label like "Runde 1"/"Runde 2" the header's fixed [labelWidth]
   /// never has to accommodate on its own (the header only ever shows
-  /// [headerLabel], e.g. "Runde"). A row also spends 3 `VerticalDividerWidget`s
-  /// (label|phase0|phase1|phase2) the header never renders. Widening the
-  /// header's title cell to the widest row label plus that same divider
-  /// budget (never narrower than [labelWidth]) keeps the header bar at
-  /// least as wide as every row without forcing the rows into a fixed
-  /// width of their own and losing that auto-fit.
+  /// [headerLabel], e.g. "Runde"). Widening the header's title cell to the
+  /// widest row label (never narrower than [labelWidth]) keeps the header
+  /// bar at least as wide as every row without forcing the rows into a
+  /// fixed width of their own and losing that auto-fit. `PhaseHeaders`
+  /// reserves its own matching `VerticalDividerWidget.defaultWidth` gaps
+  /// between cells, so this only has to account for the label/title column
+  /// itself, not the divider budget.
   double _shrinkTitleWidth() {
-    const dividerWidth = 8.0; // VerticalDividerWidget's default width
-    const dividerCount = 3; // leading + between phase0/1 + between phase1/2
     var widestLabel = labelWidth;
     const style = TextStyle(
       fontSize: kDrillAccentFontSize,
@@ -101,7 +100,7 @@ class ScheduleTable extends StatelessWidget {
       final width = painter.width + 24;
       if (width > widestLabel) widestLabel = width;
     }
-    return widestLabel + dividerCount * dividerWidth;
+    return widestLabel;
   }
 
   @override

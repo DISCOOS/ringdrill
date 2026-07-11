@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/vertical_divider_widget.dart';
 
 class PhaseHeaders extends StatelessWidget {
   const PhaseHeaders({
@@ -54,9 +55,20 @@ class PhaseHeaders extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Padding(
           padding: const EdgeInsets.only(left: 8.0),
-          child: Text(title),
+          child: Text(title.toUpperCase()),
         ),
       ),
+    );
+    // A same-colour spacer — not a visible divider glyph, just reserved
+    // width — matching each `VerticalDividerWidget` gap `ScheduleRow` lays
+    // out between its label and phase cells (leading + between phase0/1 +
+    // between phase1/2, no trailing gap). Without it, DRILL/EVAL/ROLL sit
+    // one-to-three divider-widths left of the time columns they're meant
+    // to label.
+    Widget dividerSpacer() => Container(
+      height: headerHeight,
+      width: VerticalDividerWidget.defaultWidth,
+      color: color,
     );
     return Row(
       mainAxisSize: expandTitle ? MainAxisSize.max : MainAxisSize.min,
@@ -64,18 +76,21 @@ class PhaseHeaders extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         expandTitle ? Expanded(child: titleCell) : titleCell,
+        dividerSpacer(),
         Container(
           height: headerHeight,
           width: cellSize,
           color: color,
           child: Center(child: Text(localizations.drill.toUpperCase())),
         ),
+        dividerSpacer(),
         Container(
           height: headerHeight,
           width: cellSize,
           color: color,
           child: Center(child: Text(localizations.eval.toUpperCase())),
         ),
+        dividerSpacer(),
         Container(
           height: headerHeight,
           width: cellSize,
