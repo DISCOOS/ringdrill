@@ -22,7 +22,7 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/widgets/schedule_row.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -1775,53 +1775,40 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final localizations = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...List<Widget>.generate(_exercise!.schedule.length, (roundIndex) {
-            final stationIndex = _exercise!.stationIndex(teamIndex, roundIndex);
-            final none = stationIndex < 0;
-            final title = none
+      child: ScheduleCard(
+        title: localizations.stationTimingCardTitle,
+        headerLabel: localizations.schedule,
+        labelWidth: 78,
+        event: event,
+        exercise: _exercise!,
+        rows: List<ScheduleTableRow>.generate(_exercise!.schedule.length, (
+          roundIndex,
+        ) {
+          final stationIndex = _exercise!.stationIndex(teamIndex, roundIndex);
+          final none = stationIndex < 0;
+          return ScheduleTableRow(
+            roundIndex: roundIndex,
+            label: none
                 ? '${localizations.station(1)} ×'
-                : _exercise!.stations[stationIndex].name;
+                : _exercise!.stations[stationIndex].name,
+            muted: none,
             // Mirror the description tap in _buildStationDetail: a round
-            // card here represents "team T at station S in round R", so a
+            // row here represents "team T at station S in round R", so a
             // tap should open the same StationExerciseScreen the
             // station-list path leads to. Rounds where the team has no
-            // station (`none`) keep their line-through styling and no
-            // tap handler so the dead cell can't trigger navigation.
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: none
-                    ? null
-                    : () => ContextSheet.of(context).show(
-                        context,
-                        StationSheetTarget(
-                          exerciseUuid: widget.uuid,
-                          stationIndex: stationIndex,
-                        ),
-                      ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ScheduleRow(
-                    event: event,
-                    label: title,
-                    // Fixed width keeps station-name cells aligned across
-                    // rounds so the drill/eval/roll columns line up
-                    // vertically. Names longer than this are ellipsed.
-                    labelWidth: 120,
-                    roundIndex: roundIndex,
-                    exercise: _exercise!,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    struckThrough: none,
+            // station (`none`) get no tap handler so the dead cell can't
+            // trigger navigation.
+            onTap: none
+                ? null
+                : () => ContextSheet.of(context).show(
+                    context,
+                    StationSheetTarget(
+                      exerciseUuid: widget.uuid,
+                      stationIndex: stationIndex,
+                    ),
                   ),
-                ),
-              ),
-            );
-          }),
-        ],
+          );
+        }),
       ),
     );
   }
