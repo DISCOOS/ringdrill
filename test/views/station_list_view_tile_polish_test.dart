@@ -121,8 +121,9 @@ void main() {
 
       // Header keeps the masks-theater icon (the "markers" group)...
       expect(find.byIcon(Icons.theater_comedy), findsOneWidget);
-      // ...the row now uses a person icon instead of repeating it.
-      expect(find.byIcon(Icons.person), findsOneWidget);
+      // ...the row uses the marker (face) icon — same as the cast picker —
+      // instead of repeating the header's masks icon.
+      expect(find.byIcon(Icons.face), findsOneWidget);
     },
   );
 

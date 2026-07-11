@@ -131,10 +131,11 @@ class _RoleSummaryRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Distinct from the section header's masks-theater icon above
-            // (DESIGN-010 browser tile polish) — the header names the group
-            // ("markers"), each row names an individual person.
-            Icon(Icons.person, size: 20, color: colorScheme.onSurfaceVariant),
+            // The marker (face) icon — the same `Icons.face` the cast picker
+            // uses for a marker, so a marker row reads consistently; distinct
+            // from the section header's masks-theater icon above, which names
+            // the "markers" group.
+            Icon(Icons.face, size: 20, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
