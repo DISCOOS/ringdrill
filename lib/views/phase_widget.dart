@@ -16,6 +16,8 @@ class PhasesWidget extends StatelessWidget {
     this.mainAxisAlignment = MainAxisAlignment.center,
     this.cellSize = 56.0,
     this.fontSize = kDrillAccentFontSize,
+    this.active = true,
+    this.color,
   });
 
   final int roundIndex;
@@ -25,6 +27,18 @@ class PhasesWidget extends StatelessWidget {
   final ExerciseEvent event;
   final TextDecoration? decoration;
   final MainAxisAlignment mainAxisAlignment;
+
+  /// Suppresses the current-round fill/highlight even when [event] reports
+  /// this as the running round — used by the shared schedule row for rows
+  /// that are muted (e.g. a post not in use this round), which must never
+  /// show the house treatment regardless of which round is actually live.
+  final bool active;
+
+  /// Overrides the non-current text color (defaults to the ambient theme
+  /// color via `null`). Used by the shared schedule row to apply the muted
+  /// color uniformly across the label and phase cells of a struck-through
+  /// row.
+  final Color? color;
 
   /// Width per phase cell. Default 56 matches the round-table cell width in
   /// PhaseTile. Smaller values are used by embedded contexts like the
@@ -39,7 +53,8 @@ class PhasesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCurrentRound = event.isRunning && roundIndex == event.currentRound;
+    final isCurrentRound =
+        active && event.isRunning && roundIndex == event.currentRound;
     final isCurrentPhase =
         isCurrentRound && phaseIndex == event.phase.index - 1;
     final isComplete = isCurrentRound && event.phase.index > phaseIndex + 1;
@@ -48,7 +63,7 @@ class PhasesWidget extends StatelessWidget {
       fontWeight: isCurrentRound
           ? FontWeight.bold
           : FontWeight.normal, // Emphasize current round
-      color: isCurrentRound ? Colors.white : null, // Contrast for visibility
+      color: isCurrentRound ? Colors.white : color, // Contrast for visibility
       decoration: decoration,
     );
 
