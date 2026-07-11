@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/widgets/schedule_row.dart';
 
@@ -51,6 +52,7 @@ class ScheduleTable extends StatelessWidget {
     required this.event,
     required this.exercise,
     this.labelWidth = 90,
+    this.cellSize = 56.0,
     this.bordered = false,
     this.fillWidth = true,
   });
@@ -60,15 +62,55 @@ class ScheduleTable extends StatelessWidget {
   final ExerciseEvent event;
   final Exercise exercise;
   final double labelWidth;
+
+  /// Width per phase column — shared by the header and every row so the
+  /// DRILL/EVAL/ROLL header cells line up with the actual phase-time cells
+  /// underneath them. `PhaseHeaders` and `ScheduleRow` each default to a
+  /// different `cellSize` on their own (62 vs 56); passing the same value to
+  /// both here is what keeps a shrink-wrapped table's header and rows at the
+  /// same content width.
+  final double cellSize;
   final bool bordered;
   final bool fillWidth;
+
+  /// In shrink-wrap mode, `ScheduleRow`'s label cell auto-sizes to each
+  /// row's own text — by design (`MiniRoundRow` relies on the same
+  /// behaviour for its compact "R1" label) — so it can end up wider than a
+  /// row label like "Runde 1"/"Runde 2" the header's fixed [labelWidth]
+  /// never has to accommodate on its own (the header only ever shows
+  /// [headerLabel], e.g. "Runde"). A row also spends 3 `VerticalDividerWidget`s
+  /// (label|phase0|phase1|phase2) the header never renders. Widening the
+  /// header's title cell to the widest row label plus that same divider
+  /// budget (never narrower than [labelWidth]) keeps the header bar at
+  /// least as wide as every row without forcing the rows into a fixed
+  /// width of their own and losing that auto-fit.
+  double _shrinkTitleWidth() {
+    const dividerWidth = 8.0; // VerticalDividerWidget's default width
+    const dividerCount = 3; // leading + between phase0/1 + between phase1/2
+    var widestLabel = labelWidth;
+    const style = TextStyle(
+      fontSize: kDrillAccentFontSize,
+      fontWeight: FontWeight.bold,
+    );
+    for (final row in rows) {
+      final painter = TextPainter(
+        text: TextSpan(text: row.label, style: style),
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final width = painter.width + 24;
+      if (width > widestLabel) widestLabel = width;
+    }
+    return widestLabel + dividerCount * dividerWidth;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final header = PhaseHeaders(
       title: headerLabel,
-      titleWidth: labelWidth,
+      titleWidth: fillWidth ? labelWidth : _shrinkTitleWidth(),
+      cellSize: cellSize,
       mainAxisAlignment: MainAxisAlignment.center,
       expandTitle: fillWidth,
     );
@@ -83,6 +125,7 @@ class ScheduleTable extends StatelessWidget {
           onTap: row.onTap,
           labelWidth: fillWidth ? labelWidth : null,
           mainAxisSize: fillWidth ? MainAxisSize.max : MainAxisSize.min,
+          cellSize: cellSize,
         ),
     ];
 

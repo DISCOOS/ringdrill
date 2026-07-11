@@ -10,8 +10,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
-import 'package:ringdrill/views/phase_headers.dart';
-import 'package:ringdrill/views/widgets/schedule_row.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
@@ -113,15 +112,9 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
                   // Team Info
                   _buildTeamStatus(event),
                   const SizedBox(height: 8),
-                  // Schedule Details
-                  PhaseHeaders(
-                    expand: true,
-                    titleWidth: 78,
-                    title: AppLocalizations.of(context)!.schedule,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                  ),
-                  const SizedBox(height: 4),
-                  Expanded(child: _buildStationList(event)),
+                  // Schedule Details — the shared table (its own PhaseHeaders
+                  // is the header, no separate one above it).
+                  Expanded(child: _buildScheduleTable(event)),
                 ],
               ),
             );
@@ -179,50 +172,43 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     );
   }
 
-  ListView _buildStationList(ExerciseEvent event) {
+  Widget _buildScheduleTable(ExerciseEvent event) {
     final program = _programService.activeProgram;
-    return ListView.builder(
-      itemCount: widget.exercise.schedule.length,
-      itemBuilder: (context, index) {
-        final station = widget
-            .exercise
-            .stations[widget.exercise.stationIndex(widget.teamIndex, index)];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          child: GestureDetector(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ScheduleRow(
-                label: program == null
-                    ? station.name
-                    : substitutePlanVariables(
-                        station.name,
-                        effectivePlanVariables(
-                          program,
-                          exercise: widget.exercise,
-                          station: station,
-                        ),
-                      ),
-                event: event,
-                roundIndex: index,
-                exercise: widget.exercise,
-                mainAxisAlignment: MainAxisAlignment.start,
-              ),
-            ),
-            onTap: () {
-              ContextSheet.of(context).replace(
-                StationSheetTarget(
-                  exerciseUuid: widget.exercise.uuid,
-                  stationIndex: widget.exercise.stationIndex(
-                    widget.teamIndex,
-                    index,
-                  ),
+    final rows = List.generate(widget.exercise.schedule.length, (index) {
+      final stationIndex = widget.exercise.stationIndex(
+        widget.teamIndex,
+        index,
+      );
+      final station = widget.exercise.stations[stationIndex];
+      return ScheduleTableRow(
+        roundIndex: index,
+        label: program == null
+            ? station.name
+            : substitutePlanVariables(
+                station.name,
+                effectivePlanVariables(
+                  program,
+                  exercise: widget.exercise,
+                  station: station,
                 ),
-              );
-            },
+              ),
+        onTap: () => ContextSheet.of(context).replace(
+          StationSheetTarget(
+            exerciseUuid: widget.exercise.uuid,
+            stationIndex: stationIndex,
           ),
-        );
-      },
+        ),
+      );
+    });
+    return SingleChildScrollView(
+      child: ScheduleTable(
+        headerLabel: AppLocalizations.of(context)!.schedule,
+        labelWidth: 78,
+        event: event,
+        exercise: widget.exercise,
+        bordered: true,
+        rows: rows,
+      ),
     );
   }
 

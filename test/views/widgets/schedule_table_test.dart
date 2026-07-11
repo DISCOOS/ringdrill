@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/views/phase_headers.dart';
 import 'package:ringdrill/views/widgets/schedule_row.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 
@@ -173,6 +174,104 @@ void main() {
         ),
       );
       expect(blueBehind('Runde 2'), isFalse);
+    },
+  );
+
+  testWidgets(
+    'fillWidth drives the header and rows to the same width in both modes: '
+    'true expands both to the parent, false shrink-wraps both to content',
+    (tester) async {
+      final event = _makeEvent(
+        exercise: exercise,
+        phase: ExercisePhase.pending,
+      );
+      Widget build({required bool fillWidth}) => _harness(
+        SizedBox(
+          width: 400,
+          child: ScheduleTable(
+            headerLabel: 'Runde',
+            event: event,
+            exercise: exercise,
+            fillWidth: fillWidth,
+            rows: [
+              const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
+              const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
+            ],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(build(fillWidth: true));
+      final fillHeaderWidth = tester.getSize(find.byType(PhaseHeaders)).width;
+      final fillRowWidth = tester
+          .getSize(find.byType(ScheduleRow).at(0))
+          .width;
+      expect(
+        fillHeaderWidth,
+        closeTo(fillRowWidth, 0.5),
+        reason: 'header and row must agree on width in fill mode',
+      );
+      expect(fillHeaderWidth, closeTo(400, 0.5));
+
+      await tester.pumpWidget(build(fillWidth: false));
+      final shrinkHeaderWidth = tester
+          .getSize(find.byType(PhaseHeaders))
+          .width;
+      final shrinkRowWidth = tester
+          .getSize(find.byType(ScheduleRow).at(0))
+          .width;
+      expect(
+        shrinkHeaderWidth,
+        closeTo(shrinkRowWidth, 0.5),
+        reason: 'header and row must agree on width in shrink-wrap mode too',
+      );
+      expect(
+        shrinkHeaderWidth,
+        lessThan(400),
+        reason: 'shrink-wrap must not claim the full parent width',
+      );
+    },
+  );
+
+  testWidgets(
+    'the coordinator round table (fillWidth: false) shrink-wraps',
+    (tester) async {
+      final event = _makeEvent(
+        exercise: exercise,
+        phase: ExercisePhase.pending,
+      );
+      await tester.pumpWidget(
+        _harness(
+          // A loose (not tight) bound: ConstrainedBox only caps maxWidth, the
+          // way Align/Center/IntrinsicWidth do at the real call site in
+          // coordinator_screen.dart. A tight SizedBox would force the
+          // Column to 400 regardless of its children's width and prove
+          // nothing.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: ScheduleTable(
+              headerLabel: 'Runde',
+              labelWidth: 90,
+              event: event,
+              exercise: exercise,
+              fillWidth: false,
+              rows: [
+                const ScheduleTableRow(roundIndex: 0, label: 'Runde 1'),
+                const ScheduleTableRow(roundIndex: 1, label: 'Runde 2'),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final tableWidth = tester.getSize(find.byType(ScheduleTable)).width;
+      expect(
+        tableWidth,
+        lessThan(400),
+        reason:
+            'the coordinator round table minimizes instead of stretching '
+            'to the parent width',
+      );
     },
   );
 }
