@@ -51,6 +51,24 @@ extension DateTimeX on DateTime {
   }
 }
 
+extension ExercisePhaseTimeX on Exercise {
+  /// End time of the phase at [roundIndex]/[phaseIndex] as a wall-clock
+  /// value. For execution and evaluation this is the start of the next
+  /// phase in the same round. For rotation (the last phase of a round)
+  /// this is the start of the next round's execution phase, or
+  /// [Exercise.endTime] if [roundIndex] is already the last round.
+  /// Shared by every running-state status card (DESIGN-010 follow-up:
+  /// player-status-card) so the "ferdig HH:MM" reading is computed the
+  /// same way on every surface.
+  SimpleTimeOfDay? phaseEndTime(int roundIndex, int phaseIndex) {
+    if (roundIndex < 0 || roundIndex >= schedule.length) return null;
+    if (phaseIndex < 0 || phaseIndex > 2) return null;
+    if (phaseIndex < 2) return schedule[roundIndex][phaseIndex + 1];
+    if (roundIndex + 1 < schedule.length) return schedule[roundIndex + 1][0];
+    return endTime;
+  }
+}
+
 extension TimeOfDayX on TimeOfDay {
   SimpleTimeOfDay toSimple() => SimpleTimeOfDay(hour: hour, minute: minute);
 

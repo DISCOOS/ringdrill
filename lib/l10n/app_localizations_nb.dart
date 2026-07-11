@@ -977,6 +977,45 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get statusUntilStart => 'Til start';
+
+  @override
+  String get statusMinutesRemainingOf => 'min igjen av';
+
+  @override
+  String statusRoundOfTotal(int current, int total) {
+    return 'Runde $current av $total';
+  }
+
+  @override
+  String get statusNow => 'Nå';
+
+  @override
+  String get statusNextPhase => 'Neste fase';
+
+  @override
+  String get statusNextRound => 'Neste runde';
+
+  @override
+  String get statusNotActiveNow => 'Ikke aktiv nå';
+
+  @override
+  String statusPreStartSubline(String startTime, int rounds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rounds,
+      locale: localeName,
+      other: '$rounds runder',
+      one: '1 runde',
+    );
+    return 'starter $startTime · $_temp0';
+  }
+
+  @override
+  String statusPreStartSublineMarker(String activeFrom, String postBadge) {
+    return 'aktiv fra $activeFrom · på $postBadge';
+  }
+
+  @override
   String get clockLabel => 'Tid nå';
 
   @override

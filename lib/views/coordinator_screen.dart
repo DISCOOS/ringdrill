@@ -1176,7 +1176,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               .toUpperCase();
     final endTime = isPending
         ? _exercise!.startTime
-        : _phaseEndTime(event.currentRound, phaseIdx);
+        : _exercise!.phaseEndTime(event.currentRound, phaseIdx);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1244,20 +1244,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final h = minutes ~/ 60;
     final m = (minutes % 60).toString().padLeft(2, '0');
     return Text('$h:$m', style: bigStyle, textAlign: TextAlign.center);
-  }
-
-  /// End time of a phase as a wall-clock value. For execution and
-  /// evaluation this is the start of the next phase in the same round.
-  /// For rotation (the last phase of a round) this is the start of the
-  /// next round's execution phase, or the exercise's [Exercise.endTime]
-  /// if we're already on the last round.
-  SimpleTimeOfDay? _phaseEndTime(int roundIndex, int phaseIndex) {
-    final schedule = _exercise!.schedule;
-    if (roundIndex < 0 || roundIndex >= schedule.length) return null;
-    if (phaseIndex < 0 || phaseIndex > 2) return null;
-    if (phaseIndex < 2) return schedule[roundIndex][phaseIndex + 1];
-    if (roundIndex + 1 < schedule.length) return schedule[roundIndex + 1][0];
-    return _exercise!.endTime;
   }
 
   Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {

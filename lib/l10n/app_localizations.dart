@@ -1628,6 +1628,60 @@ abstract class AppLocalizations {
   /// **'{hours} h {minutes} min'**
   String hoursMinutesShort(int hours, int minutes);
 
+  /// Label under the spelled-out countdown in the player status card's pre-start state.
+  ///
+  /// In en, this message translates to:
+  /// **'To start'**
+  String get statusUntilStart;
+
+  /// Connector between the remaining-minutes number and the phase name in the player status card's running state, e.g. '5 min left of DRILL'.
+  ///
+  /// In en, this message translates to:
+  /// **'min left of'**
+  String get statusMinutesRemainingOf;
+
+  /// Round counter in the player status card's meta cell, e.g. Round 1 of 6.
+  ///
+  /// In en, this message translates to:
+  /// **'Round {current} of {total}'**
+  String statusRoundOfTotal(int current, int total);
+
+  /// Label for the 'now' cell in the player status card's now/next row (Post/Lag/Spill).
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get statusNow;
+
+  /// Label for the coordinator's forward-looking 'next phase' cell in the player status card.
+  ///
+  /// In en, this message translates to:
+  /// **'Next phase'**
+  String get statusNextPhase;
+
+  /// Label for the coordinator's forward-looking 'next round' cell in the player status card.
+  ///
+  /// In en, this message translates to:
+  /// **'Next round'**
+  String get statusNextRound;
+
+  /// Shown in the Spill (marker) player's 'now' cell when the marker's post has no team assigned this round.
+  ///
+  /// In en, this message translates to:
+  /// **'Not active now'**
+  String get statusNotActiveNow;
+
+  /// Subline in the player status card's pre-start state: scheduled start time and round count (Post/Lag/Coordinator).
+  ///
+  /// In en, this message translates to:
+  /// **'starts {startTime} · {rounds, plural, =1{1 round} other{{rounds} rounds}}'**
+  String statusPreStartSubline(String startTime, int rounds);
+
+  /// Subline in the Spill (marker) player's status card pre-start state: when the marker becomes active and which post it's at.
+  ///
+  /// In en, this message translates to:
+  /// **'active from {activeFrom} · at {postBadge}'**
+  String statusPreStartSublineMarker(String activeFrom, String postBadge);
+
   /// Subtitle under the current wall-clock time tile in the coordinator mini-player.
   ///
   /// In en, this message translates to:

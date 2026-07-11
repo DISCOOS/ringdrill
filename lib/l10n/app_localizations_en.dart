@@ -981,6 +981,45 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get statusUntilStart => 'To start';
+
+  @override
+  String get statusMinutesRemainingOf => 'min left of';
+
+  @override
+  String statusRoundOfTotal(int current, int total) {
+    return 'Round $current of $total';
+  }
+
+  @override
+  String get statusNow => 'Now';
+
+  @override
+  String get statusNextPhase => 'Next phase';
+
+  @override
+  String get statusNextRound => 'Next round';
+
+  @override
+  String get statusNotActiveNow => 'Not active now';
+
+  @override
+  String statusPreStartSubline(String startTime, int rounds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rounds,
+      locale: localeName,
+      other: '$rounds rounds',
+      one: '1 round',
+    );
+    return 'starts $startTime · $_temp0';
+  }
+
+  @override
+  String statusPreStartSublineMarker(String activeFrom, String postBadge) {
+    return 'active from $activeFrom · at $postBadge';
+  }
+
+  @override
   String get clockLabel => 'Now';
 
   @override
