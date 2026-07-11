@@ -1281,6 +1281,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           labelWidth: 90,
           event: event,
           exercise: _exercise!,
+          // Shrink-wrap to content width — this table sits beside the hero
+          // status card (or centered on its own), not stretched to fill
+          // whatever width its ambient layout offers.
+          fillWidth: false,
           rows: [
             for (
               var roundIndex = 0;
