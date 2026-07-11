@@ -34,7 +34,7 @@ import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
-import 'package:ringdrill/views/widgets/team_schedule_table.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
@@ -389,19 +389,20 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   /// Tidsplan card (DESIGN-010): the per-team drill/eval/roll clock times
   /// for this station across every round, from the same `Exercise.schedule`
-  /// + `teamIndex`/`stationIndex` data the live rotation tables read — a
-  /// static table (`TeamScheduleTable`), not `PhaseTile`'s live-progress
-  /// rendering (that stays the coordinator/team surfaces' own job).
+  /// + `teamIndex`/`stationIndex` data the live rotation tables read — via
+  /// the shared `ScheduleTable`, so the current round (while `event` is
+  /// running) gets the same house progress-fill highlight the coordinator
+  /// and team tables show, not a bespoke static rendering.
   Widget _buildTimingCard(Station station, ExerciseEvent event) {
     final l10n = AppLocalizations.of(context)!;
     final rows = List.generate(_exercise.schedule.length, (roundIndex) {
       final teamIndex = _exercise.teamIndex(widget.stationIndex, roundIndex);
-      final phases = _exercise.schedule[roundIndex];
-      return TeamScheduleRow(
+      return ScheduleTableRow(
         roundIndex: roundIndex,
-        teamIndex: teamIndex,
-        phaseTimes: [for (final phase in phases) phase.toMaterial().formal()],
-        current: event.isRunning && roundIndex == event.currentRound,
+        label: teamIndex == -1
+            ? '${l10n.team(1)} ×'
+            : '${l10n.team(1)} ${teamIndex + 1}',
+        muted: teamIndex == -1,
         onTap: teamIndex == -1
             ? null
             : () => ContextSheet.of(context).replace(
@@ -425,7 +426,13 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(12),
-            child: TeamScheduleTable(rows: rows),
+            child: ScheduleTable(
+              headerLabel: l10n.team(1),
+              rows: rows,
+              event: event,
+              exercise: _exercise,
+              bordered: true,
+            ),
           ),
         ],
       ),

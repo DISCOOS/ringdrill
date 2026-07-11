@@ -12,7 +12,6 @@ import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
-import 'package:ringdrill/utils/time_utils.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
@@ -28,7 +27,7 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
-import 'package:ringdrill/views/widgets/team_schedule_table.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -574,9 +573,11 @@ class _EffectiveIdentityCard extends StatelessWidget {
 /// Når aktiv card (DESIGN-010's Spill viewer): the round(s) this roleplay's
 /// station is staffed by a team, from `Exercise.schedule` +
 /// `teamIndex`/`stationIndex` — filtered to only the active round(s)
-/// (unlike the Post viewer's Tidsplan card, which shows every round). No
-/// live-current highlight here: this card is a static "when", not a
-/// running-exercise indicator.
+/// (unlike the Post viewer's Tidsplan card, which shows every round). Reads
+/// the same `ExerciseService` event stream the Post viewer does, via its own
+/// `StreamBuilder`, so the currently running round gets the shared house
+/// highlight + progress fill (only while running — otherwise the rows are
+/// the plain "when" list they always were).
 class _ActiveScheduleCard extends StatelessWidget {
   const _ActiveScheduleCard({required this.exercise, required this.rolePlay});
 
@@ -590,42 +591,57 @@ class _ActiveScheduleCard extends StatelessWidget {
     if (exercise == null || stationIndex == null) {
       return const SizedBox.shrink();
     }
-    final rows = <TeamScheduleRow>[
+    final rows = <ScheduleTableRow>[
       for (
         var roundIndex = 0;
         roundIndex < exercise.schedule.length;
         roundIndex++
       )
         if (exercise.teamIndex(stationIndex, roundIndex) != -1)
-          TeamScheduleRow(
+          ScheduleTableRow(
             roundIndex: roundIndex,
-            teamIndex: exercise.teamIndex(stationIndex, roundIndex),
-            phaseTimes: [
-              for (final phase in exercise.schedule[roundIndex])
-                phase.toMaterial().formal(),
-            ],
+            label:
+                '${AppLocalizations.of(context)!.team(1)} '
+                '${exercise.teamIndex(stationIndex, roundIndex) + 1}',
           ),
     ];
     if (rows.isEmpty) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CardSectionHeader(
-            icon: Icons.access_time_filled,
-            title: l10n.roleActiveScheduleCardTitle,
+    final exerciseService = ExerciseService();
+    final lastEvent = exerciseService.last;
+    return StreamBuilder<ExerciseEvent>(
+      stream: exerciseService.events,
+      initialData: lastEvent?.exercise.uuid == exercise.uuid
+          ? lastEvent
+          : ExerciseEvent.pending(exercise),
+      builder: (context, snapshot) {
+        final event = snapshot.data!;
+        return Card(
+          elevation: 1,
+          margin: const EdgeInsets.only(bottom: 8),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CardSectionHeader(
+                icon: Icons.access_time_filled,
+                title: l10n.roleActiveScheduleCardTitle,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: ScheduleTable(
+                  headerLabel: l10n.team(1),
+                  rows: rows,
+                  event: event,
+                  exercise: exercise,
+                  bordered: true,
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TeamScheduleTable(rows: rows),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
