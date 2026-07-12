@@ -1173,7 +1173,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       onLongPress: () => _copyExerciseToClipboard(localizations),
       child: ScheduleCard(
         title: localizations.stationTimingCardTitle,
-        headerLabel: localizations.schedule,
+        // "Round", not localizations.schedule ("Schedule"/"Plan") — the
+        // card title already says "Tidsplan"/"Schedule", so repeating it
+        // as the first column's header is redundant. Every row here is one
+        // round, so "Round"/"Runde" describes the column instead.
+        headerLabel: localizations.round(1),
         labelWidth: 90,
         event: event,
         exercise: _exercise!,
@@ -1668,7 +1672,9 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: ScheduleCard(
         title: localizations.stationTimingCardTitle,
-        headerLabel: localizations.schedule,
+        // "Round", not localizations.schedule — see the coordinator's own
+        // round-table ScheduleCard above for why.
+        headerLabel: localizations.round(1),
         labelWidth: 78,
         event: event,
         exercise: _exercise!,
