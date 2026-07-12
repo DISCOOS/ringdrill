@@ -106,7 +106,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
               event.currentRound,
             );
             return Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,

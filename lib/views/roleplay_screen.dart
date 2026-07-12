@@ -209,7 +209,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

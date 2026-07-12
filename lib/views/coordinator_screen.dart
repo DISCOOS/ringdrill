@@ -54,7 +54,7 @@ import 'plan_additions.dart';
 const double _kHeroSidebarWidth = 260;
 const double _kCoordinatorTwoColumnViewportWidth = 1120;
 const double _kCoordinatorTwoColumnContentWidth = 900;
-const double _kCoordinatorBodyPadding = 16;
+const double _kCoordinatorBodyPadding = kPlayerSurfaceHorizontalPadding;
 const double _kCoordinatorWideTopSectionHeight = 300;
 
 class CoordinatorScreen extends StatefulWidget {

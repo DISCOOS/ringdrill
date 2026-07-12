@@ -213,7 +213,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                 // already gets wide-screen room from the master-detail
                 // shell (ADR-0030), not an in-body Row.
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(
+                    kPlayerSurfaceHorizontalPadding,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

@@ -3,6 +3,12 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
+/// Shared horizontal inset every player/overview surface (Post, Lag, Spill,
+/// Coordinator) applies around its status-card-and-schedule-card stack. One
+/// constant, not four per-surface literals, so the two cards can't drift out
+/// of alignment with each other.
+const double kPlayerSurfaceHorizontalPadding = 16;
+
 /// One cell of [PlayerStatusCard]'s now/next row: an icon+label header
 /// (optionally with an inline time, e.g. "Neste · 11:15") over an
 /// auto-sized value (optionally led by a number badge, e.g. a post code).
@@ -13,7 +19,7 @@ import 'package:ringdrill/utils/time_utils.dart';
 /// so the pair always reads as matched regardless of which one is "now".
 class PlayerStatusCell {
   const PlayerStatusCell({
-    required this.icon,
+    this.icon,
     required this.label,
     required this.value,
     this.time,
@@ -21,7 +27,10 @@ class PlayerStatusCell {
     this.isNow = false,
   });
 
-  final IconData icon;
+  /// Leading icon shown before [label]. `null` omits the icon (and its
+  /// spacer) entirely — used by the coordinator's forward-looking cells,
+  /// which carry no icon.
+  final IconData? icon;
   final String label;
 
   /// Inline time shown on the label row for a "next"-style cell (e.g.
@@ -157,7 +166,7 @@ class PlayerStatusCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(15, 14, 15, 0),
+          padding: const EdgeInsets.fromLTRB(16, 19, 16, 5),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -207,23 +216,23 @@ class PlayerStatusCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      l10n.statusRoundOfTotal(
+                    _buildMetaLine(
+                      theme,
+                      text: l10n.statusRoundOfTotal(
                         event.currentRound + 1,
                         event.exercise.numberOfRounds,
                       ),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      numbers: [
+                        '${event.currentRound + 1}',
+                        '${event.exercise.numberOfRounds}',
+                      ],
                     ),
                     if (endTime != null) ...[
                       const SizedBox(height: 2),
-                      Text(
-                        l10n.phaseEndsAt(endTime),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
+                      _buildMetaLine(
+                        theme,
+                        text: l10n.phaseEndsAt(endTime),
+                        numbers: [endTime],
                       ),
                     ],
                   ],
@@ -263,7 +272,12 @@ class PlayerStatusCard extends StatelessWidget {
             child: Stack(
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  // `center`, not `start`: when one cell wraps to more
+                  // lines than the other (e.g. a long station name vs a
+                  // short team label) the two cell bodies must still line
+                  // up around a shared vertical center, not pin to the top
+                  // of the taller cell.
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(child: _buildCell(context, theme, leadingCell)),
                     Expanded(child: _buildCell(context, theme, trailingCell)),
@@ -302,6 +316,57 @@ class PlayerStatusCard extends StatelessWidget {
     return end?.toString();
   }
 
+  /// One meta line ("Runde N av M" / "ferdig HH:MM"): the localized [text]
+  /// with each of [numbers] (the raw substrings, e.g. round/total/time,
+  /// found in the order they appear) rendered bold and a step larger while
+  /// the surrounding words stay regular weight.
+  Widget _buildMetaLine(
+    ThemeData theme, {
+    required String text,
+    required List<String> numbers,
+  }) {
+    final baseStyle = theme.textTheme.labelSmall?.copyWith(
+      fontSize: 13,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final boldStyle = baseStyle?.copyWith(
+      fontSize: 14.5,
+      fontWeight: FontWeight.bold,
+      color: theme.colorScheme.onSurface,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    return Text.rich(
+      TextSpan(children: _boldedSpans(text, numbers, baseStyle, boldStyle)),
+      textAlign: TextAlign.right,
+    );
+  }
+
+  /// Splits [text] into spans, styling each occurrence of [highlights] (in
+  /// the order given) with [boldStyle] and everything else with [baseStyle].
+  List<TextSpan> _boldedSpans(
+    String text,
+    List<String> highlights,
+    TextStyle? baseStyle,
+    TextStyle? boldStyle,
+  ) {
+    final spans = <TextSpan>[];
+    var pos = 0;
+    for (final highlight in highlights) {
+      if (highlight.isEmpty) continue;
+      final index = text.indexOf(highlight, pos);
+      if (index < 0) continue;
+      if (index > pos) {
+        spans.add(TextSpan(text: text.substring(pos, index), style: baseStyle));
+      }
+      spans.add(TextSpan(text: highlight, style: boldStyle));
+      pos = index + highlight.length;
+    }
+    if (pos < text.length) {
+      spans.add(TextSpan(text: text.substring(pos), style: baseStyle));
+    }
+    return spans;
+  }
+
   Widget _buildCell(
     BuildContext context,
     ThemeData theme,
@@ -321,12 +386,14 @@ class PlayerStatusCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                cell.icon,
-                size: 13,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 5),
+              if (cell.icon != null) ...[
+                Icon(
+                  cell.icon,
+                  size: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 5),
+              ],
               Flexible(
                 child: Text(
                   cell.time == null ? cell.label : '${cell.label} · ${cell.time}',
