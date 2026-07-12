@@ -8,6 +8,7 @@ import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/team_form_screen.dart';
@@ -44,16 +45,14 @@ class _TeamScreenState extends State<TeamScreen> {
       // close affordance + SheetTitle + edit, so TeamScreen renders cleanly as
       // a ContextSheet body, not just a standalone route.
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () {
+        leading: MasterDetailLeading(
+          onClose: () {
             if (MasterDetailScope.maybeOf(context) != null) {
               ContextSheet.of(context).close();
             } else {
               Navigator.pop(context);
             }
           },
-          tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,
         title: SheetTitle(primary: teamLabel),
