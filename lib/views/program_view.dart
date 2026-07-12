@@ -1583,6 +1583,55 @@ abstract class ProgramPageControllerBase extends ScreenController {
     return team == null ? null : TeamOverviewSheetTarget(teamIndex: team.index);
   }
 
+  /// The wide detail pane's selection, remembered per segment for the
+  /// session so switching segments restores the row the user had already
+  /// picked instead of re-running auto-select-first over it (fix for the
+  /// collapsible-master-pane regression: segment switches used to reset the
+  /// shared detail target unconditionally).
+  final Map<ProgramSegment, ContextSheetTarget?> _rememberedSelection = {};
+
+  /// Records [target] as the active segment's selection. Called for both
+  /// explicit picks and auto-selected-first targets — re-remembering the
+  /// latter is harmless since it is what [rememberedTarget] would already
+  /// return for a segment with no other memory.
+  void rememberSelection(ContextSheetTarget target) {
+    _rememberedSelection[activeSegment.value] = target;
+  }
+
+  /// The remembered selection for [segment], or null when there is none yet
+  /// or the remembered item no longer exists (deleted/reordered away) — the
+  /// caller falls back to [firstDetailTarget] in that case.
+  ContextSheetTarget? rememberedTarget(ProgramSegment segment) {
+    final target = _rememberedSelection[segment];
+    if (target == null || !_targetStillExists(target)) return null;
+    return target;
+  }
+
+  bool _targetStillExists(ContextSheetTarget target) {
+    final exercises = programService.loadExercises();
+    return switch (target) {
+      ExerciseSheetTarget(:final exerciseUuid) => exercises.any(
+        (e) => e.uuid == exerciseUuid,
+      ),
+      StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
+        exercises.any(
+          (e) =>
+              e.uuid == exerciseUuid &&
+              e.stations.any((s) => s.index == stationIndex),
+        ),
+      RoleSheetTarget(:final rolePlayUuid) => programService
+          .loadRolePlays()
+          .any((r) => r.uuid == rolePlayUuid),
+      TeamOverviewSheetTarget(:final teamIndex) => programService
+          .loadTeams()
+          .any((t) => t.index == teamIndex),
+      TeamSheetTarget(:final exerciseUuid, :final teamIndex) => exercises.any(
+        (e) => e.uuid == exerciseUuid && e.numberOfTeams > teamIndex,
+      ),
+      _ => false,
+    };
+  }
+
   List<Widget>? _briefAction(BuildContext context) {
     final activeProgram = programService.activeProgram;
     if (activeProgram == null) return null;

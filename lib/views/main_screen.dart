@@ -151,13 +151,19 @@ class _MainScreenState extends State<MainScreen>
       _activeRefreshIndicatorKey,
     );
     _programPageController.activeSegment.addListener(_onProgramSegmentChanged);
-    // Switching segments (Øvelser/Poster/Spill/Lag) changes which list the
-    // wide detail pane should be auto-selecting from — clear the shared
-    // target so `build`'s auto-select check (see `_maybeAutoSelectDetail`)
-    // picks the new segment's first item instead of leaving the previous
-    // segment's selection shown against a mismatched list.
+    // Switching segments (Øvelser/Poster/Spill/Lag) restores that segment's
+    // remembered selection (or null, when it has none/no-longer-valid one) so
+    // `build`'s auto-select check (see the `useRail && !isMapTab` branch)
+    // falls back to the new segment's first item only when there is nothing
+    // to restore, instead of unconditionally discarding the previous pick.
     _programPageController.activeSegment.addListener(
-      _onActiveSegmentChangedForAutoSelect,
+      _onActiveSegmentChangedForSelectionMemory,
+    );
+    // Remembers every target the wide detail pane ends up showing while on
+    // the Program tab — explicit picks and auto-selected-first alike — so
+    // the segment-switch restore above has something to read.
+    _contextSheetController.targetNotifier.addListener(
+      _onDetailTargetChangedForSelectionMemory,
     );
     // Rebuild when reorder mode toggles so the FAB (which is suppressed in
     // reorder mode) appears/disappears without waiting for another rebuild.
@@ -282,12 +288,15 @@ class _MainScreenState extends State<MainScreen>
     CatalogRefreshIndicatorRegistry().unregisterProvider(
       _activeRefreshIndicatorKey,
     );
+    _contextSheetController.targetNotifier.removeListener(
+      _onDetailTargetChangedForSelectionMemory,
+    );
     _contextSheetController.dispose();
     _programPageController.activeSegment.removeListener(
       _onProgramSegmentChanged,
     );
     _programPageController.activeSegment.removeListener(
-      _onActiveSegmentChangedForAutoSelect,
+      _onActiveSegmentChangedForSelectionMemory,
     );
     _programPageController.exerciseReorderMode.removeListener(
       _onProgramSegmentChanged,
@@ -305,14 +314,29 @@ class _MainScreenState extends State<MainScreen>
     if (mounted) setState(() {});
   }
 
-  /// Clears the shared detail target on a segment switch — unless a modal
-  /// (narrow) sheet is currently up, which this has nothing to do with —
-  /// so `build`'s auto-select check picks the new segment's first item
-  /// instead of leaving the outgoing segment's selection in place against a
-  /// list it no longer belongs to.
-  void _onActiveSegmentChangedForAutoSelect() {
+  /// Restores the newly-active segment's remembered selection — or null when
+  /// it has none/no-longer-valid one — unless a modal (narrow) sheet is
+  /// currently up, which this has nothing to do with. Leaving the shared
+  /// target null (rather than clearing it unconditionally) lets `build`'s
+  /// auto-select check pick the segment's first item only when there is
+  /// nothing to restore, instead of always discarding the previous pick.
+  void _onActiveSegmentChangedForSelectionMemory() {
     if (_contextSheetController.isModal) return;
-    _contextSheetController.targetNotifier.value = null;
+    _contextSheetController.targetNotifier.value = _programPageController
+        .rememberedTarget(_programPageController.activeSegment.value);
+  }
+
+  /// Remembers whatever the wide detail pane ends up showing while the
+  /// Program tab (segments live only there) is active, so a later segment
+  /// switch away and back can restore it via
+  /// [_onActiveSegmentChangedForSelectionMemory]. Fires for explicit picks
+  /// and for auto-selected-first targets alike — re-remembering the latter is
+  /// harmless.
+  void _onDetailTargetChangedForSelectionMemory() {
+    if (_currentTab != 0) return;
+    final target = _contextSheetController.targetNotifier.value;
+    if (target == null) return;
+    _programPageController.rememberSelection(target);
   }
 
   @override
@@ -364,10 +388,11 @@ class _MainScreenState extends State<MainScreen>
           // `build` must not mutate the shared target notifier synchronously
           // (that would notify `MasterDetailPane`'s listener while this
           // ancestor build is still in progress). No-ops once something —
-          // auto-selected or explicit — is already selected; the explicit
-          // resets on tab/segment switch (`_onDestinationSelected`,
-          // `_onActiveSegmentChangedForAutoSelect`) are what let a *new*
-          // first item win here instead of this being a no-op forever.
+          // auto-selected or explicit — is already selected; the reset on
+          // tab switch (`_onDestinationSelected`) and the remembered-or-null
+          // restore on segment switch
+          // (`_onActiveSegmentChangedForSelectionMemory`) are what let a
+          // *new* first item win here instead of this being a no-op forever.
           if (useRail && !isMapTab) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
