@@ -1670,6 +1670,12 @@ abstract class AppLocalizations {
   /// **'Not active now'**
   String get statusNotActiveNow;
 
+  /// Value shown in the player status card's next-cell once a surface has no further round/phase of its own to report (the last round is already running) — paired with the exercise's finish time in the label row (e.g. 'Next · 10:55').
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get statusFinishValue;
+
   /// Subline in the player status card's pre-start state: scheduled start time and round count (Post/Lag/Coordinator).
   ///
   /// In en, this message translates to:

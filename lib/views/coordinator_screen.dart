@@ -1109,9 +1109,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// Computes the coordinator's two forward-looking cells from
   /// `Exercise.schedule` — the next phase in the current round (or, for
   /// the last phase, the next round's first phase) and the next round
-  /// after the current one. Either (or both) is `null` once there is
-  /// nothing further to report (last phase of the last round / last
-  /// round already running).
+  /// after the current one. Either (or both) falls back to
+  /// [finishFallbackCell] once there is nothing further of its own to
+  /// report (last phase of the last round / last round already running).
+  /// Both are `null` together only when the card isn't showing the running
+  /// layout at all (`!event.isRunning`).
   ///
   /// Both cells share the plain "Neste" label with no icon — the phase/
   /// round distinction is carried by the value ("EVAL" vs "Runde 2") and
@@ -1127,7 +1129,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     final roundIdx = event.currentRound;
     final isLastRound = roundIdx >= exercise.numberOfRounds - 1;
 
-    PlayerStatusCell? nextPhaseCell;
+    final PlayerStatusCell nextPhaseCell;
     if (phaseIdx < 2 || !isLastRound) {
       final nextPhaseIdx = phaseIdx < 2 ? phaseIdx + 1 : 0;
       final nextPhaseRound = phaseIdx < 2 ? roundIdx : roundIdx + 1;
@@ -1141,15 +1143,19 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         time: exercise.schedule[nextPhaseRound][nextPhaseIdx].toString(),
         value: nextPhaseName,
       );
+    } else {
+      nextPhaseCell = finishFallbackCell(localizations, exercise);
     }
 
-    PlayerStatusCell? nextRoundCell;
+    final PlayerStatusCell nextRoundCell;
     if (!isLastRound) {
       nextRoundCell = PlayerStatusCell(
         label: localizations.nextLabel,
         time: exercise.schedule[roundIdx + 1][0].toString(),
         value: '${localizations.round(1)} ${roundIdx + 2}',
       );
+    } else {
+      nextRoundCell = finishFallbackCell(localizations, exercise);
     }
     return (nextPhaseCell, nextRoundCell);
   }

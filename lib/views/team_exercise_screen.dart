@@ -211,11 +211,13 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     );
   }
 
-  /// The next round's post, or `null` once the current round is the last
-  /// one (no further round to report).
+  /// The next round's post, falling back to [finishFallbackCell] once the
+  /// current round is the last one (no further round to report).
   PlayerStatusCell? _nextPostCell(AppLocalizations l10n, ExerciseEvent event) {
     final nextRound = event.currentRound + 1;
-    if (nextRound >= widget.exercise.numberOfRounds) return null;
+    if (nextRound >= widget.exercise.numberOfRounds) {
+      return finishFallbackCell(l10n, widget.exercise, icon: Icons.arrow_forward);
+    }
     return _postAtRoundCell(
       l10n,
       nextRound,

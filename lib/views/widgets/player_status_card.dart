@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
 
@@ -8,6 +9,25 @@ import 'package:ringdrill/utils/time_utils.dart';
 /// constant, not four per-surface literals, so the two cards can't drift out
 /// of alignment with each other.
 const double kPlayerSurfaceHorizontalPadding = 16;
+
+/// Fallback trailing ("next") cell shown once a surface has no further
+/// round/phase of its own left to report (the last round is already
+/// running) — the exercise's actual finish time, so the half-card is never
+/// left blank. Every next-cell-computing surface (Post, Lag, Spill, the
+/// coordinator's next-phase/next-round cells) shares this one wording and
+/// shape instead of four bespoke fallbacks.
+PlayerStatusCell finishFallbackCell(
+  AppLocalizations l10n,
+  Exercise exercise, {
+  IconData? icon,
+}) {
+  return PlayerStatusCell(
+    icon: icon,
+    label: l10n.nextLabel,
+    time: exercise.endTime.toString(),
+    value: l10n.statusFinishValue,
+  );
+}
 
 /// One cell of [PlayerStatusCard]'s now/next row: an icon+label header
 /// (optionally with an inline time, e.g. "Neste · 11:15") over an

@@ -305,8 +305,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   }
 
   /// The next round (after [event.currentRound]) that assigns a team to
-  /// this station, or `null` once no later round does (last active
-  /// round already running).
+  /// this station, falling back to [finishFallbackCell] once no later
+  /// round does (last active round already running).
   PlayerStatusCell? _nextTeamAtPostCell(
     AppLocalizations l10n,
     ExerciseEvent event,
@@ -325,7 +325,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         value: '${l10n.team(1)} ${teamIndex + 1}',
       );
     }
-    return null;
+    return finishFallbackCell(l10n, _exercise, icon: Icons.arrow_forward);
   }
 
   /// Postbeskrivelse (rollup) + map cards. Sized to its content (no inner

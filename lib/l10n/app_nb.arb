@@ -265,6 +265,7 @@
   "statusNextPhase": "Neste fase",
   "statusNextRound": "Neste runde",
   "statusNotActiveNow": "Ikke aktiv nå",
+  "statusFinishValue": "Ferdig",
   "statusPreStartSubline": "starter {startTime} · {rounds, plural, =1{1 runde} other{{rounds} runder}}",
   "statusPreStartSublineMarker": "aktiv fra {activeFrom} · på {postBadge}",
   "clockLabel": "Tid nå",

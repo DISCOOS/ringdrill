@@ -1004,6 +1004,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusNotActiveNow => 'Not active now';
 
   @override
+  String get statusFinishValue => 'Finish';
+
+  @override
   String statusPreStartSubline(String startTime, int rounds) {
     String _temp0 = intl.Intl.pluralLogic(
       rounds,

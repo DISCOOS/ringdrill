@@ -665,8 +665,8 @@ class _MarkerStatusCard extends StatelessWidget {
   }
 
   /// The next round (after [event.currentRound]) this post is staffed by a
-  /// team, or `null` once no later round is (last active round already
-  /// running).
+  /// team, falling back to [finishFallbackCell] once no later round is
+  /// (last active round already running).
   PlayerStatusCell? _nextTeamAtPostCell(
     AppLocalizations l10n,
     ExerciseEvent event,
@@ -685,7 +685,7 @@ class _MarkerStatusCard extends StatelessWidget {
         value: '${l10n.team(1)} ${teamIndex + 1}',
       );
     }
-    return null;
+    return finishFallbackCell(l10n, exercise, icon: Icons.arrow_forward);
   }
 }
 
