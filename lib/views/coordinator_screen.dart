@@ -41,15 +41,19 @@ import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'exercise_form_screen.dart';
 import 'plan_additions.dart';
 
-const double _kCoordinatorTwoColumnViewportWidth = 1120;
-const double _kCoordinatorTwoColumnContentWidth = 900;
 const double _kCoordinatorBodyPadding = kPlayerSurfaceHorizontalPadding;
-const double _kCoordinatorWideTopSectionHeight = 300;
+
+/// Capped width of the expanded body's left column (status card → schedule
+/// card → segment → list) — sized for the compact stack, not the map pane.
+/// It must not grow with the window, since the map to its right is the
+/// pane meant to claim the extra width (B2).
+const double _kCoordinatorExpandedLeftColumnWidth = 400;
 
 class CoordinatorScreen extends StatefulWidget {
   final String uuid;
@@ -61,11 +65,11 @@ class CoordinatorScreen extends StatefulWidget {
 }
 
 /// Which view the coordinator is currently looking at. Station rotations,
-/// team rotations and (in the single-column / mobile body) an all-stations
-/// map are mutually exclusive; the coordinator picks one via a
-/// SegmentedButton at the top of the body. [map] is only offered in the
-/// single-column layout — the wide two-column body always shows the map
-/// below the lists, so it has no map segment.
+/// team rotations and (in the compact/medium bodies) an all-stations map
+/// are mutually exclusive; the coordinator picks one via a SegmentedButton
+/// at the top of the body. [map] is only offered in the compact/medium
+/// bodies — the expanded body always shows the map beside the lists, so it
+/// has no map segment.
 enum _CoordinatorView { stations, teams, map }
 
 /// Entries in the appbar overflow menu. Edit and delete used to live as
@@ -99,10 +103,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  /// The map view only exists in the single-column (mobile) body. When the
-  /// wide two-column body is shown it has no map segment, so a `map`
-  /// selection (e.g. left over after a resize from narrow to wide) falls
-  /// back to the stations list/segment there.
+  /// The map view only exists in the compact/medium bodies. When the
+  /// expanded body is shown it has no map segment, so a `map` selection
+  /// (e.g. left over after a resize to expanded) falls back to the
+  /// stations list/segment there.
   _CoordinatorView get _viewWithoutMap =>
       _view == _CoordinatorView.map ? _CoordinatorView.stations : _view;
 
@@ -454,43 +458,43 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // presses play. Reading the service directly avoids that false
     // positive and matches the gate used for `_buildExerciseStatus`.
     final showHero = _exerciseService.isStartedOn(widget.uuid);
-    // The whole screen scrolls as one unit, so the round table, the
-    // segmented switch and the chosen list move together when the
-    // coordinator scrolls. Previously only the inner list scrolled, which
-    // pinned the round table to the top and forced the coordinator to
-    // scroll inside a small viewport.
-    //
+    final windowSize = WindowSizeClass.of(context);
     // The Stack wrapper carries a single overlay action: a small copy
     // IconButton in the top-right corner that copies the full exercise
     // (header, meta, station list, rotation block) to the clipboard.
-    // Placing it on the scroll body — not on the rotation table —
-    // matches the user mental model that this action is about the
-    // exercise as a whole. The button does not scroll with the content
-    // because it lives as a sibling of the SingleChildScrollView inside
-    // the Stack, so it stays anchored to the same screen position while
-    // the coordinator scrolls through the round table and lists below.
+    // Placing it on the body — not on the schedule card — matches the
+    // user mental model that this action is about the exercise as a
+    // whole. The button does not scroll with the content because it
+    // lives as a sibling of the scrolling content inside the Stack, so
+    // it stays anchored to the same screen position while the
+    // coordinator scrolls through the schedule and lists below.
     return Stack(
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final isTwoColumn =
-                MediaQuery.sizeOf(context).width >=
-                    _kCoordinatorTwoColumnViewportWidth &&
-                constraints.maxWidth >= _kCoordinatorTwoColumnContentWidth;
+            // Expanded gets a dedicated two-pane body: a capped-width left
+            // column (that itself scrolls) beside a map pane that fills
+            // the remaining, full-height space — that only works with a
+            // bounded outer height, so it is NOT wrapped in the shared
+            // SingleChildScrollView the other two window sizes use, where
+            // the whole screen (status/schedule/segment/list) scrolls as
+            // one unit.
+            if (windowSize == WindowSizeClass.expanded) {
+              return _buildExpandedBody(
+                event,
+                showHero: showHero,
+                localizations: localizations,
+              );
+            }
             return SingleChildScrollView(
               padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
-              child: isTwoColumn
-                  ? _buildTwoColumnBody(
-                      event,
-                      showHero: showHero,
-                      viewportHeight: constraints.maxHeight,
-                    )
-                  : _buildSingleColumnBody(
-                      event,
-                      showHero: showHero,
-                      localizations: localizations,
-                      viewportHeight: constraints.maxHeight,
-                    ),
+              child: _buildStackedBody(
+                event,
+                showHero: showHero,
+                localizations: localizations,
+                viewportHeight: constraints.maxHeight,
+                sideBySideTop: windowSize == WindowSizeClass.medium,
+              ),
             );
           },
         ),
@@ -512,16 +516,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  Widget _buildSingleColumnBody(
+  /// Compact and medium body (B2): one scrolling column — top section,
+  /// segment (with the `Kart` option), then the selected list. [sideBySideTop]
+  /// is medium's only difference from compact: with the extra width, the
+  /// status and schedule cards share a row instead of stacking.
+  Widget _buildStackedBody(
     ExerciseEvent event, {
     required bool showHero,
     required AppLocalizations localizations,
     required double viewportHeight,
+    required bool sideBySideTop,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildTopSection(event, showHero: showHero),
+        sideBySideTop
+            ? _buildSideBySideTopSection(event, showHero: showHero)
+            : _buildTopSection(event, showHero: showHero),
         const SizedBox(height: 16),
         _buildViewSelector(localizations, includeMap: true),
         const SizedBox(height: 8),
@@ -534,19 +545,78 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  /// Stations/teams switch shown at the top of the list. Shared by the
-  /// single- and two-column bodies so the wide layout (e.g. the
-  /// master-detail detail pane) keeps the same way to reach the team
-  /// rotations — without it the two-column body could only ever show
+  /// Medium's top section (B2): the status card and schedule card side by
+  /// side, both full "standard" cards (no shrink-wrap) — medium already has
+  /// the room `WindowSizeClass.medium` implies, so no extra width threshold
+  /// is needed here. Falls back to just the schedule card before start,
+  /// same as the stacked variant.
+  Widget _buildSideBySideTopSection(
+    ExerciseEvent event, {
+    required bool showHero,
+  }) {
+    if (!showHero) return _buildScheduleCard(event);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _buildScheduleCard(event)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildCombinedHeroCard(event)),
+      ],
+    );
+  }
+
+  /// Expanded body (B2): a capped-width left column (status → schedule →
+  /// segment → list, scrolling independently) beside a map pane that fills
+  /// the remaining width and the full height. The segment drops `Kart`
+  /// (`includeMap: false`) since the map is always visible here.
+  Widget _buildExpandedBody(
+    ExerciseEvent event, {
+    required bool showHero,
+    required AppLocalizations localizations,
+  }) {
+    final map = _buildExercisePositionMap(event);
+    return Padding(
+      padding: const EdgeInsets.all(_kCoordinatorBodyPadding),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: _kCoordinatorExpandedLeftColumnWidth,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildTopSection(event, showHero: showHero),
+                  const SizedBox(height: 16),
+                  _buildViewSelector(localizations, includeMap: false),
+                  const SizedBox(height: 8),
+                  _viewWithoutMap == _CoordinatorView.stations
+                      ? _buildStationList(event)
+                      : _buildTeamList(event),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: map ?? _buildMapPlaceholder(localizations)),
+        ],
+      ),
+    );
+  }
+
+  /// Stations/teams switch shown at the top of the list. Shared by every
+  /// body so all three window sizes keep the same way to reach the team
+  /// rotations — without it the expanded body could only ever show
   /// stations.
   Widget _buildViewSelector(
     AppLocalizations localizations, {
     required bool includeMap,
   }) {
-    // The map segment is only offered in the single-column body; the wide
-    // two-column body always shows the map below the lists. `selected` is
-    // coerced via [_viewWithoutMap] so a stale `map` selection does not feed
-    // SegmentedButton a value missing from its segments after a resize.
+    // The map segment is only offered in the compact/medium bodies; the
+    // expanded body always shows the map beside the lists instead.
+    // `selected` is coerced via [_viewWithoutMap] so a stale `map` selection
+    // does not feed SegmentedButton a value missing from its segments after
+    // a resize.
     final selectedView = includeMap ? _view : _viewWithoutMap;
     final button = SegmentedButton<_CoordinatorView>(
       segments: [
@@ -599,87 +669,30 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  Widget _buildTwoColumnBody(
-    ExerciseEvent event, {
-    required bool showHero,
-    required double viewportHeight,
-  }) {
-    final localizations = AppLocalizations.of(context)!;
-    final positionMap = _buildExercisePositionMap(
-      event,
-      height:
-          (viewportHeight -
-                  _kCoordinatorBodyPadding * 2 -
-                  _kCoordinatorWideTopSectionHeight)
-              .clamp(240.0, double.infinity),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          // Center the row's cross axis so the shorter column (normally the
-          // round-table/status group on the right) is vertically centered
-          // against the taller one (normally the stations/teams list). The
-          // body lives in a vertical SingleChildScrollView, so the row height
-          // is unbounded — `CrossAxisAlignment.center` measures each child at
-          // its natural height and centers the shorter one. (An `Align`
-          // inside the Expanded can't do this: with unbounded height it
-          // shrink-wraps to its child and has no spare room to center within.)
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // The list column keeps its own top-down packing (the selector
-            // stays pinned above its list); only the whole column is centered
-            // against the row, which is a no-op while it is the taller side.
-            Expanded(
-              flex: 6,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildViewSelector(localizations, includeMap: false),
-                  const SizedBox(height: 8),
-                  _viewWithoutMap == _CoordinatorView.stations
-                      ? _buildStationList(event)
-                      : _buildTeamList(event),
-                ],
-              ),
-            ),
-            const SizedBox(width: 24),
-            // Align(center) only handles the horizontal centering of the
-            // group inside its cell; the Row above owns the vertical centering.
-            Expanded(
-              flex: 5,
-              child: Align(
-                alignment: Alignment.center,
-                child: _buildTopSection(event, showHero: showHero),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (positionMap != null)
-          Padding(padding: const EdgeInsets.all(8.0), child: positionMap),
-      ],
-    );
-  }
-
-  /// Map subview for the single-column (mobile) body, shown when the map
-  /// segment is selected. Reuses the same all-stations map as the wide
-  /// body and falls back to a short placeholder when no station has a
-  /// position yet.
+  /// Map subview for the compact/medium bodies, shown when the `Kart`
+  /// segment is selected. Reuses the same all-stations map as the expanded
+  /// body's permanent pane and falls back to a short placeholder when no
+  /// station has a position yet.
   Widget _buildSingleColumnMap(ExerciseEvent event, double viewportHeight) {
-    final localizations = AppLocalizations.of(context)!;
-    // The map renders below the top section (round table + selector) inside
-    // the scrolling body, so it must leave room for that content — otherwise
-    // a near-full-viewport map pushes the page well past one screen. Reserve
-    // a chunk for the chrome above so the map stays inside the viewport
-    // rather than dominating it.
+    // The map renders below the top section (status/schedule + selector)
+    // inside the scrolling body, so it must leave room for that content —
+    // otherwise a near-full-viewport map pushes the page well past one
+    // screen. Reserve a chunk for the chrome above so the map stays inside
+    // the viewport rather than dominating it.
     final map = _buildExercisePositionMap(
       event,
       height: (viewportHeight - 320).clamp(240.0, double.infinity),
     );
-    if (map != null) {
-      return Padding(padding: const EdgeInsets.all(8.0), child: map);
+    if (map == null) {
+      return _buildMapPlaceholder(AppLocalizations.of(context)!);
     }
+    return Padding(padding: const EdgeInsets.all(8.0), child: map);
+  }
+
+  /// Placeholder shown in place of the all-stations map when no station has
+  /// a position yet — shared by the compact/medium `Kart` segment and the
+  /// expanded body's permanent map pane.
+  Widget _buildMapPlaceholder(AppLocalizations localizations) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Center(
@@ -694,13 +707,12 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   }
 
   /// All-stations map for this exercise. Returns null when no station has a
-  /// position so callers can omit the block (wide body) or show a
-  /// placeholder (mobile map subview). [height] is the fixed height the map
-  /// box occupies inside the scrolling body.
-  Widget? _buildExercisePositionMap(
-    ExerciseEvent event, {
-    required double height,
-  }) {
+  /// position so callers can omit the block (expanded body) or show a
+  /// placeholder (compact/medium `Kart` segment). [height] fixes the map
+  /// box's height inside the scrolling compact/medium body; left `null` for
+  /// the expanded body's pane, which fills whatever height its `Expanded`
+  /// ancestor gives it instead.
+  Widget? _buildExercisePositionMap(ExerciseEvent event, {double? height}) {
     final markers = <MapMarkerSpec<int>>[];
     for (
       var stationIndex = 0;
