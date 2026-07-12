@@ -191,4 +191,103 @@ void main() {
       await tester.pump();
     },
   );
+
+  testWidgets(
+    'running: mid last round, the next-round cell falls back to the '
+    'exercise finish time while next-phase still shows the real phase',
+    (tester) async {
+      // 3 minutes into round 2's (the last round's) execution phase: 2 full
+      // rounds (20 min each: executionTime 10 + evaluationTime 5 +
+      // rotationTime 5) plus 3 minutes.
+      final past = DateTime.now().subtract(const Duration(minutes: 43));
+      final exercise = _exercise(
+        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
+      );
+      await _seedAndInit(exercise);
+      ExerciseService().start(exercise);
+
+      await tester.pumpWidget(
+        _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+      );
+      await tester.pump();
+
+      final cardFinder = find.byType(PlayerStatusCard);
+      expect(cardFinder, findsOneWidget);
+
+      // Next phase (round 2 execution's next phase is round 2's EVAL) is
+      // unaffected — only the next-round cell is exhausted.
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text(l10n.eval.toUpperCase()),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
+        ),
+        findsOneWidget,
+        reason: 'the next-round cell falls back to "Next · finish time" '
+            'instead of being empty',
+      );
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text(l10n.statusFinishValue),
+        ),
+        findsOneWidget,
+        reason: 'only the next-round cell falls back here — next phase '
+            'still has a real phase to show',
+      );
+
+      ExerciseService().stop();
+      await tester.pump();
+    },
+  );
+
+  testWidgets(
+    'running: last phase of the last round, both next-cells fall back to '
+    'the exercise finish time',
+    (tester) async {
+      // 3 minutes into round 2's rotation (ROLL) phase, its last phase:
+      // 2 full rounds (40 min) + executionTime (10) + evaluationTime (5) +
+      // 3 minutes into the 5-minute rotation phase.
+      final past = DateTime.now().subtract(const Duration(minutes: 58));
+      final exercise = _exercise(
+        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
+      );
+      await _seedAndInit(exercise);
+      ExerciseService().start(exercise);
+
+      await tester.pumpWidget(
+        _harness(const CoordinatorScreen(uuid: _exerciseUuid)),
+      );
+      await tester.pump();
+
+      final cardFinder = find.byType(PlayerStatusCard);
+      expect(cardFinder, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text('${l10n.nextLabel} · ${exercise.endTime}'),
+        ),
+        findsNWidgets(2),
+        reason: 'both cells fall back to "Next · finish time" — there is '
+            'no further phase or round to report',
+      );
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text(l10n.statusFinishValue),
+        ),
+        findsNWidgets(2),
+      );
+
+      ExerciseService().stop();
+      await tester.pump();
+    },
+  );
 }

@@ -311,4 +311,49 @@ void main() {
     expect(find.text('Next'), findsOneWidget);
     expect(find.byType(Icon), findsNothing);
   });
+
+  testWidgets(
+    'finishFallbackCell builds a "Next · finish time" / "Finish" cell',
+    (tester) async {
+      final exercise = _exercise();
+
+      final cell = finishFallbackCell(l10n, exercise, icon: Icons.arrow_forward);
+
+      expect(cell.label, l10n.nextLabel);
+      expect(cell.time, exercise.endTime.toString());
+      expect(cell.value, l10n.statusFinishValue);
+      expect(cell.icon, Icons.arrow_forward);
+      expect(cell.isNow, isFalse);
+
+      // Renders through PlayerStatusCard like any other cell — same shared
+      // wording/shape everywhere it's used (Post, Lag, Spill, Coordinator).
+      final event = _runningEvent(exercise);
+      await tester.pumpWidget(
+        _harness(PlayerStatusCard(event: event, trailingCell: cell)),
+      );
+
+      expect(
+        find.text('${l10n.nextLabel} · ${exercise.endTime}'),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.statusFinishValue), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'finishFallbackCell renders no leading icon when icon is omitted',
+    (tester) async {
+      final exercise = _exercise();
+      final cell = finishFallbackCell(l10n, exercise);
+
+      expect(cell.icon, isNull);
+
+      final event = _runningEvent(exercise);
+      await tester.pumpWidget(
+        _harness(PlayerStatusCard(event: event, trailingCell: cell)),
+      );
+
+      expect(find.byType(Icon), findsNothing);
+    },
+  );
 }

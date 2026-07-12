@@ -155,6 +155,54 @@ void main() {
   );
 
   testWidgets(
+    'running: station 1 on the last round falls back to the exercise '
+    'finish time instead of an empty next-cell',
+    (tester) async {
+      // 3 minutes into round 2's (the last round's) execution phase: 2 full
+      // rounds (20 min each: executionTime 10 + evaluationTime 5 +
+      // rotationTime 5) plus 3 minutes.
+      final past = DateTime.now().subtract(const Duration(minutes: 43));
+      final exercise = _exercise(
+        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
+      );
+      await _seedAndInit(exercise);
+      ExerciseService().start(exercise);
+
+      // Station 0 (0-based): round2 -> team1 ("Team 2"), so the "now" cell
+      // is active — only the "next" cell is exhausted (no round after the
+      // last one).
+      await tester.pumpWidget(_buildScreen(stationIndex: 0));
+      await tester.pump();
+
+      final cardFinder = find.byType(PlayerStatusCard);
+      expect(cardFinder, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text(
+            '${l10n.nextLabel} · ${exercise.endTime}',
+          ),
+        ),
+        findsOneWidget,
+        reason: 'the next-cell label still reads "Next", with the '
+            "exercise's finish time appended inline",
+      );
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.text(l10n.statusFinishValue),
+        ),
+        findsOneWidget,
+        reason: 'the next-cell value reads "Finish" instead of being empty',
+      );
+
+      ExerciseService().stop();
+      await tester.pump();
+    },
+  );
+
+  testWidgets(
     'running: station 2 has no team round0 — shows "Not active now"',
     (tester) async {
       final past = DateTime.now().subtract(const Duration(minutes: 3));
