@@ -458,7 +458,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     // presses play. Reading the service directly avoids that false
     // positive and matches the gate used for `_buildExerciseStatus`.
     final showHero = _exerciseService.isStartedOn(widget.uuid);
-    final windowSize = WindowSizeClass.of(context);
     // The Stack wrapper carries a single overlay action: a small copy
     // IconButton in the top-right corner that copies the full exercise
     // (header, meta, station list, rotation block) to the clipboard.
@@ -472,6 +471,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
+            // Derived from the body's own available width — not
+            // `WindowSizeClass.of(context)` (the whole window) — so the
+            // coordinator picks its layout off its actual pane width. Inside
+            // the wide master/detail shell the coordinator lives in the
+            // detail pane, which is narrower than the window (rail + master
+            // claim the rest); reading the window there made the coordinator
+            // believe it had far more room than it did and overflow trying
+            // to render the expanded two-pane body inside a narrow pane.
+            final windowSize = WindowSizeClass.fromWidth(constraints.maxWidth);
             // Expanded gets a dedicated two-pane body: a capped-width left
             // column (that itself scrolls) beside a map pane that fills
             // the remaining, full-height space — that only works with a
