@@ -24,6 +24,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _programUuid = 'prog-status-card-padding-parity';
 const _exerciseUuid = 'ex-status-card-padding-parity';
 
+/// A fixed morning reference, safely clear of midnight for the offset used
+/// below (3 minutes) and well before the fixture's own `endTime` (09:00) so
+/// it never itself reads as "past end".
+final _fixedNow = DateTime(2026, 1, 1, 8, 0);
+
+/// A [SimpleTimeOfDay] [minutesAgo] before [_fixedNow] — pairs with
+/// [ExerciseService.debugNowOverride] pinned to [_fixedNow] so a test is
+/// not at the mercy of real wall-clock time. A bare
+/// `DateTime.now().subtract(...)` loses its date once truncated to
+/// [SimpleTimeOfDay] (hour/minute only): whenever the real current time was
+/// less than the subtracted offset past midnight, the synthetic start time
+/// landed on the previous day and the exercise looked scheduled in the
+/// future (pending) instead of already running — flaky in exactly the
+/// first `minutesAgo` minutes after midnight.
+SimpleTimeOfDay _startTimeMinutesAgo(int minutesAgo) {
+  final past = _fixedNow.subtract(Duration(minutes: minutesAgo));
+  return SimpleTimeOfDay(hour: past.hour, minute: past.minute);
+}
+
 Exercise _exercise({required SimpleTimeOfDay startTime}) => Exercise(
   uuid: _exerciseUuid,
   name: 'Padding Parity Test Exercise',
@@ -112,11 +131,10 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      final past = DateTime.now().subtract(const Duration(minutes: 3));
-      final exercise = _exercise(
-        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
-      );
+      final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
       await _seedAndInit(exercise);
+      ExerciseService().debugNowOverride = () => _fixedNow;
+      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
       ExerciseService().start(exercise);
 
       // Coordinator.
