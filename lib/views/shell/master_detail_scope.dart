@@ -11,6 +11,7 @@ class MasterDetailScope
     required ValueNotifier<ContextSheetTarget?> target,
     required this.emptyPaneBuilder,
     this.bodyBuilder,
+    this.onToggleMaster,
     required super.child,
   }) : super(notifier: target);
 
@@ -20,6 +21,13 @@ class MasterDetailScope
   /// tab-specific empty states and the Map tab can intentionally provide none.
   final DetailEmptyPaneBuilder emptyPaneBuilder;
   final ContextSheetBodyBuilder? bodyBuilder;
+
+  /// Collapses/expands the wide shell's master (list) pane. Non-null only
+  /// while a collapsible master/detail is actually hosting the detail pane
+  /// (the wide layout) — null in narrow, where the detail is a full-screen
+  /// sheet and there is no master pane to collapse. [MasterDetailLeading]
+  /// reads this to decide between the sidebar toggle and the close-X.
+  final VoidCallback? onToggleMaster;
 
   static MasterDetailScope? maybeOf(BuildContext context) {
     return context

@@ -29,6 +29,11 @@ class AppConfig {
   static const String keyShowMapZoomControls = 'app:showMapZoomControls:v1';
   static const String keyMigrationBannerDismissedAt =
       'app:migrationBannerDismissedAt:v1';
+
+  /// Whether the wide shell's master (list) pane is collapsed, leaving the
+  /// detail pane to fill the width. Wide-layout view preference; narrow is
+  /// unaffected (see `docs/design/proposals/collapsible-master-pane.md`).
+  static const String keyMasterPaneCollapsed = 'app:masterPaneCollapsed:v1';
   static const String ringDrillBaseUrl = 'https://ringdrill.app';
   static const String briefViewerBaseUrl = 'https://ringdrill.app';
   static const String apiBaseUrl = 'https://api.ringdrill.app';

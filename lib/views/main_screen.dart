@@ -8,6 +8,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
+import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
@@ -38,6 +39,7 @@ import 'package:ringdrill/web/settings_page.dart'
     if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
 import 'package:ringdrill/web/legacy_host_web.dart'
     if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({
@@ -131,10 +133,17 @@ class _MainScreenState extends State<MainScreen>
   bool _migrationSnackBarChecked = false;
   final DrillPlayerCoordinator _drillPlayer = DrillPlayerCoordinator();
 
+  // Wide-shell view preference (DESIGN-010 collapsible master pane):
+  // whether the master (list) pane is collapsed so the detail pane fills
+  // the width. Defaults to expanded until the async load below resolves.
+  // Purely a wide-layout concern — the narrow layout never reads this.
+  bool _masterCollapsed = false;
+
   @override
   void initState() {
     super.initState();
     _initTab();
+    _loadMasterCollapsed();
     // Registered once — the closure reads `_currentTab` at call time, so
     // there is nothing to re-register when the user switches tabs.
     CatalogRefreshIndicatorRegistry().registerProvider(
@@ -353,6 +362,8 @@ class _MainScreenState extends State<MainScreen>
                       ),
                       contextSheetController: _contextSheetController,
                       drillPlayer: _drillPlayer,
+                      masterCollapsed: _masterCollapsed,
+                      onToggleMaster: _toggleMasterCollapsed,
                     )
                   : SafeArea(
                       child: Column(
@@ -571,6 +582,27 @@ class _MainScreenState extends State<MainScreen>
     if (updated != null && context.mounted) {
       await ProgramService().replaceProgram(updated);
     }
+  }
+
+  /// Reads the stored master-pane-collapsed preference. The `false`
+  /// (expanded) default stays in effect until this resolves, mirroring
+  /// `BriefScreen._loadStoredRole`.
+  Future<void> _loadMasterCollapsed() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final stored = prefs.getBool(AppConfig.keyMasterPaneCollapsed);
+    if (stored == null || stored == _masterCollapsed) return;
+    setState(() => _masterCollapsed = stored);
+  }
+
+  /// Flips the wide shell's master-pane collapse state and persists it.
+  /// Only ever wired up while `useRail` is active (see `build`) — the
+  /// narrow layout has no collapse concept to toggle.
+  Future<void> _toggleMasterCollapsed() async {
+    final next = !_masterCollapsed;
+    setState(() => _masterCollapsed = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppConfig.keyMasterPaneCollapsed, next);
   }
 
   void _onDestinationSelected(int tab) {

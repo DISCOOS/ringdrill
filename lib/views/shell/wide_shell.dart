@@ -31,6 +31,8 @@ class WideShell extends StatelessWidget {
     required this.masterAppBar,
     required this.contextSheetController,
     required this.drillPlayer,
+    this.masterCollapsed = false,
+    this.onToggleMaster,
   });
 
   final BoxConstraints constraints;
@@ -40,6 +42,17 @@ class WideShell extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final List<Destination> destinations;
   final ValueChanged<int> onDestinationSelected;
+
+  /// Whether the master (list) pane is collapsed, leaving the detail pane to
+  /// fill the width. Ignored on the Map tab, which has no master/detail
+  /// split to begin with.
+  final bool masterCollapsed;
+
+  /// Flips [masterCollapsed]. Forwarded into [MasterDetailScope] so the
+  /// detail's leading (`MasterDetailLeading`) can reach it. Null only when
+  /// the host has no collapse concept to offer (defensive — the wide shell
+  /// itself always supplies one outside the Map tab).
+  final VoidCallback? onToggleMaster;
 
   /// Pre-built IndexedStack of the shell's tab pages. Same instance the
   /// narrow layout would use, so per-tab state is preserved across
@@ -138,101 +151,105 @@ class WideShell extends StatelessWidget {
       );
     }
 
+    // Rail + master pane, painted with the master-accent tone so the
+    // selected rail indicator pill, the master AppBar and the master body
+    // all share a single colour and read as one connected "active
+    // section". The detail pane keeps the scaffold background. Cards
+    // inside the master list use `*Surface` which stays distinct against
+    // the accent. Only built (and only occupies width) when the master
+    // pane is not collapsed.
+    final masterPane = Row(
+      children: [
+        rail,
+        Expanded(
+          child: ColoredBox(
+            color: masterAccent,
+            // In dark + rail, override `cardTheme.color` to `brandDeep` so
+            // cards in the master list sit one tone darker than
+            // `masterAccentDark` and clearly pop out as content tiles.
+            // Without this override cards default to `darkSurface` which
+            // is nearly the same lightness as the master accent. The
+            // narrow (no-rail) layout keeps the default `darkSurface`
+            // cards on the `brandDeep` scaffold.
+            child: Theme(
+              data: isDark
+                  ? Theme.of(context).copyWith(
+                      cardTheme: Theme.of(
+                        context,
+                      ).cardTheme.copyWith(color: RingDrillColors.brandDeep),
+                    )
+                  : Theme.of(context),
+              child: Column(
+                children: [
+                  masterAppBar,
+                  // Stack so the active tab's FAB (only the exercises tab
+                  // has one) floats at the bottom-right of the master
+                  // pane, above the docked mini player which sits below
+                  // this region in the outer Column.
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(child: tabs),
+                        if (fab != null)
+                          Positioned(right: 16, bottom: 16, child: fab),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final miniPlayer = DockedDrillMiniPlayer(
+      controller: contextSheetController,
+      openDrillPlayer: drillPlayer.openDrillPlayer,
+    );
+
+    // Collapsed: the master column (rail + list) is gone, so the mini
+    // player — which otherwise docks under just the rail+master region —
+    // moves to span the shell's full bottom width instead (a sibling of
+    // the rail+detail row, not nested under a width-constrained SizedBox).
+    // Expanded keeps today's placement: nested under the rail+master
+    // SizedBox, spanning only that region, and the detail pane never has
+    // a mini player docked beneath it.
+    final body = masterCollapsed
+        ? Column(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    rail,
+                    const Expanded(child: MasterDetailPane()),
+                  ],
+                ),
+              ),
+              miniPlayer,
+            ],
+          )
+        : Row(
+            children: [
+              SizedBox(
+                width: railWidth + masterWidth,
+                child: Column(children: [Expanded(child: masterPane), miniPlayer]),
+              ),
+              const Expanded(child: MasterDetailPane()),
+            ],
+          );
+
     return Column(
       children: [
         const MigrationBanner(),
         Expanded(
           child: MasterDetailScope(
-      target: contextSheetController.targetNotifier,
-      emptyPaneBuilder: emptyPaneBuilder,
-      child: Row(
-        children: [
-          // Left region: navigation rail + master pane stacked above the
-          // mini player. The mini player docks at the bottom of this
-          // region, spanning under the rail and the master view but NOT
-          // the detail pane — the same shape as Spotify's now-playing
-          // bar sitting over the left columns while the main view runs
-          // full height beside it.
-          SizedBox(
-            width: railWidth + masterWidth,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      rail,
-                      // Master pane is painted with the master-accent tone
-                      // so the selected rail indicator pill, the master
-                      // AppBar and the master body all share a single
-                      // colour and read as one connected "active section".
-                      // The detail pane keeps the scaffold background.
-                      // Cards inside the master list use `*Surface` which
-                      // stays distinct against the accent.
-                      Expanded(
-                        child: ColoredBox(
-                          color: masterAccent,
-                          // In dark + rail, override `cardTheme.color` to
-                          // `brandDeep` so cards in the master list sit
-                          // one tone darker than `masterAccentDark` and
-                          // clearly pop out as content tiles. Without
-                          // this override cards default to `darkSurface`
-                          // which is nearly the same lightness as the
-                          // master accent. The narrow (no-rail) layout
-                          // keeps the default `darkSurface` cards on the
-                          // `brandDeep` scaffold.
-                          child: Theme(
-                            data: isDark
-                                ? Theme.of(context).copyWith(
-                                    cardTheme: Theme.of(context).cardTheme
-                                        .copyWith(
-                                          color: RingDrillColors.brandDeep,
-                                        ),
-                                  )
-                                : Theme.of(context),
-                            child: Column(
-                              children: [
-                                masterAppBar,
-                                // Stack so the active tab's FAB (only the
-                                // exercises tab has one) floats at the
-                                // bottom-right of the master pane, above
-                                // the docked mini player which sits below
-                                // this region in the outer Column.
-                                Expanded(
-                                  child: Stack(
-                                    children: [
-                                      Positioned.fill(child: tabs),
-                                      if (fab != null)
-                                        Positioned(
-                                          right: 16,
-                                          bottom: 16,
-                                          child: fab,
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Mini player spans the left region (rail + master) and
-                // is pinned to the bottom. It deliberately does not
-                // extend into the detail pane.
-                DockedDrillMiniPlayer(
-                  controller: contextSheetController,
-                  openDrillPlayer: drillPlayer.openDrillPlayer,
-                ),
-              ],
-            ),
+            target: contextSheetController.targetNotifier,
+            emptyPaneBuilder: emptyPaneBuilder,
+            onToggleMaster: onToggleMaster,
+            child: body,
           ),
-          const Expanded(child: MasterDetailPane()),
-        ],
-      ),
         ),
-      ),
       ],
     );
   }
