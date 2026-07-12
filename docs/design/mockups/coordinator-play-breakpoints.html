@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Coordinator i play-modus: compact / medium / expanded (DESIGN-010)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --live:#2f6feb; --live-soft:#cfe0fb;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;--live:#5a8fef;--live-soft:#26456b;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  h1{font-size:17px;font-weight:600;margin:0 0 4px;text-align:center}
+  p.intro{font-size:12.5px;color:var(--text-2);max-width:900px;margin:0 auto 8px;text-align:center;line-height:1.55}
+  .rowlabel{max-width:1200px;margin:26px auto 10px;font-size:14px;font-weight:600;color:var(--text-1);border-top:1px solid var(--border);padding-top:18px}
+  .rowlabel span{color:var(--text-3);font-weight:400;font-size:12.5px}
+  .stage{max-width:1200px;margin:0 auto}
+  .cap{font-size:11.5px;color:var(--text-3);margin:0 0 8px 2px;line-height:1.45;max-width:820px}
+  .cap b{color:var(--text-2);font-weight:600}
+
+  /* device frame */
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:0 auto}
+  .frame.compact{width:360px}
+  .frame.medium{width:760px}
+  .frame.expanded{width:1180px}
+  .bar{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--border)}
+  .bar .tt{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+  .bar .nm{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar i{font-size:19px;color:var(--text-2);flex:0 0 auto}
+  .body{padding:14px;background:var(--bg-page)}
+
+  /* ---- status card (from running-status mockup) ---- */
+  .status{background:var(--bg-1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .count{display:flex;align-items:center;gap:12px;padding:19px 16px 5px}
+  .count .line{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0}
+  .count .n{font-size:29px;font-weight:700;line-height:1}
+  .count .ph{font-size:29px;font-weight:700;line-height:1;color:var(--text-1)}
+  .count .rem{font-size:13px;color:var(--text-2);white-space:nowrap}
+  .count .vdiv{flex:0 0 auto;align-self:stretch;width:1px;background:var(--border);margin:2px 0}
+  .count .meta{flex:0 0 auto;font-size:13px;color:var(--text-2);line-height:1.55;text-align:right}
+  .count .meta b{font-weight:700;font-size:14.5px;color:var(--text-1);font-variant-numeric:tabular-nums}
+  .bar-prog{height:6px;background:var(--bg-3);margin:13px 15px 14px;border-radius:3px;overflow:hidden}
+  .bar-prog .fill{height:100%;background:var(--live)}
+  .nownext{display:flex;border-top:1px solid var(--border)}
+  .nownext .col{flex:1;min-width:0;padding:11px 13px}
+  .nownext .col + .col{border-left:1px solid var(--border)}
+  .nownext .k{font-size:11px;color:var(--text-3);display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:6px}
+  .nownext .k i{font-size:13px}
+  .val{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:34px}
+  .val .nm{font-size:23px;font-weight:600;min-width:0;line-height:1.2;text-align:center}
+
+  /* ---- schedule table ---- */
+  .sched{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg-1)}
+  .sched .hdr{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:#1a2230;color:#fff}
+  @media (prefers-color-scheme: dark){.sched .hdr{background:#0d1319}}
+  .sched .hdr div{padding:9px 10px;font-size:12px;font-weight:600;text-align:center;letter-spacing:.04em}
+  .sched .hdr div:first-child{text-align:left}
+  .sched .r{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;align-items:center}
+  .sched .r div{padding:9px 10px;font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums}
+  .sched .r div:first-child{text-align:left;color:var(--text-2)}
+  .sched .r.live{background:var(--live-soft)}
+  .sched .r.live div:first-child{color:var(--text-1);font-weight:600}
+  .sched .r.live .exec{background:var(--live);color:#fff;font-weight:700}
+  .sched .r.live .done{color:var(--text-1)}
+
+  /* ---- segmented control ---- */
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--bg-1)}
+  .seg .s{display:flex;align-items:center;gap:6px;padding:8px 16px;font-size:13px;color:var(--text-2);cursor:default}
+  .seg .s + .s{border-left:1px solid var(--border)}
+  .seg .s.on{background:var(--accent-bg);color:var(--accent);font-weight:600}
+  .seg i{font-size:16px}
+  .segwrap{text-align:center}
+
+  /* ---- station list ---- */
+  .list{display:flex;flex-direction:column;gap:9px}
+  .srow{display:flex;align-items:center;gap:11px;border:1.5px solid #c98a2a;border-radius:10px;background:rgba(201,138,42,0.10);padding:10px 12px}
+  .srow .badge{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;border-radius:7px;background:#8fc4c4;color:#0c2b2b;font-size:13px;font-weight:700}
+  .srow .snm{flex:1;min-width:0;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .srow .teams{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--text-2);font-variant-numeric:tabular-nums}
+  .srow .teams .lbl{color:var(--text-3);font-size:13px;padding-right:2px;border-right:1px solid var(--border);margin-right:3px}
+  .srow .teams .t{min-width:16px;text-align:center}
+  .srow .teams .t.on{background:var(--live);color:#fff;border-radius:5px;font-weight:700;padding:1px 5px}
+  .srow .chev{color:var(--text-3);font-size:18px}
+  .seclabel{font-size:12px;color:var(--text-3);margin:2px 0 9px}
+
+  /* ---- map ---- */
+  .map{border-radius:10px;overflow:hidden;position:relative;background:
+    linear-gradient(135deg,#c7d9a8 0%,#d9e3c0 40%,#bcd0e0 100%);
+    border:1px solid var(--border);min-height:220px}
+  .map .pin{position:absolute;font-size:26px;color:#e8641e;transform:translate(-50%,-100%)}
+  .map .pin.live{color:var(--accent)}
+  .map .lab{position:absolute;transform:translate(-50%,-140%);background:#1a2230;color:#fff;font-size:11px;padding:2px 6px;border-radius:5px;white-space:nowrap}
+  .map .ctrl{position:absolute;right:10px;top:10px;width:34px;height:34px;border-radius:8px;background:#1a2230;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+
+  /* layout helpers */
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .toprow{display:flex;gap:16px;align-items:flex-start}
+  .toprow .sched-wrap{flex:0 0 auto}
+  .toprow .status-wrap{flex:1;min-width:0}
+  .split{display:flex;gap:16px;align-items:stretch}
+  .split .left{flex:0 0 380px;display:flex;flex-direction:column;gap:13px}
+  .split .right{flex:1;min-width:0;display:flex}
+  .split .right .map{flex:1}
+  .note{font-size:11px;color:var(--text-3);font-style:italic;margin:3px 0 0 2px}
+</style>
+</head>
+<body>
+  <h1>Coordinator i play-modus — compact / medium / expanded</h1>
+  <p class="intro">DESIGN-010-followup. Samme innhold (statuskort, tidsplan, segment <b>Poster&nbsp;|&nbsp;Lag&nbsp;|&nbsp;Kart</b>, valgt liste) i alle bredder — bare arrangementet endres. <b>Compact</b> og <b>medium</b> stabler; kartet nås via <b>Kart</b>-segmentet. <b>Expanded</b> gir kartet en fast høyre-rute og samler alt det styrende i en venstrekolonne med kappet bredde, så segmentet krymper til <b>Poster&nbsp;|&nbsp;Lag</b> (kartet vises alltid).</p>
+
+  <!-- ============ COMPACT ============ -->
+  <div class="rowlabel">Compact <span>— telefon (&lt; 600 dp). Én kolonne, kart bak «Kart»-segmentet.</span></div>
+  <div class="stage">
+    <p class="cap"><b>Reengineert fra dagens layout:</b> status øverst (før: rundetabell + sidekort), så tidsplan, så segmentet, så listen. Én sammenhengende scroll.</p>
+    <div class="frame compact">
+      <div class="bar"><i class="ti ti-x"></i><div class="tt"><span class="nm">#1 Søk og redning</span></div><i class="ti ti-book"></i><i class="ti ti-dots"></i></div>
+      <div class="body">
+        <div class="stack">
+          <div class="status">
+            <div class="count"><div class="line"><span class="n">8</span><span class="rem">min igjen av</span><span class="ph">EVAL</span></div><div class="vdiv"></div><div class="meta">Runde <b>2</b> av <b>4</b><br>ferdig <b>10:55</b></div></div>
+            <div class="bar-prog"><div class="fill" style="width:40%"></div></div>
+            <div class="nownext">
+              <div class="col"><div class="k">Neste · 10:55</div><div class="val"><span class="nm">RULL</span></div></div>
+              <div class="col"><div class="k">Neste · 11:00</div><div class="val"><span class="nm">Runde 3</span></div></div>
+            </div>
+          </div>
+          <div class="sched">
+            <div class="hdr"><div>PLAN</div><div>ØVE</div><div>EVAL</div><div>RULL</div></div>
+            <div class="r"><div>Runde 1</div><div>10:00</div><div>10:15</div><div>10:25</div></div>
+            <div class="r live"><div>Runde 2</div><div class="exec">10:30</div><div>10:45</div><div class="done">10:55</div></div>
+            <div class="r"><div>Runde 3</div><div>11:00</div><div>11:15</div><div>11:25</div></div>
+            <div class="r"><div>Runde 4</div><div>11:30</div><div>11:45</div><div>11:55</div></div>
+          </div>
+          <div class="segwrap">
+            <div class="seg">
+              <div class="s on"><i class="ti ti-map-pin"></i>Poster (4)</div>
+              <div class="s"><i class="ti ti-users"></i>Lag (4)</div>
+              <div class="s"><i class="ti ti-map"></i>Kart</div>
+            </div>
+          </div>
+          <div>
+            <!-- «Rekkefølge»-etiketten skjules i play-modus (rekkefølge kan ikke redigeres) -->
+            <div class="list">
+              <div class="srow"><span class="badge">1.1</span><span class="snm">1a) Turgåer</span><span class="teams"><span class="lbl">Lag</span><span class="t">1</span><span class="t on">4</span><span class="t">3</span><span class="t">2</span></span><i class="ti ti-chevron-down chev"></i></div>
+              <div class="srow"><span class="badge">1.2</span><span class="snm">1b) Rusmisbruk</span><span class="teams"><span class="lbl">Lag</span><span class="t">2</span><span class="t on">1</span><span class="t">4</span><span class="t">3</span></span><i class="ti ti-chevron-down chev"></i></div>
+              <div class="srow"><span class="badge">1.3</span><span class="snm">1c) Henteoppdrag</span><span class="teams"><span class="lbl">Lag</span><span class="t">3</span><span class="t on">2</span><span class="t">1</span><span class="t">4</span></span><i class="ti ti-chevron-down chev"></i></div>
+              <div class="srow"><span class="badge">1.4</span><span class="snm">1d) Barn 1-3 år</span><span class="teams"><span class="lbl">Lag</span><span class="t">4</span><span class="t on">3</span><span class="t">2</span><span class="t">1</span></span><i class="ti ti-chevron-down chev"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MEDIUM ============ -->
+  <div class="rowlabel">Medium <span>— mindre tablet (600–839 dp). Fortsatt stablet; kart bak «Kart»-segmentet.</span></div>
+  <div class="stage">
+    <p class="cap"><b>Bruker bredden, men splitter ikke ut kartet:</b> status og tidsplan deler topp-raden (de får plass side ved side), segmentet og listen ligger i full bredde under. For trangt til å ofre en halv skjerm på et permanent kart her.</p>
+    <div class="frame medium">
+      <div class="bar"><i class="ti ti-x"></i><div class="tt"><span class="nm">#1 Søk og redning (ringøvelse)</span></div><i class="ti ti-book"></i><i class="ti ti-dots"></i></div>
+      <div class="body">
+        <div class="stack">
+          <div class="toprow">
+            <div class="sched-wrap">
+              <div class="sched" style="width:340px">
+                <div class="hdr"><div>PLAN</div><div>ØVE</div><div>EVAL</div><div>RULL</div></div>
+                <div class="r"><div>Runde 1</div><div>10:00</div><div>10:15</div><div>10:25</div></div>
+                <div class="r live"><div>Runde 2</div><div class="exec">10:30</div><div>10:45</div><div class="done">10:55</div></div>
+                <div class="r"><div>Runde 3</div><div>11:00</div><div>11:15</div><div>11:25</div></div>
+                <div class="r"><div>Runde 4</div><div>11:30</div><div>11:45</div><div>11:55</div></div>
+              </div>
+            </div>
+            <div class="status-wrap">
+              <div class="status">
+                <div class="count"><div class="line"><span class="n">8</span><span class="rem">min igjen av</span><span class="ph">EVAL</span></div><div class="vdiv"></div><div class="meta">Runde <b>2</b> av <b>4</b><br>ferdig <b>10:55</b></div></div>
+                <div class="bar-prog"><div class="fill" style="width:40%"></div></div>
+                <div class="nownext">
+                  <div class="col"><div class="k">Neste · 10:55</div><div class="val"><span class="nm">RULL</span></div></div>
+                  <div class="col"><div class="k">Neste · 11:00</div><div class="val"><span class="nm">Runde 3</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="segwrap">
+            <div class="seg">
+              <div class="s on"><i class="ti ti-map-pin"></i>Poster (4)</div>
+              <div class="s"><i class="ti ti-users"></i>Lag (4)</div>
+              <div class="s"><i class="ti ti-map"></i>Kart</div>
+            </div>
+          </div>
+          <div>
+            <!-- «Rekkefølge»-etiketten skjules i play-modus (rekkefølge kan ikke redigeres) -->
+            <div class="list">
+              <div class="srow"><span class="badge">1.1</span><span class="snm">1a) Turgåer</span><span class="teams"><span class="lbl">Lag</span><span class="t">1</span><span class="t on">4</span><span class="t">3</span><span class="t">2</span></span><i class="ti ti-chevron-down chev"></i></div>
+              <div class="srow"><span class="badge">1.2</span><span class="snm">1b) Rusmisbruk</span><span class="teams"><span class="lbl">Lag</span><span class="t">2</span><span class="t on">1</span><span class="t">4</span><span class="t">3</span></span><i class="ti ti-chevron-down chev"></i></div>
+              <div class="srow"><span class="badge">1.3</span><span class="snm">1c) Henteoppdrag</span><span class="teams"><span class="lbl">Lag</span><span class="t">3</span><span class="t on">2</span><span class="t">1</span><span class="t">4</span></span><i class="ti ti-chevron-down chev"></i></div>
+              <div class="srow"><span class="badge">1.4</span><span class="snm">1d) Barn 1-3 år</span><span class="teams"><span class="lbl">Lag</span><span class="t">4</span><span class="t on">3</span><span class="t">2</span><span class="t">1</span></span><i class="ti ti-chevron-down chev"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EXPANDED ============ -->
+  <div class="rowlabel">Expanded <span>— stor skjerm (≥ 840 dp). Kart fast til høyre, styring i venstrekolonne.</span></div>
+  <div class="stage">
+    <p class="cap"><b>Den nye layouten:</b> kartet blir en fast høyre-rute i full høyde. Venstrekolonnen (kappet ~420 dp) holder status → tidsplan → segment → liste, top-down etter prioritet. Segmentet krymper til <b>Poster&nbsp;|&nbsp;Lag</b> siden kartet alltid vises — «Kart» ville ikke gjort noe nytt.</p>
+    <div class="frame expanded">
+      <div class="bar"><i class="ti ti-x"></i><div class="tt"><span class="nm">#1 Søk og redning (ringøvelse)</span></div><i class="ti ti-book"></i><i class="ti ti-bell"></i><i class="ti ti-dots"></i></div>
+      <div class="body">
+        <div class="split">
+          <div class="left">
+            <div class="status">
+              <div class="count"><div class="line"><span class="n">8</span><span class="rem">min igjen av</span><span class="ph">EVAL</span></div><div class="vdiv"></div><div class="meta">Runde <b>2</b> av <b>4</b><br>ferdig <b>10:55</b></div></div>
+              <div class="bar-prog"><div class="fill" style="width:40%"></div></div>
+              <div class="nownext">
+                <div class="col"><div class="k">Neste · 10:55</div><div class="val"><span class="nm">RULL</span></div></div>
+                <div class="col"><div class="k">Neste · 11:00</div><div class="val"><span class="nm">Runde 3</span></div></div>
+              </div>
+            </div>
+            <div class="sched">
+              <div class="hdr"><div>PLAN</div><div>ØVE</div><div>EVAL</div><div>RULL</div></div>
+              <div class="r"><div>Runde 1</div><div>10:00</div><div>10:15</div><div>10:25</div></div>
+              <div class="r live"><div>Runde 2</div><div class="exec">10:30</div><div>10:45</div><div class="done">10:55</div></div>
+              <div class="r"><div>Runde 3</div><div>11:00</div><div>11:15</div><div>11:25</div></div>
+              <div class="r"><div>Runde 4</div><div>11:30</div><div>11:45</div><div>11:55</div></div>
+            </div>
+            <div class="segwrap">
+              <div class="seg">
+                <div class="s on"><i class="ti ti-map-pin"></i>Poster (4)</div>
+                <div class="s"><i class="ti ti-users"></i>Lag (4)</div>
+              </div>
+            </div>
+            <div>
+              <!-- «Rekkefølge»-etiketten skjules i play-modus (rekkefølge kan ikke redigeres) -->
+              <div class="list">
+                <div class="srow"><span class="badge">1.1</span><span class="snm">1a) Turgåer</span><span class="teams"><span class="lbl">Lag</span><span class="t">1</span><span class="t on">4</span><span class="t">3</span><span class="t">2</span></span><i class="ti ti-chevron-down chev"></i></div>
+                <div class="srow"><span class="badge">1.2</span><span class="snm">1b) Rusmisbruk</span><span class="teams"><span class="lbl">Lag</span><span class="t">2</span><span class="t on">1</span><span class="t">4</span><span class="t">3</span></span><i class="ti ti-chevron-down chev"></i></div>
+                <div class="srow"><span class="badge">1.3</span><span class="snm">1c) Henteoppdrag</span><span class="teams"><span class="lbl">Lag</span><span class="t">3</span><span class="t on">2</span><span class="t">1</span><span class="t">4</span></span><i class="ti ti-chevron-down chev"></i></div>
+                <div class="srow"><span class="badge">1.4</span><span class="snm">1d) Barn 1-3 år</span><span class="teams"><span class="lbl">Lag</span><span class="t">4</span><span class="t on">3</span><span class="t">2</span><span class="t">1</span></span><i class="ti ti-chevron-down chev"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="right">
+            <div class="map">
+              <div class="ctrl"><i class="ti ti-stack-2"></i></div>
+              <div class="pin live" style="left:52%;top:34%"></div><div class="lab" style="left:52%;top:34%">1c) Henteoppdrag</div>
+              <div class="pin" style="left:33%;top:72%"></div>
+              <div class="pin" style="left:40%;top:64%"></div><div class="lab" style="left:40%;top:64%">1d) Barn 1-3 år</div>
+              <div class="pin" style="left:70%;top:52%"></div>
+            </div>
+          </div>
+        </div>
+        <p class="note">Kartet fyller høyre rute i full høyde; live post (aktiv denne runden) får aksent-pin, resten grønn — samme «live»-test som listeradene og tidsplanens aktiv-markering.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap" style="max-width:900px;margin:26px auto 0;text-align:center">Breakpoints følger M3-vindusklassene (ADR-0030): compact &lt; 600, medium 600–839, expanded ≥ 840. «Kart fast høyre» henges kun på expanded; medium beholder dagens stabling. Ingen ny data eller modell — samme statuskort, tidsplan (`ScheduleTable`), segment og liste flyttes bare rundt.</p>
+</body>
+</html>
