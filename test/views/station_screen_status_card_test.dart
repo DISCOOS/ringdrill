@@ -25,6 +25,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _programUuid = 'prog-station-status-card';
 const _exerciseUuid = 'ex-station-status-card';
 
+/// A fixed morning reference, safely clear of midnight for every offset
+/// used below (up to 43 minutes) and well before the fixture's own
+/// `endTime` (noon) so it never itself reads as "past end".
+final _fixedNow = DateTime(2026, 1, 1, 9, 0);
+
+/// A [SimpleTimeOfDay] [minutesAgo] before [_fixedNow] — pairs with
+/// [ExerciseService.debugNowOverride] pinned to [_fixedNow] so a test is
+/// not at the mercy of real wall-clock time. A bare
+/// `DateTime.now().subtract(...)` loses its date once truncated to
+/// [SimpleTimeOfDay] (hour/minute only): whenever the real current time was
+/// less than the subtracted offset past midnight, the synthetic start time
+/// landed on the previous day and the exercise looked scheduled in the
+/// future (pending) instead of already running — flaky in exactly the
+/// first `minutesAgo` minutes after midnight.
+SimpleTimeOfDay _startTimeMinutesAgo(int minutesAgo) {
+  final past = _fixedNow.subtract(Duration(minutes: minutesAgo));
+  return SimpleTimeOfDay(hour: past.hour, minute: past.minute);
+}
+
 Exercise _exercise({required SimpleTimeOfDay startTime}) => Exercise(
   uuid: _exerciseUuid,
   name: 'Station Status Card Test Exercise',
@@ -112,11 +131,10 @@ void main() {
   testWidgets(
     'running: station 1 shows the team at this post now/next',
     (tester) async {
-      final past = DateTime.now().subtract(const Duration(minutes: 3));
-      final exercise = _exercise(
-        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
-      );
+      final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
       await _seedAndInit(exercise);
+      ExerciseService().debugNowOverride = () => _fixedNow;
+      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
       ExerciseService().start(exercise);
 
       // Station 1 (0-based): round0 -> team1 ("Team 2"), round1 -> team0
@@ -161,11 +179,10 @@ void main() {
       // 3 minutes into round 2's (the last round's) execution phase: 2 full
       // rounds (20 min each: executionTime 10 + evaluationTime 5 +
       // rotationTime 5) plus 3 minutes.
-      final past = DateTime.now().subtract(const Duration(minutes: 43));
-      final exercise = _exercise(
-        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
-      );
+      final exercise = _exercise(startTime: _startTimeMinutesAgo(43));
       await _seedAndInit(exercise);
+      ExerciseService().debugNowOverride = () => _fixedNow;
+      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
       ExerciseService().start(exercise);
 
       // Station 0 (0-based): round2 -> team1 ("Team 2"), so the "now" cell
@@ -205,11 +222,10 @@ void main() {
   testWidgets(
     'running: station 2 has no team round0 — shows "Not active now"',
     (tester) async {
-      final past = DateTime.now().subtract(const Duration(minutes: 3));
-      final exercise = _exercise(
-        startTime: SimpleTimeOfDay(hour: past.hour, minute: past.minute),
-      );
+      final exercise = _exercise(startTime: _startTimeMinutesAgo(3));
       await _seedAndInit(exercise);
+      ExerciseService().debugNowOverride = () => _fixedNow;
+      addTearDown(() => ExerciseService().debugNowOverride = DateTime.now);
       ExerciseService().start(exercise);
 
       await tester.pumpWidget(_buildScreen(stationIndex: 2));
