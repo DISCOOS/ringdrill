@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -7,8 +8,10 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/phase_headers.dart';
+import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -121,6 +124,45 @@ void main() {
       expect(find.text('DRILL'), findsOneWidget);
       expect(find.text('EVAL'), findsOneWidget);
       expect(find.text('ROLL'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows the close-X with no MasterDetailScope in context (narrow)',
+    (tester) async {
+      await tester.pumpWidget(_harness(const TeamScreen(teamIndex: 0)));
+      await tester.pumpAndSettle();
+
+      // Fix B: team_screen.dart was missed in the leading migration and
+      // hardcoded a plain close-X IconButton instead of MasterDetailLeading.
+      // Outside a MasterDetailScope (narrow/full-screen sheet) that shared
+      // widget also renders a close-X, so this alone doesn't prove the fix —
+      // paired with the wide-layout case below, it does.
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.sidebar_left), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'shows the sidebar toggle instead of the close-X under a '
+    'MasterDetailScope with a collapse toggle (wide)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MasterDetailScope(
+            target: ValueNotifier<ContextSheetTarget?>(null),
+            emptyPaneBuilder: (_) => const SizedBox.shrink(),
+            onToggleMaster: () {},
+            child: const TeamScreen(teamIndex: 0),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsNothing);
     },
   );
 }

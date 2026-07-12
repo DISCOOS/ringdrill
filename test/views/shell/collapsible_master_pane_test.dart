@@ -10,6 +10,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
 import 'package:ringdrill/views/program_view.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
+import 'package:ringdrill/views/station_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _programUuid = 'program-collapsible-master-pane';
@@ -102,6 +103,18 @@ Future<void> _pumpWideApp(WidgetTester tester) async {
 Finder _railIcon(IconData icon) =>
     find.descendant(of: find.byType(NavigationRail), matching: find.byIcon(icon));
 
+Future<void> _tapSegment(WidgetTester tester, String label) async {
+  await tester.tap(
+    find
+        .descendant(
+          of: find.byType(SegmentedButton<ProgramSegment>),
+          matching: find.text(label),
+        )
+        .hitTestable(),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(_prefs());
@@ -136,6 +149,75 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(_railIcon(Icons.update));
       await tester.pumpAndSettle();
+      expect(find.text('Station A1'), findsOneWidget);
+      expect(find.text('Station B1'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'remembers a non-first pick per segment: switching segments away and '
+    'back restores it, a first-visit segment still auto-selects its first '
+    'item, and re-tapping the active segment is a no-op',
+    (tester) async {
+      await _pumpWideApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Auto-selects Exercise A (the segment's first item).
+      expect(find.text('Station A1'), findsOneWidget);
+
+      // Explicit pick in the exercises segment: Exercise B.
+      await tester.tap(find.text('Exercise B').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Station B1'), findsOneWidget);
+
+      // Switching to the stations segment for the first time this session
+      // has no remembered selection of its own, so it still auto-selects
+      // its own first item (Exercise A's station) rather than staying empty.
+      // Scoped to the detail screen: the stations segment's master list also
+      // has a "Station A1" row, so the bare text would match twice.
+      await _tapSegment(tester, l10n.stationsTab);
+      expect(
+        find.descendant(
+          of: find.byType(StationExerciseScreen),
+          matching: find.text('Station A1'),
+        ),
+        findsOneWidget,
+      );
+
+      // Switching back to the exercises segment restores the remembered
+      // pick (Exercise B) instead of re-running auto-select-first over it.
+      await _tapSegment(tester, l10n.exercise(2));
+      expect(find.text('Station B1'), findsOneWidget);
+      expect(find.text('Station A1'), findsNothing);
+
+      // Re-tapping the already-active segment is a no-op for selection.
+      await _tapSegment(tester, l10n.exercise(2));
+      expect(find.text('Station B1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'falls back to the first item when the remembered selection no longer '
+    'exists',
+    (tester) async {
+      await _pumpWideApp(tester);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Explicit pick: Exercise B.
+      await tester.tap(find.text('Exercise B').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Station B1'), findsOneWidget);
+
+      // Leave the segment so the pick is only held in memory, then delete
+      // the exercise it points at.
+      await _tapSegment(tester, l10n.stationsTab);
+      await ProgramService().deleteExercise(_exerciseBUuid);
+      await tester.pumpAndSettle();
+
+      // Switching back to the exercises segment: the remembered target
+      // (Exercise B) no longer exists, so it falls back to the segment's
+      // first item (Exercise A) instead of restoring a dangling selection.
+      await _tapSegment(tester, l10n.exercise(2));
       expect(find.text('Station A1'), findsOneWidget);
       expect(find.text('Station B1'), findsNothing);
     },
