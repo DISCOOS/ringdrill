@@ -46,12 +46,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'exercise_form_screen.dart';
 import 'plan_additions.dart';
 
-/// Width of the status card when it's used as a sidebar to the right of
-/// the round table. The running state's countdown/meta row and now/next
-/// cells need more breathing room than the old hero card did, so this is
-/// wider than before — below it the layout falls back to the stacked
-/// variant.
-const double _kHeroSidebarWidth = 260;
 const double _kCoordinatorTwoColumnViewportWidth = 1120;
 const double _kCoordinatorTwoColumnContentWidth = 900;
 const double _kCoordinatorBodyPadding = kPlayerSurfaceHorizontalPadding;
@@ -825,16 +819,11 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  /// Top of the body. Layout depends on two things:
-  ///
-  /// * `showHero`: only true once the coordinator has started the
-  ///   exercise. Before start there's nothing to show "now / next" for
-  ///   and the round table claims the full width.
-  /// * Available width: when there's room for the round table at its
-  ///   natural width plus the [_kHeroSidebarWidth] sidebar next to it
-  ///   the combined hero card is placed to the right of the table. On
-  ///   narrower screens we stack the card above the table instead, so
-  ///   phone-portrait keeps working without horizontal scrolling.
+  /// Top of the body: the same shared status-card + schedule-card stack
+  /// the Post/Lag/Spill players use (DESIGN-010 follow-up), full width of
+  /// their container. `showHero` is only true once the coordinator has
+  /// started the exercise — before start there's nothing to show "now /
+  /// next" for, so only the schedule card is shown.
   Widget _buildTopSection(ExerciseEvent event, {required bool showHero}) {
     // Play and stop now live in the docked mini-player (or, in
     // master-detail, in the master column), so the top section is purely
@@ -1065,68 +1054,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     ExerciseEvent event, {
     required bool showHero,
   }) {
-    if (!showHero) {
-      return Align(
-        alignment: Alignment.center,
-        child: _buildRoundTable(event, true),
-      );
-    }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Threshold leaves room for the round table (~280 px) + 12 px
-        // gap + sidebar. A slight buffer above the bare minimum avoids
-        // the 1.2 px overflow we saw at the edge case where Expanded
-        // pinned the table to a barely-too-narrow column.
-        final wideEnough =
-            constraints.maxWidth >= _kHeroSidebarWidth + 12 + 300;
-        if (wideEnough) {
-          // Center the table-and-card group horizontally. `mainAxisSize.min`
-          // lets the Row shrink to its content so the surrounding Center has
-          // spare width to distribute symmetrically; any leftover space now
-          // falls on both sides instead of only to the right.
-          return Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              // `center`, not `stretch`: the status card's now/next values
-              // auto-size via a `LayoutBuilder` (`_MeasuredFitText`), and
-              // `LayoutBuilder` cannot sit below an `IntrinsicHeight` — the
-              // widget that `stretch` would otherwise need here to give the
-              // shorter side a matching, bounded height. Centering the two
-              // on their natural heights avoids that without crashing.
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Round table keeps its natural width. We need
-                // IntrinsicWidth here because ScheduleRow and
-                // PhaseHeaders are `Row` widgets with the default
-                // `MainAxisSize.max`, which would otherwise try to fill
-                // the unbounded width that Row gives non-flex children.
-                // IntrinsicWidth measures the table's natural width and
-                // supplies it as a tight constraint so those inner rows
-                // have something finite to fill.
-                IntrinsicWidth(child: _buildRoundTable(event, true)),
-                const SizedBox(width: 12),
-                // Fixed-width sidebar so the typography stays stable
-                // regardless of how wide the parent is.
-                SizedBox(
-                  width: _kHeroSidebarWidth,
-                  child: _buildCombinedHeroCard(event),
-                ),
-              ],
-            ),
-          );
-        }
-        // Narrow fallback: the combined card stretches above the
-        // table. One full-width card reads cleaner than two
-        // half-width cards in the same horizontal strip.
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildCombinedHeroCard(event),
-            const SizedBox(height: 12),
-            Center(child: _buildRoundTable(event, true)),
-          ],
-        );
-      },
+    if (!showHero) return _buildScheduleCard(event);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildCombinedHeroCard(event),
+        const SizedBox(height: 12),
+        _buildScheduleCard(event),
+      ],
     );
   }
 
@@ -1151,12 +1086,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     );
   }
 
-  /// Computes the coordinator's "Neste fase"/"Neste runde" cells from
+  /// Computes the coordinator's two forward-looking cells from
   /// `Exercise.schedule` — the next phase in the current round (or, for
   /// the last phase, the next round's first phase) and the next round
   /// after the current one. Either (or both) is `null` once there is
   /// nothing further to report (last phase of the last round / last
   /// round already running).
+  ///
+  /// Both cells share the plain "Neste" label with no icon — the phase/
+  /// round distinction is carried by the value ("EVAL" vs "Runde 2") and
+  /// the inline "· HH:MM" time, not the label, so the two half-card cells
+  /// don't overflow the way "Neste fase"/"Neste runde" plus an icon did.
   (PlayerStatusCell?, PlayerStatusCell?) _coordinatorNowNext(
     ExerciseEvent event,
     AppLocalizations localizations,
@@ -1177,8 +1117,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         _ => localizations.roll,
       }.toUpperCase();
       nextPhaseCell = PlayerStatusCell(
-        icon: Icons.arrow_forward,
-        label: localizations.statusNextPhase,
+        label: localizations.nextLabel,
         time: exercise.schedule[nextPhaseRound][nextPhaseIdx].toString(),
         value: nextPhaseName,
       );
@@ -1187,8 +1126,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     PlayerStatusCell? nextRoundCell;
     if (!isLastRound) {
       nextRoundCell = PlayerStatusCell(
-        icon: Icons.repeat,
-        label: localizations.statusNextRound,
+        label: localizations.nextLabel,
         time: exercise.schedule[roundIdx + 1][0].toString(),
         value: '${localizations.round(1)} ${roundIdx + 2}',
       );
@@ -1196,43 +1134,40 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     return (nextPhaseCell, nextRoundCell);
   }
 
-  Widget _buildRoundTable(ExerciseEvent event, bool isPortrait) {
+  /// The coordinator's schedule card — the same [ScheduleCard] the
+  /// Post/Lag/Spill players build, full width, replacing the old
+  /// shrink-wrapped round table (DESIGN-010 follow-up).
+  Widget _buildScheduleCard(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
-    // Long-press on the rotation table is kept as a forgiving shortcut
+    // Long-press on the schedule card is kept as a forgiving shortcut
     // that triggers the same copy-exercise action as the floating
     // button in the top-right corner of the screen (see _buildBody).
     // Observers who learned the gesture in the original prototype
     // continue to get it; new users discover the button. Both
     // affordances copy the full exercise (header, meta, station list,
     // rotation block) so there's a single mental model. `behavior:
-    // opaque` makes the gesture fire on the padded area too, not just
-    // on tile pixels.
+    // opaque` makes the gesture fire on the card's padded area too, not
+    // just on tile pixels.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onLongPress: () => _copyExerciseToClipboard(localizations),
-      child: Container(
-        padding: const EdgeInsets.all(8.0),
-        child: ScheduleTable(
-          headerLabel: localizations.schedule,
-          labelWidth: 90,
-          event: event,
-          exercise: _exercise!,
-          // Shrink-wrap to content width — this table sits beside the hero
-          // status card (or centered on its own), not stretched to fill
-          // whatever width its ambient layout offers.
-          fillWidth: false,
-          rows: [
-            for (
-              var roundIndex = 0;
-              roundIndex < _exercise!.schedule.length;
-              roundIndex++
-            )
-              ScheduleTableRow(
-                roundIndex: roundIndex,
-                label: '${localizations.round(1)} ${roundIndex + 1}',
-              ),
-          ],
-        ),
+      child: ScheduleCard(
+        title: localizations.stationTimingCardTitle,
+        headerLabel: localizations.schedule,
+        labelWidth: 90,
+        event: event,
+        exercise: _exercise!,
+        rows: [
+          for (
+            var roundIndex = 0;
+            roundIndex < _exercise!.schedule.length;
+            roundIndex++
+          )
+            ScheduleTableRow(
+              roundIndex: roundIndex,
+              label: '${localizations.round(1)} ${roundIndex + 1}',
+            ),
+        ],
       ),
     );
   }

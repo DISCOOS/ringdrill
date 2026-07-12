@@ -13,8 +13,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // DESIGN-010 follow-up: player-status-card — the coordinator's now/next is
-// two forward-looking cells (no "Nå"): "Neste fase" and "Neste runde", from
-// Exercise.schedule.
+// two forward-looking cells (no "Nå"), both labelled "Neste" (B3: the
+// phase/round distinction is carried by the value and the inline time, not
+// by "Neste fase"/"Neste runde"), from Exercise.schedule.
 //
 // 3 stations, 2 teams, 3 rounds — Exercise.teamIndex(stationIndex, round):
 //   round0: s0->team0 s1->team1 s2->none
@@ -97,7 +98,7 @@ void main() {
   });
 
   testWidgets(
-    'running: shows "Next phase"/"Next round" cells, no "Now" cell',
+    'running: shows two "Next" cells with no icon, no "Now" cell',
     (tester) async {
       // 3 minutes into round 0's execution phase (executionTime: 10), well
       // clear of round-boundary jitter, regardless of when the test runs.
@@ -116,21 +117,34 @@ void main() {
       final cardFinder = find.byType(PlayerStatusCard);
       expect(cardFinder, findsOneWidget);
 
-      // The label row combines the label with an inline time ("Next phase
-      // · 08:10"), per the mockup, so match on containment.
+      // The label row combines the label with an inline time ("Next ·
+      // 08:10"), per the mockup, so match on containment. Both cells share
+      // the plain "Next" label (B3) — the phase/round distinction is
+      // carried by the value/time, not the label.
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.textContaining(l10n.nextLabel),
+        ),
+        findsNWidgets(2),
+      );
       expect(
         find.descendant(
           of: cardFinder,
           matching: find.textContaining(l10n.statusNextPhase),
         ),
-        findsOneWidget,
+        findsNothing,
+        reason: '"Next phase" overflowed the half-card and is replaced by '
+            'the plain "Next" label (B3)',
       );
       expect(
         find.descendant(
           of: cardFinder,
           matching: find.textContaining(l10n.statusNextRound),
         ),
-        findsOneWidget,
+        findsNothing,
+        reason: '"Next round" overflowed the half-card and is replaced by '
+            'the plain "Next" label (B3)',
       );
       expect(
         find.descendant(
@@ -140,6 +154,18 @@ void main() {
         findsNothing,
         reason: 'the coordinator has no "Nå" cell — the phase is already '
             'in the countdown line',
+      );
+      // No icon on either now/next cell (B3).
+      expect(
+        find.descendant(of: cardFinder, matching: find.byIcon(Icons.repeat)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: cardFinder,
+          matching: find.byIcon(Icons.arrow_forward),
+        ),
+        findsNothing,
       );
 
       // Round 0 execution's next phase is round 0's evaluation ("EVAL").

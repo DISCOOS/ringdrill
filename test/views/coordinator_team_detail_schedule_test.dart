@@ -17,6 +17,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 // schedule migrated from PhaseHeaders + Card-wrapped ScheduleRows onto the
 // shared ScheduleCard (last such occurrence in the codebase). Mirrors the
 // fixture already used for the 3e team_screen_test.dart migration.
+//
+// The DESIGN-010 coordinator-play-and-status-polish follow-up (B1) also put
+// the coordinator's own top-of-body round table onto a ScheduleCard, so a
+// running coordinator now shows two ScheduleCards at once: the always-
+// visible one above the segmented selector, and (once a team row is
+// expanded) this test's team-detail one. Assertions below scope to the
+// *second* ScheduleCard (index 1) to stay unambiguous.
 // ---------------------------------------------------------------------------
 
 const _programUuid = 'prog-coordinator-team-detail';
@@ -116,9 +123,13 @@ void main() {
 
       // Renders through the shared ScheduleCard (CardSectionHeader + bordered
       // ScheduleTable) — same as the Post/Spill viewers and the other team
-      // surfaces — not the old bare per-round Card-wrapped rows.
-      final scheduleCardFinder = find.byType(ScheduleCard);
-      expect(scheduleCardFinder, findsOneWidget);
+      // surfaces — not the old bare per-round Card-wrapped rows. The
+      // always-visible round table above the segmented selector is now
+      // *also* a ScheduleCard (B1), so there are two: index 0 is that round
+      // table, index 1 is this test's team-detail card.
+      final scheduleCardFinders = find.byType(ScheduleCard);
+      expect(scheduleCardFinders, findsNWidgets(2));
+      final scheduleCardFinder = scheduleCardFinders.at(1);
       expect(
         find.descendant(
           of: scheduleCardFinder,
@@ -128,7 +139,8 @@ void main() {
       );
       expect(
         find.text(l10n.stationTimingCardTitle.toUpperCase()),
-        findsOneWidget,
+        // Both ScheduleCards share the same section title.
+        findsNWidgets(2),
         reason: 'the ScheduleCard section header carries the shared title',
       );
 
@@ -145,8 +157,8 @@ void main() {
 
       // Both stations' rounds are listed, in order — only the team's own
       // ScheduleCard names stations, so this is unambiguous even though the
-      // always-visible round table above the segmented selector is still a
-      // bare ScheduleTable of its own.
+      // always-visible round table above the segmented selector shows round
+      // labels ("Round 1"/"Round 2"), not station names.
       expect(find.text('Post 1'), findsOneWidget);
       expect(find.text('Post 2'), findsOneWidget);
 
