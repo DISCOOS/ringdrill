@@ -24,12 +24,14 @@ class _Harness extends StatefulWidget {
     required this.commits,
     this.enabled = true,
     this.externalNotifier,
+    this.sortActions = const [],
   });
 
   final List<String> items;
   final List<List<String>> commits;
   final bool enabled;
   final ValueNotifier<bool>? externalNotifier;
+  final List<SortAction> sortActions;
 
   @override
   State<_Harness> createState() => _HarnessState();
@@ -53,6 +55,7 @@ class _HarnessState extends State<_Harness> {
       orderLabel: l10n.exerciseSortBy,
       enabled: widget.enabled,
       reorderMode: widget.externalNotifier,
+      sortActions: widget.sortActions,
       onCommitReorder: (newOrder) {
         widget.commits.add(List<String>.from(newOrder));
         setState(() => _items = List<String>.from(newOrder));
@@ -111,19 +114,49 @@ void main() {
       expect(find.text(l10n.exerciseReorderMode), findsOneWidget);
     });
 
-    testWidgets('reorder toggle hidden when enabled: false', (tester) async {
-      final commits = <List<String>>[];
-      await tester.pumpWidget(
-        _wrap(
-          _Harness(items: ['A', 'B', 'C'], enabled: false, commits: commits),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'whole header collapses when enabled: false and no sort actions',
+      (tester) async {
+        final commits = <List<String>>[];
+        await tester.pumpWidget(
+          _wrap(
+            _Harness(items: ['A', 'B', 'C'], enabled: false, commits: commits),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Anchor label visible but toggle is absent.
-      expect(find.text(l10n.exerciseSortBy), findsOneWidget);
-      expect(find.text(l10n.exerciseReorderMode), findsNothing);
-    });
+        // Nothing actionable to anchor the label to (the reorder toggle is
+        // hidden and there are no one-shot sort actions), so the bare
+        // orderLabel is gone too — not left dangling above the list.
+        expect(find.text(l10n.exerciseSortBy), findsNothing);
+        expect(find.text(l10n.exerciseReorderMode), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'header (with the label) stays when enabled: false but a sort action '
+      'exists',
+      (tester) async {
+        final commits = <List<String>>[];
+        await tester.pumpWidget(
+          _wrap(
+            _Harness(
+              items: ['A', 'B', 'C'],
+              enabled: false,
+              commits: commits,
+              sortActions: [(label: 'A-Z', onPressed: () {})],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // A sort action is an anchor of its own, so the label stays even
+        // though the reorder toggle is still hidden.
+        expect(find.text(l10n.exerciseSortBy), findsOneWidget);
+        expect(find.text('A-Z'), findsOneWidget);
+        expect(find.text(l10n.exerciseReorderMode), findsNothing);
+      },
+    );
   });
 
   group('ReorderableSection — mode toggle', () {

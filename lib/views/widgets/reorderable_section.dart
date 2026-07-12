@@ -30,7 +30,9 @@ typedef SortAction = ({String label, VoidCallback onPressed});
 /// **< 2 items**: the whole header strip collapses to nothing.
 ///
 /// **[enabled] false**: the reorder toggle is hidden (e.g. while an exercise
-/// is running) but the sort actions remain.
+/// is running) but the sort actions remain. If there are no sort actions
+/// either, there is nothing left to anchor the muted [orderLabel] to, so the
+/// whole header strip collapses to nothing too — same as `< 2 items`.
 ///
 /// ## Reorder-mode flag ownership
 ///
@@ -239,6 +241,13 @@ class _ReorderableSectionState<T> extends State<ReorderableSection<T>> {
   ) {
     if (reordering) return _buildDoneBar(context, l10n);
     if (itemCount < 2) return const SizedBox.shrink();
+    // Nothing actionable to anchor: the reorder toggle is hidden (e.g. an
+    // exercise is running) and there are no one-shot sort actions either,
+    // so the bare orderLabel ("Rekkefølge") would sit above the list with
+    // nothing to do. Collapse the whole header, same as `itemCount < 2`.
+    if (!widget.enabled && widget.sortActions.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return _buildSortBar(context, l10n);
   }
 
