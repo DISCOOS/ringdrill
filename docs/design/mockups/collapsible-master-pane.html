@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Sammenleggbar master-rute (variant A)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --rail:#dfe7ef; --master:#eef2f6; --detail:#ffffff;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;--rail:#1d2a33;--master:#17222a;--detail:#0f171d;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  h1{font-size:17px;font-weight:600;margin:0 0 4px;text-align:center}
+  p.intro{font-size:12.5px;color:var(--text-2);max-width:920px;margin:0 auto 20px;text-align:center;line-height:1.55}
+  .block{max-width:1040px;margin:0 auto 22px}
+  .lbl{font-size:14px;font-weight:600;margin:0 0 4px}
+  .sub{font-size:12px;color:var(--text-3);margin:0 0 10px;line-height:1.45}
+  .sub b{color:var(--text-2);font-weight:600}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace}
+  svg{display:block}
+  .shell{display:flex;height:300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--detail)}
+  .rail{flex:0 0 56px;background:var(--rail);display:flex;flex-direction:column;align-items:center;gap:16px;padding:12px 0}
+  .rail i{font-size:22px;color:var(--text-2)}
+  .rail .ham{font-size:22px;color:var(--text-3)}
+  .master{flex:0 0 250px;background:var(--master);border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0}
+  .master .top{display:flex;align-items:center;gap:8px;padding:12px 12px;border-bottom:1px solid var(--border)}
+  .master .top .nm{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .master .top i{color:var(--text-2);font-size:17px}
+  .tabs{display:flex;gap:5px;padding:9px 12px}
+  .tabs .t{font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:999px;color:var(--text-2)}
+  .tabs .t.on{background:var(--accent-bg);color:var(--accent);font-weight:600}
+  .rows{padding:4px 12px;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:7px 9px;background:var(--bg-1);font-size:12px}
+  .row.sel{border-color:var(--accent);background:var(--accent-bg)}
+  .row .n{width:22px;height:20px;border-radius:5px;background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:var(--text-2)}
+  .detail{flex:1;min-width:0;display:flex;flex-direction:column}
+  .detail .top{display:flex;align-items:center;gap:10px;padding:12px 13px;border-bottom:1px solid var(--border)}
+  .detail .top .nm{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .detail .top i{color:var(--text-2);font-size:18px}
+  /* the one toggle: sits where the close-X used to be, detail top-left */
+  .navtoggle{flex:0 0 auto;color:var(--accent)}
+  .navtoggle svg{width:22px;height:22px}
+  .detail .body{flex:1;padding:12px 13px;display:flex;gap:12px;min-width:0}
+  .card{background:var(--bg-1);border:1px solid var(--border);border-radius:9px;padding:10px;font-size:11px;color:var(--text-2);flex:1;min-width:0}
+  .card .h{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--text-3);margin-bottom:7px}
+  .mini-map{flex:1;min-width:0;border-radius:9px;background:linear-gradient(135deg,#c7d9a8,#bcd0e0);border:1px solid var(--border);position:relative}
+  .mini-map .pin{position:absolute;font-size:20px;color:#e8641e}
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-3);gap:8px}
+  .empty i{font-size:34px}
+  .callout{font-size:11.5px;color:var(--text-2);margin-top:8px;line-height:1.45}
+  .callout b{color:var(--text-1)}
+  .flow{display:flex;align-items:center;justify-content:center;color:var(--text-3);margin:2px 0 14px}
+  .flow svg{width:22px;height:22px}
+  .iconshow{display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0 4px}
+  .iconshow .g{width:44px;height:44px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center}
+  .iconshow .g svg{width:26px;height:26px}
+  .iconshow code{font-size:12px;color:var(--text-2)}
+</style>
+</head>
+<body>
+  <h1>Sammenleggbar «main»-rute — variant A</h1>
+  <p class="intro">Ingen «lukk»-X på valgt item lenger — den gir lite mening i en vedvarende master/detalj. I stedet står <b>sidebar-toggelen der X var</b>, øverst til venstre i detaljen. For at detaljen alltid har innhold, <b>auto-velges første item</b> i lista i medium/expanded. Tom liste beholder sin egen detalj-flate («Velg en øvelse») — som også får toggelen. Ingen knapp i railen.</p>
+
+  <!-- CHOSEN ICON -->
+  <div class="block">
+    <p class="lbl">Ikon</p>
+    <p class="sub"><code>CupertinoIcons.sidebar_left</code> (fra <code>package:flutter/cupertino.dart</code>). Ett ikon som toggler, plassert som «leading» i detalj-headeren — nøyaktig der lukk-X-en er i dag.</p>
+    <div class="iconshow">
+      <span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.2"/><line x1="9.5" y1="5" x2="9.5" y2="19"/><line x1="5.7" y1="9" x2="7.5" y2="9"/><line x1="5.7" y1="12" x2="7.5" y2="12"/></svg></span>
+      <code>CupertinoIcons.sidebar_left</code>
+    </div>
+  </div>
+
+  <!-- EXPANDED -->
+  <div class="block">
+    <p class="lbl">Utvidet <span style="color:var(--text-3);font-weight:400">— toggelen står øverst til venstre i detaljen (der X var)</span></p>
+    <p class="sub">Rail + master (lista) + detalj. Første øvelse er auto-valgt, så detaljen har alltid innhold.</p>
+    <div class="shell">
+      <div class="rail"><i class="ti ti-menu-2 ham"></i><i class="ti ti-clock"></i><i class="ti ti-map"></i><i class="ti ti-id-badge"></i></div>
+      <div class="master">
+        <div class="top"><span class="nm">Lagledelse søk og redning</span><i class="ti ti-book"></i><i class="ti ti-cloud-up"></i></div>
+        <div class="tabs"><span class="t on">Øvelser</span><span class="t">Poster</span><span class="t">Spill</span><span class="t">Lag</span></div>
+        <div class="rows">
+          <div class="row sel"><span class="n">#1</span>Søk og redning (ringøvelse)</div>
+          <div class="row"><span class="n">#2</span>Førsteinnsats søk</div>
+          <div class="row"><span class="n">#3</span>Førsteinnsats søk</div>
+          <div class="row"><span class="n">#4</span>Henteoppdrag</div>
+        </div>
+      </div>
+      <div class="detail">
+        <div class="top"><span class="navtoggle" title="Skjul liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.2"/><line x1="9.5" y1="5" x2="9.5" y2="19"/><line x1="5.7" y1="9" x2="7.5" y2="9"/><line x1="5.7" y1="12" x2="7.5" y2="12"/></svg></span><span class="nm">#1 Søk og redning (ringøvelse)</span><i class="ti ti-book"></i><i class="ti ti-dots"></i></div>
+        <div class="body">
+          <div class="card"><div class="h">TIDSPLAN</div>Runde 1 · 11:00 / 11:15 / 11:25<br>Runde 2 · 11:30 / 11:45 / 11:55<br>Runde 3 · 12:00 …<br><br>Poster (4) · Lag (4)<br>1.1 Turgåer …</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4v12l-5-5-1.41 1.41L12 18.83l6.41-6.42L17 11l-5 5z"/></svg></div>
+
+  <!-- COLLAPSED (VARIANT A) -->
+  <div class="block">
+    <p class="lbl">Kollapset <span style="color:var(--text-3);font-weight:400">— samme knapp, fortsatt øverst til venstre i detaljen</span></p>
+    <p class="sub">Lista er borte og detaljen fyller hele bredden — nå er det plass til kartet ved siden av tidsplanen. Toggelen er fortsatt detaljens «leading».</p>
+    <div class="shell">
+      <div class="rail"><i class="ti ti-menu-2 ham"></i><i class="ti ti-clock"></i><i class="ti ti-map"></i><i class="ti ti-id-badge"></i></div>
+      <div class="detail">
+        <div class="top"><span class="navtoggle" title="Vis liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.2"/><line x1="9.5" y1="5" x2="9.5" y2="19"/><line x1="5.7" y1="9" x2="7.5" y2="9"/><line x1="5.7" y1="12" x2="7.5" y2="12"/></svg></span><span class="nm">#1 Søk og redning (ringøvelse)</span><i class="ti ti-book"></i><i class="ti ti-dots"></i></div>
+        <div class="body">
+          <div class="card"><div class="h">TIDSPLAN</div>Runde 1 · 11:00 / 11:15 / 11:25<br>Runde 2 · 11:30 / 11:45 / 11:55<br>Runde 3 · 12:00 / 12:15 / 12:25<br>Runde 4 · 12:30 …<br><br>Poster (4) · Lag (4)</div>
+          <div class="mini-map"><span class="pin" style="left:40%;top:30%"><i class="ti ti-map-pin-filled"></i></span><span class="pin" style="left:60%;top:60%"><i class="ti ti-map-pin-filled"></i></span></div>
+        </div>
+      </div>
+    </div>
+    <p class="callout">Den brede detaljen er akkurat det som lar coordinator-en gå i kart-høyre-layouten av seg selv (jf. pane-local-breakpoint-fiksen). Tilstanden huskes mellom økter.</p>
+  </div>
+
+  <!-- EMPTY LIST -->
+  <div class="block">
+    <p class="lbl">Tom liste <span style="color:var(--text-3);font-weight:400">— egen detalj-flate, med samme toggle</span></p>
+    <p class="sub">Når lista faktisk er tom (ingenting å auto-velge) beholdes «Velg en øvelse»-flaten som i dag — men den får også toggelen øverst til venstre, så oppførselen er lik overalt.</p>
+    <div class="shell">
+      <div class="rail"><i class="ti ti-menu-2 ham"></i><i class="ti ti-clock"></i><i class="ti ti-map"></i><i class="ti ti-id-badge"></i></div>
+      <div class="master">
+        <div class="top"><span class="nm">Ny plan</span><i class="ti ti-book"></i><i class="ti ti-cloud-up"></i></div>
+        <div class="tabs"><span class="t on">Øvelser</span><span class="t">Poster</span><span class="t">Spill</span><span class="t">Lag</span></div>
+        <div class="rows"><div style="color:var(--text-3);font-size:12px;padding:14px 2px;text-align:center">Ingen øvelser ennå</div></div>
+      </div>
+      <div class="detail">
+        <div class="top"><span class="navtoggle" title="Skjul liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.2"/><line x1="9.5" y1="5" x2="9.5" y2="19"/><line x1="5.7" y1="9" x2="7.5" y2="9"/><line x1="5.7" y1="12" x2="7.5" y2="12"/></svg></span><span class="nm" style="color:var(--text-3);font-weight:400">Ingen valgt</span></div>
+        <div class="body"><div class="empty"><i class="ti ti-history-toggle"></i><span>Velg en øvelse</span></div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
