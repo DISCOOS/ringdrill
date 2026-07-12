@@ -118,6 +118,32 @@ class ExerciseService {
   double _totalProgress = 0.0;
   ExercisePhase _currentPhase = ExercisePhase.execution;
 
+  /// The moment [start] was called — the fixed reference date the running
+  /// exercise's own start/end are resolved against (see [_progress]).
+  /// Anchoring to this instead of re-deriving "today" from `DateTime.now()`
+  /// on every tick is what keeps an exercise that spans midnight (e.g.
+  /// 23:50 -> 00:10) stable once real time actually crosses midnight past
+  /// its own end: re-deriving from a moving "now" flipped the day-rollover
+  /// decision mid-run and corrupted `_roundIndex` with a large negative
+  /// value, crashing `ScheduleRow`/`MiniRoundRow` with a RangeError.
+  DateTime? _startedOn;
+
+  /// Testing seam for [_progress]'s date/time math — overridden by tests to
+  /// simulate real time crossing a boundary (e.g. midnight) between ticks,
+  /// which is otherwise impossible to control since [_progress] is driven
+  /// by a real [Timer] reading the wall clock directly.
+  @visibleForTesting
+  DateTime Function() debugNowOverride = DateTime.now;
+
+  DateTime get _now => debugNowOverride();
+
+  /// Forces one synchronous [_progress] tick using the current
+  /// [debugNowOverride] — the test-only equivalent of a timer firing.
+  @visibleForTesting
+  void debugForceTick() {
+    if (_exercise != null) _progress(_exercise!, true);
+  }
+
   /// Expose stream of `ExerciseEvent`s
   Stream<ExerciseEvent> get events => _eventController.stream;
 
@@ -152,6 +178,7 @@ class ExerciseService {
     _totalProgress = 0.0;
     _roundProgress = 0.0;
     _phaseProgress = 0.0;
+    _startedOn = _now;
     _last = ExerciseEvent.pending(exercise);
     _currentPhase = _last!.phase;
 
@@ -168,7 +195,8 @@ class ExerciseService {
 
   void _progress(Exercise exercise, bool force) {
     if (_exercise != null) {
-      final currentTimeOfDay = TimeOfDay.now();
+      final now = _now;
+      final currentTimeOfDay = TimeOfDay.fromDateTime(now);
       // Only process each time a whole minute has passed.
       // NOTE: Compare TimeOfDay by value, not by `.minute > .minute`.
       // `TimeOfDay.now()` has minute granularity, so equality flips exactly
@@ -189,17 +217,20 @@ class ExerciseService {
         final st = _exercise!.startTime.toMaterial();
         final et = _exercise!.endTime.toMaterial();
 
+        // Anchored to `_startedOn` (fixed for the life of this run), not
+        // `now` — see the field doc for why re-deriving these from a
+        // moving "now" on every tick is the bug this anchor fixes.
         final endTime = et.isBefore(st)
-            ? et.toDateTime().add(const Duration(days: 1))
-            : et.toDateTime();
+            ? et.toDateTime(_startedOn).add(const Duration(days: 1))
+            : et.toDateTime(_startedOn);
 
         // Calculate start date and time
-        final startTime = endTime.isBefore(DateTime.now())
-            ? st.toDateTime().add(const Duration(days: 1))
-            : st.toDateTime();
+        final startTime = endTime.isBefore(_startedOn!)
+            ? st.toDateTime(_startedOn).add(const Duration(days: 1))
+            : st.toDateTime(_startedOn);
 
         final startTimeDelta = currentTimeOfDay
-            .toDateTime()
+            .toDateTime(now)
             .difference(startTime)
             .inMinutes;
 
@@ -223,7 +254,7 @@ class ExerciseService {
           //    Without this, a plan with `endTime` shorter than the
           //    sum of round durations would run past its scheduled end.
           final reachedEndTime = !currentTimeOfDay
-              .toDateTime()
+              .toDateTime(now)
               .isBefore(endTime);
           if (_elapsedMinutes >= totalTime || reachedEndTime) {
             // Clamp to `totalTime`: when the endTime branch fires past
@@ -242,8 +273,15 @@ class ExerciseService {
             return;
           }
 
-          // Determine the current round
-          _roundIndex = (_elapsedMinutes ~/ roundTime);
+          // Determine the current round. Clamped defensively — every
+          // `ExerciseEvent.currentRound` consumer indexes straight into
+          // `exercise.schedule` with it (e.g. `ScheduleRow`), so a stray
+          // out-of-range value here would crash the UI rather than just
+          // mis-render.
+          _roundIndex = (_elapsedMinutes ~/ roundTime).clamp(
+            0,
+            totalRounds - 1,
+          );
 
           // Calculate minutes elapsed within the current round
           final minutesInCurrentRound = _elapsedMinutes % roundTime;
