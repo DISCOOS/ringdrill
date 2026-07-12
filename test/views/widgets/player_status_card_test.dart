@@ -205,4 +205,110 @@ void main() {
       expect(find.text('…'), findsNothing);
     },
   );
+
+  testWidgets(
+    'running: the meta cell bolds the round/total numerals but not the '
+    'surrounding words',
+    (tester) async {
+      final exercise = _exercise();
+      final event = _runningEvent(exercise, currentRound: 0);
+
+      await tester.pumpWidget(_harness(PlayerStatusCard(event: event)));
+
+      final metaFinder = find.text(
+        l10n.statusRoundOfTotal(1, exercise.numberOfRounds),
+      );
+      expect(metaFinder, findsOneWidget);
+      final metaText = tester.widget<Text>(metaFinder);
+      final rootSpan = metaText.textSpan! as TextSpan;
+      final spans = rootSpan.children!.cast<TextSpan>();
+
+      final boldTexts = spans
+          .where((span) => span.style?.fontWeight == FontWeight.bold)
+          .map((span) => span.text)
+          .toList();
+      expect(boldTexts, containsAll(['1', '${exercise.numberOfRounds}']));
+
+      final regularTexts = spans
+          .where((span) => span.style?.fontWeight != FontWeight.bold)
+          .map((span) => span.text)
+          .join();
+      expect(regularTexts, contains('Round'));
+      expect(regularTexts, isNot(contains('1')));
+    },
+  );
+
+  testWidgets(
+    'running: now/next cell bodies share a vertical center even when one '
+    'value wraps to more lines than the other',
+    (tester) async {
+      final exercise = _exercise();
+      final event = _runningEvent(exercise);
+      const leading = PlayerStatusCell(
+        icon: Icons.groups,
+        label: 'Now',
+        value: 'A',
+        isNow: true,
+      );
+      const trailing = PlayerStatusCell(
+        icon: Icons.arrow_forward,
+        label: 'Next',
+        badge: '2b',
+        value: 'Fisker (Angler)',
+      );
+
+      await tester.pumpWidget(
+        _harness(
+          SizedBox(
+            width: 300,
+            child: PlayerStatusCard(
+              event: event,
+              leadingCell: leading,
+              trailingCell: trailing,
+            ),
+          ),
+        ),
+      );
+
+      // Each cell's own content Column, found via its label text (the
+      // nearest Column ancestor is the cell's own — no intervening Column
+      // between the label Text and the cell's wrapping Column).
+      final leadingCenter = tester
+          .getRect(
+            find
+                .ancestor(of: find.text('Now'), matching: find.byType(Column))
+                .first,
+          )
+          .center
+          .dy;
+      final trailingCenter = tester
+          .getRect(
+            find
+                .ancestor(
+                  of: find.text('Next'),
+                  matching: find.byType(Column),
+                )
+                .first,
+          )
+          .center
+          .dy;
+
+      expect(leadingCenter, closeTo(trailingCenter, 0.5));
+    },
+  );
+
+  testWidgets('a cell built with icon: null renders no leading icon', (
+    tester,
+  ) async {
+    final exercise = _exercise();
+    final event = _runningEvent(exercise);
+    const leading = PlayerStatusCell(label: 'Next', value: 'EVAL');
+
+    await tester.pumpWidget(
+      _harness(PlayerStatusCard(event: event, leadingCell: leading)),
+    );
+
+    expect(find.text('Next'), findsOneWidget);
+    expect(find.byType(Icon), findsNothing);
+  });
 }
