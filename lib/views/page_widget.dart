@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
 
 class PageWidget<T extends ScreenController> extends StatefulWidget {
   const PageWidget({super.key, required this.controller, required this.child});
@@ -32,6 +33,12 @@ abstract class ScreenController {
   List<Widget>? buildActions(BuildContext context, BoxConstraints constraints) {
     return null;
   }
+
+  /// The active tab's first list item, as a detail target — used by the
+  /// wide shell to auto-select something so the detail pane is never empty
+  /// while its list has content (collapsible-master-pane proposal). Returns
+  /// null when the tab has no such list, or the list is currently empty.
+  ContextSheetTarget? firstDetailTarget(BuildContext context) => null;
 
   static T of<T extends ScreenController>(BuildContext context) {
     final T? controller = ofNullable<T>(context);

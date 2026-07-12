@@ -1523,6 +1523,66 @@ abstract class ProgramPageControllerBase extends ScreenController {
     return [...?segmentActions, ...?_briefAction(context)];
   }
 
+  /// The active segment's first row, as a detail target (collapsible-
+  /// master-pane proposal: auto-select in the wide layout so the detail
+  /// pane is never empty while the segment has content). Each segment
+  /// mirrors its own list's ordering/filtering — the flat exercise→station/
+  /// role scan `StationListView`/`RolePlaysView` build, respecting the
+  /// shared exercise filter — so the auto-selected row is the same one the
+  /// segment would show first.
+  @override
+  ContextSheetTarget? firstDetailTarget(BuildContext context) {
+    return switch (activeSegment.value) {
+      ProgramSegment.exercises => _firstExerciseTarget(),
+      ProgramSegment.stations => _firstStationTarget(),
+      ProgramSegment.script => _firstRoleTarget(),
+      ProgramSegment.teams => _firstTeamTarget(),
+    };
+  }
+
+  ContextSheetTarget? _firstExerciseTarget() {
+    final exercise = programService.loadExercises().firstOrNull;
+    return exercise == null
+        ? null
+        : ExerciseSheetTarget(exerciseUuid: exercise.uuid);
+  }
+
+  ContextSheetTarget? _firstStationTarget() {
+    final filterUuid = stationListController.filterExerciseUuid.value;
+    for (final exercise in programService.loadExercises()) {
+      if (filterUuid != null && exercise.uuid != filterUuid) continue;
+      final stations = [...exercise.stations]
+        ..sort((a, b) => a.index.compareTo(b.index));
+      final station = stations.firstOrNull;
+      if (station != null) {
+        return StationSheetTarget(
+          exerciseUuid: exercise.uuid,
+          stationIndex: station.index,
+        );
+      }
+    }
+    return null;
+  }
+
+  ContextSheetTarget? _firstRoleTarget() {
+    final filterUuid = rolePlaysController.filterExerciseUuid.value;
+    final rolePlays = programService.loadRolePlays();
+    for (final exercise in programService.loadExercises()) {
+      if (filterUuid != null && exercise.uuid != filterUuid) continue;
+      final roles =
+          rolePlays.where((rp) => rp.exerciseUuid == exercise.uuid).toList()
+            ..sort((a, b) => a.index.compareTo(b.index));
+      final role = roles.firstOrNull;
+      if (role != null) return RoleSheetTarget(rolePlayUuid: role.uuid);
+    }
+    return null;
+  }
+
+  ContextSheetTarget? _firstTeamTarget() {
+    final team = programService.loadTeams().firstOrNull;
+    return team == null ? null : TeamOverviewSheetTarget(teamIndex: team.index);
+  }
+
   List<Widget>? _briefAction(BuildContext context) {
     final activeProgram = programService.activeProgram;
     if (activeProgram == null) return null;

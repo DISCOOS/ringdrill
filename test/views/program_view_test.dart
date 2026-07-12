@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
@@ -8,14 +9,19 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/station_list_view.dart';
+import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/team_screen.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _programUuid = 'program-segments';
+const _emptyProgramUuid = 'program-segments-empty';
 const _exerciseUuid = 'exercise-segments';
 
 final _exercise = Exercise(
@@ -70,6 +76,24 @@ Map<String, Object> _prefs() {
     'pe:$_programUuid:$_exerciseUuid': jsonEncode(_exercise.toJson()),
     'pt:$_programUuid:${_team.uuid}': jsonEncode(_team.toJson()),
     'pr:$_programUuid:${_rolePlay.uuid}': jsonEncode(_rolePlay.toJson()),
+    // A second, genuinely empty plan — nothing for the wide layout to
+    // auto-select, so its exercises segment keeps showing the empty
+    // placeholder (with the sidebar-toggle leading).
+    'p:$_emptyProgramUuid': jsonEncode({
+      'uuid': _emptyProgramUuid,
+      'name': 'Empty Segment Program',
+      'description': '',
+      'metadata': {
+        'created': '2026-01-01T00:00:00.000Z',
+        'updated': '2026-01-01T00:00:00.000Z',
+        'version': '1.1',
+      },
+      'exercises': [],
+      'teams': [],
+      'sessions': [],
+      'rolePlays': [],
+      'actors': [],
+    }),
   };
 }
 
@@ -237,73 +261,111 @@ void main() {
     expect(appBarBrief(), findsOneWidget);
   });
 
-  testWidgets('wide detail empty pane follows the active program segment', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1200, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'wide layout auto-selects each program segment\'s first item '
+    '(collapsible-master-pane)',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    // After ADR-0032 the segment switcher pushes canonical
-    // /program/:uuid/:segment paths through `context.go(...)`. The
-    // hand-rolled GoRouter we used before had no segment routes and never
-    // re-rendered MainScreen with a new `location`, so taps short-circuited
-    // with `No GoRouter found in context`. Pump the production router and
-    // wrap it in `MaterialApp.router` so URL → state actually flows.
-    await ProgramService().setActive(_programUuid);
-    final router = buildRouter(false, true);
-    addTearDown(router.dispose);
-    await tester.pumpWidget(
-      MaterialApp.router(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        routerConfig: router,
-      ),
-    );
-    await tester.pumpAndSettle();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // After ADR-0032 the segment switcher pushes canonical
+      // /program/:uuid/:segment paths through `context.go(...)`. The
+      // hand-rolled GoRouter we used before had no segment routes and never
+      // re-rendered MainScreen with a new `location`, so taps short-circuited
+      // with `No GoRouter found in context`. Pump the production router and
+      // wrap it in `MaterialApp.router` so URL → state actually flows.
+      await ProgramService().setActive(_programUuid);
+      final router = buildRouter(false, true);
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    expect(find.text(l10n.detailEmptyExercise), findsOneWidget);
-    await tester.tap(
-      find
-          .descendant(
-            of: find.byType(SegmentedButton<ProgramSegment>),
-            matching: find.text(l10n.stationsTab),
-          )
-          .hitTestable(),
-    );
-    await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<SegmentedButton<ProgramSegment>>(
-            find.byType(SegmentedButton<ProgramSegment>),
-          )
-          .selected,
-      {ProgramSegment.stations},
-    );
-    expect(find.text(l10n.detailEmptyStation), findsOneWidget);
+      // Every segment in this fixture has exactly one item, so the wide
+      // detail pane auto-selects it instead of showing the empty
+      // placeholder (DESIGN-010 collapsible master pane).
+      expect(find.text(l10n.detailEmptyExercise), findsNothing);
+      expect(find.byType(CoordinatorScreen), findsOneWidget);
 
-    await tester.tap(
-      find
-          .descendant(
-            of: find.byType(SegmentedButton<ProgramSegment>),
-            matching: find.text(l10n.scriptSegment),
-          )
-          .hitTestable(),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text(l10n.detailEmptyRolePlay), findsOneWidget);
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(SegmentedButton<ProgramSegment>),
+              matching: find.text(l10n.stationsTab),
+            )
+            .hitTestable(),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<SegmentedButton<ProgramSegment>>(
+              find.byType(SegmentedButton<ProgramSegment>),
+            )
+            .selected,
+        {ProgramSegment.stations},
+      );
+      expect(find.text(l10n.detailEmptyStation), findsNothing);
+      expect(find.byType(StationExerciseScreen), findsOneWidget);
 
-    await tester.tap(
-      find
-          .descendant(
-            of: find.byType(SegmentedButton<ProgramSegment>),
-            matching: find.text(l10n.team(2)),
-          )
-          .hitTestable(),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text(l10n.detailEmptyTeam), findsOneWidget);
-  });
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(SegmentedButton<ProgramSegment>),
+              matching: find.text(l10n.scriptSegment),
+            )
+            .hitTestable(),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.detailEmptyRolePlay), findsNothing);
+      expect(find.byType(RolePlayScreen), findsOneWidget);
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(SegmentedButton<ProgramSegment>),
+              matching: find.text(l10n.team(2)),
+            )
+            .hitTestable(),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.detailEmptyTeam), findsNothing);
+      expect(find.byType(TeamScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'wide detail empty pane still shows when a segment has no items',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await ProgramService().setActive(_emptyProgramUuid);
+      final router = buildRouter(false, true);
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Nothing to auto-select — the placeholder stays, and it carries the
+      // same sidebar-toggle leading as every other detail screen.
+      expect(find.text(l10n.detailEmptyExercise), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);
+    },
+  );
 }

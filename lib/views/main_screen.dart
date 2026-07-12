@@ -151,6 +151,14 @@ class _MainScreenState extends State<MainScreen>
       _activeRefreshIndicatorKey,
     );
     _programPageController.activeSegment.addListener(_onProgramSegmentChanged);
+    // Switching segments (Øvelser/Poster/Spill/Lag) changes which list the
+    // wide detail pane should be auto-selecting from — clear the shared
+    // target so `build`'s auto-select check (see `_maybeAutoSelectDetail`)
+    // picks the new segment's first item instead of leaving the previous
+    // segment's selection shown against a mismatched list.
+    _programPageController.activeSegment.addListener(
+      _onActiveSegmentChangedForAutoSelect,
+    );
     // Rebuild when reorder mode toggles so the FAB (which is suppressed in
     // reorder mode) appears/disappears without waiting for another rebuild.
     _programPageController.exerciseReorderMode.addListener(
@@ -278,6 +286,9 @@ class _MainScreenState extends State<MainScreen>
     _programPageController.activeSegment.removeListener(
       _onProgramSegmentChanged,
     );
+    _programPageController.activeSegment.removeListener(
+      _onActiveSegmentChangedForAutoSelect,
+    );
     _programPageController.exerciseReorderMode.removeListener(
       _onProgramSegmentChanged,
     );
@@ -292,6 +303,16 @@ class _MainScreenState extends State<MainScreen>
 
   void _onProgramSegmentChanged() {
     if (mounted) setState(() {});
+  }
+
+  /// Clears the shared detail target on a segment switch — unless a modal
+  /// (narrow) sheet is currently up, which this has nothing to do with —
+  /// so `build`'s auto-select check picks the new segment's first item
+  /// instead of leaving the outgoing segment's selection in place against a
+  /// list it no longer belongs to.
+  void _onActiveSegmentChangedForAutoSelect() {
+    if (_contextSheetController.isModal) return;
+    _contextSheetController.targetNotifier.value = null;
   }
 
   @override
@@ -336,6 +357,29 @@ class _MainScreenState extends State<MainScreen>
           // for the compact layout so the bottom-nav Map tab also goes
           // chrome-free at the top. Every other tab keeps its AppBar.
           final isMapTab = _currentTab == 1;
+          // Wide-layout auto-select (collapsible-master-pane proposal): the
+          // detail's leading is the sidebar toggle rather than a close-X in
+          // this layout, which only makes sense if the detail pane always
+          // has something selected. Deferred to a post-frame callback since
+          // `build` must not mutate the shared target notifier synchronously
+          // (that would notify `MasterDetailPane`'s listener while this
+          // ancestor build is still in progress). No-ops once something —
+          // auto-selected or explicit — is already selected; the explicit
+          // resets on tab/segment switch (`_onDestinationSelected`,
+          // `_onActiveSegmentChangedForAutoSelect`) are what let a *new*
+          // first item win here instead of this being a no-op forever.
+          if (useRail && !isMapTab) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              if (_contextSheetController.targetNotifier.value != null) {
+                return;
+              }
+              final target = page.controller.firstDetailTarget(context);
+              if (target != null) {
+                _contextSheetController.targetNotifier.value = target;
+              }
+            });
+          }
           final tabsStack = IndexedStack(
             key: _indexedTabsKey,
             index: _currentTab,
@@ -611,6 +655,15 @@ class _MainScreenState extends State<MainScreen>
       _currentTab = tab;
     });
     _contextSheetController.close();
+    // `close()` is a no-op once the target was set outside its own
+    // show()/replace() bookkeeping (e.g. the wide-layout auto-select below
+    // writes the notifier directly) — clear it explicitly too so `build`'s
+    // auto-select check picks the new tab's first item rather than leaving
+    // the outgoing tab's target in place. Skipped while a narrow modal
+    // sheet is still closing; that has its own target lifecycle.
+    if (!_contextSheetController.isModal) {
+      _contextSheetController.targetNotifier.value = null;
+    }
     stationsMapDetailClearTick.value = stationsMapDetailClearTick.value + 1;
     widget.router.go(_routeForTab(tab));
     // The StationsView is kept alive inside the IndexedStack, so its map
