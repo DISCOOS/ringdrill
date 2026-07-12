@@ -25,10 +25,17 @@ class MasterDetailLeading extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     final onToggleMaster = MasterDetailScope.maybeOf(context)?.onToggleMaster;
     if (onToggleMaster != null) {
-      return IconButton(
-        icon: const Icon(CupertinoIcons.sidebar_left),
-        onPressed: onToggleMaster,
-        tooltip: localizations.masterPaneToggle,
+      // Left-only padding: unlike the close-X (which sits flush against
+      // the AppBar's usual leading inset), this toggle sits right at the
+      // seam between the master and detail panes and reads as cramped
+      // against it without extra breathing room on that side only.
+      return Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: IconButton(
+          icon: const Icon(CupertinoIcons.sidebar_left),
+          onPressed: onToggleMaster,
+          tooltip: localizations.masterPaneToggle,
+        ),
       );
     }
     return IconButton(
