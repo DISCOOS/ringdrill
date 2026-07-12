@@ -1799,6 +1799,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get briefClose => 'Close';
 
   @override
+  String get masterPaneToggle => 'Show/hide list';
+
+  @override
   String get briefDragHandle => 'Drag to close';
 
   @override

@@ -21,6 +21,7 @@ import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -162,16 +163,14 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         positionUtm: formatUtm(station.position),
         child: Scaffold(
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () {
+            leading: MasterDetailLeading(
+              onClose: () {
                 if (MasterDetailScope.maybeOf(context) != null) {
                   ContextSheet.of(context).close();
                 } else {
                   Navigator.pop(context);
                 }
               },
-              tooltip: localizations.briefClose,
             ),
             toolbarHeight: 72,
             title: SheetTitle(

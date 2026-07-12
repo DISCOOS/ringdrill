@@ -22,6 +22,7 @@ import 'package:ringdrill/views/roster_view.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/legacy_badge.dart';
 import 'package:ringdrill/views/shell/main_drawer.dart';
+import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/migration_banner.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/shell_chrome.dart';
@@ -693,7 +694,7 @@ class _MainScreenState extends State<MainScreen>
   }
 
   Widget _emptyPaneBuilderForCurrentTab(BuildContext context) {
-    return switch (_currentTab) {
+    final content = switch (_currentTab) {
       0 => ValueListenableBuilder<ProgramSegment>(
         valueListenable: _programPageController.activeSegment,
         builder: (context, segment, _) => switch (segment) {
@@ -706,6 +707,23 @@ class _MainScreenState extends State<MainScreen>
       2 => const RosterDetailEmpty(),
       _ => const SizedBox.shrink(),
     };
+    // The wide empty pane carries the same leading as every other detail
+    // screen (the sidebar toggle) so the placeholder is not the one place
+    // in the detail pane missing it — there is nothing else to "close"
+    // here, but a minimal top bar keeps the toggle reachable regardless of
+    // whether anything is selected.
+    return Column(
+      children: [
+        SizedBox(
+          height: kRingdrillHeaderHeight,
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: MasterDetailLeading(onClose: () {}),
+          ),
+        ),
+        Expanded(child: content),
+      ],
+    );
   }
 
   /// Passive notice that the auto-stop fired. The persistent

@@ -17,6 +17,7 @@ import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
@@ -131,10 +132,8 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     if (rolePlay == null) {
       return Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-            tooltip: localizations.briefClose,
+          leading: MasterDetailLeading(
+            onClose: () => Navigator.pop(context),
           ),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -158,16 +157,14 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
 
     final scaffold = Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () {
+        leading: MasterDetailLeading(
+          onClose: () {
             if (MasterDetailScope.maybeOf(context) != null) {
               ContextSheet.of(context).close();
             } else {
               Navigator.pop(context);
             }
           },
-          tooltip: localizations.briefClose,
         ),
         toolbarHeight: 72,
         title: SheetTitle(

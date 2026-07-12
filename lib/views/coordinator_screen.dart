@@ -24,6 +24,7 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
@@ -317,16 +318,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             // AppBar so the first content row aligns across master and
             // detail in the wide layout.
             toolbarHeight: kRingdrillHeaderHeight,
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () {
+            leading: MasterDetailLeading(
+              onClose: () {
                 if (MasterDetailScope.maybeOf(context) != null) {
                   ContextSheet.of(context).close();
                 } else {
                   Navigator.pop(context);
                 }
               },
-              tooltip: localizations.briefClose,
             ),
             title: SheetTitle(
               primary: _exercise!.name,

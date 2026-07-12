@@ -3026,6 +3026,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get briefClose;
 
+  /// Tooltip for the sidebar-toggle icon button that replaces the detail pane's close-X in the wide master/detail layout (collapses/expands the master list pane).
+  ///
+  /// In en, this message translates to:
+  /// **'Show/hide list'**
+  String get masterPaneToggle;
+
   /// Semantics label for the drag handle on the brief sheet.
   ///
   /// In en, this message translates to:

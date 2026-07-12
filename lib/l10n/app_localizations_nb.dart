@@ -1796,6 +1796,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get briefClose => 'Lukk';
 
   @override
+  String get masterPaneToggle => 'Vis/skjul liste';
+
+  @override
   String get briefDragHandle => 'Dra for å lukke';
 
   @override

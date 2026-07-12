@@ -34,6 +34,12 @@ dependencies:
   flutter_web_plugins:
     sdk: flutter
 
+  # CupertinoIcons.sidebar_left is the wide shell's master-pane collapse
+  # toggle (lib/views/shell/master_detail_leading.dart). The icon class
+  # itself lives in package:flutter/cupertino.dart, but this package
+  # supplies the actual glyph font.
+  cupertino_icons: ^1.0.8
+
   nanoid: ^1.0.0
   strings: ^4.0.1 # needed for flutter_map
   latlong2: ^0.9.1
