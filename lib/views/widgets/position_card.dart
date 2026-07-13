@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
@@ -248,13 +249,17 @@ class PositionCardShell extends StatefulWidget {
 
   /// Optional leading label in the coordinate bar (e.g. "Position" on the
   /// read-only panels; the pick surfaces omit it — their label sits above
-  /// the whole field instead).
+  /// the whole field instead). Ignored when [sectionId] is set: that shell
+  /// builds its own leading icon + uppercase title instead (see
+  /// [sectionId]'s doc).
   final Widget? barLabel;
 
   final Widget barChild;
 
   /// Defaults to a muted `chevron_right` — every call site uses the same
-  /// "tap opens a surface" affordance (ADR-0031).
+  /// "tap opens a surface" affordance (ADR-0031). Ignored while collapsed
+  /// in a collapsible shell (see [sectionId]): the expand chevron takes
+  /// this slot instead, so the two are never shown together.
   final Widget? barTrailing;
 
   /// Whether this shell draws its own [Card] (elevation, background,
@@ -267,13 +272,21 @@ class PositionCardShell extends StatefulWidget {
   final bool asCard;
 
   /// Stable identifier for a persisted collapsed preference (DESIGN-010
-  /// follow-up: collapsible-section-cards, mockup
+  /// follow-up: collapsible-position-card, mockup
   /// `docs/design/mockups/collapsible-position-card.html`). Null (every
   /// call site but the Post/Spill detail panels) keeps this shell exactly
-  /// as it always was: no chevron, always expanded. Non-null shows a
-  /// leading [CollapseChevron] on the coordinate bar that hides
-  /// [thumbnail]/[overlayActions]/[legend] — the coordinate bar itself
-  /// (and [onTap]) is unaffected, since it is the always-visible part.
+  /// as it always was: a plain [barLabel], no icon/title, no chevron,
+  /// always expanded.
+  ///
+  /// Non-null makes the coordinate bar this card's header-equivalent — a
+  /// leading position icon + the uppercase "Position" title (styled like
+  /// [CardSectionHeader]'s own title), replacing [barLabel] — regardless
+  /// of [fillHeight]. The *collapse* affordance itself is further gated on
+  /// `!fillHeight` (the Post/Spill expanded right pane always shows the
+  /// map): when collapsible, the collapse chevron floats over the
+  /// thumbnail (top-right) while expanded, and replaces [barTrailing] in
+  /// the bar once collapsed — [thumbnail]/[overlayActions]/[legend] are
+  /// hidden then, leaving just the bar.
   final String? sectionId;
 
   @override
@@ -307,6 +320,7 @@ class _PositionCardShellState extends State<PositionCardShell> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
     // Collapse is disabled in `fillHeight` mode (the Post/Spill expanded
     // right pane): the map is the whole point of that pane, and the
     // ancestor's stretched Row forces this shell to the pane height — so a
@@ -325,13 +339,23 @@ class _PositionCardShellState extends State<PositionCardShell> {
             fit: StackFit.expand,
             children: [
               thumbnail,
-              if (widget.overlayActions.isNotEmpty)
+              if (widget.overlayActions.isNotEmpty || collapsible)
                 Positioned(
                   top: 6,
                   right: 6,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: widget.overlayActions,
+                    children: [
+                      ...widget.overlayActions,
+                      // Collapsible + a thumbnail present means expanded
+                      // (a collapsed shell already nulled `thumbnail` out
+                      // above) — the fold-away control floats over the map
+                      // itself here rather than sitting in the bar, since
+                      // `PositionCardShell` has no other map-layer control
+                      // to share that corner with.
+                      if (collapsible)
+                        CollapseChevron(collapsed: _collapsed, onTap: _toggle),
+                    ],
                   ),
                 ),
             ],
@@ -369,21 +393,43 @@ class _PositionCardShellState extends State<PositionCardShell> {
           ),
           child: Row(
             children: [
-              if (collapsible) ...[
-                CollapseChevron(collapsed: _collapsed, onTap: _toggle),
+              // The bar is this card's header-equivalent whenever
+              // `sectionId` is set (the Post/Spill position card, `fillHeight`
+              // or not) — a leading position icon + the uppercase title,
+              // styled exactly like `CardSectionHeader`'s own title, in
+              // place of the plain `barLabel` every other call site keeps.
+              if (widget.sectionId != null) ...[
+                Icon(
+                  Icons.place,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
-              ],
-              if (widget.barLabel != null) ...[
+                Text(
+                  localizations.position.toUpperCase(),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ] else if (widget.barLabel != null) ...[
                 widget.barLabel!,
                 const SizedBox(width: 8),
               ],
               Expanded(child: widget.barChild),
               const SizedBox(width: 8),
-              widget.barTrailing ??
-                  Icon(
-                    Icons.chevron_right,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+              // Collapsed: the expand chevron takes the trailing slot
+              // instead of the editor `›` — the two are never shown
+              // together (Fix 3: collapsible-position-card.html).
+              if (collapsible && _collapsed)
+                CollapseChevron(collapsed: _collapsed, onTap: _toggle)
+              else
+                widget.barTrailing ??
+                    Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
             ],
           ),
         ),
