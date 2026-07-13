@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -23,7 +24,9 @@ import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_store.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -111,18 +114,23 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     return station.persons.where((p) => p.slug == personRef).firstOrNull;
   }
 
-  /// The label of the [Location] this roleplay's position was copied from
-  /// (DESIGN-009: `roleplay_form_screen.dart`'s `_applyPersonSelection`
-  /// copies a "following" position from the linked person's own
-  /// `locSlug`) — null when unlinked, so the position card's bar falls
-  /// back to a single-line "Posisjon" label.
-  String? _positionSourceLabel(Station? station, RolePlay rolePlay) {
+  /// The [Location] this roleplay's position was copied from (DESIGN-009:
+  /// `roleplay_form_screen.dart`'s `_applyPersonSelection` copies a
+  /// "following" position from the linked person's own `locSlug`) — null
+  /// when unlinked. Shared by [_positionSourceLabel] (the position card's
+  /// bar, pre-DESIGN-010-consistency) and the identity card's expanded
+  /// "Location" section.
+  Location? _personLocation(Station? station, RolePlay rolePlay) {
     final person = _personFor(station, rolePlay);
     final locSlug = person?.locSlug;
     if (station == null || locSlug == null) return null;
-    final location = station.locations
-        .where((l) => l.slug == locSlug)
-        .firstOrNull;
+    return station.locations.where((l) => l.slug == locSlug).firstOrNull;
+  }
+
+  /// The label of [_personLocation] — null when unlinked, so the position
+  /// card's bar falls back to a single-line "Posisjon" label.
+  String? _positionSourceLabel(Station? station, RolePlay rolePlay) {
+    final location = _personLocation(station, rolePlay);
     if (location == null) return null;
     return location.label.isEmpty ? location.slug : location.label;
   }
@@ -360,6 +368,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
       _EffectiveIdentityCard(
         rolePlay: rolePlay,
         person: _personFor(station, rolePlay),
+        location: _personLocation(station, rolePlay),
         actor: rolePlay.actorUuid == null
             ? null
             : _programService.getActor(rolePlay.actorUuid!),
@@ -581,17 +590,28 @@ class _StationContextCard extends StatelessWidget {
   }
 }
 
-/// Effective identity card (DESIGN-010's Spill viewer): the marker's
-/// name/age/gender/signalement, each the linked [Person]'s own value
-/// unless [rolePlay] overrides it non-empty (ADR-0047's effective-identity
-/// rule — the same rule `resolvePersonFacet` applies for `{{station.person.*}}`
-/// tokens and the brief itself), plus a "Played by" footer naming the cast
-/// actor. No card header, matching the mockup's bare `.pcard`.
-class _EffectiveIdentityCard extends StatelessWidget {
+/// Effective identity card (DESIGN-010's Spill viewer, harmonized +
+/// expandable — mockup `docs/design/mockups/spill-viewer-consistency.html`):
+/// the marker's name/age/gender/signalement, each the linked [Person]'s own
+/// value unless [rolePlay] overrides it non-empty (ADR-0047's
+/// effective-identity rule — the same rule `resolvePersonFacet` applies for
+/// `{{station.person.*}}` tokens and the brief itself), a muted "Spilles
+/// av" footer naming the cast actor, and — once expanded — the rest of the
+/// linked person: the full (untruncated) signalement, [Person.notes], and
+/// the linked [Location] (name + coordinate). Notes/location are not
+/// subject to the effective-identity rule — [RolePlay] has no fields of
+/// its own for either, so they come straight from [person]/[location].
+///
+/// Not built on [CollapsibleSectionCard]: it keeps its own avatar + name
+/// identity layout rather than a generic uppercase [CardSectionHeader], so
+/// the [CollapseChevron] is wired directly into that layout instead of a
+/// forced header.
+class _EffectiveIdentityCard extends StatefulWidget {
   const _EffectiveIdentityCard({
     required this.rolePlay,
     required this.person,
     required this.actor,
+    this.location,
     this.overrides = const {},
     this.roleplayFacets,
   });
@@ -599,6 +619,7 @@ class _EffectiveIdentityCard extends StatelessWidget {
   final RolePlay rolePlay;
   final Person? person;
   final Actor? actor;
+  final Location? location;
   final Map<String, String> overrides;
   final Map<String, dynamic>? roleplayFacets;
 
@@ -612,19 +633,65 @@ class _EffectiveIdentityCard extends StatelessWidget {
       : personValue;
 
   @override
+  State<_EffectiveIdentityCard> createState() =>
+      _EffectiveIdentityCardState();
+}
+
+class _EffectiveIdentityCardState extends State<_EffectiveIdentityCard> {
+  static const _sectionId = 'identity';
+  bool _collapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadCollapsed());
+  }
+
+  Future<void> _loadCollapsed() async {
+    final stored = await CollapsibleSectionStore.isCollapsed(_sectionId);
+    if (!mounted || stored == _collapsed) return;
+    setState(() => _collapsed = stored);
+  }
+
+  void _toggle() {
+    final next = !_collapsed;
+    setState(() => _collapsed = next);
+    unawaited(CollapsibleSectionStore.setCollapsed(_sectionId, next));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final person = this.person;
-    final name = _effective(rolePlay.name, person?.name) ?? rolePlay.name;
+    final rolePlay = widget.rolePlay;
+    final person = widget.person;
+    final overrides = widget.overrides;
+    final roleplayFacets = widget.roleplayFacets;
+    final actor = widget.actor;
+    final location = widget.location;
+    final name =
+        _EffectiveIdentityCard._effective(rolePlay.name, person?.name) ??
+        rolePlay.name;
     final age = rolePlay.age ?? person?.age;
-    final gender = _effective(rolePlay.gender, person?.gender);
-    final signalement = _effective(rolePlay.signalement, person?.signalement);
+    final gender = _EffectiveIdentityCard._effective(
+      rolePlay.gender,
+      person?.gender,
+    );
+    final signalement = _EffectiveIdentityCard._effective(
+      rolePlay.signalement,
+      person?.signalement,
+    );
     final genderLabel = genderLabelFor(gender, l10n);
     final metaParts = [
       if (age != null) l10n.rolePlayAgeYears(age),
       ?genderLabel,
     ];
+    final notes = person?.notes ?? '';
+    final locationLabel = location == null
+        ? null
+        : (location.label.isEmpty ? location.slug : location.label);
+    final locationPosition = location?.position;
+    final hasMore = notes.isNotEmpty || locationLabel != null;
 
     return Card(
       elevation: 1,
@@ -633,59 +700,118 @@ class _EffectiveIdentityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 19,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Icon(
-                    Icons.person,
-                    color: theme.colorScheme.onPrimaryContainer,
+          InkWell(
+            onTap: _toggle,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 19,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.person,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RingDrillText(
-                        name,
-                        overrides: overrides,
-                        roleplayFacets: roleplayFacets,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      if (metaParts.isNotEmpty)
-                        Text(
-                          metaParts.join(' · '),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      if ((signalement ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         RingDrillText(
-                          signalement!,
+                          name,
                           overrides: overrides,
                           roleplayFacets: roleplayFacets,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                          style: theme.textTheme.titleMedium,
                         ),
+                        if (metaParts.isNotEmpty)
+                          Text(
+                            metaParts.join(' · '),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        if ((signalement ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          // Collapsed: a short/one-line excerpt (mockup's
+                          // summary row). Expanded: the full signalement,
+                          // no truncation — this is the "reveal the full
+                          // signalement" half of the expand (Fix 2).
+                          RingDrillText(
+                            signalement!,
+                            overrides: overrides,
+                            roleplayFacets: roleplayFacets,
+                            maxLines: _collapsed ? 1 : null,
+                            overflow: _collapsed
+                                ? TextOverflow.ellipsis
+                                : null,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  CollapseChevron(collapsed: _collapsed, onTap: _toggle),
+                ],
+              ),
             ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            alignment: Alignment.topCenter,
+            child: _collapsed || !hasMore
+                ? const SizedBox.shrink()
+                : Padding(
+                    // Left-indents under the name column, not the avatar:
+                    // avatar diameter (38) + the gap beside it (11) + the
+                    // row's own padding (12) = 61, matching the mockup.
+                    padding: const EdgeInsets.fromLTRB(61, 0, 12, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (notes.isNotEmpty) ...[
+                          _IdentityMoreLabel(l10n.personsSectionNotesLabel),
+                          RingDrillText(
+                            notes,
+                            overrides: overrides,
+                            roleplayFacets: roleplayFacets,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        if (locationLabel != null) ...[
+                          if (notes.isNotEmpty) const SizedBox(height: 8),
+                          _IdentityMoreLabel(
+                            l10n.personsSectionLocationLabel,
+                          ),
+                          // The location's own label/place are plain
+                          // strings by convention (station_screen.dart's
+                          // `_buildLocationRow` and friends render them the
+                          // same way) — no token resolution, unlike notes.
+                          Text(
+                            [
+                              locationLabel,
+                              if (locationPosition != null)
+                                formatUtm(locationPosition),
+                            ].join(' · '),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
           ),
           if (actor != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHigh,
                 border: Border(
                   top: BorderSide(color: theme.colorScheme.outlineVariant),
                 ),
@@ -699,13 +825,36 @@ class _EffectiveIdentityCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    l10n.castedByLine(actor!.realName),
-                    style: theme.textTheme.bodySmall,
+                    l10n.castedByLine(actor.realName),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// The small uppercase kicker label above a value in the identity card's
+/// expanded "more" section (mockup's `.pmore .k`) — "NOTATER"/"LOKASJON".
+class _IdentityMoreLabel extends StatelessWidget {
+  const _IdentityMoreLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      label.toUpperCase(),
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.4,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
     );
   }
