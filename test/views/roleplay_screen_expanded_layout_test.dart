@@ -22,10 +22,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 // moves to a fixed full-height right pane beside a capped, independently-
 // scrolling left column (status/context/identity/Markørordre/Når aktiv), via
 // the shared `WideDetailMapSplit`. Compact and medium keep today's single
-// scrolling column. The roleplay carries a real position and a source
-// location here so the panel's two-line coordinate bar (label + source)
-// actually renders and the expanded map pane's height math is exercised
-// against real content, not an empty placeholder.
+// scrolling column. The roleplay carries a real position and a linked
+// source location here so the expanded map pane's height math is exercised
+// against real content, not an empty placeholder — the location itself now
+// surfaces via the identity card's expanded "Location" field, not the
+// position card's bar (Fix 2 of the Spill card consistency prompt).
 // ---------------------------------------------------------------------------
 
 const _programUuid = 'prog-role-expanded-layout';
@@ -161,7 +162,10 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(WideDetailMapSplit), findsNothing);
-      expect(find.text('Bosted'), findsOneWidget);
+      // The linked location now renders via the identity card's expanded
+      // "Location" field (Fix 2), not the position card's bar — combined
+      // with its coordinate, so a substring match instead of an exact one.
+      expect(find.textContaining('Bosted'), findsOneWidget);
     },
   );
 
@@ -179,7 +183,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(WideDetailMapSplit), findsOneWidget);
-      expect(find.text('Bosted'), findsOneWidget);
+      expect(find.textContaining('Bosted'), findsOneWidget);
     },
   );
 

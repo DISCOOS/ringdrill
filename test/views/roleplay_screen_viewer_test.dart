@@ -10,8 +10,10 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
+import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// DESIGN-010 stage 3b commit 4 — the Spill viewer's effective-identity
@@ -41,6 +43,7 @@ const _hilde = Person(
   gender: 'woman',
   signalement: 'Gul regnjakke, hjemme',
   locSlug: 'home',
+  notes: 'Skadd venstre ankel, kan ikke gå selv.',
 );
 
 Program _shell() {
@@ -176,13 +179,75 @@ void main() {
     },
   );
 
+  /// The identity card's own collapse chevron, disambiguated from the
+  /// Post/position cards' — anchored on the identity avatar's person icon,
+  /// which is unique to that card.
+  Finder identityCollapseChevron() => find.descendant(
+    of: find
+        .ancestor(of: find.byIcon(Icons.person), matching: find.byType(Card))
+        .first,
+    matching: find.byType(CollapseChevron),
+  );
+
   testWidgets(
-    'the position card is labeled with the source location the position follows',
+    'the identity card is expanded by default and shows the person\'s '
+    'notes and linked location; the "Spilles av" footer has no dark band',
     (tester) async {
       await tester.pumpWidget(_buildScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('Bosted'), findsOneWidget);
+      expect(
+        find.text('Skadd venstre ankel, kan ikke gå selv.'),
+        findsOneWidget,
+      );
+      final expectedCoordinate = formatUtm(const LatLng(59.92, 10.76));
+      expect(find.textContaining('Bosted'), findsOneWidget);
+      expect(find.textContaining(expectedCoordinate), findsWidgets);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final footerText = find.text(l10n.castedByLine('Nina Actor'));
+      final footerContainer = tester.widget<Container>(
+        find
+            .ancestor(of: footerText, matching: find.byType(Container))
+            .first,
+      );
+      final decoration = footerContainer.decoration as BoxDecoration?;
+      expect(decoration?.color, isNull);
+    },
+  );
+
+  testWidgets(
+    'collapsing the identity card hides the full signalement, notes and '
+    'location, but keeps the name/meta summary and the footer',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(identityCollapseChevron());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Skadd venstre ankel, kan ikke gå selv.'),
+        findsNothing,
+      );
+      expect(find.textContaining('Bosted'), findsNothing);
+      // Collapsed summary content stays: the age/gender meta line, the
+      // short signalement excerpt, and the cast footer.
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.textContaining(l10n.rolePlayAgeYears(34)), findsOneWidget);
+      expect(
+        find.text('Gul regnjakke, hjemme', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+
+      // Expanding it again brings notes/location back.
+      await tester.tap(identityCollapseChevron());
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Skadd venstre ankel, kan ikke gå selv.'),
+        findsOneWidget,
+      );
     },
   );
 }
