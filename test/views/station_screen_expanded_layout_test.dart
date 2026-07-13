@@ -9,8 +9,10 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
@@ -208,6 +210,86 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(WideDetailMapSplit), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the expanded map panel fills the pane height, with the coordinate bar '
+    'pinned at the bottom — no fixed-height gap',
+    (tester) async {
+      await _seedAndInit();
+      tester.view.physicalSize = const Size(900, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(
+          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+
+      final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
+      final panelRect = tester.getRect(find.byType(StationPositionPanel));
+
+      // The panel used to sit at a small fixed height (~200) regardless of
+      // how tall the pane was, leaving an empty gap below it — now it
+      // fills the pane's full height instead.
+      expect(panelRect.height, closeTo(splitHeight, 1));
+      expect(panelRect.height, greaterThan(400));
+
+      // The coordinate bar (holding the UTM position) sits at the very
+      // bottom of the filled panel, not floating with a gap beneath it.
+      final barBottom = tester.getRect(find.byType(PositionWidget)).bottom;
+      expect(barBottom, closeTo(panelRect.bottom, 20));
+    },
+  );
+
+  testWidgets(
+    'a short expanded pane still fills the map with no overflow',
+    (tester) async {
+      await _seedAndInit();
+      tester.view.physicalSize = const Size(900, 500);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(
+          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final splitHeight = tester.getSize(find.byType(WideDetailMapSplit)).height;
+      final panelRect = tester.getRect(find.byType(StationPositionPanel));
+      expect(panelRect.height, closeTo(splitHeight, 1));
+    },
+  );
+
+  testWidgets(
+    'the stacked (compact) layout keeps the panel at its fixed inline '
+    'height, unaffected by the expanded fill mode',
+    (tester) async {
+      await _seedAndInit();
+      tester.view.physicalSize = const Size(700, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(
+          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final panelRect = tester.getRect(find.byType(StationPositionPanel));
+      // Well short of the ~800px window height — the fixed thumbnail
+      // height plus legend/bar chrome, not a filled pane.
+      expect(panelRect.height, lessThan(350));
     },
   );
 }
