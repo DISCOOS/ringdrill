@@ -256,6 +256,7 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
     });
     return SingleChildScrollView(
       child: ScheduleCard(
+        sectionId: 'teamExerciseSchedule',
         title: localizations.stationTimingCardTitle,
         headerLabel: localizations.schedule,
         labelWidth: 78,

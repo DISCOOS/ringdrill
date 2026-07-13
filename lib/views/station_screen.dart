@@ -25,7 +25,7 @@ import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
-import 'package:ringdrill/views/widgets/card_section_header.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -371,6 +371,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final l10n = AppLocalizations.of(context)!;
     final overrides = _overridesFor(_exercise, station: station);
     return NarrativeRollupCard(
+      sectionId: 'description',
       icon: Icons.description,
       title: l10n.postDescriptionCardTitle,
       leadText: station.description,
@@ -503,6 +504,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       );
     });
     return ScheduleCard(
+      sectionId: 'schedule',
       title: l10n.stationTimingCardTitle,
       headerLabel: l10n.team(1),
       rows: rows,
@@ -525,21 +527,17 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   Widget _buildPersonsCard(Station station) {
     if (station.persons.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    return CollapsibleSectionCard(
+      sectionId: 'persons',
+      icon: Icons.people,
+      title: l10n.personsSectionTitle,
+      trailing: _HeaderAddAction(
+        label: l10n.personsSectionAddAction,
+        onTap: () => _addPerson(station),
+      ),
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardSectionHeader(
-            icon: Icons.people,
-            title: l10n.personsSectionTitle,
-            trailing: _HeaderAddAction(
-              label: l10n.personsSectionAddAction,
-              onTap: () => _addPerson(station),
-            ),
-          ),
           for (final person in station.persons)
             _buildPersonRow(station, person),
         ],
@@ -633,21 +631,17 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   Widget _buildLocationsCard(Station station) {
     if (station.locations.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    return CollapsibleSectionCard(
+      sectionId: 'locations',
+      icon: Icons.map,
+      title: l10n.locationsSectionTitle,
+      trailing: _HeaderAddAction(
+        label: l10n.locationsSectionAddAction,
+        onTap: () => _addLocation(station),
+      ),
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardSectionHeader(
-            icon: Icons.map,
-            title: l10n.locationsSectionTitle,
-            trailing: _HeaderAddAction(
-              label: l10n.locationsSectionAddAction,
-              onTap: () => _addLocation(station),
-            ),
-          ),
           for (final location in station.locations) _buildLocationRow(location),
         ],
       ),

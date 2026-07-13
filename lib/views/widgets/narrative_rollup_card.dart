@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
-import 'package:ringdrill/views/widgets/card_section_header.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 
 /// One section of a [NarrativeRollupCard]: a label, the raw (unresolved)
@@ -54,6 +54,7 @@ class NarrativeSection {
 class NarrativeRollupCard extends StatelessWidget {
   const NarrativeRollupCard({
     super.key,
+    required this.sectionId,
     required this.icon,
     required this.title,
     this.leadText,
@@ -64,6 +65,12 @@ class NarrativeRollupCard extends StatelessWidget {
     this.onTapSection,
     this.showHint = false,
   });
+
+  /// Stable identifier for the persisted collapsed preference (DESIGN-010
+  /// follow-up: collapsible-section-cards) — distinct per kind of rollup
+  /// card (e.g. the Post viewer's "description" vs. the Spill viewer's
+  /// "markorordre"), never [title], which is localized.
+  final String sectionId;
 
   final IconData icon;
   final String title;
@@ -159,44 +166,35 @@ class NarrativeRollupCard extends StatelessWidget {
 
     if (blocks.isEmpty) return const SizedBox.shrink();
 
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CardSectionHeader(icon: icon, title: title),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final block in blocks) ...[
-                  block,
-                  const SizedBox(height: 12),
-                ],
-                if (showHint && onTapSection != null)
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.edit,
-                        size: 13,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        l10n.tapSectionToEditHint,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+    return CollapsibleSectionCard(
+      sectionId: sectionId,
+      icon: icon,
+      title: title,
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final block in blocks) ...[block, const SizedBox(height: 12)],
+            if (showHint && onTapSection != null)
+              Row(
+                children: [
+                  Icon(
+                    Icons.edit,
+                    size: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-              ],
-            ),
-          ),
-        ],
+                  const SizedBox(width: 5),
+                  Text(
+                    l10n.tapSectionToEditHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

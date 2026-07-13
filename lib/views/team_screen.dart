@@ -218,6 +218,7 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
       ),
       onToggle: _toggleExpanded,
       body: ScheduleCard(
+        sectionId: 'teamSchedule',
         title: localizations.stationTimingCardTitle,
         headerLabel: localizations.schedule,
         labelWidth: 78,

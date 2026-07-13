@@ -116,9 +116,12 @@ void main() {
       await tester.tap(find.byIcon(Icons.group).first);
       await tester.pumpAndSettle();
 
-      // Expand the (only) team row — its chevron is the sole expand_more
-      // icon once the team list is showing.
-      await tester.tap(find.byIcon(Icons.expand_more).first);
+      // Expand the (only) team row. Not the sole `expand_more` icon any
+      // more (DESIGN-010 follow-up: collapsible-section-cards) — the
+      // always-visible round table above the segmented selector is itself
+      // a collapsible ScheduleCard now and shows its own chevron first;
+      // `.last` is the team tile's own, rendered after it.
+      await tester.tap(find.byIcon(Icons.expand_more).last);
       await tester.pumpAndSettle();
 
       // Renders through the shared ScheduleCard (CardSectionHeader + bordered

@@ -373,6 +373,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
           rolePlay.behavior?.isNotEmpty == true ||
           rolePlay.propsMd?.isNotEmpty == true)
         NarrativeRollupCard(
+          sectionId: 'markorordre',
           icon: Icons.theater_comedy,
           title: localizations.roleSection,
           sections: [
@@ -861,6 +862,7 @@ class _ActiveScheduleCard extends StatelessWidget {
       builder: (context, snapshot) {
         final event = snapshot.data!;
         return ScheduleCard(
+          sectionId: 'activeSchedule',
           title: l10n.roleActiveScheduleCardTitle,
           headerLabel: l10n.team(1),
           rows: rows,

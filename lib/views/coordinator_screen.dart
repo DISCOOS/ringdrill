@@ -1177,6 +1177,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
       behavior: HitTestBehavior.opaque,
       onLongPress: () => _copyExerciseToClipboard(localizations),
       child: ScheduleCard(
+        sectionId: 'coordinatorSchedule',
         title: localizations.stationTimingCardTitle,
         // "Round", not localizations.schedule ("Schedule"/"Plan") — the
         // card title already says "Tidsplan"/"Schedule", so repeating it
@@ -1676,6 +1677,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: ScheduleCard(
+        sectionId: 'coordinatorTeamDetailSchedule',
         title: localizations.stationTimingCardTitle,
         // "Round", not localizations.schedule — see the coordinator's own
         // round-table ScheduleCard above for why.
