@@ -307,12 +307,16 @@ class _PositionCardShellState extends State<PositionCardShell> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final collapsible = widget.sectionId != null;
-    // Collapsed: treat the shell as if it had no thumbnail at all — the
-    // existing `fill`/`mainAxisSize` logic below then shrinks the whole
-    // shell to just the coordinate bar on its own, including inside the
-    // Post/Spill expanded right pane's `fillHeight` mode (no separate
-    // "collapsed height" case to keep in sync with that one).
+    // Collapse is disabled in `fillHeight` mode (the Post/Spill expanded
+    // right pane): the map is the whole point of that pane, and the
+    // ancestor's stretched Row forces this shell to the pane height — so a
+    // collapsed shell there would just be a big empty card rather than
+    // shrinking to the bar. The chevron therefore only appears in the
+    // stacked (fixed-thumbnail) layouts, where collapsing to the coordinate
+    // bar reads correctly.
+    final collapsible = widget.sectionId != null && !widget.fillHeight;
+    // Collapsed (stacked only): treat the shell as if it had no thumbnail,
+    // so the `min` main-axis size below shrinks it to just the coordinate bar.
     final thumbnail = collapsible && _collapsed ? null : widget.thumbnail;
     final fill = widget.fillHeight && thumbnail != null;
     final thumbnailStack = thumbnail == null
