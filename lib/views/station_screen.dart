@@ -23,6 +23,8 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -37,6 +39,16 @@ import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+
+/// Reserves room, below the expanded body's map thumbnail, for
+/// [StationPositionPanel]'s own coordinate bar and scenario legend strip —
+/// neither stretches with the thumbnail, so the thumbnail's own height must
+/// leave space for them inside the fixed pane height `WideDetailMapSplit`
+/// hands it, or the panel's `Card` overflows. Generous on purpose (the
+/// legend can wrap to a couple of lines for a station with several
+/// locations): a little unused space at the bottom of the pane is fine, an
+/// overflow is not.
+const double _kStationMapPaneChromeHeight = 200;
 
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
@@ -206,26 +218,43 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                 final station = _exercise.stations[widget.stationIndex];
                 // DESIGN-010 stage 3b: the rebuilt Post viewer is a single
                 // linear stack of cards (Postbeskrivelse, map, Personer,
-                // Lokasjoner, Tidsplan), matching the mockup — the old
-                // side-by-side landscape split had no natural place for the
-                // new persons/locations/schedule cards, and the sheet
-                // already gets wide-screen room from the master-detail
-                // shell (ADR-0030), not an in-body Row.
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(
-                    kPlayerSurfaceHorizontalPadding,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStationStatus(station, event),
-                      const SizedBox(height: 8),
-                      _buildStationInfo(station),
-                      _buildPersonsCard(station),
-                      _buildLocationsCard(station),
-                      _buildTimingCard(station, event),
-                    ],
-                  ),
+                // Lokasjoner, Tidsplan), matching the mockup. The follow-up
+                // expanded-map-right split below drives off the body's own
+                // pane width (`WindowSizeClass.fromWidth`, not
+                // `.of(context)` — this sheet can sit in a detail pane
+                // narrower than the window, ADR-0030) and, at that width,
+                // moves the map to a fixed full-height right pane beside a
+                // capped, independently-scrolling left column — mirroring
+                // the coordinator's own expanded body.
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final windowSize = WindowSizeClass.fromWidth(
+                      constraints.maxWidth,
+                    );
+                    if (windowSize == WindowSizeClass.expanded) {
+                      return _buildExpandedBody(
+                        station,
+                        event,
+                        constraints.maxHeight,
+                      );
+                    }
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(
+                        kPlayerSurfaceHorizontalPadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStationStatus(station, event),
+                          const SizedBox(height: 8),
+                          _buildStationInfo(station),
+                          _buildPersonsCard(station),
+                          _buildLocationsCard(station),
+                          _buildTimingCard(station, event),
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -415,17 +444,51 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// The scenario map card: the station's own position plus its DESIGN-009
   /// `Location`s, styled by `LocationKind` (ADR-0020), with the legend slot
   /// — richer than `StationPositionPanel`'s administrative-only default,
-  /// which every other station surface keeps.
-  Widget _buildMapCard(Station station) {
+  /// which every other station surface keeps. [mapHeight] lets the
+  /// expanded body's right pane size the thumbnail to (most of) its own
+  /// available height; left at the panel's own default for the stacked
+  /// body's small inline card.
+  Widget _buildMapCard(Station station, {double? mapHeight}) {
     return StationPositionPanel(
       exercise: _exercise,
       station: station,
       asCard: true,
+      mapHeight: mapHeight ?? 200,
       miniMapKey: ValueKey<String>(
         'station-screen-map-${_exercise.uuid}-${station.index}',
       ),
       markers: stationScenarioMarkers(context, station),
       legend: StationScenarioLegend(station: station),
+    );
+  }
+
+  /// Expanded body (pane ≥ 840): the same cards the stacked body shows,
+  /// split via the shared [WideDetailMapSplit] — Postbeskrivelse/Personer/
+  /// Lokasjoner/Tidsplan in a capped, self-scrolling left column, the map
+  /// panel (with its coordinate row) as a fixed full-height right pane,
+  /// mirroring the coordinator's own expanded body.
+  Widget _buildExpandedBody(
+    Station station,
+    ExerciseEvent event,
+    double paneHeight,
+  ) {
+    final mapHeight = (paneHeight - _kStationMapPaneChromeHeight).clamp(
+      200.0,
+      double.infinity,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
+      child: WideDetailMapSplit(
+        left: [
+          _buildStationStatus(station, event),
+          const SizedBox(height: 8),
+          _buildPostDescriptionCard(station),
+          _buildPersonsCard(station),
+          _buildLocationsCard(station),
+          _buildTimingCard(station, event),
+        ],
+        mapPane: _buildMapCard(station, mapHeight: mapHeight),
+      ),
     );
   }
 
