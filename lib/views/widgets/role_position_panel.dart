@@ -22,6 +22,7 @@ class RolePositionPanel extends StatelessWidget {
     this.mapHeight = 200,
     this.asCard = false,
     this.sourceLabel,
+    this.fillHeight = false,
   });
 
   final LatLng position;
@@ -44,6 +45,13 @@ class RolePositionPanel extends StatelessWidget {
   /// no ambient card, passes `true`.
   final bool asCard;
 
+  /// Forwarded to [PositionCardShell.fillHeight]: the map flexes to fill
+  /// all remaining height an ancestor gives this panel instead of the
+  /// fixed [mapHeight] — the Spill viewer's expanded right pane
+  /// (`WideDetailMapSplit`) passes `true`; every other call site keeps the
+  /// default fixed-height inline card.
+  final bool fillHeight;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -58,6 +66,7 @@ class RolePositionPanel extends StatelessWidget {
         height: mapHeight,
       ),
       thumbnailHeight: mapHeight,
+      fillHeight: fillHeight,
       barLabel: sourceLabel == null
           ? Text(
               localizations.position,

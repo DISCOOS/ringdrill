@@ -40,16 +40,6 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 
-/// Reserves room, below the expanded body's map thumbnail, for
-/// [StationPositionPanel]'s own coordinate bar and scenario legend strip —
-/// neither stretches with the thumbnail, so the thumbnail's own height must
-/// leave space for them inside the fixed pane height `WideDetailMapSplit`
-/// hands it, or the panel's `Card` overflows. Generous on purpose (the
-/// legend can wrap to a couple of lines for a station with several
-/// locations): a little unused space at the bottom of the pane is fine, an
-/// overflow is not.
-const double _kStationMapPaneChromeHeight = 200;
-
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
   final String uuid;
@@ -232,11 +222,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                       constraints.maxWidth,
                     );
                     if (windowSize == WindowSizeClass.expanded) {
-                      return _buildExpandedBody(
-                        station,
-                        event,
-                        constraints.maxHeight,
-                      );
+                      return _buildExpandedBody(station, event);
                     }
                     return SingleChildScrollView(
                       padding: const EdgeInsets.all(
@@ -444,16 +430,16 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// The scenario map card: the station's own position plus its DESIGN-009
   /// `Location`s, styled by `LocationKind` (ADR-0020), with the legend slot
   /// — richer than `StationPositionPanel`'s administrative-only default,
-  /// which every other station surface keeps. [mapHeight] lets the
-  /// expanded body's right pane size the thumbnail to (most of) its own
-  /// available height; left at the panel's own default for the stacked
-  /// body's small inline card.
-  Widget _buildMapCard(Station station, {double? mapHeight}) {
+  /// which every other station surface keeps. [fillHeight] makes the map
+  /// flex to fill the expanded body's right pane instead of the panel's
+  /// own fixed default height; left `false` for the stacked body's small
+  /// inline card.
+  Widget _buildMapCard(Station station, {bool fillHeight = false}) {
     return StationPositionPanel(
       exercise: _exercise,
       station: station,
       asCard: true,
-      mapHeight: mapHeight ?? 200,
+      fillHeight: fillHeight,
       miniMapKey: ValueKey<String>(
         'station-screen-map-${_exercise.uuid}-${station.index}',
       ),
@@ -465,29 +451,27 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// Expanded body (pane ≥ 840): the same cards the stacked body shows,
   /// split via the shared [WideDetailMapSplit] — Postbeskrivelse/Personer/
   /// Lokasjoner/Tidsplan in a capped, self-scrolling left column, the map
-  /// panel (with its coordinate row) as a fixed full-height right pane,
-  /// mirroring the coordinator's own expanded body.
-  Widget _buildExpandedBody(
-    Station station,
-    ExerciseEvent event,
-    double paneHeight,
-  ) {
-    final mapHeight = (paneHeight - _kStationMapPaneChromeHeight).clamp(
-      200.0,
-      double.infinity,
-    );
+  /// panel (with its coordinate row) filling the right pane's full height
+  /// (`fillHeight: true`), mirroring the coordinator's own expanded body.
+  Widget _buildExpandedBody(Station station, ExerciseEvent event) {
     return Padding(
       padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
       child: WideDetailMapSplit(
         left: [
-          _buildStationStatus(station, event),
-          const SizedBox(height: 8),
+          // Only inserted when there's a status card to show — otherwise
+          // this unconditional gap would sit above Postbeskrivelse with
+          // nothing above it, misaligning the left column's first visible
+          // card against the map pane's flush top.
+          if (_isStarted) ...[
+            _buildStationStatus(station, event),
+            const SizedBox(height: 8),
+          ],
           _buildPostDescriptionCard(station),
           _buildPersonsCard(station),
           _buildLocationsCard(station),
           _buildTimingCard(station, event),
         ],
-        mapPane: _buildMapCard(station, mapHeight: mapHeight),
+        mapPane: _buildMapCard(station, fillHeight: true),
       ),
     );
   }

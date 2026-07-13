@@ -204,6 +204,7 @@ class PositionCardShell extends StatelessWidget {
     required this.barChild,
     this.barTrailing,
     this.asCard = true,
+    this.fillHeight = false,
   });
 
   final VoidCallback onTap;
@@ -213,6 +214,20 @@ class PositionCardShell extends StatelessWidget {
   /// have nowhere to sit without a thumbnail above them.
   final Widget? thumbnail;
   final double thumbnailHeight;
+
+  /// When true, [thumbnail] flexes (`Expanded`) to fill all remaining
+  /// height instead of the fixed [thumbnailHeight] — [legend] and the
+  /// coordinate bar keep their intrinsic height and end up pinned at the
+  /// very bottom of whatever height an ancestor gives this shell, with no
+  /// gap below the map. Used by the Post/Spill detail viewers' expanded
+  /// right pane (`WideDetailMapSplit`), which already gives this shell the
+  /// pane's full height via a stretched `Row` — the default (`false`)
+  /// keeps every other call site's wrap-content sizing unchanged. Ignored
+  /// (falls back to [thumbnailHeight]) when there is no [thumbnail] to
+  /// fill, so a future collapsed (bar-only) variant of this shell still
+  /// shrinks to its content instead of being forced to the ancestor's full
+  /// height.
+  final bool fillHeight;
 
   /// Rendered top-right over [thumbnail] in a [Stack]. Ignored when
   /// [thumbnail] is null.
@@ -249,29 +264,38 @@ class PositionCardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final thumbnail = this.thumbnail;
+    final fill = fillHeight && thumbnail != null;
+    final thumbnailStack = thumbnail == null
+        ? null
+        : Stack(
+            fit: StackFit.expand,
+            children: [
+              thumbnail,
+              if (overlayActions.isNotEmpty)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: overlayActions,
+                  ),
+                ),
+            ],
+          );
     final content = Column(
-      mainAxisSize: MainAxisSize.min,
+      // `max` in fill mode: the ancestor (the expanded right pane's
+      // stretched Row) already gives this shell a tight height, and the
+      // Column must claim all of it for the Expanded thumbnail below to
+      // have anything to flex into. `min` otherwise — every other call
+      // site wraps this shell content-height, not pane-height.
+      mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (thumbnail != null)
-          SizedBox(
-            height: thumbnailHeight,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                thumbnail!,
-                if (overlayActions.isNotEmpty)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: overlayActions,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        if (thumbnailStack != null)
+          fill
+              ? Expanded(child: thumbnailStack)
+              : SizedBox(height: thumbnailHeight, child: thumbnailStack),
         if (thumbnail != null && legend != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),

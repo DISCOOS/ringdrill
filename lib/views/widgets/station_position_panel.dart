@@ -32,11 +32,19 @@ class StationPositionPanel extends StatelessWidget {
     this.asCard = false,
     this.markers,
     this.legend,
+    this.fillHeight = false,
   });
 
   final Exercise exercise;
   final Station station;
   final double mapHeight;
+
+  /// Forwarded to [PositionCardShell.fillHeight]: the map flexes to fill
+  /// all remaining height an ancestor gives this panel instead of the
+  /// fixed [mapHeight] — the Post viewer's expanded right pane
+  /// (`WideDetailMapSplit`) passes `true`; every other call site keeps the
+  /// default fixed-height inline card.
+  final bool fillHeight;
 
   /// Overrides the embedded [StationMiniMap]'s default administrative-only
   /// marker with a richer scenario set (DESIGN-010's Post viewer). Null
@@ -104,6 +112,7 @@ class StationPositionPanel extends StatelessWidget {
                 ),
               ),
               thumbnailHeight: mapHeight,
+              fillHeight: fillHeight,
               legend: legend,
               barLabel: Text(
                 localizations.position,

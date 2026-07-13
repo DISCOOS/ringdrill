@@ -34,14 +34,6 @@ import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 
-/// Reserves room, below the expanded body's map thumbnail, for
-/// [RolePositionPanel]'s own coordinate bar — mirrors
-/// `_kStationMapPaneChromeHeight` in `station_screen.dart`. The bar can be
-/// two lines tall (the "Posisjon" label plus a second line naming the
-/// source location, [RolePlayScreen._positionSourceLabel]), so this leaves
-/// more headroom than the Post viewer's single-line bar needs.
-const double _kRoleMapPaneChromeHeight = 130;
-
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
 ///
@@ -237,7 +229,6 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                 stationIndex: stationIndex,
                 roleOverrides: roleOverrides,
                 localizations: localizations,
-                paneHeight: constraints.maxHeight,
               );
             }
             return SingleChildScrollView(
@@ -414,14 +405,15 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
   /// The role map panel — null when [rolePlay] has no position, matching
   /// the stacked body's own "omit entirely" behaviour; the expanded body's
   /// right pane falls back to [_buildMapPlaceholder] instead, since it
-  /// always needs something to show there. [mapHeight] sizes the
-  /// thumbnail to the expanded body's right pane; left at the panel's own
-  /// default for the stacked body's inline card.
+  /// always needs something to show there. [fillHeight] makes the map flex
+  /// to fill the expanded body's right pane instead of the panel's own
+  /// fixed default height; left `false` for the stacked body's inline
+  /// card.
   Widget? _buildPositionPanel({
     required RolePlay rolePlay,
     required Station? station,
     required Map<String, String> roleOverrides,
-    double? mapHeight,
+    bool fillHeight = false,
   }) {
     final position = rolePlay.position;
     if (position == null) return null;
@@ -442,7 +434,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             rolePlay.name,
         sourceLabel: _positionSourceLabel(station, rolePlay),
         asCard: true,
-        mapHeight: mapHeight ?? 200,
+        fillHeight: fillHeight,
       ),
     );
   }
@@ -471,12 +463,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     required int? stationIndex,
     required Map<String, String> roleOverrides,
     required AppLocalizations localizations,
-    required double paneHeight,
   }) {
-    final mapHeight = (paneHeight - _kRoleMapPaneChromeHeight).clamp(
-      200.0,
-      double.infinity,
-    );
     return Padding(
       padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
       child: WideDetailMapSplit(
@@ -496,7 +483,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
               rolePlay: rolePlay,
               station: station,
               roleOverrides: roleOverrides,
-              mapHeight: mapHeight,
+              fillHeight: true,
             ) ??
             _buildMapPlaceholder(localizations),
       ),
