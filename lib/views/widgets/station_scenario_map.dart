@@ -5,6 +5,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/widgets/location_kind_labels.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
+import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 
 /// DESIGN-010's Post viewer map card: the station's own administrative
 /// position (id `0`, accent-colored flag, matching `StationMiniMap`'s
@@ -22,10 +23,13 @@ List<MapMarkerSpec<int>> stationScenarioMarkers(
   final markers = <MapMarkerSpec<int>>[];
   final position = station.position;
   if (position != null) {
+    // Label the station's own pin with its (resolved) name, like the
+    // coordinator map does, rather than the generic "Post" category word.
+    final resolvedName = resolveScopedField(context, station.name) ?? '';
     markers.add(
       MapMarkerSpec(
         id: 0,
-        label: l10n.station(1),
+        label: resolvedName.isEmpty ? l10n.station(1) : resolvedName,
         point: position,
         child: Icon(Icons.flag, color: theme.colorScheme.primary, size: 30),
       ),
@@ -62,9 +66,10 @@ class StationScenarioLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final resolvedName = resolveScopedField(context, station.name) ?? '';
+    final stationLabel = resolvedName.isEmpty ? l10n.station(1) : resolvedName;
     final entries = <(Color, String)>[
-      if (station.position != null)
-        (theme.colorScheme.primary, l10n.station(1)),
+      if (station.position != null) (theme.colorScheme.primary, stationLabel),
     ];
     final seenKinds = <LocationKind>{};
     for (final location in station.locations) {
