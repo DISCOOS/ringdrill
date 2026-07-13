@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
+import 'package:ringdrill/views/widgets/collapse_chevron.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_store.dart';
 
 /// Layout for [PositionCard]'s surface (docs/prompts/position-card-reflow.md):
 /// [row] is a horizontal strip (station form), [card] stacks the thumbnail
@@ -192,7 +196,7 @@ class PositionCard<K> extends StatelessWidget {
 /// `StationPositionPanel`/`RolePositionPanel` (the read-only detail
 /// panels) — call sites sharing one layout instead of near-identical
 /// `Column`s.
-class PositionCardShell extends StatelessWidget {
+class PositionCardShell extends StatefulWidget {
   const PositionCardShell({
     super.key,
     required this.onTap,
@@ -205,6 +209,7 @@ class PositionCardShell extends StatelessWidget {
     this.barTrailing,
     this.asCard = true,
     this.fillHeight = false,
+    this.sectionId,
   });
 
   final VoidCallback onTap;
@@ -261,24 +266,68 @@ class PositionCardShell extends StatelessWidget {
   /// coordinate bar; it just skips the extra background/elevation.
   final bool asCard;
 
+  /// Stable identifier for a persisted collapsed preference (DESIGN-010
+  /// follow-up: collapsible-section-cards, mockup
+  /// `docs/design/mockups/collapsible-position-card.html`). Null (every
+  /// call site but the Post/Spill detail panels) keeps this shell exactly
+  /// as it always was: no chevron, always expanded. Non-null shows a
+  /// leading [CollapseChevron] on the coordinate bar that hides
+  /// [thumbnail]/[overlayActions]/[legend] — the coordinate bar itself
+  /// (and [onTap]) is unaffected, since it is the always-visible part.
+  final String? sectionId;
+
+  @override
+  State<PositionCardShell> createState() => _PositionCardShellState();
+}
+
+class _PositionCardShellState extends State<PositionCardShell> {
+  bool _collapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final sectionId = widget.sectionId;
+    if (sectionId != null) unawaited(_loadCollapsed(sectionId));
+  }
+
+  Future<void> _loadCollapsed(String sectionId) async {
+    final stored = await CollapsibleSectionStore.isCollapsed(sectionId);
+    if (!mounted || stored == _collapsed) return;
+    setState(() => _collapsed = stored);
+  }
+
+  void _toggle() {
+    final sectionId = widget.sectionId;
+    if (sectionId == null) return;
+    final next = !_collapsed;
+    setState(() => _collapsed = next);
+    unawaited(CollapsibleSectionStore.setCollapsed(sectionId, next));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final thumbnail = this.thumbnail;
-    final fill = fillHeight && thumbnail != null;
+    final collapsible = widget.sectionId != null;
+    // Collapsed: treat the shell as if it had no thumbnail at all — the
+    // existing `fill`/`mainAxisSize` logic below then shrinks the whole
+    // shell to just the coordinate bar on its own, including inside the
+    // Post/Spill expanded right pane's `fillHeight` mode (no separate
+    // "collapsed height" case to keep in sync with that one).
+    final thumbnail = collapsible && _collapsed ? null : widget.thumbnail;
+    final fill = widget.fillHeight && thumbnail != null;
     final thumbnailStack = thumbnail == null
         ? null
         : Stack(
             fit: StackFit.expand,
             children: [
               thumbnail,
-              if (overlayActions.isNotEmpty)
+              if (widget.overlayActions.isNotEmpty)
                 Positioned(
                   top: 6,
                   right: 6,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: overlayActions,
+                    children: widget.overlayActions,
                   ),
                 ),
             ],
@@ -288,15 +337,16 @@ class PositionCardShell extends StatelessWidget {
       // stretched Row) already gives this shell a tight height, and the
       // Column must claim all of it for the Expanded thumbnail below to
       // have anything to flex into. `min` otherwise — every other call
-      // site wraps this shell content-height, not pane-height.
+      // site (and a collapsed shell) wraps this shell content-height, not
+      // pane-height.
       mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (thumbnailStack != null)
           fill
               ? Expanded(child: thumbnailStack)
-              : SizedBox(height: thumbnailHeight, child: thumbnailStack),
-        if (thumbnail != null && legend != null)
+              : SizedBox(height: widget.thumbnailHeight, child: thumbnailStack),
+        if (thumbnail != null && widget.legend != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
@@ -304,7 +354,7 @@ class PositionCardShell extends StatelessWidget {
                 top: BorderSide(color: theme.colorScheme.outlineVariant),
               ),
             ),
-            child: legend!,
+            child: widget.legend!,
           ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -315,10 +365,17 @@ class PositionCardShell extends StatelessWidget {
           ),
           child: Row(
             children: [
-              if (barLabel != null) ...[barLabel!, const SizedBox(width: 8)],
-              Expanded(child: barChild),
+              if (collapsible) ...[
+                CollapseChevron(collapsed: _collapsed, onTap: _toggle),
+                const SizedBox(width: 8),
+              ],
+              if (widget.barLabel != null) ...[
+                widget.barLabel!,
+                const SizedBox(width: 8),
+              ],
+              Expanded(child: widget.barChild),
               const SizedBox(width: 8),
-              barTrailing ??
+              widget.barTrailing ??
                   Icon(
                     Icons.chevron_right,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -335,14 +392,14 @@ class PositionCardShell extends StatelessWidget {
     // the caller already provides that card (asCard: false), skip it —
     // otherwise the map preview nests a card inside a card — and just
     // round the thumbnail's own corners.
-    return asCard
+    return widget.asCard
         ? Card(
             margin: EdgeInsets.zero,
-            child: InkWell(onTap: onTap, child: content),
+            child: InkWell(onTap: widget.onTap, child: content),
           )
         : ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: InkWell(onTap: onTap, child: content),
+            child: InkWell(onTap: widget.onTap, child: content),
           );
   }
 }

@@ -436,6 +436,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
         sourceLabel: _positionSourceLabel(station, rolePlay),
         asCard: true,
         fillHeight: fillHeight,
+        sectionId: 'position',
       ),
     );
   }

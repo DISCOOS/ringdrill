@@ -23,6 +23,7 @@ class RolePositionPanel extends StatelessWidget {
     this.asCard = false,
     this.sourceLabel,
     this.fillHeight = false,
+    this.sectionId,
   });
 
   final LatLng position;
@@ -52,6 +53,11 @@ class RolePositionPanel extends StatelessWidget {
   /// default fixed-height inline card.
   final bool fillHeight;
 
+  /// Forwarded to [PositionCardShell.sectionId]. Null (every call site but
+  /// the Spill viewer) keeps this panel exactly as it always was: no
+  /// collapse chevron, always expanded.
+  final String? sectionId;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -67,6 +73,7 @@ class RolePositionPanel extends StatelessWidget {
       ),
       thumbnailHeight: mapHeight,
       fillHeight: fillHeight,
+      sectionId: sectionId,
       barLabel: sourceLabel == null
           ? Text(
               localizations.position,

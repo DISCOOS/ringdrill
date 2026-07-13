@@ -33,11 +33,17 @@ class StationPositionPanel extends StatelessWidget {
     this.markers,
     this.legend,
     this.fillHeight = false,
+    this.sectionId,
   });
 
   final Exercise exercise;
   final Station station;
   final double mapHeight;
+
+  /// Forwarded to [PositionCardShell.sectionId]. Null (every call site but
+  /// the Post viewer) keeps this panel exactly as it always was: no
+  /// collapse chevron, always expanded.
+  final String? sectionId;
 
   /// Forwarded to [PositionCardShell.fillHeight]: the map flexes to fill
   /// all remaining height an ancestor gives this panel instead of the
@@ -113,6 +119,7 @@ class StationPositionPanel extends StatelessWidget {
               ),
               thumbnailHeight: mapHeight,
               fillHeight: fillHeight,
+              sectionId: sectionId,
               legend: legend,
               barLabel: Text(
                 localizations.position,

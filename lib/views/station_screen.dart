@@ -441,6 +441,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       station: station,
       asCard: true,
       fillHeight: fillHeight,
+      sectionId: 'position',
       miniMapKey: ValueKey<String>(
         'station-screen-map-${_exercise.uuid}-${station.index}',
       ),
