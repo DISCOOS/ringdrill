@@ -23,6 +23,7 @@ import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
@@ -493,11 +494,18 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
   }
 }
 
-/// Station context card (DESIGN-010's Spill viewer): the parent post's
-/// name and a one-line description excerpt, tapping through to the Post
-/// sheet — bare row, no card header, matching the mockup. Falls back to
-/// [AppLocalizations.noStationAssigned] for an unassigned/out-of-range
-/// roleplay (ADR-0046, DESIGN-008 follow-up 07's scope-resolution note).
+/// Station context card (DESIGN-010's Spill viewer, harmonized into the
+/// shared collapsible card family — mockup
+/// `docs/design/mockups/spill-viewer-consistency.html`): a "Post" header
+/// (flag icon + collapse chevron, like every other titled section card)
+/// over a body that is itself a tappable row — the parent post's name and
+/// a one-line description excerpt, navigating to the Post sheet. No
+/// bespoke header "open" affordance: as with any [CollapsibleSectionCard],
+/// the card must be expanded first, and the body row is what navigates.
+/// Falls back to [AppLocalizations.noStationAssigned] (still inside the
+/// same collapsible card, just not tappable) for an unassigned/
+/// out-of-range roleplay (ADR-0046, DESIGN-008 follow-up 07's
+/// scope-resolution note).
 class _StationContextCard extends StatelessWidget {
   const _StationContextCard({
     required this.station,
@@ -515,13 +523,13 @@ class _StationContextCard extends StatelessWidget {
     final theme = Theme.of(context);
     final station = this.station;
     final exercise = this.exercise;
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
-      child: station == null || exercise == null
+    return CollapsibleSectionCard(
+      sectionId: 'stationContext',
+      icon: Icons.flag,
+      title: l10n.stationLabel,
+      body: station == null || exercise == null
           ? Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Text(
                 l10n.noStationAssigned,
                 style: TextStyle(
@@ -542,8 +550,6 @@ class _StationContextCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.flag, color: theme.colorScheme.primary),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
