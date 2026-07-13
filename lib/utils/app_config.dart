@@ -127,4 +127,13 @@ class AppConfig {
 
   static String catalogOwnershipKey(String slug) =>
       'app:catalogOwnership:$slug';
+
+  /// Per-section-type collapsed preference for `CollapsibleSectionCard` and
+  /// the position card's own collapse (DESIGN-010 follow-up: collapsible-
+  /// section-cards). [sectionId] is a stable identifier the caller picks
+  /// (e.g. `schedule`, `position`) — never the localized card title, which
+  /// changes with locale and would silently reset every reader's saved
+  /// state on a locale switch.
+  static String collapsibleSectionKey(String sectionId) =>
+      'app:collapsibleSection:$sectionId:v1';
 }
