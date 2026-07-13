@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Spill-viewer: konsistente kort</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:8px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  h1{font-size:17px;font-weight:600;margin:0 0 4px;text-align:center}
+  p.intro{font-size:12.5px;color:var(--text-2);max-width:860px;margin:0 auto 20px;text-align:center;line-height:1.55}
+  code{font-family:var(--font-mono)}
+  svg{display:block}
+  .frame{width:430px;max-width:100%;margin:0 auto;background:var(--bg-page);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .bar-top{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--border)}
+  .bar-top .side{color:var(--text-2)}
+  .bar-top .side svg{width:21px;height:21px}
+  .bar-top .tt{flex:1;min-width:0}
+  .bar-top .nm{font-size:17px;font-weight:600}
+  .bar-top .sub{font-size:12px;color:var(--text-3)}
+  .body{padding:13px;display:flex;flex-direction:column;gap:10px}
+  .card{background:var(--bg-1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .head{display:flex;align-items:center;gap:9px;padding:11px 12px;border-bottom:1px solid var(--border)}
+  .head.headclosed{border-bottom:none}
+  .head .hicon{color:var(--accent);display:flex}
+  .head .hicon svg{width:18px;height:18px}
+  .head .htitle{flex:1;min-width:0;font-size:12.5px;font-weight:700;letter-spacing:.04em}
+  .head .chev{color:var(--text-3);display:flex}
+  .head .chev svg{width:19px;height:19px}
+  .head .add{font-size:12px;color:var(--accent);margin-right:8px}
+  /* post body — a tappable content row (navigates once expanded) */
+  .navrow{display:flex;align-items:center;gap:10px;padding:12px}
+  .navrow .col{flex:1;min-width:0}
+  .navrow .big{font-size:15px;font-weight:600}
+  .navrow .muted{font-size:12.5px;color:var(--text-2);margin-top:3px;line-height:1.45}
+  .navrow .go{color:var(--text-3);display:flex}
+  .navrow .go svg{width:20px;height:20px}
+  /* person card */
+  .prow{display:flex;align-items:flex-start;gap:11px;padding:12px}
+  .prow .av{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .prow .av svg{width:20px;height:20px}
+  .prow .pmain{flex:1;min-width:0}
+  .prow .pnm{font-size:16px;font-weight:600}
+  .prow .pmeta{font-size:13px;color:var(--text-2);margin-top:1px}
+  .prow .psig{font-size:12.5px;color:var(--text-2);margin-top:6px;line-height:1.45}
+  .prow .chev{color:var(--text-3);display:flex;align-self:center}
+  .prow .chev svg{width:19px;height:19px}
+  .pmore{padding:0 12px 12px 61px;display:flex;flex-direction:column;gap:8px}
+  .pmore .k{font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--text-3)}
+  .pmore .v{font-size:12.5px;color:var(--text-2);line-height:1.45;margin-top:2px}
+  .pfoot{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-2)}
+  .pfoot svg{width:16px;height:16px;color:var(--text-3)}
+  /* position bar */
+  .pbar{display:flex;align-items:center;gap:10px;padding:12px}
+  .pbar .picon{color:var(--accent);display:flex}
+  .pbar .picon svg{width:18px;height:18px}
+  .pbar .lbl{color:var(--text-1);font-size:12.5px;font-weight:700;letter-spacing:.04em}
+  .pbar .utm{flex:1;text-align:right;font-family:var(--font-mono);font-size:12.5px;color:var(--text-1)}
+  .pbar .exp{color:var(--accent);display:flex}
+  .pbar .exp svg{width:20px;height:20px}
+  .note{font-size:11.5px;color:var(--text-2);max-width:860px;margin:16px auto 0;line-height:1.5}
+  .note b{color:var(--text-1)}
+</style>
+</head>
+<body>
+  <h1>Spill-viewer — alle kort i samme familie</h1>
+  <p class="intro">Post-kortet og person-kortet bruker nå den delte kort-familien (ikon + tittel + kropp + collapse-chevron). Ingen bespoke «Åpne»-lenke: som ethvert CollapsibleSectionCard må kortet utvides først, og da er postnavn-raden i kroppen klikkbar (<code>›</code>) og åpner Post-vieweren. Den mørke «Spilles av»-stripa er borte — dempet footer. Person-kortet utvides til full personinfo.</p>
+
+  <div class="frame">
+    <div class="bar-top">
+      <span class="side"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.2"/><line x1="9.5" y1="5" x2="9.5" y2="19"/></svg></span>
+      <div class="tt"><div class="nm">Hilde</div><div class="sub">Førsteinnsats søk (ringøvelse)</div></div>
+      <span class="side"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+    </div>
+    <div class="body">
+
+      <!-- POST card (shared, expanded) — body row navigates -->
+      <div class="card">
+        <div class="head"><span class="hicon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg></span><span class="htitle">POST</span><span class="chev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></span></div>
+        <div class="navrow">
+          <div class="col"><div class="big">2a) Fisker (Angler)</div><div class="muted">Eidene. Kari Fiskeløs – finsøk rundt IPP innenfor R25. Post PI …</div></div>
+          <span class="go" title="Åpne posten"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></span>
+        </div>
+      </div>
+
+      <!-- PERSON card (shared, harmonized, expanded to full info) -->
+      <div class="card">
+        <div class="prow">
+          <span class="av"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+          <div class="pmain">
+            <div class="pnm">Hilde</div>
+            <div class="pmeta">34 år · Kvinne</div>
+            <div class="psig">Kortvokst, blondt hår i hestehale, rød boblejakke.</div>
+          </div>
+          <span class="chev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></span>
+        </div>
+        <div class="pmore">
+          <div><div class="k">NOTATER</div><div class="v">Skadd venstre ankel, kan ikke gå selv. Rolig, men forvirret.</div></div>
+          <div><div class="k">LOKASJON</div><div class="v">Ved fiskeplassen · 32V 0580317E 6551926N</div></div>
+        </div>
+        <div class="pfoot"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="6" width="10" height="12" rx="3"/><rect x="11" y="4" width="10" height="12" rx="3" opacity="0.55"/></svg>Spilles av Nina</div>
+      </div>
+
+      <!-- MARKØRORDRE (collapsed) -->
+      <div class="card"><div class="head headclosed"><span class="hicon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="6" width="10" height="12" rx="3"/><rect x="11" y="4" width="10" height="12" rx="3" opacity="0.55"/></svg></span><span class="htitle">MARKØRORDRE</span><span class="chev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></span></div></div>
+
+      <!-- POSISJON (collapsed, revised model) -->
+      <div class="card"><div class="pbar"><span class="picon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg></span><span class="lbl">POSISJON</span><span class="utm">32V 0580317E 6551926N</span><span class="exp" title="Vis kart"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></span></div></div>
+
+      <!-- NÅR AKTIV (collapsed) -->
+      <div class="card"><div class="head headclosed"><span class="hicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="htitle">NÅR AKTIV</span><span class="chev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></span></div></div>
+
+    </div>
+  </div>
+
+  <p class="note"><b>Post-kortet:</b> delt kort med «POST»-header + collapse-chevron; utvidet viser postnavn + beskrivelse som en klikkbar rad (<code>›</code> → Post-vieweren). Ingen egen header-lenke — navigasjon skjer via innholdet, etter expand, som ellers. <b>Person-kortet:</b> samme familie; «Spilles av …» er en dempet footer (ingen mørk stripe); utvidet viser full personinfo (notater, lokasjon). Kollapset: navn + alder/kjønn + kort signalement + footer. <b>Posisjon:</b> se <code>collapsible-position-card.html</code>.</p>
+</body>
+</html>
