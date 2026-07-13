@@ -73,6 +73,20 @@ ProgramSegment? programSegmentFromSlug(String slug) => switch (slug) {
   _ => null,
 };
 
+/// The [ProgramSegment] that owns [target], so a redirect that changes the
+/// detail target (e.g. a cross-entity link such as the Spill viewer's
+/// post-context card) can drive the wide master pane to follow. Returns
+/// `null` for [BriefSheetTarget]: the brief is a modal, not a master-detail
+/// selection, so the master is left untouched. Centralizes the mapping so
+/// callers never need their own `is StationSheetTarget` checks.
+ProgramSegment? segmentForTarget(ContextSheetTarget target) => switch (target) {
+  ExerciseSheetTarget() => ProgramSegment.exercises,
+  StationSheetTarget() => ProgramSegment.stations,
+  RoleSheetTarget() => ProgramSegment.script,
+  TeamSheetTarget() || TeamOverviewSheetTarget() => ProgramSegment.teams,
+  BriefSheetTarget() => null,
+};
+
 enum _SortAction { byStartTime, alphabetically }
 
 class ProgramView extends StatefulWidget {
@@ -1590,12 +1604,15 @@ abstract class ProgramPageControllerBase extends ScreenController {
   /// shared detail target unconditionally).
   final Map<ProgramSegment, ContextSheetTarget?> _rememberedSelection = {};
 
-  /// Records [target] as the active segment's selection. Called for both
-  /// explicit picks and auto-selected-first targets — re-remembering the
-  /// latter is harmless since it is what [rememberedTarget] would already
-  /// return for a segment with no other memory.
-  void rememberSelection(ContextSheetTarget target) {
-    _rememberedSelection[activeSegment.value] = target;
+  /// Records [target] as [segment]'s selection (the active segment when
+  /// omitted). Called for explicit in-segment picks, auto-selected-first
+  /// targets, and — with an explicit [segment] — a redirect's target-owning
+  /// segment when that differs from the active one (see [segmentForTarget]);
+  /// re-remembering an already-current target is harmless since it is what
+  /// [rememberedTarget] would already return for a segment with no other
+  /// memory.
+  void rememberSelection(ContextSheetTarget target, {ProgramSegment? segment}) {
+    _rememberedSelection[segment ?? activeSegment.value] = target;
   }
 
   /// The remembered selection for [segment], or null when there is none yet

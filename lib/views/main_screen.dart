@@ -332,11 +332,33 @@ class _MainScreenState extends State<MainScreen>
   /// [_onActiveSegmentChangedForSelectionMemory]. Fires for explicit picks
   /// and for auto-selected-first targets alike — re-remembering the latter is
   /// harmless.
+  ///
+  /// Also the authority for keeping master and detail in sync (design doc:
+  /// `design-shell-master-detail-target-sync.md`): a redirect (`show`/
+  /// `replace`/`MasterDetailScope.setTarget`) can change the target to a
+  /// different entity kind than the active segment — e.g. the Spill viewer's
+  /// post-context card opening its Post. In the wide layout, remember the new
+  /// target under the segment that actually owns it (`segmentForTarget`)
+  /// *before* switching `activeSegment`, so
+  /// `_onActiveSegmentChangedForSelectionMemory`'s memory-restore reads back
+  /// this same target instead of clobbering it or reverting on the next
+  /// rebuild. Narrow layout has no master pane to sync, so a modal sheet only
+  /// remembers under whichever segment is already active — the previous,
+  /// simpler behavior.
   void _onDetailTargetChangedForSelectionMemory() {
     if (_currentTab != 0) return;
     final target = _contextSheetController.targetNotifier.value;
     if (target == null) return;
-    _programPageController.rememberSelection(target);
+    if (_contextSheetController.isModal) {
+      _programPageController.rememberSelection(target);
+      return;
+    }
+    final owningSegment = segmentForTarget(target);
+    if (owningSegment == null) return;
+    _programPageController.rememberSelection(target, segment: owningSegment);
+    if (_programPageController.activeSegment.value != owningSegment) {
+      _programPageController.activeSegment.value = owningSegment;
+    }
   }
 
   @override
