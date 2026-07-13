@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,19 @@ Widget _harness(String sectionId, {String title = 'Test Section'}) =>
         ),
       ),
     );
+
+/// The header's own bottom-border decoration, or null if it draws none.
+BoxDecoration? headerDecoration(WidgetTester tester) {
+  final container = tester.widget<Container>(
+    find
+        .descendant(
+          of: find.byType(CardSectionHeader),
+          matching: find.byType(Container),
+        )
+        .first,
+  );
+  return container.decoration as BoxDecoration?;
+}
 
 void main() {
   setUp(() {
@@ -138,6 +152,46 @@ void main() {
       expect(trailingTaps, 1);
       // The trailing action's own tap must not have also toggled collapse.
       expect(find.text('Section body content'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the header draws its own bottom border while expanded, but none once '
+    'collapsed — no dangling divider with nothing left below it',
+    (tester) async {
+      await tester.pumpWidget(_harness('border-section'));
+      await tester.pumpAndSettle();
+
+      expect(headerDecoration(tester)?.border, isNotNull);
+
+      await tester.tap(find.text('TEST SECTION'));
+      await tester.pumpAndSettle();
+
+      expect(headerDecoration(tester)?.border, isNull);
+    },
+  );
+
+  testWidgets(
+    'dividedBody suppresses the header\'s own border even while expanded — '
+    'the body\'s first row supplies that divider instead, so the two never '
+    'double up',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CollapsibleSectionCard(
+              sectionId: 'divided-section',
+              icon: Icons.people,
+              title: 'Test Section',
+              dividedBody: true,
+              body: const Text('Section body content'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(headerDecoration(tester)?.border, isNull);
     },
   );
 }

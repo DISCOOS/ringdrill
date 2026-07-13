@@ -13,11 +13,20 @@ class CardSectionHeader extends StatelessWidget {
     required this.icon,
     required this.title,
     this.trailing,
+    this.showBottomBorder = true,
   });
 
   final IconData icon;
   final String title;
   final Widget? trailing;
+
+  /// Whether to draw the divider under the title row. Callers set this to
+  /// `false` when there is nothing below to divide from — a collapsed
+  /// [CollapsibleSectionCard] (mockup `.headclosed{border-bottom:none}`) or
+  /// a body that already draws its own leading divider (a list of
+  /// top-bordered rows), where the header's own border would otherwise
+  /// double up with the body's first one.
+  final bool showBottomBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +34,11 @@ class CardSectionHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+        border: showBottomBorder
+            ? Border(
+                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+              )
+            : null,
       ),
       child: Row(
         children: [

@@ -536,6 +536,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         label: l10n.personsSectionAddAction,
         onTap: () => _addPerson(station),
       ),
+      // Each row already draws its own leading (top) divider.
+      dividedBody: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -640,6 +642,8 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         label: l10n.locationsSectionAddAction,
         onTap: () => _addLocation(station),
       ),
+      // Each row already draws its own leading (top) divider.
+      dividedBody: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

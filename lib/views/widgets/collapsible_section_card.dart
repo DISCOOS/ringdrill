@@ -23,6 +23,7 @@ class CollapsibleSectionCard extends StatefulWidget {
     this.trailing,
     required this.body,
     this.margin = const EdgeInsets.only(bottom: 8),
+    this.dividedBody = false,
   });
 
   /// Stable identifier for the persisted collapsed preference — chosen by
@@ -40,6 +41,14 @@ class CollapsibleSectionCard extends StatefulWidget {
 
   final Widget body;
   final EdgeInsetsGeometry margin;
+
+  /// Set when [body] is a list whose own first row already draws a
+  /// leading (top) divider — e.g. the Post viewer's Personer/Lokasjoner
+  /// cards. The header's own bottom border would otherwise double up with
+  /// that row's, producing a visibly thicker/doubled line right under the
+  /// header. Ignored while collapsed, where the header never draws a
+  /// border regardless (there is nothing below it to divide from).
+  final bool dividedBody;
 
   @override
   State<CollapsibleSectionCard> createState() =>
@@ -83,6 +92,7 @@ class _CollapsibleSectionCardState extends State<CollapsibleSectionCard> {
             child: CardSectionHeader(
               icon: widget.icon,
               title: widget.title,
+              showBottomBorder: !_collapsed && !widget.dividedBody,
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
