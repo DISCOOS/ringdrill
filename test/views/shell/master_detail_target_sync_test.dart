@@ -1,0 +1,318 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/roleplay_screen.dart';
+import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/shell/app_router.dart';
+import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/expandable_tile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Covers docs/prompts/design-shell-master-detail-target-sync.md: a redirect
+/// that changes the ContextSheetTarget's owning entity kind (e.g. the Spill
+/// viewer's post-context card opening its Post) must drag the wide master
+/// pane's segment and selection along with it, instead of leaving the master
+/// on the segment/row it was on before the redirect fired.
+const _programUuid = 'program-master-detail-sync';
+const _exerciseAUuid = 'exercise-sync-a';
+const _exerciseBUuid = 'exercise-sync-b';
+const _roleUuid = 'role-sync';
+
+final _exerciseA = Exercise(
+  uuid: _exerciseAUuid,
+  name: 'Exercise A',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+  numberOfTeams: 1,
+  numberOfRounds: 1,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 2,
+  stations: const [Station(index: 0, name: 'Station A1')],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 0),
+      SimpleTimeOfDay(hour: 8, minute: 10),
+      SimpleTimeOfDay(hour: 8, minute: 15),
+    ],
+  ],
+  endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
+);
+
+final _exerciseB = Exercise(
+  uuid: _exerciseBUuid,
+  name: 'Exercise B',
+  startTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+  numberOfTeams: 1,
+  numberOfRounds: 1,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 2,
+  stations: const [Station(index: 0, name: 'Station B1')],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 9, minute: 0),
+      SimpleTimeOfDay(hour: 9, minute: 10),
+      SimpleTimeOfDay(hour: 9, minute: 15),
+    ],
+  ],
+  endTime: const SimpleTimeOfDay(hour: 9, minute: 17),
+);
+
+const _rolePlay = RolePlay(
+  uuid: _roleUuid,
+  index: 0,
+  exerciseUuid: _exerciseAUuid,
+  stationIndex: 0,
+  name: 'Turgåer',
+);
+
+Map<String, Object> _prefs() {
+  return {
+    'app:activeProgram:v1': _programUuid,
+    'app:librarySchema:v1': '1',
+    'p:$_programUuid': jsonEncode({
+      'uuid': _programUuid,
+      'name': 'Master/Detail Sync Program',
+      'description': '',
+      'metadata': {
+        'created': '2026-01-01T00:00:00.000Z',
+        'updated': '2026-01-01T00:00:00.000Z',
+        'version': '1.1',
+      },
+      'exercises': [],
+      'teams': [],
+      'sessions': [],
+      'rolePlays': [],
+      'actors': [],
+    }),
+    'pe:$_programUuid:$_exerciseAUuid': jsonEncode(_exerciseA.toJson()),
+    'pe:$_programUuid:$_exerciseBUuid': jsonEncode(_exerciseB.toJson()),
+    'pr:$_programUuid:$_roleUuid': jsonEncode(_rolePlay.toJson()),
+  };
+}
+
+Future<void> _pumpApp(WidgetTester tester, {required bool wide}) async {
+  tester.view.physicalSize = wide ? const Size(1200, 800) : const Size(400, 800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await ProgramService().setActive(_programUuid);
+  final router = buildRouter(false, true);
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _tapSegment(WidgetTester tester, String label) async {
+  await tester.tap(
+    find
+        .descendant(
+          of: find.byType(SegmentedButton<ProgramSegment>),
+          matching: find.text(label),
+        )
+        .hitTestable(),
+  );
+  await tester.pumpAndSettle();
+}
+
+Set<ProgramSegment> _selectedSegment(WidgetTester tester) {
+  return tester
+      .widget<SegmentedButton<ProgramSegment>>(
+        find.byType(SegmentedButton<ProgramSegment>),
+      )
+      .selected;
+}
+
+void main() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues(_prefs());
+    await ProgramService().init();
+  });
+
+  group('segmentForTarget', () {
+    test('maps every target kind to its owning segment', () {
+      expect(
+        segmentForTarget(const ExerciseSheetTarget(exerciseUuid: 'e')),
+        ProgramSegment.exercises,
+      );
+      expect(
+        segmentForTarget(
+          const StationSheetTarget(exerciseUuid: 'e', stationIndex: 0),
+        ),
+        ProgramSegment.stations,
+      );
+      expect(
+        segmentForTarget(const RoleSheetTarget(rolePlayUuid: 'r')),
+        ProgramSegment.script,
+      );
+      expect(
+        segmentForTarget(
+          const TeamSheetTarget(exerciseUuid: 'e', teamIndex: 0),
+        ),
+        ProgramSegment.teams,
+      );
+      expect(
+        segmentForTarget(const TeamOverviewSheetTarget(teamIndex: 0)),
+        ProgramSegment.teams,
+      );
+    });
+
+    test('BriefSheetTarget has no owning segment', () {
+      expect(
+        segmentForTarget(const BriefSheetTarget(programUuid: 'p')),
+        isNull,
+      );
+    });
+  });
+
+  testWidgets(
+    'a cross-segment redirect (Spill post-context card) switches the wide '
+    'master to Poster with that station selected, and it sticks',
+    (tester) async {
+      await _pumpApp(tester, wide: true);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Switch to the Spill (script) segment and explicitly open its only
+      // roleplay (rather than relying on auto-select-first, so the sheet
+      // is properly "open" the way ContextSheet.replace expects), landing
+      // on RolePlayScreen with the station-context card for its linked
+      // post (Station A1).
+      await _tapSegment(tester, l10n.scriptSegment);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(RolePlaysView),
+          matching: find.text('Turgåer'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).rolePlayUuid,
+        _roleUuid,
+      );
+      expect(_selectedSegment(tester), {ProgramSegment.script});
+
+      // The post-context card is the only "Station A1" text on screen at
+      // this point (the master list is still showing roleplays).
+      await tester.tap(find.text('Station A1'));
+      await tester.pumpAndSettle();
+
+      // The redirect (ContextSheet.replace(StationSheetTarget(...))) must
+      // drag the master along: segment switches to Poster...
+      expect(_selectedSegment(tester), {ProgramSegment.stations});
+      // ...and the detail pane shows the Post viewer for that station.
+      final detail = tester.widget<StationExerciseScreen>(
+        find.byType(StationExerciseScreen),
+      );
+      expect(detail.uuid, _exerciseAUuid);
+      expect(detail.stationIndex, 0);
+      // ...and the master list highlights the same row (Poster now also
+      // lists Exercise B's unrelated station, so scope to the tile that
+      // actually wraps "Station A1").
+      expect(
+        tester
+            .widget<ExpandableTile>(
+              find.ancestor(
+                of: find.text('Station A1'),
+                matching: find.byType(ExpandableTile),
+              ),
+            )
+            .selected,
+        isTrue,
+      );
+
+      // Not reverted by a later rebuild (the per-segment selection memory
+      // must not race the redirect and clobber it back to null/first).
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(StationExerciseScreen), findsOneWidget);
+      expect(find.byType(RolePlayScreen), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'an explicit in-segment pick after a redirect still works and is '
+    'remembered per segment',
+    (tester) async {
+      await _pumpApp(tester, wide: true);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Land on Poster/Station A1 via the cross-segment redirect.
+      await _tapSegment(tester, l10n.scriptSegment);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(RolePlaysView),
+          matching: find.text('Turgåer'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Station A1'));
+      await tester.pumpAndSettle();
+      expect(_selectedSegment(tester), {ProgramSegment.stations});
+
+      // Explicit in-segment pick: Station B1 (no redirect involved, plain
+      // master-list tap) — the existing per-segment memory must still work.
+      await tester.tap(find.text('Station B1').first);
+      await tester.pumpAndSettle();
+      var detail = tester.widget<StationExerciseScreen>(
+        find.byType(StationExerciseScreen),
+      );
+      expect(detail.uuid, _exerciseBUuid);
+
+      // Switching away and back to Poster restores the explicit pick
+      // (Station B1), not the earlier redirect target (Station A1) and not
+      // the segment's first item.
+      await _tapSegment(tester, l10n.scriptSegment);
+      await _tapSegment(tester, l10n.stationsTab);
+      detail = tester.widget<StationExerciseScreen>(
+        find.byType(StationExerciseScreen),
+      );
+      expect(detail.uuid, _exerciseBUuid);
+    },
+  );
+
+  testWidgets(
+    'narrow layout is unaffected: a redirect inside the modal sheet does not '
+    'touch the underlying segment',
+    (tester) async {
+      await _pumpApp(tester, wide: false);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // No auto-select in narrow: switching segment alone opens nothing.
+      await _tapSegment(tester, l10n.scriptSegment);
+      expect(find.byType(RolePlayScreen), findsNothing);
+
+      // Explicitly open the roleplay as a full-screen modal sheet.
+      await tester.tap(find.text('Turgåer').first);
+      await tester.pumpAndSettle();
+      expect(find.byType(RolePlayScreen), findsOneWidget);
+
+      // The post-context card still redirects the modal's own content...
+      await tester.tap(find.text('Station A1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(StationExerciseScreen), findsOneWidget);
+
+      // ...but closing it lands back on the Spill segment underneath, not
+      // Poster: the narrow layout has no master pane, so the redirect must
+      // not have switched `activeSegment`.
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(_selectedSegment(tester), {ProgramSegment.script});
+      expect(find.text('Turgåer'), findsOneWidget);
+    },
+  );
+}
