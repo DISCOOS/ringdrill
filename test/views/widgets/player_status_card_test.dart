@@ -5,6 +5,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 
 // ---------------------------------------------------------------------------
@@ -354,6 +355,20 @@ void main() {
       );
 
       expect(find.byType(Icon), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'has no collapse handle — PlayerStatusCard is never collapsible '
+    '(DESIGN-010 follow-up: collapsible-section-cards)',
+    (tester) async {
+      final exercise = _exercise();
+      final event = _runningEvent(exercise);
+      await tester.pumpWidget(_harness(PlayerStatusCard(event: event)));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CollapseChevron), findsNothing);
+      expect(find.byIcon(Icons.expand_more), findsNothing);
     },
   );
 }
