@@ -54,7 +54,7 @@ Files: `station_screen.dart`, a schedule-table widget, ARB. `flutter analyze` + 
 
 Station-context, effective-identity, Markørordre, Posisjon (`RolePositionPanel`), and Når-aktiv cards.
 
-Files: `roleplay_screen.dart`, `role_position_panel.dart` if needed, ARB. `flutter analyze` + `flutter test test/views/`. Commit: `feat(views): rebuild the Spill viewer as the marker's order`.
+Files: `roleplay_screen.dart`, `role_position_panel.dart` if needed, ARB. `flutter analyze` + `flutter test test/views/`. Commit: `feat(views): rebuild the Spill viewer as the roleplay script`.
 
 ### Commit 4. Tests
 

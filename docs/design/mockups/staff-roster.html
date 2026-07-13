@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingDrill — Stab (Staff): liste, rolle-editor og tom-tilstand (DESIGN-011)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg-page:#f5f5f4; --bg-1:#ffffff; --bg-2:#f1efe8; --bg-3:#e9e7e0;
+    --text-1:#2c2c2a; --text-2:#5f5e5a; --text-3:#888780;
+    --border:rgba(0,0,0,0.12); --accent:#185FA5; --accent-bg:#E6F1FB;
+    --radius:12px; --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --font-mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg-page:#12181d;--bg-1:#1b242b;--bg-2:#232e36;--bg-3:#2b3843;
+    --text-1:#e7edf0;--text-2:#b4bcc2;--text-3:#8b98a0;--border:rgba(255,255,255,0.14);
+    --accent:#8fc7dd;--accent-bg:#123243;
+  }}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--bg-page);color:var(--text-1);padding:24px 16px;box-sizing:border-box}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-start}
+  .phone{width:340px}
+  .cap{font-size:12px;color:var(--text-3);margin:0 0 6px 4px;line-height:1.4}
+  .cap b{color:var(--text-2);font-weight:600}
+  .frame{background:var(--bg-1);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-height:560px;position:relative}
+  .bar{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .bar .p{flex:1;font-size:17px;font-weight:600}
+  .bar i{font-size:20px;color:var(--text-2)}
+  .save{font-size:13px;font-weight:600;color:#fff;background:var(--accent);padding:7px 14px;border-radius:8px}
+  .list{flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg-page)}
+  .item{display:flex;align-items:flex-start;gap:12px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
+  .av{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .g{flex:1;min-width:0}
+  .t1{font-size:14.5px;font-weight:500}
+  .t2{font-size:12px;color:var(--text-3);margin-top:1px}
+  .row1{display:flex;align-items:flex-start;gap:8px}
+  .row1 .t1{flex:1;min-width:0}
+  .chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;flex:0 0 auto}
+  .chip{font-size:11px;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .chip.role{background:var(--accent-bg);color:var(--accent);font-weight:600}
+  .chip.derived{background:var(--bg-3);color:var(--text-2)}
+  .chip.derived i{font-size:12px}
+  .chip.off{background:transparent;color:var(--text-2);border:1px solid var(--border)}
+  .drag{color:var(--text-3);font-size:18px;align-self:center}
+  .fabx{position:absolute;right:16px;bottom:16px;display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border-radius:16px;padding:13px 18px;box-shadow:0 3px 10px rgba(0,0,0,0.3);font-size:15px;font-weight:600}
+  .fabx i{font-size:22px}
+  /* editor */
+  .body{flex:1;padding:16px;display:flex;flex-direction:column;gap:18px;background:var(--bg-page)}
+  .field{display:flex;flex-direction:column}
+  .lbl{font-size:11px;color:var(--text-2);margin-bottom:4px}
+  .inp{border:none;border-bottom:1px solid var(--border);padding:8px 0;font-size:15px}
+  .inp.ph{color:var(--text-3)}
+  .selrow{display:flex;flex-wrap:wrap;gap:8px}
+  .sel{font-size:13px;padding:7px 13px;border-radius:20px;border:1px solid var(--border);color:var(--text-2)}
+  .sel.on{background:var(--accent-bg);color:var(--accent);border-color:transparent;font-weight:600}
+  .playtile{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:8px;padding:10px 11px;font-size:13.5px}
+  .playtile .badge{font-family:var(--font-mono);font-size:11px;background:var(--bg-3);color:var(--text-2);padding:1px 6px;border-radius:5px}
+  .playtile i.mkicon{font-size:16px;color:var(--accent)}
+  .derivedbox{display:flex;align-items:center;gap:8px;background:var(--bg-2);border-radius:8px;padding:9px 11px}
+  .derivedbox .mk{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--text-1)}
+  .derivedbox .note{font-size:11px;color:var(--text-3);margin-left:auto;text-align:right}
+  /* empty state teaching */
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;gap:14px;background:var(--bg-page)}
+  .empty .ill{width:72px;height:72px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center}
+  .empty .ill i{font-size:36px}
+  .empty h3{margin:0;font-size:17px}
+  .empty p{margin:0;font-size:13px;color:var(--text-2);line-height:1.5}
+  .empty .cta{margin-top:4px;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:#fff;background:var(--accent);border-radius:22px;padding:10px 18px}
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- ============ 1 · STAB LIST ============ -->
+  <div class="phone">
+    <p class="cap"><b>Stab-liste</b> — kort-per-person med rolle-chips. «Markør» er en avledet chip (fra casting), organisatoriske roller er farget. Flat med chips (rosteret er lite); gruppering/filter på rolle er et alternativ hvis det vokser.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span class="p">Stab</span><i class="ti ti-search"></i></div>
+      <div class="list">
+
+        <div class="item">
+          <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
+          <div class="g">
+            <div class="row1">
+              <div class="t1">Nina Berg</div>
+              <div class="chips">
+                <span class="chip derived"><i class="ti ti-masks-theater"></i>Markør</span>
+                <span class="chip role">Veileder</span>
+              </div>
+            </div>
+            <div class="t2">+47 901 23 456</div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+        <div class="item">
+          <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
+          <div class="g">
+            <div class="row1">
+              <div class="t1">Ola Nordmann</div>
+              <div class="chips">
+                <span class="chip role">Øvelsesleder</span>
+              </div>
+            </div>
+            <div class="t2">+47 987 65 432</div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+        <div class="item">
+          <div class="av"><i class="ti ti-user" style="font-size:20px"></i></div>
+          <div class="g">
+            <div class="row1">
+              <div class="t1">Kari Vik</div>
+              <div class="chips">
+                <span class="chip derived"><i class="ti ti-masks-theater"></i>Markør</span>
+              </div>
+            </div>
+            <div class="t2">+47 456 12 789</div>
+          </div>
+          <i class="ti ti-dots-vertical drag"></i>
+        </div>
+
+      </div>
+      <div class="fabx"><i class="ti ti-plus"></i>Nytt medlem</div>
+    </div>
+    <p class="cap" style="margin-top:8px">FAB «Nytt medlem» / «New member» (stabsmedlem, følger «Ny X»-konvensjonen som «Ny markør»/«Ny øvelse») — extended på wide (vist her), sirkulær «+» på compact så den ikke dekker rader, som i de andre fanene. Swipe sletter (ADR-0031), med cast-vakt hvis personen spiller en markør.</p>
+  </div>
+
+  <!-- ============ 2 · STAFF EDITOR ============ -->
+  <div class="phone">
+    <p class="cap"><b>Person-editor</b> — navn/telefon/notat som før, pluss rolle-multiselect (organisatoriske roller) og en read-only «Spiller»-liste: én rad per markør personen spiller, «{navn} på {post-badge} {hhmm–hhmm}».</p>
+    <div class="frame" style="min-height:560px">
+      <div class="bar"><i class="ti ti-x"></i><span class="p">Endre person</span><span class="save">Lagre</span></div>
+      <div class="body">
+        <div class="field"><span class="lbl">Navn</span><div class="inp">Nina Berg</div></div>
+        <div class="field"><span class="lbl">Telefon</span><div class="inp">+47 901 23 456</div></div>
+        <div class="field"><span class="lbl">Notat</span><div class="inp ph">Valgfritt …</div></div>
+
+        <div class="field">
+          <span class="lbl">Roller</span>
+          <div class="selrow">
+            <span class="sel">Øvelsesleder</span>
+            <span class="sel on">Veileder</span>
+            <span class="sel">Annet</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Spiller</span>
+          <div class="playtile">
+            <i class="ti ti-masks-theater mkicon"></i>
+            <span style="flex:1">Hilde på post <span class="badge">1.1</span> 09:45–10:10</span>
+            <i class="ti ti-lock" style="font-size:15px;color:var(--text-3)"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="cap" style="margin-top:8px">«Spiller»-lista er read-only (lås) — den følger av casting i Spill-segmentet, én rad per markør. Post-badgen «1.1» rendres i planens nummerformat (prikket «1.1» eller alfa «2a», per Program.stationNumberFormat). Tom når personen ikke spiller noen.</p>
+  </div>
+
+  <!-- ============ 3 · EMPTY STATE (teaching) ============ -->
+  <div class="phone">
+    <p class="cap"><b>Tom-tilstand (teaching)</b> — MÅ oppdateres ved rename: forklarer hva Stab er nå, ikke bare «markører». Samme for detalj-panelets tomme rute på wide.</p>
+    <div class="frame">
+      <div class="bar"><i class="ti ti-arrow-left"></i><span class="p">Stab</span><i class="ti ti-search" style="color:var(--text-3)"></i></div>
+      <div class="empty">
+        <div class="ill"><i class="ti ti-users-group"></i></div>
+        <h3>Ingen i staben ennå</h3>
+        <p>Legg til øvelsesledere, veiledere og markører her.</p>
+      </div>
+      <div class="fabx"><i class="ti ti-plus"></i>Nytt medlem</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

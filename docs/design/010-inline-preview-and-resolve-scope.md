@@ -87,7 +87,7 @@ Each rendered section in the rollup is **tap-to-edit**: tapping it jumps to that
 
 The station (Post) and roleplay (Spill) read-only detail sheets are this rollup made concrete, and stage 3's most visible payoff. Both call the field resolver, so every token resolves and renders as markdown. Today `station_screen.dart` prints `station.description` through `substitutePlanVariables` in a `SelectableText`, so `{{station.position.utm}}` shows as literal text; the resolver closes that, and the same fix reaches the roleplay sheet, which currently renders only its own (often inherited-empty) identity fields.
 
-The **Post viewer** stacks the resolved lead and its labeled sections, then surfaces the station's scenario data — its persons and locations (DESIGN-009) — as list cards and draws those points on the map. The **Spill viewer** presents the marker's order: the effective identity, the play (behavior, background, props), the position, the parent post, and when the marker is active.
+The **Post viewer** stacks the resolved lead and its labeled sections, then surfaces the station's scenario data — its persons and locations (DESIGN-009) — as list cards and draws those points on the map. The **Spill viewer** presents the roleplay script: the effective identity, the play (behavior, background, props), the position, the parent post, and when the marker is active.
 
 Both render according to the **role selected in settings** (default director), not an in-view toggle: role-gated sections (the DESIGN-004 audiences) appear per that role. A role selector may later live in the drawer or navigation bar; there is no per-sheet audience switch.
 
