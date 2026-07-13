@@ -19,6 +19,8 @@ import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -31,6 +33,14 @@ import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+
+/// Reserves room, below the expanded body's map thumbnail, for
+/// [RolePositionPanel]'s own coordinate bar — mirrors
+/// `_kStationMapPaneChromeHeight` in `station_screen.dart`. The bar can be
+/// two lines tall (the "Posisjon" label plus a second line naming the
+/// source location, [RolePlayScreen._positionSourceLabel]), so this leaves
+/// more headroom than the Post viewer's single-line bar needs.
+const double _kRoleMapPaneChromeHeight = 130;
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -205,112 +215,71 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Identity (name + parent exercise) lives in the sheet's
-              // AppBar via `SheetTitle`. The body starts directly at the
-              // first content card.
-
-              // Shared status card (DESIGN-010 follow-up: player-status-
-              // card): "Nå"/"Neste" is the team this marker's post meets,
-              // from the same rotation math the "Når aktiv" card below
-              // reads. Omitted for an unassigned/orphaned roleplay.
-              if (station != null && exercise != null && stationIndex != null)
-                _MarkerStatusCard(exercise: exercise, stationIndex: stationIndex),
-
-              // Station context card — parent post, chevron through.
-              _StationContextCard(
+        // DESIGN-010 follow-up (expanded-map-right split): drives off the
+        // body's own pane width (`WindowSizeClass.fromWidth`, not
+        // `.of(context)` — this sheet can sit in a detail pane narrower
+        // than the window, ADR-0030), moving the position panel to a fixed
+        // full-height right pane beside a capped, independently-scrolling
+        // left column once the pane is wide enough — mirroring the
+        // coordinator's and Post viewer's own expanded bodies. Compact and
+        // medium keep today's single scrolling column.
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final windowSize = WindowSizeClass.fromWidth(
+              constraints.maxWidth,
+            );
+            if (windowSize == WindowSizeClass.expanded) {
+              return _buildExpandedBody(
+                context,
+                rolePlay: rolePlay,
                 station: station,
                 exercise: exercise,
-                overrides: roleOverrides,
-              ),
-
-              // Effective identity card — the person's own fields,
-              // overridden by this roleplay's non-empty ones (ADR-0047):
-              // the same rule the brief and the editor's chip resolution
-              // already apply, computed here for display instead of
-              // assuming `rolePlay`'s own fields are already effective.
-              _EffectiveIdentityCard(
-                rolePlay: rolePlay,
-                person: _personFor(station, rolePlay),
-                actor: rolePlay.actorUuid == null
-                    ? null
-                    : _programService.getActor(rolePlay.actorUuid!),
-                overrides: roleOverrides,
-                roleplayFacets: _roleplayFacets(rolePlay),
-              ),
-
-              // Markørordre card — the play itself (behavior/background/
-              // props), resolved. Signalement moved to the identity card
-              // above (DESIGN-010 mockup) since it's part of *who*, not
-              // *what the marker does*.
-              if (rolePlay.background?.isNotEmpty == true ||
-                  rolePlay.behavior?.isNotEmpty == true ||
-                  rolePlay.propsMd?.isNotEmpty == true)
-                NarrativeRollupCard(
-                  icon: Icons.theater_comedy,
-                  title: localizations.roleSection,
-                  sections: [
-                    NarrativeSection(
-                      id: 'behavior',
-                      label: localizations.roleBehavior,
-                      text: rolePlay.behavior,
-                      overrides: roleOverrides,
-                      roleplayFacets: _roleplayFacets(rolePlay),
-                    ),
-                    NarrativeSection(
-                      id: 'background',
-                      label: localizations.roleBackground,
-                      text: rolePlay.background,
-                      overrides: roleOverrides,
-                      roleplayFacets: _roleplayFacets(rolePlay),
-                    ),
-                    NarrativeSection(
-                      id: 'props',
-                      label: localizations.roleProps,
-                      text: rolePlay.propsMd,
-                      overrides: roleOverrides,
-                      roleplayFacets: _roleplayFacets(rolePlay),
-                    ),
-                  ],
-                ),
-
-              // Position card — follows the portrayed person's location
-              // (copied onto rolePlay.position at selection time). asCard:
-              // true — this page has no ambient card around the panel.
-              if (rolePlay.position != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  // A Builder, not the outer `build` context: the scopes
-                  // are wrapped around this whole Scaffold below, which
-                  // sits *above* `build`'s own context in the tree, so
-                  // resolveScopedField needs a context from inside it.
-                  child: Builder(
-                    builder: (context) => RolePositionPanel(
-                      position: rolePlay.position!,
-                      label:
-                          resolveScopedField(
-                            context,
-                            rolePlay.name,
-                            overrides: roleOverrides,
-                            roleplayFacets: _roleplayFacets(rolePlay),
-                          ) ??
-                          rolePlay.name,
-                      sourceLabel: _positionSourceLabel(station, rolePlay),
-                      asCard: true,
-                    ),
+                stationIndex: stationIndex,
+                roleOverrides: roleOverrides,
+                localizations: localizations,
+                paneHeight: constraints.maxHeight,
+              );
+            }
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Identity (name + parent exercise) lives in the sheet's
+                  // AppBar via `SheetTitle`. The body starts directly at
+                  // the first content card.
+                  ..._buildTopSections(
+                    rolePlay: rolePlay,
+                    station: station,
+                    exercise: exercise,
+                    stationIndex: stationIndex,
+                    roleOverrides: roleOverrides,
+                    localizations: localizations,
                   ),
-                ),
 
-              // Når aktiv card — the round(s) this station is staffed by a
-              // team, from the same Exercise.schedule + teamIndex data the
-              // Post viewer's Tidsplan card reads.
-              _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
-            ],
-          ),
+                  // Position card — follows the portrayed person's
+                  // location (copied onto rolePlay.position at selection
+                  // time). Omitted entirely (not even a placeholder) when
+                  // there is no position, matching this body's pre-
+                  // expanded-split behaviour.
+                  if (rolePlay.position != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _buildPositionPanel(
+                        rolePlay: rolePlay,
+                        station: station,
+                        roleOverrides: roleOverrides,
+                      ),
+                    ),
+
+                  // Når aktiv card — the round(s) this station is staffed
+                  // by a team, from the same Exercise.schedule +
+                  // teamIndex data the Post viewer's Tidsplan card reads.
+                  _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
+                ],
+              ),
+            );
+          },
         ),
       ),
       // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
@@ -361,6 +330,177 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
       );
     }
     return scoped;
+  }
+
+  /// The cards shared by both bodies, in their common order, everything
+  /// but the position panel and the Når aktiv card (the stacked body
+  /// inlines the position panel between this list and Når aktiv; the
+  /// expanded body moves it to the right pane instead, so it is built
+  /// separately by both).
+  List<Widget> _buildTopSections({
+    required RolePlay rolePlay,
+    required Station? station,
+    required Exercise? exercise,
+    required int? stationIndex,
+    required Map<String, String> roleOverrides,
+    required AppLocalizations localizations,
+  }) {
+    return [
+      // Shared status card (DESIGN-010 follow-up: player-status-card):
+      // "Nå"/"Neste" is the team this marker's post meets, from the same
+      // rotation math the "Når aktiv" card reads. Omitted for an
+      // unassigned/orphaned roleplay.
+      if (station != null && exercise != null && stationIndex != null)
+        _MarkerStatusCard(exercise: exercise, stationIndex: stationIndex),
+
+      // Station context card — parent post, chevron through.
+      _StationContextCard(
+        station: station,
+        exercise: exercise,
+        overrides: roleOverrides,
+      ),
+
+      // Effective identity card — the person's own fields, overridden by
+      // this roleplay's non-empty ones (ADR-0047): the same rule the
+      // brief and the editor's chip resolution already apply, computed
+      // here for display instead of assuming `rolePlay`'s own fields are
+      // already effective.
+      _EffectiveIdentityCard(
+        rolePlay: rolePlay,
+        person: _personFor(station, rolePlay),
+        actor: rolePlay.actorUuid == null
+            ? null
+            : _programService.getActor(rolePlay.actorUuid!),
+        overrides: roleOverrides,
+        roleplayFacets: _roleplayFacets(rolePlay),
+      ),
+
+      // Markørordre card — the play itself (behavior/background/props),
+      // resolved. Signalement moved to the identity card above (DESIGN-
+      // 010 mockup) since it's part of *who*, not *what the marker does*.
+      if (rolePlay.background?.isNotEmpty == true ||
+          rolePlay.behavior?.isNotEmpty == true ||
+          rolePlay.propsMd?.isNotEmpty == true)
+        NarrativeRollupCard(
+          icon: Icons.theater_comedy,
+          title: localizations.roleSection,
+          sections: [
+            NarrativeSection(
+              id: 'behavior',
+              label: localizations.roleBehavior,
+              text: rolePlay.behavior,
+              overrides: roleOverrides,
+              roleplayFacets: _roleplayFacets(rolePlay),
+            ),
+            NarrativeSection(
+              id: 'background',
+              label: localizations.roleBackground,
+              text: rolePlay.background,
+              overrides: roleOverrides,
+              roleplayFacets: _roleplayFacets(rolePlay),
+            ),
+            NarrativeSection(
+              id: 'props',
+              label: localizations.roleProps,
+              text: rolePlay.propsMd,
+              overrides: roleOverrides,
+              roleplayFacets: _roleplayFacets(rolePlay),
+            ),
+          ],
+        ),
+    ];
+  }
+
+  /// The role map panel — null when [rolePlay] has no position, matching
+  /// the stacked body's own "omit entirely" behaviour; the expanded body's
+  /// right pane falls back to [_buildMapPlaceholder] instead, since it
+  /// always needs something to show there. [mapHeight] sizes the
+  /// thumbnail to the expanded body's right pane; left at the panel's own
+  /// default for the stacked body's inline card.
+  Widget? _buildPositionPanel({
+    required RolePlay rolePlay,
+    required Station? station,
+    required Map<String, String> roleOverrides,
+    double? mapHeight,
+  }) {
+    final position = rolePlay.position;
+    if (position == null) return null;
+    // A Builder, not the outer `build` context: the resolve-context scopes
+    // are wrapped around the whole Scaffold in `build`, which sits *above*
+    // `build`'s own context in the tree, so `resolveScopedField` needs a
+    // context from inside it.
+    return Builder(
+      builder: (context) => RolePositionPanel(
+        position: position,
+        label:
+            resolveScopedField(
+              context,
+              rolePlay.name,
+              overrides: roleOverrides,
+              roleplayFacets: _roleplayFacets(rolePlay),
+            ) ??
+            rolePlay.name,
+        sourceLabel: _positionSourceLabel(station, rolePlay),
+        asCard: true,
+        mapHeight: mapHeight ?? 200,
+      ),
+    );
+  }
+
+  /// Placeholder shown in the expanded body's map pane for an unassigned
+  /// roleplay with no position — mirrors the coordinator's own
+  /// `_buildMapPlaceholder`.
+  Widget _buildMapPlaceholder(AppLocalizations localizations) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Center(child: Text(localizations.noLocation)),
+    );
+  }
+
+  /// Expanded body (pane ≥ 840): the same cards the stacked body shows,
+  /// split via the shared [WideDetailMapSplit] — the status/context/
+  /// identity/Markørordre cards and Når aktiv in a capped, self-scrolling
+  /// left column, the role's position panel as a fixed full-height right
+  /// pane, mirroring the coordinator's and Post viewer's own expanded
+  /// bodies.
+  Widget _buildExpandedBody(
+    BuildContext context, {
+    required RolePlay rolePlay,
+    required Station? station,
+    required Exercise? exercise,
+    required int? stationIndex,
+    required Map<String, String> roleOverrides,
+    required AppLocalizations localizations,
+    required double paneHeight,
+  }) {
+    final mapHeight = (paneHeight - _kRoleMapPaneChromeHeight).clamp(
+      200.0,
+      double.infinity,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
+      child: WideDetailMapSplit(
+        left: [
+          ..._buildTopSections(
+            rolePlay: rolePlay,
+            station: station,
+            exercise: exercise,
+            stationIndex: stationIndex,
+            roleOverrides: roleOverrides,
+            localizations: localizations,
+          ),
+          _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
+        ],
+        mapPane:
+            _buildPositionPanel(
+              rolePlay: rolePlay,
+              station: station,
+              roleOverrides: roleOverrides,
+              mapHeight: mapHeight,
+            ) ??
+            _buildMapPlaceholder(localizations),
+      ),
+    );
   }
 }
 
