@@ -108,6 +108,28 @@ class ContextSheetController {
   /// cascade that breaks text fields on routes pushed above it.
   bool get isModal => _isOpen && _navigator != null;
 
+  /// Adopts [target] as the wide layout's current master-detail selection
+  /// without [show]'s modal-vs-scope branching, for callers that only have a
+  /// [BuildContext] sitting *above* where [MasterDetailScope] lives (so
+  /// `MasterDetailScope.maybeOf` can't find it) — namely `MainScreen`'s
+  /// auto-select-first and per-segment selection-memory restore, both of
+  /// which write the shared target from their own build/state context
+  /// rather than a descendant one.
+  ///
+  /// Leaves [_activeScope] unset: safe because in the wide layout
+  /// `MasterDetailScope`'s own notifier *is* [targetNotifier] (see
+  /// `WideShell`'s `MasterDetailScope(target: contextSheetController.
+  /// targetNotifier, ...)`), so the notifier write alone updates the detail
+  /// pane and a later [replace]'s `_activeScope?.setTarget(...)` no-op costs
+  /// nothing. Passing `null` clears the selection (segment has no
+  /// remembered pick, or the tab/segment being left behind).
+  void adoptWideSelection(ContextSheetTarget? target) {
+    _target.value = target;
+    _isOpen = target != null;
+    _navigator = null;
+    _activeScope = null;
+  }
+
   Future<void> show(BuildContext context, ContextSheetTarget target) async {
     if (target is! BriefSheetTarget) {
       final scope = MasterDetailScope.maybeOf(context);

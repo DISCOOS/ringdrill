@@ -322,8 +322,11 @@ class _MainScreenState extends State<MainScreen>
   /// nothing to restore, instead of always discarding the previous pick.
   void _onActiveSegmentChangedForSelectionMemory() {
     if (_contextSheetController.isModal) return;
-    _contextSheetController.targetNotifier.value = _programPageController
-        .rememberedTarget(_programPageController.activeSegment.value);
+    _contextSheetController.adoptWideSelection(
+      _programPageController.rememberedTarget(
+        _programPageController.activeSegment.value,
+      ),
+    );
   }
 
   /// Remembers whatever the wide detail pane ends up showing while the
@@ -423,7 +426,7 @@ class _MainScreenState extends State<MainScreen>
               }
               final target = page.controller.firstDetailTarget(context);
               if (target != null) {
-                _contextSheetController.targetNotifier.value = target;
+                _contextSheetController.adoptWideSelection(target);
               }
             });
           }
@@ -704,12 +707,12 @@ class _MainScreenState extends State<MainScreen>
     _contextSheetController.close();
     // `close()` is a no-op once the target was set outside its own
     // show()/replace() bookkeeping (e.g. the wide-layout auto-select below
-    // writes the notifier directly) — clear it explicitly too so `build`'s
+    // adopts the target directly) — clear it explicitly too so `build`'s
     // auto-select check picks the new tab's first item rather than leaving
     // the outgoing tab's target in place. Skipped while a narrow modal
     // sheet is still closing; that has its own target lifecycle.
     if (!_contextSheetController.isModal) {
-      _contextSheetController.targetNotifier.value = null;
+      _contextSheetController.adoptWideSelection(null);
     }
     stationsMapDetailClearTick.value = stationsMapDetailClearTick.value + 1;
     widget.router.go(_routeForTab(tab));

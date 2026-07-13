@@ -181,6 +181,46 @@ void main() {
   });
 
   testWidgets(
+    'a redirect from a purely auto-selected (never explicitly tapped) '
+    'detail pane works, instead of asserting on a not-open sheet',
+    (tester) async {
+      // Regression test for the ContextSheetController._isOpen gap: the
+      // wide layout's auto-select-first and per-segment memory-restore used
+      // to write the shared target notifier directly instead of going
+      // through `show()`, leaving `_isOpen` false. Tapping a context-sheet
+      // card's `.replace(...)` from such an auto-selected (never explicitly
+      // opened) detail then hit `ContextSheetController`'s "requires an open
+      // sheet" assert. `adoptWideSelection` fixes this by marking the
+      // controller open the way `show()` would.
+      await _pumpApp(tester, wide: true);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Switch to the Spill (script) segment: its only roleplay auto-selects
+      // — no explicit master-list tap — opening RolePlayScreen with the
+      // station-context card for its linked post (Station A1).
+      await _tapSegment(tester, l10n.scriptSegment);
+      expect(
+        tester.widget<RolePlayScreen>(find.byType(RolePlayScreen)).rolePlayUuid,
+        _roleUuid,
+      );
+      expect(_selectedSegment(tester), {ProgramSegment.script});
+
+      // Tapping the post-context card must not throw the "requires an open
+      // sheet" assert, and must still redirect correctly.
+      await tester.tap(find.text('Station A1'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(_selectedSegment(tester), {ProgramSegment.stations});
+      expect(
+        tester.widget<StationExerciseScreen>(
+          find.byType(StationExerciseScreen),
+        ).uuid,
+        _exerciseAUuid,
+      );
+    },
+  );
+
+  testWidgets(
     'a cross-segment redirect (Spill post-context card) switches the wide '
     'master to Poster with that station selected, and it sticks',
     (tester) async {
@@ -188,10 +228,9 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
       // Switch to the Spill (script) segment and explicitly open its only
-      // roleplay (rather than relying on auto-select-first, so the sheet
-      // is properly "open" the way ContextSheet.replace expects), landing
-      // on RolePlayScreen with the station-context card for its linked
-      // post (Station A1).
+      // roleplay — an explicit master-list pick, rather than relying on
+      // auto-select-first — landing on RolePlayScreen with the
+      // station-context card for its linked post (Station A1).
       await _tapSegment(tester, l10n.scriptSegment);
       await tester.tap(
         find.descendant(
