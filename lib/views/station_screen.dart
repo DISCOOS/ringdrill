@@ -10,6 +10,7 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -19,26 +20,25 @@ import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
-import 'package:ringdrill/views/shell/open_form_surface.dart';
-import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/narrative_rollup_card.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/views/widgets/player_status_card.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
-import 'package:ringdrill/views/widgets/schedule_card.dart';
-import 'package:ringdrill/views/widgets/schedule_table.dart';
 
 class StationExerciseScreen extends StatefulWidget {
   final int stationIndex;
@@ -636,7 +636,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final l10n = AppLocalizations.of(context)!;
     return CollapsibleSectionCard(
       sectionId: 'locations',
-      icon: Icons.map,
+      icon: Icons.location_pin,
       title: l10n.locationsSectionTitle,
       trailing: _HeaderAddAction(
         label: l10n.locationsSectionAddAction,
