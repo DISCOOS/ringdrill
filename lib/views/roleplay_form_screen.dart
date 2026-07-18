@@ -483,6 +483,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   Future<void> _createPersonViaForm() async {
     final result = await openFormSurface<PersonFormResult>(
       context,
+      // Folded into this editor's own working copies below, not persisted
+      // directly — this form's own caller owns the eventual save.
+      commitsToParent: true,
       builder: (_) => PersonFormScreen(
         existingSlugs: _workingPersons.map((p) => p.slug).toSet(),
         locations: _workingLocations,

@@ -125,6 +125,9 @@ class _LocationsSectionState extends State<LocationsSection> {
         .toSet();
     final result = await openFormSurface<LocationFormResult>(
       context,
+      // The result only folds into this station editor's own working copy
+      // (widget.onSave), persisted later by the station's own save.
+      commitsToParent: true,
       builder: (_) =>
           LocationFormScreen(existingSlugs: existingSlugs, initial: location),
     );

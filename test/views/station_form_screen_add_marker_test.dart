@@ -112,12 +112,12 @@ void main() {
       );
 
       // The previous (station editor) route stays mounted underneath while
-      // the roleplay editor is pushed, so scope the tap to avoid matching
-      // both AppBars' "Save".
+      // the roleplay editor is pushed, so scope the tap to the nested
+      // editor's own AppBar action.
       await tester.tap(
         find.descendant(
           of: find.byType(RolePlayFormScreen),
-          matching: find.text(l.save),
+          matching: find.text(l.formDoneAction),
         ),
       );
       await tester.pumpAndSettle();
@@ -188,7 +188,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byType(RolePlayFormScreen),
-          matching: find.text(l.save),
+          matching: find.text(l.formDoneAction),
         ),
       );
       await tester.pumpAndSettle();
@@ -224,7 +224,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byType(RolePlayFormScreen),
-          matching: find.text(l.save),
+          matching: find.text(l.formDoneAction),
         ),
       );
       await tester.pumpAndSettle();

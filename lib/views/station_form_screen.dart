@@ -393,6 +393,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
   Future<void> _openRolePlayEditor(RolePlay rolePlay) async {
     final result = await openFormSurface<RolePlayFormResult>(
       context,
+      // Merged into this station editor's own working state (see the
+      // doc comment above), never written to disk directly.
+      commitsToParent: true,
       builder: (_) => RolePlayFormScreen(
         rolePlay: rolePlay,
         exercise: _patchedExercise,

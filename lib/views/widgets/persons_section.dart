@@ -166,6 +166,9 @@ class _PersonsSectionState extends State<PersonsSection> {
         .toSet();
     final result = await openFormSurface<PersonFormResult>(
       context,
+      // The result only folds into this station editor's own working copy
+      // (widget.onSave), persisted later by the station's own save.
+      commitsToParent: true,
       builder: (_) => PersonFormScreen(
         existingSlugs: existingSlugs,
         locations: widget.locations,

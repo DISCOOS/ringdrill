@@ -156,6 +156,9 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   Future<void> _createLocationInline() async {
     final created = await openFormSurface<LocationFormResult>(
       context,
+      // Folded into this form's own working copies below, not persisted
+      // directly — this form's own caller owns the eventual save.
+      commitsToParent: true,
       builder: (_) => LocationFormScreen(
         existingSlugs: _workingLocations.map((l) => l.slug).toSet(),
       ),
