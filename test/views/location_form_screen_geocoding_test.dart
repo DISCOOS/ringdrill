@@ -8,6 +8,8 @@ import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/map_picker_screen.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-009 follow-up 3c — geocoding in `LocationFormScreen`: forward
 /// (place → position via suggestions), reverse (position → place on an
@@ -87,10 +89,17 @@ Future<void> _open(
             captured.value = await Navigator.push<Location>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => LocationFormScreen(
-                  existingSlugs: existingSlugs,
-                  initial: initial,
-                  geocodingService: geocoder,
+                builder: (_) => PlanScope(
+                  variables: const [],
+                  child: StationScope(
+                    locations: const [],
+                    persons: const [],
+                    child: LocationFormScreen(
+                      existingSlugs: existingSlugs,
+                      initial: initial,
+                      geocodingService: geocoder,
+                    ),
+                  ),
                 ),
               ),
             );

@@ -5,11 +5,19 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/services/geocoding_service.dart';
+import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
+import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/location_kind_labels.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
+import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
+import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 
 /// Debounce before a typed `place` query reaches the geocoder (ADR-0047
 /// follow-up 3c) -- long enough to skip a search per keystroke, short
@@ -64,10 +72,10 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
   late final _labelController = TextEditingController(
     text: widget.initial?.label ?? '',
   );
-  late final _placeController = TextEditingController(
+  late final _placeController = TokenTextEditingController(
     text: widget.initial?.place ?? '',
   );
-  late final _noteController = TextEditingController(
+  late final _noteController = TokenTextEditingController(
     text: widget.initial?.note ?? '',
   );
   late LocationKind _kind = widget.initial?.kind ?? LocationKind.other;
@@ -189,8 +197,89 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     });
   }
 
+  /// This form's own token-aware fields, paired with their display label
+  /// (DESIGN-009 follow-up 4e) — mirrors `StationFormScreen`'s own base-field
+  /// scan, scoped down to `place`/`note`.
+  Iterable<(String label, String text)> _tokenAwareFields(
+    AppLocalizations l10n,
+  ) sync* {
+    yield (l10n.locationsSectionPlaceLabel, _placeController.text);
+    yield (l10n.locationsSectionNoteLabel, _noteController.text);
+  }
+
+  /// Field labels with an undeclared `{{var.x}}` token — mirrors
+  /// `StationFormScreen._baseFieldLabelsWithUndeclaredTokens`.
+  List<String> _fieldLabelsWithUndeclaredVariable(AppLocalizations l10n) {
+    final declared = {for (final v in PlanScope.of(context).variables) v.name};
+    bool hasUndeclared(String text) => planVariableTokenPattern
+        .allMatches(text)
+        .any((m) => !declared.contains(m.group(1)));
+    return [
+      for (final (label, text) in _tokenAwareFields(l10n))
+        if (hasUndeclared(text)) label,
+    ];
+  }
+
+  /// The `station.loc.<slug>`/`station.person.<slug>` references in [text]
+  /// whose slug is absent from the ambient `StationScope` — mirrors
+  /// `StationFormScreen._unresolvedReferencesIn`.
+  Iterable<String> _unresolvedReferencesIn(String text) {
+    final stationScope = StationScope.maybeOf(context);
+    return stationScenarioTokenPattern.allMatches(text).where((m) {
+      final slug = m.group(2)!;
+      if (stationScope == null) return true;
+      return m.group(1) == 'loc'
+          ? !stationScope.locations.any((loc) => loc.slug == slug)
+          : !stationScope.persons.any((p) => p.slug == slug);
+    }).map((m) => 'station.${m.group(1)}.${m.group(2)}');
+  }
+
+  List<String> _fieldLabelsWithUnresolvedReference(AppLocalizations l10n) {
+    return [
+      for (final (label, text) in _tokenAwareFields(l10n))
+        if (_unresolvedReferencesIn(text).isNotEmpty) label,
+    ];
+  }
+
+  Set<String> _unresolvedReferences(AppLocalizations l10n) {
+    final refs = <String>{};
+    for (final (_, text) in _tokenAwareFields(l10n)) {
+      refs.addAll(_unresolvedReferencesIn(text));
+    }
+    return refs;
+  }
+
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    final undeclared = _fieldLabelsWithUndeclaredVariable(l10n);
+    if (undeclared.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.programSaveBlockedUndeclaredVariable(undeclared.join(', ')),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final unresolved = _fieldLabelsWithUnresolvedReference(l10n);
+    if (unresolved.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.saveBlockedUnresolvedReference(
+              unresolved.join(', '),
+              _unresolvedReferences(l10n).join(', '),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
     _formKey.currentState!.save();
     final note = _noteController.text.trim();
     final slug = widget.initial?.slug ?? randomSlug(widget.existingSlugs.contains);
@@ -214,6 +303,18 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
         : l10n.locationsSectionAddAction;
     final place = _placeController.text.trim();
     final canUpdateFromMap = _position != null && place.isNotEmpty;
+    // Resolvable at station scope and below (DESIGN-009 follow-up 4e) —
+    // never `PlanFieldTokens.roleplay`, which only resolves inside a
+    // roleplay's own scope, not a station-owned Location's.
+    final planFields = [
+      ...PlanFieldTokens.program(l10n),
+      ...PlanFieldTokens.exercise(l10n),
+      ...PlanFieldTokens.station(l10n),
+    ];
+    // Null for a new location (not yet part of the ambient StationScope, so
+    // it cannot appear as a self-reference candidate anyway) — see
+    // SelfTokenExclusion.
+    final selfSlug = widget.initial?.slug;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -249,25 +350,32 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
                     onChanged: (kind) => setState(() => _kind = kind),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  RingDrillTextField(
                     controller: _placeController,
+                    label: l10n.locationsSectionPlaceLabel,
+                    hintText: l10n.locationsSectionPlaceSearchHint,
+                    tokenAware: true,
+                    planFields: planFields,
+                    selfLocation: selfSlug == null
+                        ? null
+                        : SelfTokenExclusion(
+                            slug: selfSlug,
+                            excludeBare: true,
+                            excludedFacet: 'place',
+                          ),
                     onChanged: _onPlaceChanged,
-                    decoration: InputDecoration(
-                      labelText: l10n.locationsSectionPlaceLabel,
-                      hintText: l10n.locationsSectionPlaceSearchHint,
-                      suffixIcon: _searchingPlace
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                    suffixIcon: _searchingPlace
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
                               ),
-                            )
-                          : null,
-                    ),
+                            ),
+                          )
+                        : null,
                   ),
                   if (_placeSuggestions.isNotEmpty)
                     _PlaceSuggestionsList(
@@ -302,13 +410,13 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  RingDrillTextArea(
                     controller: _noteController,
+                    label: l10n.locationsSectionNoteLabel,
                     minLines: 1,
                     maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: l10n.locationsSectionNoteLabel,
-                    ),
+                    tokenAware: true,
+                    planFields: planFields,
                   ),
                 ],
               ),

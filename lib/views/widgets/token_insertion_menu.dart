@@ -198,6 +198,8 @@ class TokenInsertionMenu extends StatefulWidget {
     this.onCreateVariable,
     this.onCreateLocation,
     this.onCreatePerson,
+    this.selfLocation,
+    this.selfPerson,
   });
 
   final TextEditingController controller;
@@ -212,6 +214,11 @@ class TokenInsertionMenu extends StatefulWidget {
   /// `PlanScope`.
   final List<StationLocationToken> stationLocations;
   final List<StationPersonToken> stationPersons;
+
+  /// Self-reference withholding (DESIGN-009 follow-up 4e) — see
+  /// [SelfTokenExclusion]. Null (the default) excludes nothing.
+  final SelfTokenExclusion? selfLocation;
+  final SelfTokenExclusion? selfPerson;
 
   /// Wired by the caller once a scope owns a variable registry to mutate
   /// (DESIGN-008 Stage 5). Null keeps the "Opprett variabel" entry hidden.
@@ -245,6 +252,29 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
 
   @visibleForTesting
   bool get isMenuOpen => _entry != null;
+
+  /// Whether the bare `{{station.loc.<slug>}}` entry is this field's own
+  /// self-reference (DESIGN-009 follow-up 4e, [SelfTokenExclusion]).
+  bool _excludeLocationBare(String slug) =>
+      widget.selfLocation != null &&
+      widget.selfLocation!.slug == slug &&
+      widget.selfLocation!.excludeBare;
+
+  bool _excludePersonBare(String slug) =>
+      widget.selfPerson != null &&
+      widget.selfPerson!.slug == slug &&
+      widget.selfPerson!.excludeBare;
+
+  /// Whether `.facet` on `<slug>` is this field's own withheld self-facet.
+  bool _excludeLocationFacet(String slug, String facet) =>
+      widget.selfLocation != null &&
+      widget.selfLocation!.slug == slug &&
+      widget.selfLocation!.excludedFacet == facet;
+
+  bool _excludePersonFacet(String slug, String facet) =>
+      widget.selfPerson != null &&
+      widget.selfPerson!.slug == slug &&
+      widget.selfPerson!.excludedFacet == facet;
 
   @override
   void initState() {
@@ -412,6 +442,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       matchedEntity = matchedEntity || result.matchedEntity;
     } else if (namespaced == null) {
       for (final l in widget.stationLocations) {
+        if (_excludeLocationBare(l.slug)) continue;
         if (filter.isEmpty ||
             l.slug.toLowerCase().contains(lower) ||
             l.label.toLowerCase().contains(lower)) {
@@ -429,6 +460,7 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       matchedEntity = matchedEntity || result.matchedEntity;
     } else if (namespaced == null) {
       for (final p in widget.stationPersons) {
+        if (_excludePersonBare(p.slug)) continue;
         if (filter.isEmpty ||
             p.slug.toLowerCase().contains(lower) ||
             p.label.toLowerCase().contains(lower)) {
@@ -499,9 +531,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
         return (
           entries: [
             for (final l in widget.stationLocations)
-              if (filter.isEmpty ||
-                  l.slug.toLowerCase().contains(lower) ||
-                  l.label.toLowerCase().contains(lower))
+              if (!_excludeLocationBare(l.slug) &&
+                  (filter.isEmpty ||
+                      l.slug.toLowerCase().contains(lower) ||
+                      l.label.toLowerCase().contains(lower)))
                 StationLocationMenuEntry(l),
           ],
           matchedEntity: false,
@@ -509,9 +542,11 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       }
       return (
         entries: [
-          if (rest == null) StationLocationMenuEntry(location),
+          if (rest == null && !_excludeLocationBare(location.slug))
+            StationLocationMenuEntry(location),
           for (final f in locationFacetNames)
-            if (rest == null || f.toLowerCase().contains(rest.toLowerCase()))
+            if ((rest == null || f.toLowerCase().contains(rest.toLowerCase())) &&
+                !_excludeLocationFacet(location.slug, f))
               StationFacetMenuEntry(
                 kind: StationFacetKind.location,
                 slug: slugPart,
@@ -528,9 +563,10 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
       return (
         entries: [
           for (final p in widget.stationPersons)
-            if (filter.isEmpty ||
-                p.slug.toLowerCase().contains(lower) ||
-                p.label.toLowerCase().contains(lower))
+            if (!_excludePersonBare(p.slug) &&
+                (filter.isEmpty ||
+                    p.slug.toLowerCase().contains(lower) ||
+                    p.label.toLowerCase().contains(lower)))
               StationPersonMenuEntry(p),
         ],
         matchedEntity: false,
@@ -564,9 +600,11 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
     }
     return (
       entries: [
-        if (rest == null) StationPersonMenuEntry(person),
+        if (rest == null && !_excludePersonBare(person.slug))
+          StationPersonMenuEntry(person),
         for (final f in personFacetNames)
-          if (rest == null || f.toLowerCase().contains(rest.toLowerCase()))
+          if ((rest == null || f.toLowerCase().contains(rest.toLowerCase())) &&
+              !_excludePersonFacet(person.slug, f))
             StationFacetMenuEntry(
               kind: StationFacetKind.person,
               slug: slugPart,

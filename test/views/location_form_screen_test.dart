@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/map_picker_screen.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-009 follow-up 3b — `LocationFormScreen` in isolation: the inline
 /// map-pick affordance, the category grid, and its show-more/less toggle.
@@ -26,11 +30,19 @@ class _Captured {
   Location? value;
 }
 
+/// Wraps the pushed [LocationFormScreen] in [PlanScope]/[StationScope]
+/// (DESIGN-009 follow-up 4e) — mirroring what `openFormSurface` re-provides
+/// from the caller in production (DESIGN-010 stage 1), since a token-aware
+/// field asserts on a missing [PlanScope]. [variables]/[stationLocations]/
+/// [stationPersons] feed the `place`/`note` fields' insertion menu.
 Future<void> _open(
   WidgetTester tester,
   _Captured captured, {
   Location? initial,
   Set<String> existingSlugs = const {},
+  List<DrillVariable> variables = const [],
+  List<Location> stationLocations = const [],
+  List<Person> stationPersons = const [],
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -42,9 +54,16 @@ Future<void> _open(
             captured.value = await Navigator.push<Location>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => LocationFormScreen(
-                  existingSlugs: existingSlugs,
-                  initial: initial,
+                builder: (_) => PlanScope(
+                  variables: variables,
+                  child: StationScope(
+                    locations: stationLocations,
+                    persons: stationPersons,
+                    child: LocationFormScreen(
+                      existingSlugs: existingSlugs,
+                      initial: initial,
+                    ),
+                  ),
                 ),
               ),
             );

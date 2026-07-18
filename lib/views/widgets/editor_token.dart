@@ -80,3 +80,27 @@ class StationPersonToken {
   /// The bare-facet resolved (effective) name.
   final String preview;
 }
+
+/// Self-reference withholding for one leaf field (DESIGN-009's
+/// self-reference rule, DESIGN-009 follow-up 4e): a field never offers the
+/// token that would read back its own value, since that value contains the
+/// token being typed and would recurse through the fixpoint pass. [slug] is
+/// this field's own entity (null when the entity does not exist yet, e.g. a
+/// new [Location]/[Person] not yet part of the ambient `StationScope`, in
+/// which case there is nothing to withhold). [excludeBare] withholds the
+/// bare `{{station.loc/person.<slug>}}` default only when it embeds this
+/// field's own text (e.g. a location's bare default reads `place`).
+/// [excludedFacet], when set, withholds just that one facet (e.g. `place`
+/// or `name`) for [slug] — every other facet of the same entity, and every
+/// other entity, stays offered.
+class SelfTokenExclusion {
+  const SelfTokenExclusion({
+    required this.slug,
+    this.excludeBare = false,
+    this.excludedFacet,
+  });
+
+  final String slug;
+  final bool excludeBare;
+  final String? excludedFacet;
+}

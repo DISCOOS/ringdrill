@@ -62,6 +62,8 @@ Widget _wrapTokenAware({
   required ValueChanged<String>? onCreateVariable,
   required String Function(String label)? onCreateLocation,
   required String Function(String label)? onCreatePerson,
+  required SelfTokenExclusion? selfLocation,
+  required SelfTokenExclusion? selfPerson,
 }) {
   if (!tokenAware) return field;
   assert(
@@ -90,6 +92,8 @@ Widget _wrapTokenAware({
     onCreateVariable: onCreateVariable,
     onCreateLocation: stationScope == null ? null : onCreateLocation,
     onCreatePerson: stationScope == null ? null : onCreatePerson,
+    selfLocation: selfLocation,
+    selfPerson: selfPerson,
     child: field,
   );
 }
@@ -214,6 +218,8 @@ class RingDrillTextField extends StatefulWidget {
     this.onCreateVariable,
     this.onCreateLocation,
     this.onCreatePerson,
+    this.selfLocation,
+    this.selfPerson,
     this.validator,
     this.autofocus = false,
     this.hintText,
@@ -221,6 +227,7 @@ class RingDrillTextField extends StatefulWidget {
     this.showLabel = true,
     this.preview = false,
     this.roleplayFacets,
+    this.suffixIcon,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -265,11 +272,24 @@ class RingDrillTextField extends StatefulWidget {
   /// `station.person` entries being empty without one.
   final String Function(String label)? onCreateLocation;
   final String Function(String label)? onCreatePerson;
+
+  /// Self-reference withholding (DESIGN-009 follow-up 4e) — see
+  /// [SelfTokenExclusion]. Only takes effect when [tokenAware] is true and
+  /// this field also has a `StationScope` ancestor, same as
+  /// [onCreateLocation]/[onCreatePerson].
+  final SelfTokenExclusion? selfLocation;
+  final SelfTokenExclusion? selfPerson;
   final FormFieldValidator<String>? validator;
   final bool autofocus;
 
   /// Placeholder shown while the field is empty, e.g. a name's example text.
   final String? hintText;
+
+  /// Trailing decoration icon, e.g. a search-in-progress spinner
+  /// (`LocationFormScreen`'s `place` field, DESIGN-009 follow-up 4e). Shown
+  /// regardless of [tokenAware] — it decorates the field itself, not the
+  /// token chrome.
+  final Widget? suffixIcon;
 
   /// DESIGN-010: when true, renders [controller]'s text resolved (via
   /// [resolveScopedField]) as read-only `Text` instead of the editable
@@ -323,6 +343,7 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
       decoration: InputDecoration(
         labelText: widget.showLabel ? widget.label : null,
         hintText: widget.hintText,
+        suffixIcon: widget.suffixIcon,
       ),
       validator: widget.validator,
       autofocus: widget.autofocus,
@@ -339,6 +360,8 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
       onCreateVariable: widget.onCreateVariable,
       onCreateLocation: widget.onCreateLocation,
       onCreatePerson: widget.onCreatePerson,
+      selfLocation: widget.selfLocation,
+      selfPerson: widget.selfPerson,
     );
   }
 }
@@ -378,6 +401,8 @@ class RingDrillTextArea extends StatefulWidget {
     this.onCreateVariable,
     this.onCreateLocation,
     this.onCreatePerson,
+    this.selfLocation,
+    this.selfPerson,
     this.hintText,
     this.hintMaxLines,
     this.preview = false,
@@ -425,6 +450,13 @@ class RingDrillTextArea extends StatefulWidget {
   /// [RingDrillTextField.onCreateLocation]/`onCreatePerson`.
   final String Function(String label)? onCreateLocation;
   final String Function(String label)? onCreatePerson;
+
+  /// Self-reference withholding (DESIGN-009 follow-up 4e) — see
+  /// [SelfTokenExclusion]. Only takes effect when [tokenAware] is true and
+  /// this field also has a `StationScope` ancestor, same as
+  /// [onCreateLocation]/[onCreatePerson].
+  final SelfTokenExclusion? selfLocation;
+  final SelfTokenExclusion? selfPerson;
 
   /// DESIGN-010: when true, renders [controller]'s text resolved (via
   /// [resolveScopedField]) via [BriefMarkdown] instead of the editable
@@ -526,6 +558,8 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
       onCreateVariable: widget.onCreateVariable,
       onCreateLocation: widget.onCreateLocation,
       onCreatePerson: widget.onCreatePerson,
+      selfLocation: widget.selfLocation,
+      selfPerson: widget.selfPerson,
     );
   }
 }
