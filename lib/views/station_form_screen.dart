@@ -401,35 +401,44 @@ class _StationFormScreenState extends State<StationFormScreen> {
     );
     if (result == null || !mounted) return;
     setState(() {
-      // The nested editor's own inline-created locations/persons/variables
-      // belong to this same station/plan — merge them into this editor's
-      // own working copies rather than writing back separately (they ride
-      // this station's own save instead).
-      final existingLocSlugs = _workingLocations.map((l) => l.slug).toSet();
-      _workingLocations = [
-        ..._workingLocations,
-        ...result.additions.stationLocations.where(
-          (l) => !existingLocSlugs.contains(l.slug),
-        ),
-      ];
-      final existingPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
-      _workingPersons = [
-        ..._workingPersons,
-        ...result.additions.stationPersons.where(
-          (p) => !existingPersonSlugs.contains(p.slug),
-        ),
-      ];
-      final declaredVariableNames = {
-        for (final v in widget.variables) v.name,
-        for (final v in _pendingVariables) v.name,
-      };
-      _pendingVariables.addAll(
-        result.additions.variables.where(
-          (v) => !declaredVariableNames.contains(v.name),
-        ),
-      );
+      _mergeAdditions(result.additions);
       _pendingRolePlays[result.rolePlay.uuid] = result.rolePlay;
     });
+  }
+
+  /// Merges a nested editor's own `PlanAdditions` write-back into this
+  /// station editor's working state (ADR-0047, DESIGN-009 "Inline creation
+  /// and write-back") — new locations/persons belong to this same station,
+  /// so they ride this station's own save rather than writing back
+  /// separately; a new plan variable still needs to be carried up to
+  /// `Program` via [_pendingVariables]. Shared by [_openRolePlayEditor] and
+  /// this editor's own Locations/Persons sections (their leaf token fields
+  /// can create a sibling entity or a `var.*` too). Call inside a
+  /// `setState`.
+  void _mergeAdditions(PlanAdditions additions) {
+    final existingLocSlugs = _workingLocations.map((l) => l.slug).toSet();
+    _workingLocations = [
+      ..._workingLocations,
+      ...additions.stationLocations.where(
+        (l) => !existingLocSlugs.contains(l.slug),
+      ),
+    ];
+    final existingPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
+    _workingPersons = [
+      ..._workingPersons,
+      ...additions.stationPersons.where(
+        (p) => !existingPersonSlugs.contains(p.slug),
+      ),
+    ];
+    final declaredVariableNames = {
+      for (final v in widget.variables) v.name,
+      for (final v in _pendingVariables) v.name,
+    };
+    _pendingVariables.addAll(
+      additions.variables.where(
+        (v) => !declaredVariableNames.contains(v.name),
+      ),
+    );
   }
 
   /// "Legg til spill" (DESIGN-009 prompt 4j): a fresh [RolePlay] draft with
@@ -804,8 +813,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 builder: (_) => PersonsSection(
                   persons: _workingPersons,
                   locations: _workingLocations,
-                  onSave: (person, newLocation) {
-                    if (newLocation != null) _upsertLocation(newLocation);
+                  onSave: (person, additions) {
+                    setState(() => _mergeAdditions(additions));
                     _upsertPerson(person);
                   },
                   onDelete: (slug) => setState(
@@ -828,7 +837,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 icon: Icons.location_on_outlined,
                 builder: (_) => LocationsSection(
                   locations: _workingLocations,
-                  onSave: _upsertLocation,
+                  onSave: (location, additions) {
+                    setState(() => _mergeAdditions(additions));
+                    _upsertLocation(location);
+                  },
                   onDelete: (slug) => setState(
                     () => _workingLocations = _workingLocations
                         .where((l) => l.slug != slug)

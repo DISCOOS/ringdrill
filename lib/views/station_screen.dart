@@ -722,9 +722,17 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       ),
     );
     if (result == null) return;
-    final updated = station.copyWith(
-      persons: [...station.persons, result.person],
-      locations: [...station.locations, ...result.additions.stationLocations],
+    // Write-back (ADR-0047, DESIGN-009 "Inline creation and write-back"):
+    // a var.* created inline from this person's own fields reaches the
+    // active Program; a sibling station.loc/person.* joins this same
+    // station, alongside the person itself.
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
+    final withAdditions = applyStationAdditions(station, result.additions);
+    final updated = withAdditions.copyWith(
+      persons: [...withAdditions.persons, result.person],
     );
     await _saveStation(localizations, updated);
   }
@@ -738,8 +746,14 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       ),
     );
     if (result == null) return;
-    final updated = station.copyWith(
-      locations: [...station.locations, result.location],
+    // Write-back, mirroring _addPerson above.
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
+    final withAdditions = applyStationAdditions(station, result.additions);
+    final updated = withAdditions.copyWith(
+      locations: [...withAdditions.locations, result.location],
     );
     await _saveStation(localizations, updated);
   }

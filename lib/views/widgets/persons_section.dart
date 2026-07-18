@@ -6,6 +6,7 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
@@ -57,10 +58,15 @@ class PersonsSection extends StatefulWidget {
   final List<Location> locations;
 
   /// Called with the saved [Person] from [PersonFormScreen] — a new entry
-  /// (add) or the same `slug` (edit) — and, when the form's location picker
-  /// created one inline, the new [Location] to add to the station's own
-  /// list too. The caller upserts both by `slug`.
-  final void Function(Person person, Location? newLocation) onSave;
+  /// (add) or the same `slug` (edit) — and any [PlanAdditions] created
+  /// inline this session (ADR-0047, DESIGN-009 "Inline creation and
+  /// write-back"): a location from the home picker's "Ny lokasjon" entry,
+  /// or a sibling `station.loc.*`/`station.person.*`/`var.*` created from
+  /// the `name`/`signalement`/`notes` fields' own insertion menu. The
+  /// caller upserts the person and merges the additions into its own
+  /// working state the same way it already does for
+  /// `RolePlayFormResult.additions`.
+  final void Function(Person person, PlanAdditions additions) onSave;
 
   /// Called with the `slug` to remove — only once [usagesFor] has already
   /// confirmed it is unreferenced.
@@ -166,12 +172,7 @@ class _PersonsSectionState extends State<PersonsSection> {
         initial: person,
       ),
     );
-    if (result == null) return;
-    final newLocations = result.additions.stationLocations;
-    widget.onSave(
-      result.person,
-      newLocations.isEmpty ? null : newLocations.first,
-    );
+    if (result != null) widget.onSave(result.person, result.additions);
   }
 }
 

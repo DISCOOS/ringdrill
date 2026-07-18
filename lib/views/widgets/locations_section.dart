@@ -5,6 +5,7 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/utils/projection.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/location_form_screen.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 
@@ -39,9 +40,13 @@ class LocationsSection extends StatefulWidget {
   final List<Location> locations;
 
   /// Called with the saved [Location] from [LocationFormScreen] — a new
-  /// entry (add) or the same `slug` (edit). The caller upserts it into its
-  /// own working list by `slug`.
-  final ValueChanged<Location> onSave;
+  /// entry (add) or the same `slug` (edit) — and any [PlanAdditions] a
+  /// `place`/`note` token field created inline this session (ADR-0047,
+  /// DESIGN-009 "Inline creation and write-back"). The caller upserts the
+  /// location into its own working list by `slug`, and merges the
+  /// additions into its own working state the same way it already does for
+  /// `RolePlayFormResult.additions`.
+  final void Function(Location location, PlanAdditions additions) onSave;
 
   /// Called with the `slug` to remove — only once [usagesFor] has already
   /// confirmed it is unreferenced.
@@ -123,7 +128,7 @@ class _LocationsSectionState extends State<LocationsSection> {
       builder: (_) =>
           LocationFormScreen(existingSlugs: existingSlugs, initial: location),
     );
-    if (result != null) widget.onSave(result.location);
+    if (result != null) widget.onSave(result.location, result.additions);
   }
 }
 
