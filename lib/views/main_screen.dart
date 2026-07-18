@@ -360,21 +360,41 @@ class _MainScreenState extends State<MainScreen>
     if (owningSegment == null) return;
     _programPageController.rememberSelection(target, segment: owningSegment);
     if (_programPageController.activeSegment.value != owningSegment) {
-      // ADR-0032: segment selection flows URL → state. Navigate the URL to
-      // the owning segment (like the segment switcher and _onDestinationSelected
-      // do) rather than writing `activeSegment` directly. A direct write left
-      // the URL on the *origin* segment while the state moved — so re-tapping
-      // the origin segment button became `router.go(current URL)`, a no-op
-      // (the "can't get back to the segment I came from" live-lock). The
-      // target set just above survives the navigation; `_initTab` writes
-      // `activeSegment` from the new URL and the segment restore re-adopts it.
+      // ADR-0032: segment selection flows URL → state. When the redirect fired
+      // from a segment view, navigate the URL to the owning segment (like the
+      // segment switcher and _onDestinationSelected do) rather than writing
+      // `activeSegment` directly. A direct write left the URL on the *origin*
+      // segment while the state moved — so re-tapping the origin segment button
+      // became `router.go(current URL)`, a no-op (the "can't get back to the
+      // segment I came from" live-lock). `_initTab` writes `activeSegment` from
+      // the new URL and the segment restore re-adopts the target set just above.
+      //
+      // But a canonical detail deep link (e.g. `/program/:uuid/exercise/:e/
+      // station/0`) is itself the current URL, and it carries no "origin
+      // segment" to get stuck on. Navigating to the segment path there would
+      // clobber the deep link and drop the user on the segment list instead of
+      // the detail. Detect that case and only mirror the segment into state.
       final uuid = ProgramService().activeProgramUuid;
-      if (uuid != null) {
+      if (uuid != null && _locationIsSegmentPath(widget.location)) {
         widget.router.go(programSegmentPath(uuid, owningSegment.urlSlug));
       } else {
         _programPageController.activeSegment.value = owningSegment;
       }
     }
+  }
+
+  /// Whether [location] is a bare Program-tab segment path
+  /// (`/program/:uuid/:segmentSlug`) rather than a canonical detail deep link
+  /// (`.../exercise/:e/station/0`, `.../team/:idx`, `.../roleplay/:uuid`, …),
+  /// whose third path slug is an entity kind, not a segment slug. Mirrors the
+  /// segment-slot check in [_initTab].
+  bool _locationIsSegmentPath(String location) {
+    if (!location.startsWith('$routeProgram/')) return false;
+    final segments = Uri.parse(location).pathSegments;
+    // `/program/:uuid` (length 2) is promoted to the default segment path by
+    // the redirect gate before it reaches here, so treat it as a segment path.
+    if (segments.length < 3) return true;
+    return programSegmentFromSlug(segments[2]) != null;
   }
 
   @override
