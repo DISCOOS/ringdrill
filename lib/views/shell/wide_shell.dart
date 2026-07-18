@@ -96,6 +96,11 @@ class WideShell extends StatelessWidget {
         // extends into the master pane on the right.
         backgroundColor: panelColor,
         indicatorColor: masterAccent,
+        // Narrower than the M3 default (80). The rail shows icons only
+        // (labelType none), so 72 is ample and keeps the left side compact;
+        // `railWidth` above matches this so the column reserves exactly the
+        // rail's width in both states.
+        minWidth: 72,
         selectedIconTheme: IconThemeData(color: selectedIconColor),
         unselectedIconTheme: IconThemeData(color: unselectedIconColor),
         selectedIndex: currentTab,
@@ -129,8 +134,10 @@ class WideShell extends StatelessWidget {
     final masterWidth = windowSizeClass == WindowSizeClass.expanded
         ? 420.0
         : 320.0;
-    // NavigationRail default minWidth in Material 3 is 80 dp (was 72 in M2).
-    const railWidth = 80.0;
+    // Matches the NavigationRail's explicit `minWidth: 72` below, so the rail
+    // column reserves exactly the rail's width in both the expanded and the
+    // collapsed (clipped) state — narrower than the M3 default 80.
+    const railWidth = 72.0;
     // The build() gate (`useRail`) guarantees we only reach the rail
     // layout when there is room for a usable detail pane. Narrower
     // widths render the compact narrow layout instead, so there is no

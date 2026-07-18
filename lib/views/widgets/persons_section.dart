@@ -257,7 +257,10 @@ class _PersonCard extends StatelessWidget {
   /// The swipe-to-dismiss guard: a person still referenced (ADR-0047,
   /// DESIGN-009 prompt 5) is blocked with a dialog listing the usages;
   /// otherwise a plain destructive confirmation.
-  Future<bool> _confirmDelete(BuildContext context, AppLocalizations l10n) async {
+  Future<bool> _confirmDelete(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) async {
     final displayName = person.name.isEmpty ? person.slug : person.name;
     final usages = usagesFor(person.slug);
     if (usages.isNotEmpty) {
@@ -348,7 +351,7 @@ class _PersonCard extends StatelessWidget {
                             InkWell(
                               onTap: () => rolePlay == null
                                   ? onAddRolePlay()
-                                  : onOpenRolePlay(rolePlay!),
+                                  : onOpenRolePlay(rolePlay),
                               child: rolePlay == null
                                   ? _AddMarkerRow(
                                       label: l10n.personsSectionAddMarkerAction,
