@@ -323,14 +323,15 @@ void main() {
       );
     });
 
-    testWidgets('title includes cast actor realName in parens (role B)',
-        (tester) async {
+    testWidgets('collapsed title includes cast marker first name in parens '
+        '(role B)', (tester) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
       // Role B: name 'Vitne X', no age, cast to actorB ('Ola Nordmann').
+      // Collapsed, the parenthesis shows only the marker's first name (Fix 4).
       // Role B was never cleared in any prior test — safe to assert here.
-      expect(find.text('Vitne X (${_actorB.realName})'), findsOneWidget);
+      expect(find.text('Vitne X (${_actorB.firstName})'), findsOneWidget);
     });
 
     testWidgets('title includes age suffix when age is set (role A)',

@@ -1572,6 +1572,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get scriptSegment => 'Spill';
 
   @override
+  String get playSection => 'Spill';
+
+  @override
   String get roleSection => 'Markørordre';
 
   @override

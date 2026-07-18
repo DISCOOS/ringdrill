@@ -2624,6 +2624,12 @@ abstract class AppLocalizations {
   /// **'Script'**
   String get scriptSegment;
 
+  /// Section-card title for the consolidated Spill card in the RolePlay viewer (identity + script + cast). Nb: Spill. Collapsed the card appends the actor's first name in parentheses.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get playSection;
+
   /// Section header for the publishable role fields in the expanded tile and detail screen.
   ///
   /// In en, this message translates to:

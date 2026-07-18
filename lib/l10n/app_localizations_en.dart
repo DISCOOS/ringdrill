@@ -1576,6 +1576,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scriptSegment => 'Script';
 
   @override
+  String get playSection => 'Play';
+
+  @override
   String get roleSection => 'Role';
 
   @override

@@ -293,7 +293,10 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           () {
             final tb = StringBuffer(rolePlay.name);
             if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
-            if (actor != null) tb.write(' (${actor.realName})');
+            // Marker (actor) in parentheses, first name only, and only while
+            // collapsed: the expanded body's cast section already names the
+            // actor via "Spilles av …", so the parenthesis would be redundant.
+            if (actor != null && !expanded) tb.write(' (${actor.firstName})');
             return tb.toString();
           }(),
           overrides: _overridesFor(exercise, rolePlay),

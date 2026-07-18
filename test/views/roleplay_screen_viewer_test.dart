@@ -16,10 +16,11 @@ import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// DESIGN-010 stage 3b commit 4 — the Spill viewer's effective-identity
-/// card (person values inherited, roleplay values overriding non-empty
-/// ones), Markørordre card (behavior/background/props, all resolved), and
-/// position card (labeled with the source location the position follows).
+/// The Spill viewer's consolidated Spill card — effective identity (person
+/// values inherited, roleplay values overriding non-empty ones), the script
+/// sections (behavior/background/props, all resolved) and the cast footer,
+/// all in one CollapsibleSectionCard — plus the position card (labeled with
+/// the source location the position follows).
 ///
 /// RolePlay.background/behavior/propsMd are excluded from JSON (like
 /// Station's *Md fields) — persisting them for `ProgramService.init()` to
@@ -147,7 +148,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      // Age: inherited from the person (roleplay.age is null).
+      // Age (inherited, roleplay.age is null) and the overridden gender show
+      // together in the Spill card's lead meta line, e.g. "34 years · Man".
       expect(find.textContaining(l10n.rolePlayAgeYears(34)), findsOneWidget);
       // Gender: the roleplay's own 'male' wins over the person's 'female'.
       expect(find.textContaining('Man'), findsOneWidget);
@@ -175,12 +177,13 @@ void main() {
       expect(find.text('Sett ved Post 1.', findRichText: true), findsOneWidget);
       expect(find.text('Fiskestang.', findRichText: true), findsOneWidget);
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.roleProps), findsOneWidget);
+      // The props section label is now an uppercase kicker in the Spill card.
+      expect(find.text(l10n.roleProps.toUpperCase()), findsOneWidget);
     },
   );
 
-  /// The identity card's own collapse chevron, disambiguated from the
-  /// Post/position cards' — anchored on the identity avatar's person icon,
+  /// The Spill card's own collapse chevron, disambiguated from the
+  /// Post/position cards' — anchored on the cast quick-action's person icon,
   /// which is unique to that card.
   Finder identityCollapseChevron() => find.descendant(
     of: find
@@ -217,8 +220,9 @@ void main() {
   );
 
   testWidgets(
-    'collapsing the identity card hides the full signalement, notes and '
-    'location, but keeps the name/meta summary and the footer',
+    'collapsing the identity card hides gender, signalement, notes, location '
+    'and the "Spilles av" footer, leaving just the name line with the '
+    'marker first name in parentheses',
     (tester) async {
       await tester.pumpWidget(_buildScreen());
       await tester.pumpAndSettle();
@@ -226,28 +230,33 @@ void main() {
       await tester.tap(identityCollapseChevron());
       await tester.pumpAndSettle();
 
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // Notes and location stay expanded-only.
       expect(
         find.text('Skadd venstre ankel, kan ikke gå selv.'),
         findsNothing,
       );
       expect(find.textContaining('Bosted'), findsNothing);
-      // Collapsed summary content stays: the age/gender meta line, the
-      // short signalement excerpt, and the cast footer.
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.textContaining(l10n.rolePlayAgeYears(34)), findsOneWidget);
+      // Signalement, gender and the cast footer are now hidden when collapsed.
       expect(
         find.text('Gul regnjakke, hjemme', findRichText: true),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+      expect(find.textContaining('Man'), findsNothing);
+      expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
+      // The collapsed header is the uppercase "SPILL" kicker with the
+      // marker's first name in parentheses: "SPILL (NINA)".
+      expect(find.text('SPILL (NINA)'), findsOneWidget);
 
-      // Expanding it again brings notes/location back.
+      // Expanding again brings signalement, notes, location and the footer
+      // back — and drops the parenthesis from the name line.
       await tester.tap(identityCollapseChevron());
       await tester.pumpAndSettle();
       expect(
         find.text('Skadd venstre ankel, kan ikke gå selv.'),
         findsOneWidget,
       );
+      expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
     },
   );
 }
