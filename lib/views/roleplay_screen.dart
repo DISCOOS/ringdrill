@@ -84,6 +84,35 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     if (mounted) _load();
   }
 
+  /// Opens [RolePlayFormScreen] for editing, optionally jumping straight to
+  /// [initialSectionId] — used by the AppBar pencil (no section) and by
+  /// tapping a Play-card section (its matching form section). Reloads on
+  /// save. No-op when the roleplay is not resolvable.
+  Future<void> _openRolePlayForm({String? initialSectionId}) async {
+    final localizations = AppLocalizations.of(context)!;
+    final rolePlay = _rolePlay;
+    if (rolePlay == null) return;
+    final exercise = _programService.getExercise(rolePlay.exerciseUuid);
+    final result = await openFormSurface<RolePlayFormResult>(
+      context,
+      builder: (_) => RolePlayFormScreen(
+        rolePlay: rolePlay,
+        exercise: exercise,
+        variables: _programService.activeProgram?.variables ?? const [],
+        initialSectionId: initialSectionId,
+      ),
+    );
+    if (result == null) return;
+    await applyRolePlayAdditions(
+      _programService,
+      localizations,
+      result.rolePlay,
+      result.additions,
+    );
+    await _programService.saveRolePlay(localizations, result.rolePlay);
+    if (mounted) _load();
+  }
+
   /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
   /// optionally narrowed to [station]'s. Empty when there is no active
   /// plan.
@@ -196,30 +225,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: localizations.roleSection,
-            onPressed: () async {
-              final result = await openFormSurface<RolePlayFormResult>(
-                context,
-                builder: (_) => RolePlayFormScreen(
-                  rolePlay: rolePlay,
-                  exercise: exercise,
-                  variables:
-                      _programService.activeProgram?.variables ?? const [],
-                ),
-              );
-              if (result != null) {
-                await applyRolePlayAdditions(
-                  _programService,
-                  localizations,
-                  result.rolePlay,
-                  result.additions,
-                );
-                await _programService.saveRolePlay(
-                  localizations,
-                  result.rolePlay,
-                );
-                if (context.mounted) _load();
-              }
-            },
+            onPressed: () => _openRolePlayForm(),
           ),
         ],
         actionsPadding: const EdgeInsets.only(right: 16),
@@ -384,6 +390,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
         overrides: roleOverrides,
         roleplayFacets: _roleplayFacets(rolePlay),
         onEditCast: () => _openCastPicker(rolePlay),
+        onEditSection: (id) => _openRolePlayForm(initialSectionId: id),
       ),
     ];
   }
@@ -577,6 +584,7 @@ class _PlayCard extends StatelessWidget {
     required this.person,
     required this.actor,
     required this.onEditCast,
+    required this.onEditSection,
     this.location,
     this.overrides = const {},
     this.roleplayFacets,
@@ -589,6 +597,12 @@ class _PlayCard extends StatelessWidget {
   /// Opens the marker (cast) picker — the always-visible quick action in the
   /// card header, wired by [RolePlayScreen] to `_openCastPicker`.
   final VoidCallback onEditCast;
+
+  /// Opens the roleplay form at the given form section id (roleplay-owned
+  /// sections: signalement/behavior/background/props) — wired by
+  /// [RolePlayScreen] to `_openRolePlayForm`.
+  final void Function(String sectionId) onEditSection;
+
   final Location? location;
   final Map<String, String> overrides;
   final Map<String, dynamic>? roleplayFacets;
@@ -628,8 +642,20 @@ class _PlayCard extends StatelessWidget {
     // uppercase kicker; the name is not repeated here since it already heads
     // the viewer.
     final sections = <Widget>[];
-    void addSection(Widget child) {
+    // [onTap] makes a block tappable to open its editor (parity around
+    // editing): roleplay-owned blocks route to the roleplay form, person-/
+    // post-owned blocks (PERSON/NOTATER/LOKASJON) to the parent post's form.
+    void addSection(Widget child, {VoidCallback? onTap}) {
       if (sections.isNotEmpty) sections.add(const SizedBox(height: 12));
+      if (onTap != null) {
+        child = InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: child,
+          ),
+        );
+      }
       sections.add(child);
     }
 
@@ -651,29 +677,117 @@ class _PlayCard extends StatelessWidget {
       ),
     );
 
-    // Lead meta: age · gender — the identity summary.
+    // PERSON section — the effective identity (name + age · gender), each the
+    // linked person's own value unless this roleplay overrides it non-empty
+    // (ADR-0047). A small accent dot marks any override; "Tilpasset fra
+    // {person}" marks the overridden *name* specifically, so the reader knows
+    // who is actually portrayed (mirrors the form's identity header). The
+    // scenario Person is owned by the post, so a tap opens the post form.
+    final name = _effective(rolePlay.name, person?.name) ?? rolePlay.name;
+    final personName = person?.name;
+    bool overridesValue(String? own, String? personValue) =>
+        own != null && own.isNotEmpty && own != (personValue ?? '');
+    final nameOverridden =
+        personName != null && overridesValue(rolePlay.name, personName);
+    final overrideCount = person == null
+        ? 0
+        : [
+            overridesValue(rolePlay.name, person.name),
+            rolePlay.age != null && rolePlay.age != person.age,
+            overridesValue(rolePlay.gender, person.gender),
+            overridesValue(rolePlay.signalement, person.signalement),
+          ].where((overridden) => overridden).length;
     final metaParts = [
       if (age != null) l10n.rolePlayAgeYears(age),
       ?genderLabel,
     ];
-    if (metaParts.isNotEmpty) {
-      addSection(
-        Text(
-          metaParts.join(' · '),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+    addSection(
+      labeled(
+        l10n.rolePlayPersonLabel,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Flexible(
+                  child: RingDrillText(
+                    name,
+                    overrides: overrides,
+                    roleplayFacets: roleplayFacets,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                if (overrideCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            if (metaParts.isNotEmpty)
+              Text(
+                metaParts.join(' · '),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            if (nameOverridden)
+              Text(
+                l10n.rolePlayCustomizedFrom(personName!),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            // The person's own notes, folded in and read together with the
+            // identity (no "Notater" kicker of its own).
+            if (notes.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: resolvedText(notes),
+              ),
+            // The person's location, read together with the identity (no
+            // "Lokasjon" kicker of its own). Plain strings by convention —
+            // no token resolution.
+            if (locationLabel != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  [
+                    locationLabel,
+                    if (locationPosition != null) formatUtm(locationPosition),
+                  ].join(' · '),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
         ),
+      ),
+      // The identity is edited on the roleplay's own "Rolle" section (person
+      // selection + per-marker overrides), not the scenario Person directly.
+      onTap: () => onEditSection('roleplay'),
+    );
+
+    if ((signalement ?? '').isNotEmpty) {
+      addSection(
+        labeled(l10n.roleSignalement, resolvedText(signalement!)),
+        onTap: () => onEditSection('roleplay'),
       );
     }
 
-    if ((signalement ?? '').isNotEmpty) {
-      addSection(labeled(l10n.roleSignalement, resolvedText(signalement!)));
-    }
-
     // Script sections (markdown), resolved via the scope cascade (ADR-0048)
-    // and skipped when they resolve to nothing.
-    void addScript(String label, String? raw) {
+    // and skipped when they resolve to nothing. [sectionId] matches the
+    // form's own `_MdSection` id so a tap opens the form at that section.
+    void addScript(String sectionId, String label, String? raw) {
       if (raw == null || raw.isEmpty) return;
       final resolved =
           resolveScopedField(
@@ -689,35 +803,13 @@ class _PlayCard extends StatelessWidget {
           label,
           BriefMarkdownBlock(data: resolved, theme: briefTheme, gutter: 0),
         ),
+        onTap: () => onEditSection(sectionId),
       );
     }
 
-    addScript(l10n.roleBehavior, rolePlay.behavior);
-    addScript(l10n.roleBackground, rolePlay.background);
-    addScript(l10n.roleProps, rolePlay.propsMd);
-
-    if (notes.isNotEmpty) {
-      addSection(labeled(l10n.personsSectionNotesLabel, resolvedText(notes)));
-    }
-    if (locationLabel != null) {
-      // The location's own label/place are plain strings by convention
-      // (station_screen.dart's `_buildLocationRow` renders them the same
-      // way) — no token resolution, unlike notes.
-      addSection(
-        labeled(
-          l10n.personsSectionLocationLabel,
-          Text(
-            [
-              locationLabel,
-              if (locationPosition != null) formatUtm(locationPosition),
-            ].join(' · '),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
+    addScript('behavior', l10n.roleBehavior, rolePlay.behavior);
+    addScript('background', l10n.roleBackground, rolePlay.background);
+    addScript('props', l10n.roleProps, rolePlay.propsMd);
 
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.start,

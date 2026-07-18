@@ -12,6 +12,7 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -244,9 +245,12 @@ void main() {
       );
       expect(find.textContaining('Man'), findsNothing);
       expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
-      // The collapsed header is the uppercase "SPILL" kicker with the
-      // marker's first name in parentheses: "SPILL (NINA)".
-      expect(find.text('SPILL (NINA)'), findsOneWidget);
+      // The collapsed header is the uppercase play kicker with the marker's
+      // first name in parentheses, e.g. "PLAY (NINA)" (en).
+      expect(
+        find.text('${l10n.playSection} (Nina)'.toUpperCase()),
+        findsOneWidget,
+      );
 
       // Expanding again brings signalement, notes, location and the footer
       // back — and drops the parenthesis from the name line.
@@ -257,6 +261,55 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'tapping a roleplay-owned Play-card section opens the roleplay form at '
+    'that form section',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen());
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // Tap the Behaviour (Oppførsel) script section — its form id is
+      // 'behavior', distinct from the base 'roleplay' section, so it proves
+      // the tap jumps to the *tapped* section, not just opens the form.
+      final behaviorSection = find.text(l10n.roleBehavior.toUpperCase());
+      await tester.ensureVisible(behaviorSection);
+      await tester.tap(behaviorSection);
+      await tester.pumpAndSettle();
+
+      final form = find.byType(RolePlayFormScreen);
+      expect(form, findsOneWidget);
+      expect(
+        tester.widget<RolePlayFormScreen>(form).initialSectionId,
+        'behavior',
+      );
+    },
+  );
+
+  testWidgets(
+    'tapping the PERSON section opens the roleplay form at the Rolle section',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen());
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // The identity is edited on the roleplay's own "Rolle" section (person
+      // selection + per-marker overrides), so the PERSON block opens the
+      // roleplay form there.
+      final personSection = find.text(l10n.rolePlayPersonLabel.toUpperCase());
+      await tester.ensureVisible(personSection);
+      await tester.tap(personSection);
+      await tester.pumpAndSettle();
+
+      final form = find.byType(RolePlayFormScreen);
+      expect(form, findsOneWidget);
+      expect(
+        tester.widget<RolePlayFormScreen>(form).initialSectionId,
+        'roleplay',
+      );
     },
   );
 }

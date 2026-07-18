@@ -68,10 +68,16 @@ class RolePlayFormScreen extends StatefulWidget {
     required this.rolePlay,
     this.exercise,
     this.variables = const <DrillVariable>[],
+    this.initialSectionId,
   });
 
   final RolePlay rolePlay;
   final Exercise? exercise;
+
+  /// Section to open the [SectionNavigatedForm] at (e.g. tapping a section in
+  /// the Spill viewer's Play card jumps straight to it). Null starts at the
+  /// base `roleplay` section.
+  final String? initialSectionId;
 
   /// The plan's declared variables (ADR-0046), read-only here — a roleplay
   /// declares and overrides nothing (DESIGN-008 follow-up 07's settled
@@ -874,7 +880,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           key: _formKey,
           child: SectionNavigatedForm(
             title: titleText,
-            initialSectionId: 'roleplay',
+            initialSectionId: widget.initialSectionId ?? 'roleplay',
             sections: [
               FormSection(
                 id: 'roleplay',
