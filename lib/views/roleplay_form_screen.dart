@@ -485,10 +485,35 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (result == null || !mounted) return;
     setState(() {
       _workingPersons = [..._workingPersons, result.person];
-      final newLocation = result.newLocation;
-      if (newLocation != null) {
-        _workingLocations = [..._workingLocations, newLocation];
-      }
+      // The nested form's own inline-created locations/persons/variables
+      // (ADR-0047, DESIGN-009 "Inline creation and write-back") belong to
+      // this same station/plan — merge them into this editor's own working
+      // copies rather than write back separately, mirroring
+      // `StationFormScreen._openRolePlayEditor`'s merge block.
+      final additions = result.additions;
+      final existingLocSlugs = _workingLocations.map((l) => l.slug).toSet();
+      _workingLocations = [
+        ..._workingLocations,
+        ...additions.stationLocations.where(
+          (l) => !existingLocSlugs.contains(l.slug),
+        ),
+      ];
+      final existingPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
+      _workingPersons = [
+        ..._workingPersons,
+        ...additions.stationPersons.where(
+          (p) => !existingPersonSlugs.contains(p.slug),
+        ),
+      ];
+      final declaredVariableNames = {
+        for (final v in widget.variables) v.name,
+        for (final v in _pendingVariables) v.name,
+      };
+      _pendingVariables.addAll(
+        additions.variables.where(
+          (v) => !declaredVariableNames.contains(v.name),
+        ),
+      );
       _applyPersonSelection(result.person.slug);
     });
   }

@@ -724,9 +724,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     if (result == null) return;
     final updated = station.copyWith(
       persons: [...station.persons, result.person],
-      locations: result.newLocation == null
-          ? station.locations
-          : [...station.locations, result.newLocation!],
+      locations: [...station.locations, ...result.additions.stationLocations],
     );
     await _saveStation(localizations, updated);
   }

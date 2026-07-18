@@ -166,7 +166,12 @@ class _PersonsSectionState extends State<PersonsSection> {
         initial: person,
       ),
     );
-    if (result != null) widget.onSave(result.person, result.newLocation);
+    if (result == null) return;
+    final newLocations = result.additions.stationLocations;
+    widget.onSave(
+      result.person,
+      newLocations.isEmpty ? null : newLocations.first,
+    );
   }
 }
 

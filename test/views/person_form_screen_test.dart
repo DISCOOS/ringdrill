@@ -174,9 +174,10 @@ void main() {
 
       expect(captured.value, isNotNull);
       final result = captured.value!;
-      expect(result.newLocation, isNotNull);
-      expect(result.newLocation!.label, 'Nytt hjem');
-      expect(result.person.locSlug, result.newLocation!.slug);
+      final newLocations = result.additions.stationLocations;
+      expect(newLocations, hasLength(1));
+      expect(newLocations.single.label, 'Nytt hjem');
+      expect(result.person.locSlug, newLocations.single.slug);
     },
   );
 
