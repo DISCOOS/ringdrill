@@ -2021,6 +2021,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get formSectionEditAction => 'Edit';
 
   @override
+  String get formDoneAction => 'DONE';
+
+  @override
   String get rollupShowAction => 'Show details';
 
   @override

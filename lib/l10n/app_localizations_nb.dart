@@ -2018,6 +2018,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get formSectionEditAction => 'Rediger';
 
   @override
+  String get formDoneAction => 'FERDIG';
+
+  @override
   String get rollupShowAction => 'Vis detaljer';
 
   @override

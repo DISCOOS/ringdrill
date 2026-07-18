@@ -12,6 +12,7 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 Future<T?> openFormSurface<T>(
   BuildContext context, {
   required WidgetBuilder builder,
+  bool commitsToParent = false,
 }) async {
   // Capture the ancestor resolve scopes (DESIGN-010's PlanScope/
   // ExerciseScope/StationScope cascade) up front, before any `await` — both
@@ -29,6 +30,7 @@ Future<T?> openFormSurface<T>(
     planScope: planScope,
     exerciseScope: exerciseScope,
     stationScope: stationScope,
+    commitsToParent: commitsToParent,
   );
 
   if (WindowSizeClass.of(context).hasMasterDetail) {
@@ -99,9 +101,13 @@ WidgetBuilder _reprovideScopes(
   required PlanScope? planScope,
   required ExerciseScope? exerciseScope,
   required StationScope? stationScope,
+  required bool commitsToParent,
 }) {
   return (context) {
-    Widget child = builder(context);
+    Widget child = FormSurfaceScope(
+      commitsToParent: commitsToParent,
+      child: builder(context),
+    );
     if (stationScope != null) {
       child = StationScope(
         locations: stationScope.locations,
@@ -132,4 +138,33 @@ WidgetBuilder _reprovideScopes(
       child: child,
     );
   };
+}
+
+/// Signals to a form pushed through [openFormSurface] whether its result is
+/// persisted immediately by the caller, or only folded into a parent's own
+/// unsaved working copy (persisted later, by that parent's own save) — see
+/// the design note above [openFormSurface] on "nested vs committing" being a
+/// property of the call site, not the form. The shared form chrome
+/// (`SectionNavigatedForm`) reads [commitsToParent] to pick its primary
+/// action's label: "Lagre"/"Save" when false (the default — the caller
+/// persists on return), "Ferdig"/"Done" when true (the result is only
+/// merged into a parent's working copy).
+class FormSurfaceScope extends InheritedWidget {
+  const FormSurfaceScope({
+    super.key,
+    required this.commitsToParent,
+    required super.child,
+  });
+
+  final bool commitsToParent;
+
+  static bool of(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<FormSurfaceScope>()
+          ?.commitsToParent ??
+      false;
+
+  @override
+  bool updateShouldNotify(FormSurfaceScope oldWidget) =>
+      commitsToParent != oldWidget.commitsToParent;
 }

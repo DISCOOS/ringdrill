@@ -1039,6 +1039,10 @@
   "@formSectionEditAction": {
     "description": "DESIGN-010 SectionNavigatedForm AppBar-verktøytips vist mens en forhåndsvisbar seksjon viser sin resolverte markdown-forhåndsvisning — trykk bytter tilbake til redigerbar (chip) tilstand."
   },
+  "formDoneAction": "FERDIG",
+  "@formDoneAction": {
+    "description": "Knapp. SectionNavigatedForm sin hovedhandling når skjemaet kun flettes inn i en forelders egen ulagrede arbeidskopi (openFormSurface sin commitsToParent) — ingenting skrives til disk før forelderen selv lagres."
+  },
   "rollupShowAction": "Vis detaljer",
   "@rollupShowAction": {
     "description": "DESIGN-010 standardseksjonens rollup-knapp vist mens rollupen er skjult — trykk viser hele enhetens aktive seksjoner resolvert, stablet under de strukturelle feltene. Bevisst ikke \"forhåndsvisning\" (det ordet er reservert for per-seksjon-øyet) og ikke \"brief\" (rollupen er ett utsnitt av posten/spillet, ikke det eksporterte dokumentet)."

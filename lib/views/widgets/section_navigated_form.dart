@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
@@ -238,7 +239,13 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
             padding: const EdgeInsets.only(left: 8, right: 16),
             child: ElevatedButton(
               onPressed: widget.onSave,
-              child: Text(l10n.save),
+              // "Ferdig"/"Done" when this form only folds its result into a
+              // parent's own unsaved working copy — nothing is written to
+              // disk until that parent is itself saved (DESIGN-010's
+              // FormSurfaceScope, driven per `openFormSurface` call site).
+              child: Text(
+                FormSurfaceScope.of(context) ? l10n.formDoneAction : l10n.save,
+              ),
             ),
           ),
         ],

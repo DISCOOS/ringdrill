@@ -3446,6 +3446,12 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get formSectionEditAction;
 
+  /// Button. SectionNavigatedForm's primary action label when the form only folds its result into a parent's own unsaved working copy (openFormSurface's commitsToParent) — nothing is written to disk until that parent is itself saved.
+  ///
+  /// In en, this message translates to:
+  /// **'DONE'**
+  String get formDoneAction;
+
   /// DESIGN-010 default-section rollup toggle label shown while the rollup is hidden — tapping shows the whole entity's active sections resolved, stacked under the structural fields. Deliberately not "preview" (that word is reserved for the per-section eye toggle) and not "brief" (the rollup is one post/marker's slice, not the exported document).
   ///
   /// In en, this message translates to:
