@@ -227,4 +227,81 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'the place field offers "Create variable" when nothing matches; '
+    'selecting it inserts the token and carries the new variable up as a '
+    'write-back addition (ADR-0047, DESIGN-009 "Inline creation and '
+    'write-back")',
+    (tester) async {
+      final captured = _Captured();
+      await _open(tester, captured);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
+        'LKP',
+      );
+
+      final placeField = find.widgetWithText(
+        TextFormField,
+        l.locationsSectionPlaceLabel,
+      );
+      await tester.ensureVisible(placeField);
+      await tester.enterText(placeField, '{{var.frekvens');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(l.tokenMenuCreateVariable('frekvens')), findsOneWidget);
+      await tester.tap(find.text(l.tokenMenuCreateVariable('frekvens')));
+      await tester.pump();
+
+      expect(find.textContaining('{{var.frekvens}}'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      expect(
+        captured.value!.additions.variables.map((v) => v.name),
+        contains('frekvens'),
+      );
+    },
+  );
+
+  testWidgets(
+    'the note field offers "Create location «x»" when nothing matches; '
+    'selecting it carries the new sibling location up as a write-back '
+    'addition',
+    (tester) async {
+      final captured = _Captured();
+      await _open(tester, captured);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
+        'LKP',
+      );
+
+      final noteField = find.widgetWithText(
+        TextFormField,
+        l.locationsSectionNoteLabel,
+      );
+      await tester.ensureVisible(noteField);
+      await tester.enterText(noteField, 'Se {{station.loc.sentrum');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(l.tokenMenuCreateLocation('sentrum')), findsOneWidget);
+      await tester.tap(find.text(l.tokenMenuCreateLocation('sentrum')));
+      await tester.pump();
+
+      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.pumpAndSettle();
+
+      expect(captured.value, isNotNull);
+      expect(
+        captured.value!.additions.stationLocations.map((loc) => loc.label),
+        contains('sentrum'),
+      );
+    },
+  );
 }
