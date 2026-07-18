@@ -83,8 +83,14 @@ class _TeamsViewState extends State<TeamsView> {
               '$exerciseCount '
                   '${localizations.exercise(exerciseCount).toLowerCase()}',
             ];
-            final isSelected = selectedTarget is TeamOverviewSheetTarget &&
-                selectedTarget.teamIndex == t.index;
+            // Highlight for the master's own overview target and for an
+            // exercise-scoped TeamSheetTarget arriving via a schedule redirect
+            // — both identify the same team by index.
+            final isSelected =
+                (selectedTarget is TeamOverviewSheetTarget &&
+                    selectedTarget.teamIndex == t.index) ||
+                (selectedTarget is TeamSheetTarget &&
+                    selectedTarget.teamIndex == t.index);
             final colorScheme = Theme.of(context).colorScheme;
             return Dismissible(
               key: ValueKey('team-row-${t.uuid}'),
