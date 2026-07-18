@@ -116,7 +116,7 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
   }
 
   Future<void> _createLocationInline() async {
-    final created = await openFormSurface<Location>(
+    final created = await openFormSurface<LocationFormResult>(
       context,
       builder: (_) => LocationFormScreen(
         existingSlugs: _workingLocations.map((l) => l.slug).toSet(),
@@ -124,9 +124,9 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
     );
     if (created == null || !mounted) return;
     setState(() {
-      _workingLocations = [..._workingLocations, created];
-      _newLocation = created;
-      _locSlug = created.slug;
+      _workingLocations = [..._workingLocations, created.location];
+      _newLocation = created.location;
+      _locSlug = created.location.slug;
     });
   }
 

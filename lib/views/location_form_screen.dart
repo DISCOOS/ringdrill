@@ -3,11 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/person.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
+import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
@@ -24,11 +28,24 @@ import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 /// enough that suggestions still feel live.
 const _placeSearchDebounce = Duration(milliseconds: 350);
 
+/// A declared plan variable name (ADR-0046) -- mirrors
+/// `StationFormScreen`'s/`RolePlayFormScreen`'s own copy of this pattern.
+final _variableSlugPattern = RegExp(r'^[a-z][a-z0-9_]*$');
+
+/// [LocationFormScreen]'s result: the saved [Location] plus any
+/// [PlanAdditions] created inline this session from its own token-aware
+/// `place`/`note` fields (ADR-0047, DESIGN-009 follow-up 4/"Inline creation
+/// and write-back") -- a new `var.*` (-> `Program`) or a sibling
+/// `station.loc.*`/`station.person.*` (-> the station this [Location]
+/// itself joins, which this form does not own and never writes to
+/// directly). The caller applies both together in one save.
+typedef LocationFormResult = ({Location location, PlanAdditions additions});
+
 /// Self-sufficient full-screen/dialog form for creating or editing a
 /// station-owned [Location] (ADR-0047, DESIGN-009 follow-up 3b). Opened via
 /// `openFormSurface` by the caller (`LocationsSection`) — full-screen route
-/// on narrow, dialog on wide (ADR-0030). Pops with the saved [Location], or
-/// null on cancel.
+/// on narrow, dialog on wide (ADR-0030). Pops with a [LocationFormResult],
+/// or null on cancel.
 ///
 /// The reference (`slug`) is never shown: it is a random id generated at
 /// creation via [randomSlug] against [existingSlugs] (DESIGN-009 follow-up
@@ -104,6 +121,43 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
 
   bool get _isEdit => widget.initial != null;
 
+  /// Working copies of the ambient `StationScope`'s `locations`/`persons`
+  /// (ADR-0047, DESIGN-009 "Inline creation and write-back") -- this form
+  /// does not own the station a sibling `station.loc.*`/`station.person.*`
+  /// created inline from `place`/`note` would join, so it tracks one here
+  /// (seeded once in [didChangeDependencies], the same "editor resolves
+  /// against a working copy it holds" pattern `RolePlayFormScreen` already
+  /// uses) and diffs against [_originalLocationSlugs]/[_originalPersonSlugs]
+  /// at save time to carry only the new ones up as a write-back addition.
+  late List<Location> _workingLocations;
+  late List<Person> _workingPersons;
+  late Set<String> _originalLocationSlugs;
+  late Set<String> _originalPersonSlugs;
+
+  /// The ambient `PlanScope`'s declared variables as of open time -- this
+  /// form does not own `Program.variables` either, so a `var.*` created
+  /// inline is tracked in [_pendingVariables] instead and carried up the
+  /// same way.
+  late List<DrillVariable> _declaredVariables;
+  final List<DrillVariable> _pendingVariables = [];
+
+  bool _scopesSeeded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_scopesSeeded) return;
+    _scopesSeeded = true;
+    final stationScope = StationScope.maybeOf(context);
+    _workingLocations = List<Location>.of(stationScope?.locations ?? const []);
+    _workingPersons = List<Person>.of(stationScope?.persons ?? const []);
+    _originalLocationSlugs = _workingLocations.map((l) => l.slug).toSet();
+    _originalPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
+    _declaredVariables = List<DrillVariable>.of(
+      PlanScope.of(context).variables,
+    );
+  }
+
   @override
   void dispose() {
     _placeSearchDebounceTimer?.cancel();
@@ -111,6 +165,50 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     _placeController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  /// Wired to a token-aware field's `onCreateLocation` hook (ADR-0047,
+  /// DESIGN-009 follow-up 4/4e): the insertion menu needs the generated
+  /// slug synchronously to embed in the token it is about to insert. The new
+  /// [Location] joins the same station this [Location] itself joins, which
+  /// this form does not own -- [_save] diffs [_workingLocations] against
+  /// [_originalLocationSlugs] to carry it up as a write-back.
+  String _createStationLocation(String label) {
+    final slug = randomSlug(
+      (candidate) => _workingLocations.any((l) => l.slug == candidate),
+    );
+    setState(() {
+      _workingLocations = [
+        ..._workingLocations,
+        Location(slug: slug, label: label),
+      ];
+    });
+    return slug;
+  }
+
+  /// [_createStationLocation]'s [_workingPersons] counterpart.
+  String _createStationPerson(String label) {
+    final slug = randomSlug(
+      (candidate) => _workingPersons.any((p) => p.slug == candidate),
+    );
+    setState(() {
+      _workingPersons = [..._workingPersons, Person(slug: slug, name: label)];
+    });
+    return slug;
+  }
+
+  /// Wired to every token-aware field's `onCreateVariable` hook: the menu
+  /// already inserted `{{var.<name>}}`; this only needs to declare it,
+  /// empty, in [_pendingVariables] so the chip resolves live (amber) via the
+  /// merged [PlanScope] this form provides in [build].
+  void _createVariableInline(String name) {
+    if (!_variableSlugPattern.hasMatch(name)) return;
+    final alreadyDeclared = _declaredVariables.any((v) => v.name == name);
+    final alreadyPending = _pendingVariables.any((v) => v.name == name);
+    if (alreadyDeclared || alreadyPending) return;
+    setState(() {
+      _pendingVariables.add(DrillVariable(name: name, value: ''));
+    });
   }
 
   void _onPlaceChanged(String value) {
@@ -179,7 +277,10 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     await _reverseGeocodeInto(position, force: true);
   }
 
-  Future<void> _reverseGeocodeInto(LatLng position, {bool force = false}) async {
+  Future<void> _reverseGeocodeInto(
+    LatLng position, {
+    bool force = false,
+  }) async {
     String label;
     try {
       label = await _geocoder.reverse(position);
@@ -207,10 +308,17 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     yield (l10n.locationsSectionNoteLabel, _noteController.text);
   }
 
-  /// Field labels with an undeclared `{{var.x}}` token — mirrors
+  /// Field labels with an undeclared `{{var.x}}` token — checked against
+  /// [_declaredVariables]/[_pendingVariables] (this session's working set,
+  /// including anything just created inline), not the ambient `PlanScope`
+  /// directly: a variable created inline from one of these fields must not
+  /// immediately block save as "undeclared" — mirrors
   /// `StationFormScreen._baseFieldLabelsWithUndeclaredTokens`.
   List<String> _fieldLabelsWithUndeclaredVariable(AppLocalizations l10n) {
-    final declared = {for (final v in PlanScope.of(context).variables) v.name};
+    final declared = {
+      for (final v in _declaredVariables) v.name,
+      for (final v in _pendingVariables) v.name,
+    };
     bool hasUndeclared(String text) => planVariableTokenPattern
         .allMatches(text)
         .any((m) => !declared.contains(m.group(1)));
@@ -221,17 +329,21 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
   }
 
   /// The `station.loc.<slug>`/`station.person.<slug>` references in [text]
-  /// whose slug is absent from the ambient `StationScope` — mirrors
+  /// whose slug is absent from [_workingLocations]/[_workingPersons] (this
+  /// session's working set, same reasoning as [_fieldLabelsWithUndeclaredVariable]
+  /// -- a sibling entity created inline from one of these fields must not
+  /// immediately block save as "unresolved") — mirrors
   /// `StationFormScreen._unresolvedReferencesIn`.
   Iterable<String> _unresolvedReferencesIn(String text) {
-    final stationScope = StationScope.maybeOf(context);
-    return stationScenarioTokenPattern.allMatches(text).where((m) {
-      final slug = m.group(2)!;
-      if (stationScope == null) return true;
-      return m.group(1) == 'loc'
-          ? !stationScope.locations.any((loc) => loc.slug == slug)
-          : !stationScope.persons.any((p) => p.slug == slug);
-    }).map((m) => 'station.${m.group(1)}.${m.group(2)}');
+    return stationScenarioTokenPattern
+        .allMatches(text)
+        .where((m) {
+          final slug = m.group(2)!;
+          return m.group(1) == 'loc'
+              ? !_workingLocations.any((loc) => loc.slug == slug)
+              : !_workingPersons.any((p) => p.slug == slug);
+        })
+        .map((m) => 'station.${m.group(1)}.${m.group(2)}');
   }
 
   List<String> _fieldLabelsWithUnresolvedReference(AppLocalizations l10n) {
@@ -282,9 +394,23 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
 
     _formKey.currentState!.save();
     final note = _noteController.text.trim();
-    final slug = widget.initial?.slug ?? randomSlug(widget.existingSlugs.contains);
-    Navigator.of(context).pop(
-      Location(
+    final slug =
+        widget.initial?.slug ?? randomSlug(widget.existingSlugs.contains);
+    // Write-back (ADR-0047, DESIGN-009 "Inline creation and write-back"):
+    // only entries created this session -- beyond what the ambient
+    // StationScope already had when this form opened -- need to be carried
+    // up; the rest already live on the station this form itself does not
+    // own.
+    final newLocations = [
+      for (final location in _workingLocations)
+        if (!_originalLocationSlugs.contains(location.slug)) location,
+    ];
+    final newPersons = [
+      for (final person in _workingPersons)
+        if (!_originalPersonSlugs.contains(person.slug)) person,
+    ];
+    Navigator.of(context).pop((
+      location: Location(
         slug: slug,
         label: _labelController.text.trim(),
         kind: _kind,
@@ -292,7 +418,13 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
         position: _position,
         note: note.isEmpty ? null : note,
       ),
-    );
+      additions: (
+        variables: _pendingVariables,
+        stationLocations: newLocations,
+        stationPersons: newPersons,
+        rolePlays: const <RolePlay>[],
+      ),
+    ));
   }
 
   @override
@@ -315,110 +447,143 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     // it cannot appear as a self-reference candidate anyway) — see
     // SelfTokenExclusion.
     final selfSlug = widget.initial?.slug;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: l10n.cancel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(title),
-        actions: [
-          FilledButton(onPressed: _save, child: Text(l10n.save)),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: DismissKeyboard(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _labelController,
-                    autofocus: !_isEdit,
-                    decoration: InputDecoration(
-                      labelText: l10n.locationsSectionLabelLabel,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _KindCategoryGrid(
-                    value: _kind,
-                    onChanged: (kind) => setState(() => _kind = kind),
-                  ),
-                  const SizedBox(height: 16),
-                  RingDrillTextField(
-                    controller: _placeController,
-                    label: l10n.locationsSectionPlaceLabel,
-                    hintText: l10n.locationsSectionPlaceSearchHint,
-                    tokenAware: true,
-                    planFields: planFields,
-                    selfLocation: selfSlug == null
-                        ? null
-                        : SelfTokenExclusion(
-                            slug: selfSlug,
-                            excludeBare: true,
-                            excludedFacet: 'place',
-                          ),
-                    onChanged: _onPlaceChanged,
-                    suffixIcon: _searchingPlace
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          )
-                        : null,
-                  ),
-                  if (_placeSuggestions.isNotEmpty)
-                    _PlaceSuggestionsList(
-                      suggestions: _placeSuggestions,
-                      onSelect: _selectPlaceSuggestion,
-                    )
-                  else if (_placeSearchedEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        l10n.locationsSectionPlaceNoResults,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+    // Captured before this form re-wraps PlanScope/StationScope below (for
+    // its own inline-created working copies, ADR-0047) -- `context` here is
+    // this State's own, an ancestor of what this build() returns, so it
+    // always resolves to the *ambient* scope from `openFormSurface`, never
+    // this form's own re-provided one (same reasoning `RolePlayFormScreen`'s
+    // own `build` documents).
+    final ambientPlan = PlanScope.of(context);
+    final ambientStation = StationScope.maybeOf(context);
+    return PlanScope(
+      variables: [..._declaredVariables, ..._pendingVariables],
+      programName: ambientPlan.programName,
+      programDescription: ambientPlan.programDescription,
+      child: StationScope(
+        locations: _workingLocations,
+        persons: _workingPersons,
+        portrayerOf: ambientStation?.portrayerOf,
+        name: ambientStation?.name,
+        stationCode: ambientStation?.stationCode,
+        description: ambientStation?.description,
+        variantSuffix: ambientStation?.variantSuffix,
+        positionUtm: ambientStation?.positionUtm,
+        child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: l10n.cancel,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(title),
+            actions: [
+              FilledButton(onPressed: _save, child: Text(l10n.save)),
+              const SizedBox(width: 16),
+            ],
+          ),
+          body: DismissKeyboard(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        controller: _labelController,
+                        autofocus: !_isEdit,
+                        decoration: InputDecoration(
+                          labelText: l10n.locationsSectionLabelLabel,
                         ),
                       ),
-                    ),
-                  const SizedBox(height: 16),
-                  PositionFormField<int>(
-                    key: ValueKey(_position),
-                    variant: PositionFieldVariant.card,
-                    showThumbnail: true,
-                    initialValue: _position,
-                    onSaved: (value) => _position = value,
-                    onChanged: _onPositionChanged,
-                    overlayActions: [
-                      if (canUpdateFromMap)
-                        IconButton(
-                          icon: const Icon(Icons.refresh),
-                          tooltip: l10n.locationsSectionUpdatePlaceFromMapAction,
-                          onPressed: _updatePlaceFromMap,
+                      const SizedBox(height: 16),
+                      _KindCategoryGrid(
+                        value: _kind,
+                        onChanged: (kind) => setState(() => _kind = kind),
+                      ),
+                      const SizedBox(height: 16),
+                      RingDrillTextField(
+                        controller: _placeController,
+                        label: l10n.locationsSectionPlaceLabel,
+                        hintText: l10n.locationsSectionPlaceSearchHint,
+                        tokenAware: true,
+                        planFields: planFields,
+                        selfLocation: selfSlug == null
+                            ? null
+                            : SelfTokenExclusion(
+                                slug: selfSlug,
+                                excludeBare: true,
+                                excludedFacet: 'place',
+                              ),
+                        onCreateVariable: _createVariableInline,
+                        onCreateLocation: _createStationLocation,
+                        onCreatePerson: _createStationPerson,
+                        onChanged: _onPlaceChanged,
+                        suffixIcon: _searchingPlace
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
+                      if (_placeSuggestions.isNotEmpty)
+                        _PlaceSuggestionsList(
+                          suggestions: _placeSuggestions,
+                          onSelect: _selectPlaceSuggestion,
+                        )
+                      else if (_placeSearchedEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            l10n.locationsSectionPlaceNoResults,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
                         ),
+                      const SizedBox(height: 16),
+                      PositionFormField<int>(
+                        key: ValueKey(_position),
+                        variant: PositionFieldVariant.card,
+                        showThumbnail: true,
+                        initialValue: _position,
+                        onSaved: (value) => _position = value,
+                        onChanged: _onPositionChanged,
+                        overlayActions: [
+                          if (canUpdateFromMap)
+                            IconButton(
+                              icon: const Icon(Icons.refresh),
+                              tooltip:
+                                  l10n.locationsSectionUpdatePlaceFromMapAction,
+                              onPressed: _updatePlaceFromMap,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      RingDrillTextArea(
+                        controller: _noteController,
+                        label: l10n.locationsSectionNoteLabel,
+                        minLines: 1,
+                        maxLines: 3,
+                        tokenAware: true,
+                        planFields: planFields,
+                        onCreateVariable: _createVariableInline,
+                        onCreateLocation: _createStationLocation,
+                        onCreatePerson: _createStationPerson,
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  RingDrillTextArea(
-                    controller: _noteController,
-                    label: l10n.locationsSectionNoteLabel,
-                    minLines: 1,
-                    maxLines: 3,
-                    tokenAware: true,
-                    planFields: planFields,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -572,7 +737,9 @@ class _KindCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
           border: Border.all(
-            color: selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+            color: selected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outlineVariant,
             width: selected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -594,4 +761,3 @@ class _KindCard extends StatelessWidget {
     );
   }
 }
-

@@ -21,7 +21,7 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 /// shape for the rest.
 
 class _Captured {
-  Location? value;
+  LocationFormResult? value;
 }
 
 Future<void> _open(
@@ -40,7 +40,7 @@ Future<void> _open(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Location>(
+            captured.value = await Navigator.push<LocationFormResult>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => PlanScope(
@@ -195,7 +195,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.note, 'Se stedet.');
+      expect(captured.value!.location.note, 'Se stedet.');
     },
   );
 
@@ -225,27 +225,6 @@ void main() {
         resolveScopedField(context, 'Bruk {{var.kanal}}.'),
         'Bruk Kanal 6.',
       );
-    },
-  );
-
-  testWidgets(
-    'create-from-leaf is deferred: no "create variable" entry appears even '
-    'when nothing matches (ADR-0047 named-record write-back not wired for '
-    'these fields yet)',
-    (tester) async {
-      final captured = _Captured();
-      await _open(tester, captured);
-
-      final placeField = find.widgetWithText(
-        TextFormField,
-        l.locationsSectionPlaceLabel,
-      );
-      await tester.ensureVisible(placeField);
-      await tester.enterText(placeField, '{{var.zzz');
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text(l.tokenMenuCreateVariable('zzz')), findsNothing);
     },
   );
 }

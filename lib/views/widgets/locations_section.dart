@@ -118,12 +118,12 @@ class _LocationsSectionState extends State<LocationsSection> {
         .where((l) => l.slug != location?.slug)
         .map((l) => l.slug)
         .toSet();
-    final saved = await openFormSurface<Location>(
+    final result = await openFormSurface<LocationFormResult>(
       context,
       builder: (_) =>
           LocationFormScreen(existingSlugs: existingSlugs, initial: location),
     );
-    if (saved != null) widget.onSave(saved);
+    if (result != null) widget.onSave(result.location);
   }
 }
 

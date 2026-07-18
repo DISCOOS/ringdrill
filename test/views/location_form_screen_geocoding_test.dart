@@ -69,7 +69,7 @@ class _FakeGeocodingService implements GeocodingService {
 // ---------------------------------------------------------------------------
 
 class _Captured {
-  Location? value;
+  LocationFormResult? value;
 }
 
 Future<void> _open(
@@ -86,7 +86,7 @@ Future<void> _open(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Location>(
+            captured.value = await Navigator.push<LocationFormResult>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => PlanScope(
@@ -183,10 +183,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.place, hit.label);
-      expect(captured.value!.position, isNotNull);
-      expect(captured.value!.position!.latitude, closeTo(hit.position.latitude, 0.001));
-      expect(captured.value!.position!.longitude, closeTo(hit.position.longitude, 0.001));
+      expect(captured.value!.location.place, hit.label);
+      expect(captured.value!.location.position, isNotNull);
+      expect(
+        captured.value!.location.position!.latitude,
+        closeTo(hit.position.latitude, 0.001),
+      );
+      expect(
+        captured.value!.location.position!.longitude,
+        closeTo(hit.position.longitude, 0.001),
+      );
     },
   );
 
@@ -349,7 +355,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.label, 'Rescue point');
+      expect(captured.value!.location.label, 'Rescue point');
     },
   );
 

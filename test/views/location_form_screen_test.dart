@@ -27,7 +27,7 @@ Finder _pickerMap() => find.descendant(
 );
 
 class _Captured {
-  Location? value;
+  LocationFormResult? value;
 }
 
 /// Wraps the pushed [LocationFormScreen] in [PlanScope]/[StationScope]
@@ -51,7 +51,7 @@ Future<void> _open(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<Location>(
+            captured.value = await Navigator.push<LocationFormResult>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => PlanScope(
@@ -120,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(captured.value, isNotNull);
-      expect(captured.value!.position, isNotNull);
+      expect(captured.value!.location.position, isNotNull);
     },
   );
 
@@ -138,7 +138,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured.value, isNotNull);
-    expect(captured.value!.kind, LocationKind.home);
+    expect(captured.value!.location.kind, LocationKind.home);
   });
 
   testWidgets(

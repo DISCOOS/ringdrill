@@ -733,14 +733,16 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   Future<void> _addLocation(Station station) async {
     final localizations = AppLocalizations.of(context)!;
-    final saved = await openFormSurface<Location>(
+    final result = await openFormSurface<LocationFormResult>(
       context,
       builder: (_) => LocationFormScreen(
         existingSlugs: station.locations.map((l) => l.slug).toSet(),
       ),
     );
-    if (saved == null) return;
-    final updated = station.copyWith(locations: [...station.locations, saved]);
+    if (result == null) return;
+    final updated = station.copyWith(
+      locations: [...station.locations, result.location],
+    );
     await _saveStation(localizations, updated);
   }
 
