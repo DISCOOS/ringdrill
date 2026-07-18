@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 
 /// DESIGN-008 follow-up 02 — prev/next section commands on
@@ -24,27 +25,36 @@ Future<AppLocalizations> _pump(
   String? initialSectionId,
   String? entityName,
   Size size = const Size(400, 800),
+  bool? commitsToParent,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
+  Widget form = SectionNavigatedForm(
+    title: 'Test',
+    entityName: entityName,
+    sections: sections,
+    addable: addable,
+    initialSectionId: initialSectionId,
+    onAdd: (_) {},
+    onRemove: (_) {},
+    onSave: () {},
+    onClose: () {},
+  );
+  // Mirrors how `openFormSurface` actually exposes this to the pushed
+  // form's subtree — only wrapped when a test wants to probe the
+  // commit-to-parent label (DESIGN-010).
+  if (commitsToParent != null) {
+    form = FormSurfaceScope(commitsToParent: commitsToParent, child: form);
+  }
+
   await tester.pumpWidget(
     MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: SectionNavigatedForm(
-        title: 'Test',
-        entityName: entityName,
-        sections: sections,
-        addable: addable,
-        initialSectionId: initialSectionId,
-        onAdd: (_) {},
-        onRemove: (_) {},
-        onSave: () {},
-        onClose: () {},
-      ),
+      home: form,
     ),
   );
   await tester.pumpAndSettle();
@@ -242,6 +252,47 @@ void main() {
       );
       final theme = Theme.of(tester.element(find.text('Section A')));
       expect(material.color, theme.colorScheme.surface);
+    },
+  );
+
+  testWidgets(
+    'primary action reads Lagre/Save by default; Ferdig/Done when the '
+    'form commits to a parent working copy (DESIGN-010 FormSurfaceScope)',
+    (tester) async {
+      final l = await _pump(tester, sections: _sections());
+
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text(l.save)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text(l.formDoneAction),
+        ),
+        findsNothing,
+      );
+      // The × close affordance is unaffected by the label.
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      await _pump(
+        tester,
+        sections: _sections(),
+        commitsToParent: true,
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text(l.formDoneAction),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text(l.save)),
+        findsNothing,
+      );
+      expect(find.byIcon(Icons.close), findsOneWidget);
     },
   );
 

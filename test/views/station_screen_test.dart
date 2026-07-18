@@ -11,6 +11,7 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -264,6 +265,35 @@ void main() {
       // The draft is pre-filled from Kari (the unenacted person), including
       // her age — the name field shows it as part of the identity text.
       expect(find.textContaining('Kari Fiskeløs'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    '"+ Ny person" (Post viewer) opens PersonFormScreen reading Lagre/Save '
+    '— this caller applies and saves the result immediately, unlike the '
+    'station editor\'s own deferred Personer section '
+    '(persons_section_commit_label_test.dart)',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen(stationIndex: 0));
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.tap(find.text(l10n.personsSectionAddAction));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PersonFormScreen), findsOneWidget);
+      expect(find.text(l10n.save), findsOneWidget);
+      expect(find.text(l10n.formDoneAction), findsNothing);
+      // The × close affordance is unaffected by the label. Scoped to the
+      // pushed form — the underlying station screen has its own back/close
+      // action too.
+      expect(
+        find.descendant(
+          of: find.byType(PersonFormScreen),
+          matching: find.byIcon(Icons.close),
+        ),
+        findsOneWidget,
+      );
     },
   );
 
