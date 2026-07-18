@@ -250,9 +250,14 @@ void main() {
       await tester.tap(toggle);
       await tester.pumpAndSettle();
 
-      // Collapsed: the master pane is gone, the detail pane's content
+      // Collapsed: the master pane is clipped out, the detail pane's content
       // stays, and the toggle is still there (same control, now "show").
-      expect(find.byType(SegmentedButton<ProgramSegment>), findsNothing);
+      // The SegmentedButton is still in the element tree (kept mounted for
+      // perf) but has 0 visible width, so it must not be hit-testable.
+      expect(
+        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        findsNothing,
+      );
       expect(find.text('Station A1'), findsOneWidget);
       expect(find.byIcon(CupertinoIcons.sidebar_left), findsOneWidget);
 
@@ -270,7 +275,11 @@ void main() {
 
       await tester.tap(find.byIcon(CupertinoIcons.sidebar_left));
       await tester.pumpAndSettle();
-      expect(find.byType(SegmentedButton<ProgramSegment>), findsNothing);
+      // Kept mounted but clipped to 0 width — must not be hit-testable.
+      expect(
+        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        findsNothing,
+      );
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool(AppConfig.keyMasterPaneCollapsed), isTrue);
@@ -278,7 +287,11 @@ void main() {
       // Simulate an app restart: a fresh router and MainScreen State reading
       // the same (persisted) SharedPreferences store from scratch.
       await _pumpWideApp(tester);
-      expect(find.byType(SegmentedButton<ProgramSegment>), findsNothing);
+      // Kept mounted but clipped to 0 width — must not be hit-testable.
+      expect(
+        find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
+        findsNothing,
+      );
     },
   );
 

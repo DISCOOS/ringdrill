@@ -129,7 +129,8 @@ class WideShell extends StatelessWidget {
     final masterWidth = windowSizeClass == WindowSizeClass.expanded
         ? 420.0
         : 320.0;
-    const railWidth = 72.0;
+    // NavigationRail default minWidth in Material 3 is 80 dp (was 72 in M2).
+    const railWidth = 80.0;
     // The build() gate (`useRail`) guarantees we only reach the rail
     // layout when there is room for a usable detail pane. Narrower
     // widths render the compact narrow layout instead, so there is no
@@ -158,49 +159,45 @@ class WideShell extends StatelessWidget {
     // inside the master list use `*Surface` which stays distinct against
     // the accent. Only built (and only occupies width) when the master
     // pane is not collapsed.
-    final masterPane = Row(
-      children: [
-        rail,
-        Expanded(
-          child: ColoredBox(
-            color: masterAccent,
-            // In dark + rail, override `cardTheme.color` to `brandDeep` so
-            // cards in the master list sit one tone darker than
-            // `masterAccentDark` and clearly pop out as content tiles.
-            // Without this override cards default to `darkSurface` which
-            // is nearly the same lightness as the master accent. The
-            // narrow (no-rail) layout keeps the default `darkSurface`
-            // cards on the `brandDeep` scaffold.
-            child: Theme(
-              data: isDark
-                  ? Theme.of(context).copyWith(
-                      cardTheme: Theme.of(
-                        context,
-                      ).cardTheme.copyWith(color: RingDrillColors.brandDeep),
-                    )
-                  : Theme.of(context),
-              child: Column(
+    // The master column content (without the rail) — extracted so it can
+    // be kept mounted across collapse toggles. tabs lives here and must
+    // never be disposed by a toggle.
+    //
+    // In dark + rail, override `cardTheme.color` to `brandDeep` so cards
+    // in the master list sit one tone darker than `masterAccentDark` and
+    // clearly pop out as content tiles. Without this override cards default
+    // to `darkSurface` which is nearly the same lightness as the master
+    // accent. The narrow (no-rail) layout keeps the default `darkSurface`
+    // cards on the `brandDeep` scaffold.
+    final masterColumnContent = ColoredBox(
+      color: masterAccent,
+      child: Theme(
+        data: isDark
+            ? Theme.of(context).copyWith(
+                cardTheme: Theme.of(
+                  context,
+                ).cardTheme.copyWith(color: RingDrillColors.brandDeep),
+              )
+            : Theme.of(context),
+        child: Column(
+          children: [
+            masterAppBar,
+            // Stack so the active tab's FAB (only the exercises tab has
+            // one) floats at the bottom-right of the master pane, above
+            // the docked mini player which sits below this region in the
+            // outer Column.
+            Expanded(
+              child: Stack(
                 children: [
-                  masterAppBar,
-                  // Stack so the active tab's FAB (only the exercises tab
-                  // has one) floats at the bottom-right of the master
-                  // pane, above the docked mini player which sits below
-                  // this region in the outer Column.
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        Positioned.fill(child: tabs),
-                        if (fab != null)
-                          Positioned(right: 16, bottom: 16, child: fab),
-                      ],
-                    ),
-                  ),
+                  Positioned.fill(child: tabs),
+                  if (fab != null)
+                    Positioned(right: 16, bottom: 16, child: fab),
                 ],
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
 
     final miniPlayer = DockedDrillMiniPlayer(
@@ -208,36 +205,59 @@ class WideShell extends StatelessWidget {
       openDrillPlayer: drillPlayer.openDrillPlayer,
     );
 
-    // Collapsed: the master column (rail + list) is gone, so the mini
-    // player — which otherwise docks under just the rail+master region —
-    // moves to span the shell's full bottom width instead (a sibling of
-    // the rail+detail row, not nested under a width-constrained SizedBox).
-    // Expanded keeps today's placement: nested under the rail+master
-    // SizedBox, spanning only that region, and the detail pane never has
-    // a mini player docked beneath it.
-    final body = masterCollapsed
-        ? Column(
+    // Keep the master column (and thus `tabs`) mounted at the same tree
+    // position regardless of collapse state. Collapsing clips the master
+    // column to zero width via ClipRect + SizedBox(width: 0) while the
+    // OverflowBox keeps the content laid out at masterWidth so the segment
+    // pages are not reflowed or re-initialised.
+    //
+    // Mini-player placement preserves today's behaviour:
+    //   expanded → docked under the rail+master region only
+    //   collapsed → spans the full shell width (sibling of the main row)
+    // The mini-player rebuilds on toggle; tabs does not.
+    final body = Column(
+      children: [
+        Expanded(
+          child: Row(
             children: [
-              Expanded(
-                child: Row(
+              // Explicitly sized so its inner Row widgets get bounded width
+              // constraints regardless of collapse state.
+              SizedBox(
+                width: masterCollapsed ? railWidth : railWidth + masterWidth,
+                child: Column(
                   children: [
-                    rail,
-                    const Expanded(child: MasterDetailPane()),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          rail,
+                          // Always mounted; width collapses to 0 when hidden.
+                          ClipRect(
+                            child: SizedBox(
+                              width: masterCollapsed ? 0.0 : masterWidth,
+                              child: OverflowBox(
+                                alignment: Alignment.topLeft,
+                                maxWidth: masterWidth,
+                                child: SizedBox(
+                                  width: masterWidth,
+                                  child: masterColumnContent,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!masterCollapsed) miniPlayer,
                   ],
                 ),
               ),
-              miniPlayer,
-            ],
-          )
-        : Row(
-            children: [
-              SizedBox(
-                width: railWidth + masterWidth,
-                child: Column(children: [Expanded(child: masterPane), miniPlayer]),
-              ),
               const Expanded(child: MasterDetailPane()),
             ],
-          );
+          ),
+        ),
+        if (masterCollapsed) miniPlayer,
+      ],
+    );
 
     return Column(
       children: [
