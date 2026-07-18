@@ -360,7 +360,20 @@ class _MainScreenState extends State<MainScreen>
     if (owningSegment == null) return;
     _programPageController.rememberSelection(target, segment: owningSegment);
     if (_programPageController.activeSegment.value != owningSegment) {
-      _programPageController.activeSegment.value = owningSegment;
+      // ADR-0032: segment selection flows URL → state. Navigate the URL to
+      // the owning segment (like the segment switcher and _onDestinationSelected
+      // do) rather than writing `activeSegment` directly. A direct write left
+      // the URL on the *origin* segment while the state moved — so re-tapping
+      // the origin segment button became `router.go(current URL)`, a no-op
+      // (the "can't get back to the segment I came from" live-lock). The
+      // target set just above survives the navigation; `_initTab` writes
+      // `activeSegment` from the new URL and the segment restore re-adopts it.
+      final uuid = ProgramService().activeProgramUuid;
+      if (uuid != null) {
+        widget.router.go(programSegmentPath(uuid, owningSegment.urlSlug));
+      } else {
+        _programPageController.activeSegment.value = owningSegment;
+      }
     }
   }
 
