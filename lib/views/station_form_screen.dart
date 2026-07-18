@@ -817,6 +817,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
                   rolePlayFor: _rolePlayFor,
                   onOpenRolePlay: _openRolePlayEditor,
                   onAddRolePlay: _addMarkerFor,
+                  actorFor: (rp) => rp.actorUuid == null
+                      ? null
+                      : _programService.getActor(rp.actorUuid!),
                 ),
               ),
               FormSection(

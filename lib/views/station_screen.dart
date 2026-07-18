@@ -561,6 +561,13 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         )
         .firstOrNull;
     final displayName = person.name.isEmpty ? person.slug : person.name;
+    // "Spilles av …" names the marker's cast actor (the person playing the
+    // role), not the roleplay's own name — which mirrors the person and read
+    // as "Henrik · Spilles av Henrik". Fall back to the no-cast line when the
+    // marker exists but is uncast.
+    final castActor = rolePlay?.actorUuid == null
+        ? null
+        : _programService.getActor(rolePlay!.actorUuid!);
     final genderLabel = genderLabelFor(person.gender, l10n);
     final metaParts = [
       displayName,
@@ -614,9 +621,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                           label: l10n.personsSectionAddMarkerAction,
                         )
                       : _EnactedByPill(
-                          label: l10n.personsSectionEnactedByAction(
-                            rolePlay.name,
-                          ),
+                          label: castActor != null
+                              ? l10n.personsSectionEnactedByAction(
+                                  castActor.realName,
+                                )
+                              : l10n.noCastLine,
                         ),
                 ),
               ],

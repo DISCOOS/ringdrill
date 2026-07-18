@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
@@ -46,6 +47,7 @@ class PersonsSection extends StatefulWidget {
     required this.rolePlayFor,
     required this.onOpenRolePlay,
     required this.onAddRolePlay,
+    this.actorFor,
   });
 
   final List<Person> persons;
@@ -82,6 +84,12 @@ class PersonsSection extends StatefulWidget {
   /// Opens the RolePlay editor with the post and [person] pre-set, for a
   /// person with no enacting marker yet.
   final ValueChanged<Person> onAddRolePlay;
+
+  /// The cast [Actor] for an enacting [RolePlay], if any — the caller knows
+  /// the program's actors, which this presentation-only section does not.
+  /// Used so the "Spilles av …" line names the actor who plays the role,
+  /// not the roleplay's own (person-mirroring) name.
+  final Actor? Function(RolePlay rolePlay)? actorFor;
 
   @override
   State<PersonsSection> createState() => _PersonsSectionState();
@@ -128,6 +136,7 @@ class _PersonsSectionState extends State<PersonsSection> {
                     onOpenRolePlay: widget.onOpenRolePlay,
                     onAddRolePlay: () => widget.onAddRolePlay(person),
                     usagesFor: widget.usagesFor,
+                    actorFor: widget.actorFor,
                   ),
               ],
             ),
@@ -233,6 +242,7 @@ class _PersonCard extends StatelessWidget {
     required this.onOpenRolePlay,
     required this.onAddRolePlay,
     required this.usagesFor,
+    this.actorFor,
   });
 
   final Person person;
@@ -242,6 +252,7 @@ class _PersonCard extends StatelessWidget {
   final ValueChanged<RolePlay> onOpenRolePlay;
   final VoidCallback onAddRolePlay;
   final List<String> Function(String slug) usagesFor;
+  final Actor? Function(RolePlay rolePlay)? actorFor;
 
   /// The swipe-to-dismiss guard: a person still referenced (ADR-0047,
   /// DESIGN-009 prompt 5) is blocked with a dialog listing the usages;
@@ -277,6 +288,10 @@ class _PersonCard extends StatelessWidget {
       if (person.age != null) '${person.age}',
       ?genderLabel,
     ];
+    final rolePlay = this.rolePlay;
+    // "Spilles av …" names the cast actor (who plays the role), not the
+    // roleplay's own person-mirroring name; the no-cast line when uncast.
+    final castActor = rolePlay == null ? null : actorFor?.call(rolePlay);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Dismissible(
@@ -339,9 +354,11 @@ class _PersonCard extends StatelessWidget {
                                       label: l10n.personsSectionAddMarkerAction,
                                     )
                                   : _EnactedByRow(
-                                      label: l10n.personsSectionEnactedByAction(
-                                        rolePlay!.name,
-                                      ),
+                                      label: castActor != null
+                                          ? l10n.personsSectionEnactedByAction(
+                                              castActor.realName,
+                                            )
+                                          : l10n.noCastLine,
                                     ),
                             ),
                           ],
