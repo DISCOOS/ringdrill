@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-009 follow-up 3b — `PersonFormScreen` in isolation: the
 /// segmented gender control and the home picker's inline "Ny lokasjon"
@@ -15,12 +18,21 @@ class _Captured {
   PersonFormResult? value;
 }
 
+/// Wraps the pushed [PersonFormScreen] in [PlanScope]/[StationScope]
+/// (DESIGN-009 follow-up 4e) — mirroring what `openFormSurface` re-provides
+/// from the caller in production (DESIGN-010 stage 1), since a token-aware
+/// field asserts on a missing [PlanScope]. [variables]/[stationPersons] feed
+/// the `name`/`signalement`/`notes` fields' insertion menu; [locations] is
+/// both the form's own location-picker list and the ambient StationScope's
+/// locations.
 Future<void> _open(
   WidgetTester tester,
   _Captured captured, {
   Person? initial,
   List<Location> locations = const [],
   Set<String> existingSlugs = const {},
+  List<DrillVariable> variables = const [],
+  List<Person> stationPersons = const [],
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -32,10 +44,17 @@ Future<void> _open(
             captured.value = await Navigator.push<PersonFormResult>(
               ctx,
               MaterialPageRoute(
-                builder: (_) => PersonFormScreen(
-                  existingSlugs: existingSlugs,
-                  locations: locations,
-                  initial: initial,
+                builder: (_) => PlanScope(
+                  variables: variables,
+                  child: StationScope(
+                    locations: locations,
+                    persons: stationPersons,
+                    child: PersonFormScreen(
+                      existingSlugs: existingSlugs,
+                      locations: locations,
+                      initial: initial,
+                    ),
+                  ),
                 ),
               ),
             );
@@ -197,9 +216,16 @@ void main() {
               captured.value = await Navigator.push<PersonFormResult>(
                 ctx,
                 MaterialPageRoute(
-                  builder: (_) => const PersonFormScreen(
-                    existingSlugs: {},
-                    locations: [],
+                  builder: (_) => const PlanScope(
+                    variables: [],
+                    child: StationScope(
+                      locations: [],
+                      persons: [],
+                      child: PersonFormScreen(
+                        existingSlugs: {},
+                        locations: [],
+                      ),
+                    ),
                   ),
                 ),
               );
