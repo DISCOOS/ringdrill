@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
@@ -35,6 +36,10 @@ const _hilde = Person(
 );
 const _kari = Person(slug: 'kari', name: 'Kari Fiskeløs', age: 71);
 
+// Hilde's marker is cast to a staff member; the enacted-by line names the
+// cast actor (not the roleplay's person-mirroring name).
+const _actorForHilde = Actor(uuid: 'actor-hilde', realName: 'Ola Nordmann');
+
 const _roleForHilde = RolePlay(
   uuid: 'role-hilde',
   index: 0,
@@ -42,6 +47,7 @@ const _roleForHilde = RolePlay(
   stationIndex: 0,
   name: 'Hilde',
   personRef: 'hilde',
+  actorUuid: 'actor-hilde',
 );
 
 const _lkp = Location(slug: 'lkp', label: 'LKP', kind: LocationKind.lkp);
@@ -97,6 +103,9 @@ Map<String, Object> _basePrefs() {
     'pe:$_programUuid:$_exerciseUuid': jsonEncode(ex.toJson()),
     'pr:$_programUuid:${_roleForHilde.uuid}': jsonEncode(
       _roleForHilde.toJson(),
+    ),
+    'pa:$_programUuid:${_actorForHilde.uuid}': jsonEncode(
+      _actorForHilde.toJson(),
     ),
   };
 }
@@ -226,12 +235,12 @@ void main() {
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(
-        find.text(l10n.personsSectionEnactedByAction(_roleForHilde.name)),
+        find.text(l10n.personsSectionEnactedByAction(_actorForHilde.realName)),
         findsOneWidget,
       );
 
       await tester.tap(
-        find.text(l10n.personsSectionEnactedByAction(_roleForHilde.name)),
+        find.text(l10n.personsSectionEnactedByAction(_actorForHilde.realName)),
       );
       await tester.pumpAndSettle();
 

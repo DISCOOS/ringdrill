@@ -123,13 +123,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Back on the post editor: the person's card now shows the marker
-      // inline instead of "Legg til spill".
+      // inline instead of "Legg til spill". The marker is enacted but not yet
+      // cast (actors are assigned close to execution), so the row reads the
+      // no-cast line rather than naming anyone.
       expect(find.byType(RolePlayFormScreen), findsNothing);
       expect(find.text(l.personsSectionAddMarkerAction), findsNothing);
-      expect(
-        find.text(l.personsSectionEnactedByAction('Anne Glemsk')),
-        findsOneWidget,
-      );
+      expect(find.text(l.noCastLine), findsOneWidget);
 
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
@@ -171,11 +170,10 @@ void main() {
       await tester.tap(find.text(l.personsSectionTitle));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(l.personsSectionEnactedByAction('Anne Glemsk')),
-        findsOneWidget,
-      );
-      await tester.tap(find.text(l.personsSectionEnactedByAction('Anne Glemsk')));
+      // The uncast marker shows the no-cast line inline; tapping it opens the
+      // RolePlay editor.
+      expect(find.text(l.noCastLine), findsOneWidget);
+      await tester.tap(find.text(l.noCastLine));
       await tester.pumpAndSettle();
 
       expect(find.byType(RolePlayFormScreen), findsOneWidget);
@@ -196,10 +194,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(RolePlayFormScreen), findsNothing);
-      expect(
-        find.text(l.personsSectionEnactedByAction('Kari')),
-        findsOneWidget,
-      );
+      // Still enacted and still uncast, so the row keeps the no-cast line; the
+      // renamed identity rides the write-back (asserted below).
+      expect(find.text(l.noCastLine), findsOneWidget);
 
       await tester.tap(find.text(l.save));
       await tester.pumpAndSettle();
@@ -232,10 +229,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(l.personsSectionEnactedByAction('Anne Glemsk')),
-        findsOneWidget,
-      );
+      expect(find.text(l.noCastLine), findsOneWidget);
 
       // Close the post editor without saving.
       await tester.tap(find.byIcon(Icons.close));
