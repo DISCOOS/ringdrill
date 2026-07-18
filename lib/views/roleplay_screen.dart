@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -15,6 +16,7 @@ import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
+import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -28,6 +30,7 @@ import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
@@ -273,19 +276,18 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
                     localizations: localizations,
                   ),
 
-                  // Position card — follows the portrayed person's
-                  // location (copied onto rolePlay.position at selection
-                  // time). Omitted entirely (not even a placeholder) when
-                  // there is no position, matching this body's pre-
-                  // expanded-split behaviour.
-                  if (rolePlay.position != null)
+                  // Position card — the marker's own position (or, failing
+                  // that, the portrayed person's location), plus read-only
+                  // post/person context pins (Del B). Omitted entirely (not
+                  // even a placeholder) when there is no central position.
+                  if (_markerMapCentral(rolePlay, station) != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: _buildPositionPanel(
                         rolePlay: rolePlay,
                         station: station,
                         roleOverrides: roleOverrides,
-                      ),
+                      )!,
                     ),
 
                   // Når aktiv card — the round(s) this station is staffed
@@ -403,34 +405,107 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
   /// to fill the expanded body's right pane instead of the panel's own
   /// fixed default height; left `false` for the stacked body's inline
   /// card.
+  /// The role map's central position (Del B): the marker's own position if
+  /// set, else the portrayed person's location. Null when the marker has
+  /// neither — the map is omitted entirely.
+  LatLng? _markerMapCentral(RolePlay rolePlay, Station? station) =>
+      rolePlay.position ?? _personLocation(station, rolePlay)?.position;
+
   Widget? _buildPositionPanel({
     required RolePlay rolePlay,
     required Station? station,
     required Map<String, String> roleOverrides,
     bool fillHeight = false,
   }) {
-    final position = rolePlay.position;
-    if (position == null) return null;
+    final central = _markerMapCentral(rolePlay, station);
+    if (central == null) return null;
+    final personLocation = _personLocation(station, rolePlay);
+    final exercise = _programService.getExercise(rolePlay.exerciseUuid);
+    final stationNumberFormat =
+        _programService.activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
+    final exNum = exercise == null
+        ? 1
+        : _programService.loadExercises().indexWhere(
+                (e) => e.uuid == exercise.uuid,
+              ) +
+              1;
+    final exerciseNumber = exNum < 1 ? 1 : exNum;
+
     // A Builder, not the outer `build` context: the resolve-context scopes
     // are wrapped around the whole Scaffold in `build`, which sits *above*
     // `build`'s own context in the tree, so `resolveScopedField` needs a
     // context from inside it.
     return Builder(
-      builder: (context) => RolePositionPanel(
-        position: position,
-        label:
-            resolveScopedField(
-              context,
+      builder: (context) {
+        // Del B: read-only context pins beside the central marker — the parent
+        // post's position (green place pin) and the portrayed person's
+        // location (kind-styled pin) — each only when it sits at a distinct
+        // spot (within a small tolerance) from the central marker and from
+        // each other.
+        final extra = <MapMarkerSpec<int>>[];
+        bool distinct(LatLng p) =>
+            !_samePlace(p, central) &&
+            extra.every((m) => !_samePlace(p, m.point));
+
+        final postPosition = station?.position;
+        if (station != null && postPosition != null && distinct(postPosition)) {
+          final rawLabel = station.numberAndName(
+            stationNumberFormat,
+            exerciseNumber: exerciseNumber,
+          );
+          extra.add(
+            MapMarkerSpec<int>(
+              id: 1,
+              label:
+                  resolveScopedField(
+                    context,
+                    rawLabel,
+                    overrides: roleOverrides,
+                  ) ??
+                  rawLabel,
+              point: postPosition,
+              child: const Icon(Icons.place, color: Colors.green, size: 32),
+            ),
+          );
+        }
+        final locPosition = personLocation?.position;
+        if (personLocation != null &&
+            locPosition != null &&
+            distinct(locPosition)) {
+          extra.add(
+            MapMarkerSpec<int>(
+              id: 2,
+              label: personLocation.label.isEmpty
+                  ? personLocation.slug
+                  : personLocation.label,
+              point: locPosition,
+              child: Icon(
+                personLocation.kind.icon,
+                color: personLocation.kind.color,
+                size: 30,
+              ),
+            ),
+          );
+        }
+
+        return RolePositionPanel(
+          position: central,
+          label:
+              resolveScopedField(
+                context,
+                rolePlay.name,
+                overrides: roleOverrides,
+                roleplayFacets: _roleplayFacets(rolePlay),
+              ) ??
               rolePlay.name,
-              overrides: roleOverrides,
-              roleplayFacets: _roleplayFacets(rolePlay),
-            ) ??
-            rolePlay.name,
-        sourceLabel: _positionSourceLabel(station, rolePlay),
-        asCard: true,
-        fillHeight: fillHeight,
-        sectionId: 'position',
-      ),
+          sourceLabel: _positionSourceLabel(station, rolePlay),
+          asCard: true,
+          fillHeight: fillHeight,
+          sectionId: 'position',
+          extraMarkers: extra,
+        );
+      },
     );
   }
 
@@ -484,6 +559,17 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
       ),
     );
   }
+}
+
+/// Two positions count as the same spot when within ~5 m — used to drop the
+/// Spill map's post/person context pins when they coincide with the marker's
+/// own central position (Del B). A coarse degree epsilon is enough here (the
+/// pins are just deduplicated, not measured); longitude runs tighter at high
+/// latitudes, which only makes the test slightly stricter there.
+bool _samePlace(LatLng a, LatLng b) {
+  const eps = 0.00005; // ~5.5 m of latitude
+  return (a.latitude - b.latitude).abs() < eps &&
+      (a.longitude - b.longitude).abs() < eps;
 }
 
 /// Station context card (DESIGN-010's Spill viewer, harmonized into the

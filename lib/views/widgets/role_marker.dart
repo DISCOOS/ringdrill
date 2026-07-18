@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Rounded-square icon for a role-play position marker.
+/// Rounded-square icon for a role-play (markør) position marker.
 ///
 /// Visually distinct from the station's green [Icons.place] pin: uses a
-/// rounded rectangle with a [Icons.theater_comedy] glyph in the theme's
-/// tertiary container colour. A heavier border weight signals that this is
-/// a statically-placed roleplayer position.
+/// rounded rectangle with the [Icons.face] glyph (the established
+/// one-concrete-marker convention) in the theme's tertiary container colour.
+/// A heavier border weight signals that this is a statically-placed marker
+/// position.
 ///
 /// Does **not** render a label. Label rendering is owned by [MapView] via
 /// its zoom-gated label slot, so this widget is purely the icon part.
@@ -38,7 +39,7 @@ class RoleMarker extends StatelessWidget {
             ],
           ),
           child: Icon(
-            Icons.theater_comedy,
+            Icons.face,
             color: scheme.onTertiaryContainer,
             size: size / 2,
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart';
@@ -24,7 +25,14 @@ class RolePositionPanel extends StatelessWidget {
     this.sourceLabel,
     this.fillHeight = false,
     this.sectionId,
+    this.extraMarkers = const [],
   });
+
+  /// Additional read-only markers shown on the map beside the role's own
+  /// central marker (Del B: the parent post's position and the portrayed
+  /// person's location, only when they sit at a distinct spot). The
+  /// coordinate bar still reads only [position].
+  final List<MapMarkerSpec<int>> extraMarkers;
 
   final LatLng position;
 
@@ -64,12 +72,14 @@ class RolePositionPanel extends StatelessWidget {
     final theme = Theme.of(context);
 
     return PositionCardShell(
-      onTap: () => openRoleMapSheet(context, position, label),
+      onTap: () =>
+          openRoleMapSheet(context, position, label, extraMarkers: extraMarkers),
       asCard: asCard,
       thumbnail: RoleMiniMap(
         position: position,
         label: label,
         height: mapHeight,
+        extraMarkers: extraMarkers,
       ),
       thumbnailHeight: mapHeight,
       fillHeight: fillHeight,

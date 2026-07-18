@@ -17,11 +17,18 @@ class RoleMiniMap extends StatelessWidget {
     required this.position,
     required this.label,
     this.height = 200,
+    this.extraMarkers = const [],
   });
 
   final LatLng position;
   final String label;
   final double height;
+
+  /// Additional read-only markers (the parent post's position, the portrayed
+  /// person's location) shown alongside this role's own central marker — the
+  /// caller only includes ones that sit at a distinct spot. Empty for the
+  /// RolePlaysView tile.
+  final List<MapMarkerSpec<int>> extraMarkers;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +37,8 @@ class RoleMiniMap extends StatelessWidget {
       width: double.infinity,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => openRoleMapSheet(context, position, label),
+        onTap: () =>
+            openRoleMapSheet(context, position, label, extraMarkers: extraMarkers),
         child: IgnorePointer(
           child: MapView(
             layers: MapConfig.layers,
@@ -44,6 +52,7 @@ class RoleMiniMap extends StatelessWidget {
                 point: position,
                 child: const RoleMarker(),
               ),
+              ...extraMarkers,
             ],
           ),
         ),
@@ -60,8 +69,9 @@ class RoleMiniMap extends StatelessWidget {
 Future<void> openRoleMapSheet(
   BuildContext context,
   LatLng position,
-  String label,
-) {
+  String label, {
+  List<MapMarkerSpec<int>> extraMarkers = const [],
+}) {
   return showRingdrillActionSheet<void>(
     context: context,
     builder: (context) => SizedBox(
@@ -81,6 +91,7 @@ Future<void> openRoleMapSheet(
             point: position,
             child: const RoleMarker(),
           ),
+          ...extraMarkers,
         ],
       ),
     ),
