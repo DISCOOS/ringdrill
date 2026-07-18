@@ -152,7 +152,7 @@ void main() {
       find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
       'Ghost',
     );
-    await tester.tap(find.widgetWithText(FilledButton, l.save));
+    await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
     await tester.pumpAndSettle();
 
     // The newly created location gets a random slug, not "ghost" — so

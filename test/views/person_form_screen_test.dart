@@ -160,7 +160,10 @@ void main() {
       await tester.tap(
         find.descendant(
           of: locationDialog,
-          matching: find.widgetWithText(FilledButton, l.save),
+          // The nested Location form only folds its result into this
+          // Person form's own working copy (DESIGN-010's FormSurfaceScope),
+          // so it reads "Ferdig"/"Done", not "Lagre"/"Save".
+          matching: find.widgetWithText(FilledButton, l.formDoneAction),
         ),
       );
       await tester.pumpAndSettle();

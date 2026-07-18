@@ -110,7 +110,7 @@ void main() {
 
       expect(find.textContaining('{{var.frekvens}}'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l.save));
@@ -122,7 +122,10 @@ void main() {
         contains('frekvens'),
       );
       expect(captured.value!.station.locations, hasLength(1));
-      expect(captured.value!.station.locations.single.place, '{{var.frekvens}}');
+      expect(
+        captured.value!.station.locations.single.place,
+        '{{var.frekvens}}',
+      );
     },
   );
 
@@ -158,7 +161,7 @@ void main() {
       await tester.tap(find.text(l.tokenMenuCreateLocation('sentrum')));
       await tester.pump();
 
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l.save));

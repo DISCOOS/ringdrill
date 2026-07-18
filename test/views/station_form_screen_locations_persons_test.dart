@@ -119,7 +119,7 @@ void main() {
         find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
         'Sist kjente posisjon',
       );
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
       await tester.pumpAndSettle();
 
       expect(find.text('Sist kjente posisjon'), findsOneWidget);
@@ -130,7 +130,10 @@ void main() {
       expect(captured.value, isNotNull);
       expect(captured.value!.station.locations, hasLength(1));
       // Random, not derived from the label (DESIGN-009 follow-up 4h).
-      expect(captured.value!.station.locations.single.slug, matches(_slugPattern));
+      expect(
+        captured.value!.station.locations.single.slug,
+        matches(_slugPattern),
+      );
       expect(
         captured.value!.station.locations.single.label,
         'Sist kjente posisjon',
@@ -166,7 +169,7 @@ void main() {
         find.widgetWithText(TextFormField, l.locationsSectionPlaceLabel),
         'New place',
       );
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l.save));
@@ -218,7 +221,7 @@ void main() {
         find.widgetWithText(TextFormField, l.roleName),
         'Anne Glemsk',
       );
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
       await tester.pumpAndSettle();
 
       expect(find.text('Anne Glemsk'), findsOneWidget);
@@ -229,7 +232,10 @@ void main() {
       expect(captured.value, isNotNull);
       expect(captured.value!.station.persons, hasLength(1));
       // Random, not derived from the name (DESIGN-009 follow-up 4h).
-      expect(captured.value!.station.persons.single.slug, matches(_slugPattern));
+      expect(
+        captured.value!.station.persons.single.slug,
+        matches(_slugPattern),
+      );
       expect(captured.value!.station.persons.single.name, 'Anne Glemsk');
     });
 
@@ -257,7 +263,7 @@ void main() {
         await tester.tap(find.text('Sist kjent').last);
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(FilledButton, l.save));
+        await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text(l.save));
@@ -291,7 +297,7 @@ void main() {
         '74',
       );
       await tester.tap(find.text(l.genderWomanLabel));
-      await tester.tap(find.widgetWithText(FilledButton, l.save));
+      await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l.save));
@@ -346,7 +352,7 @@ void main() {
           find.widgetWithText(TextFormField, l.locationsSectionLabelLabel),
           'Sperrepost',
         );
-        await tester.tap(find.widgetWithText(FilledButton, l.save));
+        await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
         await tester.pumpAndSettle();
       }
 
@@ -376,7 +382,7 @@ void main() {
           find.widgetWithText(TextFormField, l.roleName),
           'Ukjent',
         );
-        await tester.tap(find.widgetWithText(FilledButton, l.save));
+        await tester.tap(find.widgetWithText(FilledButton, l.formDoneAction));
         await tester.pumpAndSettle();
       }
 

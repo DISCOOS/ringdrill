@@ -13,6 +13,7 @@ import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/location_kind_labels.dart';
@@ -477,7 +478,18 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
             ),
             title: Text(title),
             actions: [
-              FilledButton(onPressed: _save, child: Text(l10n.save)),
+              // "Ferdig"/"Done" when this form only folds its result into a
+              // parent's own unsaved working copy (DESIGN-010's
+              // FormSurfaceScope) — this form has its own AppBar rather than
+              // `SectionNavigatedForm`'s, so it reads the scope directly.
+              FilledButton(
+                onPressed: _save,
+                child: Text(
+                  FormSurfaceScope.of(context)
+                      ? l10n.formDoneAction
+                      : l10n.save,
+                ),
+              ),
               const SizedBox(width: 16),
             ],
           ),
