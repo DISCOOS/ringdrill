@@ -1,8 +1,9 @@
 ---
 id: DESIGN-010
 title: Inline preview and the resolve-context scope cascade
-status: Proposed
+status: Accepted
 started: 2026-07-08
+accepted: 2026-07-18
 owners: ["kengu"]
 related_code:
   - lib/services/brief/brief_renderer.dart
@@ -132,11 +133,12 @@ Staged, each a separate PR, all additive and Flutter-layer only except the resol
 
 (Consolidated from five stages to four: preview and rollup, which share one render-resolved-section primitive, are built together.)
 
-**Progress (2026-07-10).** Stages 1 and 2 have landed on `design-010`; stages 3 and 4 remain.
+**Progress (2026-07-18).** All four stages have landed on `design-010`. DESIGN-010 is Accepted.
 
-* *Stage 1* — the Flutter-free field resolver is extracted (`lib/services/brief/field_resolver.dart`, [ADR-0048](../adrs/0048-flutter-free-field-resolver.md), still `proposed`), `PlanScope` carries the program facets, `ExerciseScope` is added, and the resolve scopes are re-provided across `openFormSurface` (`lib/views/shell/open_form_surface.dart`). Covered by resolver-parity and scope-presence tests; no visible change.
+* *Stage 1* — the Flutter-free field resolver is extracted (`lib/services/brief/field_resolver.dart`, [ADR-0048](../adrs/0048-flutter-free-field-resolver.md), now `accepted`), `PlanScope` carries the program facets, `ExerciseScope` is added, and the resolve scopes are re-provided across `openFormSurface` (`lib/views/shell/open_form_surface.dart`). Covered by resolver-parity and scope-presence tests; no visible change.
 * *Stage 2 (including follow-up 2b)* — the per-section preview toggle and the read-only default-section rollup are built (`resolve_scoped_field.dart`, `section_rollup.dart`), with `StationScope` extended to carry the station's own facets. Follow-up 2b wired preview onto the base-section body and relabelled the rollup toggle to "Vis/Skjul detaljer". Tested.
-* *Remaining* — **Stage 3**: migrate `RingDrillText` and the direct `substitutePlanVariables` callers to the resolver, and build the Post/Spill detail-sheet rollups (specified above, mockup `mockups/station-and-roleplay-viewers.html`, not yet implemented). **Stage 4** is **DESIGN-009 follow-up 4e** — token-aware scenario leaf fields on the re-provided scopes. DESIGN-008 (variables, section editor) and DESIGN-009 (locations/persons, `personRef`, now *Accepted*) are the foundations these stages consume.
+* *Stage 3* — `RingDrillText` moved to the full field resolver, and the Post/Spill detail-sheet rollups were built (mockup `mockups/station-and-roleplay-viewers.html`). Tested.
+* *Stage 4* — **DESIGN-009 follow-up 4e**: `Location.place`/`note` and `Person.name`/`signalement`/`notes` became token-aware (`RingDrillTextField`/`RingDrillTextArea`, `tokenAware: true`) on top of the scopes `openFormSurface` already re-provides, with the self-reference rule enforced via a new `SelfTokenExclusion` (`lib/views/widgets/editor_token.dart`) threaded through `TokenInsertionMenu`'s entry filtering. Create-from-leaf (`onCreateVariable`/`onCreateLocation`/`onCreatePerson`) is deferred — these two forms still return their bare result type with no `PlanAdditions`-shaped write-back payload, so only existing-entity references are offered from these five fields for now; reference-existing plus the self-reference rule is the non-negotiable core DESIGN-009 4e asked for. Tested (`location_form_screen_variables_test.dart`, `person_form_screen_variables_test.dart`).
 
 All user-facing strings in `app_en.arb` / `app_nb.arb`; run `make i18n`.
 

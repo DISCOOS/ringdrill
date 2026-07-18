@@ -165,7 +165,7 @@ Picker/authoring follow-ups, all additive views/l10n/test work with no model or 
 * **4b (done).** Offer the already-resolvable `program.*` / `exercise.*` fields in every editor's picker, from a shared `PlanFieldTokens` source.
 * **4c.** Offer the station's own facets (`station.name`, `stationCode`, `position.utm`, `variantSuffix`) in the station and roleplay editors, and the roleplay's own facets (`roleplay.name`, `age`, `signalement`, `position.utm`) in the roleplay editor. Withhold each field's own free-text facet (self-reference rule).
 * **4d.** Facet completion in the picker for `station.loc.<slug>.` / `station.person.<slug>.` — list the kind's facet names as selectable entries.
-* **4e.** Make the scenario leaf fields token-aware (`Location.place`/`note`, `Person.name`/`signalement`/`notes`), re-providing `PlanScope`/`StationScope` inside the `openFormSurface` forms.
+* **4e (done).** Make the scenario leaf fields token-aware (`Location.place`/`note`, `Person.name`/`signalement`/`notes`), re-providing `PlanScope`/`StationScope` inside the `openFormSurface` forms. Landed as DESIGN-010 stage 4: `tokenAware: true` on `RingDrillTextField`/`RingDrillTextArea`, self-reference withholding via `SelfTokenExclusion`, and the save-time unresolved-reference block, reusing the scopes DESIGN-010 stage 1 already re-provides. Create-from-leaf is deferred — these two forms have no `PlanAdditions`-shaped write-back payload yet, so only existing-entity references are offered from these five fields for now.
 
 All user-facing strings in `app_en.arb` / `app_nb.arb`; run `make i18n`.
 
