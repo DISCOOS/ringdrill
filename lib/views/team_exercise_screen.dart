@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -228,18 +229,33 @@ class _TeamExerciseScreenState extends State<TeamExerciseScreen> {
   Widget _buildScheduleCard(ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
     final program = _programService.activeProgram;
+    final format = program?.stationNumberFormat ?? StationNumberFormat.dotted;
+    final exerciseNumber = () {
+      final n =
+          _programService.loadExercises().indexWhere(
+            (e) => e.uuid == widget.exercise.uuid,
+          ) +
+          1;
+      return n < 1 ? 1 : n;
+    }();
     final rows = List.generate(widget.exercise.schedule.length, (index) {
       final stationIndex = widget.exercise.stationIndex(
         widget.teamIndex,
         index,
       );
       final station = widget.exercise.stations[stationIndex];
+      // The formatted post number + name (Station.numberAndName), matching the
+      // status card's badge + name above.
+      final postLabel = station.numberAndName(
+        format,
+        exerciseNumber: exerciseNumber,
+      );
       return ScheduleTableRow(
         roundIndex: index,
         label: program == null
-            ? station.name
+            ? postLabel
             : substitutePlanVariables(
-                station.name,
+                postLabel,
                 effectivePlanVariables(
                   program,
                   exercise: widget.exercise,

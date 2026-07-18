@@ -63,7 +63,8 @@ void main() {
       'Post X',
       reason: 'first save from the sheet must persist',
     );
-    expect(find.text('Post X'), findsWidgets);
+    // The sheet title now prefixes the formatted post number ("1.1 Post X").
+    expect(find.textContaining('Post X'), findsWidgets);
 
     // Round 2: edit again from the re-opened sheet — the scenario that
     // regressed (the stale first re-open future swallowed the result).
@@ -73,6 +74,6 @@ void main() {
       'Post Y',
       reason: 'second consecutive save must persist too',
     );
-    expect(find.text('Post Y'), findsWidgets);
+    expect(find.textContaining('Post Y'), findsWidgets);
   });
 }

@@ -158,12 +158,13 @@ void main() {
         reason: 'the old per-round Card-wrapped rows are gone',
       );
 
-      // Both stations' rounds are listed, in order — only the team's own
+      // Both stations' rounds are listed, in order (now prefixed with the
+      // formatted post number, e.g. "1.1 Post 1") — only the team's own
       // ScheduleCard names stations, so this is unambiguous even though the
       // always-visible round table above the segmented selector shows round
       // labels ("Round 1"/"Round 2"), not station names.
-      expect(find.text('Post 1'), findsOneWidget);
-      expect(find.text('Post 2'), findsOneWidget);
+      expect(find.textContaining('Post 1'), findsOneWidget);
+      expect(find.textContaining('Post 2'), findsOneWidget);
 
       // The team-detail table's own header row, scoped to the card so it
       // isn't confused with the round table's identical DRILL/EVAL/ROLL

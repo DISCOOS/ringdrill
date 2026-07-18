@@ -67,9 +67,10 @@ void main() {
         reason: 'the old per-round Card-wrapped rows are gone',
       );
 
-      // Both stations' rounds are listed, in order.
-      expect(find.text('Post 1'), findsOneWidget);
-      expect(find.text('Post 2'), findsOneWidget);
+      // Both stations' rounds are listed, in order (now prefixed with the
+      // formatted post number, e.g. "1.1 Post 1").
+      expect(find.textContaining('Post 1'), findsOneWidget);
+      expect(find.textContaining('Post 2'), findsOneWidget);
 
       // One shared header, not a duplicate standalone PhaseHeaders above it.
       expect(find.text('DRILL'), findsOneWidget);

@@ -444,7 +444,13 @@ class _PositionCardShellState extends State<PositionCardShell> {
     // round the thumbnail's own corners.
     return widget.asCard
         ? Card(
+            // Match CollapsibleSectionCard exactly (elevation 1 + clip), so
+            // the collapsed bar reads as the same surface as the other
+            // section cards rather than the cardTheme default (elevation 2),
+            // whose dark-mode elevation overlay makes it visibly lighter.
+            elevation: 1,
             margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
             child: InkWell(onTap: widget.onTap, child: content),
           )
         : ClipRRect(

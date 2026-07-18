@@ -721,6 +721,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// ancestor gives it instead.
   Widget? _buildExercisePositionMap(ExerciseEvent event, {double? height}) {
     final markers = <MapMarkerSpec<int>>[];
+    final format =
+        ProgramService().activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
+    final exNum =
+        ProgramService().loadExercises().indexWhere(
+          (e) => e.uuid == _exercise!.uuid,
+        ) +
+        1;
+    final exerciseNumber = exNum < 1 ? 1 : exNum;
     for (
       var stationIndex = 0;
       stationIndex < _exercise!.stations.length;
@@ -740,10 +749,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           label:
               resolveScopedField(
                 context,
-                station.name,
+                station.numberAndName(format, exerciseNumber: exerciseNumber),
                 overrides: _overridesFor(_exercise!, station: station),
               ) ??
-              station.name,
+              station.numberAndName(format, exerciseNumber: exerciseNumber),
           point: station.position!,
           highlighted: isLive,
           child: Icon(
@@ -1538,6 +1547,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
 
   Widget _buildTeamList(ExerciseEvent event) {
     final localizations = context.l10n;
+    final format =
+        ProgramService().activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
+    final exNum =
+        ProgramService().loadExercises().indexWhere(
+          (e) => e.uuid == _exercise!.uuid,
+        ) +
+        1;
+    final exerciseNumber = exNum < 1 ? 1 : exNum;
     // See `_buildStationList`: rendered as a Column so the parent
     // SingleChildScrollView owns the scrolling. Team counts are bounded
     // by exercise configuration and stay small in practice.
@@ -1560,7 +1578,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           final currentStationName =
               (currentStationIndex >= 0 &&
                   currentStationIndex < _exercise!.stations.length)
-              ? _exercise!.stations[currentStationIndex].name
+              ? _exercise!.stations[currentStationIndex].numberAndName(
+                  format,
+                  exerciseNumber: exerciseNumber,
+                )
               : null;
           // A team is "live" when the exercise is live.
           // Mirrors the live styling used in TeamScreen._ExerciseSection.
@@ -1674,6 +1695,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   /// without leaving the overview.
   Widget _buildTeamDetail(int teamIndex, ExerciseEvent event) {
     final localizations = AppLocalizations.of(context)!;
+    final format =
+        ProgramService().activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
+    final exNum =
+        ProgramService().loadExercises().indexWhere(
+          (e) => e.uuid == _exercise!.uuid,
+        ) +
+        1;
+    final exerciseNumber = exNum < 1 ? 1 : exNum;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: ScheduleCard(
@@ -1694,7 +1724,10 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             roundIndex: roundIndex,
             label: none
                 ? '${localizations.station(1)} ×'
-                : _exercise!.stations[stationIndex].name,
+                : _exercise!.stations[stationIndex].numberAndName(
+                    format,
+                    exerciseNumber: exerciseNumber,
+                  ),
             muted: none,
             // Mirror the description tap in _buildStationDetail: a round
             // row here represents "team T at station S in round R", so a

@@ -112,7 +112,7 @@ void main() {
       expect(find.text(l10n.stationLabel.toUpperCase()), findsOneWidget);
       expect(find.byIcon(Icons.flag), findsOneWidget);
       expect(postCollapseChevron(), findsOneWidget);
-      expect(find.text('Post 1'), findsOneWidget);
+      expect(find.text('1.1 Post 1'), findsOneWidget);
       expect(find.text('Finsøk rundt IPP innenfor R25.'), findsOneWidget);
     },
   );
@@ -131,11 +131,11 @@ void main() {
 
       await tester.tap(postCollapseChevron());
       await tester.pumpAndSettle();
-      expect(find.text('Post 1'), findsNothing);
+      expect(find.text('1.1 Post 1'), findsNothing);
 
       await tester.tap(postCollapseChevron());
       await tester.pumpAndSettle();
-      expect(find.text('Post 1'), findsOneWidget);
+      expect(find.text('1.1 Post 1'), findsOneWidget);
     },
   );
 
@@ -170,7 +170,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Post 1'));
+      await tester.tap(find.text('1.1 Post 1'));
       await tester.pumpAndSettle();
 
       final target = controller.targetNotifier.value;

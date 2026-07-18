@@ -315,12 +315,9 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      // Both roles have stationIndex: 0 → station name _stationName
-      expect(
-        find.text(l10n.roleSubtitleStation(_stationName)),
-        findsWidgets,
-      );
+      // Both roles have stationIndex: 0 → the subtitle names the station,
+      // now prefixed with the formatted post number (e.g. "1.1 Post Alpha").
+      expect(find.textContaining(_stationName), findsWidgets);
     });
 
     testWidgets('collapsed title includes cast marker first name in parens '

@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/lat_lng_converter.dart';
 import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 
 part 'station.freezed.dart';
@@ -43,4 +44,17 @@ sealed class Station with _$Station {
 
   factory Station.fromJson(Map<String, dynamic> json) =>
       _$StationFromJson(json);
+}
+
+extension StationNumbering on Station {
+  /// This station's formatted number ([Numbering.station], per [format] and
+  /// the 1-based [exerciseNumber]) followed by its [name] — e.g. "1.1 Turgåer".
+  /// The raw [name] is used as-is; the caller resolves any plan-variable
+  /// tokens in the result.
+  String numberAndName(
+    StationNumberFormat format, {
+    required int exerciseNumber,
+  }) =>
+      '${Numbering.station(format, exerciseNumber: exerciseNumber, stationIndex: index)} '
+      '$name';
 }

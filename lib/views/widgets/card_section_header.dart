@@ -59,3 +59,36 @@ class CardSectionHeader extends StatelessWidget {
     );
   }
 }
+
+/// The icon + title row shared by [CardSectionHeader] and the collapse-aware
+/// `headerBuilder` headers (the Spill/Post/Når aktiv cards, which append a
+/// collapsed-state summary to the kicker). Just the leading content that
+/// fills the header's main slot — the `CollapsibleSectionCard` wrapper
+/// supplies the padding, bottom divider, trailing slot and collapse chevron —
+/// so a custom header reads exactly like the default one.
+///
+/// [title] is rendered as-is (no uppercasing): the caller upper-cases the
+/// kicker word itself and leaves any appended summary (a post name, a time
+/// span) in its natural case.
+Widget kickerHeaderContent(
+  BuildContext context, {
+  required IconData icon,
+  required String title,
+}) {
+  final theme = Theme.of(context);
+  return Row(
+    children: [
+      Icon(icon, size: 18, color: theme.colorScheme.primary),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          title,
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
+    ],
+  );
+}

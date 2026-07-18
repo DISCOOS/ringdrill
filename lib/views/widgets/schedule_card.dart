@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
+import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 
@@ -21,7 +22,14 @@ class ScheduleCard extends StatelessWidget {
     required this.exercise,
     this.icon = Icons.access_time_filled,
     this.labelWidth = 90,
+    this.collapsedSummary,
   });
+
+  /// Optional one-line summary appended to [title] in the header while the
+  /// card is collapsed (e.g. the Når aktiv card's "{start} - {end}
+  /// (duration)"), so the reader sees it without expanding. Null keeps the
+  /// plain icon + title header.
+  final String? collapsedSummary;
 
   /// Stable identifier for the persisted collapsed preference (DESIGN-010
   /// follow-up: collapsible-section-cards) — distinct per kind of schedule
@@ -45,6 +53,17 @@ class ScheduleCard extends StatelessWidget {
       sectionId: sectionId,
       icon: icon,
       title: title,
+      headerBuilder: collapsedSummary == null
+          ? null
+          : (collapsed) => kickerHeaderContent(
+              context,
+              icon: icon,
+              // Kicker upper-cased; the summary (times, duration) keeps its
+              // natural case.
+              title: collapsed
+                  ? '${title.toUpperCase()} · $collapsedSummary'
+                  : title.toUpperCase(),
+            ),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: ScheduleTable(

@@ -207,7 +207,7 @@ void main() {
 
       // Tapping the post-context card must not throw the "requires an open
       // sheet" assert, and must still redirect correctly.
-      await tester.tap(find.text('Station A1'));
+      await tester.tap(find.text('1.1 Station A1'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(_selectedSegment(tester), {ProgramSegment.stations});
@@ -247,7 +247,7 @@ void main() {
 
       // The post-context card is the only "Station A1" text on screen at
       // this point (the master list is still showing roleplays).
-      await tester.tap(find.text('Station A1'));
+      await tester.tap(find.text('1.1 Station A1'));
       await tester.pumpAndSettle();
 
       // The redirect (ContextSheet.replace(StationSheetTarget(...))) must
@@ -299,7 +299,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Station A1'));
+      await tester.tap(find.text('1.1 Station A1'));
       await tester.pumpAndSettle();
       expect(_selectedSegment(tester), {ProgramSegment.stations});
 
@@ -341,7 +341,7 @@ void main() {
       expect(find.byType(RolePlayScreen), findsOneWidget);
 
       // The post-context card still redirects the modal's own content...
-      await tester.tap(find.text('Station A1'));
+      await tester.tap(find.text('1.1 Station A1'));
       await tester.pumpAndSettle();
       expect(find.byType(StationExerciseScreen), findsOneWidget);
 

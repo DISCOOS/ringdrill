@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
@@ -138,13 +139,21 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    // Station identity in the AppBar so the sheet's header names the
-    // thing the sheet is about, with the parent exercise on the
-    // secondary line. We render `station.name` verbatim — the active
-    // data convention already embeds a code prefix in the name
-    // ("1a) Turgåer"), and the body's own heading uses the same
-    // string, so any synthetic prefix here would double up.
+    // Station identity in the AppBar so the sheet's header names the thing
+    // the sheet is about, with the parent exercise on the secondary line.
+    // Prefixed with the formatted post number (Station.numberAndName), like
+    // everywhere else a post is named as text. A manual code the author
+    // typed into the name (e.g. "1a) Turgåer") is their own to clean up
+    // (doubling is not handled here).
     final station = _exercise.stations[widget.stationIndex];
+    final stationNumberFormat =
+        _programService.activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
+    final exerciseNumber =
+        _programService.loadExercises().indexWhere(
+          (e) => e.uuid == _exercise.uuid,
+        ) +
+        1;
     // DESIGN-010 stage 3: this station/exercise are already loaded here, so
     // wrap the sheet in the same resolve-context scopes an editor provides
     // (ADR-0048). Every widget built *below* this point (`SheetTitle`,
@@ -176,7 +185,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
             ),
             toolbarHeight: 72,
             title: SheetTitle(
-              primary: station.name,
+              primary: station.numberAndName(
+                stationNumberFormat,
+                exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
+              ),
               secondary: _exercise.name,
               primaryOverrides: _overridesFor(_exercise, station: station),
               secondaryOverrides: _overridesFor(_exercise),

@@ -152,27 +152,35 @@ class _CastRosterSheetState extends State<CastRosterSheet> {
                             color: Theme.of(context).colorScheme.onError,
                           ),
                         ),
-                        child: ListTile(
-                          leading: const Icon(Icons.face),
-                          title: Text(actor.realName),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (actor.phone != null) Text(actor.phone!),
-                              if (roles.isNotEmpty)
-                                Text(
-                                  localizations.castedAs(roles.join(', ')),
-                                  // ADR-0037: themed bodySmall instead of 12.
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                            ],
+                        // Own Material (transparent) so the tile's ink/splash
+                        // paints above the sheet's surface-toned ColoredBox
+                        // instead of being hidden by it.
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: ListTile(
+                            leading: const Icon(Icons.face),
+                            title: Text(actor.realName),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (actor.phone != null) Text(actor.phone!),
+                                if (roles.isNotEmpty)
+                                  Text(
+                                    localizations.castedAs(roles.join(', ')),
+                                    // ADR-0037: themed bodySmall instead of 12.
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                              ],
+                            ),
+                            onTap: () => _openEdit(actor),
                           ),
-                          onTap: () => _openEdit(actor),
                         ),
                       );
                     },

@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/theme.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -770,6 +771,9 @@ class _StationsViewState extends State<StationsView>
   List<SearchResult> _buildSearchTargets(BuildContext context) {
     final exercises = _programService.loadExercises();
     final targets = <SearchResult>[];
+    final stationNumberFormat =
+        _programService.activeProgram?.stationNumberFormat ??
+        StationNumberFormat.dotted;
 
     for (final exercise in exercises) {
       // Hidden exercises drop out of the search list entirely (both the
@@ -815,9 +819,13 @@ class _StationsViewState extends State<StationsView>
           exercise,
           stationIndex: stationIndex,
         );
+        final postLabel = station.numberAndName(
+          stationNumberFormat,
+          exerciseNumber: exercises.indexOf(exercise) + 1,
+        );
         final label =
             '${resolveScopedField(context, exercise.name, overrides: stationOverrides) ?? exercise.name} '
-            '| ${resolveScopedField(context, station.name, overrides: stationOverrides) ?? station.name}';
+            '| ${resolveScopedField(context, postLabel, overrides: stationOverrides) ?? postLabel}';
         targets.add(
           SearchResult.points(
             label,

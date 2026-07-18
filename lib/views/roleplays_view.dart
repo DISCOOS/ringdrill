@@ -316,7 +316,11 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                   rolePlay.stationIndex! < exercise.stations.length)
               ? localizations.roleSubtitleStation(
                   substitutePlanVariables(
-                    exercise.stations[rolePlay.stationIndex!].name,
+                    exercise.stations[rolePlay.stationIndex!].numberAndName(
+                      _service.activeProgram?.stationNumberFormat ??
+                          StationNumberFormat.dotted,
+                      exerciseNumber: exerciseNumber,
+                    ),
                     _overridesFor(exercise, rolePlay),
                   ),
                 )

@@ -24,6 +24,7 @@ import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -513,12 +514,38 @@ class _StationContextCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final briefTheme = BriefTheme.of(context);
     final station = this.station;
     final exercise = this.exercise;
+    // Post label: the formatted station number + name (Station.numberAndName),
+    // or just the name when there is no resolvable post. Shown in both the
+    // collapsed header and the body's title line.
+    final postLabel = (station != null && exercise != null)
+        ? station.numberAndName(
+            ProgramService().activeProgram?.stationNumberFormat ??
+                StationNumberFormat.dotted,
+            exerciseNumber:
+                ProgramService().loadExercises().indexWhere(
+                  (e) => e.uuid == exercise.uuid,
+                ) +
+                1,
+          )
+        : station?.name;
     return CollapsibleSectionCard(
       sectionId: 'stationContext',
-      icon: Icons.flag,
-      title: l10n.stationLabel,
+      // Collapsed appends which post this marker plays at — the formatted
+      // station number + name — so the reader sees it without expanding.
+      headerBuilder: (collapsed) {
+        final title = StringBuffer(l10n.stationLabel.toUpperCase());
+        if (collapsed && postLabel != null) {
+          title.write(' · ${substitutePlanVariables(postLabel, overrides)}');
+        }
+        return kickerHeaderContent(
+          context,
+          icon: Icons.flag,
+          title: title.toString(),
+        );
+      },
       body: station == null || exercise == null
           ? Padding(
               padding: const EdgeInsets.all(12),
@@ -542,13 +569,25 @@ class _StationContextCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    RingDrillText(station.name, overrides: overrides),
+                    // Post name, prefixed with the formatted number and bold —
+                    // the body's own title line.
+                    RingDrillText(
+                      postLabel ?? station.name,
+                      overrides: overrides,
+                      style: briefTheme.typography.body.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: briefTheme.text.heading,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     if ((station.description ?? '').isNotEmpty)
                       RingDrillText(
                         station.description!,
                         overrides: overrides,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        // Match the markdown script sections' body text so the
+                        // description reads at the same size/colour.
+                        style: briefTheme.typography.body.copyWith(
+                          color: briefTheme.text.body,
                         ),
                       ),
                   ],
@@ -659,22 +698,34 @@ class _PlayCard extends StatelessWidget {
       sections.add(child);
     }
 
-    Widget labeled(String label, Widget content) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _IdentityMoreLabel(label),
-        const SizedBox(height: 2),
-        content,
-      ],
+    // [markdown] content (BriefMarkdownBlock) carries its own top spacing, so
+    // plain-text content needs a larger label→body gap to line up with the
+    // markdown script sections' airier spacing.
+    Widget labeled(String label, Widget content, {bool markdown = false}) =>
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _IdentityMoreLabel(label),
+            // ~16px label→body gap; markdown content adds ~6px of its own top
+            // spacing, so it gets a smaller SizedBox to land at the same gap.
+            SizedBox(height: markdown ? 10 : 16),
+            content,
+          ],
+        );
+
+    // Non-markdown body text (signalement, notes, location) uses the same
+    // style as the markdown script sections (BriefMarkdownBlock's paragraph:
+    // briefTheme body typography + colour), so the whole card reads at one
+    // size/colour with more air, not three.
+    final bodyTextStyle = briefTheme.typography.body.copyWith(
+      color: briefTheme.text.body,
     );
 
     Widget resolvedText(String text) => RingDrillText(
       text,
       overrides: overrides,
       roleplayFacets: roleplayFacets,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
+      style: bodyTextStyle,
     );
 
     // PERSON section — the effective identity (name + age · gender), each the
@@ -702,50 +753,48 @@ class _PlayCard extends StatelessWidget {
       ?genderLabel,
     ];
     addSection(
-      labeled(
-        l10n.rolePlayPersonLabel,
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Flexible(
-                  child: RingDrillText(
-                    name,
-                    overrides: overrides,
-                    roleplayFacets: roleplayFacets,
-                    style: theme.textTheme.bodyMedium,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label row: the "PERSON" kicker, then the accent dot (any identity
+          // facet overridden) with "Tilpasset fra {person}" as its label when
+          // it is the name specifically that is overridden. A Wrap so the
+          // label falls to the next line on a narrow card instead of
+          // overflowing; the name below stays clean.
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            children: [
+              _IdentityMoreLabel(l10n.rolePlayPersonLabel),
+              if (overrideCount > 0)
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                if (overrideCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
+              if (nameOverridden)
+                Text(
+                  l10n.rolePlayCustomizedFrom(personName!),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
                   ),
-              ],
-            ),
-            if (metaParts.isNotEmpty)
-              Text(
-                metaParts.join(' · '),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-              ),
-            if (nameOverridden)
-              Text(
-                l10n.rolePlayCustomizedFrom(personName!),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+            ],
+          ),
+          // ~16px label→body gap, matching the other blocks.
+          const SizedBox(height: 16),
+          // Effective name with age · gender appended inline (small-dot
+          // separator); same body style as the rest of the card.
+          RingDrillText(
+            metaParts.isEmpty ? name : '$name · ${metaParts.join(' · ')}',
+            overrides: overrides,
+            roleplayFacets: roleplayFacets,
+            style: bodyTextStyle,
+          ),
             // The person's own notes, folded in and read together with the
             // identity (no "Notater" kicker of its own).
             if (notes.isNotEmpty)
@@ -764,14 +813,11 @@ class _PlayCard extends StatelessWidget {
                     locationLabel,
                     if (locationPosition != null) formatUtm(locationPosition),
                   ].join(' · '),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: bodyTextStyle,
                 ),
               ),
           ],
         ),
-      ),
       // The identity is edited on the roleplay's own "Rolle" section (person
       // selection + per-marker overrides), not the scenario Person directly.
       onTap: () => onEditSection('roleplay'),
@@ -802,6 +848,7 @@ class _PlayCard extends StatelessWidget {
         labeled(
           label,
           BriefMarkdownBlock(data: resolved, theme: briefTheme, gutter: 0),
+          markdown: true,
         ),
         onTap: () => onEditSection(sectionId),
       );
@@ -865,29 +912,19 @@ class _PlayCard extends StatelessWidget {
       // header divider and the collapse chevron, so the card reads as one
       // family with Post/Når aktiv.
       headerBuilder: (collapsed) {
-        // The whole header uppercased (consistently, per Kengu) to match
-        // POST/NÅR AKTIV.
+        // Collapsed appends the marker's first name in parentheses; the whole
+        // header is uppercased (consistently, per Kengu). A single concrete
+        // marker → the face icon (masks = the markers list, face = one
+        // marker, person = a person).
         final buffer = StringBuffer(l10n.playSection);
         if (markerFirstName != null && collapsed) {
           buffer.write(' ($markerFirstName)');
         }
-        return Row(
-          children: [
-            // A single concrete marker → the face icon (established
-            // convention: masks = the markers *list*, face = one marker,
-            // person = a person). Size 18/primary like CardSectionHeader.
-            Icon(Icons.face, size: 18, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                buffer.toString().toUpperCase(),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ),
-          ],
+        // The marker name is short, so the whole Spill header stays uppercase.
+        return kickerHeaderContent(
+          context,
+          icon: Icons.face,
+          title: buffer.toString().toUpperCase(),
         );
       },
       // Add/change-marker quick action — always visible regardless of
@@ -1092,6 +1129,27 @@ class _ActiveScheduleCard extends StatelessWidget {
     if (rows.isEmpty) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
+
+    // Collapsed-header summary: the marker's active window — the first active
+    // round's start to the last active round's end (its last phase start plus
+    // the rotation it lasts) — and its total duration.
+    final startTime = exercise.schedule[rows.first.roundIndex].first;
+    final endMinutes =
+        exercise.schedule[rows.last.roundIndex].last.inMinutes +
+        exercise.rotationTime;
+    final endTime = SimpleTimeOfDay.fromMinutes(endMinutes);
+    final durationMinutes = endMinutes - startTime.inMinutes;
+    final durationHours = durationMinutes ~/ 60;
+    final durationRest = durationMinutes % 60;
+    // Common format (hoursMinutesShort/minute), but drop a trailing "0 min":
+    // whole hours read as e.g. "3 t".
+    final durationText = durationHours == 0
+        ? l10n.minute(durationRest)
+        : durationRest == 0
+        ? '$durationHours ${l10n.variableDurationHourUnit}'
+        : l10n.hoursMinutesShort(durationHours, durationRest);
+    final activeSummary = '$startTime - $endTime ($durationText)';
+
     final exerciseService = ExerciseService();
     final lastEvent = exerciseService.last;
     return StreamBuilder<ExerciseEvent>(
@@ -1108,6 +1166,7 @@ class _ActiveScheduleCard extends StatelessWidget {
           rows: rows,
           event: event,
           exercise: exercise,
+          collapsedSummary: activeSummary,
         );
       },
     );

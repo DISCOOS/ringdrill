@@ -179,7 +179,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(StationExerciseScreen),
-          matching: find.text('Station A1'),
+          matching: find.textContaining('Station A1'),
         ),
         findsOneWidget,
       );
