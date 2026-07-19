@@ -366,7 +366,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
         name: station.name,
         description: station.description,
         variantSuffix: station.variantSuffix,
-        positionUtm: formatUtm(station.position),
+        position: station.position,
         child: scoped,
       );
     }
@@ -841,11 +841,8 @@ class _PlayCard extends StatelessWidget {
       color: briefTheme.text.body,
     );
 
-    Widget resolvedText(String text) => RingDrillText.plain(
-      text,
-      overrides: overrides,
-      style: bodyTextStyle,
-    );
+    Widget resolvedText(String text) =>
+        RingDrillText.plain(text, overrides: overrides, style: bodyTextStyle);
 
     // PERSON section — the effective identity (name + age · gender), each the
     // linked person's own value unless this roleplay overrides it non-empty
@@ -954,12 +951,7 @@ class _PlayCard extends StatelessWidget {
     void addScript(String sectionId, String label, String? raw) {
       if (raw == null || raw.isEmpty) return;
       final resolved =
-          resolveScopedField(
-            context,
-            raw,
-            overrides: overrides,
-          ) ??
-          '';
+          resolveScopedField(context, raw, overrides: overrides) ?? '';
       if (resolved.trim().isEmpty) return;
       addSection(
         labeled(

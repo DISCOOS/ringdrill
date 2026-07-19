@@ -185,7 +185,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         name: station.name,
         description: station.description,
         variantSuffix: station.variantSuffix,
-        positionUtm: formatUtm(station.position),
+        position: station.position,
         child: Scaffold(
           appBar: AppBar(
             leading: MasterDetailLeading(
@@ -612,7 +612,11 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       person.signalement,
     );
     final genderLabel = genderLabelFor(effGender, l10n);
-    final metaParts = [displayName, if (effAge != null) '$effAge', ?genderLabel];
+    final metaParts = [
+      displayName,
+      if (effAge != null) '$effAge',
+      ?genderLabel,
+    ];
     final overridden =
         rolePlay != null &&
         (_isOverride(rolePlay.name, person.name) ||

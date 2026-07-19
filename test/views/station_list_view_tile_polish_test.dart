@@ -28,8 +28,8 @@ const _entryLoc = Location(
   position: LatLng(59.9, 10.7),
 );
 
-Exercise _exercise() => makeExercise(uuid: 'ex-tile-polish', name: 'Exercise A')
-    .copyWith(
+Exercise _exercise() =>
+    makeExercise(uuid: 'ex-tile-polish', name: 'Exercise A').copyWith(
       stations: [
         Station(
           index: 0,
@@ -114,18 +114,17 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Fix 2: the section header and person row use different icons',
-    (tester) async {
-      await expandFirstStation(tester);
+  testWidgets('Fix 2: the section header and person row use different icons', (
+    tester,
+  ) async {
+    await expandFirstStation(tester);
 
-      // Header keeps the masks-theater icon (the play/actors group)...
-      expect(find.byIcon(Icons.theater_comedy), findsOneWidget);
-      // ...the row is the person (character) → person icon; the actor shows in
-      // the trailing cast pill instead.
-      expect(find.byIcon(Icons.person), findsWidgets);
-    },
-  );
+    // Header keeps the masks-theater icon (the play/actors group)...
+    expect(find.byIcon(Icons.theater_comedy), findsOneWidget);
+    // ...the row is the person (character) → person icon; the actor shows in
+    // the trailing cast pill instead.
+    expect(find.byIcon(Icons.person), findsWidgets);
+  });
 
   testWidgets(
     'Fix 4: the marker row\'s cast-state icon opens the shared marker '
@@ -134,10 +133,7 @@ void main() {
       await expandFirstStation(tester);
 
       // No `⋮` menu anywhere in this tile either.
-      expect(
-        find.byWidgetPredicate((w) => w is PopupMenuButton),
-        findsNothing,
-      );
+      expect(find.byWidgetPredicate((w) => w is PopupMenuButton), findsNothing);
 
       // The role seeded in setUp() is uncast, so the trailing cast pill reads
       // "No actor" — tapping it opens the shared marker sheet (not
@@ -157,15 +153,12 @@ void main() {
       await expandFirstStation(tester);
 
       expect(find.textContaining('{{station.'), findsNothing);
-      // The description renders via RingDrillText.rich, so position and
-      // address resolve as copy chips (their own Text widgets inside
-      // WidgetSpans).
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is Text && w.data == formatUtm(_stationPosition),
-        ),
-        findsWidgets,
-      );
+      // The description renders via RingDrillText.rich. The app resolvers
+      // pass ActionChipFormatter (ADR-0050), so the position resolves as an
+      // rdchip: link (rendered as plain link text until DESIGN-013 Commit 4
+      // wires up the pill renderer) while the address stays a copy chip
+      // (its own Text widget inside a WidgetSpan).
+      expect(find.textContaining(formatUtm(_stationPosition)), findsWidgets);
       expect(
         find.byWidgetPredicate((w) => w is Text && w.data == 'Innkjøring'),
         findsWidgets,

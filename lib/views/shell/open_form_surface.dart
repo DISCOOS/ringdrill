@@ -117,7 +117,7 @@ WidgetBuilder _reprovideScopes(
         name: roleplayScope.name,
         age: roleplayScope.age,
         signalement: roleplayScope.signalement,
-        positionUtm: roleplayScope.positionUtm,
+        position: roleplayScope.position,
         child: child,
       );
     }
@@ -130,7 +130,7 @@ WidgetBuilder _reprovideScopes(
         stationCode: stationScope.stationCode,
         description: stationScope.description,
         variantSuffix: stationScope.variantSuffix,
-        positionUtm: stationScope.positionUtm,
+        position: stationScope.position,
         child: child,
       );
     }

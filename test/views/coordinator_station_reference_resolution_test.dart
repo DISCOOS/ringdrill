@@ -92,13 +92,12 @@ void main() {
 
       final expectedUtm = formatUtm(_position);
       expect(find.textContaining('{{station.position.utm}}'), findsNothing);
-      // The description renders via RingDrillText.rich, so the coordinate is a
-      // copy chip (its own Text inside a WidgetSpan). The position panel also
-      // shows the UTM (as an EditableText), so match the chip's Text widget.
-      expect(
-        find.byWidgetPredicate((w) => w is Text && w.data == expectedUtm),
-        findsWidgets,
-      );
+      // The description renders via RingDrillText.rich. The app resolvers
+      // pass ActionChipFormatter (ADR-0050), so the coordinate resolves as an
+      // rdchip: link (plain link text until DESIGN-013 Commit 4 wires up the
+      // pill renderer) rather than a standalone copy-chip Text — match on
+      // rendered text instead.
+      expect(find.textContaining(expectedUtm), findsWidgets);
     },
   );
 }

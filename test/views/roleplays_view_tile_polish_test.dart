@@ -134,27 +134,21 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Fix 4: no marker context menu remains; the cast chip (the one '
-    'person-icon) opens the shared marker sheet',
-    (tester) async {
-      await expandFirstRole(tester);
+  testWidgets('Fix 4: no marker context menu remains; the cast chip (the one '
+      'person-icon) opens the shared marker sheet', (tester) async {
+    await expandFirstRole(tester);
 
-      // No `⋮` menu anywhere in the tile.
-      expect(
-        find.byWidgetPredicate((w) => w is PopupMenuButton),
-        findsNothing,
-      );
+    // No `⋮` menu anywhere in the tile.
+    expect(find.byWidgetPredicate((w) => w is PopupMenuButton), findsNothing);
 
-      // The cast chip (Icons.face, this role is cast) opens the shared marker
-      // sheet — the one consistent affordance, unified with Poster.
-      await tester.tap(find.byIcon(Icons.face).first);
-      await tester.pumpAndSettle();
+    // The cast chip (Icons.face, this role is cast) opens the shared marker
+    // sheet — the one consistent affordance, unified with Poster.
+    await tester.tap(find.byIcon(Icons.face).first);
+    await tester.pumpAndSettle();
 
-      expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);
-      expect(find.text(l10n.clearCast), findsOneWidget);
-    },
-  );
+    expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);
+    expect(find.text(l10n.clearCast), findsOneWidget);
+  });
 
   testWidgets(
     'Fix 5: {{station.position.utm}} and {{station.loc.*}} resolve per '

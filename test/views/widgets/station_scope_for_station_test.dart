@@ -5,7 +5,6 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/utils/station_scenario_tokens.dart' show formatUtm;
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
@@ -70,7 +69,7 @@ void main() {
     expect(ex!.variableOverrides, {'freq': 'Kanal 8'});
     expect(st, isNotNull);
     expect(st!.name, 'Post 1');
-    expect(st!.positionUtm, formatUtm(const LatLng(59.91, 10.75)));
+    expect(st!.position, const LatLng(59.91, 10.75));
     expect(st!.variantSuffix, 'A');
     expect(st!.locations.single.slug, 'lkp');
     expect(st!.persons.single.slug, 'p1');

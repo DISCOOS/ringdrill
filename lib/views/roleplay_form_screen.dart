@@ -9,7 +9,6 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
@@ -592,9 +591,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       for (final v in _pendingVariables) v.name,
     };
     _pendingVariables.addAll(
-      additions.variables.where(
-        (v) => !declaredVariableNames.contains(v.name),
-      ),
+      additions.variables.where((v) => !declaredVariableNames.contains(v.name)),
     );
   }
 
@@ -983,9 +980,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         name: parentStation?.name,
         description: parentStation?.description,
         variantSuffix: parentStation?.variantSuffix,
-        positionUtm: parentStation?.position == null
-            ? null
-            : formatUtm(parentStation!.position),
+        position: parentStation?.position,
         child: Form(
           key: _formKey,
           child: SectionNavigatedForm(
@@ -1377,18 +1372,17 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final hasBadge = station != null && stationIndex != null;
-                    final trailingStyle = theme.textTheme.bodyMedium
-                        ?.copyWith(color: theme.colorScheme.primary);
-                    final trailingWidth =
-                        (TextPainter(
-                              text: TextSpan(
-                                text: l.rolePlayPostEditAction,
-                                style: trailingStyle,
-                              ),
-                              textDirection: Directionality.of(context),
-                              maxLines: 1,
-                            )..layout())
-                            .width;
+                    final trailingStyle = theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    );
+                    final trailingWidth = (TextPainter(
+                      text: TextSpan(
+                        text: l.rolePlayPostEditAction,
+                        style: trailingStyle,
+                      ),
+                      textDirection: Directionality.of(context),
+                      maxLines: 1,
+                    )..layout()).width;
                     // Everything except the station name: the minimum
                     // width the row needs even if the name shrinks to
                     // nothing. If that alone doesn't fit, the trailing

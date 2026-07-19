@@ -485,7 +485,7 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
         stationCode: ambientStation?.stationCode,
         description: ambientStation?.description,
         variantSuffix: ambientStation?.variantSuffix,
-        positionUtm: ambientStation?.positionUtm,
+        position: ambientStation?.position,
         child: Scaffold(
           appBar: AppBar(
             leading: IconButton(

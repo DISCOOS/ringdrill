@@ -71,7 +71,7 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
             locations: const [_lkp],
             persons: const [_kari],
             name: 'Station A',
-            positionUtm: formatUtm(_stationPosition),
+            position: _stationPosition,
             child: RoleplayScope.forRoleplay(
               _rolePlay,
               child: Builder(
@@ -90,52 +90,54 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets(
-    'resolves {{var.*}}, {{program.*}}, {{exercise.*}}, {{station.*}}, '
-    '{{station.loc/person.*}} and {{roleplay.*}} together the same way the '
-    'brief would, and leaves an undeclared variable as the brief\'s '
-    'unknown-variable placeholder',
-    (tester) async {
-      final context = await _pumpScoped(tester);
+  testWidgets('resolves {{var.*}}, {{program.*}}, {{exercise.*}}, {{station.*}}, '
+      '{{station.loc/person.*}} and {{roleplay.*}} together the same way the '
+      'brief would, and leaves an undeclared variable as the brief\'s '
+      'unknown-variable placeholder', (tester) async {
+    final context = await _pumpScoped(tester);
 
-      final errors = <Object>[];
-      onResolveFieldError = (error, _) => errors.add(error);
-      addTearDown(() => onResolveFieldError = null);
+    final errors = <Object>[];
+    onResolveFieldError = (error, _) => errors.add(error);
+    addTearDown(() => onResolveFieldError = null);
 
-      // Deliberately mixes every scope in one field: this is what caught the
-      // roleplay-editor gap — the mustache render is all-or-nothing, so a
-      // single token whose scope a surface forgot to provide throws and drags
-      // every *other* token back to literal too.
-      const content =
-          'P={{program.name}} E={{exercise.name}} S={{station.name}} '
-          'UTM={{station.position.utm}} LOC={{station.loc.lkp.place}} '
-          'PERSON={{station.person.kari.name}} '
-          'RP={{roleplay.name}} RPAGE={{roleplay.age}} '
-          'VAR={{var.year}} UNK={{var.unknown}}';
+    // Deliberately mixes every scope in one field: this is what caught the
+    // roleplay-editor gap — the mustache render is all-or-nothing, so a
+    // single token whose scope a surface forgot to provide throws and drags
+    // every *other* token back to literal too.
+    const content =
+        'P={{program.name}} E={{exercise.name}} S={{station.name}} '
+        'UTM={{station.position.utm}} LOC={{station.loc.lkp.place}} '
+        'PERSON={{station.person.kari.name}} '
+        'RP={{roleplay.name}} RPAGE={{roleplay.age}} '
+        'VAR={{var.year}} UNK={{var.unknown}}';
 
-      final resolved = resolveScopedField(context, content);
+    final resolved = resolveScopedField(context, content);
 
-      // {{program.name}} itself contains {{var.year}} — only resolves after
-      // a second fixpoint pass, exactly like BriefRenderer's own resolver.
-      expect(resolved, contains('P=Program 2026'));
-      expect(resolved, contains('E=Exercise 1'));
-      expect(resolved, contains('S=Station A'));
-      // Position and address resolve as copy chips (backtick-wrapped).
-      expect(resolved, contains('UTM=`${formatUtm(_stationPosition)}`'));
-      expect(resolved, contains('LOC=`Fjellheisen`'));
-      expect(resolved, contains('PERSON=Kari'));
-      expect(resolved, contains('RP=Nordmann'));
-      expect(resolved, contains('RPAGE=42'));
-      expect(resolved, contains('VAR=2026'));
-      expect(
-        resolved,
-        contains('UNK=${_l10n.briefUnknownVariable('unknown')}'),
-      );
-      // Every scope the field references was in context, so no cross-reference
-      // pass failed and the observability hook must stay silent.
-      expect(errors, isEmpty);
-    },
-  );
+    // {{program.name}} itself contains {{var.year}} — only resolves after
+    // a second fixpoint pass, exactly like BriefRenderer's own resolver.
+    expect(resolved, contains('P=Program 2026'));
+    expect(resolved, contains('E=Exercise 1'));
+    expect(resolved, contains('S=Station A'));
+    // The app resolvers pass ActionChipFormatter (ADR-0050): a position
+    // with a coordinate resolves as an rdchip: link, an address stays a
+    // plain copy chip.
+    expect(
+      resolved,
+      contains(
+        'UTM=[${formatUtm(_stationPosition)}]'
+        '(rdchip:geo:${_stationPosition.latitude},${_stationPosition.longitude})',
+      ),
+    );
+    expect(resolved, contains('LOC=`Fjellheisen`'));
+    expect(resolved, contains('PERSON=Kari'));
+    expect(resolved, contains('RP=Nordmann'));
+    expect(resolved, contains('RPAGE=42'));
+    expect(resolved, contains('VAR=2026'));
+    expect(resolved, contains('UNK=${_l10n.briefUnknownVariable('unknown')}'));
+    // Every scope the field references was in context, so no cross-reference
+    // pass failed and the observability hook must stay silent.
+    expect(errors, isEmpty);
+  });
 
   testWidgets(
     'a field referencing station.* with no StationScope in context leaves '

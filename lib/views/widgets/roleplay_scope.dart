@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 
 /// Exposes the in-scope roleplay's own cross-reference facets (`roleplay.*`,
 /// DESIGN-010's resolve-context cascade) to a subtree — the `PlanScope` /
@@ -20,7 +20,7 @@ class RoleplayScope extends InheritedWidget {
     required this.name,
     this.age,
     this.signalement,
-    this.positionUtm,
+    this.position,
     required super.child,
   });
 
@@ -29,9 +29,10 @@ class RoleplayScope extends InheritedWidget {
   final int? age;
   final String? signalement;
 
-  /// Pre-formatted UTM string (like [StationScope.positionUtm]); the copy-chip
-  /// wrapping is applied in `resolveScopedField`, not here.
-  final String? positionUtm;
+  /// The roleplay's raw coordinate (like [StationScope.position]) — formatted
+  /// and, in the app, wired to a tappable map action at resolve time
+  /// (`resolveScopedField`), not here (ADR-0050).
+  final LatLng? position;
 
   /// Wraps [child] in a scope derived from [rolePlay] — the single source of
   /// the `{{roleplay.*}}` field set, so the viewer and the editor can never
@@ -46,9 +47,7 @@ class RoleplayScope extends InheritedWidget {
       name: rolePlay.name,
       age: rolePlay.age,
       signalement: rolePlay.signalement,
-      positionUtm: rolePlay.position == null
-          ? null
-          : formatUtm(rolePlay.position),
+      position: rolePlay.position,
       child: child,
     );
   }
@@ -61,5 +60,5 @@ class RoleplayScope extends InheritedWidget {
       name != oldWidget.name ||
       age != oldWidget.age ||
       signalement != oldWidget.signalement ||
-      positionUtm != oldWidget.positionUtm;
+      position != oldWidget.position;
 }

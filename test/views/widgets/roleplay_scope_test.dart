@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 
 /// [RoleplayScope.forRoleplay] is the single source of the `{{roleplay.*}}`
@@ -40,12 +39,12 @@ void main() {
     expect(scope!.name, 'Anna');
     expect(scope!.age, 34);
     expect(scope!.signalement, 'Gul jakke');
-    // Pre-formatted UTM (the copy-chip wrapping is applied in
+    // The raw coordinate (formatting/chip wrapping is applied in
     // resolveScopedField, like StationScope).
-    expect(scope!.positionUtm, formatUtm(const LatLng(59.91, 10.75)));
+    expect(scope!.position, const LatLng(59.91, 10.75));
   });
 
-  testWidgets('a roleplay with no position leaves positionUtm null', (
+  testWidgets('a roleplay with no position leaves position null', (
     tester,
   ) async {
     RoleplayScope? scope;
@@ -61,7 +60,7 @@ void main() {
       ),
     );
 
-    expect(scope!.positionUtm, isNull);
+    expect(scope!.position, isNull);
     expect(scope!.signalement, isNull);
   });
 }

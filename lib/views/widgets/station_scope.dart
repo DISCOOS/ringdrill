@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
@@ -33,7 +34,7 @@ class StationScope extends InheritedWidget {
     this.stationCode,
     this.description,
     this.variantSuffix,
-    this.positionUtm,
+    this.position,
     required super.child,
   });
 
@@ -67,9 +68,7 @@ class StationScope extends InheritedWidget {
             name: station.name,
             description: station.description,
             variantSuffix: station.variantSuffix,
-            positionUtm: station.position == null
-                ? ''
-                : formatUtm(station.position!),
+            position: station.position,
             child: child,
           );
     return ExerciseScope(
@@ -87,7 +86,7 @@ class StationScope extends InheritedWidget {
   /// `stationRefContext` builds) — carried alongside [locations]/[persons]
   /// so a `{{station.name}}`/`{{station.position.utm}}` etc. reference
   /// resolves in preview the same way it does in the brief. A null
-  /// [name]/[description]/[variantSuffix]/[positionUtm] resolves to an
+  /// [name]/[description]/[variantSuffix]/[position] resolves to an
   /// empty string, exactly like the brief itself does for a null
   /// `Station.variantSuffix` etc. — this is not a limitation, since a
   /// present-but-null field never throws mustache's "missing" case, only a
@@ -107,7 +106,12 @@ class StationScope extends InheritedWidget {
   final String? stationCode;
   final String? description;
   final String? variantSuffix;
-  final String? positionUtm;
+
+  /// The station's raw coordinate — formatted (default UTM) and, in the app,
+  /// wired to a tappable map action at resolve time (`resolveScopedField`),
+  /// not here; this scope carries the single coordinate representation
+  /// rather than a pre-formatted string (ADR-0050).
+  final LatLng? position;
 
   /// Given a person's slug, returns the effective-identity source that
   /// overrides that [Person]'s own fields (ADR-0047) — e.g. the currently
@@ -181,7 +185,7 @@ class StationScope extends InheritedWidget {
       stationCode != oldWidget.stationCode ||
       description != oldWidget.description ||
       variantSuffix != oldWidget.variantSuffix ||
-      positionUtm != oldWidget.positionUtm;
+      position != oldWidget.position;
 }
 
 T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {

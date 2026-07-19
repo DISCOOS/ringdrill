@@ -8,7 +8,6 @@ import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
@@ -459,9 +458,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
       for (final v in _pendingVariables) v.name,
     };
     _pendingVariables.addAll(
-      additions.variables.where(
-        (v) => !declaredVariableNames.contains(v.name),
-      ),
+      additions.variables.where((v) => !declaredVariableNames.contains(v.name)),
     );
   }
 
@@ -801,7 +798,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
         name: _nameController.text.trim(),
         description: _descriptionController.text,
         variantSuffix: widget.station.variantSuffix,
-        positionUtm: _position == null ? null : formatUtm(_position),
+        position: _position,
         child: Form(
           key: _formKey,
           child: SectionNavigatedForm(

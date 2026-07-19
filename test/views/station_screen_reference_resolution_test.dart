@@ -113,14 +113,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final expectedUtm = formatUtm(_stationPosition);
-    // The detail card renders via markdown, so both references become copy
-    // chips (a Text inside a WidgetSpan). The position card also shows the
-    // UTM, but as a read-only EditableText — match the chip's Text widgets
-    // specifically, and assert presence rather than an exact count.
-    expect(
-      find.byWidgetPredicate((w) => w is Text && w.data == expectedUtm),
-      findsWidgets,
-    );
+    // The detail card renders via markdown. The app resolvers pass
+    // ActionChipFormatter (ADR-0050), so the position resolves as an
+    // rdchip: link (rendered as plain link text until DESIGN-013 Commit 4
+    // wires up the pill renderer) rather than a standalone copy-chip Text —
+    // match on rendered text instead of the chip's own Text widget.
+    expect(find.textContaining(expectedUtm), findsWidgets);
     expect(
       find.byWidgetPredicate((w) => w is Text && w.data == 'Fjellheisen'),
       findsWidgets,

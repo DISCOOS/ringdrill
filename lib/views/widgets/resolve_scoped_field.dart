@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
@@ -71,14 +72,14 @@ String? resolveScopedField(
         stationCode: stationScope.stationCode,
         description: stationScope.description,
         variantSuffix: stationScope.variantSuffix,
-        positionUtm: stationScope.positionUtm,
+        position: stationScope.position,
       ),
     if (roleplayScope != null)
       'roleplay': _roleplayFacets(
         name: roleplayScope.name,
         age: roleplayScope.age,
         signalement: roleplayScope.signalement,
-        positionUtm: roleplayScope.positionUtm,
+        position: roleplayScope.position,
       ),
   };
 
@@ -107,6 +108,7 @@ String? resolveScopedField(
     l10n: l10n,
     refContext: refContext,
     scenarioStation: scenarioStation,
+    chips: const resolver.ActionChipFormatter(),
   );
 }
 
@@ -151,14 +153,14 @@ String? resolveModelField(
         name: station.name,
         description: station.description,
         variantSuffix: station.variantSuffix,
-        positionUtm: resolver.formatUtm(station.position),
+        position: station.position,
       ),
     if (roleplay != null)
       'roleplay': _roleplayFacets(
         name: roleplay.name,
         age: roleplay.age,
         signalement: roleplay.signalement,
-        positionUtm: resolver.formatUtm(roleplay.position),
+        position: roleplay.position,
       ),
   };
 
@@ -177,6 +179,7 @@ String? resolveModelField(
     l10n: l10n,
     refContext: refContext,
     scenarioStation: scenarioStation,
+    chips: const resolver.ActionChipFormatter(),
   );
 }
 
@@ -206,23 +209,33 @@ Map<String, dynamic> _stationFacets({
   String? stationCode,
   String? description,
   String? variantSuffix,
-  String? positionUtm,
+  LatLng? position,
 }) => {
   'name': name ?? '',
   'stationCode': stationCode ?? '',
   'description': description ?? '',
   'variantSuffix': variantSuffix,
-  'position': {'utm': resolver.briefCopyChip(positionUtm ?? '')},
+  'position': {
+    'utm': const resolver.ActionChipFormatter().position(
+      resolver.formatUtm(position),
+      position,
+    ),
+  },
 };
 
 Map<String, dynamic> _roleplayFacets({
   required String name,
   int? age,
   String? signalement,
-  String? positionUtm,
+  LatLng? position,
 }) => {
   'name': name,
   'age': age,
   'signalement': signalement ?? '',
-  'position': {'utm': resolver.briefCopyChip(positionUtm ?? '')},
+  'position': {
+    'utm': const resolver.ActionChipFormatter().position(
+      resolver.formatUtm(position),
+      position,
+    ),
+  },
 };
