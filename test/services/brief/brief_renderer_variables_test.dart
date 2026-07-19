@@ -283,7 +283,7 @@ void main() {
           l10n: _l10n,
         );
 
-        expect(result, contains('Kanal Kanal 6 ved $expectedUtm'));
+        expect(result, contains('Kanal Kanal 6 ved `$expectedUtm`'));
       },
     );
 
@@ -714,10 +714,10 @@ void main() {
         );
 
         // Bare token: place + UTM, UTM as an inline-code chip.
-        expect(result, contains(RegExp(r'Sted: Meiselen 14 `\(32V [^`]+\)`')));
+        expect(result, contains(RegExp(r'Sted: `Meiselen 14` `\(32V [^`]+\)`')));
         expect(result, contains(RegExp(r'UTM `32V [^`]+`')));
-        expect(result, contains('adresse Meiselen 14'));
-        expect(result, contains('GPS 59.744500,10.204500'));
+        expect(result, contains('adresse `Meiselen 14`'));
+        expect(result, contains('GPS `59.744500,10.204500`'));
       },
     );
 

@@ -91,12 +91,14 @@ void main() {
       );
 
       final utm = BriefRenderer.formatUtm(_lkp.position);
-      expect(result, contains('Sted: Fjellheisen'));
+      expect(result, contains('Sted: `Fjellheisen`'));
       expect(result, contains('UTM: `$utm`'));
       expect(result, contains('Navn: Sist kjente posisjon'));
       // Parentheses are folded into the code span so the chip renderer can
       // keep "(pill)" on one line; copy still yields the bare coordinate.
-      expect(result, contains('Standard: Fjellheisen `($utm)`'));
+      // Place and UTM are each their own copy chip; the UTM chip keeps the
+      // folded parentheses.
+      expect(result, contains('Standard: `Fjellheisen` `($utm)`'));
     });
 
     test('.utm is empty when the location has no position', () async {
@@ -117,7 +119,7 @@ void main() {
         l10n: _l10n,
       );
 
-      expect(result, contains('UTM:[] Standard:[Rådhuset]'));
+      expect(result, contains('UTM:[] Standard:[`Rådhuset`]'));
     });
   });
 
@@ -180,7 +182,7 @@ void main() {
       );
 
       final utm = BriefRenderer.formatUtm(_lkp.position);
-      expect(result, contains('Hjemme: Fjellheisen `($utm)`'));
+      expect(result, contains('Hjemme: `Fjellheisen` `($utm)`'));
       expect(result, contains('HjemmeUTM: `$utm`'));
     });
 
@@ -204,7 +206,7 @@ void main() {
         l10n: _l10n,
       );
 
-      expect(result, contains('Sted: Fjellheisen'));
+      expect(result, contains('Sted: `Fjellheisen`'));
       expect(result, isNot(contains('.home')));
       expect(result, isNot(contains('{{station.person.anne.loc.place}}')));
     });
@@ -479,7 +481,7 @@ void main() {
       );
 
       final utm = BriefRenderer.formatUtm(station.position);
-      expect(result, contains('IPP er ved $utm.'));
+      expect(result, contains('IPP er ved `$utm`.'));
     });
   });
 }

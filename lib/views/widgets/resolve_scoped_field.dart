@@ -121,5 +121,5 @@ Map<String, dynamic> _stationFacets(StationScope scope) => {
   'stationCode': scope.stationCode ?? '',
   'description': scope.description ?? '',
   'variantSuffix': scope.variantSuffix,
-  'position': {'utm': scope.positionUtm ?? ''},
+  'position': {'utm': resolver.briefCopyChip(scope.positionUtm ?? '')},
 };

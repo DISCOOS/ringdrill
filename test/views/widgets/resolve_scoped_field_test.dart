@@ -96,8 +96,9 @@ void main() {
       expect(resolved, contains('P=Program 2026'));
       expect(resolved, contains('E=Exercise 1'));
       expect(resolved, contains('S=Station A'));
-      expect(resolved, contains('UTM=${formatUtm(_stationPosition)}'));
-      expect(resolved, contains('LOC=Fjellheisen'));
+      // Position and address resolve as copy chips (backtick-wrapped).
+      expect(resolved, contains('UTM=`${formatUtm(_stationPosition)}`'));
+      expect(resolved, contains('LOC=`Fjellheisen`'));
       expect(resolved, contains('PERSON=Kari'));
       expect(resolved, contains('VAR=2026'));
       expect(

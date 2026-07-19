@@ -163,6 +163,9 @@ void main() {
       await expandFirstRole(tester);
 
       expect(find.textContaining('{{station.'), findsNothing);
+      // Tiles render via RingDrillText (plain text), so the resolved
+      // position/address read as plain text — the copy chip only appears on
+      // the markdown surfaces (the detail card / brief).
       expect(
         find.textContaining('UTM: ${formatUtm(_stationPosition)}'),
         findsOneWidget,

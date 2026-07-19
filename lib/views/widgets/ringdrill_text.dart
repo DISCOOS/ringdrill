@@ -74,8 +74,14 @@ class RingDrillText extends StatelessWidget {
           ) ??
           text;
     }
+    // `resolveScopedField` emits markdown — including inline-code chips for
+    // positions/addresses/phones (backtick-wrapped). RingDrillText renders
+    // plain text (titles, subtitles, list rows), where a copy pill has no
+    // place and a literal backtick would leak into the UI. Strip the
+    // inline-code markers so those values read as plain text here; the chip
+    // only renders on the markdown surfaces (NarrativeRollupCard, brief).
     return Text(
-      resolved,
+      resolved.replaceAll('`', ''),
       style: style,
       maxLines: maxLines,
       overflow: overflow,

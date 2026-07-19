@@ -9,7 +9,8 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
+import 'package:ringdrill/services/brief/field_resolver.dart'
+    show formatUtm, briefCopyChip;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
@@ -307,7 +308,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     'name': _nameController.text,
     'age': int.tryParse(_ageController.text.trim()),
     'signalement': _signalementController.text,
-    'position': {'utm': _position == null ? '' : formatUtm(_position)},
+    'position': {
+      'utm': briefCopyChip(_position == null ? '' : formatUtm(_position)),
+    },
   };
 
   @override

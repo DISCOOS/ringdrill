@@ -189,13 +189,13 @@ void main() {
       expect(normalized, contains('#### Markørspill (Anne Glemsk)'));
 
       // Actor PII (director only)
-      expect(normalized, contains('**Markør:** Kari Hansen (99887766)'));
+      expect(normalized, contains('**Markør:** Kari Hansen `(99887766)`'));
 
       // Situation with resolved UTM cross-reference — {{station.position.utm}} is substituted
       expect(
         normalized,
         contains(
-          '(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i $expectedUtm,',
+          '(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i `$expectedUtm`,',
         ),
       );
 
@@ -454,7 +454,7 @@ void main() {
         expect(
           result,
           contains(
-            'Turgåer venter ved $expectedUtm, post Post, øvelse Skogsøvelse.',
+            'Turgåer venter ved `$expectedUtm`, post Post, øvelse Skogsøvelse.',
           ),
         );
         expect(result, isNot(contains('{{roleplay.')));
@@ -576,7 +576,7 @@ void main() {
         l10n: _l10n,
       );
       expect(result, isNot(contains('{{station.position.utm}}')));
-      expect(result, contains('IPP er ved $expectedUtm.'));
+      expect(result, contains('IPP er ved `$expectedUtm`.'));
     });
 
     test('an absent description renders no lead paragraph or stray blank '

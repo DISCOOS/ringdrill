@@ -59,7 +59,7 @@ void main() {
         scenarioStation: station,
       );
 
-      expect(result, 'Sted: Fjellheisen, UTM: `$expectedUtm`');
+      expect(result, 'Sted: `Fjellheisen`, UTM: `$expectedUtm`');
     });
 
     test('the fixpoint loop terminates at maxResolvePasses instead of looping '

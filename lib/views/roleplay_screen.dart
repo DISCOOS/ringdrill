@@ -11,7 +11,8 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
+import 'package:ringdrill/services/brief/field_resolver.dart'
+    show formatUtm, briefCopyChip;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -181,7 +182,9 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     'age': rolePlay.age,
     'signalement': rolePlay.signalement ?? '',
     'position': {
-      'utm': rolePlay.position == null ? '' : formatUtm(rolePlay.position),
+      'utm': briefCopyChip(
+        rolePlay.position == null ? '' : formatUtm(rolePlay.position),
+      ),
     },
   };
 

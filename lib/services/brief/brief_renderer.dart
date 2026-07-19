@@ -301,7 +301,7 @@ class BriefRenderer {
         'stationCode': stationCode,
         'description': station.description,
         'variantSuffix': station.variantSuffix,
-        'position': {'utm': utmStr},
+        'position': {'utm': resolver.briefCopyChip(utmStr)},
       },
     };
 
@@ -330,7 +330,16 @@ class BriefRenderer {
       if (audience.includesActorPii && rp.actorUuid != null) {
         final actor = actorMap[rp.actorUuid];
         if (actor != null) {
-          actorContext = {'realName': actor.realName, 'phone': actor.phone};
+          // Fold the parentheses into the phone chip (like the UTM chip) so
+          // "(", pill and ")" stay together and the copied value is the bare
+          // number.
+          final phone = actor.phone;
+          actorContext = {
+            'realName': actor.realName,
+            'phone': (phone == null || phone.isEmpty)
+                ? ''
+                : resolver.briefCopyChip('($phone)'),
+          };
         }
       }
       final resolvedRpName = resolver.substituteTypedVariables(
@@ -348,7 +357,7 @@ class BriefRenderer {
           'name': rp.name,
           'age': rp.age,
           'signalement': rp.signalement,
-          'position': {'utm': resolver.formatUtm(rp.position)},
+          'position': {'utm': resolver.briefCopyChip(resolver.formatUtm(rp.position))},
         },
       };
       String? resolveRoleplayField(String? content) => resolver.resolveField(
@@ -381,7 +390,7 @@ class BriefRenderer {
       'variantSuffix': station.variantSuffix,
       'stationCode': stationCode,
       'stationAnchor': stationAnchor,
-      'position': {'utm': utmStr},
+      'position': {'utm': resolver.briefCopyChip(utmStr)},
       'positionValue': positionValue,
       'stationDurationLabel': _stationDurationLabel(exercise),
       'descriptionMd': resolveField(station.description),

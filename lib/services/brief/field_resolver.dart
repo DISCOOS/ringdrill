@@ -215,33 +215,36 @@ T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
 String _resolveLocationFacet(Location location, List<String> facets) {
   switch (facets.isEmpty ? null : facets.first) {
     case 'place':
-      return location.place;
+      return briefCopyChip(location.place);
     case 'label':
       return location.label;
     case 'utm':
       return _locationUtmCode(location);
     case 'latlng':
-      return locationLatLng(location);
+      return briefCopyChip(locationLatLng(location));
     default:
       return _locationDefault(location);
   }
 }
 
-String _locationUtmCode(Location location) {
-  final utm = formatUtm(location.position);
-  return utm.isEmpty ? '' : '`$utm`';
-}
+/// Wraps a copyable field value (coordinate, address, phone) in a backtick
+/// code span so the brief renders it as a copy chip. Empty stays empty.
+String briefCopyChip(String value) => value.isEmpty ? '' : '`$value`';
 
-/// Sensible bare-token default: `place` plus, when a position is set, the
-/// inline-code UTM.
+String _locationUtmCode(Location location) =>
+    briefCopyChip(formatUtm(location.position));
+
+/// Sensible bare-token default: the address as its own copy chip plus, when a
+/// position is set, the UTM chip wrapped in parentheses — two chips side by
+/// side, e.g. `[Meiselen 14] ([32V …])`.
 String _locationDefault(Location location) {
   final utm = formatUtm(location.position);
-  if (location.place.isEmpty) return utm.isEmpty ? '' : '`$utm`';
-  if (utm.isEmpty) return location.place;
-  // Fold the parentheses into the code span. The chip renderer draws them
-  // just outside the pill (so "(", pill and ")" stay on one line as a single
-  // unbreakable unit) and excludes them from the copied coordinate.
-  return '${location.place} `($utm)`';
+  if (location.place.isEmpty) return briefCopyChip(utm);
+  if (utm.isEmpty) return briefCopyChip(location.place);
+  // The parentheses are folded into the UTM code span; the chip renderer
+  // draws them just outside its pill (so "(", pill and ")" stay together) and
+  // excludes them from the copied coordinate.
+  return '${briefCopyChip(location.place)} `($utm)`';
 }
 
 /// `{{station.person.<slug>[.facet]}}` facet resolution. [portrayer] is the

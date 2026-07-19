@@ -155,12 +155,9 @@ class _CodeChip extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(
-                child: Text(
-                  _inner,
-                  style: textStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // Wraps so long values (addresses) show in full rather than
+                // truncating; short values (coordinates) stay on one line.
+                child: Text(_inner, style: textStyle, softWrap: true),
               ),
               const SizedBox(width: 6),
               Tooltip(

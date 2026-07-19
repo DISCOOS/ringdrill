@@ -113,9 +113,17 @@ void main() {
     await tester.pumpAndSettle();
 
     final expectedUtm = formatUtm(_stationPosition);
+    // The detail card renders via markdown, so both references become copy
+    // chips (a Text inside a WidgetSpan). The position card also shows the
+    // UTM, but as a read-only EditableText — match the chip's Text widgets
+    // specifically, and assert presence rather than an exact count.
     expect(
-      find.text('Posisjon: $expectedUtm. Møtepunkt: Fjellheisen.'),
-      findsOneWidget,
+      find.byWidgetPredicate((w) => w is Text && w.data == expectedUtm),
+      findsWidgets,
+    );
+    expect(
+      find.byWidgetPredicate((w) => w is Text && w.data == 'Fjellheisen'),
+      findsWidgets,
     );
     expect(find.textContaining('{{station.'), findsNothing);
   });
