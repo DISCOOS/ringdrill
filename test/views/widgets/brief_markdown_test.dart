@@ -4,7 +4,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+
+/// Records every `launchUrl` call instead of hitting a real platform channel
+/// (ADR-0050's rdchip: action-chip tests) — [UrlLauncherPlatform.instance]
+/// is the officially supported seam for this, distinct from the
+/// `SystemChannels.platform` mock the copy-icon tests use for Clipboard.
+class _FakeUrlLauncher extends UrlLauncherPlatform {
+  final List<String> launchedUrls = [];
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> canLaunch(String url) async => true;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    launchedUrls.add(url);
+    return true;
+  }
+}
 
 // Helper: recursively collect all TextSpan leaf colors from a widget's render tree.
 Iterable<Color?> _collectTextColors(RichText widget) sync* {
@@ -168,7 +190,8 @@ void main() {
       expect(
         chipFinder,
         findsAtLeastNWidgets(1),
-        reason: 'Inline code should render inside a Container chip with '
+        reason:
+            'Inline code should render inside a Container chip with '
             'code.background as the fill',
       );
 
@@ -237,7 +260,9 @@ void main() {
             });
 
         await tester.pumpWidget(
-          buildWidget(data: 'Sist sett på Meiselen 14 `(32V 0563689E 6622277N)`.'),
+          buildWidget(
+            data: 'Sist sett på Meiselen 14 `(32V 0563689E 6622277N)`.',
+          ),
         );
         await tester.pump();
 
@@ -259,5 +284,125 @@ void main() {
         expect(copied, '32V 0563689E 6622277N');
       },
     );
+  });
+
+  group('BriefMarkdown — actionable rdchip chip (ADR-0050)', () {
+    late _FakeUrlLauncher fakeLauncher;
+
+    setUp(() {
+      fakeLauncher = _FakeUrlLauncher();
+      UrlLauncherPlatform.instance = fakeLauncher;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (_) async => null);
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
+    // Finds the chip's own Container (the same code.background pill the
+    // inline-code tests match on) by its "code" child text, since a plain
+    // find.byIcon(Icons.content_copy) would also match a real inline-code
+    // chip elsewhere on the page.
+    Finder chipContainer(String text) => find.ancestor(
+      of: find.text(text),
+      matching: find.byWidgetPredicate((widget) {
+        if (widget is! Container) return false;
+        final decoration = widget.decoration;
+        if (decoration is! BoxDecoration) return false;
+        return decoration.color == lightTheme.code.background;
+      }),
+    );
+
+    testWidgets('an rdchip:geo: link renders as a pill with a copy icon', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildWidget(data: '[32V 601234 6643210](rdchip:geo:58.99,10.43)'),
+      );
+      await tester.pump();
+
+      expect(find.text('32V 601234 6643210'), findsOneWidget);
+      expect(chipContainer('32V 601234 6643210'), findsOneWidget);
+      expect(find.byIcon(Icons.content_copy), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping the body of an rdchip:geo: chip opens the maps URL, not a copy',
+      (tester) async {
+        await tester.pumpWidget(
+          buildWidget(data: '[32V 601234 6643210](rdchip:geo:58.99,10.43)'),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('32V 601234 6643210'));
+        await tester.pumpAndSettle();
+
+        expect(
+          fakeLauncher.launchedUrls,
+          contains(
+            'https://www.google.com/maps/search/?api=1&query=58.99,10.43',
+          ),
+        );
+        // The action ran, not a copy — no "Copied" snackbar.
+        expect(find.text('Copied'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the copy icon of an rdchip:geo: chip copies the display text '
+      'without launching',
+      (tester) async {
+        String? copied;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'Clipboard.setData') {
+                copied = (call.arguments as Map)['text'] as String?;
+              }
+              return null;
+            });
+
+        await tester.pumpWidget(
+          buildWidget(data: '[32V 601234 6643210](rdchip:geo:58.99,10.43)'),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.content_copy));
+        await tester.pumpAndSettle();
+
+        expect(copied, '32V 601234 6643210');
+        expect(fakeLauncher.launchedUrls, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'an rdchip:tel: link dials the number, not the raw href, when tapped',
+      (tester) async {
+        await tester.pumpWidget(
+          buildWidget(data: '[99887766](rdchip:tel:99887766)'),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('99887766'));
+        await tester.pumpAndSettle();
+
+        expect(fakeLauncher.launchedUrls, contains('tel:99887766'));
+      },
+    );
+
+    testWidgets('a regular https link is unaffected by the rdchip: generator', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget(data: '[link](https://example.com)'));
+      await tester.pump();
+
+      await tester.tap(find.textContaining('link'));
+      await tester.pumpAndSettle();
+
+      expect(fakeLauncher.launchedUrls, contains('https://example.com'));
+      // Not rendered as a chip: no copy icon for a plain link.
+      expect(find.byIcon(Icons.content_copy), findsNothing);
+    });
   });
 }

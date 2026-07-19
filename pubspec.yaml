@@ -87,6 +87,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   visibility_detector: ^0.4.0+2
+  # For mocking UrlLauncherPlatform.instance in brief_markdown_test.dart's
+  # rdchip: action-chip tests (DESIGN-013) — a transitive dependency of
+  # url_launcher we depend on directly here.
+  url_launcher_platform_interface: ^2.3.2
 
   build_runner: ^2.6.0
   freezed: ^3.2.0
