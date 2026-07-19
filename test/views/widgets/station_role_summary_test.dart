@@ -154,7 +154,7 @@ void main() {
     await tester.pump();
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.stationRolesSection), findsNothing);
+    expect(find.text(l10n.playSection), findsNothing);
   });
 
   testWidgets('renders header with role count when roles exist', (tester) async {
@@ -163,7 +163,7 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     // Two roles at station 0
-    expect(find.text(l10n.stationRolesSection), findsOneWidget);
+    expect(find.text(l10n.playSection), findsOneWidget);
     expect(find.text('(2)'), findsOneWidget);
   });
 
@@ -173,22 +173,22 @@ void main() {
     await tester.pump();
 
     // _roleWithAge has name 'Olav Berg', age 45
-    expect(find.text('Olav Berg, 45'), findsOneWidget);
+    expect(find.text('Olav Berg · 45'), findsOneWidget);
     // _roleCast has name 'Anna Hansen', no age
     expect(find.text('Anna Hansen'), findsOneWidget);
     // Station 1 role must not appear
     expect(find.text('Vitne X'), findsNothing);
   });
 
-  testWidgets('subtitle shows castedByLine when actor is cast', (tester) async {
+  testWidgets('cast pill shows the actor name when cast', (tester) async {
     await tester.pumpWidget(_buildWidget(stationIndex: 0));
     await tester.pump();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.castedByLine(_actorA.realName)), findsOneWidget);
+    // Just the actor name (no "Played by").
+    expect(find.text(_actorA.realName), findsOneWidget);
   });
 
-  testWidgets('subtitle shows noCastLine when no actor is cast', (tester) async {
+  testWidgets('cast pill shows noCastLine when no actor is cast', (tester) async {
     await tester.pumpWidget(_buildWidget(stationIndex: 0));
     await tester.pump();
 
@@ -197,25 +197,12 @@ void main() {
     expect(find.text(l10n.noCastLine), findsOneWidget);
   });
 
-  testWidgets('uncast subtitle is italic + lowered opacity', (tester) async {
-    await tester.pumpWidget(_buildWidget(stationIndex: 0));
-    await tester.pump();
-
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    final noCastWidgets =
-        tester.widgetList<Text>(find.text(l10n.noCastLine));
-    for (final w in noCastWidgets) {
-      expect(w.style?.fontStyle, FontStyle.italic,
-          reason: 'Uncast subtitle must be italic');
-    }
-  });
-
   testWidgets('tapping a row body pushes the roleplay route', (tester) async {
     await tester.pumpWidget(_buildWidget(stationIndex: 0));
     await tester.pump();
 
     // Tap the InkWell area of the first row (the name text)
-    await tester.tap(find.text('Olav Berg, 45'));
+    await tester.tap(find.text('Olav Berg · 45'));
     await tester.pumpAndSettle();
 
     expect(

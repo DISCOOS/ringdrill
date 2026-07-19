@@ -1745,7 +1745,7 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get noCastLine => 'Ingen markør valgt';
+  String get noCastLine => 'Ingen markør';
 
   @override
   String get briefScreenTitle => 'Brief';

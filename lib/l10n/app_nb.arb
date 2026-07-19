@@ -741,7 +741,7 @@
       "name": { "type": "String" }
     }
   },
-  "noCastLine": "Ingen markør valgt",
+  "noCastLine": "Ingen markør",
   "@noCastLine": {
     "description": "Undertittel på en rolleradex når ingen markør er tildelt. Stiles kursiv + dempet."
   },

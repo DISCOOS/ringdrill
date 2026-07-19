@@ -15,6 +15,7 @@ import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -223,8 +224,8 @@ void main() {
   );
 
   testWidgets(
-    'an enacted person shows the marker (actor) name and taps into the role '
-    'sheet',
+    'an enacted person shows the cast pill and tapping it opens the cast '
+    'picker',
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -237,14 +238,16 @@ void main() {
       await tester.pump(); // showModalBottomSheet starts
       await tester.pumpAndSettle();
 
-      // The pill now shows just the marker (cast actor) name — no "Played by"
-      // prefix.
-      expect(find.text(_actorForHilde.realName), findsOneWidget);
+      // Hilde is enacted by the cast actor — the pill shows just the actor
+      // name (no "Played by").
+      final castPill = find.text(_actorForHilde.realName);
+      expect(castPill, findsOneWidget);
 
-      await tester.tap(find.text(_actorForHilde.realName));
+      // Tapping the pill opens the shared cast picker (assign/change/clear the
+      // actor), not the Spill viewer.
+      await tester.tap(castPill);
       await tester.pumpAndSettle();
-
-      expect(find.text('RolePlay ${_roleForHilde.uuid}'), findsOneWidget);
+      expect(find.byType(CastPickerSheet), findsOneWidget);
     },
   );
 
@@ -264,6 +267,23 @@ void main() {
       // The draft is pre-filled from Kari (the unenacted person), including
       // her age — the name field shows it as part of the identity text.
       expect(find.textContaining('Kari Fiskeløs'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'tapping a person row that has a spill opens the spill editor, not the '
+    'person editor',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen(stationIndex: 0));
+      await tester.pumpAndSettle();
+
+      // Hilde is enacted (has a RolePlay) — tapping her row (not the pill)
+      // opens the spill editor so the spill is reachable from the person list.
+      await tester.tap(find.textContaining('Hilde'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RolePlayFormScreen), findsOneWidget);
+      expect(find.byType(PersonFormScreen), findsNothing);
     },
   );
 

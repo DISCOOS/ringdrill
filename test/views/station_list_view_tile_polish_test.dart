@@ -115,15 +115,15 @@ void main() {
   );
 
   testWidgets(
-    'Fix 2: the marker section header and marker row use different icons',
+    'Fix 2: the section header and person row use different icons',
     (tester) async {
       await expandFirstStation(tester);
 
-      // Header keeps the masks-theater icon (the "markers" group)...
+      // Header keeps the masks-theater icon (the play/actors group)...
       expect(find.byIcon(Icons.theater_comedy), findsOneWidget);
-      // ...the row uses the marker (face) icon — same as the cast picker —
-      // instead of repeating the header's masks icon.
-      expect(find.byIcon(Icons.face), findsOneWidget);
+      // ...the row is the person (character) → person icon; the actor shows in
+      // the trailing cast pill instead.
+      expect(find.byIcon(Icons.person), findsWidgets);
     },
   );
 
@@ -139,10 +139,10 @@ void main() {
         findsNothing,
       );
 
-      // The role seeded in setUp() is uncast, so the trailing cast-state
-      // icon is the "add" glyph — tapping it opens the shared marker sheet
-      // (not RoleSheetTarget/the Spill viewer).
-      await tester.tap(find.byIcon(Icons.person_add_outlined));
+      // The role seeded in setUp() is uncast, so the trailing cast pill reads
+      // "No actor" — tapping it opens the shared marker sheet (not
+      // RoleSheetTarget/the Spill viewer).
+      await tester.tap(find.text(l10n.noCastLine));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);

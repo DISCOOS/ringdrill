@@ -184,11 +184,11 @@ void main() {
   );
 
   /// The Spill card's own collapse chevron, disambiguated from the
-  /// Post/position cards' — anchored on the cast quick-action's person icon,
-  /// which is unique to that card.
+  /// Post/position cards' — anchored on the cast quick-action IconButton, which
+  /// is the only IconButton inside a body card (the Spill card).
   Finder identityCollapseChevron() => find.descendant(
     of: find
-        .ancestor(of: find.byIcon(Icons.person), matching: find.byType(Card))
+        .ancestor(of: find.byType(IconButton), matching: find.byType(Card))
         .first,
     matching: find.byType(CollapseChevron),
   );

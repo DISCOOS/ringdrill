@@ -19,29 +19,30 @@ import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
-import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
+import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
-import 'package:ringdrill/views/widgets/player_status_card.dart';
-import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/brief_markdown.dart';
+import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
+import 'package:ringdrill/views/widgets/face_badge_icon.dart';
+import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/map_legend.dart';
-import 'package:ringdrill/views/widgets/exercise_scope.dart';
-import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
-import 'package:ringdrill/views/widgets/brief_markdown.dart';
-import 'package:ringdrill/views/widgets/brief_theme.dart';
+import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/schedule_card.dart';
+import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
-import 'package:ringdrill/views/widgets/schedule_table.dart';
 
 /// Read-only view of a single [RolePlay]. Shows the publishable scenario
 /// fields (name, age, signalement, background, behavior, station, position).
@@ -186,9 +187,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     if (rolePlay == null) {
       return Scaffold(
         appBar: AppBar(
-          leading: MasterDetailLeading(
-            onClose: () => Navigator.pop(context),
-          ),
+          leading: MasterDetailLeading(onClose: () => Navigator.pop(context)),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -246,9 +245,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
         // medium keep today's single scrolling column.
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final windowSize = WindowSizeClass.fromWidth(
-              constraints.maxWidth,
-            );
+            final windowSize = WindowSizeClass.fromWidth(constraints.maxWidth);
             if (windowSize == WindowSizeClass.expanded) {
               return _buildExpandedBody(
                 context,
@@ -506,10 +503,7 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             ),
           );
           legendEntries.add(
-            MapLegendEntry(
-              color: personLocation.kind.color,
-              label: locLabel,
-            ),
+            MapLegendEntry(color: personLocation.kind.color, label: locLabel),
           );
         }
 
@@ -880,7 +874,7 @@ class _PlayCard extends StatelessWidget {
                 ),
               if (nameOverridden)
                 Text(
-                  l10n.rolePlayCustomizedFrom(personName!),
+                  l10n.rolePlayCustomizedFrom(personName),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
@@ -898,29 +892,29 @@ class _PlayCard extends StatelessWidget {
             roleplayFacets: roleplayFacets,
             style: bodyTextStyle,
           ),
-            // The person's own notes, folded in and read together with the
-            // identity (no "Notater" kicker of its own).
-            if (notes.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: resolvedText(notes),
+          // The person's own notes, folded in and read together with the
+          // identity (no "Notater" kicker of its own).
+          if (notes.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: resolvedText(notes),
+            ),
+          // The person's location, read together with the identity (no
+          // "Lokasjon" kicker of its own). Plain strings by convention —
+          // no token resolution.
+          if (locationLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                [
+                  locationLabel,
+                  if (locationPosition != null) formatUtm(locationPosition),
+                ].join(' · '),
+                style: bodyTextStyle,
               ),
-            // The person's location, read together with the identity (no
-            // "Lokasjon" kicker of its own). Plain strings by convention —
-            // no token resolution.
-            if (locationLabel != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  [
-                    locationLabel,
-                    if (locationPosition != null) formatUtm(locationPosition),
-                  ].join(' · '),
-                  style: bodyTextStyle,
-                ),
-              ),
-          ],
-        ),
+            ),
+        ],
+      ),
       // The identity is edited on the roleplay's own "Rolle" section (person
       // selection + per-marker overrides), not the scenario Person directly.
       onTap: () => onEditSection('roleplay'),
@@ -976,32 +970,40 @@ class _PlayCard extends StatelessWidget {
         // the sections above by a top border only when there are sections
         // (the header divider already separates it otherwise).
         if (actor != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              border: sections.isNotEmpty
-                  ? Border(
-                      top: BorderSide(color: theme.colorScheme.outlineVariant),
-                    )
-                  : null,
-            ),
-            child: Row(
-              children: [
-                // "Spilles av …" names the actor (a person) → person icon,
-                // not the markers-list masks.
-                Icon(
-                  Icons.person,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.castedByLine(actor.realName),
-                  style: theme.textTheme.bodySmall?.copyWith(
+          // The footer names the cast actor and is itself tappable — opening
+          // the same cast picker as the header quick action — kept a plain
+          // muted row (no chip background).
+          InkWell(
+            onTap: onEditCast,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                border: sections.isNotEmpty
+                    ? Border(
+                        top: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      )
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  // "Spilles av …" names the actor → face icon (person ≠ actor;
+                  // person is reserved for the character).
+                  Icon(
+                    Icons.face,
+                    size: 16,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.castedByLine(actor.realName),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
       ],
@@ -1038,12 +1040,11 @@ class _PlayCard extends StatelessWidget {
         padding: const EdgeInsets.all(4),
         constraints: const BoxConstraints(),
         visualDensity: VisualDensity.compact,
-        icon: Icon(
-          actor != null ? Icons.person : Icons.person_add_outlined,
-          color: actor != null
-              ? theme.colorScheme.primary
-              : theme.colorScheme.onSurfaceVariant,
-        ),
+        // Cast → plain face; uncast → face + plus "assign an actor". person/
+        // add-person is reserved for the character, not who enacts it.
+        icon: actor != null
+            ? Icon(Icons.face, color: theme.colorScheme.primary)
+            : AddFaceIcon(size: 20, color: theme.colorScheme.onSurfaceVariant),
         onPressed: onEditCast,
       ),
       body: body,

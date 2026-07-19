@@ -120,13 +120,13 @@ void main() {
   );
 
   testWidgets(
-    'Fix 3: Cast tile shows "Played by {realName}" (castedByLine), the '
-    "phone number, and never castPrivateHint",
+    'Fix 3: Cast tile shows the actor name, the phone number, and never '
+    'castPrivateHint',
     (tester) async {
       await expandFirstRole(tester);
 
-      expect(find.text(l10n.castedByLine(_actor.realName)), findsOneWidget);
-      expect(find.text(_actor.realName), findsNothing);
+      // The cast pill shows just the actor name (no "Played by").
+      expect(find.text(_actor.realName), findsOneWidget);
       expect(find.text(_actor.phone!), findsOneWidget);
       // The deprecated hint's literal wording must never render.
       expect(find.text('Stays on this device'), findsNothing);
@@ -146,9 +146,9 @@ void main() {
         findsNothing,
       );
 
-      // The cast chip (Icons.person, this role is cast) opens the shared
-      // marker sheet — the one consistent affordance, unified with Poster.
-      await tester.tap(find.byIcon(Icons.person));
+      // The cast chip (Icons.face, this role is cast) opens the shared marker
+      // sheet — the one consistent affordance, unified with Poster.
+      await tester.tap(find.byIcon(Icons.face).first);
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.pickerSelectRolePlayTitle), findsOneWidget);

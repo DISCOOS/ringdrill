@@ -105,17 +105,15 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.clearCast), findsOneWidget);
+    // Actions live at the bottom (like "Velg person"), below the actor list:
+    // the actor rows come before "Ny markør", which comes before "Fjern markør".
+    expect(
+      tester.getTopLeft(find.text(_actorUncast.realName)).dy,
+      lessThan(tester.getTopLeft(find.text(l10n.newActor)).dy),
+    );
     expect(
       tester.getTopLeft(find.text(l10n.newActor)).dy,
       lessThan(tester.getTopLeft(find.text(l10n.clearCast)).dy),
-    );
-    expect(
-      tester.getTopLeft(find.byType(Divider)).dy,
-      greaterThan(tester.getTopLeft(find.text(l10n.clearCast)).dy),
-    );
-    expect(
-      tester.getTopLeft(find.byType(Divider)).dy,
-      lessThan(tester.getTopLeft(find.text(_actorUncast.realName)).dy),
     );
 
     final selectedTile = tester.widget<ListTile>(
@@ -148,7 +146,18 @@ void main() {
     expect(find.text(l10n.alreadyCastAs(_roleB.name)), findsOneWidget);
   });
 
-  testWidgets('search filters by realName', (tester) async {
+  testWidgets('search (shown past the threshold) filters by realName', (
+    tester,
+  ) async {
+    // Search only renders once the list is long enough (like the shared
+    // picker), so seed enough actors to cross the threshold.
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    for (var i = 0; i < 6; i++) {
+      await ProgramService().saveActor(
+        l10n,
+        Actor(uuid: 'extra-$i', realName: 'Extra $i'),
+      );
+    }
     await tester.pumpWidget(_buildPicker(_roleA));
     await tester.pump();
 

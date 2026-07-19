@@ -451,15 +451,29 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       context: context,
       title: l.pickerSelectPersonTitle,
       items: _workingPersons,
-      itemBuilder: (context, person, onTap) => ListTile(
-        title: Text(person.name.isEmpty ? person.slug : person.name),
-        onTap: onTap,
-      ),
+      itemBuilder: (context, person, onTap) {
+        final isSelected = person.slug == _personRef;
+        return ListTile(
+          selected: isSelected,
+          // Selection shown by the leading check + row tint; the pencil edits
+          // the person's own record without leaving the spill editor.
+          leading: isSelected
+              ? Icon(Icons.check, color: theme.colorScheme.primary)
+              : const Icon(Icons.person),
+          title: Text(person.name.isEmpty ? person.slug : person.name),
+          trailing: IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: l.personsSectionEditAction,
+            onPressed: () => _editPersonInPicker(person),
+          ),
+          onTap: onTap,
+        );
+      },
       searchText: (person) => person.name.isEmpty ? person.slug : person.name,
       searchHint: l.pickerSearchHint,
       footerActions: [
         ListTile(
-          leading: Icon(Icons.add, color: theme.colorScheme.primary),
+          leading: Icon(Icons.person_add, color: theme.colorScheme.primary),
           title: Text(
             l.personsSectionAddAction,
             style: TextStyle(color: theme.colorScheme.primary),
@@ -494,36 +508,69 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     if (result == null || !mounted) return;
     setState(() {
       _workingPersons = [..._workingPersons, result.person];
-      // The nested form's own inline-created locations/persons/variables
-      // (ADR-0047, DESIGN-009 "Inline creation and write-back") belong to
-      // this same station/plan — merge them into this editor's own working
-      // copies rather than write back separately, mirroring
-      // `StationFormScreen._openRolePlayEditor`'s merge block.
-      final additions = result.additions;
-      final existingLocSlugs = _workingLocations.map((l) => l.slug).toSet();
-      _workingLocations = [
-        ..._workingLocations,
-        ...additions.stationLocations.where(
-          (l) => !existingLocSlugs.contains(l.slug),
-        ),
-      ];
-      final existingPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
-      _workingPersons = [
-        ..._workingPersons,
-        ...additions.stationPersons.where(
-          (p) => !existingPersonSlugs.contains(p.slug),
-        ),
-      ];
-      final declaredVariableNames = {
-        for (final v in widget.variables) v.name,
-        for (final v in _pendingVariables) v.name,
-      };
-      _pendingVariables.addAll(
-        additions.variables.where(
-          (v) => !declaredVariableNames.contains(v.name),
-        ),
-      );
+      _mergeInlineAdditions(result.additions);
       _applyPersonSelection(result.person.slug);
+    });
+  }
+
+  /// Folds a nested Person/Location form's inline-created
+  /// locations/persons/variables (ADR-0047, DESIGN-009 "Inline creation and
+  /// write-back") into this editor's own working copies, deduped by slug/name
+  /// — mirroring `StationFormScreen._openRolePlayEditor`'s merge block. Shared
+  /// by [_createPersonViaForm] and [_editPersonInPicker]. Call inside
+  /// `setState`.
+  void _mergeInlineAdditions(PlanAdditions additions) {
+    final existingLocSlugs = _workingLocations.map((l) => l.slug).toSet();
+    _workingLocations = [
+      ..._workingLocations,
+      ...additions.stationLocations.where(
+        (l) => !existingLocSlugs.contains(l.slug),
+      ),
+    ];
+    final existingPersonSlugs = _workingPersons.map((p) => p.slug).toSet();
+    _workingPersons = [
+      ..._workingPersons,
+      ...additions.stationPersons.where(
+        (p) => !existingPersonSlugs.contains(p.slug),
+      ),
+    ];
+    final declaredVariableNames = {
+      for (final v in widget.variables) v.name,
+      for (final v in _pendingVariables) v.name,
+    };
+    _pendingVariables.addAll(
+      additions.variables.where(
+        (v) => !declaredVariableNames.contains(v.name),
+      ),
+    );
+  }
+
+  /// Opens [PersonFormScreen] to edit an existing working [person] (the pencil
+  /// on a person-picker row), replacing it in the working copies by slug and
+  /// folding in any inline additions — so a spill can edit its own people
+  /// without leaving the editor. The current selection is unchanged; if the
+  /// edited person is the selected one, the identity card re-derives from the
+  /// updated record on the next build.
+  Future<void> _editPersonInPicker(Person person) async {
+    final result = await openFormSurface<PersonFormResult>(
+      context,
+      commitsToParent: true,
+      builder: (_) => PersonFormScreen(
+        existingSlugs: _workingPersons
+            .where((p) => p.slug != person.slug)
+            .map((p) => p.slug)
+            .toSet(),
+        locations: _workingLocations,
+        initial: person,
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _workingPersons = [
+        for (final p in _workingPersons)
+          if (p.slug == person.slug) result.person else p,
+      ];
+      _mergeInlineAdditions(result.additions);
     });
   }
 

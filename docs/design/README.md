@@ -18,6 +18,8 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | DESIGN-008 | [Plan variables and the section-navigated editor](./008-plan-variables-and-section-navigated-editor.md) | Accepted | 2026-07-03 |
 | DESIGN-009 | [Scenario locations and persons](./009-scenario-locations-and-persons.md) | Accepted | 2026-07-03 |
 | DESIGN-010 | [Inline preview and the resolve-context scope cascade](./010-inline-preview-and-resolve-scope.md) | Accepted | 2026-07-08 |
+| DESIGN-011 | [Person-with-role and the Roster model](./011-person-with-role-and-roster-model.md) | Accepted | 2026-07-10 |
+| DESIGN-012 | [A unified cast pill on person/actor rows](./012-unified-cast-pill.md) | Accepted | 2026-07-19 |
 
 ## Folder layout
 

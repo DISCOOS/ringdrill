@@ -6,6 +6,7 @@ import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/actor_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 
 /// Opens the marker sheet for [rolePlay] and applies whatever the user chose
@@ -224,38 +225,43 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final filtered = _filtered;
     final hasCurrentActor = widget.rolePlay.actorUuid != null;
-    final sheetHeight = MediaQuery.sizeOf(context).height * 0.6;
+    // Search only once the list is long enough to need it — the same threshold
+    // the shared `showRingdrillPicker` uses, instead of always showing it.
+    final showSearch = _actors.length >= 8;
 
-    return SizedBox(
-      height: sheetHeight,
-      child: Column(
-        children: [
-          // Title (ADR-0049: static "Velg markør", matching every other
-          // selector's title instead of naming the role being cast).
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 4, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    localizations.pickerSelectRolePlayTitle,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+    // Mirrors `showRingdrillPicker`'s layout so both selectors read alike:
+    // title, divider, (conditional) search, list, divider, footer actions at
+    // the bottom.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title (ADR-0049: static "Velg markør").
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  localizations.pickerSelectRolePlayTitle,
+                  style: theme.textTheme.titleMedium,
                 ),
-                if (widget.showCloseButton)
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-              ],
-            ),
+              ),
+              if (widget.showCloseButton)
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+            ],
           ),
-
-          // Search field
+        ),
+        const Divider(height: 1),
+        if (showSearch)
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -268,74 +274,63 @@ class _CastPickerSheetState extends State<CastPickerSheet> {
             ),
           ),
 
-          // Actor list
-          Expanded(
-            child: ListView.builder(
-              itemCount: filtered.length + 2 + (hasCurrentActor ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return ListTile(
-                    leading: const Icon(Icons.person_add),
-                    title: Text(localizations.newActor),
-                    onTap: _createAndSelect,
-                  );
-                }
-
-                if (hasCurrentActor && index == 1) {
-                  return ListTile(
-                    leading: const Icon(Icons.person_remove),
-                    title: Text(localizations.clearCast),
-                    onTap: _clear,
-                  );
-                }
-
-                final dividerIndex = hasCurrentActor ? 2 : 1;
-                if (index == dividerIndex) {
-                  return const Divider(height: 1);
-                }
-
-                final actor = filtered[index - dividerIndex - 1];
-                final crossCast = _crossCastName(actor.uuid);
-                final isSelected = actor.uuid == widget.rolePlay.actorUuid;
-
-                return ListTile(
-                  selected: isSelected,
-                  leading: const Icon(Icons.face),
-                  title: Text(actor.realName),
-                  subtitle: crossCast != null
-                      ? Text(
-                          localizations.alreadyCastAs(crossCast),
-                          // ADR-0037: themed bodySmall instead of 12.
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        )
-                      : (actor.phone != null ? Text(actor.phone!) : null),
-                  // The pencil is its own IconButton (not the row's onTap)
-                  // so editing a *different* actor than the currently cast
-                  // one never accidentally selects it — tapping the row
-                  // body still selects/changes; only the pencil edits.
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isSelected) const Icon(Icons.check),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: localizations.editCast,
-                        onPressed: () => _editActor(actor),
-                      ),
-                    ],
-                  ),
-                  onTap: () => _select(actor.uuid),
-                );
-              },
-            ),
+        // Actor list.
+        Flexible(
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              final actor = filtered[index];
+              final crossCast = _crossCastName(actor.uuid);
+              final isSelected = actor.uuid == widget.rolePlay.actorUuid;
+              return ListTile(
+                selected: isSelected,
+                // Selection is shown by a leading check + the row tint, not a
+                // trailing checkmark.
+                leading: isSelected
+                    ? Icon(Icons.check, color: theme.colorScheme.primary)
+                    : const Icon(Icons.face),
+                title: Text(actor.realName),
+                subtitle: crossCast != null
+                    ? Text(
+                        localizations.alreadyCastAs(crossCast),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      )
+                    : (actor.phone != null ? Text(actor.phone!) : null),
+                // The pencil is its own IconButton (not the row's onTap) so
+                // editing a *different* actor never accidentally selects it —
+                // tapping the row body still selects; only the pencil edits.
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: localizations.editCast,
+                  onPressed: () => _editActor(actor),
+                ),
+                onTap: () => _select(actor.uuid),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+
+        const Divider(height: 1),
+        // Footer actions at the bottom (like "Velg person"), with semantic
+        // face-badge icons rather than a bare +/−.
+        ListTile(
+          leading: AddFaceIcon(color: theme.colorScheme.primary),
+          title: Text(
+            localizations.newActor,
+            style: TextStyle(color: theme.colorScheme.primary),
+          ),
+          onTap: _createAndSelect,
+        ),
+        if (hasCurrentActor)
+          ListTile(
+            leading: const RemoveFaceIcon(),
+            title: Text(localizations.clearCast),
+            onTap: _clear,
+          ),
+      ],
     );
   }
 }

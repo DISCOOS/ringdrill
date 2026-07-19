@@ -17,7 +17,9 @@ import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
+import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
@@ -380,14 +382,15 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     RolePlay rolePlay,
     Actor? actor,
   ) {
+    final scheme = Theme.of(context).colorScheme;
     return IconButton(
       tooltip: actor != null ? localizations.editCast : localizations.addCast,
-      icon: Icon(
-        actor != null ? Icons.person : Icons.person_add_outlined,
-        color: actor != null
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
+      // The actor (face) glyph: cast shows a plain face, uncast the face + plus
+      // "assign an actor" affordance. person/add-person is reserved for the
+      // character (a Person), not who enacts it (the actor).
+      icon: actor != null
+          ? Icon(Icons.face, color: scheme.primary)
+          : AddFaceIcon(color: scheme.onSurfaceVariant),
       onPressed: () => _openCastPicker(rolePlay),
     );
   }
@@ -466,30 +469,32 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     RolePlay rolePlay,
     Actor? actor,
   ) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
     if (actor == null) {
-      return TextButton.icon(
-        onPressed: () => _openCastPicker(rolePlay),
-        icon: const Icon(Icons.person_add_outlined, size: 18),
-        label: Text(localizations.addCast),
+      // Uncast — the same tappable cast pill the Post surfaces use.
+      return CastPill(
+        variant: CastPillVariant.uncast,
+        label: localizations.noCastLine,
+        onTap: () => _openCastPicker(rolePlay),
       );
     }
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     // No `⋮` menu here (DESIGN-010 browser tile polish): edit/clear moved
     // into the marker sheet itself (CastPickerSheet), reachable from the
     // collapsed tile's cast chip regardless of expand state.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // "Spilles av {realName}" (castedByLine) — the same "Played by …"
-        // wording the detail sheet uses, not the bare actor name.
-        // castPrivateHint ("Stays on this device") is deliberately
-        // dropped: deprecated wording the app has moved away from.
-        Text(
-          localizations.castedByLine(actor.realName),
-          style: theme.textTheme.bodyMedium,
+        // "Spilles av {realName}" as the shared cast pill — tappable to
+        // change/clear the actor, the same affordance as the collapsed tile's
+        // face chip and the header cast icon.
+        CastPill(
+          variant: CastPillVariant.cast,
+          // Just the actor name — the face icon already reads "enacted by".
+          label: actor.realName,
+          onTap: () => _openCastPicker(rolePlay),
         ),
+        if (actor.phone != null) const SizedBox(height: 6),
         if (actor.phone != null)
           InkWell(
             onTap: () => launchUrl(Uri.parse('tel:${actor.phone}')),

@@ -1679,7 +1679,7 @@
       "name": { "type": "String" }
     }
   },
-  "noCastLine": "No actor selected",
+  "noCastLine": "No actor",
   "@noCastLine": {
     "description": "Subtitle on a role row when no actor is cast. Styled italic + subdued."
   },

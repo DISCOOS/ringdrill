@@ -27,6 +27,8 @@ import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/shell/wide_detail_map_split.dart';
 import 'package:ringdrill/views/shell/window_size_class.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
+import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
+import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -580,26 +582,65 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
               r.personRef == person.slug,
         )
         .firstOrNull;
-    final displayName = person.name.isEmpty ? person.slug : person.name;
-    // "Spilles av …" names the marker's cast actor (the person playing the
-    // role), not the roleplay's own name — which mirrors the person and read
-    // as "Henrik · Spilles av Henrik". Fall back to the no-cast line when the
-    // marker exists but is uncast.
     final castActor = rolePlay?.actorUuid == null
         ? null
         : _programService.getActor(rolePlay!.actorUuid!);
-    final genderLabel = genderLabelFor(person.gender, l10n);
-    final metaParts = [
-      displayName,
-      if (person.age != null) '${person.age}',
-      ?genderLabel,
-    ];
-    // The row itself opens the person editor; the trailing marker pill is its
-    // own tap target (add-marker or open-marker) and, being an inner InkWell,
-    // wins the tap over the row's own — so a tap on the pill never also opens
-    // the person editor.
+
+    // Effective identity (DESIGN-012): the actor's own non-empty
+    // override wins over the linked person's planned value, so the post's own
+    // context shows what is actually played — not just the plan.
+    final effName = _effective(rolePlay?.name, person.name);
+    final displayName = (effName == null || effName.isEmpty)
+        ? person.slug
+        : effName;
+    final effAge = rolePlay?.age ?? person.age;
+    final effGender = _effective(rolePlay?.gender, person.gender);
+    final effSignalement = _effective(
+      rolePlay?.signalement,
+      person.signalement,
+    );
+    final genderLabel = genderLabelFor(effGender, l10n);
+    final metaParts = [displayName, if (effAge != null) '$effAge', ?genderLabel];
+    final overridden =
+        rolePlay != null &&
+        (_isOverride(rolePlay.name, person.name) ||
+            (rolePlay.age != null && rolePlay.age != person.age) ||
+            _isOverride(rolePlay.gender, person.gender) ||
+            _isOverride(rolePlay.signalement, person.signalement));
+
+    // Trailing cast pill: create the RolePlay (no marker yet), or assign/edit
+    // the actor (RolePlay present) via the shared cast picker — not the Spill
+    // viewer.
+    final CastPill pill;
+    if (rolePlay == null) {
+      pill = CastPill(
+        variant: CastPillVariant.add,
+        label: l10n.personsSectionAddMarkerAction,
+        onTap: () => _addRolePlayForPerson(station, person),
+      );
+    } else if (castActor == null) {
+      pill = CastPill(
+        variant: CastPillVariant.uncast,
+        label: l10n.noCastLine,
+        onTap: () => _castRolePlay(rolePlay),
+      );
+    } else {
+      pill = CastPill(
+        variant: CastPillVariant.cast,
+        // Just the actor name — the face icon already reads "enacted by".
+        label: castActor.realName,
+        onTap: () => _castRolePlay(rolePlay),
+      );
+    }
+
+    // Once a spill (RolePlay) exists, the row opens the spill editor — the
+    // spill is the richer entity and would otherwise be unreachable from the
+    // person list (DESIGN-012 follow-up); without one, it opens the person
+    // editor. The trailing cast pill is its own inner tap target.
     return InkWell(
-      onTap: () => _editPerson(station, person),
+      onTap: rolePlay == null
+          ? () => _editPerson(station, person)
+          : () => _editRolePlay(rolePlay),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -610,28 +651,18 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Icon(
-                Icons.person,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            // Person rows carry a person icon (the row *is* the character);
+            // the accent-dot badge marks a row the actor has overridden.
+            _personLeadingIcon(theme, overridden: overridden),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(metaParts.join(' · '), overflow: TextOverflow.ellipsis),
-                  if ((person.signalement ?? '').isNotEmpty)
+                  if ((effSignalement ?? '').isNotEmpty)
                     Text(
-                      person.signalement!,
+                      effSignalement!,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -641,32 +672,96 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            // Trailing on the name line — better use of the horizontal space
-            // than a second row under the name, and easier to scan.
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 170),
-              child: InkWell(
-                onTap: rolePlay == null
-                    ? () => _addRolePlayForPerson(station, person)
-                    : () => _openRolePlay(rolePlay),
-                child: rolePlay == null
-                    ? _AddMarkerPill(
-                        label: l10n.personsSectionAddMarkerAction,
-                      )
-                    : _EnactedByPill(
-                        // Just the marker (cast actor) name + icon — the
-                        // "Spilles av" prefix is dropped here (the masks icon
-                        // already says "enacted by").
-                        label: castActor != null
-                            ? castActor.realName
-                            : l10n.noCastLine,
-                      ),
-              ),
+              child: pill,
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// ADR-0047 effective-identity rule: the roleplay's own non-empty value
+  /// wins over the linked person's.
+  static String? _effective(String? roleValue, String? personValue) =>
+      (roleValue != null && roleValue.isNotEmpty) ? roleValue : personValue;
+
+  /// Whether [roleValue] overrides [personValue] (non-empty and different).
+  static bool _isOverride(String? roleValue, String? personValue) =>
+      roleValue != null &&
+      roleValue.isNotEmpty &&
+      roleValue != (personValue ?? '');
+
+  /// The person row's 30×30 leading icon, with an accent-dot corner badge
+  /// (costing no inline width) when the actor has overridden the person's
+  /// planned identity.
+  Widget _personLeadingIcon(ThemeData theme, {required bool overridden}) {
+    final box = Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Icon(
+        Icons.person,
+        size: 16,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+    if (!overridden) return box;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        box,
+        Positioned(
+          top: -2,
+          right: -2,
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: theme.cardColor, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Opens the shared cast picker for [rolePlay] (assign/clear its actor),
+  /// the same sheet the Spill card and browser tiles use.
+  Future<void> _castRolePlay(RolePlay rolePlay) async {
+    final localizations = AppLocalizations.of(context)!;
+    await openCastPickerAndApply(context, localizations, rolePlay);
+    if (mounted) setState(() {});
+  }
+
+  /// Opens the spill (roleplay) editor for an existing [rolePlay] — the person
+  /// row's tap target once the person has a spill (DESIGN-012 follow-up), so
+  /// the spill is reachable and editable from the person list.
+  Future<void> _editRolePlay(RolePlay rolePlay) async {
+    final localizations = AppLocalizations.of(context)!;
+    final result = await openFormSurface<RolePlayFormResult>(
+      context,
+      builder: (_) => RolePlayFormScreen(
+        rolePlay: rolePlay,
+        exercise: _exercise,
+        variables: _programService.activeProgram?.variables ?? const [],
+      ),
+    );
+    if (result == null) return;
+    await applyRolePlayAdditions(
+      _programService,
+      localizations,
+      result.rolePlay,
+      result.additions,
+    );
+    await _programService.saveRolePlay(localizations, result.rolePlay);
+    if (mounted) setState(() {});
   }
 
   /// Lokasjoner card (DESIGN-009/010): one row per station-owned [Location],
@@ -895,12 +990,6 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     }
   }
 
-  void _openRolePlay(RolePlay rolePlay) {
-    ContextSheet.of(
-      context,
-    ).replace(RoleSheetTarget(rolePlayUuid: rolePlay.uuid));
-  }
-
   Future<void> _saveStation(
     AppLocalizations localizations,
     Station updated,
@@ -1003,69 +1092,6 @@ class _HeaderAddAction extends StatelessWidget {
   }
 }
 
-/// A person row's "Spilles av {navn}" pill (mockup's `.mkline`) — mirrors
-/// `PersonsSection`'s own `_EnactedByRow` visual (that one is private to
-/// `persons_section.dart`).
-class _EnactedByPill extends StatelessWidget {
-  const _EnactedByPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.theater_comedy_outlined,
-            size: 14,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A person row's "+ Legg til markør" affordance (mockup's `.addinline`) —
-/// mirrors `PersonsSection`'s own `_AddMarkerRow` visual.
-class _AddMarkerPill extends StatelessWidget {
-  const _AddMarkerPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.add, size: 15, color: theme.colorScheme.primary),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      ],
-    );
-  }
-}
+// The person row's cast affordance is now the shared `CastPill`
+// (DESIGN-012); the former private `_EnactedByPill` /
+// `_AddMarkerPill` have been removed.

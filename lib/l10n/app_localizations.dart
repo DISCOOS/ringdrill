@@ -2933,7 +2933,7 @@ abstract class AppLocalizations {
   /// Subtitle on a role row when no actor is cast. Styled italic + subdued.
   ///
   /// In en, this message translates to:
-  /// **'No actor selected'**
+  /// **'No actor'**
   String get noCastLine;
 
   /// AppBar title for the BriefScreen.

@@ -164,8 +164,8 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 0);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.castedByLine(_actorA.realName)), findsOneWidget);
+      // The expanded cast pill shows just the actor name (no "Played by").
+      expect(find.text(_actorA.realName), findsOneWidget);
     });
 
     testWidgets('phone is rendered when actor has phone', (tester) async {
@@ -196,9 +196,9 @@ void main() {
           findsNothing,
         );
 
-        // The collapsed tile's cast chip (Icons.person, role A is cast) is
+        // The collapsed tile's cast chip (Icons.face, role A is cast) is
         // the one marker-management affordance now.
-        await tester.tap(find.byIcon(Icons.person).first);
+        await tester.tap(find.byIcon(Icons.face).first);
         await tester.pumpAndSettle();
 
         final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -214,15 +214,15 @@ void main() {
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 0);
 
-      await tester.tap(find.byIcon(Icons.person).first);
+      await tester.tap(find.byIcon(Icons.face).first);
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.clearCast));
       await tester.pumpAndSettle();
 
-      // After clearing, add-cast button appears (role is no longer cast)
-      expect(find.text(l10n.addCast), findsWidgets);
+      // After clearing, the uncast "No actor" pill appears (no longer cast).
+      expect(find.text(l10n.noCastLine), findsWidgets);
     });
   });
 
@@ -231,8 +231,7 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 1);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
+      expect(find.text(_actorB.realName), findsOneWidget);
     });
 
     testWidgets('phone number not rendered when actor.phone is null',
@@ -242,8 +241,7 @@ void main() {
       await _expandTileAt(tester, 1);
 
       // Actor name is present
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
+      expect(find.text(_actorB.realName), findsOneWidget);
       // The phone number of actor A must not appear in role B's section
       expect(find.text(_actorA.phone!), findsNothing);
     });

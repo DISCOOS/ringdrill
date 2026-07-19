@@ -31,3 +31,7 @@ Feature-specific UI reaches `MapView` through **slot props** (`topRightCommands`
 ## Form primary-action label ("Save" vs "Done") (ADR-0030)
 
 Editor forms open through `openFormSurface`, which provides a `FormSurfaceScope`. Set `commitsToParent` **per call site**: `false` (default) when the caller persists on return (a "Save" primary action), `true` when the result is only merged into a parent's unsaved working copy (a "Done" primary action). "Nested vs committing" is a property of the call site, not the form — the same form is a real save from a viewer but deferred from an editor. See the `FormSurfaceScope` / `openFormSurface` dartdoc for the full rule.
+
+## Previewing a widget headlessly
+
+When you change how a widget looks, render it to a PNG and inspect the image before calling it done — don't rely on reading the code. Use `skills/flutter-widget-preview/`: copy its template into the gitignored `test/preview/`, point it at the widget, run `skills/flutter-widget-preview/run_preview.sh`, and open the output. It renders through the test binary, so no browser or device is needed, and it captures light/dark, text scale, and `nb`/`en` in one pass. This is the no-browser companion to `flutter widget-preview start`. See rule 14 in [`AGENTS.md`](../AGENTS.md) and the skill's `SKILL.md`.

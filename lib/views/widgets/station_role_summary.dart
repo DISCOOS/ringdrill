@@ -4,7 +4,9 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
+import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 
 /// Read-only summary of roles (markørordrer) attached to a station.
 ///
@@ -67,7 +69,7 @@ class StationRoleSummary extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              localizations.stationRolesSection,
+              localizations.playSection,
               style: theme.textTheme.titleSmall,
             ),
             const SizedBox(width: 6),
@@ -109,18 +111,16 @@ class _RoleSummaryRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final titleText = role.age != null
-        ? '${role.name}, ${role.age}'
-        : role.name;
-    final subtitleText = actor != null
-        ? localizations.castedByLine(actor!.realName)
-        : localizations.noCastLine;
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
-      color: actor != null
-          ? colorScheme.onSurfaceVariant
-          : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-      fontStyle: actor != null ? FontStyle.normal : FontStyle.italic,
-    );
+    // Title: effective name · age · gender (role.* already carries the
+    // effective identity). Subtitle: signalement — the person info, now that
+    // cast status has moved into the trailing pill.
+    final genderLabel = genderLabelFor(role.gender, localizations);
+    final metaParts = [
+      role.name,
+      if (role.age != null) '${role.age}',
+      ?genderLabel,
+    ];
+    final signalement = role.signalement ?? '';
 
     return InkWell(
       onTap: () => ContextSheet.of(
@@ -131,53 +131,48 @@ class _RoleSummaryRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // The marker (face) icon — the same `Icons.face` the cast picker
-            // uses for a marker, so a marker row reads consistently; distinct
-            // from the section header's masks-theater icon above, which names
-            // the "markers" group.
-            Icon(Icons.face, size: 20, color: colorScheme.onSurfaceVariant),
+            // The row is the person (the character) → person icon; the actor
+            // who enacts them shows in the trailing cast pill (face).
+            Icon(Icons.person, size: 20, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(titleText, maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text(
-                    subtitleText,
-                    style: subtitleStyle,
+                    metaParts.join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (signalement.isNotEmpty)
+                    Text(
+                      signalement,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
             ),
-            // Cast-state indicator, matching the Spill tile's cast chip
-            // icon/meaning exactly. A bare Icon (no IconButton) when
-            // onTapMarker is null (program_view.dart/coordinator_screen.dart
-            // stay read-only); the Poster tile's marker-row wraps it as the
-            // one consistent "open the marker sheet" affordance shared with
-            // Spill (DESIGN-010 browser tile polish, Fix 4).
-            if (onTapMarker == null)
-              Icon(
-                actor != null ? Icons.person : Icons.person_add_outlined,
-                color: actor != null
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-              )
-            else
-              IconButton(
-                tooltip: actor != null
-                    ? localizations.editCast
-                    : localizations.addCast,
-                icon: Icon(
-                  actor != null ? Icons.person : Icons.person_add_outlined,
-                  color: actor != null
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                ),
-                onPressed: () => onTapMarker!(role),
+            const SizedBox(width: 8),
+            // Cast state as the shared pill — tappable (opens the cast picker)
+            // only where the caller wires [onTapMarker]; a bare, non-interactive
+            // indicator on the read-only surfaces (program/coordinator detail).
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 150),
+              child: CastPill(
+                variant: actor != null
+                    ? CastPillVariant.cast
+                    : CastPillVariant.uncast,
+                label: actor != null
+                    ? actor!.realName
+                    : localizations.noCastLine,
+                onTap: onTapMarker == null ? null : () => onTapMarker!(role),
               ),
+            ),
           ],
         ),
       ),

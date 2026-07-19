@@ -130,6 +130,9 @@ class _RingdrillPickerBodyState<T> extends State<_RingdrillPickerBody<T>> {
             ],
           ),
         ),
+        // Separate the title header from the list/search so it reads as a
+        // header and not as another list item.
+        const Divider(height: 1),
         if (showSearch)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),

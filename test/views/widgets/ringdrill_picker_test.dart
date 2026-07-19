@@ -167,7 +167,9 @@ void main() {
     );
 
     expect(find.byKey(const Key('footer-action')), findsOneWidget);
-    expect(find.byType(Divider), findsOneWidget);
+    // Two dividers now: one under the title (header separator) and one above
+    // the footer actions.
+    expect(find.byType(Divider), findsNWidgets(2));
     expect(
       tester.getTopLeft(find.byKey(const Key('footer-action'))).dy,
       greaterThan(tester.getTopLeft(find.text('Beta')).dy),

@@ -1748,7 +1748,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noCastLine => 'No actor selected';
+  String get noCastLine => 'No actor';
 
   @override
   String get briefScreenTitle => 'Brief';
