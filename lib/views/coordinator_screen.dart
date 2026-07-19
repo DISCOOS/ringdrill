@@ -260,7 +260,14 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
     if (context.mounted && confirmed) {
       await _programService.deleteExercise(_exercise!.uuid);
       if (context.mounted) {
-        Navigator.of(context).pop(false);
+        // The exercise this coordinator showed is gone — close the viewer the
+        // same master/detail-aware way the AppBar close does (back to the
+        // exercise list), not pop the wrong navigator in the wide layout.
+        if (MasterDetailScope.maybeOf(context) != null) {
+          ContextSheet.of(context).close();
+        } else {
+          Navigator.pop(context);
+        }
       }
     }
   }
@@ -298,8 +305,17 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         });
       case ExerciseFormDelete(:final exercise):
         await _programService.deleteExercise(exercise.uuid);
-        // The exercise this coordinator showed is gone — close the viewer.
-        if (mounted) Navigator.of(context).pop(false);
+        if (!mounted) return;
+        // The exercise this coordinator showed is gone — close the viewer the
+        // same master/detail-aware way the AppBar close does. Use the State's
+        // own context (this.context), not the method parameter: the `mounted`
+        // check guards this State, and in compact layout the passed-in context
+        // belonged to the now-disposed sheet.
+        if (MasterDetailScope.maybeOf(this.context) != null) {
+          ContextSheet.of(this.context).close();
+        } else {
+          Navigator.pop(this.context);
+        }
     }
   }
 
