@@ -14,7 +14,7 @@ import 'package:ringdrill/views/station_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// DESIGN-010 stage 3 — regression test for the reported bug: the Post
-/// sheet's description used to render `{{station.position.utm}}` (and
+/// sheet's description used to render `{{station.position}}` (and
 /// `{{station.loc.*}}`) as literal text (only `{{var.*}}` resolved). Now
 /// that station_screen.dart wraps itself in ExerciseScope/StationScope and
 /// resolves its description through resolveScopedField (ADR-0048), the
@@ -45,7 +45,7 @@ Exercise _exercise() => Exercise(
       position: _stationPosition,
       locations: const [_lkp],
       description:
-          'Posisjon: {{station.position.utm}}. Møtepunkt: '
+          'Posisjon: {{station.position}}. Møtepunkt: '
           '{{station.loc.lkp.place}}.',
     ),
   ],
@@ -107,7 +107,7 @@ void main() {
     await ProgramService().init();
   });
 
-  testWidgets('the description resolves {{station.position.utm}} and '
+  testWidgets('the description resolves {{station.position}} and '
       '{{station.loc.*}} instead of leaving them literal', (tester) async {
     await tester.pumpWidget(_buildScreen());
     await tester.pumpAndSettle();

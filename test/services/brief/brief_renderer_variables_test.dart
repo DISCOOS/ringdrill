@@ -266,8 +266,7 @@ void main() {
               index: 0,
               name: 'Post',
               position: position,
-              situationMd:
-                  'Kanal {{var.frekvens}} ved {{station.position.utm}}',
+              situationMd: 'Kanal {{var.frekvens}} ved {{station.position}}',
             ),
           ],
           schedule: const [],
@@ -583,27 +582,24 @@ void main() {
   /// these deeper layers resolve, instead of stopping at the innermost layer
   /// already present in the raw text.
   group('BriefRenderer — nested token resolution', () {
-    test(
-      'a variable inside program.name resolves when the name is reached '
-      'through {{program.name}} in a markdown field',
-      () async {
-        final program = _emptyProgram().copyWith(
-          name: 'LSOR Eidene {{var.year}}',
-          variables: const [DrillVariable(name: 'year', value: '2026')],
-          briefIntroMd: 'Velkommen til {{program.name}}!',
-        );
+    test('a variable inside program.name resolves when the name is reached '
+        'through {{program.name}} in a markdown field', () async {
+      final program = _emptyProgram().copyWith(
+        name: 'LSOR Eidene {{var.year}}',
+        variables: const [DrillVariable(name: 'year', value: '2026')],
+        briefIntroMd: 'Velkommen til {{program.name}}!',
+      );
 
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        expect(result, contains('# LSOR Eidene 2026'));
-        expect(result, contains('Velkommen til LSOR Eidene 2026!'));
-        expect(result, isNot(contains('{{var.year}}')));
-      },
-    );
+      expect(result, contains('# LSOR Eidene 2026'));
+      expect(result, contains('Velkommen til LSOR Eidene 2026!'));
+      expect(result, isNot(contains('{{var.year}}')));
+    });
 
     test(
       'a three-level chain field -> {{program.description}} -> {{program.name}} '
@@ -627,27 +623,24 @@ void main() {
       },
     );
 
-    test(
-      'a circular cross-reference terminates and leaves a literal token '
-      'instead of hanging',
-      () async {
-        final program = _emptyProgram().copyWith(
-          name: '{{program.description}}',
-          description: '{{program.name}}',
-          commsMd: 'Intro: {{program.name}}',
-        );
+    test('a circular cross-reference terminates and leaves a literal token '
+        'instead of hanging', () async {
+      final program = _emptyProgram().copyWith(
+        name: '{{program.description}}',
+        description: '{{program.name}}',
+        commsMd: 'Intro: {{program.name}}',
+      );
 
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
 
-        // Reaching here at all proves the fixpoint loop terminated; the cap's
-        // fail-safe leaves the unresolvable cycle as a visible literal token.
-        expect(result, contains('{{program.'));
-      },
-    );
+      // Reaching here at all proves the fixpoint loop terminated; the cap's
+      // fail-safe leaves the unresolvable cycle as a visible literal token.
+      expect(result, contains('{{program.'));
+    });
   });
 
   group('BriefRenderer — typed variables (DESIGN-008 follow-up 11)', () {
@@ -686,8 +679,8 @@ void main() {
       briefIntroMd:
           'Oppmøte kl {{var.tid}} den {{var.dato}}, varer {{var.varighet}}. '
           'Pi er {{var.pi}}. Kanal {{var.frekvens}}. '
-          'Sted: {{var.oppmote}} — UTM {{var.oppmote.utm}}, '
-          'adresse {{var.oppmote.place}}, GPS {{var.oppmote.latlng}}.',
+          'Sted: {{var.oppmote}} — UTM {{var.oppmote.position}}, '
+          'adresse {{var.oppmote.place}}.',
     );
 
     test('formats each type canonically for display in the brief', () async {
@@ -713,11 +706,13 @@ void main() {
           l10n: _l10n,
         );
 
-        // Bare token: place + UTM, UTM as an inline-code chip.
-        expect(result, contains(RegExp(r'Sted: `Meiselen 14` `\(32V [^`]+\)`')));
+        // Bare token: place + position, position as an inline-code chip.
+        expect(
+          result,
+          contains(RegExp(r'Sted: `Meiselen 14` `\(32V [^`]+\)`')),
+        );
         expect(result, contains(RegExp(r'UTM `32V [^`]+`')));
         expect(result, contains('adresse `Meiselen 14`'));
-        expect(result, contains('GPS `59.744500,10.204500`'));
       },
     );
 

@@ -25,8 +25,6 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/projection.dart';
-import 'package:ringdrill/utils/station_scenario_tokens.dart'
-    show locationLatLng;
 import 'package:ringdrill/utils/variable_values.dart';
 
 /// Upper bound on [resolveField]'s fixpoint iterations. Each successful
@@ -124,6 +122,21 @@ class ActionChipFormatter extends ChipFormatter {
   String address(String value) => briefCopyChip(value);
 }
 
+/// Coordinate display format for the `position` facet (ADR-0050), unifying
+/// the former flat `utm`/`latlng` facets into one format-agnostic
+/// `position`. Ships with UTM only — [format] is the seam for MGRS, the
+/// degree variants (DD/DM/DMS) and raw LatLng later, à la
+/// [ADR-0034](../../../docs/adrs/0034-configurable-numbering-formats.md)'s
+/// configurable numbering.
+enum CoordinateFormat {
+  utm;
+
+  /// Formats [latLng] per this format. Empty string when [latLng] is null.
+  String format(LatLng? latLng) => switch (this) {
+    CoordinateFormat.utm => formatUtm(latLng),
+  };
+}
+
 /// Resolves a markdown field for rendering by running the full token
 /// pipeline — `{{var.<name>}}`, then (when [scenarioStation] is given)
 /// `{{station.loc/person.<slug>}}`, then the mustache cross-reference pass
@@ -153,6 +166,7 @@ String? resolveField(
   Station? scenarioStation,
   List<RolePlay> scenarioRolePlays = const [],
   ChipFormatter chips = const CopyChipFormatter(),
+  CoordinateFormat format = CoordinateFormat.utm,
 }) {
   if (content == null) return null;
   var current = content;
@@ -167,6 +181,7 @@ String? resolveField(
       scenarioStation: scenarioStation,
       scenarioRolePlays: scenarioRolePlays,
       chips: chips,
+      format: format,
       onError: (error, stackTrace) {
         // Keep only the first pass's failure: a persistent missing-scope
         // token throws on every pass, but it is one problem, reported once.
@@ -198,9 +213,16 @@ String _resolveFieldOnce(
   Station? scenarioStation,
   List<RolePlay> scenarioRolePlays = const [],
   ChipFormatter chips = const CopyChipFormatter(),
+  CoordinateFormat format = CoordinateFormat.utm,
   void Function(Object error, StackTrace stackTrace)? onError,
 }) {
-  final withVars = substituteTypedVariables(content, vars, l10n, chips: chips);
+  final withVars = substituteTypedVariables(
+    content,
+    vars,
+    l10n,
+    chips: chips,
+    format: format,
+  );
   final withScenario = scenarioStation == null
       ? withVars
       : _resolveStationScenarioTokens(
@@ -209,6 +231,7 @@ String _resolveFieldOnce(
           rolePlays: scenarioRolePlays,
           l10n: l10n,
           chips: chips,
+          format: format,
         );
   try {
     return Template(
@@ -228,7 +251,7 @@ String _resolveFieldOnce(
 /// internally.
 ///
 /// Runs before the mustache pass (see [resolveField]), so cross-references
-/// like `{{station.position.utm}}` are still handled by the subsequent
+/// like `{{station.position}}` are still handled by the subsequent
 /// mustache pass against `refContext`. A variable *value* that itself
 /// contains `{{...}}` is inserted literally here and picked up by a later
 /// pass of [resolveField]'s fixpoint loop: a `{{var.*}}` value resolves on
@@ -240,6 +263,7 @@ String substituteTypedVariables(
   Map<String, DrillVariable> vars,
   AppLocalizations l10n, {
   ChipFormatter chips = const CopyChipFormatter(),
+  CoordinateFormat format = CoordinateFormat.utm,
 }) {
   return resolveTypedPlanVariables(
     content,
@@ -250,7 +274,7 @@ String substituteTypedVariables(
     ),
     onUnknown: (name) => l10n.briefUnknownVariable(name),
     locationFacetResolver: (location, facets) =>
-        _resolveLocationFacet(location, facets, chips),
+        _resolveLocationFacet(location, facets, chips, format),
   );
 }
 
@@ -274,7 +298,7 @@ final _stationScenarioTokenPattern = RegExp(
 /// Runs pre-mustache, alongside `{{var.<name>}}` substitution — this is a
 /// second registry-like lookup, not mustache's fixed derived context, so it
 /// stays on the same pre-pass rather than growing a second parser. The
-/// remaining `{{station.position.*}}` etc. are untouched here and still
+/// remaining `{{station.position}}` etc. are untouched here and still
 /// resolved by the subsequent mustache pass against `refContext`.
 String _resolveStationScenarioTokens(
   String content, {
@@ -282,6 +306,7 @@ String _resolveStationScenarioTokens(
   required List<RolePlay> rolePlays,
   required AppLocalizations l10n,
   ChipFormatter chips = const CopyChipFormatter(),
+  CoordinateFormat format = CoordinateFormat.utm,
 }) {
   return content.replaceAllMapped(_stationScenarioTokenPattern, (match) {
     final kind = match.group(1)!;
@@ -295,14 +320,21 @@ String _resolveStationScenarioTokens(
       if (location == null) {
         return l10n.briefUnknownReference('station.loc.$slug');
       }
-      return _resolveLocationFacet(location, facets, chips);
+      return _resolveLocationFacet(location, facets, chips, format);
     }
     final person = _bySlug(station.persons, slug, (p) => p.slug);
     if (person == null) {
       return l10n.briefUnknownReference('station.person.$slug');
     }
     final portrayer = _bySlug(rolePlays, slug, (rp) => rp.personRef ?? '');
-    return _resolvePersonFacet(person, portrayer, station, facets, chips);
+    return _resolvePersonFacet(
+      person,
+      portrayer,
+      station,
+      facets,
+      chips,
+      format,
+    );
   });
 }
 
@@ -316,25 +348,29 @@ T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
 /// `{{station.loc.<slug>[.facet]}}` facet resolution — also reused for
 /// `location`-typed `{{var.<name>[.facet]}}` tokens (DESIGN-008 follow-up
 /// 11), which project onto the same `Location` shape. The bare/default and
-/// `.utm` forms render the UTM as inline code (backtick-wrapped), matching
-/// how the brief presents `station.position.utm` elsewhere; empty when the
-/// location has no position.
+/// `position` forms render the coordinate (formatted per [format]) as inline
+/// code (backtick-wrapped) or, under [ActionChipFormatter], an `rdchip:`
+/// link; empty when the location has no position. Replaces the former flat
+/// `utm`/`latlng` facets (ADR-0050) — a field still using one of those old
+/// tokens falls through to the bare default, same as any unrecognized facet.
 String _resolveLocationFacet(
   Location location,
   List<String> facets,
   ChipFormatter chips,
+  CoordinateFormat format,
 ) {
   switch (facets.isEmpty ? null : facets.first) {
     case 'place':
       return chips.address(location.place);
     case 'label':
       return location.label;
-    case 'utm':
-      return chips.position(formatUtm(location.position), location.position);
-    case 'latlng':
-      return chips.position(locationLatLng(location), location.position);
+    case 'position':
+      return chips.position(
+        format.format(location.position),
+        location.position,
+      );
     default:
-      return _locationDefault(location, chips);
+      return _locationDefault(location, chips, format);
   }
 }
 
@@ -343,17 +379,23 @@ String _resolveLocationFacet(
 String briefCopyChip(String value) => value.isEmpty ? '' : '`$value`';
 
 /// Sensible bare-token default: the address as its own copy chip plus, when a
-/// position is set, the UTM chip wrapped in parentheses — two chips side by
-/// side, e.g. `[Meiselen 14] ([32V …])`.
-String _locationDefault(Location location, ChipFormatter chips) {
-  final utm = formatUtm(location.position);
-  if (location.place.isEmpty) return chips.position(utm, location.position);
-  if (utm.isEmpty) return chips.address(location.place);
+/// position is set, the coordinate chip (formatted per [format]) wrapped in
+/// parentheses — two chips side by side, e.g. `[Meiselen 14] ([32V …])`.
+String _locationDefault(
+  Location location,
+  ChipFormatter chips,
+  CoordinateFormat format,
+) {
+  final position = format.format(location.position);
+  if (location.place.isEmpty) {
+    return chips.position(position, location.position);
+  }
+  if (position.isEmpty) return chips.address(location.place);
   // The parentheses are folded into the position chip; the chip renderer
   // draws them just outside its pill (so "(", pill and ")" stay together) and
   // excludes them from the copied coordinate.
   return '${chips.address(location.place)} '
-      '${chips.position('($utm)', location.position)}';
+      '${chips.position('($position)', location.position)}';
 }
 
 /// `{{station.person.<slug>[.facet]}}` facet resolution. [portrayer] is the
@@ -368,6 +410,7 @@ String _resolvePersonFacet(
   Station station,
   List<String> facets,
   ChipFormatter chips,
+  CoordinateFormat format,
 ) {
   switch (facets.isEmpty ? null : facets.first) {
     case 'age':
@@ -384,7 +427,7 @@ String _resolvePersonFacet(
           : _bySlug(station.locations, locSlug, (l) => l.slug);
       return loc == null
           ? ''
-          : _resolveLocationFacet(loc, facets.skip(1).toList(), chips);
+          : _resolveLocationFacet(loc, facets.skip(1).toList(), chips, format);
     case 'name':
     default:
       return _effectivePersonName(person, portrayer);

@@ -53,7 +53,7 @@ void main() {
       final expectedUtm = formatUtm(const LatLng(58.99, 10.43));
 
       final result = resolveField(
-        'Sted: {{station.loc.lkp.place}}, UTM: {{station.loc.lkp.utm}}',
+        'Sted: {{station.loc.lkp.place}}, UTM: {{station.loc.lkp.position}}',
         vars: const {},
         l10n: _l10n,
         scenarioStation: station,
@@ -192,7 +192,7 @@ void main() {
       final expectedUtm = formatUtm(latLng);
 
       final result = resolveField(
-        'Sted: {{station.loc.lkp.utm}}',
+        'Sted: {{station.loc.lkp.position}}',
         vars: const {},
         l10n: _l10n,
         scenarioStation: station,

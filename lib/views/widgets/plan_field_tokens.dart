@@ -41,7 +41,7 @@ class PlanFieldTokens {
   static List<PlanFieldToken> station(AppLocalizations l) => [
     PlanFieldToken(name: 'station.name', label: l.stationName),
     PlanFieldToken(name: 'station.stationCode', label: l.stationCode),
-    PlanFieldToken(name: 'station.position.utm', label: l.positionUtm),
+    PlanFieldToken(name: 'station.position', label: l.positionUtm),
     PlanFieldToken(name: 'station.variantSuffix', label: l.variantSuffix),
   ];
 
@@ -58,6 +58,6 @@ class PlanFieldTokens {
     PlanFieldToken(name: 'roleplay.name', label: l.roleName),
     PlanFieldToken(name: 'roleplay.age', label: l.roleAge),
     PlanFieldToken(name: 'roleplay.signalement', label: l.roleSignalement),
-    PlanFieldToken(name: 'roleplay.position.utm', label: l.positionUtm),
+    PlanFieldToken(name: 'roleplay.position', label: l.positionUtm),
   ];
 }

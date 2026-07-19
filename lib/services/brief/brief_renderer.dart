@@ -301,7 +301,7 @@ class BriefRenderer {
         'stationCode': stationCode,
         'description': station.description,
         'variantSuffix': station.variantSuffix,
-        'position': {'utm': resolver.briefCopyChip(utmStr)},
+        'position': resolver.briefCopyChip(utmStr),
       },
     };
 
@@ -357,7 +357,7 @@ class BriefRenderer {
           'name': rp.name,
           'age': rp.age,
           'signalement': rp.signalement,
-          'position': {'utm': resolver.briefCopyChip(resolver.formatUtm(rp.position))},
+          'position': resolver.briefCopyChip(resolver.formatUtm(rp.position)),
         },
       };
       String? resolveRoleplayField(String? content) => resolver.resolveField(
@@ -390,7 +390,7 @@ class BriefRenderer {
       'variantSuffix': station.variantSuffix,
       'stationCode': stationCode,
       'stationAnchor': stationAnchor,
-      'position': {'utm': resolver.briefCopyChip(utmStr)},
+      'position': resolver.briefCopyChip(utmStr),
       'positionValue': positionValue,
       'stationDurationLabel': _stationDurationLabel(exercise),
       'descriptionMd': resolveField(station.description),

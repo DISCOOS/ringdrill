@@ -33,7 +33,7 @@ Exercise _exercise() => Exercise(
     Station(
       index: 0,
       name: 'Post 1',
-      description: 'IPP {{station.position.utm}}',
+      description: 'IPP {{station.position}}',
       position: _position,
     ),
   ],
@@ -65,7 +65,7 @@ void main() {
   tearDown(() => ProgramService().clearAllForTest());
 
   testWidgets(
-    'expanding a post resolves {{station.position.utm}} in its description',
+    'expanding a post resolves {{station.position}} in its description',
     (tester) async {
       useCompactWindow(tester);
       await tester.pumpWidget(
@@ -91,7 +91,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final expectedUtm = formatUtm(_position);
-      expect(find.textContaining('{{station.position.utm}}'), findsNothing);
+      expect(find.textContaining('{{station.position}}'), findsNothing);
       // The description renders via RingDrillText.rich. The app resolvers
       // pass ActionChipFormatter (ADR-0050), so the coordinate resolves as an
       // rdchip: link (plain link text until DESIGN-013 Commit 4 wires up the

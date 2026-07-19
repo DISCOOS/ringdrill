@@ -61,9 +61,10 @@ enum StationFacetKind { location, person }
 /// A `{{station.loc/person.<slug>.<facetPath>}}` entry completing a known
 /// entity's facet — additive to the bare [StationLocationMenuEntry]/
 /// [StationPersonMenuEntry] default, never replacing it (DESIGN-009
-/// follow-up 4d). [facetPath] is one or two segments (`['utm']` or, for a
-/// person's location chained to its own facets, `['loc', 'utm']`), joined
-/// with `.` to complete the token in [TokenInsertionMenuState._select].
+/// follow-up 4d). [facetPath] is one or two segments (`['position']` or, for
+/// a person's location chained to its own facets, `['loc', 'position']`),
+/// joined with `.` to complete the token in
+/// [TokenInsertionMenuState._select].
 class StationFacetMenuEntry extends TokenMenuEntry {
   const StationFacetMenuEntry({
     required this.kind,
@@ -137,16 +138,17 @@ final _stationPersonPrefixPattern = RegExp(
   caseSensitive: false,
 );
 
-/// The facets `brief_renderer.dart`'s `_resolveLocationFacet` switches on,
-/// in picker display order (ADR-0047, DESIGN-009 follow-up 4d). There is no
-/// facet enum in the renderer, so this constant — read directly by the
-/// resolution-guard test that renders each one through `BriefRenderer` — is
-/// what keeps the picker in sync with it. Public (not the usual leading
-/// underscore) for that test's benefit only, same rationale as
+/// The facets `field_resolver.dart`'s `_resolveLocationFacet` switches on,
+/// in picker display order (ADR-0047, DESIGN-009 follow-up 4d; renamed
+/// `utm`/`latlng` → `position` by ADR-0050). There is no facet enum in the
+/// resolver, so this constant — read directly by the resolution-guard test
+/// that renders each one through `BriefRenderer` — is what keeps the picker
+/// in sync with it. Public (not the usual leading underscore) for that
+/// test's benefit only, same rationale as
 /// [TokenInsertionMenuState.isMenuOpen]. The bare token (no facet) is a
 /// separate, always-offered default; it is not itself in this list.
 @visibleForTesting
-const locationFacetNames = ['place', 'label', 'utm'];
+const locationFacetNames = ['place', 'label', 'position'];
 
 /// The facets `_resolvePersonFacet` switches on. `loc` chains to the
 /// person's location's own [locationFacetNames] one level deep (see
@@ -159,7 +161,7 @@ String _locationFacetLabel(AppLocalizations l10n, String facet) =>
     switch (facet) {
       'place' => l10n.locationsSectionPlaceLabel,
       'label' => l10n.locationsSectionLabelLabel,
-      'utm' => l10n.utm,
+      'position' => l10n.positionUtm,
       _ => facet,
     };
 
@@ -545,7 +547,8 @@ class TokenInsertionMenuState extends State<TokenInsertionMenu> {
           if (rest == null && !_excludeLocationBare(location.slug))
             StationLocationMenuEntry(location),
           for (final f in locationFacetNames)
-            if ((rest == null || f.toLowerCase().contains(rest.toLowerCase())) &&
+            if ((rest == null ||
+                    f.toLowerCase().contains(rest.toLowerCase())) &&
                 !_excludeLocationFacet(location.slug, f))
               StationFacetMenuEntry(
                 kind: StationFacetKind.location,

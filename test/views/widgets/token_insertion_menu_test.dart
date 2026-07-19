@@ -25,7 +25,7 @@ String _locationFacetLabelFor(AppLocalizations l10n, String facet) =>
     switch (facet) {
       'place' => l10n.locationsSectionPlaceLabel,
       'label' => l10n.locationsSectionLabelLabel,
-      'utm' => l10n.utm,
+      'position' => l10n.positionUtm,
       _ => facet,
     };
 
@@ -673,47 +673,47 @@ void main() {
       );
 
       testWidgets(
-        'completion: "station.loc.lkp.ut" narrows to utm and inserts the '
-        'full dotted token',
+        'completion: "station.loc.lkp.pos" narrows to position and inserts '
+        'the full dotted token',
         (tester) async {
           final controller = await _pump(
             tester,
             stationLocations: const [location],
           );
 
-          await _typeAndOpen(tester, '{{station.loc.lkp.ut');
+          await _typeAndOpen(tester, '{{station.loc.lkp.pos');
 
           final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-          expect(find.text(l10n.utm), findsOneWidget);
+          expect(find.text(l10n.positionUtm), findsOneWidget);
           expect(find.text(l10n.locationsSectionPlaceLabel), findsNothing);
           expect(find.text('Siste kjente posisjon'), findsNothing);
 
-          await tester.tap(find.text(l10n.utm));
+          await tester.tap(find.text(l10n.positionUtm));
           await tester.pump();
 
-          expect(controller.text, '{{station.loc.lkp.utm}}');
+          expect(controller.text, '{{station.loc.lkp.position}}');
         },
       );
 
       testWidgets(
-        'loc chaining: "station.person.anne.loc.ut" offers the location '
-        'utm facet and inserts {{station.person.anne.loc.utm}}',
+        'loc chaining: "station.person.anne.loc.pos" offers the location '
+        'position facet and inserts {{station.person.anne.loc.position}}',
         (tester) async {
           final controller = await _pump(
             tester,
             stationPersons: const [person],
           );
 
-          await _typeAndOpen(tester, '{{station.person.anne.loc.ut');
+          await _typeAndOpen(tester, '{{station.person.anne.loc.pos');
 
           final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-          expect(find.text(l10n.utm), findsOneWidget);
+          expect(find.text(l10n.positionUtm), findsOneWidget);
           expect(find.text(l10n.roleAge), findsNothing);
 
-          await tester.tap(find.text(l10n.utm));
+          await tester.tap(find.text(l10n.positionUtm));
           await tester.pump();
 
-          expect(controller.text, '{{station.person.anne.loc.utm}}');
+          expect(controller.text, '{{station.person.anne.loc.position}}');
         },
       );
 

@@ -415,7 +415,7 @@ class _StationListViewState extends State<StationListView> {
 
     // DESIGN-010 browser tile polish: each row lists a different station, so
     // it seeds its own scope (rather than sharing one ancestor) — this is what
-    // lets `{{station.*}}` (e.g. `{{station.position.utm}}`) resolve inside
+    // lets `{{station.*}}` (e.g. `{{station.position}}`) resolve inside
     // the tile's title/subtitle/body instead of showing literally.
     return StationScope.forStation(
       exercise: exercise,

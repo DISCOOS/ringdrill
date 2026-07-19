@@ -109,7 +109,7 @@ A **station** exposes, among others:
 | `stationCode` | The station's numbered code, e.g. `3.1`. |
 | `stationAnchor` | The in-document link target for this station. |
 | `variantSuffix` | The station's optional variant suffix. |
-| `position.utm` | UTM coordinate as a copy chip. |
+| `position` | Coordinate (default UTM format, [ADR-0050](./adrs/0050-per-output-format-chip-formatting.md)) as a copy chip. |
 | `positionValue` | Pre-formatted "plassering" value — a UTM code chip, or a muted "no position" label. |
 | `stationDurationLabel` | The per-station duration label. |
 | `descriptionMd` | Resolved description (markdown). |

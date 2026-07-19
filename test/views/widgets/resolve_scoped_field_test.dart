@@ -106,7 +106,7 @@ void main() {
     // every *other* token back to literal too.
     const content =
         'P={{program.name}} E={{exercise.name}} S={{station.name}} '
-        'UTM={{station.position.utm}} LOC={{station.loc.lkp.place}} '
+        'UTM={{station.position}} LOC={{station.loc.lkp.place}} '
         'PERSON={{station.person.kari.name}} '
         'RP={{roleplay.name}} RPAGE={{roleplay.age}} '
         'VAR={{var.year}} UNK={{var.unknown}}';

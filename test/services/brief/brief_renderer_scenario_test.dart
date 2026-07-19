@@ -69,14 +69,14 @@ void main() {
   });
 
   group('BriefRenderer — station locations', () {
-    test('.place, .utm, .label and the bare default resolve', () async {
+    test('.place, .position, .label and the bare default resolve', () async {
       final station = Station(
         index: 0,
         name: 'Post',
         locations: const [_lkp],
         situationMd:
             'Sted: {{station.loc.lkp.place}}\n'
-            'UTM: {{station.loc.lkp.utm}}\n'
+            'UTM: {{station.loc.lkp.position}}\n'
             'Navn: {{station.loc.lkp.label}}\n'
             'Standard: {{station.loc.lkp}}',
       );
@@ -101,13 +101,13 @@ void main() {
       expect(result, contains('Standard: `Fjellheisen` `($utm)`'));
     });
 
-    test('.utm is empty when the location has no position', () async {
+    test('.position is empty when the location has no position', () async {
       final station = Station(
         index: 0,
         name: 'Post',
         locations: const [_noPositionLoc],
         situationMd:
-            'UTM:[{{station.loc.ko.utm}}] Standard:[{{station.loc.ko}}]',
+            'UTM:[{{station.loc.ko.position}}] Standard:[{{station.loc.ko}}]',
       );
       final program = _emptyProgram().copyWith(
         exercises: [_exerciseWith(station: station)],
@@ -160,7 +160,7 @@ void main() {
       expect(result, contains('Standard: Anne Glemsk'));
     });
 
-    test('.loc.utm resolves through locSlug to the location', () async {
+    test('.loc.position resolves through locSlug to the location', () async {
       const anne = Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp');
       final station = Station(
         index: 0,
@@ -169,7 +169,7 @@ void main() {
         persons: const [anne],
         situationMd:
             'Hjemme: {{station.person.anne.loc}}\n'
-            'HjemmeUTM: {{station.person.anne.loc.utm}}',
+            'HjemmeUTM: {{station.person.anne.loc.position}}',
       );
       final program = _emptyProgram().copyWith(
         exercises: [_exerciseWith(station: station)],
@@ -468,7 +468,7 @@ void main() {
         index: 0,
         name: 'Post',
         position: const LatLng(58.99, 10.43),
-        situationMd: 'IPP er ved {{station.position.utm}}.',
+        situationMd: 'IPP er ved {{station.position}}.',
       );
       final program = _emptyProgram().copyWith(
         exercises: [_exerciseWith(station: station)],

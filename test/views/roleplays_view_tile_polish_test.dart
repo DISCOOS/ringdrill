@@ -58,8 +58,7 @@ RolePlay _rolePlay() => const RolePlay(
   stationIndex: 0,
   position: _rolePosition,
   actorUuid: 'actor-role-tile-polish',
-  signalement:
-      'UTM: {{station.position.utm}} STED: {{station.loc.entry.place}}',
+  signalement: 'UTM: {{station.position}} STED: {{station.loc.entry.place}}',
 );
 
 Widget _harness(Widget sliver) => MaterialApp(
@@ -150,21 +149,20 @@ void main() {
     expect(find.text(l10n.clearCast), findsOneWidget);
   });
 
-  testWidgets(
-    'Fix 5: {{station.position.utm}} and {{station.loc.*}} resolve per '
-    'tile via its own StationScope instead of showing literally',
-    (tester) async {
-      await expandFirstRole(tester);
+  testWidgets('Fix 5: {{station.position}} and {{station.loc.*}} resolve per '
+      'tile via its own StationScope instead of showing literally', (
+    tester,
+  ) async {
+    await expandFirstRole(tester);
 
-      expect(find.textContaining('{{station.'), findsNothing);
-      // The signalement renders via RingDrillText.plain, so position/address
-      // read as plain text (chips are reserved for description bodies /
-      // markdown surfaces).
-      expect(
-        find.textContaining('UTM: ${formatUtm(_stationPosition)}'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('STED: Innkjøring'), findsOneWidget);
-    },
-  );
+    expect(find.textContaining('{{station.'), findsNothing);
+    // The signalement renders via RingDrillText.plain, so position/address
+    // read as plain text (chips are reserved for description bodies /
+    // markdown surfaces).
+    expect(
+      find.textContaining('UTM: ${formatUtm(_stationPosition)}'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('STED: Innkjøring'), findsOneWidget);
+  });
 }

@@ -35,7 +35,7 @@ Exercise _exercise() =>
           index: 0,
           name: 'Post 1',
           description:
-              'Beskrivelse. UTM: {{station.position.utm}} '
+              'Beskrivelse. UTM: {{station.position}} '
               'STED: {{station.loc.entry.place}}',
           position: _stationPosition,
           locations: const [_entryLoc],
@@ -147,7 +147,7 @@ void main() {
   );
 
   testWidgets(
-    'Fix 5: {{station.position.utm}} and {{station.loc.*}} resolve per tile '
+    'Fix 5: {{station.position}} and {{station.loc.*}} resolve per tile '
     'via its own StationScope instead of showing literally',
     (tester) async {
       await expandFirstStation(tester);

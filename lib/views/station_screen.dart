@@ -387,7 +387,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
 
   /// The rollup made concrete (DESIGN-010): the lead description then every
   /// active labeled section, resolved and markdown-rendered, closing the
-  /// literal `{{station.position.utm}}` bug this stage started from.
+  /// literal `{{station.position}}` bug this stage started from.
   /// `directorNotesMd` is the mockup's "Notat til øvelsesleder" — gated on
   /// the settings role being director (a stricter gate than the brief's own
   /// `BriefAudience.includesDirectorNotes`, which also includes instructor:

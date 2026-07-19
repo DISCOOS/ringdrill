@@ -31,8 +31,8 @@ enum VariableType {
 
   /// A place with a coordinate — the geo shape of a `Location` (DESIGN-009)
   /// minus `kind`. The value lives in [DrillVariable.location], not in the
-  /// string [DrillVariable.value]; it exposes the `.place`/`.utm`/`.latlng`
-  /// facets, and the bare token renders place + UTM.
+  /// string [DrillVariable.value]; it exposes the `.place`/`.position`
+  /// facets (ADR-0050), and the bare token renders place + position.
   location,
 }
 

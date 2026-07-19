@@ -84,7 +84,7 @@ class StationScope extends InheritedWidget {
   /// This station's own cross-reference facets (`station.*`, DESIGN-010's
   /// resolve-context cascade — the same set `BriefRenderer`'s
   /// `stationRefContext` builds) — carried alongside [locations]/[persons]
-  /// so a `{{station.name}}`/`{{station.position.utm}}` etc. reference
+  /// so a `{{station.name}}`/`{{station.position}}` etc. reference
   /// resolves in preview the same way it does in the brief. A null
   /// [name]/[description]/[variantSuffix]/[position] resolves to an
   /// empty string, exactly like the brief itself does for a null

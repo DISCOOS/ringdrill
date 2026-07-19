@@ -27,8 +27,8 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 /// `Exercise`'s/`Station`'s `variableOverrides`) — same map a token-aware
 /// field's own `overrides` param already carries.
 ///
-/// The roleplay's own `roleplay.*` facets (name/age/signalement/
-/// `position.utm`) come from a [RoleplayScope] ancestor when one is present —
+/// The roleplay's own `roleplay.*` facets (name/age/signalement/`position`)
+/// come from a [RoleplayScope] ancestor when one is present —
 /// the viewer/editor wrap their roleplay content in `RoleplayScope.forRoleplay`
 /// once, so no field has to thread the facets down itself.
 ///
@@ -215,12 +215,10 @@ Map<String, dynamic> _stationFacets({
   'stationCode': stationCode ?? '',
   'description': description ?? '',
   'variantSuffix': variantSuffix,
-  'position': {
-    'utm': const resolver.ActionChipFormatter().position(
-      resolver.formatUtm(position),
-      position,
-    ),
-  },
+  'position': const resolver.ActionChipFormatter().position(
+    resolver.formatUtm(position),
+    position,
+  ),
 };
 
 Map<String, dynamic> _roleplayFacets({
@@ -232,10 +230,8 @@ Map<String, dynamic> _roleplayFacets({
   'name': name,
   'age': age,
   'signalement': signalement ?? '',
-  'position': {
-    'utm': const resolver.ActionChipFormatter().position(
-      resolver.formatUtm(position),
-      position,
-    ),
-  },
+  'position': const resolver.ActionChipFormatter().position(
+    resolver.formatUtm(position),
+    position,
+  ),
 };

@@ -66,7 +66,7 @@ Station _designStation() => const Station(
   equipmentMd:
       'Et stort hus til å gjennomføre hussøk i (bruk huset «Gamlestuen» på Eidene).',
   situationMd:
-      '(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i {{station.position.utm}},\n'
+      '(AL) Anne Glemsk 39 år er meldt savnet fra Gamlehuset i {{station.position}},\n'
       'av pårørende kl 13.00 i dag. Sist sett på vei mot kjellertrappen kl 09.30.\n',
   missionMd:
       '(AL) Politiet ønsker at Røde Kors utfører søk etter savnet kvinne. Det er\n'
@@ -191,7 +191,7 @@ void main() {
       // Actor PII (director only)
       expect(normalized, contains('**Markør:** Kari Hansen `(99887766)`'));
 
-      // Situation with resolved UTM cross-reference — {{station.position.utm}} is substituted
+      // Situation with resolved UTM cross-reference — {{station.position}} is substituted
       expect(
         normalized,
         contains(
@@ -261,7 +261,7 @@ void main() {
   });
 
   group('BriefRenderer — cross-reference resolution', () {
-    test('resolves {{station.position.utm}} inside markdown fields', () async {
+    test('resolves {{station.position}} inside markdown fields', () async {
       const position = LatLng(58.99, 10.43);
       final expectedUtm = BriefRenderer.formatUtm(position);
       final exercise = Exercise(
@@ -279,7 +279,7 @@ void main() {
             index: 0,
             name: 'Post',
             position: position,
-            situationMd: 'IPP er ved {{station.position.utm}}.',
+            situationMd: 'IPP er ved {{station.position}}.',
           ),
         ],
         schedule: const [],
@@ -292,7 +292,7 @@ void main() {
       );
 
       expect(result, contains(expectedUtm));
-      expect(result, isNot(contains('{{station.position.utm}}')));
+      expect(result, isNot(contains('{{station.position}}')));
     });
 
     test(
@@ -360,55 +360,52 @@ void main() {
       },
     );
 
-    test(
-      'station-scope cross-references resolve station, exercise AND program data '
-      '(cascade)',
-      () async {
-        final exercise = Exercise(
-          uuid: 'ex-1',
-          name: 'Skogsøvelse',
-          startTime: _start,
-          endTime: _end,
-          numberOfTeams: 1,
-          numberOfRounds: 1,
-          executionTime: 10,
-          evaluationTime: 5,
-          rotationTime: 5,
-          stations: const [
-            Station(
-              index: 0,
-              name: 'Post',
-              variantSuffix: 'Vinter',
-              description: 'Skogsholt ved myra',
-              situationMd:
-                  '{{program.name}} / {{exercise.name}} — post {{station.stationCode}} '
-                  '({{station.variantSuffix}}): {{station.description}}.',
-            ),
-          ],
-          schedule: const [],
-        );
-        final program = _emptyProgram().copyWith(
-          name: 'Vinterøvelse',
-          exercises: [exercise],
-        );
-
-        final result = await renderer.render(
-          program: program,
-          audience: BriefAudience.participant,
-          l10n: _l10n,
-        );
-
-        expect(
-          result,
-          contains(
-            'Vinterøvelse / Skogsøvelse — post 1.1 (Vinter): Skogsholt ved myra.',
+    test('station-scope cross-references resolve station, exercise AND program data '
+        '(cascade)', () async {
+      final exercise = Exercise(
+        uuid: 'ex-1',
+        name: 'Skogsøvelse',
+        startTime: _start,
+        endTime: _end,
+        numberOfTeams: 1,
+        numberOfRounds: 1,
+        executionTime: 10,
+        evaluationTime: 5,
+        rotationTime: 5,
+        stations: const [
+          Station(
+            index: 0,
+            name: 'Post',
+            variantSuffix: 'Vinter',
+            description: 'Skogsholt ved myra',
+            situationMd:
+                '{{program.name}} / {{exercise.name}} — post {{station.stationCode}} '
+                '({{station.variantSuffix}}): {{station.description}}.',
           ),
-        );
-        expect(result, isNot(contains('{{station.')));
-        expect(result, isNot(contains('{{exercise.')));
-        expect(result, isNot(contains('{{program.')));
-      },
-    );
+        ],
+        schedule: const [],
+      );
+      final program = _emptyProgram().copyWith(
+        name: 'Vinterøvelse',
+        exercises: [exercise],
+      );
+
+      final result = await renderer.render(
+        program: program,
+        audience: BriefAudience.participant,
+        l10n: _l10n,
+      );
+
+      expect(
+        result,
+        contains(
+          'Vinterøvelse / Skogsøvelse — post 1.1 (Vinter): Skogsholt ved myra.',
+        ),
+      );
+      expect(result, isNot(contains('{{station.')));
+      expect(result, isNot(contains('{{exercise.')));
+      expect(result, isNot(contains('{{program.')));
+    });
 
     test(
       'roleplay-scope cross-references resolve roleplay, station, exercise AND '
@@ -424,7 +421,7 @@ void main() {
           stationIndex: 0,
           position: rolePosition,
           behavior:
-              '{{roleplay.name}} venter ved {{roleplay.position.utm}}, '
+              '{{roleplay.name}} venter ved {{roleplay.position}}, '
               'post {{station.name}}, øvelse {{exercise.name}}.',
         );
         final exercise = Exercise(
@@ -499,10 +496,7 @@ void main() {
   });
 
   group('BriefRenderer — description lead (DESIGN-009)', () {
-    Program programWithDescription(
-      String? description, {
-      LatLng? position,
-    }) {
+    Program programWithDescription(String? description, {LatLng? position}) {
       final exercise = Exercise(
         uuid: 'ex-1',
         name: 'Test',
@@ -569,13 +563,13 @@ void main() {
       final expectedUtm = BriefRenderer.formatUtm(position);
       final result = await BriefRenderer().render(
         program: programWithDescription(
-          'IPP er ved {{station.position.utm}}.',
+          'IPP er ved {{station.position}}.',
           position: position,
         ),
         audience: BriefAudience.participant,
         l10n: _l10n,
       );
-      expect(result, isNot(contains('{{station.position.utm}}')));
+      expect(result, isNot(contains('{{station.position}}')));
       expect(result, contains('IPP er ved `$expectedUtm`.'));
     });
 
@@ -1143,9 +1137,12 @@ void main() {
       expect(registry.resolve('ringdrill-standard-v1', 'en-GB').locale, 'en');
     });
 
-    test('unknown templateId falls back to default family, honouring locale', () {
-      expect(registry.resolve('does-not-exist', 'en').locale, 'en');
-      expect(registry.resolve('does-not-exist', 'nb').locale, 'nb');
-    });
+    test(
+      'unknown templateId falls back to default family, honouring locale',
+      () {
+        expect(registry.resolve('does-not-exist', 'en').locale, 'en');
+        expect(registry.resolve('does-not-exist', 'nb').locale, 'nb');
+      },
+    );
   });
 }

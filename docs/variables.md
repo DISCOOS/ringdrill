@@ -67,7 +67,7 @@ renders exactly as before.
 | `time`     | 24-hour `HH:MM`                   | localized time                       |
 | `date`     | ISO `yyyy-MM-dd`                  | localized date                       |
 | `duration` | whole minutes as an integer       | `"45 min"` / `"1 t 30 min"`          |
-| `location` | see below                         | place text + UTM copy chip           |
+| `location` | see below                         | place text + position copy chip      |
 
 Formatting is always canonical → formatted at render time, so the brief, the
 slash-menu previews and the override tables' parenthesized defaults all read
@@ -77,8 +77,8 @@ A `location` variable carries more than a scalar: a place text plus a
 coordinate (the `Location` geo shape minus `kind`). Its value lives in a
 structured `VariableLocation` (`place` + nullable `LatLng`), not in the string
 `value`. It exposes the same facets as a scenario location —
-`{{var.<name>.place}}`, `{{var.<name>.utm}}`, `{{var.<name>.latlng}}` — and the
-bare `{{var.<name>}}` renders place + UTM.
+`{{var.<name>.place}}`, `{{var.<name>.position}}` — and the bare
+`{{var.<name>}}` renders place + position.
 
 ### Validation states
 
@@ -133,7 +133,7 @@ reference everything up to `{{program.*}}`.
 |-------|-------------|
 | `{{station.name}}` | The station's name. |
 | `{{station.stationCode}}` | The station's numbered code, e.g. `3.1`. In-editor preview leaves it empty — the code needs the program's numbering, which no view scope carries, so it fills in only once the brief is generated. |
-| `{{station.position.utm}}` | The station's UTM coordinate, as a copy chip. |
+| `{{station.position}}` | The station's coordinate (default UTM format, [ADR-0050](./adrs/0050-per-output-format-chip-formatting.md)), as a copy chip in the brief or an actionable (open-in-maps) chip in the app. |
 | `{{station.variantSuffix}}` | The station's optional variant suffix. |
 
 `{{station.description}}` is intentionally *not* offered: it is the field the
@@ -147,7 +147,7 @@ recurse on itself (DESIGN-009 follow-up 4c).
 | `{{roleplay.name}}` | The marker's role name. |
 | `{{roleplay.age}}` | The marker's age. |
 | `{{roleplay.signalement}}` | The marker's appearance/description (*signalement*). |
-| `{{roleplay.position.utm}}` | The marker's UTM coordinate, as a copy chip. |
+| `{{roleplay.position}}` | The marker's coordinate (default UTM format), as a copy chip in the brief or an actionable (open-in-maps) chip in the app. |
 
 As with `station.description`, `{{roleplay.name}}` is excluded from the
 roleplay's own name field (self-referential there) but available in its
@@ -162,11 +162,10 @@ scope. `<slug>` is the location's or person's own slug.
 
 | Token | Description |
 |-------|-------------|
-| `{{station.loc.<slug>}}` | A named location; the bare token renders its default (place text plus a UTM copy chip). |
-| `{{station.loc.<slug>.place}}` | The location's place text. |
+| `{{station.loc.<slug>}}` | A named location; the bare token renders its default (place text plus a position copy chip). |
+| `{{station.loc.<slug>.place}}` | The location's place text (an address). |
 | `{{station.loc.<slug>.label}}` | The location's label. |
-| `{{station.loc.<slug>.utm}}` | The location's UTM coordinate, as a copy chip. |
-| `{{station.loc.<slug>.latlng}}` | The location's raw `lat,lng`. |
+| `{{station.loc.<slug>.position}}` | The location's coordinate (default UTM format, [ADR-0050](./adrs/0050-per-output-format-chip-formatting.md)), as a copy chip in the brief or an actionable (open-in-maps) chip in the app. |
 | `{{station.person.<slug>}}` | A named person; the bare token renders the effective (portrayer-aware) name. |
 | `{{station.person.<slug>.name}}` | The person's name. |
 | `{{station.person.<slug>.age}}` | The person's age. |
