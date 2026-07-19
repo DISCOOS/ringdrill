@@ -57,6 +57,7 @@ We use the [MADR](https://adr.github.io/madr/) format. See [`template.md`](./tem
 | ADR-0047 | [Station-scoped scenario locations and persons, and RolePlay portrays a Person](./0047-scenario-locations-and-persons.md) | Accepted |
 | ADR-0048 | [Extract a Flutter-free field resolver from BriefRenderer](./0048-flutter-free-field-resolver.md) | Accepted |
 | ADR-0049 | [Selectors adapt to window size behind one picker primitive — bottom sheet on compact, dialog on medium/expanded](./0049-adaptive-selector-surface.md) | Proposed |
+| ADR-0050 | [Per-output-format chip formatting via a ChipFormatter strategy](./0050-per-output-format-chip-formatting.md) | Accepted |
 
 ## When to write an ADR
 
