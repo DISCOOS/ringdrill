@@ -173,23 +173,34 @@ scope. `<slug>` is the location's or person's own slug.
 | `{{station.person.<slug>.signalement}}` | The person's appearance/description. |
 | `{{station.person.<slug>.loc.<facet>}}` | The person's own linked location, with any of the location facets above. |
 
-## The copy-chip convention
+## The copy-chip and action-chip convention
 
-Positions, addresses and phone numbers resolve to an **inline-code chip** —
-the value wrapped in backticks in the resulting markdown. The rich renderer
-(the brief and the in-app detail cards) turns each such chip into a tappable
-copy pill; a plain surface (a title, a list row) strips the backticks so the
-raw value reads as ordinary text.
+Positions, addresses and phone numbers resolve through a `ChipFormatter`
+(ADR-0050, [DESIGN-013](./design/013-actionable-field-chips.md)) chosen per
+output format — the resolver never hardcodes one rendering:
 
-So `{{station.position.utm}}` resolves to `` `32V 601234 6643210` `` — a UTM
-copy pill in the brief, plain text in a title. The same applies to
-`{{roleplay.position.utm}}`, a location variable's `.utm` facet, and (in the
-brief, director audience only) an actor's phone number, whose surrounding
-parentheses are folded into the chip so the copied value stays the bare
-number.
+- **`CopyChipFormatter`** (the default) — every value is an **inline-code
+  chip**, the value wrapped in backticks. Used by the brief and by the
+  non-interactive exports (PDF, DOCX, once they exist). The rich renderer (the
+  brief and the in-app detail cards) turns each chip into a tappable copy
+  pill; a plain surface (a title, a list row) strips the backticks so the raw
+  value reads as ordinary text.
+- **`ActionChipFormatter`** — the app preview (and, later, the HTML brief). A
+  position or phone chip additionally encodes a launch target as a markdown
+  link with an internal `rdchip:` sentinel scheme, which the app's markdown
+  renderer wires to a tap action (open a map, dial a number) while the copy
+  icon still copies the plain value. An address stays a copy chip in every
+  formatter — it has no reliable launch target.
+
+So `{{station.position}}` resolves to `` `32V 601234 6643210` `` — a copy pill
+in the brief, an open-in-maps pill in the app preview, plain text in a title.
+The same applies to `{{roleplay.position}}`, a location variable's `.position`
+facet, and (in the brief, director audience only) an actor's phone number,
+whose surrounding parentheses are folded into the chip so the copied value
+stays the bare number.
 
 `{{{positionValue}}}` is a *template-level* value, not a field token — see
-[`template.md`](./template.md#the-copy-chip-convention).
+[`template.md`](./template.md#the-copy-chip-and-action-chip-convention).
 
 ## How resolution runs
 
@@ -277,4 +288,8 @@ calling context's `InheritedWidget` ancestry.
   Flutter-free resolver.
 - [DESIGN-010](./design/010-inline-preview-and-resolve-scope.md) — inline
   preview and the resolve-scope cascade.
+- [DESIGN-013](./design/013-actionable-field-chips.md) — actionable field
+  chips (tap-to-call, open-in-maps) and the `place`/`position` facet model.
+- [ADR-0050](./adrs/0050-per-output-format-chip-formatting.md) — the
+  `ChipFormatter` strategy and the `rdchip:` encoding.
 - [`glossary.md`](./glossary.md) — domain vocabulary.

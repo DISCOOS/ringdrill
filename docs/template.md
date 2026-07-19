@@ -139,22 +139,32 @@ An **exercise** exposes its own facets and metadata labels:
 | `setupLabel` | The organisation/setup label. |
 | `methodMd`, `learningGoalsMd`, `trainingFocusMd`, `orderFormatMd`, `executionTipsMd`, `effectiveCommsMd` | Resolved long-form markdown blocks. |
 
-## The copy-chip convention
+## The copy-chip and action-chip convention
 
-Positions, addresses and phone numbers render as **inline-code chips** — the
-value wrapped in backticks — which the brief renderer turns into tappable copy
-pills. Two shapes appear in the template:
+Positions, addresses and phone numbers render through a `ChipFormatter`
+chosen per output format ([ADR-0050](./adrs/0050-per-output-format-chip-formatting.md),
+[DESIGN-013](./design/013-actionable-field-chips.md)): a plain **inline-code
+chip** — the value wrapped in backticks — for the brief and the
+non-interactive exports (PDF, DOCX), or an **action chip** (tap-to-call /
+open-in-maps, the copy icon retained) for the app preview and, later, the
+HTML brief. `BriefRenderer` always passes the default (copy-chip) formatter,
+so the template only ever sees the copy-chip markdown shape below; the
+action-chip encoding is an app-only rendering concern (`brief_markdown.dart`),
+invisible to the template.
 
-- `{{{station.position.utm}}}` (and `roleplay.position.utm`, an actor's
-  `phone`) — the bare value as a code chip. Parentheses around a chip are
-  folded *into* it so the pill and its brackets stay on one line and the copied
-  text is the bare value.
+Two shapes appear in the template:
+
+- `{{{position}}}` (a station's/roleplay's coordinate) and an actor's
+  `{{{phone}}}` — the bare value as a code chip, unescaped because it already
+  contains markdown. Parentheses around a chip are folded *into* it so the
+  pill and its brackets stay on one line and the copied text is the bare
+  value.
 - `{{{positionValue}}}` — a station-level convenience value pre-formatted for
   the "Post Nx plassering:" line: a `` `UTM` `` code chip when the station has a
   position, or a muted italic "no position" label when it does not. It is
   triple-braced because it already contains markdown.
 
-Both are pre-formatted in the renderer, so a template author writes the
+All are pre-formatted in the renderer, so a template author writes the
 placeholder and gets the pill; the chip styling itself is
 [ADR-0023](./adrs/0023-brief-theme-tokens.md).
 
@@ -177,3 +187,7 @@ placeholder and gets the pill; the chip styling itself is
   `.md` files in the archive.
 - [ADR-0023](./adrs/0023-brief-theme-tokens.md) — brief theming and the copy
   pill styling.
+- [DESIGN-013](./design/013-actionable-field-chips.md) — actionable field
+  chips (tap-to-call, open-in-maps) and the `place`/`position` facet model.
+- [ADR-0050](./adrs/0050-per-output-format-chip-formatting.md) — the
+  `ChipFormatter` strategy and the `rdchip:` encoding.

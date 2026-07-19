@@ -231,3 +231,29 @@ migrated deliberately here.
 The per-output-format chip strategy, the `rdchip:` encoding and the
 `place` / `position` coordinate facet model are recorded in
 [ADR-0050](../adrs/0050-per-output-format-chip-formatting.md) (Accepted).
+
+## Implementation status
+
+Shipped, across six commits on `design-013`:
+
+- The `ChipFormatter` strategy (`CopyChipFormatter` / `ActionChipFormatter`)
+  in `field_resolver.dart`, threaded through the resolver with the brief
+  staying on the default formatter (byte-identical).
+- `StationScope`/`RoleplayScope` carry the raw `LatLng? position`; the app
+  resolvers (`resolveScopedField`/`resolveModelField`) pass
+  `ActionChipFormatter`, so an app-resolved position is an `rdchip:` link.
+  `RingDrillText.plain` strips that link markup to its display text, the
+  same way it already stripped backtick copy chips.
+- The `place`/`position` coordinate facet model with a `CoordinateFormat` seam
+  (UTM only); the flat `utm`/`latlng` facets are gone, migrated to
+  `position` everywhere (content, tests, docs).
+- `_ActionChip` in `brief_markdown.dart`: an `rdchip:` link renders as a pill
+  matching `_CodeChip`'s look, tap-to-act / icon-to-copy, registered on both
+  `BriefMarkdown` and `BriefMarkdownBlock`; every other link is unaffected.
+- The actor's phone is a first-class chip in `roleplays_view.dart` and
+  `roleplay_screen.dart`'s Spill card footer, and the brief templates render
+  it unescaped (`{{{phone}}}`) so the pre-built copy chip actually renders.
+
+Deferred, as recorded above: address action chips, the multi-action context
+menu, the non-interactive export formats (PDF, DOCX) and the HTML brief, and
+every coordinate format beyond UTM.
