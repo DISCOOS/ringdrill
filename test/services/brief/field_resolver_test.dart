@@ -86,4 +86,123 @@ void main() {
       expect(resolveField(null, vars: const {}, l10n: _l10n), isNull);
     });
   });
+
+  group('ChipFormatter', () {
+    const latLng = LatLng(58.99, 10.43);
+
+    group('CopyChipFormatter', () {
+      const formatter = CopyChipFormatter();
+
+      test('position renders a plain copy chip regardless of latLng', () {
+        expect(
+          formatter.position('32V 601234 6643210', latLng),
+          '`32V 601234 6643210`',
+        );
+        expect(
+          formatter.position('32V 601234 6643210', null),
+          '`32V 601234 6643210`',
+        );
+      });
+
+      test('phone renders a plain copy chip regardless of the number', () {
+        expect(formatter.phone('99887766', '99887766'), '`99887766`');
+        expect(formatter.phone('99887766', ''), '`99887766`');
+      });
+
+      test('address renders a plain copy chip', () {
+        expect(formatter.address('Meiselen 14'), '`Meiselen 14`');
+      });
+
+      test('empty values render empty (briefCopyChip parity)', () {
+        expect(formatter.position('', null), '');
+        expect(formatter.phone('', ''), '');
+        expect(formatter.address(''), '');
+      });
+    });
+
+    group('ActionChipFormatter', () {
+      const formatter = ActionChipFormatter();
+
+      test('position with a coordinate encodes an rdchip:geo: link', () {
+        expect(
+          formatter.position('32V 601234 6643210', latLng),
+          '[32V 601234 6643210](rdchip:geo:58.99,10.43)',
+        );
+      });
+
+      test('position without a coordinate degrades to a copy chip', () {
+        expect(
+          formatter.position('32V 601234 6643210', null),
+          '`32V 601234 6643210`',
+        );
+      });
+
+      test('phone with a number encodes an rdchip:tel: link', () {
+        expect(
+          formatter.phone('99887766', '99887766'),
+          '[99887766](rdchip:tel:99887766)',
+        );
+      });
+
+      test('phone with an empty number degrades to a copy chip', () {
+        expect(formatter.phone('99887766', ''), '`99887766`');
+      });
+
+      test('address always renders a plain copy chip', () {
+        expect(formatter.address('Meiselen 14'), '`Meiselen 14`');
+      });
+    });
+
+    test('resolveField with the default formatter renders station.loc facets '
+        'byte-identical to the pre-ChipFormatter output', () {
+      const location = Location(
+        slug: 'lkp',
+        place: 'Fjellheisen',
+        position: latLng,
+      );
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        locations: const [location],
+      );
+      final expectedUtm = formatUtm(latLng);
+
+      final result = resolveField(
+        'Sted: {{station.loc.lkp}}',
+        vars: const {},
+        l10n: _l10n,
+        scenarioStation: station,
+      );
+
+      expect(result, 'Sted: `Fjellheisen` `($expectedUtm)`');
+    });
+
+    test('resolveField with ActionChipFormatter renders station.loc facets as '
+        'rdchip: links', () {
+      const location = Location(
+        slug: 'lkp',
+        place: 'Fjellheisen',
+        position: latLng,
+      );
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        locations: const [location],
+      );
+      final expectedUtm = formatUtm(latLng);
+
+      final result = resolveField(
+        'Sted: {{station.loc.lkp.utm}}',
+        vars: const {},
+        l10n: _l10n,
+        scenarioStation: station,
+        chips: const ActionChipFormatter(),
+      );
+
+      expect(
+        result,
+        'Sted: [$expectedUtm](rdchip:geo:${latLng.latitude},${latLng.longitude})',
+      );
+    });
+  });
 }

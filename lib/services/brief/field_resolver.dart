@@ -58,6 +58,72 @@ const maxResolvePasses = 10;
 /// code bugs.
 void Function(Object error, StackTrace stackTrace)? onResolveFieldError;
 
+/// Strategy for rendering a copyable field value (position, phone, address),
+/// chosen per output format (ADR-0050). [resolveField] takes one, defaulting
+/// to [CopyChipFormatter] so the brief and non-interactive exports (PDF,
+/// DOCX) stay unchanged; the app resolvers pass [ActionChipFormatter].
+abstract class ChipFormatter {
+  const ChipFormatter();
+
+  /// A coordinate value. [display] is the formatted text to show (e.g. a
+  /// UTM string); [latLng] is the raw coordinate an action chip needs for its
+  /// map link — null degrades every formatter to a plain copy chip of
+  /// [display], since there is nothing to link to.
+  String position(String display, LatLng? latLng);
+
+  /// A phone number. [display] is the text to show; [number] is the raw
+  /// number a `tel:` action chip dials — empty degrades to a plain copy chip.
+  String phone(String display, String number);
+
+  /// An address value. Always a copy chip in every formatter — an address
+  /// has no reliable launch target (deferred, ADR-0050).
+  String address(String value);
+}
+
+/// The default [ChipFormatter]: every value is today's plain backtick copy
+/// chip ([briefCopyChip]). Used by the brief and the non-interactive exports;
+/// `BriefRenderer` never passes another formatter, so this keeps the brief
+/// output byte-identical.
+class CopyChipFormatter extends ChipFormatter {
+  const CopyChipFormatter();
+
+  @override
+  String position(String display, LatLng? latLng) => briefCopyChip(display);
+
+  @override
+  String phone(String display, String number) => briefCopyChip(display);
+
+  @override
+  String address(String value) => briefCopyChip(value);
+}
+
+/// The interactive [ChipFormatter] for the app preview (and, later, the HTML
+/// brief). A position/phone chip encodes its launch target as a markdown
+/// link with an internal `rdchip:` sentinel scheme —
+/// `[display](rdchip:geo:<lat>,<lng>)` / `[display](rdchip:tel:<number>)` —
+/// that the app's markdown renderer (`brief_markdown.dart`) recognizes and
+/// wires to a tap action, the copy icon still copying [display]/[number].
+/// Degrades to a plain copy chip when there is nothing to act on (no
+/// coordinate, empty number). An address stays a copy chip.
+class ActionChipFormatter extends ChipFormatter {
+  const ActionChipFormatter();
+
+  @override
+  String position(String display, LatLng? latLng) {
+    if (latLng == null) return briefCopyChip(display);
+    return '[$display](rdchip:geo:${latLng.latitude},${latLng.longitude})';
+  }
+
+  @override
+  String phone(String display, String number) {
+    if (number.isEmpty) return briefCopyChip(display);
+    return '[$display](rdchip:tel:$number)';
+  }
+
+  @override
+  String address(String value) => briefCopyChip(value);
+}
+
 /// Resolves a markdown field for rendering by running the full token
 /// pipeline — `{{var.<name>}}`, then (when [scenarioStation] is given)
 /// `{{station.loc/person.<slug>}}`, then the mustache cross-reference pass
@@ -86,6 +152,7 @@ String? resolveField(
   Map<String, dynamic> refContext = const {},
   Station? scenarioStation,
   List<RolePlay> scenarioRolePlays = const [],
+  ChipFormatter chips = const CopyChipFormatter(),
 }) {
   if (content == null) return null;
   var current = content;
@@ -99,6 +166,7 @@ String? resolveField(
       refContext: refContext,
       scenarioStation: scenarioStation,
       scenarioRolePlays: scenarioRolePlays,
+      chips: chips,
       onError: (error, stackTrace) {
         // Keep only the first pass's failure: a persistent missing-scope
         // token throws on every pass, but it is one problem, reported once.
@@ -129,9 +197,10 @@ String _resolveFieldOnce(
   required Map<String, dynamic> refContext,
   Station? scenarioStation,
   List<RolePlay> scenarioRolePlays = const [],
+  ChipFormatter chips = const CopyChipFormatter(),
   void Function(Object error, StackTrace stackTrace)? onError,
 }) {
-  final withVars = substituteTypedVariables(content, vars, l10n);
+  final withVars = substituteTypedVariables(content, vars, l10n, chips: chips);
   final withScenario = scenarioStation == null
       ? withVars
       : _resolveStationScenarioTokens(
@@ -139,6 +208,7 @@ String _resolveFieldOnce(
           station: scenarioStation,
           rolePlays: scenarioRolePlays,
           l10n: l10n,
+          chips: chips,
         );
   try {
     return Template(
@@ -168,8 +238,9 @@ String _resolveFieldOnce(
 String substituteTypedVariables(
   String content,
   Map<String, DrillVariable> vars,
-  AppLocalizations l10n,
-) {
+  AppLocalizations l10n, {
+  ChipFormatter chips = const CopyChipFormatter(),
+}) {
   return resolveTypedPlanVariables(
     content,
     vars,
@@ -178,7 +249,8 @@ String substituteTypedVariables(
       hourUnit: l10n.variableDurationHourUnit,
     ),
     onUnknown: (name) => l10n.briefUnknownVariable(name),
-    locationFacetResolver: _resolveLocationFacet,
+    locationFacetResolver: (location, facets) =>
+        _resolveLocationFacet(location, facets, chips),
   );
 }
 
@@ -209,6 +281,7 @@ String _resolveStationScenarioTokens(
   required Station station,
   required List<RolePlay> rolePlays,
   required AppLocalizations l10n,
+  ChipFormatter chips = const CopyChipFormatter(),
 }) {
   return content.replaceAllMapped(_stationScenarioTokenPattern, (match) {
     final kind = match.group(1)!;
@@ -222,14 +295,14 @@ String _resolveStationScenarioTokens(
       if (location == null) {
         return l10n.briefUnknownReference('station.loc.$slug');
       }
-      return _resolveLocationFacet(location, facets);
+      return _resolveLocationFacet(location, facets, chips);
     }
     final person = _bySlug(station.persons, slug, (p) => p.slug);
     if (person == null) {
       return l10n.briefUnknownReference('station.person.$slug');
     }
     final portrayer = _bySlug(rolePlays, slug, (rp) => rp.personRef ?? '');
-    return _resolvePersonFacet(person, portrayer, station, facets);
+    return _resolvePersonFacet(person, portrayer, station, facets, chips);
   });
 }
 
@@ -246,18 +319,22 @@ T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
 /// `.utm` forms render the UTM as inline code (backtick-wrapped), matching
 /// how the brief presents `station.position.utm` elsewhere; empty when the
 /// location has no position.
-String _resolveLocationFacet(Location location, List<String> facets) {
+String _resolveLocationFacet(
+  Location location,
+  List<String> facets,
+  ChipFormatter chips,
+) {
   switch (facets.isEmpty ? null : facets.first) {
     case 'place':
-      return briefCopyChip(location.place);
+      return chips.address(location.place);
     case 'label':
       return location.label;
     case 'utm':
-      return _locationUtmCode(location);
+      return chips.position(formatUtm(location.position), location.position);
     case 'latlng':
-      return briefCopyChip(locationLatLng(location));
+      return chips.position(locationLatLng(location), location.position);
     default:
-      return _locationDefault(location);
+      return _locationDefault(location, chips);
   }
 }
 
@@ -265,20 +342,18 @@ String _resolveLocationFacet(Location location, List<String> facets) {
 /// code span so the brief renders it as a copy chip. Empty stays empty.
 String briefCopyChip(String value) => value.isEmpty ? '' : '`$value`';
 
-String _locationUtmCode(Location location) =>
-    briefCopyChip(formatUtm(location.position));
-
 /// Sensible bare-token default: the address as its own copy chip plus, when a
 /// position is set, the UTM chip wrapped in parentheses — two chips side by
 /// side, e.g. `[Meiselen 14] ([32V …])`.
-String _locationDefault(Location location) {
+String _locationDefault(Location location, ChipFormatter chips) {
   final utm = formatUtm(location.position);
-  if (location.place.isEmpty) return briefCopyChip(utm);
-  if (utm.isEmpty) return briefCopyChip(location.place);
-  // The parentheses are folded into the UTM code span; the chip renderer
+  if (location.place.isEmpty) return chips.position(utm, location.position);
+  if (utm.isEmpty) return chips.address(location.place);
+  // The parentheses are folded into the position chip; the chip renderer
   // draws them just outside its pill (so "(", pill and ")" stay together) and
   // excludes them from the copied coordinate.
-  return '${briefCopyChip(location.place)} `($utm)`';
+  return '${chips.address(location.place)} '
+      '${chips.position('($utm)', location.position)}';
 }
 
 /// `{{station.person.<slug>[.facet]}}` facet resolution. [portrayer] is the
@@ -292,6 +367,7 @@ String _resolvePersonFacet(
   RolePlay? portrayer,
   Station station,
   List<String> facets,
+  ChipFormatter chips,
 ) {
   switch (facets.isEmpty ? null : facets.first) {
     case 'age':
@@ -300,8 +376,7 @@ String _resolvePersonFacet(
     case 'gender':
       return _effectiveField(portrayer?.gender, person.gender) ?? '';
     case 'signalement':
-      return _effectiveField(portrayer?.signalement, person.signalement) ??
-          '';
+      return _effectiveField(portrayer?.signalement, person.signalement) ?? '';
     case 'loc':
       final locSlug = person.locSlug;
       final loc = locSlug == null
@@ -309,7 +384,7 @@ String _resolvePersonFacet(
           : _bySlug(station.locations, locSlug, (l) => l.slug);
       return loc == null
           ? ''
-          : _resolveLocationFacet(loc, facets.skip(1).toList());
+          : _resolveLocationFacet(loc, facets.skip(1).toList(), chips);
     case 'name':
     default:
       return _effectivePersonName(person, portrayer);
