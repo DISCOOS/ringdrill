@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 
 /// Exposes the in-scope station's [Location]s/[Person]s (ADR-0047,
 /// DESIGN-009 follow-up 4) to a subtree, so token-aware fields
@@ -33,6 +36,48 @@ class StationScope extends InheritedWidget {
     this.positionUtm,
     required super.child,
   });
+
+  /// The single place a station-detail surface gets its `{{station.*}}` /
+  /// `{{exercise.*}}` context: wraps [child] in an [ExerciseScope] plus a
+  /// [StationScope] with every facet derived from [exercise]/[station] (the
+  /// full field list and the UTM formatting live here, not at each call site).
+  ///
+  /// Use this anywhere a station's or exercise's description/scenario fields
+  /// render for a specific item — the Poster/Øvelser/Spill tabs, the
+  /// coordinator's expanded card, etc. `PlanScope` is provided once by the
+  /// shell; this supplies the per-item level that lists cannot hoist to the
+  /// tab (each row is a different exercise/station).
+  ///
+  /// [station] is optional: an orphaned/unassigned roleplay has an exercise
+  /// but no station, so the [StationScope] is skipped and only the
+  /// [ExerciseScope] wraps [child] (a `StationScope.maybeOf` miss then means
+  /// "no station tokens here", not an error).
+  static Widget forStation({
+    Key? key,
+    required Exercise exercise,
+    Station? station,
+    required Widget child,
+  }) {
+    final scoped = station == null
+        ? child
+        : StationScope(
+            key: key,
+            locations: station.locations,
+            persons: station.persons,
+            name: station.name,
+            description: station.description,
+            variantSuffix: station.variantSuffix,
+            positionUtm: station.position == null
+                ? ''
+                : formatUtm(station.position!),
+            child: child,
+          );
+    return ExerciseScope(
+      exercise: exercise,
+      variableOverrides: exercise.variableOverrides,
+      child: scoped,
+    );
+  }
 
   final List<Location> locations;
   final List<Person> persons;

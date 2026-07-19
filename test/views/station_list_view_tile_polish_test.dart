@@ -157,14 +157,19 @@ void main() {
       await expandFirstStation(tester);
 
       expect(find.textContaining('{{station.'), findsNothing);
-      // Tiles render via RingDrillText (plain text), so the resolved
-      // position/address read as plain text — the copy chip only appears on
-      // the markdown surfaces (the detail card / brief).
+      // The description renders via RingDrillText.rich, so position and
+      // address resolve as copy chips (their own Text widgets inside
+      // WidgetSpans).
       expect(
-        find.textContaining('UTM: ${formatUtm(_stationPosition)}'),
-        findsOneWidget,
+        find.byWidgetPredicate(
+          (w) => w is Text && w.data == formatUtm(_stationPosition),
+        ),
+        findsWidgets,
       );
-      expect(find.textContaining('STED: Innkjøring'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate((w) => w is Text && w.data == 'Innkjøring'),
+        findsWidgets,
+      );
     },
   );
 }

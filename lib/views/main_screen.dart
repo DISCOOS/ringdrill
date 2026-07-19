@@ -690,7 +690,7 @@ class _MainScreenState extends State<MainScreen>
     // name — a fixed section label never contains a token.
     final Widget titleChild = hasRail
         ? SheetTitle(primary: pageTitle, secondary: secondary)
-        : (isPlanNameTitle ? RingDrillText(pageTitle) : Text(pageTitle));
+        : (isPlanNameTitle ? RingDrillText.plain(pageTitle) : Text(pageTitle));
 
     final controller = page.controller;
     if (controller is! ProgramPageControllerBase) return titleChild;

@@ -40,6 +40,7 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
@@ -842,7 +843,7 @@ class _ProgramOverview extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (hasDescription)
-                      RingDrillText(
+                      RingDrillText.plain(
                         description,
                         style: textTheme.bodyMedium,
                         maxLines: maxLines,
@@ -1088,7 +1089,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
       accent: accent,
       selected: widget.selected,
       leading: leading,
-      title: RingDrillText(
+      title: RingDrillText.plain(
         exercise.name,
         overrides: widget.program == null
             ? const {}
@@ -1189,7 +1190,7 @@ class _ExerciseCardState extends State<ExerciseCard> {
               : Theme.of(context).colorScheme.surfaceContainerHigh,
           accent: accent,
           leading: leading,
-          title: RingDrillText(
+          title: RingDrillText.plain(
             station.name,
             overrides: program == null
                 ? const {}
@@ -1349,37 +1350,44 @@ class _ExerciseCardState extends State<ExerciseCard> {
   /// inside the already-expanded card.
   Widget _buildStationDetail(Exercise exercise, Station station) {
     final description = station.description;
-    final theme = Theme.of(context);
     final program = widget.program;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (description != null && description.trim().isNotEmpty) ...[
-          RingDrillText(
-            description,
-            overrides: program == null
-                ? const {}
-                : effectivePlanVariables(
-                    program,
-                    exercise: exercise,
-                    station: station,
-                  ),
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-        ],
-        StationPositionPanel(
-          exercise: exercise,
-          station: station,
-          mapHeight: 140,
-          miniMapKey: ValueKey<String>(
-            'exercise-card-station-map-${exercise.uuid}-${station.index}',
-          ),
+    // Seed this station's own scope so `{{station.*}}` resolves in the
+    // Exercises-tab expanded card instead of showing literally.
+    return StationScope.forStation(
+      exercise: exercise,
+      station: station,
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (description != null && description.trim().isNotEmpty) ...[
+              RingDrillText.rich(
+                description,
+                overrides: program == null
+                    ? const {}
+                    : effectivePlanVariables(
+                        program,
+                        exercise: exercise,
+                        station: station,
+                      ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            StationPositionPanel(
+              exercise: exercise,
+              station: station,
+              mapHeight: 140,
+              miniMapKey: ValueKey<String>(
+                'exercise-card-station-map-${exercise.uuid}-${station.index}',
+              ),
+            ),
+            const SizedBox(height: 12),
+            StationRoleSummary(
+              exercise: exercise,
+              stationIndex: station.index,
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        StationRoleSummary(exercise: exercise, stationIndex: station.index),
-      ],
     );
   }
 }

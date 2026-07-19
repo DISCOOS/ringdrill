@@ -277,7 +277,7 @@ class _BriefScreenState extends State<BriefScreen> {
               onPressed: widget.onClose,
             )
           : null,
-      title: RingDrillText(
+      title: RingDrillText.plain(
         title,
         overrides: titleOverrides,
         style: theme.typography.h4.copyWith(color: theme.text.heading),

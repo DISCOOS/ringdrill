@@ -50,7 +50,7 @@ void main() {
             locations: const [],
             persons: const [],
             name: 'Station A',
-            child: const RingDrillText('{{station.name}} / {{exercise.name}}'),
+            child: const RingDrillText.plain('{{station.name}} / {{exercise.name}}'),
           ),
         ),
       ),
@@ -67,7 +67,7 @@ void main() {
         PlanScope(
           variables: const [DrillVariable(name: 'freq', value: 'Kanal 6')],
           programName: 'Program One',
-          child: const RingDrillText('{{var.freq}} @ {{program.name}}'),
+          child: const RingDrillText.plain('{{var.freq}} @ {{program.name}}'),
         ),
       );
 
@@ -83,7 +83,7 @@ void main() {
       const content = '{{station.name}}';
       await _pump(
         tester,
-        PlanScope(variables: const [], child: const RingDrillText(content)),
+        PlanScope(variables: const [], child: const RingDrillText.plain(content)),
       );
 
       expect(find.text(content), findsOneWidget);
@@ -93,7 +93,7 @@ void main() {
   testWidgets('with no scope ancestor at all, degrades to the raw text', (
     tester,
   ) async {
-    await _pump(tester, const RingDrillText('{{station.name}} {{var.freq}}'));
+    await _pump(tester, const RingDrillText.plain('{{station.name}} {{var.freq}}'));
 
     expect(find.text('{{station.name}} {{var.freq}}'), findsOneWidget);
   });

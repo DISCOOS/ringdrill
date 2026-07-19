@@ -716,7 +716,7 @@ class _StationContextCard extends StatelessWidget {
                   children: [
                     // Post name, prefixed with the formatted number and bold —
                     // the body's own title line.
-                    RingDrillText(
+                    RingDrillText.plain(
                       postLabel ?? station.name,
                       overrides: overrides,
                       style: briefTheme.typography.body.copyWith(
@@ -726,14 +726,9 @@ class _StationContextCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     if ((station.description ?? '').isNotEmpty)
-                      RingDrillText(
+                      RingDrillText.rich(
                         station.description!,
                         overrides: overrides,
-                        // Match the markdown script sections' body text so the
-                        // description reads at the same size/colour.
-                        style: briefTheme.typography.body.copyWith(
-                          color: briefTheme.text.body,
-                        ),
                       ),
                   ],
                 ),
@@ -865,7 +860,7 @@ class _PlayCard extends StatelessWidget {
       color: briefTheme.text.body,
     );
 
-    Widget resolvedText(String text) => RingDrillText(
+    Widget resolvedText(String text) => RingDrillText.plain(
       text,
       overrides: overrides,
       roleplayFacets: roleplayFacets,
@@ -933,7 +928,7 @@ class _PlayCard extends StatelessWidget {
           const SizedBox(height: 16),
           // Effective name with age · gender appended inline (small-dot
           // separator); same body style as the rest of the card.
-          RingDrillText(
+          RingDrillText.plain(
             metaParts.isEmpty ? name : '$name · ${metaParts.join(' · ')}',
             overrides: overrides,
             roleplayFacets: roleplayFacets,

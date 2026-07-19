@@ -6,7 +6,6 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -18,7 +17,6 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
-import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
@@ -1350,7 +1348,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
           accent: accent,
           leading: badge,
-          title: RingDrillText(
+          title: RingDrillText.plain(
             station.name,
             overrides: _overridesFor(exercise, station: station),
             style: TextStyle(
@@ -1398,7 +1396,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
           margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
           accent: accent,
           leading: badge,
-          title: RingDrillText(
+          title: RingDrillText.plain(
             station.name,
             overrides: _overridesFor(exercise, station: station),
             style: TextStyle(
@@ -1514,23 +1512,15 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Widget _buildStationDetail(int stationIndex) {
     final station = _exercise!.stations[stationIndex];
     final description = station.description;
-    // Seed this station's own ExerciseScope/StationScope (mirroring
-    // station_list_view.dart's per-tile scope) so `{{station.*}}` — e.g.
-    // `{{station.position.utm}}` — resolves in the expanded card instead of
-    // showing literally.
-    return ExerciseScope(
+    // Seed this station's own scope so `{{station.*}}` resolves in the
+    // expanded card instead of showing literally (StationScope.forStation is
+    // the single source of the field list + UTM formatting).
+    return StationScope.forStation(
       exercise: _exercise!,
-      variableOverrides: _exercise!.variableOverrides,
-      child: StationScope(
-        locations: station.locations,
-        persons: station.persons,
-        name: station.name,
-        description: station.description,
-        variantSuffix: station.variantSuffix,
-        positionUtm: formatUtm(station.position),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-          child: Column(
+      station: station,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (description != null && description.isNotEmpty)
@@ -1544,7 +1534,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
               ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                child: RingDrillText(
+                child: RingDrillText.rich(
                   description,
                   overrides: _overridesFor(_exercise!, station: station),
                 ),
@@ -1577,7 +1567,6 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         ],
           ),
         ),
-      ),
     );
   }
 

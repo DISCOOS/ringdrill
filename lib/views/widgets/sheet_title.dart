@@ -42,7 +42,7 @@ class SheetTitle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        RingDrillText(
+        RingDrillText.plain(
           primary,
           overrides: primaryOverrides,
           maxLines: 1,
@@ -50,7 +50,7 @@ class SheetTitle extends StatelessWidget {
         ),
         if (hasSecondary) ...[
           const SizedBox(height: 2),
-          RingDrillText(
+          RingDrillText.plain(
             secondary!,
             overrides: secondaryOverrides,
             style: theme.textTheme.bodySmall?.copyWith(

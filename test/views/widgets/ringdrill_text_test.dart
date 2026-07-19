@@ -19,7 +19,7 @@ void main() {
   testWidgets('with no PlanScope ancestor, renders the raw text', (
     tester,
   ) async {
-    await _pump(tester, const RingDrillText('Kanal {{var.frekvens}}'));
+    await _pump(tester, const RingDrillText.plain('Kanal {{var.frekvens}}'));
 
     expect(find.text('Kanal {{var.frekvens}}'), findsOneWidget);
   });
@@ -27,7 +27,7 @@ void main() {
   testWidgets('resolves a declared variable from PlanScope', (tester) async {
     await _pump(
       tester,
-      const RingDrillText('Kanal {{var.frekvens}}'),
+      const RingDrillText.plain('Kanal {{var.frekvens}}'),
       scopeVariables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
     );
 
@@ -38,7 +38,7 @@ void main() {
   testWidgets('an undeclared token is left raw, not a throw', (tester) async {
     await _pump(
       tester,
-      const RingDrillText('Kanal {{var.mangler}}'),
+      const RingDrillText.plain('Kanal {{var.mangler}}'),
       scopeVariables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
     );
 
@@ -48,7 +48,7 @@ void main() {
   testWidgets('overrides shadow the declared value', (tester) async {
     await _pump(
       tester,
-      const RingDrillText(
+      const RingDrillText.plain(
         'Kanal {{var.frekvens}}',
         overrides: {'frekvens': 'Kanal 9'},
       ),
@@ -61,7 +61,7 @@ void main() {
   testWidgets('passes through Text styling params', (tester) async {
     await _pump(
       tester,
-      const RingDrillText(
+      const RingDrillText.plain(
         'plain',
         style: TextStyle(fontWeight: FontWeight.bold),
         maxLines: 1,

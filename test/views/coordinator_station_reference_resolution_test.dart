@@ -92,7 +92,13 @@ void main() {
 
       final expectedUtm = formatUtm(_position);
       expect(find.textContaining('{{station.position.utm}}'), findsNothing);
-      expect(find.text('IPP $expectedUtm'), findsOneWidget);
+      // The description renders via RingDrillText.rich, so the coordinate is a
+      // copy chip (its own Text inside a WidgetSpan). The position panel also
+      // shows the UTM (as an EditableText), so match the chip's Text widget.
+      expect(
+        find.byWidgetPredicate((w) => w is Text && w.data == expectedUtm),
+        findsWidgets,
+      );
     },
   );
 }

@@ -8,7 +8,6 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -23,7 +22,6 @@ import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
-import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
@@ -291,7 +289,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           label: _roleBadgeLabel(rolePlay, exerciseNumber),
           highlight: actor != null,
         ),
-        title: RingDrillText(
+        title: RingDrillText.plain(
           () {
             final tb = StringBuffer(rolePlay.name);
             if (rolePlay.age != null) tb.write(', ${rolePlay.age}');
@@ -351,28 +349,14 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       ),
     );
 
-    // DESIGN-010 browser tile polish: each row is a different roleplay, so
-    // it seeds its own ExerciseScope/(optional) StationScope from the
-    // linked station — mirroring RolePlayScreen's detail sheet — so
-    // `{{station.*}}` resolves inside the tile instead of showing literally.
-    // Both are skipped rather than passed fake data when absent (an
-    // orphaned/unassigned roleplay has neither).
-    Widget scoped = tile;
-    if (station != null) {
-      scoped = StationScope(
-        locations: station.locations,
-        persons: station.persons,
-        name: station.name,
-        description: station.description,
-        variantSuffix: station.variantSuffix,
-        positionUtm: formatUtm(station.position),
-        child: scoped,
-      );
-    }
-    return ExerciseScope(
+    // DESIGN-010 browser tile polish: each row is a different roleplay, so it
+    // seeds its own scope from the linked station (skipped for an
+    // unassigned roleplay), so `{{station.*}}` resolves inside the tile
+    // instead of showing literally.
+    return StationScope.forStation(
       exercise: exercise,
-      variableOverrides: exercise.variableOverrides,
-      child: scoped,
+      station: station,
+      child: tile,
     );
   }
 
@@ -615,7 +599,7 @@ class RolePlaysFilterBanner extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: RingDrillText(
+                    child: RingDrillText.plain(
                       localizations.showingRolesIn(exercise.name),
                       overrides: ProgramService().activeProgram == null
                           ? const {}
@@ -708,7 +692,7 @@ class _ExpandedFieldBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        RingDrillText(text, overrides: overrides),
+        RingDrillText.plain(text, overrides: overrides),
       ],
     );
   }

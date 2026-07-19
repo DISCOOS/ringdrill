@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/views/widgets/brief_markdown.dart';
+import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 
@@ -8,30 +10,31 @@ import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 /// pipeline before rendering — `{{var.<name>}}` (ADR-0046), plus whatever
 /// `{{program.*}}`/`{{exercise.*}}`/`{{station.*}}`/`{{roleplay.*}}`
 /// cross-references the ancestor scopes offer — the display-surface half of
-/// DESIGN-008's token-aware fields, with no chip rendering or insertion menu
-/// (that is [RingDrillTextField]/[RingDrillTextArea]'s job for editing).
-/// Delegates to [resolveScopedField] (ADR-0048), the same cascade the
-/// per-section preview and rollup already read, so a surface using this
-/// widget never falls behind the brief.
+/// DESIGN-008's token-aware fields. Delegates to [resolveScopedField]
+/// (ADR-0048), the same cascade the per-section preview and rollup already
+/// read, so a surface using this widget never falls behind the brief.
 ///
-/// Reads [PlanScope.maybeOf], not [PlanScope.of]: a surface outside a
-/// program context (e.g. a global list with no active plan resolved yet)
-/// has no scope to read, and must degrade to plain, unresolved [text] rather
-/// than throw. Likewise a missing `ExerciseScope`/`StationScope` simply
-/// leaves that level's cross-references unresolved (ADR-0048) — never a
-/// crash. [overrides] shadows a declared value the same way an
-/// [Exercise]/[Station]'s `variableOverrides` does for [BriefRenderer] and
-/// the token-aware fields — omit it where the entity has none (e.g. a
-/// program or roleplay name). [roleplayFacets] is this text's own
-/// roleplay's `roleplay.*` facets (DESIGN-010 folds these into the field's
-/// context rather than a scope) — omit it outside a roleplay display.
+/// Two rendering modes, chosen by constructor:
 ///
-/// An undeclared token is left as literal `{{var.name}}` text
-/// (`substitutePlanVariables`'s default when no `onUnknown` is given) —
-/// visible enough to flag a broken reference without the noisier
-/// placeholder the brief renderer substitutes server-side.
+/// * [RingDrillText.plain] — one [Text]. The resolver emits markdown
+///   (including inline-code chips for positions/addresses/phones); plain
+///   surfaces (titles, subtitles, list rows, names) strip those markers so a
+///   copy pill never appears where it makes no sense.
+/// * [RingDrillText.rich] — renders the resolved markdown via
+///   [BriefMarkdownBlock], so positions/addresses/phones become copy chips and
+///   the prose reads exactly as it does in the brief / detail card. For
+///   description bodies and scenario prose.
+///
+/// Reads [PlanScope.maybeOf], not [PlanScope.of]: a surface outside a program
+/// context degrades to plain, unresolved [text] rather than throwing. Likewise
+/// a missing `ExerciseScope`/`StationScope` simply leaves that level's
+/// cross-references unresolved (ADR-0048) — never a crash. [overrides] shadows
+/// a declared value the same way an [Exercise]/[Station]'s `variableOverrides`
+/// does. [roleplayFacets] is this text's own roleplay's `roleplay.*` facets
+/// (DESIGN-010 folds these into the field's context rather than a scope).
 class RingDrillText extends StatelessWidget {
-  const RingDrillText(
+  /// Plain rendering — titles, labels, names, list rows.
+  const RingDrillText.plain(
     this.text, {
     super.key,
     this.overrides = const {},
@@ -40,7 +43,19 @@ class RingDrillText extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.textAlign,
-  });
+  }) : _rich = false;
+
+  /// Markdown rendering (copy chips) — description bodies and scenario prose.
+  const RingDrillText.rich(
+    this.text, {
+    super.key,
+    this.overrides = const {},
+    this.roleplayFacets,
+  }) : _rich = true,
+       style = null,
+       maxLines = null,
+       overflow = null,
+       textAlign = null;
 
   final String text;
   final Map<String, String> overrides;
@@ -49,6 +64,7 @@ class RingDrillText extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final TextAlign? textAlign;
+  final bool _rich;
 
   @override
   Widget build(BuildContext context) {
@@ -74,12 +90,19 @@ class RingDrillText extends StatelessWidget {
           ) ??
           text;
     }
-    // `resolveScopedField` emits markdown — including inline-code chips for
-    // positions/addresses/phones (backtick-wrapped). RingDrillText renders
-    // plain text (titles, subtitles, list rows), where a copy pill has no
-    // place and a literal backtick would leak into the UI. Strip the
-    // inline-code markers so those values read as plain text here; the chip
-    // only renders on the markdown surfaces (NarrativeRollupCard, brief).
+
+    if (_rich) {
+      // Markdown: positions/addresses/phones render as copy chips, matching
+      // the brief / detail card.
+      return BriefMarkdownBlock(
+        data: resolved,
+        theme: BriefTheme.of(context),
+        gutter: 0,
+      );
+    }
+
+    // Plain: strip the inline-code markers so a resolved coordinate/address
+    // reads as plain text rather than leaking a literal backtick into a title.
     return Text(
       resolved.replaceAll('`', ''),
       style: style,

@@ -6,7 +6,6 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -19,7 +18,6 @@ import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
-import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
@@ -343,12 +341,12 @@ class _StationListViewState extends State<StationListView> {
     if (reordering) {
       tile = ExpandableTile(
         leading: badge,
-        title: RingDrillText(
+        title: RingDrillText.plain(
           station.name,
           overrides: _overridesFor(exercise, station),
           style: accent.textStyle,
         ),
-        subtitle: RingDrillText(
+        subtitle: RingDrillText.plain(
           '${localizations.exercise(1)}: ${exercise.name}',
           overrides: _overridesFor(exercise, station),
           style: accent.textStyle,
@@ -385,12 +383,12 @@ class _StationListViewState extends State<StationListView> {
         child: ExpandableTile(
           onLongPress: () => _openStationForm(exercise, station),
           leading: badge,
-          title: RingDrillText(
+          title: RingDrillText.plain(
             station.name,
             overrides: _overridesFor(exercise, station),
             style: accent.textStyle,
           ),
-          subtitle: RingDrillText(
+          subtitle: RingDrillText.plain(
             '${localizations.exercise(1)}: ${exercise.name}',
             overrides: _overridesFor(exercise, station),
             style: accent.textStyle,
@@ -416,22 +414,13 @@ class _StationListViewState extends State<StationListView> {
     }
 
     // DESIGN-010 browser tile polish: each row lists a different station, so
-    // it seeds its own ExerciseScope/StationScope (mirroring station_screen.
-    // dart's detail sheet) rather than sharing one ancestor — this is what
+    // it seeds its own scope (rather than sharing one ancestor) — this is what
     // lets `{{station.*}}` (e.g. `{{station.position.utm}}`) resolve inside
     // the tile's title/subtitle/body instead of showing literally.
-    return ExerciseScope(
+    return StationScope.forStation(
       exercise: exercise,
-      variableOverrides: exercise.variableOverrides,
-      child: StationScope(
-        locations: station.locations,
-        persons: station.persons,
-        name: station.name,
-        description: station.description,
-        variantSuffix: station.variantSuffix,
-        positionUtm: formatUtm(station.position),
-        child: tile,
-      ),
+      station: station,
+      child: tile,
     );
   }
 
@@ -444,16 +433,14 @@ class _StationListViewState extends State<StationListView> {
   }) {
     final hasDescription =
         station.description != null && station.description!.trim().isNotEmpty;
-    final theme = Theme.of(context);
     // One shared TileSectionDivider between each present section — never a
     // leading or trailing one — so Description/Position/Markers read as
     // consistently divided regardless of which are present for this station.
     final sections = <Widget>[
       if (hasDescription)
-        RingDrillText(
+        RingDrillText.rich(
           station.description!,
           overrides: _overridesFor(exercise, station),
-          style: theme.textTheme.bodyMedium,
         ),
       // Shared "Posisjon" label + pin/coords row + tappable mini-map
       // (140 px tall to match the previous inline layout). Keeping the
@@ -610,7 +597,7 @@ class StationFilterBanner extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: RingDrillText(
+                    child: RingDrillText.plain(
                       localizations.showingStationsIn(exercise.name),
                       overrides: ProgramService().activeProgram == null
                           ? const {}

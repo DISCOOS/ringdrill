@@ -533,7 +533,7 @@ class _StationsViewState extends State<StationsView>
                             ),
                             size: 32,
                           ),
-                          title: RingDrillText(
+                          title: RingDrillText.plain(
                             ex.name,
                             overrides: _overridesFor(ex),
                           ),
