@@ -12,12 +12,11 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-009 follow-up 3c — geocoding in `LocationFormScreen`: forward
-/// (place → position via suggestions), reverse (position → place on an
-/// empty field), non-clobber (position set with non-empty place shows
-/// "Update from map" instead of overwriting), best-effort (throwing geocoder
-/// leaves the form usable and never blocks save), and a small regression
-/// check that `MapView` still routes search through the shared
-/// `GeocodingService`.
+/// (place → position via suggestions), reverse (an active map pick derives
+/// `place` from the chosen point, overwriting any previous address),
+/// best-effort (throwing geocoder leaves the form usable and never blocks
+/// save), and a small regression check that `MapView` still routes search
+/// through the shared `GeocodingService`.
 ///
 /// No test touches the network: every case injects a [_FakeGeocodingService].
 
@@ -249,8 +248,8 @@ void main() {
   // -------------------------------------------------------------------------
 
   testWidgets(
-    'reverse: non-empty place is not auto-overwritten on position change; '
-    '"Update from map" does overwrite',
+    'reverse: an active map pick overwrites even a non-empty place — there '
+    'is no separate "update from map" action',
     (tester) async {
       final geocoder = _FakeGeocodingService(reverseLabel: 'New Reverse Place');
       final captured = _Captured();
@@ -275,7 +274,7 @@ void main() {
       await tester.pump(placeSearchDebounce);
       await tester.pumpAndSettle();
 
-      // Set a position via the map picker.
+      // Actively pick a (new) position on the map.
       await tester.ensureVisible(find.byIcon(Icons.chevron_right));
       await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
@@ -284,24 +283,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.check));
       await tester.pumpAndSettle();
 
-      // Place must still be the author's typed value — never auto-overwritten.
-      expect(
-        tester.widget<TextField>(
-          find.descendant(of: placeField, matching: find.byType(TextField)),
-        ).controller!.text,
-        'My typed place',
-      );
-
-      // The explicit "Update from map" action (a refresh icon over the
-      // position card's thumbnail) should be visible.
-      final updateBtn = find.byTooltip(l.locationsSectionUpdatePlaceFromMapAction);
-      await tester.ensureVisible(updateBtn);
-      expect(updateBtn, findsOneWidget);
-
-      // Tapping it triggers a reverse geocode and replaces the place text.
-      await tester.tap(updateBtn);
-      await tester.pumpAndSettle();
-
+      // The author chose a new point, so the address is re-derived from it —
+      // the typed value is replaced, automatically, with no refresh action.
       expect(
         tester.widget<TextField>(
           find.descendant(of: placeField, matching: find.byType(TextField)),

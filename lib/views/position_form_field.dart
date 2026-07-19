@@ -33,6 +33,15 @@ class PositionFormField<K> extends FormField<LatLng> {
     PositionFieldVariant variant = PositionFieldVariant.row,
     bool showThumbnail = true,
     List<Widget> overlayActions = const [],
+    // Optional leading title stacked above the coordinate in the `card`
+    // variant's bar (e.g. the roleplay editor shows the followed location's
+    // name, or "Own position" for an override). Null keeps the bar showing
+    // just the coordinate, as every other caller does.
+    String? title,
+    // Optional trailing widget in the `card` variant's bar, replacing the
+    // default `chevron_right` (the roleplay editor's expand chevron on the
+    // collapsed, map-less card). Its own tap target.
+    Widget? barTrailing,
     AutovalidateMode super.autovalidateMode = AutovalidateMode.disabled,
   }) : super(
          builder: (FormFieldState<LatLng> state) {
@@ -94,6 +103,8 @@ class PositionFormField<K> extends FormField<LatLng> {
                  markers: markers,
                  overlayActions: overlayActions,
                  emptyLabel: l10n.pickALocation,
+                 title: title,
+                 barTrailing: barTrailing,
                ),
                if (state.hasError)
                  Padding(

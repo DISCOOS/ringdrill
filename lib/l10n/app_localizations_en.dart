@@ -2344,9 +2344,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationsSectionPlaceNoResults => 'No matches found';
 
   @override
-  String get locationsSectionUpdatePlaceFromMapAction => 'Update from map';
-
-  @override
   String get locationsSectionNoteLabel => 'Note';
 
   @override
@@ -2453,7 +2450,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get rolePlayPositionSetOwnAction => 'Set own';
+  String get rolePlayPositionOwnLabel => 'Own position';
 
   @override
   String get genderWomanLabel => 'Woman';

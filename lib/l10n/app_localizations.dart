@@ -4004,12 +4004,6 @@ abstract class AppLocalizations {
   /// **'No matches found'**
   String get locationsSectionPlaceNoResults;
 
-  /// Explicit action shown next to a non-empty place field once a position is set, offering a reverse-geocode refresh without silently overwriting what the author typed (ADR-0047 follow-up 3c: geocoding never clobbers an existing value on its own).
-  ///
-  /// In en, this message translates to:
-  /// **'Update from map'**
-  String get locationsSectionUpdatePlaceFromMapAction;
-
   /// Field label for a location's optional note in the add/edit-location dialog.
   ///
   /// In en, this message translates to:
@@ -4190,11 +4184,11 @@ abstract class AppLocalizations {
   /// **'{age, plural, =1{1 year} other{{age} years}}'**
   String rolePlayAgeYears(int age);
 
-  /// Trailing action on the position card's disclosure row that reveals the raw position picker so the author can override the marker's position away from the person's location (DESIGN-009 prompt 4i).
+  /// Title in the marker's position card bar when it has its own coordinate (an override), shown instead of the followed location's name (DESIGN-009 prompt 4i/4j).
   ///
   /// In en, this message translates to:
-  /// **'Set own'**
-  String get rolePlayPositionSetOwnAction;
+  /// **'Own position'**
+  String get rolePlayPositionOwnLabel;
 
   /// GenderSegmentedControl option label for the stable code "woman" (DESIGN-009 follow-up 3b, ADR-0047). Shared by Person.gender and, from prompt 4, RolePlay.gender.
   ///

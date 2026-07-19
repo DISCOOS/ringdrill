@@ -28,11 +28,23 @@ class PositionCard<K> extends StatelessWidget {
     this.markers = const [],
     this.overlayActions = const [],
     this.emptyLabel,
+    this.title,
+    this.barTrailing,
   });
 
   final PositionFieldVariant variant;
   final LatLng? position;
   final VoidCallback onTap;
+
+  /// Optional leading title stacked above the coordinate in the `card`
+  /// variant's bar (the `row` variant ignores it). Null shows just the
+  /// coordinate — every caller but the roleplay editor's own-position card.
+  final String? title;
+
+  /// Optional trailing widget in the `card` variant's bar, replacing the
+  /// default `chevron_right` (the roleplay editor's expand chevron on the
+  /// collapsed, map-less card). Ignored by `row`.
+  final Widget? barTrailing;
 
   /// Renders a live [MapView] thumbnail centred on [position]. Only
   /// meaningful when [position] is non-null; the empty state is a plain
@@ -61,7 +73,8 @@ class PositionCard<K> extends StatelessWidget {
         thumbnail: showThumbnail ? _buildMapContent(theme, pinSize: 28) : null,
         thumbnailHeight: _cardThumbnailHeight,
         overlayActions: overlayActions,
-        barChild: _buildCoordinate(theme),
+        barChild: _buildBar(theme),
+        barTrailing: barTrailing,
       );
     }
     return ClipRRect(
@@ -184,6 +197,27 @@ class PositionCard<K> extends StatelessWidget {
             format: PositionFormat.utm,
             wrapped: false,
           );
+  }
+
+  /// The `card` variant's bar content: just the coordinate, or — when
+  /// [title] is set — the title stacked above it (the roleplay editor's
+  /// followed-location name / "Own position"). The coordinate reads muted
+  /// under a title so the title is the primary line.
+  Widget _buildBar(ThemeData theme) {
+    final coordinate = _buildCoordinate(theme);
+    final t = title;
+    if (t == null || t.isEmpty) return coordinate;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(t, maxLines: 1, overflow: TextOverflow.ellipsis),
+        DefaultTextStyle.merge(
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          child: coordinate,
+        ),
+      ],
+    );
   }
 }
 
@@ -387,11 +421,20 @@ class _PositionCardShellState extends State<PositionCardShell> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: theme.colorScheme.outlineVariant),
-            ),
+            // Only a divider when there is a thumbnail (or legend) above the
+            // bar; a bar-only card (collapsed / no thumbnail) has nothing to
+            // divide from, so the top border would be a stray line.
+            border: thumbnail == null
+                ? null
+                : Border(
+                    top: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
           ),
           child: Row(
+            // Top-align so a trailing chevron sits against the title line
+            // when the bar has a second (coordinate) line, matching the other
+            // collapsible cards. Single-line bars are unaffected.
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // The bar is this card's header-equivalent whenever
               // `sectionId` is set (the Post/Spill position card, `fillHeight`

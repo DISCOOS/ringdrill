@@ -18,8 +18,8 @@ import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
-import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -1753,146 +1753,65 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         : location.label;
     final following = _positionFollowsPerson;
 
-    if (!_positionExpanded && following) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final expanded = _positionExpanded;
+
+    // Reset an override back to the location's coordinate (→ following) and
+    // collapse to the compact card. Shown only while overridden, under the
+    // coordinate in the card's own bar — its own tap target inside the
+    // tap-to-select surface.
+    final resetLink = InkWell(
+      key: const Key('position-reset'),
+      onTap: () => setState(() {
+        _position = personCoord;
+        _positionExpanded = false;
+      }),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(Icons.replay, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: 4),
           Text(
-            l.position,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 20,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              locationLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            PositionWidget(
-                              format: PositionFormat.utm,
-                              position: personCoord,
-                              wrapped: false,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                InkWell(
-                  key: const Key('position-disclosure'),
-                  onTap: () => setState(() => _positionExpanded = true),
-                  child: Container(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.5,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.map_outlined,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        // No inherit-state label here (DESIGN-009 prompt
-                        // 4j) — the location name above already reads
-                        // as the source.
-                        const Expanded(child: SizedBox.shrink()),
-                        Text(
-                          l.rolePlayPositionSetOwnAction,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            l.rolePlayIdentityResetAction,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.primary,
             ),
           ),
         ],
-      );
-    }
+      ),
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        PositionFormField(
-          key: ValueKey(_position),
-          variant: PositionFieldVariant.card,
-          initialValue: _position,
-          onChanged: (pos) => setState(() {
-            _position = pos;
-            _positionFromStation = false;
-          }),
-          onSaved: (pos) => _rolePlay = _rolePlay.copyWith(position: pos),
-        ),
-        if (!following)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: InkWell(
-              onTap: () => setState(() {
-                _position = personCoord;
-                _positionExpanded = false;
-              }),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.replay,
-                    size: 13,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    l.rolePlayIdentityResetAction,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
+    final chevron = CollapseChevron(
+      key: Key(expanded ? 'position-collapse' : 'position-expand'),
+      collapsed: !expanded,
+      onTap: () => setState(() => _positionExpanded = !expanded),
+    );
+
+    // One collapsible position card (DESIGN-009 prompt 4i/4j): compact (bar
+    // only) by default, showing the followed location's name — or "Egen
+    // posisjon" for an override — above the coordinate. The chevron toggles
+    // the inline map preview; tapping the strip always opens the selector.
+    return PositionFormField(
+      key: ValueKey(_position),
+      variant: PositionFieldVariant.card,
+      initialValue: _position,
+      showThumbnail: expanded,
+      title: following ? locationLabel : l.rolePlayPositionOwnLabel,
+      // The reset shares the bar's right column with the fold chevron, so both
+      // sit flush at the card's right margin — chevron on the title line,
+      // "Reset" on the coordinate line — instead of the reset stopping short
+      // inside the text column. The chevron's own behaviour is unchanged.
+      barTrailing: following
+          ? chevron
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [chevron, const SizedBox(height: 6), resetLink],
             ),
-          ),
-      ],
+      onChanged: (pos) => setState(() {
+        _position = pos;
+        _positionFromStation = false;
+      }),
+      onSaved: (pos) => _rolePlay = _rolePlay.copyWith(position: pos),
     );
   }
 

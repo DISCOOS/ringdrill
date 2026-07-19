@@ -51,14 +51,14 @@ typedef LocationFormResult = ({Location location, PlanAdditions additions});
 /// The reference (`slug`) is never shown: it is a random id generated at
 /// creation via [randomSlug] against [existingSlugs] (DESIGN-009 follow-up
 /// 4h — derived from no field) and carries through unchanged when [initial]
-/// is edited (there is no rename, ADR-0047). `place` is a geocoder-backed search
-/// (DESIGN-009 follow-up 3c): typing debounces into a forward-geocode
-/// lookup whose suggestions set both `place` and `position`; setting a
-/// position with an empty `place` reverse-geocodes to fill it. Both
-/// directions are best-effort — offline, an error or no result is a silent
-/// no-op and never blocks save — and neither ever overwrites text the
-/// author already typed; an explicit reverse-geocode refresh action (a
-/// refresh icon over the position card's thumbnail) offers that instead.
+/// is edited (there is no rename, ADR-0047). `place` is a geocoder-backed
+/// search (DESIGN-009 follow-up 3c): typing debounces into a forward-geocode
+/// lookup whose suggestions set both `place` and `position`, and an active
+/// map pick reverse-geocodes the new coordinate back into `place` so the
+/// address matches the chosen point. Both directions are best-effort —
+/// offline, an error or a no-result lookup is a silent no-op that keeps the
+/// existing address and never blocks save; a map pick that does not move the
+/// point leaves `place` untouched.
 class LocationFormScreen extends StatefulWidget {
   const LocationFormScreen({
     super.key,
@@ -278,38 +278,29 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     });
   }
 
-  /// Wired to the position field's `onChanged` (map-pick or forward-geocode
-  /// pick). Reverse-geocodes to fill an *empty* place; a non-empty place is
-  /// never overwritten automatically (`_updatePlaceFromMap` is the explicit
-  /// opt-in for that).
+  /// Wired to the position field's `onChanged` — an active map pick. The
+  /// author chose this point, so the address should match it: re-derive
+  /// `place` from the new coordinate via reverse geocoding, overwriting any
+  /// previous address. Skipped when the pick did not move (same coordinate)
+  /// or the lookup finds nothing — the existing address is then kept (inside
+  /// [_reverseGeocodeInto]).
   void _onPositionChanged(LatLng position) {
+    final moved = position != _position;
     setState(() => _position = position);
-    if (_placeController.text.trim().isEmpty) {
-      unawaited(_reverseGeocodeInto(position));
-    }
+    if (moved) unawaited(_reverseGeocodeInto(position));
   }
 
-  Future<void> _updatePlaceFromMap() async {
-    final position = _position;
-    if (position == null) return;
-    await _reverseGeocodeInto(position, force: true);
-  }
-
-  Future<void> _reverseGeocodeInto(
-    LatLng position, {
-    bool force = false,
-  }) async {
+  Future<void> _reverseGeocodeInto(LatLng position) async {
     String label;
     try {
       label = await _geocoder.reverse(position);
     } catch (_) {
-      // Best-effort: offline/error is a silent no-op.
+      // Best-effort: offline/error is a silent no-op — keep the existing
+      // address rather than clearing it.
       return;
     }
-    if (!mounted) return;
-    // Re-check emptiness at completion time, not just at call time: the
-    // author may have typed something while the lookup was in flight.
-    if (!force && _placeController.text.trim().isNotEmpty) return;
+    // A no-result reverse lookup keeps the existing address too.
+    if (!mounted || label.trim().isEmpty) return;
     setState(() {
       _lastAppliedPlace = label;
       _placeController.text = label;
@@ -451,8 +442,6 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     final title = _isEdit
         ? l10n.locationsSectionEditAction
         : l10n.locationsSectionAddAction;
-    final place = _placeController.text.trim();
-    final canUpdateFromMap = _position != null && place.isNotEmpty;
     // Resolvable at station scope and below (DESIGN-009 follow-up 4e) —
     // never `PlanFieldTokens.roleplay`, which only resolves inside a
     // roleplay's own scope, not a station-owned Location's.
@@ -588,15 +577,6 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
                         initialValue: _position,
                         onSaved: (value) => _position = value,
                         onChanged: _onPositionChanged,
-                        overlayActions: [
-                          if (canUpdateFromMap)
-                            IconButton(
-                              icon: const Icon(Icons.refresh),
-                              tooltip:
-                                  l10n.locationsSectionUpdatePlaceFromMapAction,
-                              onPressed: _updatePlaceFromMap,
-                            ),
-                        ],
                       ),
                       const SizedBox(height: 16),
                       RingDrillTextArea(

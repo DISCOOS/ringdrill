@@ -1441,10 +1441,6 @@
   "@locationsSectionPlaceNoResults": {
     "description": "Liten hjelpetekst under stedsfeltet når et geokodersøk gir null treff (eller feiler, f.eks. uten nett) -- blokkerer aldri, i tråd med feltets beste-innsats-kontrakt (ADR-0047 oppfølging 3c)."
   },
-  "locationsSectionUpdatePlaceFromMapAction": "Oppdater fra kart",
-  "@locationsSectionUpdatePlaceFromMapAction": {
-    "description": "Eksplisitt handling vist ved siden av et ikke-tomt stedsfelt når en posisjon er satt, som tilbyr et reversgeokodet oppdatering uten å overskrive det forfatteren har skrevet (ADR-0047 oppfølging 3c: geokoding overskriver aldri en eksisterende verdi av seg selv)."
-  },
   "locationsSectionPlaceLabel": "Sted",
   "@locationsSectionPlaceLabel": {
     "description": "Feltetikett for en lokasjons stedsbeskrivelse/adresse i legg-til/rediger-dialogen."
@@ -1584,9 +1580,9 @@
       "age": { "type": "int" }
     }
   },
-  "rolePlayPositionSetOwnAction": "Sett egen",
-  "@rolePlayPositionSetOwnAction": {
-    "description": "Handling på posisjonskortets utfoldingsrad som viser den vanlige posisjonsvelgeren, slik at forfatteren kan overstyre markørens posisjon bort fra personens lokasjon (DESIGN-009 prompt 4i)."
+  "rolePlayPositionOwnLabel": "Egen posisjon",
+  "@rolePlayPositionOwnLabel": {
+    "description": "Tittel i markørens posisjonskort-stripe når den har egen koordinat (en overstyring), vist i stedet for navnet på lokasjonen den ellers følger (DESIGN-009 prompt 4i/4j)."
   },
   "genderWomanLabel": "Kvinne",
   "@genderWomanLabel": {

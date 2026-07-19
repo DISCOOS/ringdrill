@@ -2342,9 +2342,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get locationsSectionPlaceNoResults => 'Fant ingen treff';
 
   @override
-  String get locationsSectionUpdatePlaceFromMapAction => 'Oppdater fra kart';
-
-  @override
   String get locationsSectionNoteLabel => 'Notat';
 
   @override
@@ -2451,7 +2448,7 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get rolePlayPositionSetOwnAction => 'Sett egen';
+  String get rolePlayPositionOwnLabel => 'Egen posisjon';
 
   @override
   String get genderWomanLabel => 'Kvinne';
