@@ -11,7 +11,8 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
+import 'package:ringdrill/services/brief/field_resolver.dart'
+    show ActionChipFormatter, formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -998,22 +999,41 @@ class _PlayCard extends StatelessWidget {
                       )
                     : null,
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // "Spilles av …" names the actor → face icon (person ≠ actor;
-                  // person is reserved for the character).
-                  Icon(
-                    Icons.face,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  Row(
+                    children: [
+                      // "Spilles av …" names the actor → face icon (person ≠
+                      // actor; person is reserved for the character).
+                      Icon(
+                        Icons.face,
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.castedByLine(actor.realName),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.castedByLine(actor.realName),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  // The cast footer is the only surface with room for the
+                  // actor's phone (ADR-0050, DESIGN-013) — a full chip (copy
+                  // icon and all), indented under the name to align with it.
+                  if (actor.phone != null && actor.phone!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 24),
+                      child: RingDrillText.rich(
+                        const ActionChipFormatter().phone(
+                          actor.phone!,
+                          actor.phone!,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

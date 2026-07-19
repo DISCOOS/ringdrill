@@ -8,6 +8,8 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart'
+    show ActionChipFormatter;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -32,7 +34,6 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/tile_section_divider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Flat list of all [RolePlay] rows across all exercises, sorted by
 /// exercise order then role index. Each row uses [ExpandableTile].
@@ -479,16 +480,13 @@ class _RolePlaysViewState extends State<RolePlaysView> {
           label: actor.realName,
           onTap: () => _openCastPicker(rolePlay),
         ),
-        if (actor.phone != null) const SizedBox(height: 6),
-        if (actor.phone != null)
-          InkWell(
-            onTap: () => launchUrl(Uri.parse('tel:${actor.phone}')),
-            child: Text(
-              actor.phone!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.primary,
-              ),
-            ),
+        if (actor.phone != null && actor.phone!.isNotEmpty)
+          const SizedBox(height: 6),
+        // A full chip (copy icon and all), not plain tappable text — tap
+        // dials, the icon copies (ADR-0050, DESIGN-013).
+        if (actor.phone != null && actor.phone!.isNotEmpty)
+          RingDrillText.rich(
+            const ActionChipFormatter().phone(actor.phone!, actor.phone!),
           ),
         if (actor.notes != null && actor.notes!.isNotEmpty)
           Text(
