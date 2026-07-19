@@ -325,6 +325,52 @@ void main() {
   );
 
   testWidgets(
+    'switching to a segment whose remembered target is cross-segment does not '
+    'crash when the switch runs during build (deferred router.go)',
+    (tester) async {
+      // Regression for the "setState() called during build" crash: an external
+      // rebuild drives MainScreen.didUpdateWidget → `_initTab` (during build),
+      // whose segment-memory restore reached `router.go`, marking the Router
+      // dirty mid-build. The fix defers that `go` to a post-frame callback.
+      //
+      // A segment only remembers a *cross-segment* target via the narrow modal
+      // branch of `_onDetailTargetChangedForSelectionMemory`. Plant it under
+      // `script` there, then switch away to `stations` before going wide so
+      // wide's auto-select-first does not clobber `script`'s memory. Tapping
+      // back to `script` then runs `_initTab` during the router's build and
+      // restores that cross-segment target — the crash path.
+      await _pumpApp(tester, wide: false);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await _tapSegment(tester, l10n.scriptSegment);
+      await tester.tap(find.text('Turgåer').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1.1 Station A1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(StationExerciseScreen), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      // Leave script (so its cross-segment memory survives wide entry).
+      await _tapSegment(tester, l10n.stationsTab);
+      await tester.pumpAndSettle();
+
+      tester.view.physicalSize = const Size(1200, 800);
+      await tester.pumpAndSettle();
+
+      // Back to script → `_initTab` restores script's cross-segment Station
+      // target during build → deferred router.go. Must not throw.
+      await _tapSegment(tester, l10n.scriptSegment);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // The deferred go lands on Poster with that station shown.
+      expect(_selectedSegment(tester), {ProgramSegment.stations});
+      expect(find.byType(StationExerciseScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'narrow layout is unaffected: a redirect inside the modal sheet does not '
     'touch the underlying segment',
     (tester) async {

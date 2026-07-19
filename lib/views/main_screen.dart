@@ -376,7 +376,18 @@ class _MainScreenState extends State<MainScreen>
       // the detail. Detect that case and only mirror the segment into state.
       final uuid = ProgramService().activeProgramUuid;
       if (uuid != null && _locationIsSegmentPath(widget.location)) {
-        widget.router.go(programSegmentPath(uuid, owningSegment.urlSlug));
+        // This callback can fire mid-build: `_initTab` (in `didUpdateWidget`)
+        // writes `activeSegment`, whose notifier cascade reaches here, and
+        // `router.go` marks the Router dirty — illegal during build
+        // ("setState() called during build"). Defer the navigation to the
+        // next frame so it runs when the scheduler is idle; the segment memory
+        // set just above already holds the target, so the deferred `go`
+        // lands on the right selection. Mirrors the post-frame deferral
+        // app_router.dart uses for the same reason.
+        final path = programSegmentPath(uuid, owningSegment.urlSlug);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.router.go(path);
+        });
       } else {
         _programPageController.activeSegment.value = owningSegment;
       }
