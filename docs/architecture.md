@@ -119,6 +119,10 @@ The backend runtime, hosting topology (the three ADR-0039 origins) and local dev
 
 The `.drill` file format and the drill library bundle format live in [`drill-file-format.md`](./drill-file-format.md).
 
+## Briefs, templates and variables
+
+The brief is a projection of the entities, rendered on demand through a versioned mustache template. The template format, registration and audiences live in [`template.md`](./template.md); the `{{var.*}}` and cross-reference tokens an author types inside fields — with their typed values, the copy-chip convention, the resolution pipeline and the resolve-scope model — live in [`variables.md`](./variables.md).
+
 ## Where to look first
 
 * Bootstrap and theming: `lib/main.dart`.
