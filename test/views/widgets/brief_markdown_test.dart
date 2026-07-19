@@ -222,5 +222,42 @@ void main() {
             'Tapping the code chip should show a SnackBar with the copied label',
       );
     });
+
+    testWidgets(
+      'a code chip wrapped in parentheses draws the parens outside the pill '
+      'and copies only the inner text',
+      (tester) async {
+        String? copied;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'Clipboard.setData') {
+                copied = (call.arguments as Map)['text'] as String?;
+              }
+              return null;
+            });
+
+        await tester.pumpWidget(
+          buildWidget(data: 'Sist sett på Meiselen 14 `(32V 0563689E 6622277N)`.'),
+        );
+        await tester.pump();
+
+        // The pill shows the bare coordinate; the parens are their own text
+        // runs (rendered outside the pill so "(pill)" stays one line).
+        expect(find.text('32V 0563689E 6622277N'), findsOneWidget);
+        expect(find.text('('), findsOneWidget);
+        expect(find.text(')'), findsOneWidget);
+
+        final chipFinder = find.byWidgetPredicate((widget) {
+          if (widget is! Container) return false;
+          final decoration = widget.decoration;
+          if (decoration is! BoxDecoration) return false;
+          return decoration.color == lightTheme.code.background;
+        });
+        await tester.tap(chipFinder.first);
+        await tester.pumpAndSettle();
+
+        expect(copied, '32V 0563689E 6622277N');
+      },
+    );
   });
 }

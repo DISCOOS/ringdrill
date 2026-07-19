@@ -78,6 +78,10 @@ class _CodeChipNode extends ElementNode {
         // color behind the glyphs — the Container paints it instead.
         textStyle: merged.copyWith(backgroundColor: Colors.transparent),
         backgroundColor: merged.backgroundColor ?? const Color(0xCCEFF1F3),
+        // Parentheses folded into a code span (e.g. a location's
+        // `(<utm>)`) render just outside the pill in the surrounding body
+        // style, not on the chip background.
+        adornmentStyle: parentStyle,
       ),
     );
   }
@@ -94,14 +98,29 @@ class _CodeChip extends StatelessWidget {
     required this.text,
     required this.textStyle,
     required this.backgroundColor,
+    this.adornmentStyle,
   });
 
   final String text;
   final TextStyle textStyle;
   final Color backgroundColor;
 
+  /// Style for parentheses folded into the code span (drawn outside the pill
+  /// in the surrounding body style). Falls back to [textStyle] when null.
+  final TextStyle? adornmentStyle;
+
+  /// A single surrounding paren pair is treated as adornment: rendered just
+  /// outside the pill and excluded from the copied text. Only content with
+  /// both a leading `(` and trailing `)` qualifies.
+  bool get _hasParens =>
+      text.length >= 2 && text.startsWith('(') && text.endsWith(')');
+
+  /// The pill's visible content and the copied text — the coordinate without
+  /// the adornment parentheses.
+  String get _inner => _hasParens ? text.substring(1, text.length - 1) : text;
+
   Future<void> _copy(BuildContext context) async {
-    await Clipboard.setData(ClipboardData(text: text));
+    await Clipboard.setData(ClipboardData(text: _inner));
     if (!context.mounted) return;
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.maybeOf(context);
@@ -120,7 +139,7 @@ class _CodeChip extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final iconColor = textStyle.color?.withValues(alpha: 0.7);
 
-    return MouseRegion(
+    final pill = MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -137,7 +156,7 @@ class _CodeChip extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  text,
+                  _inner,
                   style: textStyle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -152,6 +171,22 @@ class _CodeChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    if (!_hasParens) return pill;
+
+    // Flank the pill with the adornment parentheses inside one Row, so the
+    // whole "(pill)" group is a single unbreakable placeholder — the "(" can
+    // no longer orphan at a line end.
+    final parenStyle = adornmentStyle ?? textStyle;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text('(', style: parenStyle),
+        pill,
+        Text(')', style: parenStyle),
+      ],
     );
   }
 }

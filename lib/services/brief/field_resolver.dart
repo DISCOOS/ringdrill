@@ -235,10 +235,13 @@ String _locationUtmCode(Location location) {
 /// Sensible bare-token default: `place` plus, when a position is set, the
 /// inline-code UTM.
 String _locationDefault(Location location) {
-  final utmCode = _locationUtmCode(location);
-  if (location.place.isEmpty) return utmCode;
-  if (utmCode.isEmpty) return location.place;
-  return '${location.place} ($utmCode)';
+  final utm = formatUtm(location.position);
+  if (location.place.isEmpty) return utm.isEmpty ? '' : '`$utm`';
+  if (utm.isEmpty) return location.place;
+  // Fold the parentheses into the code span. The chip renderer draws them
+  // just outside the pill (so "(", pill and ")" stay on one line as a single
+  // unbreakable unit) and excludes them from the copied coordinate.
+  return '${location.place} `($utm)`';
 }
 
 /// `{{station.person.<slug>[.facet]}}` facet resolution. [portrayer] is the
