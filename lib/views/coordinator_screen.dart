@@ -6,6 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/notification_service.dart';
 import 'package:ringdrill/services/program_service.dart';
@@ -17,8 +18,10 @@ import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/utils/time_utils.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
+import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
@@ -1511,9 +1514,23 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   Widget _buildStationDetail(int stationIndex) {
     final station = _exercise!.stations[stationIndex];
     final description = station.description;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      child: Column(
+    // Seed this station's own ExerciseScope/StationScope (mirroring
+    // station_list_view.dart's per-tile scope) so `{{station.*}}` — e.g.
+    // `{{station.position.utm}}` — resolves in the expanded card instead of
+    // showing literally.
+    return ExerciseScope(
+      exercise: _exercise!,
+      variableOverrides: _exercise!.variableOverrides,
+      child: StationScope(
+        locations: station.locations,
+        persons: station.persons,
+        name: station.name,
+        description: station.description,
+        variantSuffix: station.variantSuffix,
+        positionUtm: formatUtm(station.position),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (description != null && description.isNotEmpty)
@@ -1558,6 +1575,8 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
