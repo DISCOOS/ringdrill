@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/exercise.dart';
+import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' as resolver;
 import 'package:ringdrill/utils/exercise_share_format.dart';
@@ -61,9 +63,23 @@ String? resolveScopedField(
       'name': planScope?.programName,
       'description': planScope?.programDescription,
     },
-    if (exerciseScope != null) 'exercise': _exerciseFacets(exerciseScope, l10n),
-    if (stationScope != null) 'station': _stationFacets(stationScope),
-    if (roleplayScope != null) 'roleplay': _roleplayFacets(roleplayScope),
+    if (exerciseScope != null)
+      'exercise': _exerciseFacets(exerciseScope.exercise, l10n),
+    if (stationScope != null)
+      'station': _stationFacets(
+        name: stationScope.name,
+        stationCode: stationScope.stationCode,
+        description: stationScope.description,
+        variantSuffix: stationScope.variantSuffix,
+        positionUtm: stationScope.positionUtm,
+      ),
+    if (roleplayScope != null)
+      'roleplay': _roleplayFacets(
+        name: roleplayScope.name,
+        age: roleplayScope.age,
+        signalement: roleplayScope.signalement,
+        positionUtm: roleplayScope.positionUtm,
+      ),
   };
 
   // A throwaway Station carrying only what the resolver's scenario-token
@@ -94,11 +110,82 @@ String? resolveScopedField(
   );
 }
 
-Map<String, dynamic> _exerciseFacets(
-  ExerciseScope scope,
-  AppLocalizations l10n,
-) {
-  final exercise = scope.exercise;
+/// [resolveScopedField]'s eager, model-driven twin: resolves [content]
+/// against cross-reference facets built from explicitly passed models rather
+/// than from the widget tree. For a label computed imperatively per item —
+/// a map marker's or search result's caption, built in a `.map()` over many
+/// different roleplays/stations, where there is no per-item scoped subtree to
+/// read from — so `{{exercise.*}}`/`{{station.*}}`/`{{roleplay.*}}` in a name
+/// resolve the same way they do in a scoped surface and the brief, instead of
+/// the mustache pass throwing on the first absent scope and dragging the whole
+/// label back to literal.
+///
+/// The program level and the declared variables still come from the ambient
+/// [PlanScope] (every map/search surface has one); [overrides] shadows a
+/// declared value the same way [resolveScopedField]'s does.
+String? resolveModelField(
+  BuildContext context,
+  String? content, {
+  Exercise? exercise,
+  Station? station,
+  RolePlay? roleplay,
+  Map<String, String> overrides = const {},
+}) {
+  if (content == null || content.isEmpty) return content;
+  final l10n = AppLocalizations.of(context)!;
+  final planScope = PlanScope.maybeOf(context);
+
+  final vars = <String, DrillVariable>{
+    for (final v in planScope?.variables ?? const [])
+      v.name: applyVariableOverride(v, overrides[v.name]),
+  };
+
+  final refContext = <String, dynamic>{
+    'program': {
+      'name': planScope?.programName,
+      'description': planScope?.programDescription,
+    },
+    if (exercise != null) 'exercise': _exerciseFacets(exercise, l10n),
+    if (station != null)
+      'station': _stationFacets(
+        name: station.name,
+        description: station.description,
+        variantSuffix: station.variantSuffix,
+        positionUtm: resolver.formatUtm(station.position),
+      ),
+    if (roleplay != null)
+      'roleplay': _roleplayFacets(
+        name: roleplay.name,
+        age: roleplay.age,
+        signalement: roleplay.signalement,
+        positionUtm: resolver.formatUtm(roleplay.position),
+      ),
+  };
+
+  final scenarioStation = station == null
+      ? null
+      : Station(
+          index: 0,
+          name: station.name,
+          locations: station.locations,
+          persons: station.persons,
+        );
+
+  return resolver.resolveField(
+    content,
+    vars: vars,
+    l10n: l10n,
+    refContext: refContext,
+    scenarioStation: scenarioStation,
+  );
+}
+
+// The facet builders take plain fields, not scope objects, so the two
+// resolution entry points share one source of the `{{exercise/station/
+// roleplay.*}}` shape (ADR-0048 — no drift): [resolveScopedField] feeds them
+// from the ancestor scopes, [resolveModelField] from explicit models.
+
+Map<String, dynamic> _exerciseFacets(Exercise exercise, AppLocalizations l10n) {
   return {
     'name': exercise.name,
     'numberOfTeams': exercise.numberOfTeams,
@@ -114,17 +201,28 @@ Map<String, dynamic> _exerciseFacets(
   };
 }
 
-Map<String, dynamic> _stationFacets(StationScope scope) => {
-  'name': scope.name ?? '',
-  'stationCode': scope.stationCode ?? '',
-  'description': scope.description ?? '',
-  'variantSuffix': scope.variantSuffix,
-  'position': {'utm': resolver.briefCopyChip(scope.positionUtm ?? '')},
+Map<String, dynamic> _stationFacets({
+  String? name,
+  String? stationCode,
+  String? description,
+  String? variantSuffix,
+  String? positionUtm,
+}) => {
+  'name': name ?? '',
+  'stationCode': stationCode ?? '',
+  'description': description ?? '',
+  'variantSuffix': variantSuffix,
+  'position': {'utm': resolver.briefCopyChip(positionUtm ?? '')},
 };
 
-Map<String, dynamic> _roleplayFacets(RoleplayScope scope) => {
-  'name': scope.name,
-  'age': scope.age,
-  'signalement': scope.signalement ?? '',
-  'position': {'utm': resolver.briefCopyChip(scope.positionUtm ?? '')},
+Map<String, dynamic> _roleplayFacets({
+  required String name,
+  int? age,
+  String? signalement,
+  String? positionUtm,
+}) => {
+  'name': name,
+  'age': age,
+  'signalement': signalement ?? '',
+  'position': {'utm': resolver.briefCopyChip(positionUtm ?? '')},
 };

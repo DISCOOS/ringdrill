@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show formatUtm, onResolveFieldError;
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -205,6 +206,56 @@ void main() {
       final resolved = resolveScopedField(captured, 'P={{program.name}}');
 
       expect(resolved, 'P=Program One');
+    },
+  );
+
+  testWidgets(
+    'resolveModelField resolves exercise/station/roleplay facets from explicit '
+    'models (eager labels with no scoped subtree, e.g. map markers) and keeps '
+    'the hook silent when they are all supplied',
+    (tester) async {
+      late BuildContext captured;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('nb'),
+          home: PlanScope(
+            variables: const [DrillVariable(name: 'year', value: '2026')],
+            programName: 'Program {{var.year}}',
+            child: Builder(
+              builder: (context) {
+                captured = context;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+
+      final errors = <Object>[];
+      onResolveFieldError = (error, _) => errors.add(error);
+      addTearDown(() => onResolveFieldError = null);
+
+      const content =
+          'P={{program.name}} E={{exercise.name}} S={{station.name}} '
+          'RP={{roleplay.name}} VAR={{var.year}}';
+
+      final resolved = resolveModelField(
+        captured,
+        content,
+        exercise: _exercise(),
+        station: const Station(index: 0, name: 'Station A'),
+        roleplay: _rolePlay,
+        overrides: const {},
+      );
+
+      expect(resolved, contains('P=Program 2026'));
+      expect(resolved, contains('E=Exercise 1'));
+      expect(resolved, contains('S=Station A'));
+      expect(resolved, contains('RP=Nordmann'));
+      expect(resolved, contains('VAR=2026'));
+      expect(errors, isEmpty);
     },
   );
 }

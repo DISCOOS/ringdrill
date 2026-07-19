@@ -218,12 +218,26 @@ class _StationsViewState extends State<StationsView>
               label: () {
                 final exercise = _programService.getExercise(rp.exerciseUuid);
                 if (exercise == null) return rp.name;
-                return resolveScopedField(
+                final stationIndex = rp.stationIndex;
+                final station =
+                    (stationIndex != null &&
+                        stationIndex >= 0 &&
+                        stationIndex < exercise.stations.length)
+                    ? exercise.stations[stationIndex]
+                    : null;
+                // Eager per-roleplay label: no per-item scoped subtree to read
+                // from, so feed the exercise/station/self facets explicitly —
+                // otherwise a {{station.*}} etc. in a marker name throws the
+                // all-or-nothing mustache pass and the label falls to literal.
+                return resolveModelField(
                       context,
                       rp.name,
+                      exercise: exercise,
+                      station: station,
+                      roleplay: rp,
                       overrides: _overridesFor(
                         exercise,
-                        stationIndex: rp.stationIndex,
+                        stationIndex: stationIndex,
                       ),
                     ) ??
                     rp.name;
@@ -790,9 +804,10 @@ class _StationsViewState extends State<StationsView>
       final exerciseOverrides = _overridesFor(exercise);
       targets.add(
         SearchResult.points(
-          resolveScopedField(
+          resolveModelField(
                 context,
                 exercise.name,
+                exercise: exercise,
                 overrides: exerciseOverrides,
               ) ??
               exercise.name,
@@ -824,8 +839,8 @@ class _StationsViewState extends State<StationsView>
           exerciseNumber: exercises.indexOf(exercise) + 1,
         );
         final label =
-            '${resolveScopedField(context, exercise.name, overrides: stationOverrides) ?? exercise.name} '
-            '| ${resolveScopedField(context, postLabel, overrides: stationOverrides) ?? postLabel}';
+            '${resolveModelField(context, exercise.name, exercise: exercise, station: station, overrides: stationOverrides) ?? exercise.name} '
+            '| ${resolveModelField(context, postLabel, exercise: exercise, station: station, overrides: stationOverrides) ?? postLabel}';
         targets.add(
           SearchResult.points(
             label,
