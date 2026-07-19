@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
+import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
@@ -218,6 +219,122 @@ void main() {
 
       final loaded = service.getRolePlay('rp-null')!;
       expect(loaded.stationIndex, isNull);
+    });
+  });
+
+  group('ProgramService — delete', () {
+    test('deleteExercise removes the exercise from the active plan', () async {
+      final service = ProgramService();
+      await service.saveExercise(l10n, _ex('ex-keep', name: 'Keep'));
+      await service.saveExercise(l10n, _ex('ex-drop', name: 'Drop'));
+      expect(service.loadExercises().length, 2);
+
+      await service.deleteExercise('ex-drop');
+
+      final remaining = service.loadExercises();
+      expect(remaining.map((e) => e.uuid), ['ex-keep']);
+      expect(service.getExercise('ex-drop'), isNull);
+    });
+
+    test('deleteExercise on an unknown uuid is a no-op', () async {
+      final service = ProgramService();
+      await service.saveExercise(l10n, _ex('ex-1'));
+
+      await service.deleteExercise('does-not-exist');
+
+      expect(service.loadExercises().length, 1);
+    });
+
+    test(
+      'deleteRolePlay removes the role but leaves its cast actor in the roster',
+      () async {
+        final service = ProgramService();
+        await service.saveExercise(l10n, _ex('ex-1'));
+
+        const actor = Actor(
+          uuid: 'actor-1',
+          realName: 'Kari Nordmann',
+          phone: '12345678',
+        );
+        await service.saveActor(l10n, actor);
+
+        const rp = RolePlay(
+          uuid: 'rp-1',
+          index: 0,
+          exerciseUuid: 'ex-1',
+          name: 'Turgåer',
+          stationIndex: 0,
+          actorUuid: 'actor-1',
+        );
+        await service.saveRolePlay(l10n, rp);
+        expect(service.getRolePlay('rp-1'), isNotNull);
+
+        final removed = await service.deleteRolePlay('rp-1');
+
+        // The role is gone…
+        expect(removed?.uuid, 'rp-1');
+        expect(service.getRolePlay('rp-1'), isNull);
+        // …but the actor it was cast from stays in the roster, just uncast.
+        expect(service.getActor('actor-1'), isNotNull);
+        expect(service.loadActors().map((a) => a.uuid), contains('actor-1'));
+      },
+    );
+  });
+
+  // These guard the stream contract: every mutation must emit so the
+  // StreamBuilder-driven surfaces (Spill list, Roster, Post rows) refresh.
+  group('ProgramService — mutations emit events', () {
+    Future<List<ProgramEventType>> capture(
+      ProgramService service,
+      Future<void> Function() mutate,
+    ) async {
+      final types = <ProgramEventType>[];
+      final sub = service.events.listen((e) => types.add(e.type));
+      await mutate();
+      // `events` is a broadcast stream: `_controller.add` schedules delivery
+      // as a microtask, so drain the queue before cancelling or the listener
+      // never sees the event.
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+      return types;
+    }
+
+    test('deleteRolePlay emits rolePlayDeleted', () async {
+      final service = ProgramService();
+      await service.saveExercise(l10n, _ex('ex-1'));
+      await service.saveRolePlay(
+        l10n,
+        const RolePlay(uuid: 'rp-1', index: 0, exerciseUuid: 'ex-1', name: 'A'),
+      );
+
+      final types = await capture(service, () => service.deleteRolePlay('rp-1'));
+
+      expect(types, contains(ProgramEventType.rolePlayDeleted));
+    });
+
+    test('saveActor emits actorSaved', () async {
+      final service = ProgramService();
+      final types = await capture(
+        service,
+        () => service.saveActor(
+          l10n,
+          const Actor(uuid: 'actor-1', realName: 'Kari'),
+        ),
+      );
+
+      expect(types, contains(ProgramEventType.actorSaved));
+    });
+
+    test('deleteActor emits actorDeleted', () async {
+      final service = ProgramService();
+      await service.saveActor(
+        l10n,
+        const Actor(uuid: 'actor-1', realName: 'Kari'),
+      );
+
+      final types = await capture(service, () => service.deleteActor('actor-1'));
+
+      expect(types, contains(ProgramEventType.actorDeleted));
     });
   });
 }

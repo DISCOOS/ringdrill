@@ -33,7 +33,7 @@ Exercise _exercise({required Station station}) => Exercise(
 );
 
 class _Captured {
-  RolePlayFormResult? value;
+  RolePlayFormSave? value;
 }
 
 Future<void> _openForm(
@@ -49,7 +49,7 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<RolePlayFormResult>(
+            captured.value = await Navigator.push<RolePlayFormSave>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => RolePlayFormScreen(

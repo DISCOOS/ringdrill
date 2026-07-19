@@ -127,6 +127,18 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         }
       }),
     );
+
+    // Rebuild on any program mutation (roleplay/actor/person/station edits
+    // elsewhere), not just this screen's own actions — mirrors
+    // CoordinatorScreen. Re-read the cached exercise; ignore a delete of the
+    // exercise itself (the hosting sheet closes that case).
+    _subscribers.add(
+      _programService.events.listen((_) {
+        if (!mounted) return;
+        final fresh = _programService.getExercise(widget.uuid);
+        if (fresh != null) setState(() => _exercise = fresh);
+      }),
+    );
     super.initState();
   }
 
@@ -751,16 +763,23 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         rolePlay: rolePlay,
         exercise: _exercise,
         variables: _programService.activeProgram?.variables ?? const [],
+        isExisting: true,
       ),
     );
-    if (result == null) return;
-    await applyRolePlayAdditions(
-      _programService,
-      localizations,
-      result.rolePlay,
-      result.additions,
-    );
-    await _programService.saveRolePlay(localizations, result.rolePlay);
+    switch (result) {
+      case null:
+        return;
+      case RolePlayFormSave(:final rolePlay, :final additions):
+        await applyRolePlayAdditions(
+          _programService,
+          localizations,
+          rolePlay,
+          additions,
+        );
+        await _programService.saveRolePlay(localizations, rolePlay);
+      case RolePlayFormDelete(:final rolePlay):
+        await _programService.deleteRolePlay(rolePlay.uuid);
+    }
     if (mounted) setState(() {});
   }
 
@@ -978,7 +997,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
         variables: _programService.activeProgram?.variables ?? const [],
       ),
     );
-    if (result != null) {
+    // A fresh draft has no delete affordance, so only a save (or cancel) is
+    // possible here.
+    if (result is RolePlayFormSave) {
       await applyRolePlayAdditions(
         _programService,
         localizations,

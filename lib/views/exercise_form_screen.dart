@@ -31,11 +31,29 @@ enum _ExerciseSection {
   comms,
 }
 
-/// [ExerciseFormScreen]'s result: the saved [Exercise] plus any [PlanAdditions]
-/// created inline this session (ADR-0047, DESIGN-009 follow-up 4) — the
-/// caller applies both atomically (the exercise to its own owner, the
-/// additions' variables to `Program`).
-typedef ExerciseFormResult = ({Exercise exercise, PlanAdditions additions});
+/// [ExerciseFormScreen]'s result — a sealed save/delete, mirroring
+/// [ActorFormResult]/`RolePlayFormResult`. Null (cancel) is neither.
+sealed class ExerciseFormResult {
+  const ExerciseFormResult();
+}
+
+/// A save: the edited [Exercise] plus any [PlanAdditions] created inline this
+/// session (ADR-0047, DESIGN-009 follow-up 4) — the caller applies both
+/// atomically (the exercise to its own owner, the additions' variables to
+/// `Program`).
+final class ExerciseFormSave extends ExerciseFormResult {
+  const ExerciseFormSave(this.exercise, this.additions);
+
+  final Exercise exercise;
+  final PlanAdditions additions;
+}
+
+/// A delete: the caller removes [exercise] (`ProgramService.deleteExercise`).
+final class ExerciseFormDelete extends ExerciseFormResult {
+  const ExerciseFormDelete(this.exercise);
+
+  final Exercise exercise;
+}
 
 /// ADR-0046's declared-variable-name rule, duplicated from
 /// `ProgramFormScreen`'s own `_slugPattern`/`VariablesSection`'s
@@ -353,6 +371,8 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
         onRemove: (id) => _removeSection(_ExerciseSection.values.byName(id)),
         onSave: _saveExercise,
         onClose: () => Navigator.of(context).pop(),
+        onDelete: widget.exercise != null ? _confirmDeleteExercise : null,
+        deleteTooltip: l.deleteExercise,
       ),
     );
 
@@ -796,10 +816,26 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       );
 
       // Return the exercise to the previous screen
-      Navigator.of(context).pop((
-        exercise: withBrief,
-        additions: variableAdditions(_pendingVariables),
-      ));
+      Navigator.of(context).pop(
+        ExerciseFormSave(withBrief, variableAdditions(_pendingVariables)),
+      );
+    }
+  }
+
+  /// Confirms and returns an [ExerciseFormDelete] (the "Slett øvelse" AppBar
+  /// action, shown only when editing an existing exercise).
+  Future<void> _confirmDeleteExercise() async {
+    final exercise = widget.exercise;
+    if (exercise == null) return;
+    final l = context.l10n;
+    final confirmed = await confirmDestructive(
+      context,
+      title: l.deleteExercise,
+      message: l.confirmDeleteExercise,
+      confirmLabel: l.delete,
+    );
+    if (confirmed && mounted) {
+      Navigator.of(context).pop(ExerciseFormDelete(exercise));
     }
   }
 

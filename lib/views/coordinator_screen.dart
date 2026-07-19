@@ -282,19 +282,24 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
         variables: _programService.activeProgram?.variables ?? const [],
       ),
     );
-    if (result == null) return;
-    // Apply the write-back (any variable created inline, ADR-0047) before
-    // the exercise itself, so a chip the exercise's own save might validate
-    // against is already declared.
-    await applyVariableAdditionsToActiveProgram(
-      _programService,
-      result.additions,
-    );
-    await _programService.saveExercise(localizations, result.exercise);
-    if (!mounted) return;
-    setState(() {
-      _exercise = result.exercise;
-    });
+    switch (result) {
+      case null:
+        return;
+      case ExerciseFormSave(:final exercise, :final additions):
+        // Apply the write-back (any variable created inline, ADR-0047) before
+        // the exercise itself, so a chip the exercise's own save might
+        // validate against is already declared.
+        await applyVariableAdditionsToActiveProgram(_programService, additions);
+        await _programService.saveExercise(localizations, exercise);
+        if (!mounted) return;
+        setState(() {
+          _exercise = exercise;
+        });
+      case ExerciseFormDelete(:final exercise):
+        await _programService.deleteExercise(exercise.uuid);
+        // The exercise this coordinator showed is gone — close the viewer.
+        if (mounted) Navigator.of(context).pop(false);
+    }
   }
 
   @override
@@ -364,47 +369,59 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
                   tooltip: localizations.showNotification,
                 ),
 
-              // Overflow menu for edit + delete. These are admin actions
-              // that the original layout kept as standalone icon buttons,
-              // which pushed the title into ellipsis on narrow devices.
-              // Both are guarded by `_isStarted` so they keep parity with
-              // the previous disabled-during-run behaviour, just expressed
-              // once on the menu trigger instead of on each icon button.
-              PopupMenuButton<_AppBarMenuAction>(
-                tooltip: localizations.moreActions,
-                enabled: !_isStarted,
-                position: PopupMenuPosition.under,
-                onSelected: (action) {
-                  switch (action) {
-                    case _AppBarMenuAction.edit:
-                      _editExercise(context);
-                      break;
-                    case _AppBarMenuAction.delete:
-                      _deleteExercise(context);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem<_AppBarMenuAction>(
-                    value: _AppBarMenuAction.edit,
-                    child: ListTile(
-                      leading: const Icon(Icons.edit),
-                      title: Text(localizations.editExercise),
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
+              // Edit + delete admin actions (both disabled during a run). On a
+              // medium/expanded window there is room to show them as standalone
+              // icons; on a compact window a long exercise title would
+              // ellipsize, so they collapse into an overflow menu instead.
+              if (WindowSizeClass.of(context).hasMasterDetail) ...[
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  padding: const EdgeInsets.all(8.0),
+                  tooltip: localizations.editExercise,
+                  onPressed: _isStarted ? null : () => _editExercise(context),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  padding: const EdgeInsets.all(8.0),
+                  tooltip: localizations.deleteExercise,
+                  onPressed: _isStarted ? null : () => _deleteExercise(context),
+                ),
+              ] else
+                PopupMenuButton<_AppBarMenuAction>(
+                  tooltip: localizations.moreActions,
+                  enabled: !_isStarted,
+                  position: PopupMenuPosition.under,
+                  onSelected: (action) {
+                    switch (action) {
+                      case _AppBarMenuAction.edit:
+                        _editExercise(context);
+                        break;
+                      case _AppBarMenuAction.delete:
+                        _deleteExercise(context);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem<_AppBarMenuAction>(
+                      value: _AppBarMenuAction.edit,
+                      child: ListTile(
+                        leading: const Icon(Icons.edit),
+                        title: Text(localizations.editExercise),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
                     ),
-                  ),
-                  PopupMenuItem<_AppBarMenuAction>(
-                    value: _AppBarMenuAction.delete,
-                    child: ListTile(
-                      leading: const Icon(Icons.delete),
-                      title: Text(localizations.deleteExercise),
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
+                    PopupMenuItem<_AppBarMenuAction>(
+                      value: _AppBarMenuAction.delete,
+                      child: ListTile(
+                        leading: const Icon(Icons.delete),
+                        title: Text(localizations.deleteExercise),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ]),
             actionsPadding: EdgeInsets.only(right: 16.0),
           ),

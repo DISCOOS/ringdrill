@@ -5,6 +5,7 @@ import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/theme.dart' show kDrillAccentFontSize;
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
@@ -26,8 +27,20 @@ class TeamScreen extends StatefulWidget {
   State<TeamScreen> createState() => _TeamScreenState();
 }
 
-class _TeamScreenState extends State<TeamScreen> {
+class _TeamScreenState extends State<TeamScreen>
+    with SubscriptionBag<TeamScreen> {
   final ProgramService _programService = ProgramService();
+
+  @override
+  void initState() {
+    super.initState();
+    // The team name and exercise list are read fresh in build(); rebuild on
+    // any program mutation elsewhere, not just this screen's own edits —
+    // mirrors CoordinatorScreen.
+    listen(_programService.events, (_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

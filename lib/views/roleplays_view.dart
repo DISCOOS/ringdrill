@@ -545,16 +545,22 @@ class _RolePlaysViewState extends State<RolePlaysView> {
         rolePlay: rolePlay,
         exercise: exercise,
         variables: _service.activeProgram?.variables ?? const [],
+        isExisting: true,
       ),
     );
     if (result == null || !mounted) return;
-    await applyRolePlayAdditions(
-      _service,
-      localizations,
-      result.rolePlay,
-      result.additions,
-    );
-    await _service.saveRolePlay(localizations, result.rolePlay);
+    switch (result) {
+      case RolePlayFormSave(:final rolePlay, :final additions):
+        await applyRolePlayAdditions(
+          _service,
+          localizations,
+          rolePlay,
+          additions,
+        );
+        await _service.saveRolePlay(localizations, rolePlay);
+      case RolePlayFormDelete(:final rolePlay):
+        await _service.deleteRolePlay(rolePlay.uuid);
+    }
     if (mounted) setState(() {});
   }
 
@@ -790,7 +796,8 @@ class RolePlaysController extends ScreenController {
         variables: service.activeProgram?.variables ?? const [],
       ),
     );
-    if (result == null || !context.mounted) return;
+    // A fresh draft has no delete affordance, so only a save (or cancel) here.
+    if (result is! RolePlayFormSave || !context.mounted) return;
     await applyRolePlayAdditions(
       service,
       localizations,

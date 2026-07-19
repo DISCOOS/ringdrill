@@ -1710,6 +1710,19 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String get deleteRolePlay => 'Slett spill';
+
+  @override
+  String confirmDeleteRolePlay(String name) {
+    return 'Vil du slette spillet «$name»?';
+  }
+
+  @override
+  String confirmDeleteRolePlayWithActor(String name, String actor) {
+    return 'Vil du slette spillet «$name»? Markøren $actor frigjøres fra spillet, men beholdes i markørlista.';
+  }
+
+  @override
   String get addRolePlay => 'Legg til markørordre';
 
   @override

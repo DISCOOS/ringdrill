@@ -481,14 +481,15 @@ class _ProgramViewState extends State<ProgramView> {
         variables: _programService.activeProgram?.variables ?? const [],
       ),
     );
-    if (result != null && context.mounted) {
-      await applyVariableAdditionsToActiveProgram(
-        _programService,
-        result.additions,
-      );
-      await _programService.saveExercise(localizations, result.exercise);
-      setState(_initExercises);
+    if (result == null || !context.mounted) return;
+    switch (result) {
+      case ExerciseFormSave(:final exercise, :final additions):
+        await applyVariableAdditionsToActiveProgram(_programService, additions);
+        await _programService.saveExercise(localizations, exercise);
+      case ExerciseFormDelete(:final exercise):
+        await _programService.deleteExercise(exercise.uuid);
     }
+    if (mounted) setState(_initExercises);
   }
 
   /// One-shot sort: rewrites all exercise indices in the chosen order via
@@ -1500,7 +1501,8 @@ abstract class ProgramPageControllerBase extends ScreenController {
       ),
     );
 
-    if (context.mounted && result != null) {
+    // Creating a new exercise — only a save (or cancel), never a delete.
+    if (result is ExerciseFormSave && context.mounted) {
       final localizations = AppLocalizations.of(context)!;
       await applyVariableAdditionsToActiveProgram(
         programService,

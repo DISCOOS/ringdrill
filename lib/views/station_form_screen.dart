@@ -390,7 +390,10 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// aborted post edit discards it along with everything else unsaved.
   /// Shared by the Persons section's "Legg til spill" (a fresh draft) and
   /// "Spilles av {navn}" (an existing one) rows.
-  Future<void> _openRolePlayEditor(RolePlay rolePlay) async {
+  Future<void> _openRolePlayEditor(
+    RolePlay rolePlay, {
+    required bool isExisting,
+  }) async {
     final result = await openFormSurface<RolePlayFormResult>(
       context,
       // Merged into this station editor's own working state (see the
@@ -400,13 +403,30 @@ class _StationFormScreenState extends State<StationFormScreen> {
         rolePlay: rolePlay,
         exercise: _patchedExercise,
         variables: [...widget.variables, ..._pendingVariables],
+        // The Persons section opens both fresh drafts and existing roleplays
+        // (the caller says which); only the latter may be deleted. Never
+        // derived from the service here — that would break tests that build
+        // this form without a seeded ProgramService.
+        isExisting: isExisting,
       ),
     );
     if (result == null || !mounted) return;
-    setState(() {
-      _mergeAdditions(result.additions);
-      _pendingRolePlays[result.rolePlay.uuid] = result.rolePlay;
-    });
+    switch (result) {
+      case RolePlayFormSave(:final rolePlay, :final additions):
+        setState(() {
+          _mergeAdditions(additions);
+          _pendingRolePlays[rolePlay.uuid] = rolePlay;
+        });
+      case RolePlayFormDelete(:final rolePlay):
+        // A delete is an immediate, confirmed action — the button only shows
+        // for an already-persisted roleplay, so it is removed from disk (and
+        // from any pending edit) here rather than folded into the station's
+        // own unsaved working copy.
+        await _programService.deleteRolePlay(rolePlay.uuid);
+        if (mounted) {
+          setState(() => _pendingRolePlays.remove(rolePlay.uuid));
+        }
+    }
   }
 
   /// Merges a nested editor's own `PlanAdditions` write-back into this
@@ -467,7 +487,7 @@ class _StationFormScreenState extends State<StationFormScreen> {
       stationIndex: widget.station.index,
       personRef: person.slug,
     );
-    await _openRolePlayEditor(draft);
+    await _openRolePlayEditor(draft, isExisting: false);
   }
 
   /// Wired to every token-aware field's `onCreateVariable` hook (ADR-0047,
@@ -827,7 +847,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
                   ),
                   usagesFor: (slug) => _usagesOfPerson(slug, l),
                   rolePlayFor: _rolePlayFor,
-                  onOpenRolePlay: _openRolePlayEditor,
+                  onOpenRolePlay: (rp) =>
+                      _openRolePlayEditor(rp, isExisting: true),
                   onAddRolePlay: _addMarkerFor,
                   actorFor: (rp) => rp.actorUuid == null
                       ? null

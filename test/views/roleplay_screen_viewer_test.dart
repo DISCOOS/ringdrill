@@ -313,4 +313,34 @@ void main() {
       );
     },
   );
+
+  // Regression: the viewer caches `_rolePlay` and must refresh when the SAME
+  // roleplay is mutated elsewhere (roster re-cast, another master/detail
+  // pane), not only on its own actions. It subscribes to
+  // ProgramService.events via SubscriptionBag; without that it would keep
+  // showing the stale cast.
+  testWidgets('the viewer refreshes when the roleplay is re-cast externally', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildScreen());
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.castedByLine('Nina Actor')), findsOneWidget);
+
+    // Cast a different actor through the service, as the roster would.
+    final service = ProgramService();
+    await service.saveActor(
+      l10n,
+      const Actor(uuid: 'actor-2', realName: 'Ola Actor'),
+    );
+    await service.saveRolePlay(
+      l10n,
+      _rolePlay().copyWith(actorUuid: 'actor-2'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.castedByLine('Ola Actor')), findsOneWidget);
+    expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
+  });
 }

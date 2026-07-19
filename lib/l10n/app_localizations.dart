@@ -2864,6 +2864,24 @@ abstract class AppLocalizations {
   /// **'This will delete {name} from the actor roster. Continue?'**
   String confirmDeleteActor(String name);
 
+  /// Button and dialog title for deleting a RolePlay (spill) from RolePlayFormScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete role'**
+  String get deleteRolePlay;
+
+  /// Confirmation message before deleting a RolePlay that has no cast actor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the role \"{name}\"?'**
+  String confirmDeleteRolePlay(String name);
+
+  /// Confirmation message before deleting a RolePlay whose actor is cast; names the actor that gets unassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the role \"{name}\"? The actor {actor} is unassigned from it, but kept in the roster.'**
+  String confirmDeleteRolePlayWithActor(String name, String actor);
+
   /// Button label in the Markører section on StationExerciseScreen to create a new RolePlay at this post.
   ///
   /// In en, this message translates to:

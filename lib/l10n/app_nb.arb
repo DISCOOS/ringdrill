@@ -693,6 +693,26 @@
     }
   },
 
+  "deleteRolePlay": "Slett spill",
+  "@deleteRolePlay": {
+    "description": "Button and dialog title for deleting a RolePlay (spill) from RolePlayFormScreen."
+  },
+  "confirmDeleteRolePlay": "Vil du slette spillet «{name}»?",
+  "@confirmDeleteRolePlay": {
+    "description": "Confirmation message before deleting a RolePlay that has no cast actor.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "confirmDeleteRolePlayWithActor": "Vil du slette spillet «{name}»? Markøren {actor} frigjøres fra spillet, men beholdes i markørlista.",
+  "@confirmDeleteRolePlayWithActor": {
+    "description": "Confirmation message before deleting a RolePlay whose actor is cast; names the actor that gets unassigned.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "actor": { "type": "String" }
+    }
+  },
+
   "addRolePlay": "Legg til markørordre",
   "@addRolePlay": {
     "description": "Knappetikett i Markørordre-seksjonen på StationExerciseScreen."

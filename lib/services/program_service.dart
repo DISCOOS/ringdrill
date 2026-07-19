@@ -43,6 +43,9 @@ enum ProgramEventType {
   exerciseDeleted,
   teamSaved,
   rolePlaySaved,
+  rolePlayDeleted,
+  actorSaved,
+  actorDeleted,
   programOpened,
   programImported,
   programExported,
@@ -129,6 +132,7 @@ class ProgramEvent {
   final Exercise? exercise;
   final Team? team;
   final RolePlay? rolePlay;
+  final Actor? actor;
   final ProgramEventType type;
 
   ProgramEvent(
@@ -138,6 +142,7 @@ class ProgramEvent {
     this.exercise,
     this.team,
     this.rolePlay,
+    this.actor,
   });
 
   factory ProgramEvent.added(Program program, Exercise exercise) =>
@@ -159,6 +164,19 @@ class ProgramEvent {
         program,
         rolePlay: rolePlay,
       );
+
+  factory ProgramEvent.rolePlayDeleted(Program program, RolePlay rolePlay) =>
+      ProgramEvent(
+        ProgramEventType.rolePlayDeleted,
+        program,
+        rolePlay: rolePlay,
+      );
+
+  factory ProgramEvent.actorSaved(Program program, Actor actor) =>
+      ProgramEvent(ProgramEventType.actorSaved, program, actor: actor);
+
+  factory ProgramEvent.actorDeleted(Program program, Actor actor) =>
+      ProgramEvent(ProgramEventType.actorDeleted, program, actor: actor);
 
   factory ProgramEvent.opened(Program program, DrillFile file) =>
       ProgramEvent(ProgramEventType.programOpened, program, file: file);
@@ -339,7 +357,14 @@ class ProgramService {
     }
   }
 
-  Future<RolePlay?> deleteRolePlay(String uuid) => _repo.deleteRolePlay(uuid);
+  Future<RolePlay?> deleteRolePlay(String uuid) async {
+    final deleted = await _repo.deleteRolePlay(uuid);
+    final program = activeProgram;
+    if (deleted != null && program != null) {
+      _controller.add(ProgramEvent.rolePlayDeleted(program, deleted));
+    }
+    return deleted;
+  }
 
   List<Actor> loadActors() {
     if (activeProgramUuid == null) return const [];
@@ -356,9 +381,20 @@ class ProgramService {
   ) async {
     await _ensureActiveProgram(localizations.defaultPlanName);
     await _repo.saveActor(actor);
+    final program = activeProgram;
+    if (program != null) {
+      _controller.add(ProgramEvent.actorSaved(program, actor));
+    }
   }
 
-  Future<Actor?> deleteActor(String uuid) => _repo.deleteActor(uuid);
+  Future<Actor?> deleteActor(String uuid) async {
+    final deleted = await _repo.deleteActor(uuid);
+    final program = activeProgram;
+    if (deleted != null && program != null) {
+      _controller.add(ProgramEvent.actorDeleted(program, deleted));
+    }
+    return deleted;
+  }
 
   List<Exercise> loadExercises() {
     if (activeProgramUuid == null) return const [];

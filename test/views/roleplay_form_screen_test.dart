@@ -101,7 +101,7 @@ void main() {
   });
 
   testWidgets('save pops with updated name', (tester) async {
-    RolePlayFormResult? result;
+    RolePlayFormSave? result;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -109,7 +109,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              result = await Navigator.push<RolePlayFormResult>(
+              result = await Navigator.push<RolePlayFormSave>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => RolePlayFormScreen(rolePlay: _baseRole()),
@@ -136,6 +136,56 @@ void main() {
 
     expect(result?.rolePlay.name, 'Maria Olsen');
   });
+
+  testWidgets('a new draft (isExisting: false) shows no delete action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildForm());
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.delete), findsNothing);
+  });
+
+  testWidgets(
+    'an existing role shows a delete action that pops RolePlayFormDelete '
+    'after confirmation',
+    (tester) async {
+      RolePlayFormResult? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => TextButton(
+              onPressed: () async {
+                result = await Navigator.push<RolePlayFormResult>(
+                  ctx,
+                  MaterialPageRoute(
+                    builder: (_) => RolePlayFormScreen(
+                      rolePlay: _baseRole(),
+                      isExisting: true,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // The AppBar delete action → confirm the destructive dialog.
+      await tester.tap(find.byIcon(Icons.delete));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.delete));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<RolePlayFormDelete>());
+    },
+  );
 
   testWidgets('AppBar title is the static "New role" for a new draft', (
     tester,

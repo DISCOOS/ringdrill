@@ -52,7 +52,7 @@ RolePlay _rolePlay() => const RolePlay(
 );
 
 class _Captured {
-  RolePlayFormResult? value;
+  RolePlayFormSave? value;
 }
 
 Future<void> _open(WidgetTester tester, _Captured captured) async {
@@ -63,7 +63,7 @@ Future<void> _open(WidgetTester tester, _Captured captured) async {
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<RolePlayFormResult>(
+            captured.value = await Navigator.push<RolePlayFormSave>(
               ctx,
               MaterialPageRoute(
                 builder: (_) =>

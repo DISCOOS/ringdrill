@@ -38,7 +38,7 @@ Exercise _exercise({
 );
 
 class _Captured {
-  ExerciseFormResult? value;
+  ExerciseFormSave? value;
 }
 
 Future<void> _openForm(
@@ -59,7 +59,7 @@ Future<void> _openForm(
       home: Builder(
         builder: (ctx) => TextButton(
           onPressed: () async {
-            captured.value = await Navigator.push<ExerciseFormResult>(
+            captured.value = await Navigator.push<ExerciseFormSave>(
               ctx,
               MaterialPageRoute(
                 builder: (_) => ExerciseFormScreen(

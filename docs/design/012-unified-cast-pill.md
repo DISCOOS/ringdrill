@@ -143,3 +143,55 @@ addressed:
   `AddFaceIcon`/`RemoveFaceIcon`. (The person link is mandatory, so the person
   picker has no "remove person" counterpart to the cast picker's "Fjern
   markør".)
+- **Delete a spill.** Removing a roleplay had a service method
+  (`ProgramService.deleteRolePlay`) but no UI. `RolePlayFormScreen` gained a
+  canonical form-delete, mirroring `ActorFormScreen`: `RolePlayFormResult` is
+  now sealed (`RolePlayFormSave` | `RolePlayFormDelete`); a trash action in the
+  `SectionNavigatedForm` AppBar (via a new optional `onDelete` slot) shows only
+  for an existing roleplay (`isExisting`, set by the caller — not derived from
+  the service, so the form stays testable), behind a `confirmDestructive` that
+  names the cast actor being unassigned (the actor itself stays in the roster).
+  All six callers apply the result; the Spill viewer also closes on delete. No
+  referential guard is needed — nothing references a roleplay yet
+  (`SessionParticipant`/ADR-0019 is not implemented).
+- **Delete an exercise (parity with the spill form).** The same pattern was
+  extended to the exercise editor: `ExerciseFormResult` is now sealed
+  (`ExerciseFormSave` | `ExerciseFormDelete`), the form derives its
+  existing-vs-new state from `widget.exercise != null` (no caller flag needed),
+  and the trash action sits **next to "Lagre"** in the `SectionNavigatedForm`
+  AppBar (order `[preview, delete, Lagre]`), never between preview and save.
+  The three exercise-form callers (`program_view` add + add/edit,
+  `coordinator_screen` edit) switch on the sealed result; the coordinator
+  viewer closes (`pop(false)`) when its exercise is deleted.
+- **Viewer chrome is responsive.** The exercise **viewer**
+  (`CoordinatorScreen`) shows edit + delete as two side-by-side icons in
+  medium/expanded (`WindowSizeClass.of(context).hasMasterDetail`) and keeps the
+  `⋮` overflow menu in compact, where space is tight. The Spill viewer
+  (`roleplay_screen.dart`) has a short title, so it shows both icons directly.
+
+## Test coverage (create / delete / events)
+
+- Spill form: `roleplay_form_screen_test.dart` — a new draft shows no delete
+  action; an existing role pops `RolePlayFormDelete` after confirmation.
+- Exercise form: `exercise_form_screen_delete_test.dart` — a new draft shows no
+  delete action; an existing exercise pops `ExerciseFormDelete` after
+  confirmation. `exercise_form_screen_create_test.dart` — a blank form → save
+  lands the new exercise in the active plan's list.
+- Service: `program_service_test.dart` (group "delete") — `deleteExercise`
+  removes the exercise (and is a no-op on an unknown uuid); `deleteRolePlay`
+  removes the role but leaves its cast actor in the roster (uncast, not
+  deleted).
+
+### The event-stream contract
+
+Every StreamBuilder/`listen`-driven surface (Spill list, Roster, Post rows,
+Map, Lag) refreshes on **any** `ProgramService.events` emission — none of them
+filter by type. So every mutation must emit, or dependent widgets go stale.
+Three did not and were fixed alongside this work: `deleteRolePlay`
+(→ `rolePlayDeleted`), `saveActor` (→ `actorSaved`), `deleteActor`
+(→ `actorDeleted`). Person / location / optional-section / variable-override
+edits ride on `saveExercise` (→ `exerciseAdded`); global plan variables ride on
+`replaceProgram` (→ `programRefreshed`); reorders emit `programRefreshed`. The
+`program_service_test.dart` group "mutations emit events" guards the three that
+regressed. (There is no `ProgramService.deleteTeam` yet — only a repo-level
+one with no UI caller — so add its event when that surface is built.)

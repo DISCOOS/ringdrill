@@ -15,6 +15,7 @@ import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
 import 'package:ringdrill/utils/station_scenario_tokens.dart'
     show EffectivePersonIdentity, stationScenarioTokenPattern;
+import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
@@ -38,12 +39,57 @@ import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 /// in the always-visible "Rolle" base section instead.
 enum _MdSection { background, behavior, props }
 
-/// [RolePlayFormScreen]'s result: the saved [RolePlay] plus any
-/// [PlanAdditions] created inline this session (ADR-0047, DESIGN-009
-/// follow-up 4) — new plan variables (→ `Program`) and any new station
-/// locations/persons beyond what [RolePlayFormScreen.rolePlay]'s linked
+/// [RolePlayFormScreen]'s result — a sealed save/delete, mirroring
+/// [ActorFormResult]. Null (cancel) is neither.
+sealed class RolePlayFormResult {
+  const RolePlayFormResult();
+}
+
+/// A save: the edited [RolePlay] plus any [PlanAdditions] created inline this
+/// session (ADR-0047, DESIGN-009 follow-up 4) — new plan variables
+/// (→ `Program`) and any new station locations/persons beyond what the linked
 /// station already had (→ that station; a roleplay does not own it).
-typedef RolePlayFormResult = ({RolePlay rolePlay, PlanAdditions additions});
+final class RolePlayFormSave extends RolePlayFormResult {
+  const RolePlayFormSave(this.rolePlay, this.additions);
+
+  final RolePlay rolePlay;
+  final PlanAdditions additions;
+}
+
+/// A delete: the caller removes [rolePlay] (`ProgramService.deleteRolePlay`,
+/// or from its own working copy). Any cast actor is unassigned but kept in the
+/// roster; nothing else references a roleplay today (SessionParticipant is not
+/// implemented yet, ADR-0019).
+final class RolePlayFormDelete extends RolePlayFormResult {
+  const RolePlayFormDelete(this.rolePlay);
+
+  final RolePlay rolePlay;
+}
+
+/// Shows the "Slett spill" confirmation — naming the cast actor being
+/// unassigned, if any (the actor itself stays in the roster) — and returns
+/// whether the user confirmed. Shared by the roleplay form's delete action and
+/// the Spill viewer's delete icon.
+Future<bool> confirmDeleteRolePlay(
+  BuildContext context,
+  RolePlay rolePlay,
+) async {
+  final l = AppLocalizations.of(context)!;
+  final actor = rolePlay.actorUuid == null
+      ? null
+      : ProgramService().getActor(rolePlay.actorUuid!);
+  final name = rolePlay.name.trim().isEmpty
+      ? l.roleSection
+      : rolePlay.name.trim();
+  return confirmDestructive(
+    context,
+    title: l.deleteRolePlay,
+    message: actor == null
+        ? l.confirmDeleteRolePlay(name)
+        : l.confirmDeleteRolePlayWithActor(name, actor.realName),
+    confirmLabel: l.delete,
+  );
+}
 
 /// ADR-0046's declared-variable-name rule — see `ExerciseFormScreen`'s own
 /// copy of this same one-line RegExp for why it is duplicated per editor.
@@ -69,7 +115,15 @@ class RolePlayFormScreen extends StatefulWidget {
     this.exercise,
     this.variables = const <DrillVariable>[],
     this.initialSectionId,
+    this.isExisting = false,
   });
+
+  /// Whether [rolePlay] is an already-persisted roleplay being edited (vs a
+  /// fresh draft from "+ Legg til spill"/"+ Ny markørordre"). Only an existing
+  /// one shows the delete ("Slett spill") action. The caller knows which it is
+  /// — this is not derived from the service, so the form stays testable without
+  /// a seeded [ProgramService].
+  final bool isExisting;
 
   final RolePlay rolePlay;
   final Exercise? exercise;
@@ -957,6 +1011,8 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
             onRemove: (id) => _removeMdSection(_MdSection.values.byName(id)),
             onSave: _save,
             onClose: () => Navigator.of(context).pop(),
+            onDelete: widget.isExisting ? _confirmDelete : null,
+            deleteTooltip: l.deleteRolePlay,
           ),
         ),
       ),
@@ -2086,14 +2142,22 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         if (!_originalPersonSlugs.contains(person.slug)) person,
     ];
 
-    Navigator.of(context).pop((
-      rolePlay: updated,
-      additions: (
+    Navigator.of(context).pop(
+      RolePlayFormSave(updated, (
         variables: _pendingVariables,
         stationLocations: newLocations,
         stationPersons: newPersons,
         rolePlays: const <RolePlay>[],
-      ),
-    ));
+      )),
+    );
+  }
+
+  /// Confirms and returns a [RolePlayFormDelete] (the "Slett spill" AppBar
+  /// action). The confirmation names the cast actor being unassigned, if any —
+  /// the actor itself is kept in the roster.
+  Future<void> _confirmDelete() async {
+    if (await confirmDeleteRolePlay(context, widget.rolePlay) && mounted) {
+      Navigator.of(context).pop(RolePlayFormDelete(widget.rolePlay));
+    }
   }
 }

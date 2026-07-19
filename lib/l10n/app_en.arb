@@ -1631,6 +1631,26 @@
     }
   },
 
+  "deleteRolePlay": "Delete role",
+  "@deleteRolePlay": {
+    "description": "Button and dialog title for deleting a RolePlay (spill) from RolePlayFormScreen."
+  },
+  "confirmDeleteRolePlay": "Delete the role \"{name}\"?",
+  "@confirmDeleteRolePlay": {
+    "description": "Confirmation message before deleting a RolePlay that has no cast actor.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "confirmDeleteRolePlayWithActor": "Delete the role \"{name}\"? The actor {actor} is unassigned from it, but kept in the roster.",
+  "@confirmDeleteRolePlayWithActor": {
+    "description": "Confirmation message before deleting a RolePlay whose actor is cast; names the actor that gets unassigned.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "actor": { "type": "String" }
+    }
+  },
+
   "addRolePlay": "Add role",
   "@addRolePlay": {
     "description": "Button label in the Markører section on StationExerciseScreen to create a new RolePlay at this post."

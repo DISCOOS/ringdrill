@@ -93,6 +93,8 @@ class SectionNavigatedForm extends StatefulWidget {
     required this.onClose,
     this.initialSectionId,
     this.entityName,
+    this.onDelete,
+    this.deleteTooltip,
   });
 
   /// Static title shown in the AppBar on the default (first) section.
@@ -119,6 +121,14 @@ class SectionNavigatedForm extends StatefulWidget {
   final VoidCallback onSave;
   final VoidCallback onClose;
   final String? initialSectionId;
+
+  /// When non-null, an AppBar delete action (trash icon) is shown — for forms
+  /// that edit an existing, deletable entity (e.g. the roleplay form's "Slett
+  /// spill"). Stable per form instance (a form is either editing or not), so
+  /// it never makes the actions row jump between sections. [deleteTooltip]
+  /// labels it.
+  final VoidCallback? onDelete;
+  final String? deleteTooltip;
 
   @override
   State<SectionNavigatedForm> createState() => _SectionNavigatedFormState();
@@ -235,6 +245,15 @@ class _SectionNavigatedFormState extends State<SectionNavigatedForm> {
                 ? null
                 : () => current.onPreviewChanged!(!current.preview!),
           ),
+          // Delete sits immediately left of Save (never between the preview
+          // toggle and Save is the rule — it rides right next to the primary
+          // action). Only shown when the caller wires [onDelete].
+          if (widget.onDelete != null)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: widget.deleteTooltip,
+              onPressed: widget.onDelete,
+            ),
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 16),
             child: ElevatedButton(

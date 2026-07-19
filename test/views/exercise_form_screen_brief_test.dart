@@ -30,7 +30,7 @@ void main() {
   testWidgets('seeded brief section survives a save round-trip', (
     tester,
   ) async {
-    ExerciseFormResult? captured;
+    ExerciseFormSave? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -38,7 +38,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<ExerciseFormResult>(
+              captured = await Navigator.push<ExerciseFormSave>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) =>
@@ -80,7 +80,7 @@ void main() {
   testWidgets('removing a seeded brief section clears its value on save', (
     tester,
   ) async {
-    ExerciseFormResult? captured;
+    ExerciseFormSave? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -88,7 +88,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<ExerciseFormResult>(
+              captured = await Navigator.push<ExerciseFormSave>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) =>
@@ -138,7 +138,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (ctx) => TextButton(
-              onPressed: () => Navigator.push<ExerciseFormResult>(
+              onPressed: () => Navigator.push<ExerciseFormSave>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) => ExerciseFormScreen(exercise: exercise),

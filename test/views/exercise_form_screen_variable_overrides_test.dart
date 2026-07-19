@@ -36,7 +36,7 @@ void main() {
   testWidgets('saving an edited exercise preserves its variableOverrides', (
     tester,
   ) async {
-    ExerciseFormResult? captured;
+    ExerciseFormSave? captured;
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -44,7 +44,7 @@ void main() {
         home: Builder(
           builder: (ctx) => TextButton(
             onPressed: () async {
-              captured = await Navigator.push<ExerciseFormResult>(
+              captured = await Navigator.push<ExerciseFormSave>(
                 ctx,
                 MaterialPageRoute(
                   builder: (_) =>

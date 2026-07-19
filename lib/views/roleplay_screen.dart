@@ -15,6 +15,7 @@ import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
+import 'package:ringdrill/utils/subscription_bag.dart';
 import 'package:ringdrill/views/drill_player/drill_mini_player.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/plan_additions.dart';
@@ -64,7 +65,8 @@ class RolePlayScreen extends StatefulWidget {
   State<RolePlayScreen> createState() => _RolePlayScreenState();
 }
 
-class _RolePlayScreenState extends State<RolePlayScreen> {
+class _RolePlayScreenState extends State<RolePlayScreen>
+    with SubscriptionBag<RolePlayScreen> {
   final _programService = ProgramService();
 
   RolePlay? _rolePlay;
@@ -73,6 +75,11 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
   void initState() {
     super.initState();
     _load();
+    // Refresh on any program mutation (cast/edit from the roster or another
+    // pane, not just this viewer's own actions) — mirrors CoordinatorScreen.
+    listen(_programService.events, (_) {
+      if (mounted) _load();
+    });
   }
 
   void _load() {
@@ -106,17 +113,46 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
         exercise: exercise,
         variables: _programService.activeProgram?.variables ?? const [],
         initialSectionId: initialSectionId,
+        isExisting: true,
       ),
     );
-    if (result == null) return;
-    await applyRolePlayAdditions(
-      _programService,
-      localizations,
-      result.rolePlay,
-      result.additions,
-    );
-    await _programService.saveRolePlay(localizations, result.rolePlay);
-    if (mounted) _load();
+    switch (result) {
+      case null:
+        return;
+      case RolePlayFormSave(:final rolePlay, :final additions):
+        await applyRolePlayAdditions(
+          _programService,
+          localizations,
+          rolePlay,
+          additions,
+        );
+        await _programService.saveRolePlay(localizations, rolePlay);
+        if (mounted) _load();
+      case RolePlayFormDelete(:final rolePlay):
+        await _programService.deleteRolePlay(rolePlay.uuid);
+        if (!mounted) return;
+        // The roleplay this viewer showed is gone — close the viewer.
+        if (MasterDetailScope.maybeOf(context) != null) {
+          ContextSheet.of(context).close();
+        } else {
+          Navigator.pop(context);
+        }
+    }
+  }
+
+  /// Deletes the shown roleplay after confirmation (the viewer's delete icon),
+  /// then closes the viewer — the same shared confirm the roleplay form uses.
+  Future<void> _confirmDeleteFromViewer() async {
+    final rolePlay = _rolePlay;
+    if (rolePlay == null) return;
+    if (!await confirmDeleteRolePlay(context, rolePlay) || !mounted) return;
+    await _programService.deleteRolePlay(rolePlay.uuid);
+    if (!mounted) return;
+    if (MasterDetailScope.maybeOf(context) != null) {
+      ContextSheet.of(context).close();
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
@@ -230,6 +266,14 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             icon: const Icon(Icons.edit),
             tooltip: localizations.roleSection,
             onPressed: () => _openRolePlayForm(),
+          ),
+          // The Spill title is short, so — unlike the exercise viewer's
+          // cramped compact bar — there is room for a standalone delete icon
+          // next to edit instead of an overflow menu.
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: localizations.deleteRolePlay,
+            onPressed: _confirmDeleteFromViewer,
           ),
         ],
         actionsPadding: const EdgeInsets.only(right: 16),

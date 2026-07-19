@@ -1713,6 +1713,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get deleteRolePlay => 'Delete role';
+
+  @override
+  String confirmDeleteRolePlay(String name) {
+    return 'Delete the role \"$name\"?';
+  }
+
+  @override
+  String confirmDeleteRolePlayWithActor(String name, String actor) {
+    return 'Delete the role \"$name\"? The actor $actor is unassigned from it, but kept in the roster.';
+  }
+
+  @override
   String get addRolePlay => 'Add role';
 
   @override

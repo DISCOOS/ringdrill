@@ -67,6 +67,8 @@ Domain vocabulary and the English-vs-Norwegian naming rule live in [`glossary.md
 ### Services
 
 * Services are long-lived singletons constructed in `lib/main.dart` (e.g. `ProgramService().init()`). Keep them framework-free (no `BuildContext`) and expose streams/`ValueNotifier`s for UI.
+* **`ProgramService.events` is a fire-on-every-mutation contract.** UI surfaces subscribe to the broadcast `events` stream and rebuild on *any* emission — they do not filter by `ProgramEventType`. So every mutating method must emit an event before returning (guarded on `activeProgram != null`), or dependent widgets go stale. Reuse `programRefreshed` when no specific type fits (as the reorder methods do). Entity edits that persist through `saveExercise`/`replaceProgram` inherit those events; a method that writes via `_repo` directly (e.g. `deleteRolePlay`, `saveActor`) must emit its own.
+* **Consumer side: long-lived detail viewers subscribe too.** List views already do. Any screen that caches an entity (`_exercise`, `_rolePlay`, a team read in `build`) and can stay open while that entity is mutated elsewhere — `CoordinatorScreen`, `StationExerciseScreen`, `RolePlayScreen`, `TeamScreen` — must `listen(_programService.events, …)` (via the `SubscriptionBag` mixin) and re-read, not rely on local `setState` after its own actions alone. Otherwise it shows stale data in the wide master/detail layout.
 * `NotificationService` is non-web only and is gated by user preferences from `AppConfig`.
 * New persistent settings keys go in `lib/utils/app_config.dart` with a `keyX` constant. Use the prefix `app:<feature>`. Append a `:v<n>` suffix when the value may need a future migration (see `keyIsFirstLaunch = 'app:isFirstLaunch:v1'`).
 
