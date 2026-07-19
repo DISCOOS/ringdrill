@@ -25,6 +25,7 @@ class CollapsibleSectionCard extends StatefulWidget {
     required this.body,
     this.margin = const EdgeInsets.only(bottom: 8),
     this.dividedBody = false,
+    this.collapsedTitleSuffix,
   }) : assert(
          headerBuilder != null || (icon != null && title != null),
          'Provide either a headerBuilder or an icon + title for the default '
@@ -65,6 +66,14 @@ class CollapsibleSectionCard extends StatefulWidget {
   /// header. Ignored while collapsed, where the header never draws a
   /// border regardless (there is nothing below it to divide from).
   final bool dividedBody;
+
+  /// Appended to [title] as "· suffix" in the default [CardSectionHeader]
+  /// while collapsed — e.g. the Personer/Lokasjoner cards' item count, shown
+  /// only when the card is folded so the reader sees how many rows are hidden
+  /// without expanding. Ignored when [headerBuilder] supplies a custom header
+  /// (that builder owns its own collapsed content), and while expanded (the
+  /// rows are visible, so the count would be redundant).
+  final String? collapsedTitleSuffix;
 
   @override
   State<CollapsibleSectionCard> createState() =>
@@ -131,7 +140,9 @@ class _CollapsibleSectionCardState extends State<CollapsibleSectionCard> {
           )
         : CardSectionHeader(
             icon: widget.icon!,
-            title: widget.title!,
+            title: _collapsed && widget.collapsedTitleSuffix != null
+                ? '${widget.title!} · ${widget.collapsedTitleSuffix}'
+                : widget.title!,
             showBottomBorder: showBorder,
             trailing: trailingRow,
           );

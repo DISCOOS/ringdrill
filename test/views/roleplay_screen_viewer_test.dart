@@ -244,16 +244,17 @@ void main() {
         findsNothing,
       );
       expect(find.textContaining('Man'), findsNothing);
+      // The mixed-case cast footer is hidden; the collapsed header instead
+      // reads the uppercase "SPILLES AV {markør}" (castedByLine), e.g.
+      // "PLAYED BY NINA ACTOR" (en) — a different (uppercase) string.
       expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
-      // The collapsed header is the uppercase play kicker with the marker's
-      // first name in parentheses, e.g. "PLAY (NINA)" (en).
       expect(
-        find.text('${l10n.playSection} (Nina)'.toUpperCase()),
+        find.text(l10n.castedByLine('Nina Actor').toUpperCase()),
         findsOneWidget,
       );
 
       // Expanding again brings signalement, notes, location and the footer
-      // back — and drops the parenthesis from the name line.
+      // back — and the header returns to just the "SPILL" kicker.
       await tester.tap(identityCollapseChevron());
       await tester.pumpAndSettle();
       expect(

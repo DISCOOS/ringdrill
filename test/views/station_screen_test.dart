@@ -11,9 +11,11 @@ import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/views/location_form_screen.dart';
 import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -221,7 +223,8 @@ void main() {
   );
 
   testWidgets(
-    'an enacted person shows "Played by <name>" and taps into the role sheet',
+    'an enacted person shows the marker (actor) name and taps into the role '
+    'sheet',
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -234,15 +237,11 @@ void main() {
       await tester.pump(); // showModalBottomSheet starts
       await tester.pumpAndSettle();
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(
-        find.text(l10n.personsSectionEnactedByAction(_actorForHilde.realName)),
-        findsOneWidget,
-      );
+      // The pill now shows just the marker (cast actor) name — no "Played by"
+      // prefix.
+      expect(find.text(_actorForHilde.realName), findsOneWidget);
 
-      await tester.tap(
-        find.text(l10n.personsSectionEnactedByAction(_actorForHilde.realName)),
-      );
+      await tester.tap(find.text(_actorForHilde.realName));
       await tester.pumpAndSettle();
 
       expect(find.text('RolePlay ${_roleForHilde.uuid}'), findsOneWidget);
@@ -304,6 +303,46 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.locationsSectionTitle.toUpperCase()), findsOneWidget);
     expect(find.text('LKP'), findsWidgets);
+  });
+
+  testWidgets(
+    'tapping a person row (not the marker pill) opens PersonFormScreen for '
+    'that person',
+    (tester) async {
+      await tester.pumpWidget(_buildScreen(stationIndex: 0));
+      await tester.pumpAndSettle();
+
+      // Kari's row reads "Kari Fiskeløs · 71" — tap the name (left of the
+      // trailing "+ Legg til spill" pill) to edit the person, not add a marker.
+      final row = find.text('Kari Fiskeløs · 71');
+      expect(row, findsOneWidget);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PersonFormScreen), findsOneWidget);
+      // Pre-filled with Kari's own identity.
+      expect(find.textContaining('Kari Fiskeløs'), findsWidgets);
+    },
+  );
+
+  testWidgets('tapping a location row opens LocationFormScreen for that '
+      'location', (tester) async {
+    await tester.pumpWidget(_buildScreen(stationIndex: 0));
+    await tester.pumpAndSettle();
+
+    // The "LKP" text inside the Lokasjoner card (a CollapsibleSectionCard) —
+    // scoped so it never matches the same label on the map marker/legend.
+    final row = find.descendant(
+      of: find.byType(CollapsibleSectionCard),
+      matching: find.text('LKP'),
+    );
+    expect(row, findsOneWidget);
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LocationFormScreen), findsOneWidget);
   });
 
   testWidgets('Tidsplan card shows the team schedule table', (tester) async {

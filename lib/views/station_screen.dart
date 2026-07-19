@@ -523,6 +523,13 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       rows: rows,
       event: event,
       exercise: _exercise,
+      // Collapsed-header summary: the whole exercise window and its duration,
+      // via the same helper the Spill viewer's Når aktiv card uses.
+      collapsedSummary: scheduleWindowSummary(
+        l10n,
+        _exercise.startTime,
+        _exercise.endTime,
+      ),
     );
   }
 
@@ -544,6 +551,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       sectionId: 'persons',
       icon: Icons.people,
       title: l10n.personsSectionTitle,
+      collapsedTitleSuffix: '${station.persons.length}',
       trailing: _HeaderAddAction(
         label: l10n.personsSectionAddAction,
         onTap: () => _addPerson(station),
@@ -586,64 +594,77 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       if (person.age != null) '${person.age}',
       ?genderLabel,
     ];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
+    // The row itself opens the person editor; the trailing marker pill is its
+    // own tap target (add-marker or open-marker) and, being an inner InkWell,
+    // wins the tap over the row's own — so a tap on the pill never also opens
+    // the person editor.
+    return InkWell(
+      onTap: () => _editPerson(station, person),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(7),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(
+                Icons.person,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-            child: Icon(
-              Icons.person,
-              size: 16,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(metaParts.join(' · '), overflow: TextOverflow.ellipsis),
-                if ((person.signalement ?? '').isNotEmpty)
-                  Text(
-                    person.signalement!,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(metaParts.join(' · '), overflow: TextOverflow.ellipsis),
+                  if ((person.signalement ?? '').isNotEmpty)
+                    Text(
+                      person.signalement!,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                const SizedBox(height: 6),
-                InkWell(
-                  onTap: rolePlay == null
-                      ? () => _addRolePlayForPerson(station, person)
-                      : () => _openRolePlay(rolePlay),
-                  child: rolePlay == null
-                      ? _AddMarkerPill(
-                          label: l10n.personsSectionAddMarkerAction,
-                        )
-                      : _EnactedByPill(
-                          label: castActor != null
-                              ? l10n.personsSectionEnactedByAction(
-                                  castActor.realName,
-                                )
-                              : l10n.noCastLine,
-                        ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            // Trailing on the name line — better use of the horizontal space
+            // than a second row under the name, and easier to scan.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 170),
+              child: InkWell(
+                onTap: rolePlay == null
+                    ? () => _addRolePlayForPerson(station, person)
+                    : () => _openRolePlay(rolePlay),
+                child: rolePlay == null
+                    ? _AddMarkerPill(
+                        label: l10n.personsSectionAddMarkerAction,
+                      )
+                    : _EnactedByPill(
+                        // Just the marker (cast actor) name + icon — the
+                        // "Spilles av" prefix is dropped here (the masks icon
+                        // already says "enacted by").
+                        label: castActor != null
+                            ? castActor.realName
+                            : l10n.noCastLine,
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -659,6 +680,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       sectionId: 'locations',
       icon: Icons.location_pin,
       title: l10n.locationsSectionTitle,
+      collapsedTitleSuffix: '${station.locations.length}',
       trailing: _HeaderAddAction(
         label: l10n.locationsSectionAddAction,
         onTap: () => _addLocation(station),
@@ -668,58 +690,62 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final location in station.locations) _buildLocationRow(location),
+          for (final location in station.locations)
+            _buildLocationRow(station, location),
         ],
       ),
     );
   }
 
-  Widget _buildLocationRow(Location location) {
+  Widget _buildLocationRow(Station station, Location location) {
     final theme = Theme.of(context);
     final displayName = location.label.isEmpty ? location.slug : location.label;
     final subtitle = location.place.isNotEmpty
         ? location.place
         : (location.position == null ? '' : formatUtm(location.position));
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
+    return InkWell(
+      onTap: () => _editLocation(station, location),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(7),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(
+                location.kind.icon,
+                size: 16,
+                color: location.kind.color,
+              ),
             ),
-            child: Icon(
-              location.kind.icon,
-              size: 16,
-              color: location.kind.color,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(displayName, overflow: TextOverflow.ellipsis),
-                if (subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(displayName, overflow: TextOverflow.ellipsis),
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -766,6 +792,65 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     final withAdditions = applyStationAdditions(station, result.additions);
     final updated = withAdditions.copyWith(
       locations: [...withAdditions.locations, result.location],
+    );
+    await _saveStation(localizations, updated);
+  }
+
+  /// Opens the person editor for an existing [person] (row tap), writing the
+  /// edited person back in place by its (stable) slug. Mirrors [_addPerson]'s
+  /// write-back of any sibling entities created inline.
+  Future<void> _editPerson(Station station, Person person) async {
+    final localizations = AppLocalizations.of(context)!;
+    final result = await openFormSurface<PersonFormResult>(
+      context,
+      builder: (_) => PersonFormScreen(
+        existingSlugs: station.persons
+            .where((p) => p.slug != person.slug)
+            .map((p) => p.slug)
+            .toSet(),
+        locations: station.locations,
+        initial: person,
+      ),
+    );
+    if (result == null) return;
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
+    final withAdditions = applyStationAdditions(station, result.additions);
+    final updated = withAdditions.copyWith(
+      persons: [
+        for (final p in withAdditions.persons)
+          if (p.slug == person.slug) result.person else p,
+      ],
+    );
+    await _saveStation(localizations, updated);
+  }
+
+  /// [_editPerson]'s [Location] counterpart (row tap on the Lokasjoner card).
+  Future<void> _editLocation(Station station, Location location) async {
+    final localizations = AppLocalizations.of(context)!;
+    final result = await openFormSurface<LocationFormResult>(
+      context,
+      builder: (_) => LocationFormScreen(
+        existingSlugs: station.locations
+            .where((l) => l.slug != location.slug)
+            .map((l) => l.slug)
+            .toSet(),
+        initial: location,
+      ),
+    );
+    if (result == null) return;
+    await applyVariableAdditionsToActiveProgram(
+      _programService,
+      result.additions,
+    );
+    final withAdditions = applyStationAdditions(station, result.additions);
+    final updated = withAdditions.copyWith(
+      locations: [
+        for (final l in withAdditions.locations)
+          if (l.slug == location.slug) result.location else l,
+      ],
     );
     await _saveStation(localizations, updated);
   }

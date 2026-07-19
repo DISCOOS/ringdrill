@@ -26,6 +26,7 @@ class RolePositionPanel extends StatelessWidget {
     this.fillHeight = false,
     this.sectionId,
     this.extraMarkers = const [],
+    this.legend,
   });
 
   /// Additional read-only markers shown on the map beside the role's own
@@ -33,6 +34,13 @@ class RolePositionPanel extends StatelessWidget {
   /// person's location, only when they sit at a distinct spot). The
   /// coordinate bar still reads only [position].
   final List<MapMarkerSpec<int>> extraMarkers;
+
+  /// Forwarded to [PositionCardShell.legend]: the wrapping dot + label strip
+  /// under the map (a [MapLegend]) naming the markers present — the Spill
+  /// viewer builds one from the marker/post/person-location entries, the same
+  /// way the Post viewer's map card does. Null (every other call site) keeps
+  /// the map with no legend strip.
+  final Widget? legend;
 
   final LatLng position;
 
@@ -84,6 +92,7 @@ class RolePositionPanel extends StatelessWidget {
       thumbnailHeight: mapHeight,
       fillHeight: fillHeight,
       sectionId: sectionId,
+      legend: legend,
       barLabel: sourceLabel == null
           ? Text(
               localizations.position,

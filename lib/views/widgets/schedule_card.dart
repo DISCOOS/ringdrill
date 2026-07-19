@@ -1,9 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+
+/// The collapsed-header window summary "{start} - {end} ({duration})" shared
+/// by the Post viewer's Tidsplan card (the whole exercise window) and the
+/// Spill viewer's Når aktiv card (the marker's active window). Drops a
+/// trailing "0 min" so whole hours read as e.g. "3 t".
+String scheduleWindowSummary(
+  AppLocalizations l10n,
+  SimpleTimeOfDay start,
+  SimpleTimeOfDay end,
+) {
+  final durationMinutes = end.inMinutes - start.inMinutes;
+  final hours = durationMinutes ~/ 60;
+  final rest = durationMinutes % 60;
+  final durationText = hours == 0
+      ? l10n.minute(rest)
+      : rest == 0
+      ? '$hours ${l10n.variableDurationHourUnit}'
+      : l10n.hoursMinutesShort(hours, rest);
+  return '$start - $end ($durationText)';
+}
 
 /// The one round/phase-time schedule card every surface with its own `Card`
 /// shows (DESIGN-010 stage 3e): a foldable [CollapsibleSectionCard] header

@@ -5,6 +5,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/widgets/location_kind_labels.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
+import 'package:ringdrill/views/widgets/map_legend.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 
 /// DESIGN-010's Post viewer map card: the station's own administrative
@@ -68,33 +69,21 @@ class StationScenarioLegend extends StatelessWidget {
     final theme = Theme.of(context);
     final resolvedName = resolveScopedField(context, station.name) ?? '';
     final stationLabel = resolvedName.isEmpty ? l10n.station(1) : resolvedName;
-    final entries = <(Color, String)>[
-      if (station.position != null) (theme.colorScheme.primary, stationLabel),
+    final entries = <MapLegendEntry>[
+      if (station.position != null)
+        MapLegendEntry(color: theme.colorScheme.primary, label: stationLabel),
     ];
     final seenKinds = <LocationKind>{};
     for (final location in station.locations) {
       if (location.position == null) continue;
       if (!seenKinds.add(location.kind)) continue;
-      entries.add((location.kind.color, location.kind.label(l10n)));
+      entries.add(
+        MapLegendEntry(
+          color: location.kind.color,
+          label: location.kind.label(l10n),
+        ),
+      );
     }
-    return Wrap(
-      spacing: 12,
-      runSpacing: 4,
-      children: [
-        for (final (color, label) in entries)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 4),
-              Text(label, style: theme.textTheme.bodySmall),
-            ],
-          ),
-      ],
-    );
+    return MapLegend(entries: entries);
   }
 }

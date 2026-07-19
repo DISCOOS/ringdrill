@@ -212,6 +212,23 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
     });
   }
 
+  /// Picking a category also names the location after it — but only when the
+  /// name is still a "default" one: empty, or exactly a category name from a
+  /// previous pick. A name the author typed themselves (anything that is not
+  /// one of the [LocationKind] labels) is left untouched, so this only ever
+  /// fills the common "just pick a type" case and never clobbers real input.
+  void _onKindChanged(LocationKind kind) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentName = _labelController.text.trim();
+    final isDefaultName =
+        currentName.isEmpty ||
+        LocationKind.values.any((k) => k.label(l10n) == currentName);
+    setState(() {
+      _kind = kind;
+      if (isDefaultName) _labelController.text = kind.label(l10n);
+    });
+  }
+
   void _onPlaceChanged(String value) {
     _placeSearchDebounceTimer?.cancel();
     if (value == _lastAppliedPlace) {
@@ -512,7 +529,7 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
                       const SizedBox(height: 16),
                       _KindCategoryGrid(
                         value: _kind,
-                        onChanged: (kind) => setState(() => _kind = kind),
+                        onChanged: _onKindChanged,
                       ),
                       const SizedBox(height: 16),
                       RingDrillTextField(

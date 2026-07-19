@@ -31,6 +31,7 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
+import 'package:ringdrill/views/widgets/map_legend.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
@@ -438,12 +439,28 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
     // context from inside it.
     return Builder(
       builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        final resolvedRoleName =
+            resolveScopedField(
+              context,
+              rolePlay.name,
+              overrides: roleOverrides,
+              roleplayFacets: _roleplayFacets(rolePlay),
+            ) ??
+            rolePlay.name;
+
         // Del B: read-only context pins beside the central marker — the parent
         // post's position (green place pin) and the portrayed person's
         // location (kind-styled pin) — each only when it sits at a distinct
         // spot (within a small tolerance) from the central marker and from
-        // each other.
+        // each other. The legend mirrors whichever pins are actually shown,
+        // led by the marker's own central position (the `RoleMarker`'s
+        // tertiary accent), the same dot + label strip the Post viewer's map
+        // card uses.
         final extra = <MapMarkerSpec<int>>[];
+        final legendEntries = <MapLegendEntry>[
+          MapLegendEntry(color: scheme.tertiary, label: resolvedRoleName),
+        ];
         bool distinct(LatLng p) =>
             !_samePlace(p, central) &&
             extra.every((m) => !_samePlace(p, m.point));
@@ -454,31 +471,32 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
             stationNumberFormat,
             exerciseNumber: exerciseNumber,
           );
+          final postLabel =
+              resolveScopedField(context, rawLabel, overrides: roleOverrides) ??
+              rawLabel;
           extra.add(
             MapMarkerSpec<int>(
               id: 1,
-              label:
-                  resolveScopedField(
-                    context,
-                    rawLabel,
-                    overrides: roleOverrides,
-                  ) ??
-                  rawLabel,
+              label: postLabel,
               point: postPosition,
               child: const Icon(Icons.place, color: Colors.green, size: 32),
             ),
+          );
+          legendEntries.add(
+            MapLegendEntry(color: Colors.green, label: postLabel),
           );
         }
         final locPosition = personLocation?.position;
         if (personLocation != null &&
             locPosition != null &&
             distinct(locPosition)) {
+          final locLabel = personLocation.label.isEmpty
+              ? personLocation.slug
+              : personLocation.label;
           extra.add(
             MapMarkerSpec<int>(
               id: 2,
-              label: personLocation.label.isEmpty
-                  ? personLocation.slug
-                  : personLocation.label,
+              label: locLabel,
               point: locPosition,
               child: Icon(
                 personLocation.kind.icon,
@@ -487,23 +505,23 @@ class _RolePlayScreenState extends State<RolePlayScreen> {
               ),
             ),
           );
+          legendEntries.add(
+            MapLegendEntry(
+              color: personLocation.kind.color,
+              label: locLabel,
+            ),
+          );
         }
 
         return RolePositionPanel(
           position: central,
-          label:
-              resolveScopedField(
-                context,
-                rolePlay.name,
-                overrides: roleOverrides,
-                roleplayFacets: _roleplayFacets(rolePlay),
-              ) ??
-              rolePlay.name,
+          label: resolvedRoleName,
           sourceLabel: _positionSourceLabel(station, rolePlay),
           asCard: true,
           fillHeight: fillHeight,
           sectionId: 'position',
           extraMarkers: extra,
+          legend: MapLegend(entries: legendEntries),
         );
       },
     );
@@ -699,10 +717,10 @@ class _StationContextCard extends StatelessWidget {
 ///
 /// Built on [CollapsibleSectionCard] via its `headerBuilder` slot, so it
 /// shares the card chrome, header divider and collapse machinery with the
-/// Post/Når aktiv cards. The header is an uppercase "SPILL" kicker (the
-/// marker's first name in parentheses only while collapsed, since the full
-/// name already heads the viewer); the cast quick action rides the wrapper's
-/// `trailing` slot and the body aligns at the shared 12px padding.
+/// Post/Når aktiv cards. The header is an uppercase "SPILL" kicker, which
+/// while collapsed becomes "SPILLES AV {markør}" when a cast marker exists
+/// (else stays "SPILL"); the cast quick action rides the wrapper's `trailing`
+/// slot and the body aligns at the shared 12px padding.
 class _PlayCard extends StatelessWidget {
   const _PlayCard({
     required this.rolePlay,
@@ -758,7 +776,6 @@ class _PlayCard extends StatelessWidget {
         ? null
         : (location.label.isEmpty ? location.slug : location.label);
     final locationPosition = location?.position;
-    final markerFirstName = actor?.firstName;
 
     // The card body, in the agreed order: who (age · gender, then
     // signalement), what the marker does (the script sections
@@ -998,19 +1015,17 @@ class _PlayCard extends StatelessWidget {
       // header divider and the collapse chevron, so the card reads as one
       // family with Post/Når aktiv.
       headerBuilder: (collapsed) {
-        // Collapsed appends the marker's first name in parentheses; the whole
-        // header is uppercased (consistently, per Kengu). A single concrete
-        // marker → the face icon (masks = the markers list, face = one
-        // marker, person = a person).
-        final buffer = StringBuffer(l10n.playSection);
-        if (markerFirstName != null && collapsed) {
-          buffer.write(' ($markerFirstName)');
-        }
-        // The marker name is short, so the whole Spill header stays uppercase.
+        // Collapsed with a cast marker → "SPILLES AV {markør}" (the
+        // `castedByLine` string, uppercased); otherwise just "SPILL". A single
+        // concrete marker → the face icon (masks = the markers list, face =
+        // one marker, person = a person).
+        final title = collapsed && actor != null
+            ? l10n.castedByLine(actor.realName)
+            : l10n.playSection;
         return kickerHeaderContent(
           context,
           icon: Icons.face,
-          title: buffer.toString().toUpperCase(),
+          title: title.toUpperCase(),
         );
       },
       // Add/change-marker quick action — always visible regardless of
@@ -1218,23 +1233,14 @@ class _ActiveScheduleCard extends StatelessWidget {
 
     // Collapsed-header summary: the marker's active window — the first active
     // round's start to the last active round's end (its last phase start plus
-    // the rotation it lasts) — and its total duration.
+    // the rotation it lasts) — and its total duration, via the shared
+    // `scheduleWindowSummary` the Post viewer's Tidsplan card also uses.
     final startTime = exercise.schedule[rows.first.roundIndex].first;
-    final endMinutes =
-        exercise.schedule[rows.last.roundIndex].last.inMinutes +
-        exercise.rotationTime;
-    final endTime = SimpleTimeOfDay.fromMinutes(endMinutes);
-    final durationMinutes = endMinutes - startTime.inMinutes;
-    final durationHours = durationMinutes ~/ 60;
-    final durationRest = durationMinutes % 60;
-    // Common format (hoursMinutesShort/minute), but drop a trailing "0 min":
-    // whole hours read as e.g. "3 t".
-    final durationText = durationHours == 0
-        ? l10n.minute(durationRest)
-        : durationRest == 0
-        ? '$durationHours ${l10n.variableDurationHourUnit}'
-        : l10n.hoursMinutesShort(durationHours, durationRest);
-    final activeSummary = '$startTime - $endTime ($durationText)';
+    final endTime = SimpleTimeOfDay.fromMinutes(
+      exercise.schedule[rows.last.roundIndex].last.inMinutes +
+          exercise.rotationTime,
+    );
+    final activeSummary = scheduleWindowSummary(l10n, startTime, endTime);
 
     final exerciseService = ExerciseService();
     final lastEvent = exerciseService.last;
