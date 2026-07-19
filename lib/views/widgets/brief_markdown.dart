@@ -194,10 +194,10 @@ class _CodeChip extends StatelessWidget {
 //
 // `ActionChipFormatter` (lib/services/brief/field_resolver.dart) encodes a
 // position/phone chip's launch target as a markdown link with an internal
-// `rdchip:` sentinel scheme — `[display](rdchip:geo:<lat>,<lng>)` /
-// `[display](rdchip:tel:<number>)`. The generator below recognizes that
-// scheme and renders `_ActionChip`; every other link falls through to the
-// package's own `LinkNode` (the shared `LinkConfig` behaviour), so a normal
+// `ringdrill://chip` URI — `?action=map&lat=<lat>&lng=<lng>` /
+// `?action=call&tel=<number>`. The generator below recognizes that URI and
+// renders `_ActionChip`; every other link falls through to the package's own
+// `LinkNode` (the shared `LinkConfig` behaviour), so a normal
 // `[text](https://...)` link is unaffected.
 
 /// A single launch target a chip can run — a map open, a phone dial. Actions
@@ -210,36 +210,39 @@ class _ChipAction {
   final Future<void> Function() run;
 }
 
-/// Parses an `rdchip:` href into its launch target(s). Empty (no action,
-/// degrades to a plain tap-does-nothing chip) for a scheme this version
-/// doesn't recognize — forward-compatible with a future action kind rather
-/// than crashing.
-List<_ChipAction> _rdchipActions(String href) {
-  const geoPrefix = 'rdchip:geo:';
-  const telPrefix = 'rdchip:tel:';
-  if (href.startsWith(geoPrefix)) {
-    final coords = href.substring(geoPrefix.length);
-    return [
-      _ChipAction(
-        () => _launchExternalLink(
-          'https://www.google.com/maps/search/?api=1&query=$coords',
+/// Parses a `ringdrill://chip` URI's query parameters into its launch
+/// target(s). Empty (no action, degrades to a plain tap-does-nothing chip)
+/// for an `action` this version doesn't recognize — forward-compatible with
+/// a future action kind rather than crashing.
+List<_ChipAction> _chipActions(Uri uri) {
+  final params = uri.queryParameters;
+  switch (params['action']) {
+    case 'map':
+      final lat = params['lat'];
+      final lng = params['lng'];
+      if (lat == null || lng == null) return const [];
+      return [
+        _ChipAction(
+          () => _launchExternalLink(
+            'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+          ),
         ),
-      ),
-    ];
+      ];
+    case 'call':
+      final tel = params['tel'];
+      if (tel == null) return const [];
+      return [_ChipAction(() => _launchExternalLink('tel:$tel'))];
+    default:
+      return const [];
   }
-  if (href.startsWith(telPrefix)) {
-    final number = href.substring(telPrefix.length);
-    return [_ChipAction(() => _launchExternalLink('tel:$number'))];
-  }
-  return const [];
 }
 
-/// Renders an `rdchip:` link as a pill matching [_CodeChip]'s look: an
-/// [InkWell] over everything *except* the copy icon runs the chip's
-/// action(s); the copy icon always copies [text] (never the `rdchip:` href —
-/// that scheme must never reach the clipboard). The parens-adornment
-/// handling (`(pill)` kept unbreakable, parens excluded from both the action
-/// and the copied value) mirrors [_CodeChip].
+/// Renders a `ringdrill://chip` link as a pill matching [_CodeChip]'s look:
+/// an [InkWell] over everything *except* the copy icon runs the chip's
+/// action(s); the copy icon always copies [text] (never the URI — that
+/// scheme must never reach the clipboard). The parens-adornment handling
+/// (`(pill)` kept unbreakable, parens excluded from both the action and the
+/// copied value) mirrors [_CodeChip].
 class _ActionChip extends StatelessWidget {
   const _ActionChip({
     required this.text,
@@ -337,10 +340,10 @@ class _ActionChip extends StatelessWidget {
 }
 
 class _ActionChipNode extends ElementNode {
-  _ActionChipNode(this.text, this.href, this.codeConfig);
+  _ActionChipNode(this.text, this.uri, this.codeConfig);
 
   final String text;
-  final String href;
+  final Uri uri;
   final CodeConfig codeConfig;
 
   @override
@@ -357,25 +360,26 @@ class _ActionChipNode extends ElementNode {
         textStyle: merged.copyWith(backgroundColor: Colors.transparent),
         backgroundColor: merged.backgroundColor ?? const Color(0xCCEFF1F3),
         adornmentStyle: parentStyle,
-        actions: _rdchipActions(href),
+        actions: _chipActions(uri),
       ),
     );
   }
 }
 
 /// The shared link-tag generator for [BriefMarkdown] and [BriefMarkdownBlock]:
-/// an `rdchip:` href renders [_ActionChip]; anything else falls through to
-/// the package's own [LinkNode] (i.e. the ambient [LinkConfig] behaviour),
-/// so a normal link is unaffected whether or not this generator is
-/// registered.
+/// a `ringdrill://chip` href renders [_ActionChip]; anything else falls
+/// through to the package's own [LinkNode] (i.e. the ambient [LinkConfig]
+/// behaviour), so a normal link is unaffected whether or not this generator
+/// is registered.
 SpanNodeGeneratorWithTag _actionChipGenerator() => SpanNodeGeneratorWithTag(
   tag: MarkdownTag.a.name,
   generator: (e, config, visitor) {
     final href = e.attributes['href'] ?? '';
-    if (!href.startsWith('rdchip:')) {
+    final uri = Uri.tryParse(href);
+    if (uri == null || uri.scheme != 'ringdrill' || uri.host != 'chip') {
       return LinkNode(e.attributes, config.a);
     }
-    return _ActionChipNode(e.textContent, href, config.code);
+    return _ActionChipNode(e.textContent, uri, config.code);
   },
 );
 
@@ -677,8 +681,9 @@ class BriefMarkdown extends StatelessWidget {
           generator: (e, config, _) =>
               _CodeChipNode(e.textContent, config.code),
         ),
-        // An `rdchip:` link renders as an actionable pill (ADR-0050); every
-        // other link keeps the ambient LinkConfig behaviour.
+        // A `ringdrill://chip` link renders as an actionable pill
+        // (ADR-0050); every other link keeps the ambient LinkConfig
+        // behaviour.
         _actionChipGenerator(),
         // Search highlight generators. `<mark>` paints the non-current
         // matches as a flat-background TextSpan. `<curr-mark>` paints the
@@ -908,8 +913,9 @@ class BriefMarkdownBlock extends StatelessWidget {
           generator: (e, config, _) =>
               _CodeChipNode(e.textContent, config.code),
         ),
-        // An `rdchip:` link renders as an actionable pill (ADR-0050); every
-        // other link keeps the ambient LinkConfig behaviour.
+        // A `ringdrill://chip` link renders as an actionable pill
+        // (ADR-0050); every other link keeps the ambient LinkConfig
+        // behaviour.
         _actionChipGenerator(),
       ],
     );

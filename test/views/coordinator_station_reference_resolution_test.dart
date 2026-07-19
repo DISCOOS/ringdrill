@@ -93,10 +93,10 @@ void main() {
       final expectedUtm = formatUtm(_position);
       expect(find.textContaining('{{station.position}}'), findsNothing);
       // The description renders via RingDrillText.rich. The app resolvers
-      // pass ActionChipFormatter (ADR-0050), so the coordinate resolves as an
-      // rdchip: link (plain link text until DESIGN-013 Commit 4 wires up the
-      // pill renderer) rather than a standalone copy-chip Text — match on
-      // rendered text instead.
+      // pass ActionChipFormatter (ADR-0050), so the coordinate resolves as a
+      // ringdrill://chip link (plain link text until DESIGN-013 Commit 4
+      // wires up the pill renderer) rather than a standalone copy-chip Text
+      // — match on rendered text instead.
       expect(find.textContaining(expectedUtm), findsWidgets);
     },
   );

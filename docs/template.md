@@ -190,4 +190,4 @@ placeholder and gets the pill; the chip styling itself is
 - [DESIGN-013](./design/013-actionable-field-chips.md) — actionable field
   chips (tap-to-call, open-in-maps) and the `place`/`position` facet model.
 - [ADR-0050](./adrs/0050-per-output-format-chip-formatting.md) — the
-  `ChipFormatter` strategy and the `rdchip:` encoding.
+  `ChipFormatter` strategy and the `ringdrill://chip` encoding.

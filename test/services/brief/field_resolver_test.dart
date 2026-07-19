@@ -123,10 +123,11 @@ void main() {
     group('ActionChipFormatter', () {
       const formatter = ActionChipFormatter();
 
-      test('position with a coordinate encodes an rdchip:geo: link', () {
+      test('position with a coordinate encodes a ringdrill://chip map link', () {
         expect(
           formatter.position('32V 601234 6643210', latLng),
-          '[32V 601234 6643210](rdchip:geo:58.99,10.43)',
+          '[32V 601234 6643210]'
+          '(ringdrill://chip?action=map&lat=58.99&lng=10.43)',
         );
       });
 
@@ -137,10 +138,10 @@ void main() {
         );
       });
 
-      test('phone with a number encodes an rdchip:tel: link', () {
+      test('phone with a number encodes a ringdrill://chip call link', () {
         expect(
           formatter.phone('99887766', '99887766'),
-          '[99887766](rdchip:tel:99887766)',
+          '[99887766](ringdrill://chip?action=call&tel=99887766)',
         );
       });
 
@@ -178,7 +179,7 @@ void main() {
     });
 
     test('resolveField with ActionChipFormatter renders station.loc facets as '
-        'rdchip: links', () {
+        'ringdrill://chip map links', () {
       const location = Location(
         slug: 'lkp',
         place: 'Fjellheisen',
@@ -201,7 +202,9 @@ void main() {
 
       expect(
         result,
-        'Sted: [$expectedUtm](rdchip:geo:${latLng.latitude},${latLng.longitude})',
+        'Sted: [$expectedUtm]'
+        '(ringdrill://chip?action=map&lat=${latLng.latitude}'
+        '&lng=${latLng.longitude})',
       );
     });
   });

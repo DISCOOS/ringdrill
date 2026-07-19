@@ -9,9 +9,10 @@ import 'package:url_launcher_platform_interface/url_launcher_platform_interface.
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Records every `launchUrl` call instead of hitting a real platform channel
-/// (ADR-0050's rdchip: action-chip tests) — [UrlLauncherPlatform.instance]
-/// is the officially supported seam for this, distinct from the
-/// `SystemChannels.platform` mock the copy-icon tests use for Clipboard.
+/// (ADR-0050's ringdrill://chip action-chip tests) —
+/// [UrlLauncherPlatform.instance] is the officially supported seam for this,
+/// distinct from the `SystemChannels.platform` mock the copy-icon tests use
+/// for Clipboard.
 class _FakeUrlLauncher extends UrlLauncherPlatform {
   final List<String> launchedUrls = [];
 
@@ -286,7 +287,7 @@ void main() {
     );
   });
 
-  group('BriefMarkdown — actionable rdchip chip (ADR-0050)', () {
+  group('BriefMarkdown — actionable ringdrill://chip (ADR-0050)', () {
     late _FakeUrlLauncher fakeLauncher;
 
     setUp(() {
@@ -315,24 +316,29 @@ void main() {
       }),
     );
 
-    testWidgets('an rdchip:geo: link renders as a pill with a copy icon', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildWidget(data: '[32V 601234 6643210](rdchip:geo:58.99,10.43)'),
-      );
-      await tester.pump();
-
-      expect(find.text('32V 601234 6643210'), findsOneWidget);
-      expect(chipContainer('32V 601234 6643210'), findsOneWidget);
-      expect(find.byIcon(Icons.content_copy), findsOneWidget);
-    });
+    const geoHref = 'ringdrill://chip?action=map&lat=58.99&lng=10.43';
+    const telHref = 'ringdrill://chip?action=call&tel=99887766';
 
     testWidgets(
-      'tapping the body of an rdchip:geo: chip opens the maps URL, not a copy',
+      'a ringdrill://chip map link renders as a pill with a copy icon',
       (tester) async {
         await tester.pumpWidget(
-          buildWidget(data: '[32V 601234 6643210](rdchip:geo:58.99,10.43)'),
+          buildWidget(data: '[32V 601234 6643210]($geoHref)'),
+        );
+        await tester.pump();
+
+        expect(find.text('32V 601234 6643210'), findsOneWidget);
+        expect(chipContainer('32V 601234 6643210'), findsOneWidget);
+        expect(find.byIcon(Icons.content_copy), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the body of a ringdrill://chip map link opens the maps URL, '
+      'not a copy',
+      (tester) async {
+        await tester.pumpWidget(
+          buildWidget(data: '[32V 601234 6643210]($geoHref)'),
         );
         await tester.pump();
 
@@ -351,8 +357,8 @@ void main() {
     );
 
     testWidgets(
-      'tapping the copy icon of an rdchip:geo: chip copies the display text '
-      'without launching',
+      'tapping the copy icon of a ringdrill://chip map link copies the '
+      'display text without launching',
       (tester) async {
         String? copied;
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -364,7 +370,7 @@ void main() {
             });
 
         await tester.pumpWidget(
-          buildWidget(data: '[32V 601234 6643210](rdchip:geo:58.99,10.43)'),
+          buildWidget(data: '[32V 601234 6643210]($geoHref)'),
         );
         await tester.pump();
 
@@ -377,11 +383,10 @@ void main() {
     );
 
     testWidgets(
-      'an rdchip:tel: link dials the number, not the raw href, when tapped',
+      'a ringdrill://chip call link dials the number, not the raw href, '
+      'when tapped',
       (tester) async {
-        await tester.pumpWidget(
-          buildWidget(data: '[99887766](rdchip:tel:99887766)'),
-        );
+        await tester.pumpWidget(buildWidget(data: '[99887766]($telHref)'));
         await tester.pump();
 
         await tester.tap(find.text('99887766'));
@@ -391,18 +396,21 @@ void main() {
       },
     );
 
-    testWidgets('a regular https link is unaffected by the rdchip: generator', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildWidget(data: '[link](https://example.com)'));
-      await tester.pump();
+    testWidgets(
+      'a regular https link is unaffected by the ringdrill://chip generator',
+      (tester) async {
+        await tester.pumpWidget(
+          buildWidget(data: '[link](https://example.com)'),
+        );
+        await tester.pump();
 
-      await tester.tap(find.textContaining('link'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('link'));
+        await tester.pumpAndSettle();
 
-      expect(fakeLauncher.launchedUrls, contains('https://example.com'));
-      // Not rendered as a chip: no copy icon for a plain link.
-      expect(find.byIcon(Icons.content_copy), findsNothing);
-    });
+        expect(fakeLauncher.launchedUrls, contains('https://example.com'));
+        // Not rendered as a chip: no copy icon for a plain link.
+        expect(find.byIcon(Icons.content_copy), findsNothing);
+      },
+    );
   });
 }

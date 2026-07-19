@@ -114,10 +114,11 @@ void main() {
 
     final expectedUtm = formatUtm(_stationPosition);
     // The detail card renders via markdown. The app resolvers pass
-    // ActionChipFormatter (ADR-0050), so the position resolves as an
-    // rdchip: link (rendered as plain link text until DESIGN-013 Commit 4
-    // wires up the pill renderer) rather than a standalone copy-chip Text —
-    // match on rendered text instead of the chip's own Text widget.
+    // ActionChipFormatter (ADR-0050), so the position resolves as a
+    // ringdrill://chip link (rendered as plain link text until DESIGN-013
+    // Commit 4 wires up the pill renderer) rather than a standalone
+    // copy-chip Text — match on rendered text instead of the chip's own
+    // Text widget.
     expect(find.textContaining(expectedUtm), findsWidgets);
     expect(
       find.byWidgetPredicate((w) => w is Text && w.data == 'Fjellheisen'),

@@ -41,7 +41,8 @@ facets are `utm` / `latlng` rather than a format-agnostic `position`.
 * **A: A `ChipFormatter` strategy selected per output format.** The resolver
   takes a formatter; `CopyChipFormatter` (default) emits today's code chip,
   `ActionChipFormatter` emits an interactive chip encoded as a markdown link
-  with an `rdchip:` sentinel scheme the app renderer wires to a tap action.
+  with a `ringdrill://chip?action=...` URI the app renderer wires to a tap
+  action.
 * **B: A boolean `actionableChips` flag on the resolver.** App passes true.
 * **C: Detect chip type in the render layer by content heuristics** and convert
   UTM→LatLng there to build the map link.
@@ -68,19 +69,25 @@ abstract class ChipFormatter {
 
 `CopyChipFormatter` (the default) returns `briefCopyChip(...)` for all three —
 today's output. `ActionChipFormatter` encodes a launch target as a markdown
-link with an `rdchip:` sentinel scheme — `[display](rdchip:geo:<lat>,<lng>)`,
-`[display](rdchip:tel:<number>)` — degrading to a copy chip when the
-coordinate/number is absent; an address stays a copy chip. `resolveField` gains
-`ChipFormatter chips = const CopyChipFormatter()`, threaded through the scenario
-facet resolvers. `BriefRenderer` passes nothing (keeps the default), so the
-brief is unchanged. The app resolvers (`resolveScopedField`,
+link with a structured `ringdrill://chip` URI, built with `Uri(...)` so
+values are properly encoded —
+`[display](ringdrill://chip?action=map&lat=<lat>&lng=<lng>)`,
+`[display](ringdrill://chip?action=call&tel=<number>)` — degrading to a copy
+chip when the coordinate/number is absent; an address stays a copy chip. The
+query form replaced an earlier terse `rdchip:` sentinel scheme (same
+decision, refined encoding — see "Refinements" below): it is legible and
+leaves room for a future `label` parameter and further actions. `resolveField`
+gains `ChipFormatter chips = const CopyChipFormatter()`, threaded through the
+scenario facet resolvers. `BriefRenderer` passes nothing (keeps the default),
+so the brief is unchanged. The app resolvers (`resolveScopedField`,
 `resolveModelField`) pass `ActionChipFormatter`. The app markdown renderer
-recognizes the `rdchip:` scheme and renders a pill whose body (everything
-except the copy icon) runs the chip's action and whose copy icon copies. The
-actions are a list, and the tap follows the count: a single action (today's
-case) runs directly on tap, and a chip with more than one action opens a
-context menu — so no menu exists today. The `rdchip:` scheme is internal and
-never reaches a copied value or a non-app surface.
+recognizes `ringdrill://chip` links (scheme `ringdrill`, host `chip`) and
+renders a pill whose body (everything except the copy icon) runs the chip's
+action and whose copy icon copies. The actions are a list, and the tap
+follows the count: a single action (today's case) runs directly on tap, and a
+chip with more than one action opens a context menu — so no menu exists
+today. The `ringdrill://chip` URI is internal and never reaches a copied
+value or a non-app surface.
 
 ### The coordinate facet model
 
@@ -105,9 +112,19 @@ seam for MGRS / DD / DM / DMS / raw LatLng later, à la
 * Bad: renaming the flat `utm`/`latlng` facets to `position` is a deliberate
   token migration (example content and tests updated; acceptable — the app is
   unpublished, no archive migration needed).
-* Bad: a new internal encoding (`rdchip:`) and a new render path to maintain.
+* Bad: a new internal encoding (`ringdrill://chip`) and a new render path to
+  maintain.
 * Bad: app/brief parity is deferred — the HTML brief will select the action
   formatter later; until then only the app is interactive.
+
+### Refinements
+
+* **The chip encoding.** Shipped initially as a terse `rdchip:<action>`
+  sentinel scheme; refined to the structured `ringdrill://chip?action=...`
+  URI above (same decision — a same-format, per-format `ChipFormatter`
+  strategy — with a more legible, extensible encoding). See
+  [DESIGN-013](../design/013-actionable-field-chips.md#implementation-status)
+  for the follow-up detail.
 
 ## Pros and cons of the options
 

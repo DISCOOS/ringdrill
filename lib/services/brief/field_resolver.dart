@@ -97,25 +97,41 @@ class CopyChipFormatter extends ChipFormatter {
 
 /// The interactive [ChipFormatter] for the app preview (and, later, the HTML
 /// brief). A position/phone chip encodes its launch target as a markdown
-/// link with an internal `rdchip:` sentinel scheme —
-/// `[display](rdchip:geo:<lat>,<lng>)` / `[display](rdchip:tel:<number>)` —
-/// that the app's markdown renderer (`brief_markdown.dart`) recognizes and
-/// wires to a tap action, the copy icon still copying [display]/[number].
-/// Degrades to a plain copy chip when there is nothing to act on (no
-/// coordinate, empty number). An address stays a copy chip.
+/// link to an internal `ringdrill://chip` URI — `action=map` with `lat`/`lng`
+/// query parameters, or `action=call` with a `tel` query parameter — that the
+/// app's markdown renderer (`brief_markdown.dart`) recognizes and wires to a
+/// tap action, the copy icon still copying [display]/[number]. The query
+/// form (over the original `rdchip:` sentinel) is legible and leaves room for
+/// a future `label` parameter and further actions. Degrades to a plain copy
+/// chip when there is nothing to act on (no coordinate, empty number). An
+/// address stays a copy chip.
 class ActionChipFormatter extends ChipFormatter {
   const ActionChipFormatter();
 
   @override
   String position(String display, LatLng? latLng) {
     if (latLng == null) return briefCopyChip(display);
-    return '[$display](rdchip:geo:${latLng.latitude},${latLng.longitude})';
+    final uri = Uri(
+      scheme: 'ringdrill',
+      host: 'chip',
+      queryParameters: {
+        'action': 'map',
+        'lat': '${latLng.latitude}',
+        'lng': '${latLng.longitude}',
+      },
+    );
+    return '[$display]($uri)';
   }
 
   @override
   String phone(String display, String number) {
     if (number.isEmpty) return briefCopyChip(display);
-    return '[$display](rdchip:tel:$number)';
+    final uri = Uri(
+      scheme: 'ringdrill',
+      host: 'chip',
+      queryParameters: {'action': 'call', 'tel': number},
+    );
+    return '[$display]($uri)';
   }
 
   @override
@@ -349,8 +365,8 @@ T? _bySlug<T>(List<T> items, String slug, String Function(T item) slugOf) {
 /// `location`-typed `{{var.<name>[.facet]}}` tokens (DESIGN-008 follow-up
 /// 11), which project onto the same `Location` shape. The bare/default and
 /// `position` forms render the coordinate (formatted per [format]) as inline
-/// code (backtick-wrapped) or, under [ActionChipFormatter], an `rdchip:`
-/// link; empty when the location has no position. Replaces the former flat
+/// code (backtick-wrapped) or, under [ActionChipFormatter], a `ringdrill:`
+/// chip link; empty when the location has no position. Replaces the former flat
 /// `utm`/`latlng` facets (ADR-0050) — a field still using one of those old
 /// tokens falls through to the bare default, same as any unrecognized facet.
 String _resolveLocationFacet(

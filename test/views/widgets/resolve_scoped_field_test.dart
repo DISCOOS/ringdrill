@@ -119,13 +119,14 @@ void main() {
     expect(resolved, contains('E=Exercise 1'));
     expect(resolved, contains('S=Station A'));
     // The app resolvers pass ActionChipFormatter (ADR-0050): a position
-    // with a coordinate resolves as an rdchip: link, an address stays a
-    // plain copy chip.
+    // with a coordinate resolves as a ringdrill://chip map link, an address
+    // stays a plain copy chip.
     expect(
       resolved,
       contains(
         'UTM=[${formatUtm(_stationPosition)}]'
-        '(rdchip:geo:${_stationPosition.latitude},${_stationPosition.longitude})',
+        '(ringdrill://chip?action=map&lat=${_stationPosition.latitude}'
+        '&lng=${_stationPosition.longitude})',
       ),
     );
     expect(resolved, contains('LOC=`Fjellheisen`'));

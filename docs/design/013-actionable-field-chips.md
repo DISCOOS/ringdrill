@@ -81,10 +81,15 @@ abstract class ChipFormatter {
   chip, i.e. today's `briefCopyChip` output. Used by the brief and by the
   non-interactive exports (PDF, DOCX).
 - `ActionChipFormatter` — the app preview and HTML. A position carries a map
-  launch target and a phone a `tel:` target, encoded as a markdown link with an
-  `rdchip:` **sentinel scheme** (`[display](rdchip:geo:<lat>,<lng>)`,
-  `[display](rdchip:tel:<number>)`). A value with no coordinate/number degrades
-  to a plain copy chip. An address stays a copy chip (no reliable action).
+  launch target and a phone a `tel:` target, encoded as a markdown link with a
+  structured **`ringdrill://chip` URI**, built with `Uri(...)` so values are
+  properly encoded —
+  `[display](ringdrill://chip?action=map&lat=<lat>&lng=<lng>)`,
+  `[display](ringdrill://chip?action=call&tel=<number>)`. A value with no
+  coordinate/number degrades to a plain copy chip. An address stays a copy
+  chip (no reliable action). This refines an earlier terse `rdchip:` sentinel
+  scheme to a legible, extensible query form (see "Implementation status"
+  below).
 
 `resolveField` gains `ChipFormatter chips = const CopyChipFormatter()`,
 threaded through the scenario facet resolvers (`_resolveLocationFacet`,
@@ -145,8 +150,10 @@ through the same markdown pill.
 ### 4. Rendering the action chip
 
 Add `_ActionChip` to `brief_markdown.dart` plus a link-tag
-`SpanNodeGeneratorWithTag` that recognizes hrefs beginning with `rdchip:`;
-non-sentinel links keep the existing `LinkConfig` behaviour. `_ActionChip`
+`SpanNodeGeneratorWithTag` that recognizes hrefs parsing as a
+`ringdrill://chip` URI (`Uri.tryParse`, `scheme == 'ringdrill' && host ==
+'chip'`); every other link keeps the existing `LinkConfig` behaviour.
+`_ActionChip`
 reuses the `_CodeChip` pill look. An `InkWell` over **everything except the
 copy icon** runs the chip's action; the copy icon always copies the value,
 exactly as the copy chip does today. The parens-adornment handling (`(pill)`
@@ -163,7 +170,7 @@ without reworking the widget.
 Only the app surfaces opt in — `RingDrillText.rich` (→ `BriefMarkdownBlock`)
 and the in-editor preview (→ `BriefMarkdown` via `RingDrillTextArea`). The
 brief reading surface (`BriefScreen`) keeps copy chips and never emits the
-`rdchip:` scheme, so it is unaffected whether or not the generator is
+`ringdrill://chip` URI, so it is unaffected whether or not the generator is
 registered in the shared config.
 
 Map launch URL: a universal `https://www.google.com/maps/search/?api=1&query=<lat>,<lng>`
@@ -228,7 +235,7 @@ migrated deliberately here.
 
 ## ADR
 
-The per-output-format chip strategy, the `rdchip:` encoding and the
+The per-output-format chip strategy, the `ringdrill://chip` encoding and the
 `place` / `position` coordinate facet model are recorded in
 [ADR-0050](../adrs/0050-per-output-format-chip-formatting.md) (Accepted).
 
@@ -241,18 +248,26 @@ Shipped, across six commits on `design-013`:
   staying on the default formatter (byte-identical).
 - `StationScope`/`RoleplayScope` carry the raw `LatLng? position`; the app
   resolvers (`resolveScopedField`/`resolveModelField`) pass
-  `ActionChipFormatter`, so an app-resolved position is an `rdchip:` link.
+  `ActionChipFormatter`, so an app-resolved position is an actionable link.
   `RingDrillText.plain` strips that link markup to its display text, the
   same way it already stripped backtick copy chips.
 - The `place`/`position` coordinate facet model with a `CoordinateFormat` seam
   (UTM only); the flat `utm`/`latlng` facets are gone, migrated to
   `position` everywhere (content, tests, docs).
-- `_ActionChip` in `brief_markdown.dart`: an `rdchip:` link renders as a pill
-  matching `_CodeChip`'s look, tap-to-act / icon-to-copy, registered on both
-  `BriefMarkdown` and `BriefMarkdownBlock`; every other link is unaffected.
+- `_ActionChip` in `brief_markdown.dart`: an actionable link renders as a
+  pill matching `_CodeChip`'s look, tap-to-act / icon-to-copy, registered on
+  both `BriefMarkdown` and `BriefMarkdownBlock`; every other link is
+  unaffected.
 - The actor's phone is a first-class chip in `roleplays_view.dart` and
   `roleplay_screen.dart`'s Spill card footer, and the brief templates render
   it unescaped (`{{{phone}}}`) so the pre-built copy chip actually renders.
+
+Follow-up refinement: the action-chip encoding shipped initially as a terse
+`rdchip:<action>` sentinel scheme (`[display](rdchip:geo:<lat>,<lng>)` /
+`[display](rdchip:tel:<number>)`), then replaced — same decision, refined
+encoding, no user-visible change — with the structured `ringdrill://chip`
+URI described in §1/§4 above, for legibility and room to grow (a future
+`label`, further actions).
 
 Deferred, as recorded above: address action chips, the multi-action context
 menu, the non-interactive export formats (PDF, DOCX) and the HTML brief, and

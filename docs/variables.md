@@ -187,10 +187,10 @@ output format — the resolver never hardcodes one rendering:
   value reads as ordinary text.
 - **`ActionChipFormatter`** — the app preview (and, later, the HTML brief). A
   position or phone chip additionally encodes a launch target as a markdown
-  link with an internal `rdchip:` sentinel scheme, which the app's markdown
-  renderer wires to a tap action (open a map, dial a number) while the copy
-  icon still copies the plain value. An address stays a copy chip in every
-  formatter — it has no reliable launch target.
+  link with an internal, structured `ringdrill://chip?action=...` URI, which
+  the app's markdown renderer wires to a tap action (open a map, dial a
+  number) while the copy icon still copies the plain value. An address stays
+  a copy chip in every formatter — it has no reliable launch target.
 
 So `{{station.position}}` resolves to `` `32V 601234 6643210` `` — a copy pill
 in the brief, an open-in-maps pill in the app preview, plain text in a title.
@@ -291,5 +291,5 @@ calling context's `InheritedWidget` ancestry.
 - [DESIGN-013](./design/013-actionable-field-chips.md) — actionable field
   chips (tap-to-call, open-in-maps) and the `place`/`position` facet model.
 - [ADR-0050](./adrs/0050-per-output-format-chip-formatting.md) — the
-  `ChipFormatter` strategy and the `rdchip:` encoding.
+  `ChipFormatter` strategy and the `ringdrill://chip` encoding.
 - [`glossary.md`](./glossary.md) — domain vocabulary.

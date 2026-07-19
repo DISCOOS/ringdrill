@@ -154,10 +154,10 @@ void main() {
 
       expect(find.textContaining('{{station.'), findsNothing);
       // The description renders via RingDrillText.rich. The app resolvers
-      // pass ActionChipFormatter (ADR-0050), so the position resolves as an
-      // rdchip: link (rendered as plain link text until DESIGN-013 Commit 4
-      // wires up the pill renderer) while the address stays a copy chip
-      // (its own Text widget inside a WidgetSpan).
+      // pass ActionChipFormatter (ADR-0050), so the position resolves as a
+      // ringdrill://chip link (rendered as plain link text until DESIGN-013
+      // Commit 4 wires up the pill renderer) while the address stays a
+      // copy chip (its own Text widget inside a WidgetSpan).
       expect(find.textContaining(formatUtm(_stationPosition)), findsWidgets);
       expect(
         find.byWidgetPredicate((w) => w is Text && w.data == 'Innkjøring'),
