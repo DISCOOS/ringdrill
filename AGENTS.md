@@ -24,6 +24,7 @@ make patch-android                             # Shorebird OTA patch
 make release-tag VERSION=X.Y.Z+N               # bump pubspec, prepend CHANGELOG.md, commit, annotated tag
 dart pub global activate -s path .             # install CLI from this checkout
 ringdrill -h                                   # CLI usage (needs RINGDRILL_ADMIN_TOKEN)
+skills/flutter-widget-preview/run_preview.sh   # render a widget to a PNG headlessly (no browser)
 ```
 
 Localization is regenerated automatically the next time you `flutter run`, `flutter build` or `flutter test` after editing `lib/l10n/app_en.arb` or `app_nb.arb`. Run `make i18n` (`flutter gen-l10n`) when you need an explicit regen — `make build` only covers freezed/`json_serializable` and does NOT touch `app_localizations*.dart`.
@@ -46,6 +47,7 @@ These are non-negotiable unless the maintainer says otherwise.
 11. **Propose an ADR when you change architecture.** If your change introduces, replaces or contradicts an architectural assumption (new dependency category, new file format, new release channel, new backend endpoint, new persistence mechanism, new state-management approach, removal of an existing pattern), add an ADR file under [`docs/adrs/`](./docs/adrs/) in the same change set. Use the next free number and follow [`docs/adrs/template.md`](./docs/adrs/template.md). Update the index in [`docs/adrs/README.md`](./docs/adrs/README.md). Default status is `proposed`. Only set the status to `accepted` when the user explicitly instructs you to do so in the same conversation; otherwise leave it `proposed` for maintainer review.
 12. **Write all documentation in English.** Everything under `docs/` (architecture, ADRs, DESIGN issues, worked examples, prompts) plus `README.md`, `AGENTS.md` and `CLAUDE.md` is written in English — prose, headings, and explanatory code/YAML comments. Real example data (e.g. the contents of a Norwegian SAR plan: station names, descriptions) and quoted template fields may stay in their source language; a Norwegian term may be named once as a label (e.g. "source format (NO: *kildeformat*)"). This is independent of rule 4, which governs user-visible app strings. Domain vocabulary is pinned in [`docs/glossary.md`](./docs/glossary.md); cross-cutting UI patterns in [`docs/ui-conventions.md`](./docs/ui-conventions.md).
 13. **Write commit messages in English.** Use Conventional Commits style (`type(scope): summary`, e.g. `fix(views): …`), in English, even when the working conversation is in Norwegian.
+14. **Verify visual changes by rendering, not guessing.** When you add or change how a widget looks (layout, theming, light vs dark, text scale, or localized strings), render it headlessly to a PNG with `skills/flutter-widget-preview/` and inspect the image before claiming the change is done. It is the no-browser way to actually see a widget, and it complements the analyze/test gate in rule 9 rather than replacing it. The throwaway preview test lives in the gitignored `test/preview/`, so it never lands in a commit. Skip it only for non-visual changes (logic, data, backend).
 
 ## Architecture Decision Records
 
@@ -59,6 +61,7 @@ Before introducing a new pattern, check [`docs/adrs/`](./docs/adrs/) for an exis
 * Drill timer/phase engine: `lib/services/exercise_service.dart`.
 * File import/export pipeline: `lib/data/drill_file.dart` plus `lib/services/shared_file_channel.dart`.
 * Backend contract: `netlify.toml` for routes, `netlify/functions/*.js` for handlers, `lib/data/drill_client.dart` for the Dart-side client.
+* See what a widget looks like without a browser or device: `skills/flutter-widget-preview/` (SKILL.md + runner + template), harness at `test/support/widget_preview_harness.dart`. Renders any widget to a PNG via the test binary — the no-browser companion to `flutter widget-preview start`.
 
 More detail on each of these, plus repo layout and per-layer conventions, is in [`docs/architecture.md`](./docs/architecture.md).
 

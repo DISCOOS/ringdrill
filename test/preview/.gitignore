@@ -1,0 +1,4 @@
+# Throwaway headless widget previews (see skills/flutter-widget-preview/SKILL.md).
+# The harness lives in test/support/; everything generated here is transient.
+*
+!.gitignore
