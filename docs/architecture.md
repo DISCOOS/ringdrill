@@ -53,6 +53,10 @@ Conditional imports follow the standard pattern, e.g. `import 'package:foo/x.dar
 
 ## Conventions
 
+### Terminology
+
+Domain vocabulary and the English-vs-Norwegian naming rule live in [`glossary.md`](./glossary.md).
+
 ### Models
 
 * Every model in `lib/models/` is `@freezed sealed class X with _$X`. Add new models the same way and run `make build`.
@@ -71,6 +75,7 @@ Conditional imports follow the standard pattern, e.g. `import 'package:foo/x.dar
 * All screens and widgets live directly under `lib/views/`. Do not introduce a feature-folder structure without coordinating with the maintainer.
 * Theming: `ringDrillTheme` and `ringDrillDarkTheme` in `main.dart` are the source of truth. Reuse `Theme.of(context).colorScheme` rather than hard-coded colors.
 * All user-visible strings go through `AppLocalizations.of(context)!.<key>` and are defined in `app_en.arb` first, then translated in `app_nb.arb`. Untranslated keys are reported in `lib/l10n/untranslated-messages.json` (gitignored).
+* Cross-cutting UI conventions — marker icons, row edit affordances, active-filter visibility, design tokens, map slot props, and form "Save"/"Done" labels — live in [`ui-conventions.md`](./ui-conventions.md).
 
 ### Web
 
@@ -104,95 +109,13 @@ When adding tests, prefer pure-Dart unit tests against `models/`, `data/` and `u
 * `.drill` files served by Netlify are forced to `Content-Disposition: attachment` with the custom MIME type. Do not change this without also updating the share/import handlers in `lib/data/drill_file.dart` and `lib/views/shared_file_widget.dart`.
 * The Shorebird `app_id` in `shorebird.yaml` is public and safe to commit. `sentry.properties` is gitignored and must not be committed.
 
-## Domain and hosting
+## Backend, API and hosting
 
-* The domain `ringdrill.app` is registered with **GoDaddy**. Renewal, WHOIS contacts and ownership records live in the GoDaddy account belonging to DISCOOS.
-* DNS authority is delegated to Netlify (NS1-based nameservers) today. [ADR-0039](./adrs/0039-site-pwa-api-origins.md) migrates DNS authority to Cloudflare and splits hosting across three origins:
-  - `ringdrill.app` (apex): static site on Cloudflare Pages (`ringdrill-site` project)
-  - `web.ringdrill.app`: Flutter PWA on Cloudflare Pages (`ringdrill-pwa` project)
-  - `api.ringdrill.app`: Netlify functions only, no static hosting
-* Until that migration lands, `ringdrill.app` continues to serve the Flutter PWA from Netlify alongside the functions. After migration, only Netlify functions remain on Netlify; the rest moves to Cloudflare.
-* SSL certificates are issued and renewed automatically by each hosting provider (Netlify today; Cloudflare for apex/www/web and Netlify for api after migration). No manual cert handling.
-* The registrar (GoDaddy) is only used for nameserver delegation. All record management happens at the DNS provider, not at the registrar.
-
-## Backend (Netlify functions)
-
-Endpoints (see `netlify.toml` for the redirect map):
-
-| Method | Path | Handler | Purpose |
-|--------|------|---------|---------|
-| POST | `/api/drills/upload` | `drills-upload.js` | Multipart `.drill` upload, returns versioned URL |
-| GET | `/api/drills/head/:slug` | `drills-head.js` | Metadata lookup for a slug |
-| GET | `/d/:slug` | `deep-link.js` | Deep-link redirector for the mobile apps |
-| GET | `/api/market/feed` | `market-feed.js` | Public market feed |
-| * | `/api/admin` | `drills-admin.js` | Token-gated admin operations, used by the CLI |
-
-The CLI in `bin/ringdrill.dart` talks to these endpoints using `RINGDRILL_ADMIN_TOKEN` and `RINGDRILL_BASE_URL`.
-
-### Running the backend locally
-
-The full Netlify stack (functions plus an emulated blob store) can be run on a contributor machine without touching production. The architectural rationale is in [ADR-0013](./adrs/0013-local-catalog-testing.md).
-
-Prerequisites: Node 20+ and the [Netlify CLI](https://docs.netlify.com/cli/get-started/) (`npx netlify` will fetch it on first use).
-
-Start the backend:
-```bash
-make netlify-dev
-```
-The target runs `npm install` and `ADMIN_TOKEN=dev-token npx netlify functions:serve --port 8888`. Override the token with `make netlify-dev LOCAL_ADMIN_TOKEN=<token>`. Functions are now reachable at `http://localhost:8888/.netlify/functions/<name>`. The blob store is emulated under `.netlify/blobs-serve/`.
-
-The target uses `netlify functions:serve` instead of `netlify dev` because the latter sets up an Edge Functions runtime that fails to install reliably on some macOS hosts. We do not use edge functions, so `functions:serve` is sufficient.
-
-Caveat: the redirects defined in `netlify.toml` (`/api/*` and `/d/*`) are not applied by `functions:serve`. `DrillClient` already calls `/.netlify/functions/*` directly, so the CLI commands `upload`, `feed`, `list-all`, `publish` and friends all work. `ringdrill download <slug>` uses the `/d/<slug>` deep-link path and will return 404 in this mode.
-
-Seed the catalog, inspect the feed, or reset the blob store:
-```bash
-make catalog-seed     # uploads $(SEED_DRILL) and publishes it
-make catalog-feed     # lists /.netlify/functions/market-feed
-make catalog-reset    # clears .netlify/blobs-serve (with the backend stopped)
-```
-`SEED_DRILL` defaults to `test/fixtures/test-7x.drill`. Override with `make catalog-seed SEED_DRILL=path/to/other.drill` to publish a different file.
-
-Under the hood these targets shell out to `dart run bin/ringdrill.dart`, which gained three public commands (no admin token required):
-```bash
-ringdrill upload <file.drill> [--published] [--tags=a,b,c] [--owner=<id>]
-ringdrill feed [--limit=N] [--cursor=C]
-ringdrill download <slug> [--out=<file>] [--version=N]
-```
-The CLI honors `RINGDRILL_BASE_URL`, so the same binary works against the local backend without rebuilding:
-```bash
-export RINGDRILL_BASE_URL=http://localhost:8888
-export RINGDRILL_ADMIN_TOKEN=dev-token
-ringdrill list-all
-ringdrill publish <slug>
-```
-
-Point the Flutter app at the local backend using a compile-time `--dart-define`:
-```bash
-flutter run -d macos --dart-define=RINGDRILL_LOCAL_BASE_URL=http://localhost:8888
-```
-The override is resolved at compile time (via `String.fromEnvironment` in `AppConfig.localBaseUrl`) and only takes effect in debug builds. Release builds cannot be coerced into talking to localhost.
+The backend runtime, hosting topology (the three ADR-0039 origins) and local dev live in [`backend.md`](./backend.md); the HTTP API reference — endpoints, auth, examples — is in [`api.md`](./api.md).
 
 ## Drill file format
 
-`DrillFile` (in `lib/data/drill_file.dart`) is a versioned zip wrapper around the program JSON.
-
-* MIME type: `application/vnd.ringdrill+zip`
-* Extension: `.drill`
-* Current schema: `DrillFile.drillSchemaCurrent`, currently `'1.2'` (`drillSchema1_0`/`1_1`/`1_2` are still read for backward compatibility).
-
-Bumping the schema requires updating the import code in `lib/data/drill_file.dart`, the Netlify upload handler, and a migration path for existing files.
-
-### Drill library format
-
-A drill library bundles multiple programs into one outer ZIP, for migration export and for backing up or moving a whole library between devices ([ADR-0045](./adrs/0045-drill-library-bundle-format.md)).
-
-* Outer ZIP, one `.drill` per program: `<slug>.drill`, `<slug>-1.drill`, … for slug collisions.
-* Detected by content, not extension: a top-level `program.json` means a single `.drill`; one or more `*.drill` entries anywhere in the archive (any nesting depth) with no top-level `program.json` means a library; anything else is invalid. Depth is deliberately not checked for `.drill` entries because the bundle may be repacked by any zip tool before it reaches the app; known packaging cruft (`__MACOSX/`, `.DS_Store`) is ignored.
-* Carries no schema of its own — each inner `.drill` carries its own schema per the section above.
-* Import is best-effort per entry: a corrupt inner `.drill` is skipped and counted, it does not abort the rest of the bundle. Import never activates a program.
-
-Implementation lives in `lib/data/drill_library.dart` (`DrillLibrary.sniff`, `.entries`, `.fromPrograms`). `lib/data/bulk_export.dart`'s `exportAllPrograms` delegates to `DrillLibrary.fromPrograms`.
+The `.drill` file format and the drill library bundle format live in [`drill-file-format.md`](./drill-file-format.md).
 
 ## Where to look first
 
