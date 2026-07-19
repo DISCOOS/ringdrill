@@ -38,6 +38,26 @@ import 'package:ringdrill/utils/variable_values.dart';
 /// cycle to the author rather than hanging the render.
 const maxResolvePasses = 10;
 
+/// Optional sink for a mustache cross-reference render that [resolveField]
+/// caught and fell back on — returning the field with its `{{scope.*}}` tokens
+/// left literal (ADR-0048) rather than throwing. Fired at most once per
+/// [resolveField] call, carrying the first pass's error.
+///
+/// Null by default: the CLI and other pure-Dart callers leave it unset, and
+/// this file stays flutter-free (ADR-0005). The app wires it (behind the
+/// analytics-consent gate) so a field that silently degrades because a resolve
+/// scope is missing from the widget tree — the class of bug where a surface
+/// forgot to provide, say, an `ExerciseScope` — becomes visible instead of
+/// vanishing into the catch. Tests set it to assert no field degrades
+/// unexpectedly.
+///
+/// Caveat for any alerting consumer: the resolver cannot tell an intended
+/// literal fallback (a genuinely orphaned `{{station.*}}` in a roleplay with
+/// no linked station, honest per ADR-0048) from a missing-scope bug — both
+/// land here, so expect some legitimate content-side reports alongside the
+/// code bugs.
+void Function(Object error, StackTrace stackTrace)? onResolveFieldError;
+
 /// Resolves a markdown field for rendering by running the full token
 /// pipeline — `{{var.<name>}}`, then (when [scenarioStation] is given)
 /// `{{station.loc/person.<slug>}}`, then the mustache cross-reference pass
@@ -69,6 +89,8 @@ String? resolveField(
 }) {
   if (content == null) return null;
   var current = content;
+  Object? firstError;
+  StackTrace? firstStack;
   for (var pass = 0; pass < maxResolvePasses; pass++) {
     final next = _resolveFieldOnce(
       current,
@@ -77,9 +99,19 @@ String? resolveField(
       refContext: refContext,
       scenarioStation: scenarioStation,
       scenarioRolePlays: scenarioRolePlays,
+      onError: (error, stackTrace) {
+        // Keep only the first pass's failure: a persistent missing-scope
+        // token throws on every pass, but it is one problem, reported once.
+        firstError ??= error;
+        firstStack ??= stackTrace;
+      },
     );
-    if (next == current) return next;
+    final converged = next == current;
     current = next;
+    if (converged) break;
+  }
+  if (firstError != null) {
+    onResolveFieldError?.call(firstError!, firstStack ?? StackTrace.current);
   }
   return current;
 }
@@ -97,6 +129,7 @@ String _resolveFieldOnce(
   required Map<String, dynamic> refContext,
   Station? scenarioStation,
   List<RolePlay> scenarioRolePlays = const [],
+  void Function(Object error, StackTrace stackTrace)? onError,
 }) {
   final withVars = substituteTypedVariables(content, vars, l10n);
   final withScenario = scenarioStation == null
@@ -112,7 +145,8 @@ String _resolveFieldOnce(
       withScenario,
       htmlEscapeValues: false,
     ).renderString(refContext);
-  } catch (_) {
+  } catch (error, stackTrace) {
+    onError?.call(error, stackTrace);
     return withScenario;
   }
 }

@@ -11,8 +11,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart'
-    show formatUtm, briefCopyChip;
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
@@ -41,6 +40,7 @@ import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
@@ -171,22 +171,6 @@ class _RolePlayScreenState extends State<RolePlayScreen>
       station: station,
     );
   }
-
-  /// This roleplay's own `roleplay.*` facets (DESIGN-010's resolve-context
-  /// cascade — the same shape `RolePlayFormScreen._roleplayFacets` builds
-  /// for its live preview), passed to `resolveScopedField`'s
-  /// `roleplayFacets` rather than a scope (DESIGN-010: "small enough...
-  /// than a separate scope").
-  Map<String, dynamic> _roleplayFacets(RolePlay rolePlay) => {
-    'name': rolePlay.name,
-    'age': rolePlay.age,
-    'signalement': rolePlay.signalement ?? '',
-    'position': {
-      'utm': briefCopyChip(
-        rolePlay.position == null ? '' : formatUtm(rolePlay.position),
-      ),
-    },
-  };
 
   /// The scenario [Person] this roleplay portrays, via `personRef`, or
   /// null when unlinked (a legacy/orphaned roleplay with only its own bare
@@ -369,11 +353,12 @@ class _RolePlayScreenState extends State<RolePlayScreen>
           : null,
     );
 
-    // DESIGN-010 stage 3 (ADR-0048): wrap in the linked station's/parent
-    // exercise's resolve-context scopes, mirroring station_screen.dart —
-    // both are optional here (an orphaned or unassigned roleplay has
-    // neither), so each wrap is skipped rather than passed empty/fake data.
-    Widget scoped = scaffold;
+    // DESIGN-010 stage 3 (ADR-0048): wrap in this roleplay's own facets plus
+    // the linked station's/parent exercise's resolve-context scopes. The
+    // roleplay scope is always present (this is its viewer); station/exercise
+    // are optional (an orphaned/unassigned roleplay has neither), so each of
+    // those is skipped rather than passed empty/fake data.
+    Widget scoped = RoleplayScope.forRoleplay(rolePlay, child: scaffold);
     if (station != null) {
       scoped = StationScope(
         locations: station.locations,
@@ -436,7 +421,6 @@ class _RolePlayScreenState extends State<RolePlayScreen>
             ? null
             : _programService.getActor(rolePlay.actorUuid!),
         overrides: roleOverrides,
-        roleplayFacets: _roleplayFacets(rolePlay),
         onEditCast: () => _openCastPicker(rolePlay),
         onEditSection: (id) => _openRolePlayForm(initialSectionId: id),
       ),
@@ -489,7 +473,6 @@ class _RolePlayScreenState extends State<RolePlayScreen>
               context,
               rolePlay.name,
               overrides: roleOverrides,
-              roleplayFacets: _roleplayFacets(rolePlay),
             ) ??
             rolePlay.name;
 
@@ -766,7 +749,6 @@ class _PlayCard extends StatelessWidget {
     required this.onEditSection,
     this.location,
     this.overrides = const {},
-    this.roleplayFacets,
   });
 
   final RolePlay rolePlay;
@@ -784,7 +766,6 @@ class _PlayCard extends StatelessWidget {
 
   final Location? location;
   final Map<String, String> overrides;
-  final Map<String, dynamic>? roleplayFacets;
 
   /// ADR-0047's effective-identity rule: the roleplay's own non-empty
   /// value wins over the linked person's, mirroring
@@ -863,7 +844,6 @@ class _PlayCard extends StatelessWidget {
     Widget resolvedText(String text) => RingDrillText.plain(
       text,
       overrides: overrides,
-      roleplayFacets: roleplayFacets,
       style: bodyTextStyle,
     );
 
@@ -931,7 +911,6 @@ class _PlayCard extends StatelessWidget {
           RingDrillText.plain(
             metaParts.isEmpty ? name : '$name · ${metaParts.join(' · ')}',
             overrides: overrides,
-            roleplayFacets: roleplayFacets,
             style: bodyTextStyle,
           ),
           // The person's own notes, folded in and read together with the
@@ -979,7 +958,6 @@ class _PlayCard extends StatelessWidget {
             context,
             raw,
             overrides: overrides,
-            roleplayFacets: roleplayFacets,
           ) ??
           '';
       if (resolved.trim().isEmpty) return;

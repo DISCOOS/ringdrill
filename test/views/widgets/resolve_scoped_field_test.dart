@@ -7,10 +7,13 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
 import 'package:ringdrill/models/person.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
+import 'package:ringdrill/models/role_play.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart'
+    show formatUtm, onResolveFieldError;
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
+import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-010 stage 2 — context assembly: resolveScopedField reads
@@ -25,6 +28,13 @@ const _lkp = Location(
   position: LatLng(58.99, 10.43),
 );
 const _kari = Person(slug: 'kari', name: 'Kari');
+const _rolePlay = RolePlay(
+  uuid: 'rp-1',
+  index: 0,
+  exerciseUuid: 'ex-1',
+  name: 'Nordmann',
+  age: 42,
+);
 final _stationPosition = const LatLng(59.91, 10.75);
 
 Exercise _exercise() => Exercise(
@@ -61,11 +71,14 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
             persons: const [_kari],
             name: 'Station A',
             positionUtm: formatUtm(_stationPosition),
-            child: Builder(
-              builder: (context) {
-                captured = context;
-                return const SizedBox.shrink();
-              },
+            child: RoleplayScope.forRoleplay(
+              _rolePlay,
+              child: Builder(
+                builder: (context) {
+                  captured = context;
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ),
@@ -77,17 +90,27 @@ Future<BuildContext> _pumpScoped(WidgetTester tester) async {
 
 void main() {
   testWidgets(
-    'resolves {{var.*}}, {{program.*}}, {{exercise.*}}, {{station.*}} and '
-    '{{station.loc/person.*}} the same way the brief would, and leaves an '
-    'undeclared variable as the brief\'s unknown-variable placeholder',
+    'resolves {{var.*}}, {{program.*}}, {{exercise.*}}, {{station.*}}, '
+    '{{station.loc/person.*}} and {{roleplay.*}} together the same way the '
+    'brief would, and leaves an undeclared variable as the brief\'s '
+    'unknown-variable placeholder',
     (tester) async {
       final context = await _pumpScoped(tester);
 
+      final errors = <Object>[];
+      onResolveFieldError = (error, _) => errors.add(error);
+      addTearDown(() => onResolveFieldError = null);
+
+      // Deliberately mixes every scope in one field: this is what caught the
+      // roleplay-editor gap — the mustache render is all-or-nothing, so a
+      // single token whose scope a surface forgot to provide throws and drags
+      // every *other* token back to literal too.
       const content =
           'P={{program.name}} E={{exercise.name}} S={{station.name}} '
           'UTM={{station.position.utm}} LOC={{station.loc.lkp.place}} '
-          'PERSON={{station.person.kari.name}} VAR={{var.year}} '
-          'UNK={{var.unknown}}';
+          'PERSON={{station.person.kari.name}} '
+          'RP={{roleplay.name}} RPAGE={{roleplay.age}} '
+          'VAR={{var.year}} UNK={{var.unknown}}';
 
       final resolved = resolveScopedField(context, content);
 
@@ -100,11 +123,16 @@ void main() {
       expect(resolved, contains('UTM=`${formatUtm(_stationPosition)}`'));
       expect(resolved, contains('LOC=`Fjellheisen`'));
       expect(resolved, contains('PERSON=Kari'));
+      expect(resolved, contains('RP=Nordmann'));
+      expect(resolved, contains('RPAGE=42'));
       expect(resolved, contains('VAR=2026'));
       expect(
         resolved,
         contains('UNK=${_l10n.briefUnknownVariable('unknown')}'),
       );
+      // Every scope the field references was in context, so no cross-reference
+      // pass failed and the observability hook must stay silent.
+      expect(errors, isEmpty);
     },
   );
 
@@ -131,6 +159,10 @@ void main() {
         ),
       );
 
+      final errors = <Object>[];
+      onResolveFieldError = (error, _) => errors.add(error);
+      addTearDown(() => onResolveFieldError = null);
+
       const content = 'P={{program.name}} S={{station.name}}';
       final resolved = resolveScopedField(captured, content);
 
@@ -141,6 +173,10 @@ void main() {
       // documented bounded limitation for a partial context, unchanged by
       // this helper.
       expect(resolved, content);
+      // But it is no longer *silent*: the swallowed failure is surfaced once
+      // through the hook, so a missing scope can be alerted on (Sentry in the
+      // app) or asserted on in tests instead of vanishing into the catch.
+      expect(errors, hasLength(1));
     },
   );
 

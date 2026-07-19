@@ -8,6 +8,7 @@ import 'package:ringdrill/utils/variable_values.dart'
     show applyVariableOverride;
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
+import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 /// DESIGN-010's shared resolution primitive: "resolve a field string against
@@ -23,31 +24,28 @@ import 'package:ringdrill/views/widgets/station_scope.dart';
 /// `Exercise`'s/`Station`'s `variableOverrides`) — same map a token-aware
 /// field's own `overrides` param already carries.
 ///
-/// [roleplayFacets] is this roleplay's own `roleplay.*` facets
-/// (name/age/signalement/`position.utm`) for a field inside the roleplay
-/// editor. DESIGN-010 folds these into the field's own context rather than
-/// a scope ("small enough... than a separate scope") since only the
-/// currently-open `RolePlay`'s own live, unsaved identity is ever in play —
-/// unlike `station.loc/person.*`, no other roleplay's fields need to read
-/// it. Omitted (null) everywhere else.
+/// The roleplay's own `roleplay.*` facets (name/age/signalement/
+/// `position.utm`) come from a [RoleplayScope] ancestor when one is present —
+/// the viewer/editor wrap their roleplay content in `RoleplayScope.forRoleplay`
+/// once, so no field has to thread the facets down itself.
 ///
 /// A scope missing from the ancestry (no `ExerciseScope` above a
-/// program-scope field, no `StationScope` above an exercise-scope field)
-/// contributes nothing: its facets are simply absent from the resolution
-/// context, so a reference to them resolves to the same literal, unrendered
-/// token the brief shows for a genuinely missing cross-reference — honest,
-/// not a crash (ADR-0048).
+/// program-scope field, no `StationScope` above an exercise-scope field, no
+/// `RoleplayScope` outside a roleplay surface) contributes nothing: its facets
+/// are simply absent from the resolution context, so a reference to them
+/// resolves to the same literal, unrendered token the brief shows for a
+/// genuinely missing cross-reference — honest, not a crash (ADR-0048).
 String? resolveScopedField(
   BuildContext context,
   String? content, {
   Map<String, String> overrides = const {},
-  Map<String, dynamic>? roleplayFacets,
 }) {
   if (content == null || content.isEmpty) return content;
   final l10n = AppLocalizations.of(context)!;
   final planScope = PlanScope.maybeOf(context);
   final exerciseScope = ExerciseScope.maybeOf(context);
   final stationScope = StationScope.maybeOf(context);
+  final roleplayScope = RoleplayScope.maybeOf(context);
 
   final vars = <String, DrillVariable>{
     for (final v in planScope?.variables ?? const [])
@@ -65,7 +63,7 @@ String? resolveScopedField(
     },
     if (exerciseScope != null) 'exercise': _exerciseFacets(exerciseScope, l10n),
     if (stationScope != null) 'station': _stationFacets(stationScope),
-    'roleplay': ?roleplayFacets,
+    if (roleplayScope != null) 'roleplay': _roleplayFacets(roleplayScope),
   };
 
   // A throwaway Station carrying only what the resolver's scenario-token
@@ -121,5 +119,12 @@ Map<String, dynamic> _stationFacets(StationScope scope) => {
   'stationCode': scope.stationCode ?? '',
   'description': scope.description ?? '',
   'variantSuffix': scope.variantSuffix,
+  'position': {'utm': resolver.briefCopyChip(scope.positionUtm ?? '')},
+};
+
+Map<String, dynamic> _roleplayFacets(RoleplayScope scope) => {
+  'name': scope.name,
+  'age': scope.age,
+  'signalement': scope.signalement ?? '',
   'position': {'utm': resolver.briefCopyChip(scope.positionUtm ?? '')},
 };

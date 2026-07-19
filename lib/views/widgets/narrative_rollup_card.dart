@@ -16,7 +16,6 @@ class NarrativeSection {
     required this.label,
     required this.text,
     this.overrides = const {},
-    this.roleplayFacets,
     this.gated = false,
   });
 
@@ -24,7 +23,6 @@ class NarrativeSection {
   final String label;
   final String? text;
   final Map<String, String> overrides;
-  final Map<String, dynamic>? roleplayFacets;
 
   /// Shows the [AppLocalizations.directorOnlyBadge] pill next to this
   /// section's heading. The caller decides *whether to include this
@@ -59,7 +57,6 @@ class NarrativeRollupCard extends StatelessWidget {
     required this.title,
     this.leadText,
     this.leadOverrides = const {},
-    this.leadRoleplayFacets,
     this.leadId,
     this.sections = const [],
     this.onTapSection,
@@ -79,7 +76,6 @@ class NarrativeRollupCard extends StatelessWidget {
   /// heading — the mockup's `.lead` block. Null/empty omits it.
   final String? leadText;
   final Map<String, String> leadOverrides;
-  final Map<String, dynamic>? leadRoleplayFacets;
 
   /// Section id passed to [onTapSection] when the lead block is tapped.
   /// Null (no lead, or the caller doesn't support tap-to-edit) disables the
@@ -105,12 +101,7 @@ class NarrativeRollupCard extends StatelessWidget {
 
     if (leadText != null && leadText!.isNotEmpty) {
       final resolved =
-          resolveScopedField(
-            context,
-            leadText,
-            overrides: leadOverrides,
-            roleplayFacets: leadRoleplayFacets,
-          ) ??
+          resolveScopedField(context, leadText, overrides: leadOverrides) ??
           '';
       if (resolved.trim().isNotEmpty) {
         blocks.add(
@@ -126,12 +117,7 @@ class NarrativeRollupCard extends StatelessWidget {
       final text = section.text;
       if (text == null || text.isEmpty) continue;
       final resolved =
-          resolveScopedField(
-            context,
-            text,
-            overrides: section.overrides,
-            roleplayFacets: section.roleplayFacets,
-          ) ??
+          resolveScopedField(context, text, overrides: section.overrides) ??
           '';
       if (resolved.trim().isEmpty) continue;
       blocks.add(

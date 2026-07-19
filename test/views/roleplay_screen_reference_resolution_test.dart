@@ -12,10 +12,9 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// DESIGN-010 stage 3 — the Spill sheet (roleplay_screen.dart) now wraps
-/// itself in StationScope (the linked station's facets) and passes the
-/// roleplay's own facets to resolveScopedField's roleplayFacets, so a
-/// scenario field can reference both `{{roleplay.*}}` and the linked
-/// station's `{{station.*}}` instead of leaving them literal.
+/// itself in a RoleplayScope (its own facets) and a StationScope (the linked
+/// station's facets), so a scenario field can reference both `{{roleplay.*}}`
+/// and the linked station's `{{station.*}}` instead of leaving them literal.
 const _programUuid = 'prog-role-ref';
 const _exerciseUuid = 'ex-role-ref';
 const _roleUuid = 'role-ref';
@@ -47,7 +46,13 @@ RolePlay _rolePlay() => const RolePlay(
   stationIndex: 0,
   name: 'Turgåer',
   age: 34,
-  signalement: 'Alder {{roleplay.age}}, sett ved {{station.name}}.',
+  // Mixes three scopes in one field on purpose: roleplay (own facet),
+  // exercise (parent) and station (linked). The viewer must provide all
+  // three, or the all-or-nothing mustache render throws on the first missing
+  // one and drags the rest back to literal.
+  signalement:
+      'Alder {{roleplay.age}}, {{exercise.numberOfTeams}} lag, '
+      'sett ved {{station.name}}.',
 );
 
 Map<String, Object> _prefs() {
@@ -99,15 +104,15 @@ void main() {
   });
 
   testWidgets(
-    'signalement resolves the roleplay\'s own {{roleplay.age}} facet and '
-    'the linked station\'s {{station.name}} instead of leaving them literal',
+    'signalement resolves {{roleplay.*}}, {{exercise.*}} and {{station.*}} '
+    'together instead of leaving them literal',
     (tester) async {
       await tester.pumpWidget(_buildScreen());
       await tester.pumpAndSettle();
 
-      expect(find.text('Alder 34, sett ved Post 1.'), findsOneWidget);
-      expect(find.textContaining('{{roleplay.'), findsNothing);
-      expect(find.textContaining('{{station.'), findsNothing);
+      // _exercise() declares numberOfTeams: 1.
+      expect(find.text('Alder 34, 1 lag, sett ved Post 1.'), findsOneWidget);
+      expect(find.textContaining('{{'), findsNothing);
     },
   );
 }

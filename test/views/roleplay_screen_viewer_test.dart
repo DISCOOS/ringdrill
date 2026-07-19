@@ -103,7 +103,7 @@ RolePlay _rolePlay() => const RolePlay(
   personRef: 'hilde',
   actorUuid: _actorUuid,
   position: LatLng(59.92, 10.76),
-  // `{{roleplay.age}}` deliberately not used here: roleplayFacets exposes
+  // `{{roleplay.age}}` deliberately not used here: RoleplayScope exposes
   // the roleplay's own bare fields (ADR-0048), not the effective/merged
   // value the identity card computes — age is null on this roleplay
   // itself (only the linked person has it), so that token would resolve

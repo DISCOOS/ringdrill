@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/drill_variable.dart';
+import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/station_form_screen.dart';
 import 'package:ringdrill/views/widgets/brief_markdown.dart';
@@ -13,6 +14,20 @@ import 'package:ringdrill/views/widgets/brief_markdown.dart';
 /// previewing just the description field inline. This replaced the old
 /// bottom "Vis detaljer" toggle + side-by-side pane, which squeezed the
 /// fields on medium-wide and hid the toggle below the fold on narrow.
+Exercise _exercise() => Exercise(
+  uuid: 'ex-1',
+  name: 'Exercise',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+  endTime: const SimpleTimeOfDay(hour: 9, minute: 0),
+  numberOfTeams: 3,
+  numberOfRounds: 1,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 2,
+  stations: const [Station(index: 0, name: 'Post 1')],
+  schedule: const [],
+);
+
 void main() {
   Future<void> useWideSurface(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
@@ -21,8 +36,9 @@ void main() {
 
   Future<AppLocalizations> openStation(
     WidgetTester tester,
-    Station station,
-  ) async {
+    Station station, {
+    Exercise? parentExercise,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -34,6 +50,7 @@ void main() {
               MaterialPageRoute(
                 builder: (_) => StationFormScreen(
                   station: station,
+                  parentExercise: parentExercise,
                   variables: const [
                     DrillVariable(name: 'radio', value: 'Kanal 8'),
                   ],
@@ -93,6 +110,35 @@ void main() {
 
       expect(find.byType(BriefMarkdownBlock), findsNothing);
       expect(find.widgetWithText(TextFormField, 'Post 1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the base-section rollup resolves {{station.*}} and {{exercise.*}} '
+    'together — a missing ExerciseScope must not drag the field to literal',
+    (tester) async {
+      await useWideSurface(tester);
+      final station = Station(
+        index: 0,
+        name: 'Post 1',
+        // Mixes the station's own facet with the parent exercise's: the
+        // editor offers {{exercise.*}} tokens, so it must provide the scope,
+        // or the all-or-nothing mustache render throws and takes {{station.*}}
+        // down with it (the same gap the roleplay editor had).
+        description:
+            'Her på {{station.name}} er det {{exercise.numberOfTeams}} lag.',
+      );
+      final l = await openStation(tester, station, parentExercise: _exercise());
+
+      await tester.tap(find.byTooltip(l.formSectionPreviewAction));
+      await tester.pumpAndSettle();
+
+      // _exercise() declares numberOfTeams: 3.
+      expect(
+        find.textContaining('Her på Post 1 er det 3 lag.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('{{'), findsNothing);
     },
   );
 }

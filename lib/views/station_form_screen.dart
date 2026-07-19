@@ -21,6 +21,7 @@ import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/locations_section.dart';
 import 'package:ringdrill/views/widgets/persons_section.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
@@ -773,8 +774,9 @@ class _StationFormScreenState extends State<StationFormScreen> {
     // editor shadows PlanScope with its own (for the live variables list),
     // which would otherwise strand {{program.name}} at null below here.
     final ambientPlan = PlanScope.maybeOf(context);
+    final exercise = widget.parentExercise;
 
-    return PlanScope(
+    Widget scopes = PlanScope(
       // Declared variables plus anything created inline this session, so a
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
@@ -901,6 +903,22 @@ class _StationFormScreenState extends State<StationFormScreen> {
         ),
       ),
     );
+    // The parent exercise's own facets (DESIGN-010) so `{{exercise.*}}`
+    // resolves in preview — this editor even offers {{exercise.*}} tokens in
+    // its insertion menu. Without the scope the resolver's mustache pass is
+    // all-or-nothing per field: one unresolved {{exercise.*}} throws and
+    // takes the whole field (including {{station.*}}/{{program.*}}) back to
+    // literal. The viewer (station_screen) and the list (StationScope.
+    // forStation) already provide it. Skipped when opened without a parent
+    // exercise (degrades to the program-only baseline).
+    if (exercise != null) {
+      scopes = ExerciseScope(
+        exercise: exercise,
+        variableOverrides: exercise.variableOverrides,
+        child: scopes,
+      );
+    }
+    return scopes;
   }
 
   /// The DESIGN-008 default section for [Station]: the short structural

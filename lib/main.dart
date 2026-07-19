@@ -6,6 +6,8 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart' show GoRouter;
 import 'package:intl/intl_browser.dart'
     if (dart.library.io) 'package:intl/intl_standalone.dart';
+import 'package:ringdrill/services/brief/field_resolver.dart'
+    show onResolveFieldError;
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/map_settings.dart';
 import 'package:ringdrill/services/notification_service.dart';
@@ -27,6 +29,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
 
 import 'l10n/app_localizations.dart' show AppLocalizations;
+
+/// Routes the field resolver's swallowed-failure sink ([onResolveFieldError])
+/// to Sentry, deduped by error signature for the process lifetime so a
+/// preview that re-resolves on every keystroke cannot flood the project. Only
+/// called on analytics consent (below), so it inherits the same gate as every
+/// other Sentry call. These events are shipped from debug builds too — see
+/// [SentryConfig] — because a missing resolve scope is introduced during
+/// development, which is exactly when we want to see it.
+void _wireResolveFieldReporting() {
+  final reported = <String>{};
+  onResolveFieldError = (error, stackTrace) {
+    if (!reported.add(error.toString())) return;
+    unawaited(
+      Sentry.captureException(
+        error,
+        stackTrace: stackTrace,
+        withScope: (scope) {
+          scope.level = SentryLevel.warning;
+          scope.setTag('subsystem', 'field_resolver');
+        },
+      ),
+    );
+  };
+}
 
 Future<void> main() async {
   SentryWidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +108,11 @@ Future<void> main() async {
         scope.setTag('app.origin', kIsWeb ? Uri.base.host : 'native');
         scope.setTag('app.legacy_apex', isLegacyHost().toString());
       });
+      // Route swallowed field-resolution failures (a missing resolve scope, a
+      // malformed token) to Sentry instead of letting them vanish into the
+      // resolver's catch — the class of bug where a surface forgot to provide
+      // a scope and a field silently degrades to its literal tokens.
+      _wireResolveFieldReporting();
       if (isLegacyHost()) {
         await Sentry.captureMessage(
           'boot on legacy apex',

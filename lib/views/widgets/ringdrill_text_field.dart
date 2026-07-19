@@ -110,13 +110,11 @@ class _ResolvedFieldPreview extends StatefulWidget {
   const _ResolvedFieldPreview({
     required this.controller,
     required this.overrides,
-    this.roleplayFacets,
     required this.builder,
   });
 
   final TextEditingController controller;
   final Map<String, String> overrides;
-  final Map<String, dynamic>? roleplayFacets;
   final Widget Function(BuildContext context, String resolved) builder;
 
   @override
@@ -163,7 +161,6 @@ class _ResolvedFieldPreviewState extends State<_ResolvedFieldPreview> {
           context,
           widget.controller.text,
           overrides: widget.overrides,
-          roleplayFacets: widget.roleplayFacets,
         ) ??
         '';
     return widget.builder(context, resolved);
@@ -226,7 +223,6 @@ class RingDrillTextField extends StatefulWidget {
     this.onChanged,
     this.showLabel = true,
     this.preview = false,
-    this.roleplayFacets,
     this.suffixIcon,
   });
 
@@ -298,11 +294,6 @@ class RingDrillTextField extends StatefulWidget {
   /// [tokenAware] is false (a plain field has nothing to resolve).
   final bool preview;
 
-  /// This roleplay's own `roleplay.*` facets, folded into the preview's
-  /// resolution context — see `resolveScopedField`'s own doc comment. Only
-  /// the roleplay editor ever sets this.
-  final Map<String, dynamic>? roleplayFacets;
-
   @override
   State<RingDrillTextField> createState() => _RingDrillTextFieldState();
 }
@@ -325,7 +316,6 @@ class _RingDrillTextFieldState extends State<RingDrillTextField> {
       return _ResolvedFieldPreview(
         controller: widget.controller,
         overrides: widget.overrides,
-        roleplayFacets: widget.roleplayFacets,
         builder: (context, resolved) => _previewWithLabel(
           context: context,
           label: widget.showLabel ? widget.label : null,
@@ -406,7 +396,6 @@ class RingDrillTextArea extends StatefulWidget {
     this.hintText,
     this.hintMaxLines,
     this.preview = false,
-    this.roleplayFacets,
   });
 
   /// Owned by the caller, as with any Flutter form field. When
@@ -464,11 +453,6 @@ class RingDrillTextArea extends StatefulWidget {
   /// false.
   final bool preview;
 
-  /// This roleplay's own `roleplay.*` facets, folded into the preview's
-  /// resolution context — see `resolveScopedField`'s own doc comment. Only
-  /// the roleplay editor ever sets this.
-  final Map<String, dynamic>? roleplayFacets;
-
   @override
   State<RingDrillTextArea> createState() => _RingDrillTextAreaState();
 }
@@ -498,7 +482,6 @@ class _RingDrillTextAreaState extends State<RingDrillTextArea> {
       return _ResolvedFieldPreview(
         controller: widget.controller,
         overrides: widget.overrides,
-        roleplayFacets: widget.roleplayFacets,
         builder: (context, resolved) => _previewWithLabel(
           context: context,
           label: widget.label,

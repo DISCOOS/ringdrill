@@ -95,4 +95,92 @@ void main() {
       expect(contentRectPreview.topLeft, inputRectEdit.topLeft);
     },
   );
+
+  testWidgets(
+    'a markdown section preview resolves {{roleplay.name}} from the live '
+    'identity (RoleplayScope wraps the whole form)',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: RolePlayFormScreen(
+            rolePlay: RolePlay(
+              uuid: 'rp-role',
+              index: 0,
+              exerciseUuid: 'ex-1',
+              name: 'Hilde',
+              background: 'Markøren heter {{roleplay.name}}',
+              stationIndex: 0,
+            ),
+            exercise: _exercise(),
+            variables: const [],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final l = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text(l.roleBackground));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l.formSectionPreviewAction));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('{{roleplay.'), findsNothing);
+      expect(find.textContaining('Markøren heter Hilde'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a section preview resolves co-occurring {{roleplay.*}} and '
+    '{{exercise.*}} tokens together — a missing scope for one must not drag '
+    'the whole field back to literal',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: RolePlayFormScreen(
+            rolePlay: RolePlay(
+              uuid: 'rp-both',
+              index: 0,
+              exerciseUuid: 'ex-1',
+              name: 'Hilde',
+              // The exact shape the manual test caught: one roleplay token
+              // (scope present) and one exercise token (scope was missing in
+              // the editor). The resolver's mustache pass is all-or-nothing
+              // per field, so before the ExerciseScope fix the unresolved
+              // {{exercise.*}} threw and left *both* literal.
+              background: 'Markøren heter {{roleplay.name}}. Det er totalt '
+                  '{{exercise.numberOfTeams}} lag.',
+              stationIndex: 0,
+            ),
+            exercise: _exercise(),
+            variables: const [],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final l = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await tester.tap(find.text(l.roleBackground));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l.formSectionPreviewAction));
+      await tester.pumpAndSettle();
+
+      // No token of any kind is left literal.
+      expect(find.textContaining('{{'), findsNothing);
+      // _exercise() declares numberOfTeams: 1.
+      expect(
+        find.textContaining('Markøren heter Hilde. Det er totalt 1 lag.'),
+        findsOneWidget,
+      );
+    },
+  );
 }

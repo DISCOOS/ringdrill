@@ -27,7 +27,13 @@ class SentryConfig {
     // exact source tree, so we can jump from a Sentry issue straight to
     // the GitHub commit shown on the About page.
     options.beforeSend = (event, hint) {
-      if (!kReleaseMode) return null;
+      // Field-resolution failures ship from debug builds too (by request):
+      // they flag a missing resolve scope, which is introduced during
+      // development, so we want them from dev runs and not only from prod.
+      // Everything else out of a dev/debug build is still dropped below.
+      final isFieldResolverEvent =
+          event.tags?['subsystem'] == 'field_resolver';
+      if (!kReleaseMode && !isFieldResolverEvent) return null;
       // Drop benign GPS-fix timeouts from `MapView._locateMe`. The user
       // already sees a localized error snackbar and can just tap the
       // Locate-Me FAB again. The `LocationSettings.timeLimit` we pass

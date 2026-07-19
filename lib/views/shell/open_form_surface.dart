@@ -7,6 +7,7 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
+import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
 Future<T?> openFormSurface<T>(
@@ -25,11 +26,13 @@ Future<T?> openFormSurface<T>(
   final planScope = PlanScope.maybeOf(context);
   final exerciseScope = ExerciseScope.maybeOf(context);
   final stationScope = StationScope.maybeOf(context);
+  final roleplayScope = RoleplayScope.maybeOf(context);
   final wrappedBuilder = _reprovideScopes(
     builder,
     planScope: planScope,
     exerciseScope: exerciseScope,
     stationScope: stationScope,
+    roleplayScope: roleplayScope,
     commitsToParent: commitsToParent,
   );
 
@@ -101,6 +104,7 @@ WidgetBuilder _reprovideScopes(
   required PlanScope? planScope,
   required ExerciseScope? exerciseScope,
   required StationScope? stationScope,
+  required RoleplayScope? roleplayScope,
   required bool commitsToParent,
 }) {
   return (context) {
@@ -108,6 +112,15 @@ WidgetBuilder _reprovideScopes(
       commitsToParent: commitsToParent,
       child: builder(context),
     );
+    if (roleplayScope != null) {
+      child = RoleplayScope(
+        name: roleplayScope.name,
+        age: roleplayScope.age,
+        signalement: roleplayScope.signalement,
+        positionUtm: roleplayScope.positionUtm,
+        child: child,
+      );
+    }
     if (stationScope != null) {
       child = StationScope(
         locations: stationScope.locations,

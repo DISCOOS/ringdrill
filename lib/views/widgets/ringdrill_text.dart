@@ -28,17 +28,16 @@ import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 /// Reads [PlanScope.maybeOf], not [PlanScope.of]: a surface outside a program
 /// context degrades to plain, unresolved [text] rather than throwing. Likewise
 /// a missing `ExerciseScope`/`StationScope` simply leaves that level's
-/// cross-references unresolved (ADR-0048) — never a crash. [overrides] shadows
-/// a declared value the same way an [Exercise]/[Station]'s `variableOverrides`
-/// does. [roleplayFacets] is this text's own roleplay's `roleplay.*` facets
-/// (DESIGN-010 folds these into the field's context rather than a scope).
+/// cross-references unresolved (ADR-0048) — never a crash. `{{roleplay.*}}`
+/// references read from a `RoleplayScope` ancestor when present. [overrides]
+/// shadows a declared value the same way an [Exercise]/[Station]'s
+/// `variableOverrides` does.
 class RingDrillText extends StatelessWidget {
   /// Plain rendering — titles, labels, names, list rows.
   const RingDrillText.plain(
     this.text, {
     super.key,
     this.overrides = const {},
-    this.roleplayFacets,
     this.style,
     this.maxLines,
     this.overflow,
@@ -50,7 +49,6 @@ class RingDrillText extends StatelessWidget {
     this.text, {
     super.key,
     this.overrides = const {},
-    this.roleplayFacets,
   }) : _rich = true,
        style = null,
        maxLines = null,
@@ -59,7 +57,6 @@ class RingDrillText extends StatelessWidget {
 
   final String text;
   final Map<String, String> overrides;
-  final Map<String, dynamic>? roleplayFacets;
   final TextStyle? style;
   final int? maxLines;
   final TextOverflow? overflow;
@@ -82,12 +79,7 @@ class RingDrillText extends StatelessWidget {
       });
     } else {
       resolved =
-          resolveScopedField(
-            context,
-            text,
-            overrides: overrides,
-            roleplayFacets: roleplayFacets,
-          ) ??
+          resolveScopedField(context, text, overrides: overrides) ??
           text;
     }
 

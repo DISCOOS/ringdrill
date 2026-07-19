@@ -9,8 +9,7 @@ import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/brief/field_resolver.dart'
-    show formatUtm, briefCopyChip;
+import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/utils/slug.dart';
@@ -24,11 +23,13 @@ import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
+import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
 import 'package:ringdrill/views/widgets/section_rollup.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
@@ -296,22 +297,17 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     return vars;
   }
 
-  /// This roleplay's own `roleplay.*` cross-reference facets (DESIGN-010),
-  /// read live from the same controllers the "Rolle" default section edits
-  /// — so a `{{roleplay.name}}` reference in e.g. `background` previews the
-  /// identity as it is currently being typed, not just the last save.
-  /// Folded directly into `resolveScopedField`'s context (via
-  /// `RingDrillTextArea.roleplayFacets`) rather than a scope — small enough,
-  /// and only this roleplay's own fields ever need it (DESIGN-010's "The
-  /// resolve-context cascade").
-  Map<String, dynamic> get _roleplayFacets => {
-    'name': _nameController.text,
-    'age': int.tryParse(_ageController.text.trim()),
-    'signalement': _signalementController.text,
-    'position': {
-      'utm': briefCopyChip(_position == null ? '' : formatUtm(_position)),
-    },
-  };
+  /// This roleplay's live working copy — the saved [RolePlay] with the "Rolle"
+  /// identity fields overlaid from their controllers — wrapped once as a
+  /// [RoleplayScope] around the form body, so a `{{roleplay.name}}` reference
+  /// in e.g. `background` previews the identity as it is currently being typed,
+  /// not just the last save.
+  RolePlay get _liveRolePlay => widget.rolePlay.copyWith(
+    name: _nameController.text,
+    age: int.tryParse(_ageController.text.trim()),
+    signalement: _signalementController.text,
+    position: _position,
+  );
 
   @override
   void initState() {
@@ -865,7 +861,14 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _buildSectionNavigated(context);
+    // Wrap the whole section-navigated form in this roleplay's own facet scope
+    // (a live working copy over the "Rolle" controllers) so every section —
+    // the base identity fields and every markdown section (background/
+    // behavior/props) — resolves `{{roleplay.*}}` from one place.
+    return RoleplayScope.forRoleplay(
+      _liveRolePlay,
+      child: _buildSectionNavigated(context),
+    );
   }
 
   /// DESIGN-008 follow-up 07. `signalement` sits in the always-visible
@@ -914,7 +917,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
                       label: _mdLabelFor(section, l),
                       expands: true,
                       preview: _previewSections.contains(section.name),
-                      roleplayFacets: _roleplayFacets,
                       tokenAware: true,
                       overrides: _effectiveVariables,
                       planFields: planFields,
@@ -953,8 +955,9 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
     // which would otherwise strand {{program.name}} at null below here.
     final ambientPlan = PlanScope.maybeOf(context);
     final parentStation = _parentStation;
+    final exercise = widget.exercise;
 
-    return PlanScope(
+    Widget scopes = PlanScope(
       // Declared variables plus anything created inline this session, so a
       // just-created {{var.x}} chip resolves live (amber) instead of red
       // (ADR-0047, DESIGN-009 follow-up 4).
@@ -1020,6 +1023,22 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         ),
       ),
     );
+    // The parent exercise's own facets (DESIGN-010) so `{{exercise.*}}`
+    // resolves in preview, mirroring the Spill viewer (roleplay_screen) and
+    // the brief. Without it the resolver's mustache pass throws on the
+    // unresolved `{{exercise.*}}` token and — since that render is
+    // all-or-nothing per field — falls the whole field back to its literal
+    // tokens, dragging `{{roleplay.*}}`/`{{station.*}}` down too even though
+    // their scopes are present. Skipped when opened without an exercise (no
+    // stations, no exercise facets to resolve against).
+    if (exercise != null) {
+      scopes = ExerciseScope(
+        exercise: exercise,
+        variableOverrides: exercise.variableOverrides,
+        child: scopes,
+      );
+    }
+    return scopes;
   }
 
   /// Live inline warning shown right under the Post selector when
@@ -1214,7 +1233,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
               label: _mdLabelFor(section, l),
               controller: _mdControllerFor(section),
               overrides: _effectiveVariables,
-              roleplayFacets: _roleplayFacets,
             ),
       ],
       showRollup: _showRollup,

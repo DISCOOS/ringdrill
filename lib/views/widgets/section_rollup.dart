@@ -16,14 +16,12 @@ class RollupSection {
     required this.label,
     required this.controller,
     this.overrides = const {},
-    this.roleplayFacets,
   });
 
   final String id;
   final String label;
   final TextEditingController controller;
   final Map<String, String> overrides;
-  final Map<String, dynamic>? roleplayFacets;
 }
 
 /// The read-only rollup under an entity editor's default section
@@ -114,7 +112,6 @@ class _SectionRollupState extends State<SectionRollup> {
             context,
             s.controller.text,
             overrides: s.overrides,
-            roleplayFacets: s.roleplayFacets,
           ) ??
           '';
       if (resolved.trim().isEmpty) continue;

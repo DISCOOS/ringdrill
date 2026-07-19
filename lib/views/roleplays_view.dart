@@ -27,6 +27,7 @@ import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
@@ -349,14 +350,14 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       ),
     );
 
-    // DESIGN-010 browser tile polish: each row is a different roleplay, so it
-    // seeds its own scope from the linked station (skipped for an
-    // unassigned roleplay), so `{{station.*}}` resolves inside the tile
-    // instead of showing literally.
+    // Each row is a different roleplay, so it seeds its own scopes: the
+    // roleplay's own facets (so `{{roleplay.*}}` in the scenario fields
+    // resolves) plus the linked station's/exercise's (so `{{station.*}}`
+    // resolves), skipped for an unassigned roleplay.
     return StationScope.forStation(
       exercise: exercise,
       station: station,
-      child: tile,
+      child: RoleplayScope.forRoleplay(rolePlay, child: tile),
     );
   }
 
