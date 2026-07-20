@@ -124,8 +124,8 @@ void main() {
     (tester) async {
       await expandFirstRole(tester);
 
-      // The cast pill shows just the actor name (no "Played by").
-      expect(find.text(_actor.realName), findsOneWidget);
+      // The cast pill reads "Enacted by {realName}".
+      expect(find.text(l10n.castedByLine(_actor.realName)), findsOneWidget);
       expect(find.text(_actor.phone!), findsOneWidget);
       // The deprecated hint's literal wording must never render.
       expect(find.text('Stays on this device'), findsNothing);
@@ -156,13 +156,17 @@ void main() {
     await expandFirstRole(tester);
 
     expect(find.textContaining('{{station.'), findsNothing);
-    // The signalement renders via RingDrillText.plain, so position/address
-    // read as plain text (chips are reserved for description bodies /
-    // markdown surfaces).
+    // The signalement renders via RingDrillText.rich, so the resolved
+    // position/address render as their own action/copy chips rather than
+    // flat text — the "UTM:"/"STED:" labels stay in the surrounding prose
+    // (only found via `findRichText`) while each resolved value is its own
+    // chip widget's plain Text.
     expect(
-      find.textContaining('UTM: ${formatUtm(_stationPosition)}'),
+      find.textContaining('UTM:', findRichText: true),
       findsOneWidget,
     );
-    expect(find.textContaining('STED: Innkjøring'), findsOneWidget);
+    expect(find.textContaining(formatUtm(_stationPosition)), findsWidgets);
+    expect(find.textContaining('STED:', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Innkjøring'), findsWidgets);
   });
 }

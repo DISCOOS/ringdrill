@@ -20,6 +20,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 // chevron so the two are never shown together. Every other
 // `StationPositionPanel` test (e.g. `station_position_panel_test.dart`)
 // omits `sectionId`, so this file is scoped to the collapsible variant.
+//
+// The map folds via a vertical SizeTransition (shared with
+// CollapsibleSectionCard): it stays in the tree and is clipped to zero height
+// when collapsed, so it can slide rather than vanish. "Hidden" is therefore
+// asserted as zero clipped height (its SizeTransition ancestor), not as an
+// absent widget.
 // ---------------------------------------------------------------------------
 
 void main() {
@@ -53,6 +59,19 @@ void main() {
     position: const LatLng(58.99, 10.43),
   );
 
+  /// The clipped height of the map section — the [SizeTransition] wrapping
+  /// the [StationMiniMap]. Zero when collapsed, the map's full height when
+  /// expanded.
+  double mapHeight(WidgetTester tester) {
+    final sizeTransition = find
+        .ancestor(
+          of: find.byType(StationMiniMap),
+          matching: find.byType(SizeTransition),
+        )
+        .first;
+    return tester.getSize(sizeTransition).height;
+  }
+
   Future<void> pump(WidgetTester tester, {bool fillHeight = false}) =>
       tester.pumpWidget(
         MaterialApp(
@@ -79,6 +98,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(StationMiniMap), findsOneWidget);
+      expect(mapHeight(tester), greaterThan(0));
       expect(find.byType(CollapseChevron), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       // The bar's own leading icon — distinct from the map's own pin
@@ -108,7 +128,8 @@ void main() {
       await tester.tap(find.byType(CollapseChevron));
       await tester.pumpAndSettle();
 
-      expect(find.byType(StationMiniMap), findsNothing);
+      // Clipped to zero height, not removed.
+      expect(mapHeight(tester), 0);
       // The bar itself — title and UTM — stays; the editor chevron is gone,
       // replaced by the (now bar-trailing) expand chevron.
       expect(find.text(l.position.toUpperCase()), findsOneWidget);
@@ -119,7 +140,7 @@ void main() {
       // and the editor chevron returns.
       await tester.tap(find.byType(CollapseChevron));
       await tester.pumpAndSettle();
-      expect(find.byType(StationMiniMap), findsOneWidget);
+      expect(mapHeight(tester), greaterThan(0));
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     },
   );
@@ -145,7 +166,7 @@ void main() {
 
       await tester.tap(find.byType(CollapseChevron));
       await tester.pumpAndSettle();
-      expect(find.byType(StationMiniMap), findsNothing);
+      expect(mapHeight(tester), 0);
 
       // Tap the bar's title — a separate tap target from the expand
       // chevron sharing the same row, unaffected by the collapsed state.
@@ -165,14 +186,14 @@ void main() {
 
       await tester.tap(find.byType(CollapseChevron));
       await tester.pumpAndSettle();
-      expect(find.byType(StationMiniMap), findsNothing);
+      expect(mapHeight(tester), 0);
 
       // Simulate a fresh mount (e.g. app restart) reading the same store.
       await tester.pumpWidget(const SizedBox.shrink());
       await pump(tester);
       await tester.pumpAndSettle();
 
-      expect(find.byType(StationMiniMap), findsNothing);
+      expect(mapHeight(tester), 0);
       expect(find.text(l.position.toUpperCase()), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right), findsNothing);
     },

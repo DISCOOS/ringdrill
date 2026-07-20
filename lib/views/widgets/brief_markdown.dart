@@ -79,7 +79,12 @@ class _CodeChipNode extends ElementNode {
   final CodeConfig codeConfig;
 
   @override
-  TextStyle get style => codeConfig.style.merge(parentStyle);
+  // Body style as the base, `codeConfig.style` (BriefTheme.typography.code +
+  // code colors) on top: `a.merge(b)` lets b win, so the code config must be
+  // the argument — otherwise the surrounding body font size overrides the code
+  // size and the chip reads too large.
+  TextStyle get style =>
+      (parentStyle ?? const TextStyle()).merge(codeConfig.style);
 
   @override
   InlineSpan build() {
@@ -362,7 +367,12 @@ class _ActionChipNode extends ElementNode {
   final CodeConfig codeConfig;
 
   @override
-  TextStyle get style => codeConfig.style.merge(parentStyle);
+  // Body style as the base, `codeConfig.style` (BriefTheme.typography.code +
+  // code colors) on top: `a.merge(b)` lets b win, so the code config must be
+  // the argument — otherwise the surrounding body font size overrides the code
+  // size and the chip reads too large.
+  TextStyle get style =>
+      (parentStyle ?? const TextStyle()).merge(codeConfig.style);
 
   @override
   InlineSpan build() {

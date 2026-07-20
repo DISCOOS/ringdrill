@@ -164,8 +164,9 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 0);
-      // The expanded cast pill shows just the actor name (no "Played by").
-      expect(find.text(_actorA.realName), findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // The expanded cast pill reads "Enacted by {realName}".
+      expect(find.text(l10n.castedByLine(_actorA.realName)), findsOneWidget);
     });
 
     testWidgets('phone is rendered when actor has phone', (tester) async {
@@ -231,7 +232,8 @@ void main() {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 1);
-      expect(find.text(_actorB.realName), findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
     });
 
     testWidgets('phone number not rendered when actor.phone is null',
@@ -240,8 +242,9 @@ void main() {
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 1);
 
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       // Actor name is present
-      expect(find.text(_actorB.realName), findsOneWidget);
+      expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
       // The phone number of actor A must not appear in role B's section
       expect(find.text(_actorA.phone!), findsNothing);
     });

@@ -3,14 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
-import 'package:ringdrill/views/widgets/collapsible_section_store.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_mixin.dart';
 
 /// Shared collapsible wrapper for every titled section card built on
 /// [CardSectionHeader] (Postbeskrivelse, Personer, Lokasjoner, Tidsplan/
 /// Når aktiv, Markørordre, ...): a [Card] with a tappable header — tapping
 /// anywhere in the header (or its own [CollapseChevron]) folds [body] away
-/// with an [AnimatedSize], leaving just the header (icon, title, any
-/// [trailing] action) visible. State is remembered per [sectionId] via
+/// with a vertical [SizeTransition] — it expands downward and collapses
+/// upward, the body staying rendered and clipped throughout — leaving just
+/// the header (icon, title, any [trailing] action) visible. State is
+/// remembered per [sectionId] via
 /// [CollapsibleSectionStore] — never the localized [title], which is not a
 /// stable key. `PlayerStatusCard` does not use this wrapper; it is never
 /// collapsible.
@@ -76,43 +78,29 @@ class CollapsibleSectionCard extends StatefulWidget {
   final String? collapsedTitleSuffix;
 
   @override
-  State<CollapsibleSectionCard> createState() =>
-      _CollapsibleSectionCardState();
+  State<CollapsibleSectionCard> createState() => _CollapsibleSectionCardState();
 }
 
-class _CollapsibleSectionCardState extends State<CollapsibleSectionCard> {
-  bool _collapsed = false;
-
+class _CollapsibleSectionCardState extends State<CollapsibleSectionCard>
+    with SingleTickerProviderStateMixin, CollapsibleSectionStateMixin {
   @override
   void initState() {
     super.initState();
-    unawaited(_loadCollapsed());
+    unawaited(initCollapse(widget.sectionId));
   }
 
-  Future<void> _loadCollapsed() async {
-    final stored = await CollapsibleSectionStore.isCollapsed(
-      widget.sectionId,
-    );
-    if (!mounted || stored == _collapsed) return;
-    setState(() => _collapsed = stored);
-  }
-
-  void _toggle() {
-    final next = !_collapsed;
-    setState(() => _collapsed = next);
-    unawaited(CollapsibleSectionStore.setCollapsed(widget.sectionId, next));
-  }
+  void _toggle() => toggleCollapse(widget.sectionId);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final showBorder = !_collapsed && !widget.dividedBody;
+    final showBorder = !collapsed && !widget.dividedBody;
     final trailingRow = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         ?widget.trailing,
         if (widget.trailing != null) const SizedBox(width: 4),
-        CollapseChevron(collapsed: _collapsed, onTap: _toggle),
+        CollapseChevron(collapsed: collapsed, onTap: _toggle),
       ],
     );
 
@@ -133,14 +121,14 @@ class _CollapsibleSectionCardState extends State<CollapsibleSectionCard> {
             ),
             child: Row(
               children: [
-                Expanded(child: widget.headerBuilder!(_collapsed)),
+                Expanded(child: widget.headerBuilder!(collapsed)),
                 trailingRow,
               ],
             ),
           )
         : CardSectionHeader(
             icon: widget.icon!,
-            title: _collapsed && widget.collapsedTitleSuffix != null
+            title: collapsed && widget.collapsedTitleSuffix != null
                 ? '${widget.title!} · ${widget.collapsedTitleSuffix}'
                 : widget.title!,
             showBottomBorder: showBorder,
@@ -155,10 +143,14 @@ class _CollapsibleSectionCardState extends State<CollapsibleSectionCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(onTap: _toggle, child: header),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
+          // Vertical reveal: the body stays in the tree and is clipped from
+          // the bottom (axisAlignment -1 pins it to the top), so it expands
+          // downward and collapses upward instead of appearing from the side
+          // or vanishing at once.
+          SizeTransition(
             alignment: Alignment.topCenter,
-            child: _collapsed ? const SizedBox.shrink() : widget.body,
+            sizeFactor: collapseFactor,
+            child: widget.body,
           ),
         ],
       ),

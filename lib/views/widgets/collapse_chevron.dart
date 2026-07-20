@@ -9,7 +9,11 @@ import 'package:flutter/material.dart';
 /// so it can sit inside another tappable region (a header row, a
 /// coordinate bar) without also triggering that region's own tap.
 class CollapseChevron extends StatelessWidget {
-  const CollapseChevron({super.key, required this.collapsed, required this.onTap});
+  const CollapseChevron({
+    super.key,
+    required this.collapsed,
+    required this.onTap,
+  });
 
   final bool collapsed;
   final VoidCallback onTap;

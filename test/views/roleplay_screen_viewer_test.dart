@@ -193,9 +193,23 @@ void main() {
     matching: find.byType(CollapseChevron),
   );
 
+  /// The Spill identity card's body reveal — the outermost [SizeTransition]
+  /// inside that card (CollapsibleSectionCard wraps its body in one). The body
+  /// stays in the tree when collapsed and is clipped to zero height, so
+  /// "folded away" is asserted as zero height here, not as absent widgets.
+  Finder identityBodyReveal() => find
+      .descendant(
+        of: find
+            .ancestor(of: find.byType(IconButton), matching: find.byType(Card))
+            .first,
+        matching: find.byType(SizeTransition),
+      )
+      .first;
+
   testWidgets(
     'the identity card is expanded by default and shows the person\'s '
-    'notes and linked location; the "Spilles av" footer has no dark band',
+    'notes and linked location; the "Spilles av" footer renders as the '
+    'shared CastPill chip',
     (tester) async {
       await tester.pumpWidget(_buildScreen());
       await tester.pumpAndSettle();
@@ -210,13 +224,16 @@ void main() {
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       final footerText = find.text(l10n.castedByLine('Nina Actor'));
+      // The footer uses the same CastPill chip as the collapsed tile's face
+      // chip and roleplays_view's cast row — its `.cast` variant always
+      // paints a colored (primaryContainer) background.
       final footerContainer = tester.widget<Container>(
         find
             .ancestor(of: footerText, matching: find.byType(Container))
             .first,
       );
       final decoration = footerContainer.decoration as BoxDecoration?;
-      expect(decoration?.color, isNull);
+      expect(decoration?.color, isNotNull);
     },
   );
 
@@ -232,31 +249,24 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      // Notes and location stay expanded-only.
-      expect(
-        find.text('Skadd venstre ankel, kan ikke gå selv.'),
-        findsNothing,
-      );
-      expect(find.textContaining('Bosted'), findsNothing);
-      // Signalement, gender and the cast footer are now hidden when collapsed.
-      expect(
-        find.text('Gul regnjakke, hjemme', findRichText: true),
-        findsNothing,
-      );
-      expect(find.textContaining('Man'), findsNothing);
-      // The mixed-case cast footer is hidden; the collapsed header instead
-      // reads the uppercase "SPILLES AV {markør}" (castedByLine), e.g.
-      // "PLAYED BY NINA ACTOR" (en) — a different (uppercase) string.
-      expect(find.text(l10n.castedByLine('Nina Actor')), findsNothing);
+      // Gender, signalement, notes, the linked location and the cast footer
+      // all live in the body, which folds away — clipped to zero height, not
+      // removed from the tree.
+      expect(tester.getSize(identityBodyReveal()).height, 0);
+      // The collapsed header reads the uppercase "SPILLES AV {markør}"
+      // (castedByLine), e.g. "PLAYED BY NINA ACTOR" (en) — it sits outside the
+      // folded body, so it stays visible while the mixed-case footer inside is
+      // clipped away.
       expect(
         find.text(l10n.castedByLine('Nina Actor').toUpperCase()),
         findsOneWidget,
       );
 
-      // Expanding again brings signalement, notes, location and the footer
-      // back — and the header returns to just the "SPILL" kicker.
+      // Expanding again reveals the body (notes, location, footer) and the
+      // header returns to just the "SPILL" kicker.
       await tester.tap(identityCollapseChevron());
       await tester.pumpAndSettle();
+      expect(tester.getSize(identityBodyReveal()).height, greaterThan(0));
       expect(
         find.text('Skadd venstre ankel, kan ikke gå selv.'),
         findsOneWidget,

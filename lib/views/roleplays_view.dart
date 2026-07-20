@@ -202,7 +202,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
             final isSelected =
                 selectedTarget is RoleSheetTarget &&
                 selectedTarget.rolePlayUuid == rolePlay.uuid;
-            return _buildRow(
+            return _buildRoleplayRow(
               context,
               localizations,
               exerciseNumber: exerciseNumber,
@@ -245,7 +245,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     );
   }
 
-  Widget _buildRow(
+  Widget _buildRoleplayRow(
     BuildContext context,
     AppLocalizations localizations, {
     required int exerciseNumber,
@@ -333,7 +333,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
                   ),
                 ),
         ),
-        trailing: _buildCastChip(context, localizations, rolePlay, actor),
+        trailing: _buildCastAction(context, localizations, rolePlay, actor),
         expanded: expanded,
         onOpen: () => _openRolePlay(rolePlay),
         onToggle: () {
@@ -362,7 +362,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     );
   }
 
-  Widget _buildCastChip(
+  Widget _buildCastAction(
     BuildContext context,
     AppLocalizations localizations,
     RolePlay rolePlay,
@@ -388,15 +388,18 @@ class _RolePlaysViewState extends State<RolePlaysView> {
     RolePlay rolePlay,
     Actor? actor,
   ) {
-    // Scenario fields — labeled, matching the RolePlayScreen card style.
-    // Collected as one "section" (own internal 8px gaps, not full section
-    // dividers) so the tile shows at most one divider between it and the
-    // position panel/Cast, not one per field.
+    // Scenario fields — labeled, rendered via RingDrillText.rich so a
+    // resolved position/address reads as its own action/copy chip (unlike
+    // RolePlayScreen's plain-text signalement, this compact tile treats
+    // signalement/background/behavior alike). Collected as one "section"
+    // (own internal 8px gaps, not full section dividers) so the tile shows at
+    // most one divider between it and the position panel/Cast, not one per
+    // field.
     final scenarioBlocks = <Widget>[];
     void addScenarioBlock(String label, String? text) {
       if (text == null || text.isEmpty) return;
       if (scenarioBlocks.isNotEmpty) {
-        scenarioBlocks.add(const SizedBox(height: 8));
+        scenarioBlocks.add(const SizedBox(height: 12));
       }
       scenarioBlocks.add(
         _ExpandedFieldBlock(
@@ -451,7 +454,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Widget _buildCastSection(
     BuildContext context,
-    AppLocalizations localizations,
+    AppLocalizations l10n,
     RolePlay rolePlay,
     Actor? actor,
   ) {
@@ -459,42 +462,38 @@ class _RolePlaysViewState extends State<RolePlaysView> {
       // Uncast — the same tappable cast pill the Post surfaces use.
       return CastPill(
         variant: CastPillVariant.uncast,
-        label: localizations.noCastLine,
+        label: l10n.noCastLine,
         onTap: () => _openCastPicker(rolePlay),
       );
     }
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     // No `⋮` menu here (DESIGN-010 browser tile polish): edit/clear moved
     // into the marker sheet itself (CastPickerSheet), reachable from the
     // collapsed tile's cast chip regardless of expand state.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // "Spilles av {realName}" as the shared cast pill — tappable to
+        // "Enacted by {realName}" as the shared cast pill — tappable to
         // change/clear the actor, the same affordance as the collapsed tile's
         // face chip and the header cast icon.
-        CastPill(
-          variant: CastPillVariant.cast,
-          // Just the actor name — the face icon already reads "enacted by".
-          label: actor.realName,
-          onTap: () => _openCastPicker(rolePlay),
-        ),
-        if (actor.phone != null && actor.phone!.isNotEmpty)
-          const SizedBox(height: 6),
-        // A full chip (copy icon and all), not plain tappable text — tap
-        // dials, the icon copies (ADR-0050, DESIGN-013).
-        if (actor.phone != null && actor.phone!.isNotEmpty)
-          RingDrillText.rich(
-            const ActionChipFormatter().phone(actor.phone!, actor.phone!),
-          ),
-        if (actor.notes != null && actor.notes!.isNotEmpty)
-          Text(
-            actor.notes!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            CastPill(
+              variant: CastPillVariant.cast,
+              label: l10n.castedByLine(actor.realName),
+              onTap: () => _openCastPicker(rolePlay),
             ),
-          ),
+            // A full chip (copy icon and all), not plain tappable text — tap
+            // dials, the icon copies (ADR-0050, DESIGN-013).
+            if (actor.phone != null && actor.phone!.isNotEmpty)
+              RingDrillText.rich(
+                const ActionChipFormatter().phone(actor.phone!, actor.phone!),
+              ),
+          ],
+        ),
+
+        if (actor.notes != null && actor.notes!.isNotEmpty)
+          RingDrillText.rich(actor.notes!),
       ],
     );
   }
@@ -691,7 +690,7 @@ class _ExpandedFieldBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        RingDrillText.plain(text, overrides: overrides),
+        RingDrillText.rich(text, overrides: overrides),
       ],
     );
   }

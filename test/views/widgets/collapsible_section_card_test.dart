@@ -11,6 +11,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 // viewer's Personer/Lokasjoner cards all build on this). Tests it directly
 // rather than through any one call site so they cover the shared mechanism
 // once instead of per migrated card.
+//
+// The body folds via a vertical SizeTransition: it stays in the tree and is
+// clipped to zero height when collapsed (so it can slide, not vanish), rather
+// than being removed. "Hidden" is therefore asserted as zero clipped height,
+// not as an absent widget.
 // ---------------------------------------------------------------------------
 
 Widget _harness(String sectionId, {String title = 'Test Section'}) =>
@@ -24,6 +29,19 @@ Widget _harness(String sectionId, {String title = 'Test Section'}) =>
         ),
       ),
     );
+
+/// The clipped height of the section body whose text is [bodyText] — its
+/// nearest [SizeTransition] ancestor. Zero when the card is collapsed, the
+/// body's full height when expanded.
+double _bodyHeight(WidgetTester tester, String bodyText) {
+  final sizeTransition = find
+      .ancestor(
+        of: find.text(bodyText),
+        matching: find.byType(SizeTransition),
+      )
+      .first;
+  return tester.getSize(sizeTransition).height;
+}
 
 /// The header's own bottom-border decoration, or null if it draws none.
 BoxDecoration? headerDecoration(WidgetTester tester) {
@@ -44,14 +62,15 @@ void main() {
   });
 
   testWidgets(
-    'tapping the header collapses the body and hides it; the header '
-    '(title/chevron) stays; tapping again expands',
+    'tapping the header collapses the body (clips it to zero height); the '
+    'header (title/chevron) stays; tapping again expands',
     (tester) async {
       await tester.pumpWidget(_harness('test-section'));
       await tester.pumpAndSettle();
 
       expect(find.text('TEST SECTION'), findsOneWidget);
       expect(find.text('Section body content'), findsOneWidget);
+      expect(_bodyHeight(tester, 'Section body content'), greaterThan(0));
       expect(find.byType(CollapseChevron), findsOneWidget);
 
       await tester.tap(find.text('TEST SECTION'));
@@ -59,12 +78,13 @@ void main() {
 
       expect(find.text('TEST SECTION'), findsOneWidget);
       expect(find.byType(CollapseChevron), findsOneWidget);
-      expect(find.text('Section body content'), findsNothing);
+      // Clipped away, not removed.
+      expect(_bodyHeight(tester, 'Section body content'), 0);
 
       await tester.tap(find.text('TEST SECTION'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Section body content'), findsOneWidget);
+      expect(_bodyHeight(tester, 'Section body content'), greaterThan(0));
     },
   );
 
@@ -76,14 +96,14 @@ void main() {
 
       await tester.tap(find.text('TEST SECTION'));
       await tester.pumpAndSettle();
-      expect(find.text('Section body content'), findsNothing);
+      expect(_bodyHeight(tester, 'Section body content'), 0);
 
       // Simulate a fresh mount (e.g. app restart) reading the same store.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(_harness('persist-section'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Section body content'), findsNothing);
+      expect(_bodyHeight(tester, 'Section body content'), 0);
     },
   );
 
@@ -118,8 +138,8 @@ void main() {
       await tester.tap(find.text('TIDSPLAN'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Schedule body'), findsNothing);
-      expect(find.text('Persons body'), findsOneWidget);
+      expect(_bodyHeight(tester, 'Schedule body'), 0);
+      expect(_bodyHeight(tester, 'Persons body'), greaterThan(0));
     },
   );
 
@@ -151,7 +171,7 @@ void main() {
 
       expect(trailingTaps, 1);
       // The trailing action's own tap must not have also toggled collapse.
-      expect(find.text('Section body content'), findsOneWidget);
+      expect(_bodyHeight(tester, 'Section body content'), greaterThan(0));
     },
   );
 

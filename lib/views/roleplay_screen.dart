@@ -30,6 +30,7 @@ import 'package:ringdrill/views/widgets/brief_markdown.dart';
 import 'package:ringdrill/views/widgets/brief_theme.dart';
 import 'package:ringdrill/views/widgets/card_section_header.dart';
 import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
+import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -909,7 +910,6 @@ class _PlayCard extends StatelessWidget {
           RingDrillText.plain(
             metaParts.isEmpty ? name : '$name · ${metaParts.join(' · ')}',
             overrides: overrides,
-            style: bodyTextStyle,
           ),
           // The person's own notes, folded in and read together with the
           // identity (no "Notater" kicker of its own).
@@ -924,12 +924,15 @@ class _PlayCard extends StatelessWidget {
           if (locationLabel != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(
+              child: RingDrillText.rich(
                 [
                   locationLabel,
-                  if (locationPosition != null) formatUtm(locationPosition),
+                  if (locationPosition != null)
+                    const ActionChipFormatter().position(
+                      formatUtm(locationPosition),
+                      locationPosition,
+                    ),
                 ].join(' · '),
-                style: bodyTextStyle,
               ),
             ),
         ],
@@ -979,13 +982,14 @@ class _PlayCard extends StatelessWidget {
               children: sections,
             ),
           ),
-        // "Spilles av …" footer — a muted row (no dark band), separated from
-        // the sections above by a top border only when there are sections
-        // (the header divider already separates it otherwise).
+        // "Spilles av …" footer, separated from the sections above by a top
+        // border only when there are sections (the header divider already
+        // separates it otherwise).
         if (actor != null)
           // The footer names the cast actor and is itself tappable — opening
-          // the same cast picker as the header quick action — kept a plain
-          // muted row (no chip background).
+          // the same cast picker as the header quick action — via the same
+          // CastPill chip as the collapsed tile's face chip and
+          // roleplays_view's cast row.
           InkWell(
             onTap: onEditCast,
             child: Container(
@@ -1001,39 +1005,32 @@ class _PlayCard extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // "Enacted by {realName}" as the shared cast pill — tappable to
+                  // change/clear the actor, the same affordance as the collapsed tile's
+                  // face chip and the header cast icon.
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // "Spilles av …" names the actor → face icon (person ≠
-                      // actor; person is reserved for the character).
-                      Icon(
-                        Icons.face,
-                        size: 16,
-                        color: theme.colorScheme.onSurfaceVariant,
+                      CastPill(
+                        variant: CastPillVariant.cast,
+                        label: l10n.castedByLine(actor.realName),
+                        onTap: () => _openCastPicker(context, rolePlay),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.castedByLine(actor.realName),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      // A full chip (copy icon and all), not plain tappable text — tap
+                      // dials, the icon copies (ADR-0050, DESIGN-013).
+                      if (actor.phone != null && actor.phone!.isNotEmpty)
+                        RingDrillText.rich(
+                          const ActionChipFormatter().phone(
+                            actor.phone!,
+                            actor.phone!,
+                          ),
                         ),
-                      ),
                     ],
                   ),
-                  // The cast footer is the only surface with room for the
-                  // actor's phone (ADR-0050, DESIGN-013) — a full chip (copy
-                  // icon and all), indented under the name to align with it.
-                  if (actor.phone != null && actor.phone!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 24),
-                      child: RingDrillText.rich(
-                        const ActionChipFormatter().phone(
-                          actor.phone!,
-                          actor.phone!,
-                        ),
-                      ),
-                    ),
+
+                  if (actor.notes != null && actor.notes!.isNotEmpty)
+                    RingDrillText.rich(actor.notes!),
                 ],
               ),
             ),
@@ -1058,7 +1055,7 @@ class _PlayCard extends StatelessWidget {
             : l10n.playSection;
         return kickerHeaderContent(
           context,
-          icon: Icons.face,
+          icon: Icons.theater_comedy_outlined,
           title: title.toUpperCase(),
         );
       },
@@ -1068,19 +1065,24 @@ class _PlayCard extends StatelessWidget {
       // so it does not make the header taller than the other section cards.
       trailing: IconButton(
         tooltip: actor != null ? l10n.editCast : l10n.addCast,
-        iconSize: 20,
-        padding: const EdgeInsets.all(4),
-        constraints: const BoxConstraints(),
         visualDensity: VisualDensity.compact,
         // Cast → plain face; uncast → face + plus "assign an actor". person/
         // add-person is reserved for the character, not who enacts it.
         icon: actor != null
             ? Icon(Icons.face, color: theme.colorScheme.primary)
-            : AddFaceIcon(size: 20, color: theme.colorScheme.onSurfaceVariant),
+            : AddFaceIcon(color: theme.colorScheme.onSurfaceVariant),
         onPressed: onEditCast,
       ),
       body: body,
     );
+  }
+
+  // Select/clear/edit/add all live in the marker sheet itself now
+  // (CastPickerSheet, DESIGN-010 browser tile polish) — this just opens it
+  // and applies the resulting select-or-clear choice via the shared helper.
+  Future<void> _openCastPicker(BuildContext context, RolePlay rolePlay) async {
+    final localizations = AppLocalizations.of(context)!;
+    await openCastPickerAndApply(context, localizations, rolePlay);
   }
 }
 

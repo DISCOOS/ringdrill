@@ -90,6 +90,19 @@ Finder postCollapseChevron() => find.descendant(
   matching: find.byType(CollapseChevron),
 );
 
+/// The Post card's body reveal — the outermost [SizeTransition] inside that
+/// card. CollapsibleSectionCard keeps its body in the tree when collapsed and
+/// clips it to zero height (so it slides rather than vanishes), so "hidden" is
+/// asserted as zero height here, not as an absent widget.
+Finder postBodyReveal() => find
+    .descendant(
+      of: find
+          .ancestor(of: find.byIcon(Icons.flag), matching: find.byType(Card))
+          .first,
+      matching: find.byType(SizeTransition),
+    )
+    .first;
+
 void main() {
   setUp(() async {
     await _seedAndInit();
@@ -131,10 +144,12 @@ void main() {
 
       await tester.tap(postCollapseChevron());
       await tester.pumpAndSettle();
-      expect(find.text('1.1 Post 1'), findsNothing);
+      // Clipped to zero height, not removed from the tree.
+      expect(tester.getSize(postBodyReveal()).height, 0);
 
       await tester.tap(postCollapseChevron());
       await tester.pumpAndSettle();
+      expect(tester.getSize(postBodyReveal()).height, greaterThan(0));
       expect(find.text('1.1 Post 1'), findsOneWidget);
     },
   );

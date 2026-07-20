@@ -6,7 +6,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
-import 'package:ringdrill/views/widgets/collapsible_section_store.dart';
+import 'package:ringdrill/views/widgets/collapsible_section_mixin.dart';
 
 /// Layout for [PositionCard]'s surface (docs/prompts/position-card-reflow.md):
 /// [row] is a horizontal strip (station form), [card] stacks the thumbnail
@@ -327,28 +327,17 @@ class PositionCardShell extends StatefulWidget {
   State<PositionCardShell> createState() => _PositionCardShellState();
 }
 
-class _PositionCardShellState extends State<PositionCardShell> {
-  bool _collapsed = false;
-
+class _PositionCardShellState extends State<PositionCardShell>
+    with SingleTickerProviderStateMixin, CollapsibleSectionStateMixin {
   @override
   void initState() {
     super.initState();
-    final sectionId = widget.sectionId;
-    if (sectionId != null) unawaited(_loadCollapsed(sectionId));
-  }
-
-  Future<void> _loadCollapsed(String sectionId) async {
-    final stored = await CollapsibleSectionStore.isCollapsed(sectionId);
-    if (!mounted || stored == _collapsed) return;
-    setState(() => _collapsed = stored);
+    unawaited(initCollapse(widget.sectionId));
   }
 
   void _toggle() {
     final sectionId = widget.sectionId;
-    if (sectionId == null) return;
-    final next = !_collapsed;
-    setState(() => _collapsed = next);
-    unawaited(CollapsibleSectionStore.setCollapsed(sectionId, next));
+    if (sectionId != null) toggleCollapse(sectionId);
   }
 
   @override
@@ -363,9 +352,11 @@ class _PositionCardShellState extends State<PositionCardShell> {
     // stacked (fixed-thumbnail) layouts, where collapsing to the coordinate
     // bar reads correctly.
     final collapsible = widget.sectionId != null && !widget.fillHeight;
-    // Collapsed (stacked only): treat the shell as if it had no thumbnail,
-    // so the `min` main-axis size below shrinks it to just the coordinate bar.
-    final thumbnail = collapsible && _collapsed ? null : widget.thumbnail;
+    // The thumbnail stays in the tree while collapsible so the SizeTransition
+    // below can slide it (down to expand, up to collapse) rather than it
+    // appearing/vanishing at once. A genuinely absent thumbnail (no map) or a
+    // non-collapsible caller is unaffected.
+    final thumbnail = widget.thumbnail;
     final fill = widget.fillHeight && thumbnail != null;
     final thumbnailStack = thumbnail == null
         ? null
@@ -373,27 +364,59 @@ class _PositionCardShellState extends State<PositionCardShell> {
             fit: StackFit.expand,
             children: [
               thumbnail,
-              if (widget.overlayActions.isNotEmpty || collapsible)
+              if (widget.overlayActions.isNotEmpty ||
+                  (collapsible && !collapsed))
                 Positioned(
-                  top: 6,
-                  right: 6,
+                  top: 12,
+                  right: 12,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ...widget.overlayActions,
-                      // Collapsible + a thumbnail present means expanded
-                      // (a collapsed shell already nulled `thumbnail` out
-                      // above) — the fold-away control floats over the map
-                      // itself here rather than sitting in the bar, since
-                      // `PositionCardShell` has no other map-layer control
-                      // to share that corner with.
-                      if (collapsible)
-                        CollapseChevron(collapsed: _collapsed, onTap: _toggle),
+                      // The fold-away control floats over the map itself while
+                      // expanded — dropped from the tree once collapsed (the
+                      // map slides shut, and the bar's own chevron takes over)
+                      // so it never lingers clipped-but-findable behind the
+                      // folded map.
+                      if (collapsible && !collapsed)
+                        CollapseChevron(collapsed: collapsed, onTap: _toggle),
                     ],
                   ),
                 ),
             ],
           );
+
+    final legendBox = widget.legend == null
+        ? null
+        : Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            child: widget.legend!,
+          );
+
+    // The fixed-height map plus any legend, one unit so the collapse animation
+    // slides them together (non-fill layouts only; fill mode never collapses
+    // and flexes the map instead).
+    final mapAndLegend = thumbnailStack == null
+        ? null
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(height: widget.thumbnailHeight, child: thumbnailStack),
+              ?legendBox,
+            ],
+          );
+
+    // Divider between the map section and the bar — dropped once collapsed
+    // (nothing visible above the bar), so no stray line remains.
+    final showBarDivider =
+        thumbnailStack != null && !(collapsible && collapsed);
+
     final content = Column(
       // `max` in fill mode: the ancestor (the expanded right pane's
       // stretched Row) already gives this shell a tight height, and the
@@ -404,37 +427,28 @@ class _PositionCardShellState extends State<PositionCardShell> {
       mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (thumbnailStack != null)
-          fill
-              ? Expanded(child: thumbnailStack)
-              : SizedBox(height: widget.thumbnailHeight, child: thumbnailStack),
-        if (thumbnail != null && widget.legend != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-            ),
-            child: widget.legend!,
-          ),
+        if (fill && thumbnailStack != null) ...[
+          Expanded(child: thumbnailStack),
+          ?legendBox,
+        ] else if (mapAndLegend != null)
+          collapsible
+              ? SizeTransition(
+                  alignment: Alignment.topCenter,
+                  sizeFactor: collapseFactor,
+                  child: mapAndLegend,
+                )
+              : mapAndLegend,
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            // Only a divider when there is a thumbnail (or legend) above the
-            // bar; a bar-only card (collapsed / no thumbnail) has nothing to
-            // divide from, so the top border would be a stray line.
-            border: thumbnail == null
-                ? null
-                : Border(
+            border: showBarDivider
+                ? Border(
                     top: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
+                  )
+                : null,
           ),
           child: Row(
-            // Top-align so a trailing chevron sits against the title line
-            // when the bar has a second (coordinate) line, matching the other
-            // collapsible cards. Single-line bars are unaffected.
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // The bar is this card's header-equivalent whenever
               // `sectionId` is set (the Post/Spill position card, `fillHeight`
@@ -442,11 +456,7 @@ class _PositionCardShellState extends State<PositionCardShell> {
               // styled exactly like `CardSectionHeader`'s own title, in
               // place of the plain `barLabel` every other call site keeps.
               if (widget.sectionId != null) ...[
-                Icon(
-                  Icons.place,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.place, size: 18, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   localizations.position.toUpperCase(),
@@ -462,11 +472,11 @@ class _PositionCardShellState extends State<PositionCardShell> {
               ],
               Expanded(child: widget.barChild),
               const SizedBox(width: 8),
-              // Collapsed: the expand chevron takes the trailing slot
-              // instead of the editor `›` — the two are never shown
-              // together (Fix 3: collapsible-position-card.html).
-              if (collapsible && _collapsed)
-                CollapseChevron(collapsed: _collapsed, onTap: _toggle)
+              // Collapsed: the expand chevron takes the trailing slot instead
+              // of the editor `›` — the two are never shown together (the
+              // over-map collapse chevron only exists while expanded).
+              if (collapsible && collapsed)
+                CollapseChevron(collapsed: collapsed, onTap: _toggle)
               else
                 widget.barTrailing ??
                     Icon(
