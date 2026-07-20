@@ -126,10 +126,15 @@ class ActionChipFormatter extends ChipFormatter {
   @override
   String phone(String display, String number) {
     if (number.isEmpty) return briefCopyChip(display);
+    // Dial value carries only `+` and digits — a formatted [display]
+    // (spaces, parentheses, dashes) would make the `tel:` URI malformed and
+    // fail to launch on a real device. The chip still *shows* [display].
+    final dialable = number.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (dialable.isEmpty) return briefCopyChip(display);
     final uri = Uri(
       scheme: 'ringdrill',
       host: 'chip',
-      queryParameters: {'action': 'call', 'tel': number},
+      queryParameters: {'action': 'call', 'tel': dialable},
     );
     return '[$display]($uri)';
   }
