@@ -51,9 +51,12 @@ void main() {
         ),
       );
 
-      // Open the map picker by tapping the surface (there is no separate
-      // map icon button; the whole card opens the picker).
-      await tester.tap(find.byIcon(Icons.chevron_right));
+      // Open the map picker by tapping the thumbnail (there is no separate
+      // map icon button). Tapping the coordinate itself is reserved for
+      // copy-to-clipboard (CodeChip) — the default `row` variant has no
+      // separate chevron/trailing icon, so the thumbnail's own pin is the
+      // one tap target guaranteed not to land on the coordinate chip.
+      await tester.tap(find.byIcon(Icons.place));
       await tester.pumpAndSettle();
       expect(_pickerMap(), findsOneWidget);
 

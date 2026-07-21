@@ -720,7 +720,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pickALocation => 'Pick a Location';
+  String get modified => 'Modified';
+
+  @override
+  String get placement => 'Placement';
+
+  @override
+  String get pickAPlacement => 'Pick a placement';
+
+  @override
+  String get pickALocation => 'Pick a location';
 
   @override
   String get selectHere => 'Select here';
@@ -2710,4 +2719,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickerFilterByExerciseTitle => 'Filter by exercise';
+
+  @override
+  String get editPlacement => 'Edit placement';
 }

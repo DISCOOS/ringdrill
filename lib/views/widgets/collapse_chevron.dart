@@ -13,10 +13,12 @@ class CollapseChevron extends StatelessWidget {
     super.key,
     required this.collapsed,
     required this.onTap,
+    this.inverseColorOnCollapsed = false,
   });
 
   final bool collapsed;
   final VoidCallback onTap;
+  final bool inverseColorOnCollapsed;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,9 @@ class CollapseChevron extends StatelessWidget {
           child: Icon(
             Icons.expand_more,
             size: 20,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: inverseColorOnCollapsed && !collapsed
+                ? theme.colorScheme.onInverseSurface
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),

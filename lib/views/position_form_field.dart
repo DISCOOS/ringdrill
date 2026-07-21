@@ -38,9 +38,17 @@ class PositionFormField<K> extends FormField<LatLng> {
     // name, or "Own position" for an override). Null keeps the bar showing
     // just the coordinate, as every other caller does.
     String? title,
+    // Optional leading title stacked above the coordinate in the `card`
+    // variant's bar (e.g. the roleplay editor shows the followed location's
+    // name, or "Own position" for an override). Null keeps the bar showing
+    // just the coordinate, as every other caller does.
+    String? emptyLabel,
+    // Optional leading widget in the `card` variant's bar.
+    Widget? barLeading,
+    // Optional label widget in the `card` variant's bar
+    Widget? barLabel,
     // Optional trailing widget in the `card` variant's bar, replacing the
-    // default `chevron_right` (the roleplay editor's expand chevron on the
-    // collapsed, map-less card). Its own tap target.
+    // default `chevron_right`. Its own tap target.
     Widget? barTrailing,
     AutovalidateMode super.autovalidateMode = AutovalidateMode.disabled,
   }) : super(
@@ -54,9 +62,7 @@ class PositionFormField<K> extends FormField<LatLng> {
              // the surrounding markers (e.g. sibling stations) instead of
              // the global default centre, so the user places the new point
              // near its context.
-             final points = markers
-                 .map((m) => m.point)
-                 .toList(growable: false);
+             final points = markers.map((m) => m.point).toList(growable: false);
              final LatLng center;
              CameraFit? fit;
              if (position != null) {
@@ -88,23 +94,44 @@ class PositionFormField<K> extends FormField<LatLng> {
            return Column(
              crossAxisAlignment: CrossAxisAlignment.start,
              children: [
-               Text(
-                 l10n.position,
-                 style: theme.textTheme.labelSmall?.copyWith(
-                   color: theme.colorScheme.onSurfaceVariant,
+               if (title?.isNotEmpty == true) ...[
+                 Text(
+                   title!,
+                   style: theme.textTheme.labelSmall?.copyWith(
+                     color: theme.colorScheme.onSurfaceVariant,
+                   ),
                  ),
-               ),
-               const SizedBox(height: 6),
-               PositionCard<K>(
-                 variant: variant,
-                 position: position,
-                 onTap: openPicker,
-                 showThumbnail: showThumbnail,
-                 markers: markers,
-                 overlayActions: overlayActions,
-                 emptyLabel: l10n.pickALocation,
-                 title: title,
-                 barTrailing: barTrailing,
+                 const SizedBox(height: 6),
+               ],
+               ClipRRect(
+                 borderRadius: BorderRadius.circular(8),
+                 child: Container(
+                   decoration: BoxDecoration(
+                     border: Border.all(
+                       color: theme.colorScheme.outlineVariant,
+                     ),
+                     borderRadius: BorderRadius.circular(8),
+                   ),
+                   child: PositionCard<K>(
+                     elevation: 0,
+                     variant: variant,
+                     markers: markers,
+                     onTap: openPicker,
+                     position: position,
+                     overlayActions: overlayActions,
+                     emptyLabel: emptyLabel ?? l10n.pickALocation,
+                     barLabel:
+                         barLabel ??
+                         (position != null ? Text(l10n.editPlacement) : null),
+                     barLeading: barLeading,
+                     barTrailing:
+                         barTrailing ??
+                         Icon(
+                           Icons.chevron_right,
+                           color: theme.colorScheme.onSurfaceVariant,
+                         ),
+                   ),
+                 ),
                ),
                if (state.hasError)
                  Padding(

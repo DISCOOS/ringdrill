@@ -45,6 +45,7 @@ import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
+import 'package:ringdrill/views/widgets/section_header.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
@@ -186,22 +187,12 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   /// The [Location] this roleplay's position was copied from (DESIGN-009:
   /// `roleplay_form_screen.dart`'s `_applyPersonSelection` copies a
   /// "following" position from the linked person's own `locSlug`) — null
-  /// when unlinked. Shared by [_positionSourceLabel] (the position card's
-  /// bar, pre-DESIGN-010-consistency) and the identity card's expanded
-  /// "Location" section.
+  /// when unlinked. Used by the identity card's expanded "Location" section.
   Location? _personLocation(Station? station, RolePlay rolePlay) {
     final person = _personFor(station, rolePlay);
     final locSlug = person?.locSlug;
     if (station == null || locSlug == null) return null;
     return station.locations.where((l) => l.slug == locSlug).firstOrNull;
-  }
-
-  /// The label of [_personLocation] — null when unlinked, so the position
-  /// card's bar falls back to a single-line "Posisjon" label.
-  String? _positionSourceLabel(Station? station, RolePlay rolePlay) {
-    final location = _personLocation(station, rolePlay);
-    if (location == null) return null;
-    return location.label.isEmpty ? location.slug : location.label;
   }
 
   @override
@@ -542,7 +533,6 @@ class _RolePlayScreenState extends State<RolePlayScreen>
         return RolePositionPanel(
           position: central,
           label: resolvedRoleName,
-          sourceLabel: _positionSourceLabel(station, rolePlay),
           asCard: true,
           fillHeight: fillHeight,
           sectionId: 'position',
@@ -827,7 +817,7 @@ class _PlayCard extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _IdentityMoreLabel(label),
+            SectionHeader(label),
             // ~16px label→body gap; markdown content adds ~6px of its own top
             // spacing, so it gets a smaller SizedBox to land at the same gap.
             SizedBox(height: markdown ? 10 : 16),
@@ -883,7 +873,7 @@ class _PlayCard extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 6,
             children: [
-              _IdentityMoreLabel(l10n.rolePlayPersonLabel),
+              SectionHeader(l10n.rolePlayPersonLabel),
               if (overrideCount > 0)
                 Container(
                   width: 7,
@@ -1083,28 +1073,6 @@ class _PlayCard extends StatelessWidget {
   Future<void> _openCastPicker(BuildContext context, RolePlay rolePlay) async {
     final localizations = AppLocalizations.of(context)!;
     await openCastPickerAndApply(context, localizations, rolePlay);
-  }
-}
-
-/// The small uppercase kicker label above each labelled block in the Spill
-/// card body (mockup's `.pmore .k`) — "SIGNALEMENT", "OPPFØRSEL",
-/// "NOTATER", "LOKASJON", …
-class _IdentityMoreLabel extends StatelessWidget {
-  const _IdentityMoreLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      label.toUpperCase(),
-      style: theme.textTheme.labelSmall?.copyWith(
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.4,
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
-    );
   }
 }
 

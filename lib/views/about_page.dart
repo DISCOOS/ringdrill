@@ -6,11 +6,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/app_build_info.dart';
 import 'package:ringdrill/utils/app_flags.dart';
+import 'package:ringdrill/utils/external_links.dart';
+import 'package:ringdrill/web/pwa_status_tile.dart'
+    if (dart.library.io) 'package:ringdrill/views/pwa_status_tile_io.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:ringdrill/web/pwa_status_tile.dart'
-    if (dart.library.io) 'package:ringdrill/views/pwa_status_tile_io.dart';
 
 /// Public site URL for RingDrill. The Astro-hosted marketing site at
 /// this apex serves the landing plus the linked pages below (privacy,
@@ -96,10 +97,7 @@ class _AboutPageState extends State<AboutPage> {
     final l = AppLocalizations.of(context)!;
     bool ok = false;
     try {
-      ok = await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.externalApplication,
-      );
+      ok = await launchExternalApp(url);
     } catch (_) {
       ok = false;
     }
@@ -259,11 +257,12 @@ class _AboutPageState extends State<AboutPage> {
                       children: [
                         Text(
                           '${f.value}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                         ),
                         Text(
                           f.description,

@@ -4,14 +4,14 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/app_config.dart';
+import 'package:ringdrill/utils/external_links.dart';
 import 'package:ringdrill/views/migration_page.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/web/legacy_host_web.dart'
+    if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 import 'package:ringdrill/web/trigger_download_web.dart'
     if (dart.library.io) 'package:ringdrill/web/trigger_download_stub.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:ringdrill/web/legacy_host_web.dart'
-    if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
 
 /// Signal that re-surfaces the [MigrationBanner] on demand, even after the
 /// user has dismissed it for the 24-hour window. The [LegacyBadge] bumps
@@ -82,8 +82,7 @@ class _MigrationBannerState extends State<MigrationBanner> {
     super.dispose();
   }
 
-  bool get _isLegacy =>
-      widget.isLegacyHostOverride?.call() ?? isLegacyHost();
+  bool get _isLegacy => widget.isLegacyHostOverride?.call() ?? isLegacyHost();
 
   /// Publish whether the banner is currently on screen so the [LegacyBadge]
   /// can hide itself while the banner is showing (mutually exclusive).
@@ -152,7 +151,7 @@ class _MigrationBannerState extends State<MigrationBanner> {
       await widget.onOpenNewAppOverride!(uri);
       return;
     }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    await launchExternalApp(uri.toString());
   }
 
   void _readMore() {
@@ -184,16 +183,16 @@ class _MigrationBannerState extends State<MigrationBanner> {
                   Text(
                     l10n.migrationBannerHeading,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSecondaryContainer,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSecondaryContainer,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     l10n.migrationBannerBody,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: cs.onSecondaryContainer,
-                        ),
+                      color: cs.onSecondaryContainer,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -217,10 +216,7 @@ class _MigrationBannerState extends State<MigrationBanner> {
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: _dismiss,
-            ),
+            IconButton(icon: const Icon(Icons.close), onPressed: _dismiss),
           ],
         ),
       ),

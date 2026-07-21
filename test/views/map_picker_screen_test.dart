@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_picker_screen.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/widgets/code_chip.dart';
 
 /// docs/prompts/map-picker-redesign.md — MapPickerScreen confirms from a
 /// bottom bar (live coordinate + "select here") instead of a small AppBar
@@ -56,6 +57,12 @@ void main() {
       findsNothing,
     );
     expect(find.text(l.selectHere), findsOneWidget);
+
+    // The bar renders the centre position (PositionWidget/CodeChip, the
+    // former UtmWidget's replacement) without crashing, in the expected
+    // "<zone><band> <easting>E <northing>N" shape.
+    final chip = tester.widget<CodeChip>(find.byType(CodeChip));
+    expect(chip.text, matches(RegExp(r'^\d+\w \d+E \d+N$')));
   });
 
   testWidgets('the bottom bar coordinate updates live as the map is panned', (
@@ -63,16 +70,14 @@ void main() {
   ) async {
     await openPicker(tester);
 
-    final before = tester
-        .widget<SelectableText>(find.byType(SelectableText))
-        .data;
+    // The confirm bar's coordinate now renders via PositionWidget/CodeChip,
+    // not a SelectableText.
+    final before = tester.widget<CodeChip>(find.byType(CodeChip)).text;
 
     await tester.drag(find.byType(FlutterMap), const Offset(-200, -150));
     await tester.pump(const Duration(milliseconds: 300));
 
-    final after = tester
-        .widget<SelectableText>(find.byType(SelectableText))
-        .data;
+    final after = tester.widget<CodeChip>(find.byType(CodeChip)).text;
     expect(after, isNot(before));
   });
 
@@ -104,18 +109,14 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    final before = tester
-        .widget<SelectableText>(find.byType(SelectableText))
-        .data;
+    final before = tester.widget<CodeChip>(find.byType(CodeChip)).text;
 
     await tester.drag(find.byType(FlutterMap), const Offset(-200, -150));
     await tester.pump(const Duration(milliseconds: 300));
 
     // Capture what the bar shows right before confirming: after popping,
-    // MapPickerScreen is gone and there is no SelectableText left to read.
-    final panned = tester
-        .widget<SelectableText>(find.byType(SelectableText))
-        .data;
+    // MapPickerScreen is gone and there is no CodeChip left to read.
+    final panned = tester.widget<CodeChip>(find.byType(CodeChip)).text;
     expect(panned, isNot(before));
 
     await tester.tap(find.text(l.selectHere));

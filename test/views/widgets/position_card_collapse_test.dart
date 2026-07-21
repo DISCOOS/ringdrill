@@ -12,12 +12,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // DESIGN-010's Spill/Post viewer card consistency prompt — the position card
-// (`PositionCardShell`, via `StationPositionPanel`) is its own header-
-// equivalent bar (a leading position icon + the uppercase "Position" title,
-// docs/design/mockups/collapsible-position-card.html) whenever it is given a
-// `sectionId`. Expanded, the collapse chevron floats bare over the map's
-// top-right corner; collapsed, it replaces the bar's own trailing editor
-// chevron so the two are never shown together. Every other
+// (`PositionCardShell`, via `StationPositionPanel`) renders the same plain
+// "Position" bar label whenever it is given a `sectionId`, no special
+// header-style treatment (bold/uppercase/leading icon) — PositionCardShell no
+// longer builds one automatically. Expanded, the collapse chevron floats bare
+// over the map's top-right corner; collapsed, it replaces the bar's own
+// trailing slot (empty by default here, since StationPositionPanel passes no
+// `barTrailing`) so the two are never shown together. Every other
 // `StationPositionPanel` test (e.g. `station_position_panel_test.dart`)
 // omits `sectionId`, so this file is scoped to the collapsible variant.
 //
@@ -26,6 +27,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 // when collapsed, so it can slide rather than vanish. "Hidden" is therefore
 // asserted as zero clipped height (its SizeTransition ancestor), not as an
 // absent widget.
+//
+// StationPositionPanel passes no `onTap` in these tests, so the bar's own tap
+// only ever toggles collapse (or is a no-op when not collapsible) — it never
+// opens the interactive map sheet. Only the StationMiniMap thumbnail's own
+// tap affordance does that (see station_position_panel_test.dart).
 // ---------------------------------------------------------------------------
 
 void main() {
@@ -90,9 +96,9 @@ void main() {
       );
 
   testWidgets(
-    'expanded by default: the bar is "POSITION" styled like a section '
-    'header, the map thumbnail and its editor chevron are visible, plus a '
-    'bare collapse chevron over the map',
+    'expanded by default: the bar shows the plain "Position" label, the map '
+    'thumbnail is visible with no default trailing icon, plus a bare '
+    'collapse chevron over the map',
     (tester) async {
       await pump(tester);
       await tester.pumpAndSettle();
@@ -100,27 +106,16 @@ void main() {
       expect(find.byType(StationMiniMap), findsOneWidget);
       expect(mapHeight(tester), greaterThan(0));
       expect(find.byType(CollapseChevron), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-      // The bar's own leading icon — distinct from the map's own pin
-      // marker, which also uses `Icons.place` at a larger size.
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is Icon && w.icon == Icons.place && w.size == 18,
-        ),
-        findsOneWidget,
-      );
-
-      final title = tester.widget<Text>(
-        find.text(l.position.toUpperCase()),
-      );
-      expect(title.style?.fontWeight, FontWeight.bold);
-      expect(title.style?.letterSpacing, 0.4);
+      // No default chevron_right (dropped from PositionCardShell's bar);
+      // StationPositionPanel passes no barTrailing.
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.text(l.position), findsOneWidget);
     },
   );
 
   testWidgets(
     'tapping the collapse chevron hides the map, and the expand chevron '
-    'replaces the editor chevron in the bar (never both at once)',
+    'takes the bar\'s trailing slot while collapsed',
     (tester) async {
       await pump(tester);
       await tester.pumpAndSettle();
@@ -130,18 +125,15 @@ void main() {
 
       // Clipped to zero height, not removed.
       expect(mapHeight(tester), 0);
-      // The bar itself — title and UTM — stays; the editor chevron is gone,
-      // replaced by the (now bar-trailing) expand chevron.
-      expect(find.text(l.position.toUpperCase()), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      // The bar itself — label and UTM — stays; the expand chevron now
+      // occupies the (otherwise empty) trailing slot.
+      expect(find.text(l.position), findsOneWidget);
       expect(find.byType(CollapseChevron), findsOneWidget);
 
-      // Tapping the (now bar-trailing) expand chevron brings the map back,
-      // and the editor chevron returns.
+      // Tapping the (now bar-trailing) expand chevron brings the map back.
       await tester.tap(find.byType(CollapseChevron));
       await tester.pumpAndSettle();
       expect(mapHeight(tester), greaterThan(0));
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     },
   );
 
@@ -159,7 +151,9 @@ void main() {
   );
 
   testWidgets(
-    'the bar still opens the position editor sheet while collapsed',
+    'tapping the bar while collapsed re-expands it rather than opening the '
+    'position editor sheet; tapping the thumbnail opens the sheet while '
+    'expanded',
     (tester) async {
       await pump(tester);
       await tester.pumpAndSettle();
@@ -168,9 +162,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(mapHeight(tester), 0);
 
-      // Tap the bar's title — a separate tap target from the expand
-      // chevron sharing the same row, unaffected by the collapsed state.
-      await tester.tap(find.text(l.position.toUpperCase()));
+      // No `onTap` is passed to StationPositionPanel in this harness, so
+      // the bar's own tap only ever toggles collapse — tapping the label
+      // re-expands, it never opens the sheet.
+      await tester.tap(find.text(l.position));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(mapHeight(tester), greaterThan(0));
+
+      // The thumbnail is the one affordance that opens the interactive
+      // sheet, regardless of the bar's collapse/onTap wiring.
+      await tester.tap(find.byType(StationMiniMap));
       await tester.pumpAndSettle();
 
       expect(find.byType(BottomSheet), findsOneWidget);
@@ -194,8 +197,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(mapHeight(tester), 0);
-      expect(find.text(l.position.toUpperCase()), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.text(l.position), findsOneWidget);
     },
   );
 
@@ -212,10 +214,10 @@ void main() {
 
       expect(find.byType(StationMiniMap), findsOneWidget);
       expect(find.byType(CollapseChevron), findsNothing);
-      // The title bar still reads as the shared card header, and the
-      // editor chevron stays put — there is simply nothing to collapse.
-      expect(find.text(l.position.toUpperCase()), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      // The bar still shows its plain label; there is simply nothing to
+      // collapse, and no default trailing icon either.
+      expect(find.text(l.position), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
     },
   );
 }

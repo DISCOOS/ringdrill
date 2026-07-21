@@ -1241,7 +1241,25 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
-  /// **'Pick a Location'**
+  /// **'Modified'**
+  String get modified;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Placement'**
+  String get placement;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a placement'**
+  String get pickAPlacement;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a location'**
   String get pickALocation;
 
   /// Confirm button label on the map picker screen; confirms the centred point
@@ -4639,6 +4657,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter by exercise'**
   String get pickerFilterByExerciseTitle;
+
+  /// Edit where something is placed
+  ///
+  /// In en, this message translates to:
+  /// **'Edit placement'**
+  String get editPlacement;
 }
 
 class _AppLocalizationsDelegate

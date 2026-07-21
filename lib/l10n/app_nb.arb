@@ -200,7 +200,10 @@
   "forceUpdateConfirmAction": "Oppdater nå",
   "searchForPlaceOrLocation": "Søk etter sted eller posisjon",
   "searchFailed": "Søk feilet: {error}",
-  "pickALocation": "Velg plassering",
+  "modified": "Tilpasset",
+  "placement": "Plassering",
+  "pickAPlacement": "Pick a placement",
+  "pickALocation": "Velg lokasjon",
   "selectHere": "Velg her",
   "switchToOSM": "Bytt til OSM",
   "switchToTopo": "Bytt til Topo",
@@ -1914,5 +1917,10 @@
   "pickerFilterByExerciseTitle": "Filtrer på øvelse",
   "@pickerFilterByExerciseTitle": {
     "description": "Tittel på den adaptive velger-picker (ADR-0049, showRingdrillPicker) som filtrerer markørlista på øvelse; første valg er «Alle øvelser», resten er én per øvelse."
+  },
+  "editPlacement": "Endre plassering",
+  "@editPlacement": {
+    "description": "Endre hvor noe er plassert"
   }
+
 }

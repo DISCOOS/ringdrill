@@ -37,18 +37,16 @@ class _TeamFormScreenState extends State<TeamFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          tooltip: localizations.cancel,
+          tooltip: l10n.cancel,
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(localizations.editTeam),
-        actions: [
-          ElevatedButton(onPressed: _save, child: Text(localizations.save)),
-        ],
+        title: Text(l10n.editTeam),
+        actions: [ElevatedButton(onPressed: _save, child: Text(l10n.save))],
         actionsPadding: const EdgeInsets.only(right: 16),
       ),
       body: DismissKeyboard(
@@ -63,13 +61,11 @@ class _TeamFormScreenState extends State<TeamFormScreen> {
                   TextFormField(
                     autofocus: true,
                     controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: localizations.teamName,
-                    ),
+                    decoration: InputDecoration(labelText: l10n.teamName),
                     validator: (value) =>
                         value != null && value.trim().isNotEmpty
                         ? null
-                        : localizations.pleaseEnterAName,
+                        : l10n.pleaseEnterAName,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -77,21 +73,22 @@ class _TeamFormScreenState extends State<TeamFormScreen> {
                     controller: _numberOfMembersController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: localizations.numberOfMembers,
+                      labelText: l10n.numberOfMembers,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) return null;
                       final numberOfMembers = int.tryParse(value);
                       if (numberOfMembers == null || numberOfMembers < 0) {
-                        return localizations.pleaseEnterAValidNumber;
+                        return l10n.pleaseEnterAValidNumber;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   PositionFormField(
-                    variant: PositionFieldVariant.card,
+                    title: l10n.placement,
                     initialValue: _team.position,
+                    variant: PositionFieldVariant.card,
                     onSaved: (position) {
                       _team = _team.copyWith(position: position);
                     },
@@ -100,7 +97,9 @@ class _TeamFormScreenState extends State<TeamFormScreen> {
                     // take" until the form was saved (same bug fixed in
                     // station_form_screen.dart).
                     onChanged: (position) {
-                      setState(() => _team = _team.copyWith(position: position));
+                      setState(
+                        () => _team = _team.copyWith(position: position),
+                      );
                     },
                   ),
                 ],

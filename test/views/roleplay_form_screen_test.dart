@@ -210,29 +210,26 @@ void main() {
     );
   });
 
-  testWidgets(
-    'AppBar title is the static "Edit role", not the role name '
-    '(DESIGN-009 prompt 4j)',
-    (tester) async {
-      await tester.pumpWidget(_buildForm());
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  testWidgets('AppBar title is the static "Edit role", not the role name '
+      '(DESIGN-009 prompt 4j)', (tester) async {
+    await tester.pumpWidget(_buildForm());
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text(l10n.editRolePlayTitle),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text('Anna Hansen'),
-        ),
-        findsNothing,
-      );
-    },
-  );
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(l10n.editRolePlayTitle),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Anna Hansen'),
+      ),
+      findsNothing,
+    );
+  });
 
   testWidgets('localized form labels render', (tester) async {
     await tester.pumpWidget(_buildForm());
@@ -265,7 +262,9 @@ void main() {
     (tester) async {
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       final rolePlay = _baseRole().copyWith(stationIndex: 0);
-      await tester.pumpWidget(_buildForm(rolePlay: rolePlay, exercise: _exercise()));
+      await tester.pumpWidget(
+        _buildForm(rolePlay: rolePlay, exercise: _exercise()),
+      );
 
       expect(
         find.descendant(
@@ -334,7 +333,7 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
     // Position should be pre-filled from the post, not "Pick a Location".
-    expect(find.text(l10n.pickALocation), findsNothing);
+    expect(find.text(l10n.pickAPlacement), findsNothing);
     expect(find.byType(PositionWidget), findsOneWidget);
   });
 
@@ -353,7 +352,7 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
       expect(find.text(l10n.rolePlayPostRequiredHint), findsOneWidget);
-      expect(find.text(l10n.pickALocation), findsNothing);
+      expect(find.text(l10n.pickAPlacement), findsNothing);
     },
   );
 

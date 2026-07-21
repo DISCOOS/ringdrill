@@ -5,7 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
-import 'package:ringdrill/views/utm_widget.dart';
+import 'package:ringdrill/views/position_widget.dart';
 
 class MapPickerScreen<K> extends StatefulWidget {
   const MapPickerScreen({
@@ -172,14 +172,14 @@ class _ConfirmBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Icon(
                   Icons.gps_fixed,
                   size: 18,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 10),
-                Expanded(child: UtmWidget(position: position, wrapped: false)),
+                PositionWidget(format: PositionFormat.utm, position: position),
               ],
             ),
             const SizedBox(height: 10),

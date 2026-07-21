@@ -44,8 +44,8 @@ void main() {
   );
 
   testWidgets(
-    'a positioned station renders the shared card shell with a chevron and '
-    'the UTM coordinate, and tapping it opens the interactive map sheet',
+    'a positioned station renders the shared card shell with the UTM '
+    'coordinate, and tapping the thumbnail opens the interactive map sheet',
     (tester) async {
       final station = Station(
         index: 0,
@@ -55,11 +55,15 @@ void main() {
       await pump(tester, station);
 
       expect(find.byType(PositionCardShell), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.text(l.noLocation), findsNothing);
 
+      // No default chevron_right (dropped from PositionCardShell's bar);
+      // no onTap is passed here, so the bar itself is a no-op — only the
+      // StationMiniMap thumbnail's own tap opens the sheet.
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+
       expect(find.byType(BottomSheet), findsNothing);
-      await tester.tap(find.byType(PositionCardShell));
+      await tester.tap(find.byType(StationMiniMap));
       await tester.pumpAndSettle();
 
       // openStationMapSheet opens the interactive map in a modal sheet.

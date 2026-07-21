@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
 import 'package:ringdrill/views/widgets/collapse_chevron.dart';
@@ -14,36 +13,37 @@ import 'package:ringdrill/views/widgets/collapsible_section_mixin.dart';
 enum PositionFieldVariant { row, card }
 
 /// Pure layout for a position pick surface: a live mini-map thumbnail plus a
-/// single-line UTM coordinate and a trailing chevron, in either [variant].
-/// The whole surface is one [InkWell] driving [onTap] — there is no separate
-/// map icon button, and no [Icons.edit] in the row (ADR-0031); the chevron
-/// alone signals "taps open a surface".
+/// single-line UTM coordinate, in either [variant]. The whole surface is one
+/// [InkWell] driving [onTap] — there is no separate map icon button, and no
+/// [Icons.edit] in the row (ADR-0031).
 class PositionCard<K> extends StatelessWidget {
   const PositionCard({
     super.key,
     required this.variant,
     required this.position,
-    required this.onTap,
     this.showThumbnail = true,
     this.markers = const [],
     this.overlayActions = const [],
     this.emptyLabel,
-    this.title,
+    this.barLabel,
+    this.barLeading,
     this.barTrailing,
+    this.elevation = 1,
+    this.onTap,
   });
 
-  final PositionFieldVariant variant;
   final LatLng? position;
-  final VoidCallback onTap;
+  final double elevation;
+  final VoidCallback? onTap;
+  final PositionFieldVariant variant;
 
-  /// Optional leading title stacked above the coordinate in the `card`
-  /// variant's bar (the `row` variant ignores it). Null shows just the
-  /// coordinate — every caller but the roleplay editor's own-position card.
-  final String? title;
+  /// Optional label widget in the `card` variant's bar. Ignored by `row`.
+  final Widget? barLabel;
 
-  /// Optional trailing widget in the `card` variant's bar, replacing the
-  /// default `chevron_right` (the roleplay editor's expand chevron on the
-  /// collapsed, map-less card). Ignored by `row`.
+  /// Optional leading widget in the `card` variant's bar. Ignored by `row`.
+  final Widget? barLeading;
+
+  /// Optional trailing widget in the `card` variant's bar. Ignored by `row`.
   final Widget? barTrailing;
 
   /// Renders a live [MapView] thumbnail centred on [position]. Only
@@ -70,11 +70,13 @@ class PositionCard<K> extends StatelessWidget {
     if (variant == PositionFieldVariant.card) {
       return PositionCardShell(
         onTap: onTap,
-        thumbnail: showThumbnail ? _buildMapContent(theme, pinSize: 28) : null,
-        thumbnailHeight: _cardThumbnailHeight,
-        overlayActions: overlayActions,
-        barChild: _buildBar(theme),
+        barLabel: barLabel,
+        barLeading: barLeading,
         barTrailing: barTrailing,
+        barChild: _buildCoordinate(theme),
+        overlayActions: overlayActions,
+        thumbnailHeight: _cardThumbnailHeight,
+        thumbnail: showThumbnail ? _buildMapContent(theme, pinSize: 28) : null,
       );
     }
     return ClipRRect(
@@ -121,18 +123,6 @@ class PositionCard<K> extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: _buildCoordinate(theme),
               ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-            ),
-            child: Icon(
-              Icons.chevron_right,
-              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -192,32 +182,7 @@ class PositionCard<K> extends StatelessWidget {
   Widget _buildCoordinate(ThemeData theme) {
     return position == null
         ? Text(emptyLabel ?? '', overflow: TextOverflow.ellipsis, maxLines: 1)
-        : PositionWidget(
-            position: position,
-            format: PositionFormat.utm,
-            wrapped: false,
-          );
-  }
-
-  /// The `card` variant's bar content: just the coordinate, or — when
-  /// [title] is set — the title stacked above it (the roleplay editor's
-  /// followed-location name / "Own position"). The coordinate reads muted
-  /// under a title so the title is the primary line.
-  Widget _buildBar(ThemeData theme) {
-    final coordinate = _buildCoordinate(theme);
-    final t = title;
-    if (t == null || t.isEmpty) return coordinate;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(t, maxLines: 1, overflow: TextOverflow.ellipsis),
-        DefaultTextStyle.merge(
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          child: coordinate,
-        ),
-      ],
-    );
+        : PositionWidget(position: position, format: PositionFormat.utm);
   }
 }
 
@@ -234,20 +199,24 @@ class PositionCard<K> extends StatelessWidget {
 class PositionCardShell extends StatefulWidget {
   const PositionCardShell({
     super.key,
-    required this.onTap,
     this.thumbnail,
     this.thumbnailHeight = 120.0,
     this.overlayActions = const [],
     this.legend,
     this.barLabel,
-    required this.barChild,
     this.barTrailing,
+    this.barLeading,
+    this.elevation = 1,
+    required this.barChild,
     this.asCard = true,
     this.fillHeight = false,
     this.sectionId,
+    this.onTap,
   });
 
-  final VoidCallback onTap;
+  final double elevation;
+
+  final VoidCallback? onTap;
 
   /// The mini-map (or placeholder) content. Null omits the whole
   /// thumbnail section — and with it, [overlayActions] and [legend], which
@@ -283,17 +252,15 @@ class PositionCardShell extends StatefulWidget {
 
   /// Optional leading label in the coordinate bar (e.g. "Position" on the
   /// read-only panels; the pick surfaces omit it — their label sits above
-  /// the whole field instead). Ignored when [sectionId] is set: that shell
-  /// builds its own leading icon + uppercase title instead (see
-  /// [sectionId]'s doc).
+  /// the whole field instead).
   final Widget? barLabel;
 
   final Widget barChild;
 
-  /// Defaults to a muted `chevron_right` — every call site uses the same
-  /// "tap opens a surface" affordance (ADR-0031). Ignored while collapsed
-  /// in a collapsible shell (see [sectionId]): the expand chevron takes
-  /// this slot instead, so the two are never shown together.
+  /// Optional leading widget in the `card` variant's bar. Ignored by `row`.
+  final Widget? barLeading;
+
+  /// Optional trailing widget in the `card` variant's bar. Ignored by `row`.
   final Widget? barTrailing;
 
   /// Whether this shell draws its own [Card] (elevation, background,
@@ -307,20 +274,10 @@ class PositionCardShell extends StatefulWidget {
 
   /// Stable identifier for a persisted collapsed preference (DESIGN-010
   /// follow-up: collapsible-position-card, mockup
-  /// `docs/design/mockups/collapsible-position-card.html`). Null (every
-  /// call site but the Post/Spill detail panels) keeps this shell exactly
-  /// as it always was: a plain [barLabel], no icon/title, no chevron,
-  /// always expanded.
+  /// `docs/design/mockups/collapsible-position-card.html`). Null keeps this
+  /// shell exactly as it always was: a plain [barLabel], no icon/title, no
+  /// chevron, always expanded.
   ///
-  /// Non-null makes the coordinate bar this card's header-equivalent — a
-  /// leading position icon + the uppercase "Position" title (styled like
-  /// [CardSectionHeader]'s own title), replacing [barLabel] — regardless
-  /// of [fillHeight]. The *collapse* affordance itself is further gated on
-  /// `!fillHeight` (the Post/Spill expanded right pane always shows the
-  /// map): when collapsible, the collapse chevron floats over the
-  /// thumbnail (top-right) while expanded, and replaces [barTrailing] in
-  /// the bar once collapsed — [thumbnail]/[overlayActions]/[legend] are
-  /// hidden then, leaving just the bar.
   final String? sectionId;
 
   @override
@@ -343,7 +300,6 @@ class _PositionCardShellState extends State<PositionCardShell>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
     // Collapse is disabled in `fillHeight` mode (the Post/Spill expanded
     // right pane): the map is the whole point of that pane, and the
     // ancestor's stretched Row forces this shell to the pane height — so a
@@ -379,7 +335,11 @@ class _PositionCardShellState extends State<PositionCardShell>
                       // so it never lingers clipped-but-findable behind the
                       // folded map.
                       if (collapsible && !collapsed)
-                        CollapseChevron(collapsed: collapsed, onTap: _toggle),
+                        CollapseChevron(
+                          collapsed: collapsed,
+                          onTap: _toggle,
+                          inverseColorOnCollapsed: true,
+                        ),
                     ],
                   ),
                 ),
@@ -447,43 +407,48 @@ class _PositionCardShellState extends State<PositionCardShell>
                   )
                 : null,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // The bar is this card's header-equivalent whenever
-              // `sectionId` is set (the Post/Spill position card, `fillHeight`
-              // or not) — a leading position icon + the uppercase title,
-              // styled exactly like `CardSectionHeader`'s own title, in
-              // place of the plain `barLabel` every other call site keeps.
-              if (widget.sectionId != null) ...[
-                Icon(Icons.place, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  localizations.position.toUpperCase(),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.4,
+          child: InkWell(
+            onTap: () {
+              if (widget.onTap != null) {
+                widget.onTap!();
+                return;
+              }
+              setState(() {
+                if (widget.sectionId != null) {
+                  toggleCollapse(widget.sectionId!);
+                }
+              });
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (widget.barLabel != null) ...[
+                  ?widget.barLeading,
+                  const SizedBox(width: 8),
+                  widget.barLabel!,
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: widget.barChild,
                   ),
                 ),
                 const SizedBox(width: 8),
-              ] else if (widget.barLabel != null) ...[
-                widget.barLabel!,
-                const SizedBox(width: 8),
+                // Collapsed: the expand chevron takes the trailing slot instead
+                // of the editor `›` — the two are never shown together (the
+                // over-map collapse chevron only exists while expanded).
+                if (collapsible && collapsed)
+                  CollapseChevron(
+                    collapsed: collapsed,
+                    onTap: _toggle,
+                    inverseColorOnCollapsed: true,
+                  )
+                else
+                  ?widget.barTrailing,
               ],
-              Expanded(child: widget.barChild),
-              const SizedBox(width: 8),
-              // Collapsed: the expand chevron takes the trailing slot instead
-              // of the editor `›` — the two are never shown together (the
-              // over-map collapse chevron only exists while expanded).
-              if (collapsible && collapsed)
-                CollapseChevron(collapsed: collapsed, onTap: _toggle)
-              else
-                widget.barTrailing ??
-                    Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-            ],
+            ),
           ),
         ),
       ],
@@ -501,8 +466,8 @@ class _PositionCardShellState extends State<PositionCardShell>
             // the collapsed bar reads as the same surface as the other
             // section cards rather than the cardTheme default (elevation 2),
             // whose dark-mode elevation overlay makes it visibly lighter.
-            elevation: 1,
             margin: EdgeInsets.zero,
+            elevation: widget.elevation,
             clipBehavior: Clip.antiAlias,
             child: InkWell(onTap: widget.onTap, child: content),
           )

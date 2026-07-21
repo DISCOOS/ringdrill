@@ -810,7 +810,19 @@
   "@searchFailed": {
     "description": "Parameterized message"
   },
-  "pickALocation": "Pick a Location",
+  "modified": "Modified",
+  "@modified": {
+    "description": "Label"
+  },
+  "placement": "Placement",
+  "@placement": {
+    "description": "Label"
+  },
+  "pickAPlacement": "Pick a placement",
+  "@pickAPlacement": {
+    "description": "Label"
+  },
+  "pickALocation": "Pick a location",
   "@pickALocation": {
     "description": "Label"
   },
@@ -2926,5 +2938,9 @@
   "pickerFilterByExerciseTitle": "Filter by exercise",
   "@pickerFilterByExerciseTitle": {
     "description": "Title of the adaptive selector picker (ADR-0049, showRingdrillPicker) that filters the marker list by exercise; the first choice is \"All exercises\", the rest one per exercise."
+  },
+  "editPlacement": "Edit placement",
+  "@editPlacement": {
+    "description": "Edit where something is placed"
   }
 }

@@ -571,6 +571,7 @@ class _LocationFormScreenState extends State<LocationFormScreen> {
                         ),
                       const SizedBox(height: 16),
                       PositionFormField<int>(
+                        title: l10n.placement,
                         key: ValueKey(_position),
                         variant: PositionFieldVariant.card,
                         showThumbnail: true,

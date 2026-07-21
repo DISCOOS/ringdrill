@@ -101,7 +101,9 @@ class _VariableValueFieldState extends State<VariableValueField> {
     text: widget.location?.place ?? '',
   );
   late final TextEditingController _coordinateController =
-      TextEditingController(text: _coordinateDisplay(widget.location?.position));
+      TextEditingController(
+        text: _coordinateDisplay(widget.location?.position),
+      );
   late LatLng? _position = widget.location?.position;
 
   Timer? _placeSearchDebounceTimer;
@@ -313,9 +315,7 @@ class _VariableValueFieldState extends State<VariableValueField> {
         // The canonical encoding is 24-hour HH:MM (DESIGN-008 follow-up
         // 11), so the picker matches regardless of the device's 12-hour
         // preference.
-        data: MediaQuery.of(
-          context,
-        ).copyWith(alwaysUse24HourFormat: true),
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
         child: child!,
       ),
     );
@@ -396,6 +396,7 @@ class _VariableValueFieldState extends State<VariableValueField> {
         ),
         const SizedBox(height: 8),
         PositionFormField<int>(
+          title: l10n.placement,
           key: ValueKey(_position),
           variant: PositionFieldVariant.card,
           showThumbnail: true,

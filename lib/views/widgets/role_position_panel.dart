@@ -12,9 +12,10 @@ import 'package:ringdrill/views/widgets/role_mini_map.dart';
 /// Station/Exercise pair, keeping it domain-agnostic.
 ///
 /// Renders [PositionCardShell]: the static [RoleMiniMap] preview on top,
-/// a coordinate bar below (label, UTM coordinate, trailing chevron). Tap
-/// (thumbnail or bar) opens the same interactive bottom sheet as
-/// [RoleMiniMap] on its own — read-only, never the [PositionCard] picker.
+/// a coordinate bar below (label, UTM coordinate). [RoleMiniMap]'s own tap
+/// affordance opens the interactive bottom sheet; the bar itself has no
+/// `onTap` to forward, so tapping it is a no-op — read-only either way,
+/// never the [PositionCard] picker.
 class RolePositionPanel extends StatelessWidget {
   const RolePositionPanel({
     super.key,
@@ -22,7 +23,6 @@ class RolePositionPanel extends StatelessWidget {
     required this.label,
     this.mapHeight = 200,
     this.asCard = false,
-    this.sourceLabel,
     this.fillHeight = false,
     this.sectionId,
     this.extraMarkers = const [],
@@ -49,12 +49,6 @@ class RolePositionPanel extends StatelessWidget {
 
   final double mapHeight;
 
-  /// The scenario `Location` this position was taken from (DESIGN-010's
-  /// Spill viewer: "the marker's position follows the portrayed person's
-  /// location") — shown as a small second line under the "Posisjon" bar
-  /// label. Null (every other call site) keeps the single-line label.
-  final String? sourceLabel;
-
   /// Forwarded to [PositionCardShell]. Defaults to `false` because most
   /// call sites embed this panel inside an `ExpandableTile` body — itself
   /// a `Card` — where the panel's own [Card] would nest inside it. The
@@ -80,8 +74,6 @@ class RolePositionPanel extends StatelessWidget {
     final theme = Theme.of(context);
 
     return PositionCardShell(
-      onTap: () =>
-          openRoleMapSheet(context, position, label, extraMarkers: extraMarkers),
       asCard: asCard,
       thumbnail: RoleMiniMap(
         position: position,
@@ -93,30 +85,15 @@ class RolePositionPanel extends StatelessWidget {
       fillHeight: fillHeight,
       sectionId: sectionId,
       legend: legend,
-      barLabel: sourceLabel == null
-          ? Text(
-              localizations.position,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  localizations.position,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(sourceLabel!, style: theme.textTheme.bodySmall),
-              ],
-            ),
+      barLabel: Text(
+        localizations.position,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
       barChild: Align(
         alignment: Alignment.centerRight,
         child: PositionWidget(
-          wrapped: false,
           format: PositionFormat.utm,
           position: position,
           style: theme.textTheme.bodyMedium,

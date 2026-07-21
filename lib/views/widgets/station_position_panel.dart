@@ -12,12 +12,13 @@ import 'package:ringdrill/views/widgets/station_mini_map.dart';
 ///
 /// Renders [PositionCardShell]: a bordered card with the static
 /// [StationMiniMap] preview on top and a coordinate bar below (the
-/// "Posisjon" label, the UTM coordinate, a trailing chevron). Reuses
-/// [StationMiniMap]'s own "tap opens the interactive bottom sheet"
-/// affordance for the thumbnail; the shell's own [InkWell] covers the
-/// same tap for the coordinate bar so the whole card is one affordance.
-/// This stays read-only — the tap opens `openStationMapSheet`, never the
-/// [PositionCard] picker.
+/// "Position" label, the UTM coordinate). [StationMiniMap]'s own tap
+/// affordance always opens the interactive `openStationMapSheet`; the bar
+/// itself only does so when the caller passes [onTap] for that purpose —
+/// station_screen.dart instead wires it to open the station editor, and
+/// every other call site leaves it null (bar tap is then a no-op; the
+/// thumbnail remains the one affordance). This stays read-only either
+/// way — never the [PositionCard] picker.
 ///
 /// When the station has no [Station.position] the card is omitted
 /// entirely and the row shows the "no location" fallback text instead.
@@ -26,18 +27,20 @@ class StationPositionPanel extends StatelessWidget {
     super.key,
     required this.exercise,
     required this.station,
-    this.mapHeight = 200,
     this.miniMapKey,
-    this.padding = EdgeInsets.zero,
-    this.asCard = false,
     this.markers,
     this.legend,
-    this.fillHeight = false,
     this.sectionId,
+    this.asCard = false,
+    this.fillHeight = false,
+    this.mapHeight = 200,
+    this.padding = EdgeInsets.zero,
+    this.onTap,
   });
 
-  final Exercise exercise;
   final Station station;
+  final Exercise exercise;
+
   final double mapHeight;
 
   /// Forwarded to [PositionCardShell.sectionId]. Null (every call site but
@@ -77,6 +80,8 @@ class StationPositionPanel extends StatelessWidget {
   /// page with no ambient card, pass `true`.
   final bool asCard;
 
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -102,7 +107,7 @@ class StationPositionPanel extends StatelessWidget {
               ],
             )
           : PositionCardShell(
-              onTap: () => openStationMapSheet(context, exercise, station),
+              onTap: onTap,
               asCard: asCard,
               thumbnail: StationMiniMap(
                 key: miniMapKey,
@@ -121,19 +126,24 @@ class StationPositionPanel extends StatelessWidget {
               fillHeight: fillHeight,
               sectionId: sectionId,
               legend: legend,
-              barLabel: Text(
-                localizations.position,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              barLabel: InkWell(
+                onTap: onTap,
+                child: Text(
+                  localizations.position,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               barChild: Align(
                 alignment: Alignment.centerRight,
-                child: PositionWidget(
-                  wrapped: false,
-                  format: PositionFormat.utm,
-                  position: position,
-                  style: theme.textTheme.bodyMedium,
+                child: InkWell(
+                  onTap: onTap,
+                  child: PositionWidget(
+                    format: PositionFormat.utm,
+                    position: position,
+                    style: theme.textTheme.bodyMedium,
+                  ),
                 ),
               ),
             ),

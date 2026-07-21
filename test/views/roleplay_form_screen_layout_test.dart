@@ -190,7 +190,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Bosted'), findsOneWidget);
-      expect(find.byKey(const Key('position-expand')), findsOneWidget);
       expect(find.textContaining('Følger'), findsNothing);
     },
   );

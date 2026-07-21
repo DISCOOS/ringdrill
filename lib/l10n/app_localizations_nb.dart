@@ -719,7 +719,16 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get pickALocation => 'Velg plassering';
+  String get modified => 'Tilpasset';
+
+  @override
+  String get placement => 'Plassering';
+
+  @override
+  String get pickAPlacement => 'Pick a placement';
+
+  @override
+  String get pickALocation => 'Velg lokasjon';
 
   @override
   String get selectHere => 'Velg her';
@@ -2708,4 +2717,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get pickerFilterByExerciseTitle => 'Filtrer på øvelse';
+
+  @override
+  String get editPlacement => 'Endre plassering';
 }
