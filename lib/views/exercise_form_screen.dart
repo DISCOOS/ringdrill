@@ -16,8 +16,8 @@ import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
+import 'package:ringdrill/views/widgets/rollup.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
-import 'package:ringdrill/views/widgets/section_rollup.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
 
@@ -407,10 +407,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
   /// The DESIGN-008 default section for [Exercise]: the short structural
   /// fields that never become their own section (name, start time, the
   /// scheduling counters).
-  Widget _buildExerciseSectionBody(BuildContext context, AppLocalizations l) {
+  Widget _buildExerciseSectionBody(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     final planFields = [
-      ...PlanFieldTokens.program(l),
-      ...PlanFieldTokens.exercise(l),
+      ...PlanFieldTokens.program(l10n),
+      ...PlanFieldTokens.exercise(l10n),
     ];
     final fields = SafeArea(
       child: DismissKeyboard(
@@ -425,7 +428,7 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                   Expanded(
                     child: RingDrillTextField(
                       controller: _nameController,
-                      label: l.exerciseName,
+                      label: l10n.exerciseName,
                       autofocus: true,
                       tokenAware: true,
                       overrides: _workingOverrides,
@@ -433,20 +436,20 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       onCreateVariable: _createVariableInline,
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                          ? l.pleaseEnterAName
+                          ? l10n.pleaseEnterAName
                           : null,
                     ),
                   ),
                   const SizedBox(width: 16.0),
-                  IntrinsicWidth(child: _buildStartTimeField(context, l)),
+                  IntrinsicWidth(child: _buildStartTimeField(context, l10n)),
                 ],
               ),
               const SizedBox(height: 16.0),
-              _buildTimeSection(context, l),
+              _buildTimeSection(context, l10n),
               const SizedBox(height: 16.0),
               if (_legacyOversizedCounters) ...[
                 MaterialBanner(
-                  content: Text(l.legacyOversizedExerciseNotice),
+                  content: Text(l10n.legacyOversizedExerciseNotice),
                   actions: const [SizedBox.shrink()],
                   padding: const EdgeInsetsDirectional.only(start: 16, end: 8),
                   leading: const Icon(Icons.info_outline),
@@ -459,7 +462,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                     child: TextFormField(
                       controller: _numberOfTeamsController,
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: l.numberOfTeams),
+                      decoration: InputDecoration(
+                        labelText: l10n.numberOfTeams,
+                      ),
                       onChanged: (value) {
                         if (_stationsTracksTeams) {
                           _numberOfStationsController.text = value;
@@ -467,13 +472,13 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                         setState(() {});
                       },
                       validator: (value) {
-                        final counterError = _validateCounter(value, l);
+                        final counterError = _validateCounter(value, l10n);
                         if (counterError != null) return counterError;
                         if (_isValidNumber(_numberOfStationsController.text) &&
                             int.parse(value!) >
                                 int.parse(_numberOfStationsController.text)) {
-                          return l.mustBeEqualToOrLessThanNumberOf(
-                            l.station(2).toLowerCase(),
+                          return l10n.mustBeEqualToOrLessThanNumberOf(
+                            l10n.station(2).toLowerCase(),
                           );
                         }
                         return null;
@@ -486,20 +491,20 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                       controller: _numberOfStationsController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: l.numberOfStations,
+                        labelText: l10n.numberOfStations,
                       ),
                       onChanged: (_) {
                         _stationsTracksTeams = false;
                         setState(() {});
                       },
                       validator: (value) {
-                        final counterError = _validateCounter(value, l);
+                        final counterError = _validateCounter(value, l10n);
                         if (counterError != null) return counterError;
                         if (_isValidNumber(_numberOfTeamsController.text) &&
                             int.parse(value!) <
                                 int.parse(_numberOfTeamsController.text)) {
-                          return l.mustBeEqualToOrGreaterThanNumberOf(
-                            l.team(2).toLowerCase(),
+                          return l10n.mustBeEqualToOrGreaterThanNumberOf(
+                            l10n.team(2).toLowerCase(),
                           );
                         }
                         return null;
@@ -511,34 +516,36 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
                     child: TextFormField(
                       controller: _numberOfRoundsController,
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: l.numberOfRounds),
+                      decoration: InputDecoration(
+                        labelText: l10n.numberOfRounds,
+                      ),
                       onChanged: (_) => setState(() {}),
-                      validator: (value) => _validateCounter(value, l),
+                      validator: (value) => _validateCounter(value, l10n),
                     ),
                   ),
                 ],
               ),
-              ?_buildStationsRoundNote(l),
+              ?_buildStationsRoundNote(l10n),
             ],
           ),
         ),
       ),
     );
 
-    return withSectionRollup(
+    if (!_showRollup) return fields;
+
+    return RollupCard.withScrollable(
       context: context,
-      fields: fields,
-      rollupSections: [
+      sections: [
         for (final section in _ExerciseSection.values)
           if (_activeSections.contains(section))
             RollupSection(
               id: section.name,
-              label: _labelFor(section, l),
-              controller: _sectionControllers[section]!,
+              label: _labelFor(section, l10n),
+              text: _sectionControllers[section]!.text,
               overrides: _workingOverrides,
             ),
       ],
-      showRollup: _showRollup,
     );
   }
 
@@ -816,9 +823,9 @@ class _ExerciseFormScreenState extends State<ExerciseFormScreen> {
       );
 
       // Return the exercise to the previous screen
-      Navigator.of(context).pop(
-        ExerciseFormSave(withBrief, variableAdditions(_pendingVariables)),
-      );
+      Navigator.of(
+        context,
+      ).pop(ExerciseFormSave(withBrief, variableAdditions(_pendingVariables)));
     }
   }
 

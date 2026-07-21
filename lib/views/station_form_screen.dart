@@ -26,8 +26,8 @@ import 'package:ringdrill/views/widgets/persons_section.dart';
 import 'package:ringdrill/views/widgets/plan_field_tokens.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
+import 'package:ringdrill/views/widgets/rollup.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
-import 'package:ringdrill/views/widgets/section_rollup.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
 import 'package:ringdrill/views/widgets/variable_overrides_section.dart';
@@ -921,11 +921,11 @@ class _StationFormScreenState extends State<StationFormScreen> {
   /// The DESIGN-008 default section for [Station]: the short structural
   /// fields that never become their own section (name, position,
   /// description).
-  Widget _buildStationSectionBody(BuildContext context, AppLocalizations l) {
+  Widget _buildStationSectionBody(BuildContext context, AppLocalizations l10n) {
     final planFields = [
-      ...PlanFieldTokens.program(l),
-      ...PlanFieldTokens.exercise(l),
-      ...PlanFieldTokens.station(l),
+      ...PlanFieldTokens.program(l10n),
+      ...PlanFieldTokens.exercise(l10n),
+      ...PlanFieldTokens.station(l10n),
     ];
     final markers = _position == null
         ? widget.markers
@@ -939,8 +939,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
             children: [
               RingDrillTextField(
                 controller: _nameController,
-                label: l.stationName,
-                hintText: l.stationNameHint,
+                label: l10n.stationName,
+                hintText: l10n.stationNameHint,
                 autofocus: true,
                 tokenAware: true,
                 overrides: _workingOverrides,
@@ -950,13 +950,14 @@ class _StationFormScreenState extends State<StationFormScreen> {
                 onCreatePerson: _createPersonInline,
                 validator: (value) => value != null && value.trim().isNotEmpty
                     ? null
-                    : l.pleaseEnterAName,
+                    : l10n.pleaseEnterAName,
               ),
               const SizedBox(height: 16),
               PositionFormField(
-                variant: PositionFieldVariant.card,
-                initialValue: _position,
                 markers: markers,
+                title: l10n.placement,
+                initialValue: _position,
+                variant: PositionFieldVariant.card,
                 onSaved: (position) => _position = position,
                 onChanged: (position) => setState(() => _position = position),
               ),
@@ -965,8 +966,8 @@ class _StationFormScreenState extends State<StationFormScreen> {
                   ? RingDrillTextArea(
                       controller: _descriptionController,
                       focusNode: _descriptionFocusNode,
-                      label: l.stationDescription,
-                      hintText: l.stationDescriptionHint,
+                      label: l10n.stationDescription,
+                      hintText: l10n.stationDescriptionHint,
                       hintMaxLines: 10,
                       minLines: 1,
                       maxLines: 15,
@@ -987,29 +988,29 @@ class _StationFormScreenState extends State<StationFormScreen> {
       ),
     );
 
-    return withSectionRollup(
+    if (!_showRollup) return fields;
+
+    return RollupCard.withScrollable(
       context: context,
-      fields: fields,
       // The lead description first, matching the eventual Post detail
       // sheet's "lead description plus its sections" shape (DESIGN-009/010),
       // then the active markdown sections in order.
-      rollupSections: [
+      sections: [
         RollupSection(
           id: 'station',
-          label: l.stationDescription,
-          controller: _descriptionController,
+          label: l10n.stationDescription,
+          text: _descriptionController.text,
           overrides: _workingOverrides,
         ),
         for (final section in _StationSection.values)
           if (_activeSections.contains(section))
             RollupSection(
               id: section.name,
-              label: _labelFor(section, l),
-              controller: _sectionControllers[section]!,
+              label: _labelFor(section, l10n),
+              text: _sectionControllers[section]!.text,
               overrides: _effectiveAtStationScope,
             ),
       ],
-      showRollup: _showRollup,
     );
   }
 

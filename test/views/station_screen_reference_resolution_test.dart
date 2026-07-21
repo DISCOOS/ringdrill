@@ -11,6 +11,7 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/station_screen.dart';
+import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// DESIGN-010 stage 3 — regression test for the reported bug: the Post
@@ -89,8 +90,13 @@ Widget _buildScreen() {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) =>
-            const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+        builder: (context, state) => const PlanScope(
+          variables: [],
+          child: StationExerciseScreen(
+            stationIndex: 0,
+            uuid: _exerciseUuid,
+          ),
+        ),
       ),
     ],
   );

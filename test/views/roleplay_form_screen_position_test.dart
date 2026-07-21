@@ -10,14 +10,12 @@ import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/roleplay_form_screen.dart';
 
-/// DESIGN-009 prompt 4i/4j — the marker position is one collapsible
-/// [PositionFormField] card. It follows the selected person's own `loc`
-/// location by default and shows that name — or "Own position" for an
-/// override — above the coordinate. Compact (bar only) by default; the
-/// `position-expand` chevron reveals the inline map and `position-collapse`
-/// folds it back (reversible — the earlier dead end). An override shows a
-/// `position-reset` link; a person with no location falls back to the plain
-/// picker.
+/// DESIGN-009 prompt 4i/4j (since simplified) — the marker position is one
+/// [PositionFormField] card, thumbnail always shown. It follows the selected
+/// person's own `loc` location by default and shows that name — or
+/// "Modified" for an override — as the bar's label above the coordinate. An
+/// override shows a `position-reset` link; a person with no location falls
+/// back to the plain picker.
 
 const _lkp = LatLng(58.99, 10.43);
 
@@ -71,12 +69,8 @@ Future<void> _openForm(
   await tester.pumpAndSettle();
 }
 
-Station _stationWith(List<Location> locations, List<Person> persons) => Station(
-  index: 0,
-  name: 'Post 1',
-  locations: locations,
-  persons: persons,
-);
+Station _stationWith(List<Location> locations, List<Person> persons) =>
+    Station(index: 0, name: 'Post 1', locations: locations, persons: persons);
 
 void main() {
   late AppLocalizations l;
@@ -86,8 +80,8 @@ void main() {
   });
 
   testWidgets(
-    'defaults to the selected person\'s location: compact card shows the '
-    'location name and its coordinate, expand chevron, no reset',
+    'defaults to the selected person\'s location: the bar shows the '
+    'location name as its label, no reset',
     (tester) async {
       final station = _stationWith(
         const [Location(slug: 'lkp', label: 'Sist kjent', position: _lkp)],
@@ -108,12 +102,9 @@ void main() {
         captured,
       );
 
-      // One collapsible position card, compact by default: the location name
-      // as the bar title, the expand chevron, no collapse and no reset yet.
+      // Following: the location name is the bar's label, no reset link.
       expect(find.byType(PositionFormField), findsOneWidget);
       expect(find.text('Sist kjent'), findsWidgets);
-      expect(find.byKey(const Key('position-expand')), findsOneWidget);
-      expect(find.byKey(const Key('position-collapse')), findsNothing);
       expect(find.byKey(const Key('position-reset')), findsNothing);
 
       await tester.tap(find.text(l.save));
@@ -124,52 +115,9 @@ void main() {
     },
   );
 
-  testWidgets('the map toggles both ways: expand then collapse', (
-    tester,
-  ) async {
-    final station = _stationWith(
-      const [Location(slug: 'lkp', label: 'Sist kjent', position: _lkp)],
-      const [Person(slug: 'anne', name: 'Anne Glemsk', locSlug: 'lkp')],
-    );
-    final captured = _Captured();
-    await _openForm(
-      tester,
-      const RolePlay(
-        uuid: 'role-1',
-        index: 0,
-        exerciseUuid: 'ex-1',
-        name: 'Anne Glemsk',
-        stationIndex: 0,
-        personRef: 'anne',
-      ),
-      station,
-      captured,
-    );
-
-    // Expand: the inline map appears and the collapse chevron with it.
-    await tester.ensureVisible(find.byKey(const Key('position-expand')));
-    await tester.tap(find.byKey(const Key('position-expand')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('position-collapse')), findsOneWidget);
-    expect(find.byKey(const Key('position-expand')), findsNothing);
-
-    // Collapse back — the regression this guards: the expand used to be a
-    // one-way trip.
-    await tester.ensureVisible(find.byKey(const Key('position-collapse')));
-    await tester.tap(find.byKey(const Key('position-collapse')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('position-expand')), findsOneWidget);
-    expect(find.byKey(const Key('position-collapse')), findsNothing);
-
-    // Still following, so save persists the location's own coordinate.
-    await tester.tap(find.text(l.save));
-    await tester.pumpAndSettle();
-    expect(captured.value!.rolePlay.position, _lkp);
-  });
-
   testWidgets(
     'a person with no loc location falls back to the plain picker — no '
-    'title toggle, no reset',
+    'reset',
     (tester) async {
       final station = _stationWith(const [], const [
         Person(slug: 'anne', name: 'Anne Glemsk'),
@@ -190,9 +138,8 @@ void main() {
       );
 
       expect(find.byType(PositionFormField), findsOneWidget);
-      expect(find.byKey(const Key('position-expand')), findsNothing);
       expect(find.byKey(const Key('position-reset')), findsNothing);
-      expect(find.text(l.pickALocation), findsOneWidget);
+      expect(find.text(l.pickAPlacement), findsOneWidget);
     },
   );
 
@@ -225,8 +172,7 @@ void main() {
         captured,
       );
 
-      // Following Anne's location before the switch (compact, expand chevron).
-      expect(find.byKey(const Key('position-expand')), findsOneWidget);
+      // Following Anne's location before the switch.
       expect(find.byKey(const Key('position-reset')), findsNothing);
 
       await tester.tap(find.byKey(const Key('person-field')));
@@ -236,7 +182,6 @@ void main() {
 
       // Re-follows onto Kari's own location.
       expect(find.text('IPP'), findsWidgets);
-      expect(find.byKey(const Key('position-expand')), findsOneWidget);
       expect(find.byKey(const Key('position-reset')), findsNothing);
 
       await tester.tap(find.text(l.save));
@@ -276,7 +221,7 @@ void main() {
         captured,
       );
 
-      // Override: the reset link is present (the title reads "Own position").
+      // Override: the reset link is present (the bar's label reads "Modified").
       expect(find.byKey(const Key('position-reset')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('person-field')));
@@ -321,10 +266,9 @@ void main() {
     await tester.tap(find.byKey(const Key('position-reset')));
     await tester.pumpAndSettle();
 
-    // Back to following the location: the reset is gone, the expand chevron
-    // is back, and saving persists the location's coordinate.
+    // Back to following the location: the reset is gone, and saving
+    // persists the location's coordinate.
     expect(find.byKey(const Key('position-reset')), findsNothing);
-    expect(find.byKey(const Key('position-expand')), findsOneWidget);
 
     await tester.tap(find.text(l.save));
     await tester.pumpAndSettle();

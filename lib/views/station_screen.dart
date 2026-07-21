@@ -6,9 +6,9 @@ import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/person.dart';
 import 'package:ringdrill/models/role_play.dart';
-import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
@@ -31,14 +31,13 @@ import 'package:ringdrill/views/widgets/cast_picker_sheet.dart';
 import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/collapsible_section_card.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
-import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/gender_segmented_control.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
-import 'package:ringdrill/views/widgets/narrative_rollup_card.dart';
 import 'package:ringdrill/views/widgets/player_status_card.dart';
 import 'package:ringdrill/views/widgets/schedule_card.dart';
 import 'package:ringdrill/views/widgets/schedule_table.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
+import 'package:ringdrill/views/widgets/station_description_card.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
@@ -64,7 +63,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   final _exerciseService = ExerciseService();
   final _subscribers = <StreamSubscription>[];
 
-  // DESIGN-010 stage 3b: the Postbeskrivelse card renders per the settings
+  // DESIGN-010 stage 3b: the Station description card renders per the settings
   // role (director sees the gated directorNotesMd section too), not an
   // in-sheet toggle. Defaults to director (participants do not use the
   // app) until the async load resolves, mirroring BriefScreen's own
@@ -176,125 +175,117 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     // `{{var.*}}` — `context` captured here in `build` stays above the
     // scope (it is `State.context`, an ancestor of whatever `build`
     // returns), so it cannot see these two itself.
-    return ExerciseScope(
+    return StationScope.forStation(
       exercise: _exercise,
-      variableOverrides: _exercise.variableOverrides,
-      child: StationScope(
-        locations: station.locations,
-        persons: station.persons,
-        name: station.name,
-        description: station.description,
-        variantSuffix: station.variantSuffix,
-        position: station.position,
-        child: Scaffold(
-          appBar: AppBar(
-            leading: MasterDetailLeading(
-              onClose: () {
-                if (MasterDetailScope.maybeOf(context) != null) {
-                  ContextSheet.of(context).close();
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            toolbarHeight: 72,
-            title: SheetTitle(
-              primary: station.numberAndName(
-                stationNumberFormat,
-                exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
-              ),
-              secondary: _exercise.name,
-              primaryOverrides: _overridesFor(_exercise, station: station),
-              secondaryOverrides: _overridesFor(_exercise),
-            ),
-            actions: [
-              // Edit Exercise Button
-              IconButton(
-                icon: const Icon(Icons.edit),
-                padding: const EdgeInsets.all(8.0),
-                onPressed: _isStarted ? null : () => _editStation(context),
-                tooltip: _isStarted
-                    ? localizations.stopExerciseFirst(
-                        substitutePlanVariables(
-                          _exercise.name,
-                          _overridesFor(_exercise),
-                        ),
-                      )
-                    : localizations.editExercise,
-              ),
-            ],
-            actionsPadding: EdgeInsets.only(right: 16.0),
+      station: station,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: MasterDetailLeading(
+            onClose: () {
+              if (MasterDetailScope.maybeOf(context) != null) {
+                ContextSheet.of(context).close();
+              } else {
+                Navigator.pop(context);
+              }
+            },
           ),
-          body: SafeArea(
-            child: StreamBuilder(
-              stream: _exerciseService.events,
-              initialData: _initialData(),
-              builder: (context, asyncSnapshot) {
-                final event = asyncSnapshot.data!;
-                final station = _exercise.stations[widget.stationIndex];
-                // DESIGN-010 stage 3b: the rebuilt Post viewer is a single
-                // linear stack of cards (Postbeskrivelse, map, Personer,
-                // Lokasjoner, Tidsplan), matching the mockup. The follow-up
-                // expanded-map-right split below drives off the body's own
-                // pane width (`WindowSizeClass.fromWidth`, not
-                // `.of(context)` — this sheet can sit in a detail pane
-                // narrower than the window, ADR-0030) and, at that width,
-                // moves the map to a fixed full-height right pane beside a
-                // capped, independently-scrolling left column — mirroring
-                // the coordinator's own expanded body.
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final windowSize = WindowSizeClass.fromWidth(
-                      constraints.maxWidth,
-                    );
-                    if (windowSize == WindowSizeClass.expanded) {
-                      return _buildExpandedBody(station, event);
-                    }
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(
-                        kPlayerSurfaceHorizontalPadding,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildStationStatus(station, event),
-                          const SizedBox(height: 8),
-                          _buildStationInfo(station),
-                          _buildPersonsCard(station),
-                          _buildLocationsCard(station),
-                          _buildTimingCard(station, event),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
+          toolbarHeight: 72,
+          title: SheetTitle(
+            primary: station.numberAndName(
+              stationNumberFormat,
+              exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
             ),
+            secondary: _exercise.name,
+            primaryOverrides: _overridesFor(_exercise, station: station),
+            secondaryOverrides: _overridesFor(_exercise),
           ),
-          // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
-          // the parent exercise so the user can start it directly from the
-          // station view (modal context sheet in narrow). In master-detail
-          // (wide) the docked bar lives in the master column instead, so we
-          // skip it here. The bar self-hides when an unrelated exercise is
-          // already running.
-          bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
-              ? DrillMiniPlayer(
-                  exercise: _exercise,
-                  height: 64,
-                  applyBottomInset: true,
-                  // We are already inside the station sheet; tapping the bar
-                  // body should not try to re-open something.
-                  onOpen: () {},
-                  onPlay: () {
-                    unawaited(HapticFeedback.mediumImpact());
-                    _exerciseService.start(_exercise);
-                  },
-                  onPickExercise: (picked) => ContextSheet.of(
-                    context,
-                  ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
-                )
-              : null,
+          actions: [
+            // Edit Exercise Button
+            IconButton(
+              icon: const Icon(Icons.edit),
+              padding: const EdgeInsets.all(8.0),
+              onPressed: _isStarted ? null : () => _editStation(context),
+              tooltip: _isStarted
+                  ? localizations.stopExerciseFirst(
+                      substitutePlanVariables(
+                        _exercise.name,
+                        _overridesFor(_exercise),
+                      ),
+                    )
+                  : localizations.editExercise,
+            ),
+          ],
+          actionsPadding: EdgeInsets.only(right: 16.0),
         ),
+        body: SafeArea(
+          child: StreamBuilder(
+            stream: _exerciseService.events,
+            initialData: _initialData(),
+            builder: (context, asyncSnapshot) {
+              final event = asyncSnapshot.data!;
+              final station = _exercise.stations[widget.stationIndex];
+              // DESIGN-010 stage 3b: the rebuilt Post viewer is a single
+              // linear stack of cards (Postbeskrivelse, map, Personer,
+              // Lokasjoner, Tidsplan), matching the mockup. The follow-up
+              // expanded-map-right split below drives off the body's own
+              // pane width (`WindowSizeClass.fromWidth`, not
+              // `.of(context)` — this sheet can sit in a detail pane
+              // narrower than the window, ADR-0030) and, at that width,
+              // moves the map to a fixed full-height right pane beside a
+              // capped, independently-scrolling left column — mirroring
+              // the coordinator's own expanded body.
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final windowSize = WindowSizeClass.fromWidth(
+                    constraints.maxWidth,
+                  );
+                  if (windowSize == WindowSizeClass.expanded) {
+                    return _buildExpandedBody(station, event);
+                  }
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(
+                      kPlayerSurfaceHorizontalPadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStationStatus(station, event),
+                        const SizedBox(height: 8),
+                        _buildStationInfo(station),
+                        _buildPersonsCard(station),
+                        _buildLocationsCard(station),
+                        _buildTimingCard(station, event),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        // Mirror the CoordinatorScreen pattern: dock a DrillMiniPlayer for
+        // the parent exercise so the user can start it directly from the
+        // station view (modal context sheet in narrow). In master-detail
+        // (wide) the docked bar lives in the master column instead, so we
+        // skip it here. The bar self-hides when an unrelated exercise is
+        // already running.
+        bottomNavigationBar: MasterDetailScope.maybeOf(context) == null
+            ? DrillMiniPlayer(
+                exercise: _exercise,
+                height: 64,
+                applyBottomInset: true,
+                // We are already inside the station sheet; tapping the bar
+                // body should not try to re-open something.
+                onOpen: () {},
+                onPlay: () {
+                  unawaited(HapticFeedback.mediumImpact());
+                  _exerciseService.start(_exercise);
+                },
+                onPickExercise: (picked) => ContextSheet.of(
+                  context,
+                ).replace(ExerciseSheetTarget(exerciseUuid: picked.uuid)),
+              )
+            : null,
       ),
     );
   }
@@ -368,7 +359,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     return finishFallbackCell(l10n, _exercise, icon: Icons.arrow_forward);
   }
 
-  /// Postbeskrivelse (rollup) + map cards. Sized to its content (no inner
+  /// Station description (rollup) + map cards. Sized to its content (no inner
   /// scrollable) so the outer SingleChildScrollView in [build] owns the
   /// whole screen's scroll context.
   Widget _buildStationInfo(Station station) {
@@ -376,7 +367,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildPostDescriptionCard(station),
+        _buildStationDescriptionCard(station),
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: _buildMapCard(station),
@@ -393,64 +384,12 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// `BriefAudience.includesDirectorNotes`, which also includes instructor:
   /// this is the author's own live planning note, not the printed brief).
   /// Tapping a section opens the station editor scrolled straight to it.
-  Widget _buildPostDescriptionCard(Station station) {
-    final l10n = AppLocalizations.of(context)!;
-    final overrides = _overridesFor(_exercise, station: station);
-    return NarrativeRollupCard(
-      sectionId: 'description',
-      icon: Icons.description,
-      title: l10n.postDescriptionCardTitle,
-      leadText: station.description,
-      leadOverrides: overrides,
-      leadId: 'station',
-      sections: [
-        NarrativeSection(
-          id: 'equipment',
-          label: l10n.briefSectionStationEquipment,
-          text: station.equipmentMd,
-          overrides: overrides,
-        ),
-        NarrativeSection(
-          id: 'situation',
-          label: l10n.briefSectionStationSituation,
-          text: station.situationMd,
-          overrides: overrides,
-        ),
-        NarrativeSection(
-          id: 'mission',
-          label: l10n.briefSectionStationMission,
-          text: station.missionMd,
-          overrides: overrides,
-        ),
-        NarrativeSection(
-          id: 'logistics',
-          label: l10n.briefSectionStationLogistics,
-          text: station.logisticsMd,
-          overrides: overrides,
-        ),
-        NarrativeSection(
-          id: 'criticalQuestions',
-          label: l10n.briefSectionStationCriticalQuestions,
-          text: station.criticalQuestionsMd,
-          overrides: overrides,
-        ),
-        NarrativeSection(
-          id: 'leaderAnswers',
-          label: l10n.briefSectionStationLeaderAnswers,
-          text: station.leaderAnswersMd,
-          overrides: overrides,
-        ),
-        if (_role == AppUserRole.director)
-          NarrativeSection(
-            id: 'directorNotes',
-            label: l10n.briefSectionStationDirectorNotes,
-            text: station.directorNotesMd,
-            overrides: overrides,
-            gated: true,
-          ),
-      ],
+  Widget _buildStationDescriptionCard(Station station) {
+    return StationDescriptionCard(
+      exercise: _exercise,
+      station: station,
+      role: _role,
       onTapSection: (id) => _editStation(context, initialSectionId: id),
-      showHint: true,
     );
   }
 
@@ -473,6 +412,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
       ),
       markers: stationScenarioMarkers(context, station),
       legend: StationScenarioLegend(station: station),
+      onTap: () => _editStation(context, initialSectionId: 'id'),
     );
   }
 
@@ -494,7 +434,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
             _buildStationStatus(station, event),
             const SizedBox(height: 8),
           ],
-          _buildPostDescriptionCard(station),
+          _buildStationDescriptionCard(station),
           _buildPersonsCard(station),
           _buildLocationsCard(station),
           _buildTimingCard(station, event),

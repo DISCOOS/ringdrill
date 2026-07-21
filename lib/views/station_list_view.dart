@@ -6,6 +6,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
@@ -23,6 +24,7 @@ import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
+import 'package:ringdrill/views/widgets/station_description_rollup.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
@@ -80,9 +82,22 @@ class _StationListViewState extends State<StationListView> {
 
   StationListController get _controller => widget.controller;
 
+  // DESIGN-010 stage 3b: the Station description card renders per the settings
+  // role (director sees the gated directorNotesMd section too), not an
+  // in-sheet toggle. Defaults to director (participants do not use the
+  // app) until the async load resolves, mirroring BriefScreen's own
+  // `_loadStoredRole` default/override pattern.
+  AppUserRole _role = AppUserRole.director;
+
+  Future<void> _loadStoredRole() async {
+    final role = await loadStoredAppUserRole();
+    if (mounted) setState(() => _role = role);
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadStoredRole();
     // Drop `done` events so a stopped exercise's stations stop being
     // highlighted with the live-accent treatment on the badge and tile.
     _liveEvent = _filterLive(ExerciseService().last);
@@ -253,7 +268,7 @@ class _StationListViewState extends State<StationListView> {
         final localIndex = exerciseStart < 0
             ? position
             : position - exerciseStart;
-        return _buildRow(
+        return _buildStationRow(
           context,
           localizations,
           exerciseNumber: exerciseNumber,
@@ -303,7 +318,7 @@ class _StationListViewState extends State<StationListView> {
     }
   }
 
-  Widget _buildRow(
+  Widget _buildStationRow(
     BuildContext context,
     AppLocalizations localizations, {
     required int exerciseNumber,
@@ -431,17 +446,15 @@ class _StationListViewState extends State<StationListView> {
     Station station, {
     required bool hasRoles,
   }) {
-    final hasDescription =
-        station.description != null && station.description!.trim().isNotEmpty;
     // One shared TileSectionDivider between each present section — never a
     // leading or trailing one — so Description/Position/Markers read as
     // consistently divided regardless of which are present for this station.
     final sections = <Widget>[
-      if (hasDescription)
-        RingDrillText.rich(
-          station.description!,
-          overrides: _overridesFor(exercise, station),
-        ),
+      StationDescriptionRollup(
+        exercise: exercise,
+        station: station,
+        role: _role,
+      ),
       // Shared "Posisjon" label + pin/coords row + tappable mini-map
       // (140 px tall to match the previous inline layout). Keeping the
       // 140 px height — instead of falling back to the widget's 200 px

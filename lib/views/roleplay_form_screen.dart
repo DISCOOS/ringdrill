@@ -19,7 +19,6 @@ import 'package:ringdrill/views/person_form_screen.dart';
 import 'package:ringdrill/views/plan_additions.dart';
 import 'package:ringdrill/views/position_form_field.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
-import 'package:ringdrill/views/widgets/collapse_chevron.dart';
 import 'package:ringdrill/views/widgets/dismiss_keyboard.dart';
 import 'package:ringdrill/views/widgets/editor_token.dart';
 import 'package:ringdrill/views/widgets/exercise_scope.dart';
@@ -29,8 +28,8 @@ import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text_field.dart';
 import 'package:ringdrill/views/widgets/roleplay_scope.dart';
+import 'package:ringdrill/views/widgets/rollup.dart';
 import 'package:ringdrill/views/widgets/section_navigated_form.dart';
-import 'package:ringdrill/views/widgets/section_rollup.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/token_text_editing_controller.dart';
@@ -197,13 +196,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   // default we may keep updating). Cleared once the user picks a spot on the
   // map, so we never overwrite a manual fine-tune.
   bool _positionFromStation = false;
-
-  /// Whether the position section shows the raw [PositionFormField] picker
-  /// rather than the collapsed location card (DESIGN-009 prompt 4i/4j).
-  /// Set once in [initState] from whether there is a person
-  /// location to collapse behind at all; toggled true afterward by the
-  /// "Sett egen" action, and back to false by "Tilbakestill".
-  bool _positionExpanded = false;
 
   /// New on `RolePlay` (ADR-0047, DESIGN-009 follow-up 4) — the
   /// `roleGender`-labeled counterpart of `Person.gender`, reusing
@@ -378,10 +370,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
         }
       }
     }
-    // Show the raw picker right away unless there is a person location to
-    // collapse behind (DESIGN-009 prompt 4i) — no inheritable coordinate
-    // means no card, no regression from the pre-existing behavior above.
-    _positionExpanded = _personLocationCoordinate == null;
   }
 
   /// Wired to a markdown field's `onCreateLocation` hook (ADR-0047,
@@ -478,7 +466,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       final newCoord = _personLocationCoordinate;
       if (newCoord != null) {
         _position = newCoord;
-        _positionExpanded = false;
       }
     }
   }
@@ -1217,20 +1204,20 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       ),
     );
 
-    return withSectionRollup(
+    if (!_showRollup) return fields;
+
+    return RollupCard.withScrollable(
       context: context,
-      fields: fields,
-      rollupSections: [
+      sections: [
         for (final section in _MdSection.values)
           if (_activeMdSections.contains(section))
             RollupSection(
               id: section.name,
               label: _mdLabelFor(section, l),
-              controller: _mdControllerFor(section),
+              text: _mdControllerFor(section).text,
               overrides: _effectiveVariables,
             ),
       ],
-      showRollup: _showRollup,
     );
   }
 
@@ -1731,13 +1718,15 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
   /// [PositionFormField] when there is no inheritable coordinate — no
   /// card, no regression from the pre-existing "defaults to the post's
   /// position" behavior.
-  Widget _buildPositionSection(BuildContext context, AppLocalizations l) {
+  Widget _buildPositionSection(BuildContext context, AppLocalizations l10n) {
     final personCoord = _personLocationCoordinate;
     if (personCoord == null) {
       return PositionFormField(
+        title: l10n.placement,
         key: ValueKey(_position),
         variant: PositionFieldVariant.card,
         initialValue: _position,
+        emptyLabel: l10n.pickAPlacement,
         onChanged: (pos) => setState(() {
           _position = pos;
           _positionFromStation = false;
@@ -1748,12 +1737,10 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
 
     final theme = Theme.of(context);
     final location = _selectedPersonLocation!;
+    final following = _positionFollowsPerson;
     final locationLabel = location.label.isEmpty
         ? location.slug
         : location.label;
-    final following = _positionFollowsPerson;
-
-    final expanded = _positionExpanded;
 
     // Reset an override back to the location's coordinate (→ following) and
     // collapse to the compact card. Shown only while overridden, under the
@@ -1763,7 +1750,6 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       key: const Key('position-reset'),
       onTap: () => setState(() {
         _position = personCoord;
-        _positionExpanded = false;
       }),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1771,7 +1757,7 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
           Icon(Icons.replay, size: 14, color: theme.colorScheme.primary),
           const SizedBox(width: 4),
           Text(
-            l.rolePlayIdentityResetAction,
+            l10n.rolePlayIdentityResetAction,
             style: theme.textTheme.labelMedium?.copyWith(
               color: theme.colorScheme.primary,
             ),
@@ -1780,38 +1766,17 @@ class _RolePlayFormScreenState extends State<RolePlayFormScreen> {
       ),
     );
 
-    final chevron = CollapseChevron(
-      key: Key(expanded ? 'position-collapse' : 'position-expand'),
-      collapsed: !expanded,
-      onTap: () => setState(() => _positionExpanded = !expanded),
-    );
-
-    // One collapsible position card (DESIGN-009 prompt 4i/4j): compact (bar
-    // only) by default, showing the followed location's name — or "Egen
-    // posisjon" for an override — above the coordinate. The chevron toggles
-    // the inline map preview; tapping the strip always opens the selector.
     return PositionFormField(
       key: ValueKey(_position),
-      variant: PositionFieldVariant.card,
+      title: l10n.placement,
       initialValue: _position,
-      showThumbnail: expanded,
-      title: following ? locationLabel : l.rolePlayPositionOwnLabel,
-      // The reset shares the bar's right column with the fold chevron, so both
-      // sit flush at the card's right margin — chevron on the title line,
-      // "Reset" on the coordinate line — instead of the reset stopping short
-      // inside the text column. The chevron's own behaviour is unchanged.
-      barTrailing: following
-          ? chevron
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [chevron, const SizedBox(height: 6), resetLink],
-            ),
-      onChanged: (pos) => setState(() {
-        _position = pos;
-        _positionFromStation = false;
-      }),
-      onSaved: (pos) => _rolePlay = _rolePlay.copyWith(position: pos),
+      emptyLabel: l10n.pickAPlacement,
+      barLabel: Text(following ? locationLabel : l10n.modified),
+      variant: PositionFieldVariant.card,
+      barTrailing: following ? null : resetLink,
+      showThumbnail: true,
+      onSaved: (position) => _position = position,
+      onChanged: (position) => setState(() => _position = position),
     );
   }
 

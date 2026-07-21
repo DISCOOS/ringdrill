@@ -119,7 +119,11 @@ void main() {
       findsOneWidget,
     );
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text(l10n.briefSectionStationSituation), findsOneWidget);
+    // SectionHeader renders every section label uppercased.
+    expect(
+      find.text(l10n.briefSectionStationSituation.toUpperCase()),
+      findsOneWidget,
+    );
     expect(
       find.text('Situasjonsbeskrivelse.', findRichText: true),
       findsOneWidget,
@@ -150,7 +154,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.briefSectionStationDirectorNotes), findsOneWidget);
+      // SectionHeader renders every section label uppercased.
+      expect(
+        find.text(l10n.briefSectionStationDirectorNotes.toUpperCase()),
+        findsOneWidget,
+      );
       expect(
         find.text('Hemmelig notat til leder.', findRichText: true),
         findsOneWidget,

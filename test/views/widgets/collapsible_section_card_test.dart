@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // DESIGN-010 follow-up: collapsible-section-cards — the shared
-// CollapsibleSectionCard wrapper (ScheduleCard, NarrativeRollupCard, the Post
+// CollapsibleSectionCard wrapper (ScheduleCard, RollupCard, the Post
 // viewer's Personer/Lokasjoner cards all build on this). Tests it directly
 // rather than through any one call site so they cover the shared mechanism
 // once instead of per migrated card.

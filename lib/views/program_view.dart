@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/exercise_service.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/theme.dart';
@@ -30,18 +31,20 @@ import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/drill_player_sheet.dart';
+import 'package:ringdrill/views/widgets/exercise_description_rollup.dart';
 import 'package:ringdrill/views/widgets/exercise_mini_map.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
+import 'package:ringdrill/views/widgets/exercise_scope.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/live_accent.dart';
 import 'package:ringdrill/views/widgets/reorderable_section.dart';
 import 'package:ringdrill/views/widgets/resolved_markdown_text.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
+import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:ringdrill/views/widgets/station_number_badge.dart';
 import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
-import 'package:ringdrill/views/widgets/start_here_pill.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
 
 import 'exercise_form_screen.dart';
@@ -178,7 +181,7 @@ class _ProgramViewState extends State<ProgramView> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
     final targetNotifier = MasterDetailScope.maybeOf(context)?.target;
     // ----------------------------------------------------------------
     // The exercises segment body: a slim list header (sort + reorder
@@ -212,7 +215,7 @@ class _ProgramViewState extends State<ProgramView> {
           exercise: exercise,
           program: _programService.activeProgram,
           exerciseNumber: index + 1,
-          localizations: localizations,
+          localizations: l10n,
           markers: markers,
           liveEvent: _liveEvent,
           selected: isSelected,
@@ -236,7 +239,7 @@ class _ProgramViewState extends State<ProgramView> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
-                localizations.editExercise,
+                l10n.editExercise,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
@@ -250,7 +253,7 @@ class _ProgramViewState extends State<ProgramView> {
           ),
         ),
         confirmDismiss: (direction) async {
-          await _openExerciseForm(context, localizations, exercise);
+          await _openExerciseForm(context, l10n, exercise);
           // Always return false — the item should not be removed.
           return false;
         },
@@ -258,7 +261,7 @@ class _ProgramViewState extends State<ProgramView> {
           exercise: exercise,
           program: _programService.activeProgram,
           exerciseNumber: index + 1,
-          localizations: localizations,
+          localizations: l10n,
           markers: markers,
           liveEvent: _liveEvent,
           selected: isSelected,
@@ -271,8 +274,7 @@ class _ProgramViewState extends State<ProgramView> {
                   : exercise.uuid;
             });
           },
-          onLongPress: () =>
-              _openExerciseForm(context, localizations, exercise),
+          onLongPress: () => _openExerciseForm(context, l10n, exercise),
           // V1: live card opens the DrillPlayer sheet (DESIGN-001).
           // All other cards keep the ContextSheet flow.
           onOpen: () {
@@ -299,22 +301,22 @@ class _ProgramViewState extends State<ProgramView> {
             hasScrollBody: false,
             child: TeachingEmptyState(
               icon: Icons.update,
-              title: localizations.emptyExercisesTitle,
-              body: localizations.emptyExercisesBody,
+              title: l10n.emptyExercisesTitle,
+              body: l10n.emptyExercisesBody,
             ),
           )
         : ReorderableSection<Exercise>(
             sliver: true,
             items: _exercises,
             keyOf: (e) => ValueKey(e.uuid),
-            orderLabel: localizations.exerciseSortBy,
+            orderLabel: l10n.exerciseSortBy,
             sortActions: [
               (
-                label: localizations.exerciseSortByStartTimeShort,
+                label: l10n.exerciseSortByStartTimeShort,
                 onPressed: () => _sortExercises(_SortAction.byStartTime),
               ),
               (
-                label: localizations.exerciseSortAlphabeticallyShort,
+                label: l10n.exerciseSortAlphabeticallyShort,
                 onPressed: () => _sortExercises(_SortAction.alphabetically),
               ),
             ],
@@ -363,7 +365,7 @@ class _ProgramViewState extends State<ProgramView> {
               expanded: _overviewExpanded,
               onToggleExpanded: () =>
                   setState(() => _overviewExpanded = !_overviewExpanded),
-              onEdit: () => _openProgramForm(context, localizations),
+              onEdit: () => _openProgramForm(context, l10n),
             ),
           ),
           SliverPersistentHeader(
@@ -1119,25 +1121,45 @@ class _ExerciseCardState extends State<ExerciseCard> {
         ? widget.liveEvent
         : null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (markers.isNotEmpty) ...[
-          ExerciseMiniMap(
-            markers: markers,
-            mapKey: ValueKey<String>('exercise-card-map-${exercise.uuid}'),
+    // `{{exercise.*}}` (e.g. `numberOfRounds`) resolves via
+    // `ExerciseScope.maybeOf` (resolve_scoped_field.dart) — without this
+    // ancestor the exercise facet map is simply absent and the reference
+    // stays literal (ADR-0048), which is what `ExerciseDescriptionRollup`'s
+    // sections were hitting before this scope existed. `_buildStationDetail`
+    // gets the same thing for free via `StationScope.forStation`, which
+    // wraps its own `ExerciseScope` internally.
+    return ExerciseScope(
+      exercise: exercise,
+      variableOverrides: exercise.variableOverrides,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ExerciseDescriptionRollup(
+            exercise: exercise,
+            role: AppUserRole.director,
+            onTapSection: (_) {
+              if (widget.onLongPress != null) {
+                widget.onLongPress!();
+              }
+            },
           ),
-          if (showStations) const SizedBox(height: 8),
+          if (markers.isNotEmpty) ...[
+            ExerciseMiniMap(
+              markers: markers,
+              mapKey: ValueKey<String>('exercise-card-map-${exercise.uuid}'),
+            ),
+            if (showStations) const SizedBox(height: 8),
+          ],
+          if (showStations)
+            for (
+              var stationIndex = 0;
+              stationIndex < exercise.stations.length;
+              stationIndex++
+            )
+              _buildStationRow(exercise, stationIndex, liveEvent),
         ],
-        if (showStations)
-          for (
-            var stationIndex = 0;
-            stationIndex < exercise.stations.length;
-            stationIndex++
-          )
-            _buildStationRow(exercise, stationIndex, liveEvent),
-      ],
+      ),
     );
   }
 
@@ -1357,37 +1379,34 @@ class _ExerciseCardState extends State<ExerciseCard> {
       exercise: exercise,
       station: station,
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (description != null && description.trim().isNotEmpty) ...[
-              RingDrillText.rich(
-                description,
-                overrides: program == null
-                    ? const {}
-                    : effectivePlanVariables(
-                        program,
-                        exercise: exercise,
-                        station: station,
-                      ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            StationPositionPanel(
-              exercise: exercise,
-              station: station,
-              mapHeight: 140,
-              miniMapKey: ValueKey<String>(
-                'exercise-card-station-map-${exercise.uuid}-${station.index}',
-              ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (description != null && description.trim().isNotEmpty) ...[
+            RingDrillText.rich(
+              description,
+              overrides: program == null
+                  ? const {}
+                  : effectivePlanVariables(
+                      program,
+                      exercise: exercise,
+                      station: station,
+                    ),
             ),
             const SizedBox(height: 12),
-            StationRoleSummary(
-              exercise: exercise,
-              stationIndex: station.index,
-            ),
           ],
-        ),
+          StationPositionPanel(
+            exercise: exercise,
+            station: station,
+            mapHeight: 140,
+            miniMapKey: ValueKey<String>(
+              'exercise-card-station-map-${exercise.uuid}-${station.index}',
+            ),
+          ),
+          const SizedBox(height: 12),
+          StationRoleSummary(exercise: exercise, stationIndex: station.index),
+        ],
+      ),
     );
   }
 }
@@ -1646,12 +1665,10 @@ abstract class ProgramPageControllerBase extends ScreenController {
               e.uuid == exerciseUuid &&
               e.stations.any((s) => s.index == stationIndex),
         ),
-      RoleSheetTarget(:final rolePlayUuid) => programService
-          .loadRolePlays()
-          .any((r) => r.uuid == rolePlayUuid),
-      TeamOverviewSheetTarget(:final teamIndex) => programService
-          .loadTeams()
-          .any((t) => t.index == teamIndex),
+      RoleSheetTarget(:final rolePlayUuid) =>
+        programService.loadRolePlays().any((r) => r.uuid == rolePlayUuid),
+      TeamOverviewSheetTarget(:final teamIndex) =>
+        programService.loadTeams().any((t) => t.index == teamIndex),
       TeamSheetTarget(:final exerciseUuid, :final teamIndex) => exercises.any(
         (e) => e.uuid == exerciseUuid && e.numberOfTeams > teamIndex,
       ),

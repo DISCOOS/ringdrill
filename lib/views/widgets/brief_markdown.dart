@@ -680,7 +680,8 @@ class BriefMarkdownBlock extends StatelessWidget {
     // own full-page reading surface is wide enough that the effect goes
     // unnoticed; a compact rollup block is exactly where it shows up. The
     // rollup's own container already caps/pads the available width
-    // (withSectionRollup), so this block just fills whatever it is given.
+    // (RollupCard.withScrollable), so this block just fills whatever it is
+    // given.
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: gutter ?? theme.spacing.gutter),
       // Deliberately no SelectionArea, unlike BriefMarkdown: the section
