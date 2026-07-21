@@ -12,10 +12,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/services/geocoding_service.dart';
 import 'package:ringdrill/services/map_settings.dart';
-import 'package:ringdrill/views/shell/window_size_class.dart';
-import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/variable_values.dart';
+import 'package:ringdrill/views/shell/window_size_class.dart';
+import 'package:ringdrill/views/widgets/map_command.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Unified spec for a single map marker. The [child] widget is the icon
@@ -475,7 +475,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                         child: Icon(
                           Icons.location_on,
                           size: 42,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Colors.green,
                         ),
                       ),
                     ),
