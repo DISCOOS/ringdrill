@@ -5,6 +5,7 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
+import 'package:ringdrill/views/widgets/border_shell.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
 
 import 'map_picker_screen.dart';
@@ -103,34 +104,25 @@ class PositionFormField<K> extends FormField<LatLng> {
                  ),
                  const SizedBox(height: 6),
                ],
-               ClipRRect(
-                 borderRadius: BorderRadius.circular(8),
-                 child: Container(
-                   decoration: BoxDecoration(
-                     border: Border.all(
-                       color: theme.colorScheme.outlineVariant,
-                     ),
-                     borderRadius: BorderRadius.circular(8),
-                   ),
-                   child: PositionCard<K>(
-                     elevation: 0,
-                     variant: variant,
-                     markers: markers,
-                     onTap: openPicker,
-                     position: position,
-                     overlayActions: overlayActions,
-                     emptyLabel: emptyLabel ?? l10n.pickALocation,
-                     barLabel:
-                         barLabel ??
-                         (position != null ? Text(l10n.editPlacement) : null),
-                     barLeading: barLeading,
-                     barTrailing:
-                         barTrailing ??
-                         Icon(
-                           Icons.chevron_right,
-                           color: theme.colorScheme.onSurfaceVariant,
-                         ),
-                   ),
+               BorderShell(
+                 child: PositionCard<K>(
+                   elevation: 0,
+                   variant: variant,
+                   markers: markers,
+                   onTap: openPicker,
+                   position: position,
+                   overlayActions: overlayActions,
+                   emptyLabel: emptyLabel ?? l10n.pickALocation,
+                   barLabel:
+                       barLabel ??
+                       (position != null ? Text(l10n.editPlacement) : null),
+                   barLeading: barLeading,
+                   barTrailing:
+                       barTrailing ??
+                       Icon(
+                         Icons.chevron_right,
+                         color: theme.colorScheme.onSurfaceVariant,
+                       ),
                  ),
                ),
                if (state.hasError)

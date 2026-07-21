@@ -349,7 +349,7 @@ class _PositionCardShellState extends State<PositionCardShell>
     final legendBox = widget.legend == null
         ? null
         : Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(color: theme.colorScheme.outlineVariant),
@@ -377,6 +377,15 @@ class _PositionCardShellState extends State<PositionCardShell>
     final showBarDivider =
         thumbnailStack != null && !(collapsible && collapsed);
 
+    final trailing = collapsible && collapsed
+        ? CollapseChevron(
+            onTap: _toggle,
+            collapsed: collapsed,
+            inverseColorOnCollapsed: true,
+            padding: EdgeInsets.only(left: 0),
+          )
+        : widget.barTrailing;
+
     final content = Column(
       // `max` in fill mode: the ancestor (the expanded right pane's
       // stretched Row) already gives this shell a tight height, and the
@@ -399,8 +408,9 @@ class _PositionCardShellState extends State<PositionCardShell>
                 )
               : mapAndLegend,
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
             border: showBarDivider
                 ? Border(
                     top: BorderSide(color: theme.colorScheme.outlineVariant),
@@ -423,9 +433,9 @@ class _PositionCardShellState extends State<PositionCardShell>
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                ?widget.barLeading,
+                if (widget.barLeading != null) const SizedBox(width: 8),
                 if (widget.barLabel != null) ...[
-                  ?widget.barLeading,
-                  const SizedBox(width: 8),
                   widget.barLabel!,
                   const SizedBox(width: 8),
                 ],
@@ -435,18 +445,11 @@ class _PositionCardShellState extends State<PositionCardShell>
                     child: widget.barChild,
                   ),
                 ),
-                const SizedBox(width: 8),
                 // Collapsed: the expand chevron takes the trailing slot instead
                 // of the editor `›` — the two are never shown together (the
                 // over-map collapse chevron only exists while expanded).
-                if (collapsible && collapsed)
-                  CollapseChevron(
-                    collapsed: collapsed,
-                    onTap: _toggle,
-                    inverseColorOnCollapsed: true,
-                  )
-                else
-                  ?widget.barTrailing,
+                if (trailing != null) const SizedBox(width: 8),
+                ?trailing,
               ],
             ),
           ),

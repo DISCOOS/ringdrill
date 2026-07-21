@@ -80,6 +80,7 @@ class Rollup extends StatelessWidget {
     }
 
     return Column(
+      spacing: 8.0,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [...blocks, ?_buildHint(context, hint)],
     );
@@ -214,17 +215,14 @@ List<Widget> _buildSectionBlocks(
     blocks.add(
       _buildTappable(
         id: section.id,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (section.label != null)
-                SectionHeader(section.label!, gated: section.gated),
-              const SizedBox(height: 2),
-              RingDrillText.rich(text, overrides: section.overrides),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (section.label != null)
+              SectionHeader(section.label!, gated: section.gated),
+            const SizedBox(height: 2),
+            RingDrillText.rich(text, overrides: section.overrides),
+          ],
         ),
         onTapSection: onTapSection,
       ),

@@ -14,10 +14,12 @@ class CollapseChevron extends StatelessWidget {
     required this.collapsed,
     required this.onTap,
     this.inverseColorOnCollapsed = false,
+    this.padding = const EdgeInsets.all(4),
   });
 
   final bool collapsed;
   final VoidCallback onTap;
+  final EdgeInsetsGeometry padding;
   final bool inverseColorOnCollapsed;
 
   @override
@@ -27,7 +29,7 @@ class CollapseChevron extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(7),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: padding,
         child: AnimatedRotation(
           turns: collapsed ? 0 : 0.5,
           duration: const Duration(milliseconds: 200),

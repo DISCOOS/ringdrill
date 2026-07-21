@@ -25,7 +25,7 @@ class CollapsibleSectionCard extends StatefulWidget {
     this.headerBuilder,
     this.trailing,
     required this.body,
-    this.margin = const EdgeInsets.only(bottom: 8),
+    this.margin = const EdgeInsets.only(bottom: 0),
     this.dividedBody = false,
     this.collapsedTitleSuffix,
   }) : assert(

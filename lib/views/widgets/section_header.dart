@@ -3,9 +3,15 @@ import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/widgets/gate_badge.dart';
 
 class SectionHeader extends StatelessWidget {
-  const SectionHeader(this.text, {super.key, this.gated = false});
+  const SectionHeader(
+    this.text, {
+    super.key,
+    this.gated = false,
+    this.trailing,
+  });
 
   final String text;
+  final Widget? trailing;
 
   /// Shows the [AppLocalizations.directorOnlyBadge] pill next to this
   /// section's heading. The caller decides *whether to include this
@@ -19,17 +25,19 @@ class SectionHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     return Row(
+      spacing: 6.0,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: Text(
-            text.toUpperCase(),
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.4,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+        Text(
+          text.toUpperCase(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.4,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        ?trailing,
         if (gated) ...[
           const SizedBox(width: 6),
           GateBadge(label: l10n.directorOnlyBadge),

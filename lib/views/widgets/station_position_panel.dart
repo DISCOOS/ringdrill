@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
+import 'package:ringdrill/views/widgets/border_shell.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
 import 'package:ringdrill/views/widgets/station_mini_map.dart';
 
@@ -34,14 +36,21 @@ class StationPositionPanel extends StatelessWidget {
     this.asCard = false,
     this.fillHeight = false,
     this.mapHeight = 200,
-    this.padding = EdgeInsets.zero,
+    this.label,
     this.onTap,
+    this.withTitle = false,
+    this.withBorder = false,
+    this.padding = EdgeInsets.zero,
   });
 
+  final String? label;
+  final bool withTitle;
+  final bool withBorder;
   final Station station;
-  final Exercise exercise;
-
   final double mapHeight;
+  final Exercise exercise;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
 
   /// Forwarded to [PositionCardShell.sectionId]. Null (every call site but
   /// the Post viewer) keeps this panel exactly as it always was: no
@@ -71,8 +80,6 @@ class StationPositionPanel extends StatelessWidget {
   /// instance and they do not share camera state.
   final Key? miniMapKey;
 
-  final EdgeInsetsGeometry padding;
-
   /// Forwarded to [PositionCardShell]. Defaults to `false` because most
   /// call sites embed this panel inside an `ExpandableTile` body — itself
   /// a `Card` — where the panel's own [Card] would nest inside it.
@@ -80,73 +87,102 @@ class StationPositionPanel extends StatelessWidget {
   /// page with no ambient card, pass `true`.
   final bool asCard;
 
-  final VoidCallback? onTap;
-
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final position = station.position;
+    final content = position == null
+        ? _buildNoPositionRow(l10n, theme)
+        : _buildPositionCard(l10n, theme, position);
 
+    final positioned = withBorder ? BorderShell(child: content) : content;
     return Padding(
       padding: padding,
-      child: position == null
-          ? Row(
-              children: [
-                Text(
-                  localizations.position,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  localizations.noLocation,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
-            )
-          : PositionCardShell(
-              onTap: onTap,
-              asCard: asCard,
-              thumbnail: StationMiniMap(
-                key: miniMapKey,
-                exercise: exercise,
-                station: station,
-                height: mapHeight,
-                markers: markers,
-                // Square bottom corners: the map sits flush above the
-                // coordinate bar, and PositionCardShell's own outer
-                // rounding already handles the card's top corners.
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(8),
-                ),
-              ),
-              thumbnailHeight: mapHeight,
-              fillHeight: fillHeight,
-              sectionId: sectionId,
-              legend: legend,
-              barLabel: InkWell(
-                onTap: onTap,
-                child: Text(
-                  localizations.position,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              barChild: Align(
-                alignment: Alignment.centerRight,
-                child: InkWell(
-                  onTap: onTap,
-                  child: PositionWidget(
-                    format: PositionFormat.utm,
-                    position: position,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        // `max` + Expanded in fillHeight mode: the ancestor (the expanded
+        // right pane's stretched Row) gives this panel a tight height, and
+        // this wrapper must pass all of it through to PositionCardShell's
+        // own Expanded thumbnail below — a `min` Column would instead give
+        // its child unbounded height to measure it, which conflicts with
+        // that Expanded. `min` otherwise, so the panel wraps its content
+        // height like every other call site.
+        mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          if (withTitle) ...[
+            Text(
+              l10n.placement.toUpperCase(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 6),
+          ],
+          fillHeight ? Expanded(child: positioned) : positioned,
+        ],
+      ),
+    );
+  }
+
+  Row _buildNoPositionRow(AppLocalizations l10n, ThemeData theme) {
+    return Row(
+      children: [
+        Text(
+          l10n.position,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const Spacer(),
+        Text(l10n.noLocation, style: theme.textTheme.bodyMedium),
+      ],
+    );
+  }
+
+  PositionCardShell _buildPositionCard(
+    AppLocalizations l10n,
+    ThemeData theme,
+    LatLng position,
+  ) {
+    return PositionCardShell(
+      onTap: onTap,
+      asCard: asCard,
+      thumbnail: StationMiniMap(
+        key: miniMapKey,
+        exercise: exercise,
+        station: station,
+        height: mapHeight,
+        markers: markers,
+        // Square bottom corners: the map sits flush above the
+        // coordinate bar, and PositionCardShell's own outer
+        // rounding already handles the card's top corners.
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+      ),
+      thumbnailHeight: mapHeight,
+      fillHeight: fillHeight,
+      sectionId: sectionId,
+      legend: legend,
+      barLabel: InkWell(
+        onTap: onTap,
+        child: Text(
+          label ?? l10n.position,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+      barChild: Align(
+        alignment: Alignment.centerRight,
+        child: InkWell(
+          onTap: onTap,
+          child: PositionWidget(
+            format: PositionFormat.utm,
+            position: position,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ),
     );
   }
 }

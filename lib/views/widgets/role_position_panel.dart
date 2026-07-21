@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/views/map_view.dart';
 import 'package:ringdrill/views/position_widget.dart';
+import 'package:ringdrill/views/widgets/border_shell.dart';
 import 'package:ringdrill/views/widgets/position_card.dart';
 import 'package:ringdrill/views/widgets/role_mini_map.dart';
 
@@ -19,15 +20,29 @@ import 'package:ringdrill/views/widgets/role_mini_map.dart';
 class RolePositionPanel extends StatelessWidget {
   const RolePositionPanel({
     super.key,
-    required this.position,
-    required this.label,
+    this.label,
+    this.legend,
+    this.position,
+    this.sectionId,
     this.mapHeight = 200,
     this.asCard = false,
     this.fillHeight = false,
-    this.sectionId,
     this.extraMarkers = const [],
-    this.legend,
+    this.onTap,
+    this.withTitle = false,
+    this.withBorder = false,
+    this.padding = EdgeInsets.zero,
   });
+
+  final bool withTitle;
+  final bool withBorder;
+  final LatLng? position;
+  final double mapHeight;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+
+  /// Role name — used as the map marker label and bottom-sheet title.
+  final String? label;
 
   /// Additional read-only markers shown on the map beside the role's own
   /// central marker (Del B: the parent post's position and the portrayed
@@ -41,13 +56,6 @@ class RolePositionPanel extends StatelessWidget {
   /// way the Post viewer's map card does. Null (every other call site) keeps
   /// the map with no legend strip.
   final Widget? legend;
-
-  final LatLng position;
-
-  /// Role name — used as the map marker label and bottom-sheet title.
-  final String label;
-
-  final double mapHeight;
 
   /// Forwarded to [PositionCardShell]. Defaults to `false` because most
   /// call sites embed this panel inside an `ExpandableTile` body — itself
@@ -70,14 +78,69 @@ class RolePositionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
+    final content = position == null
+        ? _buildNoPositionRow(l10n, theme)
+        : _buildPositionCard(l10n, theme, position!);
+
+    final positioned = withBorder ? BorderShell(child: content) : content;
+    return Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        // `max` + Expanded in fillHeight mode: the ancestor (the expanded
+        // right pane's stretched Row) gives this panel a tight height, and
+        // this wrapper must pass all of it through to PositionCardShell's
+        // own Expanded thumbnail below — a non-flex child always gets
+        // unbounded main-axis constraints for its own measurement pass
+        // regardless of mainAxisSize, which conflicts with that Expanded
+        // unless it is itself a flex (Expanded) child here too. `min`
+        // otherwise, so the panel wraps its content height like every
+        // other call site.
+        mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          if (withTitle) ...[
+            Text(
+              l10n.placement.toUpperCase(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          fillHeight ? Expanded(child: positioned) : positioned,
+        ],
+      ),
+    );
+  }
+
+  Row _buildNoPositionRow(AppLocalizations localizations, ThemeData theme) {
+    return Row(
+      children: [
+        Text(
+          localizations.position,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const Spacer(),
+        Text(localizations.noLocation, style: theme.textTheme.bodyMedium),
+      ],
+    );
+  }
+
+  PositionCardShell _buildPositionCard(
+    AppLocalizations l10n,
+    ThemeData theme,
+    LatLng position,
+  ) {
     return PositionCardShell(
       asCard: asCard,
       thumbnail: RoleMiniMap(
         position: position,
-        label: label,
+        label: label ?? l10n.position,
         height: mapHeight,
         extraMarkers: extraMarkers,
       ),
@@ -85,18 +148,24 @@ class RolePositionPanel extends StatelessWidget {
       fillHeight: fillHeight,
       sectionId: sectionId,
       legend: legend,
-      barLabel: Text(
-        localizations.position,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+      barLabel: InkWell(
+        onTap: onTap,
+        child: Text(
+          label ?? l10n.position,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
       barChild: Align(
         alignment: Alignment.centerRight,
-        child: PositionWidget(
-          format: PositionFormat.utm,
-          position: position,
-          style: theme.textTheme.bodyMedium,
+        child: InkWell(
+          onTap: onTap,
+          child: PositionWidget(
+            format: PositionFormat.utm,
+            position: position,
+            style: theme.textTheme.bodyMedium,
+          ),
         ),
       ),
     );

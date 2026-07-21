@@ -39,6 +39,7 @@ class WideDetailMapSplit extends StatelessWidget {
           width: leftMaxWidth,
           child: SingleChildScrollView(
             child: Column(
+              spacing: 8.0,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: left,
             ),
