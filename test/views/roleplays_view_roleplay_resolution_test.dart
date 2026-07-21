@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 
 import 'support/save_roundtrip_harness.dart';
@@ -43,9 +43,7 @@ void main() {
   tearDown(() => ProgramService().clearAllForTest());
 
   testWidgets('an expanded role tile resolves {{roleplay.*}} and '
-      '{{exercise.*}} together', (
-    tester,
-  ) async {
+      '{{exercise.*}} together', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -54,7 +52,7 @@ void main() {
           variables: const [],
           child: Scaffold(
             body: CustomScrollView(
-              slivers: [RolePlaysView(controller: RolePlaysController())],
+              slivers: [RolePlayListView(controller: RolePlaysController())],
             ),
           ),
         ),

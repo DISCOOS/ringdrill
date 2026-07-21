@@ -10,7 +10,7 @@ related_code:
   - lib/views/widgets/face_badge_icon.dart
   - lib/views/station_screen.dart
   - lib/views/widgets/station_role_summary.dart
-  - lib/views/roleplays_view.dart
+  - lib/views/roleplay_list_view.dart
   - lib/views/roleplay_screen.dart
 related_designs:
   - 010-inline-preview-and-resolve-scope.md

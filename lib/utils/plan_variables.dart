@@ -150,12 +150,11 @@ Map<String, String> effectivePlanVariables(
   Station? station,
 }) {
   return {
-    for (final entry
-        in effectiveTypedPlanVariables(
-          program,
-          exercise: exercise,
-          station: station,
-        ).entries)
+    for (final entry in effectiveTypedPlanVariables(
+      program,
+      exercise: exercise,
+      station: station,
+    ).entries)
       entry.key: entry.value.type == VariableType.location
           ? locationPlaceUtm(variableLocationAsLocation(entry.value))
           : entry.value.value,

@@ -8,7 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
@@ -53,26 +53,24 @@ final _roleB = RolePlay(
 const _stationName = 'Post Alpha';
 
 Exercise _exercise() => Exercise(
-      uuid: _exerciseUuid,
-      name: 'Test Exercise RV',
-      startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
-      numberOfTeams: 1,
-      numberOfRounds: 1,
-      executionTime: 10,
-      evaluationTime: 5,
-      rotationTime: 2,
-      stations: const [
-        Station(index: 0, name: _stationName),
-      ],
-      schedule: const [
-        [
-          SimpleTimeOfDay(hour: 8, minute: 0),
-          SimpleTimeOfDay(hour: 8, minute: 10),
-          SimpleTimeOfDay(hour: 8, minute: 15),
-        ],
-      ],
-      endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
-    );
+  uuid: _exerciseUuid,
+  name: 'Test Exercise RV',
+  startTime: const SimpleTimeOfDay(hour: 8, minute: 0),
+  numberOfTeams: 1,
+  numberOfRounds: 1,
+  executionTime: 10,
+  evaluationTime: 5,
+  rotationTime: 2,
+  stations: const [Station(index: 0, name: _stationName)],
+  schedule: const [
+    [
+      SimpleTimeOfDay(hour: 8, minute: 0),
+      SimpleTimeOfDay(hour: 8, minute: 10),
+      SimpleTimeOfDay(hour: 8, minute: 15),
+    ],
+  ],
+  endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
+);
 
 Map<String, Object> _buildPrefs() {
   final ex = _exercise();
@@ -116,13 +114,14 @@ Widget _buildView() {
         // Wire the controller's AppBar actions so tests can assert on
         // the filter icon that moved off the body FAB in Step 2.
         appBar: AppBar(
-          actions: controller.buildActions(
+          actions:
+              controller.buildActions(
                 context,
                 BoxConstraints.loose(const Size(400, 56)),
               ) ??
               [],
         ),
-        // RolePlaysView now returns sliver content for embedding in a
+        // RolePlayListView now returns sliver content for embedding in a
         // CustomScrollView (see program_view.dart's per-segment scroll
         // view); the "Ny rolle" FAB is a separate overlay widget
         // (RolePlaysCreateFab) that program_view.dart renders alongside it,
@@ -131,7 +130,7 @@ Widget _buildView() {
           children: [
             Positioned.fill(
               child: CustomScrollView(
-                slivers: [RolePlaysView(controller: controller)],
+                slivers: [RolePlayListView(controller: controller)],
               ),
             ),
             RolePlaysCreateFab(controller: controller),
@@ -236,8 +235,9 @@ void main() {
       expect(find.text(l10n.castedByLine(_actorB.realName)), findsOneWidget);
     });
 
-    testWidgets('phone number not rendered when actor.phone is null',
-        (tester) async {
+    testWidgets('phone number not rendered when actor.phone is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       await _expandTileAt(tester, 1);
@@ -251,8 +251,9 @@ void main() {
   });
 
   group('Active-program guard and AppBar action (Step 5)', () {
-    testWidgets('with active program: noActiveProgramHint not shown',
-        (tester) async {
+    testWidgets('with active program: noActiveProgramHint not shown', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
@@ -260,8 +261,9 @@ void main() {
       expect(find.text(l10n.noActiveProgramHint), findsNothing);
     });
 
-    testWidgets('filter icon is in AppBar actions when active program exists',
-        (tester) async {
+    testWidgets('filter icon is in AppBar actions when active program exists', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
@@ -269,8 +271,9 @@ void main() {
       expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
 
-    testWidgets('"Nytt spill" FAB is present when active program exists',
-        (tester) async {
+    testWidgets('"Nytt spill" FAB is present when active program exists', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
@@ -280,7 +283,9 @@ void main() {
   });
 
   group('Adaptive selectors (ADR-0049)', () {
-    testWidgets('the exercise filter opens the adaptive picker', (tester) async {
+    testWidgets('the exercise filter opens the adaptive picker', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -295,8 +300,9 @@ void main() {
       expect(find.text('Test Exercise RV'), findsWidgets);
     });
 
-    testWidgets('"Nytt spill" opens the adaptive exercise picker',
-        (tester) async {
+    testWidgets('"Nytt spill" opens the adaptive exercise picker', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -310,9 +316,9 @@ void main() {
   });
 
   group('Collapsed tile — subtitle and title (Step 3)', () {
-    testWidgets(
-        'subtitle shows roleSubtitleStation when stationIndex is set',
-        (tester) async {
+    testWidgets('subtitle shows roleSubtitleStation when stationIndex is set', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildView());
       await tester.pumpAndSettle();
 
@@ -332,8 +338,9 @@ void main() {
       expect(find.text('Vitne X (${_actorB.firstName})'), findsOneWidget);
     });
 
-    testWidgets('title includes age suffix when age is set (role A)',
-        (tester) async {
+    testWidgets('title includes age suffix when age is set (role A)', (
+      tester,
+    ) async {
       // Role A may or may not have actor after the clearCast test, but its
       // name 'Anna Hansen' and age 45 are always present in the title.
       await tester.pumpWidget(_buildView());
@@ -342,9 +349,7 @@ void main() {
       // Find a text widget whose content starts with 'Anna Hansen, 45'
       expect(
         find.byWidgetPredicate(
-          (w) =>
-              w is Text &&
-              (w.data?.startsWith('Anna Hansen, 45') ?? false),
+          (w) => w is Text && (w.data?.startsWith('Anna Hansen, 45') ?? false),
         ),
         findsOneWidget,
       );

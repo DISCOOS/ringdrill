@@ -17,7 +17,7 @@ import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/plan_status_badge.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
 import 'package:ringdrill/views/program_view.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/roster_view.dart';
 import 'package:ringdrill/views/shell/detail_empty_pane.dart';
 import 'package:ringdrill/views/shell/legacy_badge.dart';
@@ -36,10 +36,10 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
-import 'package:ringdrill/web/settings_page.dart'
-    if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
 import 'package:ringdrill/web/legacy_host_web.dart'
     if (dart.library.io) 'package:ringdrill/web/legacy_host_stub.dart';
+import 'package:ringdrill/web/settings_page.dart'
+    if (dart.library.io) 'package:ringdrill/views/settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends StatefulWidget {

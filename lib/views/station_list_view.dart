@@ -30,7 +30,6 @@ import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_role_summary.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
-import 'package:ringdrill/views/widgets/tile_section_divider.dart';
 
 class StationListView extends StatefulWidget {
   const StationListView({super.key, required this.controller});
@@ -446,24 +445,21 @@ class _StationListViewState extends State<StationListView> {
     Station station, {
     required bool hasRoles,
   }) {
-    // One shared TileSectionDivider between each present section — never a
-    // leading or trailing one — so Description/Position/Markers read as
-    // consistently divided regardless of which are present for this station.
+    // Description/Position/Markers, each spaced evenly via the Column's own
+    // `spacing` below — no separate divider widget needed.
     final sections = <Widget>[
       StationDescriptionRollup(
         exercise: exercise,
         station: station,
         role: _role,
       ),
-      // Shared "Posisjon" label + pin/coords row + tappable mini-map
-      // (140 px tall to match the previous inline layout). Keeping the
-      // 140 px height — instead of falling back to the widget's 200 px
-      // default — preserves the compact look this list relies on.
       StationPositionPanel(
+        mapHeight: 140,
+        withTitle: true,
+        withBorder: true,
         exercise: exercise,
         station: station,
-        mapHeight: 140,
-        miniMapKey: ValueKey<String>(
+        key: ValueKey<String>(
           'stations-list-map-${exercise.uuid}-${station.index}',
         ),
       ),
@@ -478,14 +474,10 @@ class _StationListViewState extends State<StationListView> {
         ),
     ];
     return Column(
+      spacing: 16.0,
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < sections.length; i++) ...[
-          if (i > 0) const TileSectionDivider(),
-          sections[i],
-        ],
-      ],
+      children: sections,
     );
   }
 

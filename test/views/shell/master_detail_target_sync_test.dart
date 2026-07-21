@@ -8,8 +8,8 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/station_screen.dart';
 import 'package:ringdrill/views/widgets/context_sheet.dart';
@@ -100,7 +100,9 @@ Map<String, Object> _prefs() {
 }
 
 Future<void> _pumpApp(WidgetTester tester, {required bool wide}) async {
-  tester.view.physicalSize = wide ? const Size(1200, 800) : const Size(400, 800);
+  tester.view.physicalSize = wide
+      ? const Size(1200, 800)
+      : const Size(400, 800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -212,9 +214,9 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(_selectedSegment(tester), {ProgramSegment.stations});
       expect(
-        tester.widget<StationExerciseScreen>(
-          find.byType(StationExerciseScreen),
-        ).uuid,
+        tester
+            .widget<StationExerciseScreen>(find.byType(StationExerciseScreen))
+            .uuid,
         _exerciseAUuid,
       );
     },
@@ -234,7 +236,7 @@ void main() {
       await _tapSegment(tester, l10n.scriptSegment);
       await tester.tap(
         find.descendant(
-          of: find.byType(RolePlaysView),
+          of: find.byType(RolePlayListView),
           matching: find.text('Turgåer'),
         ),
       );
@@ -283,46 +285,43 @@ void main() {
     },
   );
 
-  testWidgets(
-    'an explicit in-segment pick after a redirect still works and is '
-    'remembered per segment',
-    (tester) async {
-      await _pumpApp(tester, wide: true);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  testWidgets('an explicit in-segment pick after a redirect still works and is '
+      'remembered per segment', (tester) async {
+    await _pumpApp(tester, wide: true);
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-      // Land on Poster/Station A1 via the cross-segment redirect.
-      await _tapSegment(tester, l10n.scriptSegment);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(RolePlaysView),
-          matching: find.text('Turgåer'),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('1.1 Station A1'));
-      await tester.pumpAndSettle();
-      expect(_selectedSegment(tester), {ProgramSegment.stations});
+    // Land on Poster/Station A1 via the cross-segment redirect.
+    await _tapSegment(tester, l10n.scriptSegment);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(RolePlayListView),
+        matching: find.text('Turgåer'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1.1 Station A1'));
+    await tester.pumpAndSettle();
+    expect(_selectedSegment(tester), {ProgramSegment.stations});
 
-      // Explicit in-segment pick: Station B1 (no redirect involved, plain
-      // master-list tap) — the existing per-segment memory must still work.
-      await tester.tap(find.text('Station B1').first);
-      await tester.pumpAndSettle();
-      var detail = tester.widget<StationExerciseScreen>(
-        find.byType(StationExerciseScreen),
-      );
-      expect(detail.uuid, _exerciseBUuid);
+    // Explicit in-segment pick: Station B1 (no redirect involved, plain
+    // master-list tap) — the existing per-segment memory must still work.
+    await tester.tap(find.text('Station B1').first);
+    await tester.pumpAndSettle();
+    var detail = tester.widget<StationExerciseScreen>(
+      find.byType(StationExerciseScreen),
+    );
+    expect(detail.uuid, _exerciseBUuid);
 
-      // Switching away and back to Poster restores the explicit pick
-      // (Station B1), not the earlier redirect target (Station A1) and not
-      // the segment's first item.
-      await _tapSegment(tester, l10n.scriptSegment);
-      await _tapSegment(tester, l10n.stationsTab);
-      detail = tester.widget<StationExerciseScreen>(
-        find.byType(StationExerciseScreen),
-      );
-      expect(detail.uuid, _exerciseBUuid);
-    },
-  );
+    // Switching away and back to Poster restores the explicit pick
+    // (Station B1), not the earlier redirect target (Station A1) and not
+    // the segment's first item.
+    await _tapSegment(tester, l10n.scriptSegment);
+    await _tapSegment(tester, l10n.stationsTab);
+    detail = tester.widget<StationExerciseScreen>(
+      find.byType(StationExerciseScreen),
+    );
+    expect(detail.uuid, _exerciseBUuid);
+  });
 
   testWidgets(
     'switching to a segment whose remembered target is cross-segment does not '

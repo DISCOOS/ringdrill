@@ -14,8 +14,8 @@ import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 /// every marker-management affordance shares (DESIGN-010 browser tile
 /// polish: unify on the bottom sheet). Both the Poster tile's marker-row
 /// icon (`StationRoleSummary.onTapMarker`) and the Spill tile's cast chip
-/// (`RolePlaysView._buildCastChip`) call this instead of each re-deriving
-/// the select-vs-clear-vs-noop `copyWith` themselves.
+/// (`RolePlayListView._buildCastAction`) call this instead of each
+/// re-deriving the select-vs-clear-vs-noop `copyWith` themselves.
 Future<void> openCastPickerAndApply(
   BuildContext context,
   AppLocalizations localizations,

@@ -7,12 +7,13 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// DESIGN-008 follow-up 09 — variable resolution on the live-UI RolePlaysView
-/// list: the role name (`RingDrillText`, needs an ambient `PlanScope`) and
+/// DESIGN-008 follow-up 09 — variable resolution on the live-UI
+/// RolePlayListView list: the role name (`RingDrillText`, needs an ambient
+/// `PlanScope`) and
 /// the exercise/station subtitle (a direct `substitutePlanVariables` call,
 /// resolved from `ProgramService().activeProgram` regardless of any
 /// `PlanScope` ancestor).
@@ -84,7 +85,7 @@ Map<String, Object> _buildPrefs() {
 Widget _buildView({required bool withPlanScope}) {
   final controller = RolePlaysController();
   final body = CustomScrollView(
-    slivers: [RolePlaysView(controller: controller)],
+    slivers: [RolePlayListView(controller: controller)],
   );
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -144,10 +145,7 @@ void main() {
         find.text(l.roleSubtitleExercise('Øvelse Kanal 8')),
         findsOneWidget,
       );
-      expect(
-        find.text(l.roleSubtitleExercise('Øvelse Kanal 6')),
-        findsNothing,
-      );
+      expect(find.text(l.roleSubtitleExercise('Øvelse Kanal 6')), findsNothing);
     },
   );
 }

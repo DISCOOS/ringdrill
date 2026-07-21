@@ -5,7 +5,7 @@ import 'package:ringdrill/models/drill_variable.dart';
 import 'package:ringdrill/models/program.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/program_view.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,41 +83,39 @@ void main() {
     await ProgramService().replaceProgram(_baseProgram());
   });
 
-  testWidgets(
-    'resolves a declared variable in the overview card preview',
-    (tester) async {
-      await ProgramService().replaceProgram(
-        _baseProgram(
-          briefIntroMd: 'Samband på kanal {{var.frekvens}}.',
-          variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
-        ),
-      );
+  testWidgets('resolves a declared variable in the overview card preview', (
+    tester,
+  ) async {
+    await ProgramService().replaceProgram(
+      _baseProgram(
+        briefIntroMd: 'Samband på kanal {{var.frekvens}}.',
+        variables: const [DrillVariable(name: 'frekvens', value: 'Kanal 6')],
+      ),
+    );
 
-      await tester.pumpWidget(_harness());
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
 
-      expect(find.textContaining('Samband på kanal Kanal 6.'), findsOneWidget);
-      expect(find.textContaining('{{var.frekvens}}'), findsNothing);
-    },
-  );
+    expect(find.textContaining('Samband på kanal Kanal 6.'), findsOneWidget);
+    expect(find.textContaining('{{var.frekvens}}'), findsNothing);
+  });
 
-  testWidgets(
-    'resolves {{program.name}} in the overview card preview',
-    (tester) async {
-      await ProgramService().replaceProgram(
-        _baseProgram(briefIntroMd: 'Velkommen til {{program.name}}.'),
-      );
+  testWidgets('resolves {{program.name}} in the overview card preview', (
+    tester,
+  ) async {
+    await ProgramService().replaceProgram(
+      _baseProgram(briefIntroMd: 'Velkommen til {{program.name}}.'),
+    );
 
-      await tester.pumpWidget(_harness());
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('Velkommen til Vinterøvelse Nordland.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('{{program.name}}'), findsNothing);
-    },
-  );
+    expect(
+      find.textContaining('Velkommen til Vinterøvelse Nordland.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('{{program.name}}'), findsNothing);
+  });
 
   testWidgets(
     'an undeclared variable still shows the localized placeholder, not the raw token',

@@ -197,7 +197,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
     final rolePlay = _rolePlay;
 
     if (rolePlay == null) {
@@ -244,7 +244,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            tooltip: localizations.roleSection,
+            tooltip: l10n.roleSection,
             onPressed: () => _openRolePlayForm(),
           ),
           // The Spill title is short, so — unlike the exercise viewer's
@@ -252,7 +252,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
           // next to edit instead of an overflow menu.
           IconButton(
             icon: const Icon(Icons.delete),
-            tooltip: localizations.deleteRolePlay,
+            tooltip: l10n.deleteRolePlay,
             onPressed: _confirmDeleteFromViewer,
           ),
         ],
@@ -273,17 +273,18 @@ class _RolePlayScreenState extends State<RolePlayScreen>
             if (windowSize == WindowSizeClass.expanded) {
               return _buildExpandedBody(
                 context,
-                rolePlay: rolePlay,
+                l10n: l10n,
                 station: station,
                 exercise: exercise,
+                rolePlay: rolePlay,
                 stationIndex: stationIndex,
                 roleOverrides: roleOverrides,
-                localizations: localizations,
               );
             }
             return SingleChildScrollView(
               padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
               child: Column(
+                spacing: 8.0,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Identity (name + parent exercise) lives in the sheet's
@@ -295,7 +296,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
                     exercise: exercise,
                     stationIndex: stationIndex,
                     roleOverrides: roleOverrides,
-                    localizations: localizations,
+                    localizations: l10n,
                   ),
 
                   // Position card — the marker's own position (or, failing
@@ -303,14 +304,12 @@ class _RolePlayScreenState extends State<RolePlayScreen>
                   // post/person context pins (Del B). Omitted entirely (not
                   // even a placeholder) when there is no central position.
                   if (_markerMapCentral(rolePlay, station) != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _buildPositionPanel(
-                        rolePlay: rolePlay,
-                        station: station,
-                        roleOverrides: roleOverrides,
-                      )!,
-                    ),
+                    _buildPositionPanel(
+                      l10n: l10n,
+                      rolePlay: rolePlay,
+                      station: station,
+                      roleOverrides: roleOverrides,
+                    )!,
 
                   // Når aktiv card — the round(s) this station is staffed
                   // by a team, from the same Exercise.schedule +
@@ -390,8 +389,15 @@ class _RolePlayScreenState extends State<RolePlayScreen>
       // Shared status card (DESIGN-010 follow-up: player-status-card):
       // "Nå"/"Neste" is the team this marker's post meets, from the same
       // rotation math the "Når aktiv" card reads. Omitted for an
-      // unassigned/orphaned roleplay.
-      if (station != null && exercise != null && stationIndex != null)
+      // unassigned/orphaned roleplay, and while the exercise is not running
+      // (mirrors station_screen.dart's own `if (_isStarted)` gating) —
+      // `_PlayStatusCard` itself also collapses to `SizedBox.shrink()` then,
+      // but leaving it in the list would still cost one `Column.spacing` gap
+      // above the next card, with nothing visible to justify it.
+      if (station != null &&
+          exercise != null &&
+          stationIndex != null &&
+          ExerciseService().isStartedOn(exercise.uuid))
         _PlayStatusCard(exercise: exercise, stationIndex: stationIndex),
 
       // Station context card — parent post, chevron through.
@@ -436,6 +442,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   Widget? _buildPositionPanel({
     required RolePlay rolePlay,
     required Station? station,
+    required AppLocalizations l10n,
     required Map<String, String> roleOverrides,
     bool fillHeight = false,
   }) {
@@ -532,7 +539,7 @@ class _RolePlayScreenState extends State<RolePlayScreen>
 
         return RolePositionPanel(
           position: central,
-          label: resolvedRoleName,
+          label: l10n.placement,
           asCard: true,
           fillHeight: fillHeight,
           sectionId: 'position',
@@ -546,10 +553,10 @@ class _RolePlayScreenState extends State<RolePlayScreen>
   /// Placeholder shown in the expanded body's map pane for an unassigned
   /// roleplay with no position — mirrors the coordinator's own
   /// `_buildMapPlaceholder`.
-  Widget _buildMapPlaceholder(AppLocalizations localizations) {
+  Widget _buildMapPlaceholder(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Center(child: Text(localizations.noLocation)),
+      child: Center(child: Text(l10n.noLocation)),
     );
   }
 
@@ -566,30 +573,31 @@ class _RolePlayScreenState extends State<RolePlayScreen>
     required Exercise? exercise,
     required int? stationIndex,
     required Map<String, String> roleOverrides,
-    required AppLocalizations localizations,
+    required AppLocalizations l10n,
   }) {
     return Padding(
       padding: const EdgeInsets.all(kPlayerSurfaceHorizontalPadding),
       child: WideDetailMapSplit(
         left: [
           ..._buildTopSections(
-            rolePlay: rolePlay,
             station: station,
             exercise: exercise,
+            rolePlay: rolePlay,
             stationIndex: stationIndex,
             roleOverrides: roleOverrides,
-            localizations: localizations,
+            localizations: l10n,
           ),
           _ActiveScheduleCard(exercise: exercise, rolePlay: rolePlay),
         ],
         mapPane:
             _buildPositionPanel(
+              l10n: l10n,
               rolePlay: rolePlay,
               station: station,
               roleOverrides: roleOverrides,
               fillHeight: true,
             ) ??
-            _buildMapPlaceholder(localizations),
+            _buildMapPlaceholder(l10n),
       ),
     );
   }

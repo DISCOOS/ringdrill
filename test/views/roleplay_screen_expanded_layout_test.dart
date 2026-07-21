@@ -170,6 +170,35 @@ void main() {
   );
 
   testWidgets(
+    'an expanded (900px) pane has no phantom gap above the first left-'
+    'column card when the exercise is not started',
+    (tester) async {
+      await _seedAndInit();
+      tester.view.physicalSize = const Size(900, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _harness(const RolePlayScreen(rolePlayUuid: _roleUuid)),
+      );
+      await tester.pumpAndSettle();
+
+      // _PlayStatusCard collapses to zero height while the exercise is not
+      // started (the fixture never calls ExerciseService().start) — it must
+      // be omitted from the left column's list entirely, not merely render
+      // empty, or Column.spacing still opens an 8px gap above it with
+      // nothing visible to justify it.
+      final scrollTop = tester
+          .getTopLeft(find.byType(SingleChildScrollView).first)
+          .dy;
+      final firstCardTop = tester
+          .getTopLeft(find.byType(Card).first)
+          .dy;
+      expect(firstCardTop - scrollTop, 0.0);
+    },
+  );
+
+  testWidgets(
     'an expanded (900px) pane splits — map pane beside a capped left '
     'column, no overflow',
     (tester) async {

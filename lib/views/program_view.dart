@@ -21,7 +21,7 @@ import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/dialog_widgets.dart';
 import 'package:ringdrill/views/page_widget.dart';
 import 'package:ringdrill/views/program_form_screen.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/shared_file_widget.dart';
 import 'package:ringdrill/views/shell/master_detail_scope.dart';
 import 'package:ringdrill/views/shell/open_form_surface.dart';
@@ -410,7 +410,7 @@ class _ProgramViewState extends State<ProgramView> {
               ),
             ),
             buildSegmentScrollView(
-              [RolePlaysView(controller: widget.rolePlaysController)],
+              [RolePlayListView(controller: widget.rolePlaysController)],
               footer: RolePlaysFilterBanner(
                 controller: widget.rolePlaysController,
               ),
@@ -1570,7 +1570,7 @@ abstract class ProgramPageControllerBase extends ScreenController {
   /// master-pane proposal: auto-select in the wide layout so the detail
   /// pane is never empty while the segment has content). Each segment
   /// mirrors its own list's ordering/filtering — the flat exercise→station/
-  /// role scan `StationListView`/`RolePlaysView` build, respecting the
+  /// role scan `StationListView`/`RolePlayListView` build, respecting the
   /// shared exercise filter — so the auto-selected row is the same one the
   /// segment would show first.
   @override

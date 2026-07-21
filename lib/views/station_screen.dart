@@ -225,8 +225,7 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
               final event = asyncSnapshot.data!;
               final station = _exercise.stations[widget.stationIndex];
               // DESIGN-010 stage 3b: the rebuilt Post viewer is a single
-              // linear stack of cards (Postbeskrivelse, map, Personer,
-              // Lokasjoner, Tidsplan), matching the mockup. The follow-up
+              // linear stack of cards, matching the mockup. The follow-up
               // expanded-map-right split below drives off the body's own
               // pane width (`WindowSizeClass.fromWidth`, not
               // `.of(context)` — this sheet can sit in a detail pane
@@ -247,10 +246,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
                       kPlayerSurfaceHorizontalPadding,
                     ),
                     child: Column(
+                      spacing: 8.0,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildStationStatus(station, event),
-                        const SizedBox(height: 8),
                         _buildStationInfo(station),
                         _buildPersonsCard(station),
                         _buildLocationsCard(station),
@@ -364,15 +363,10 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
   /// whole screen's scroll context.
   Widget _buildStationInfo(Station station) {
     return Column(
+      spacing: 8.0,
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildStationDescriptionCard(station),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: _buildMapCard(station),
-        ),
-      ],
+      children: [_buildStationDescriptionCard(station), _buildMapCard(station)],
     );
   }
 
@@ -404,7 +398,9 @@ class _StationExerciseScreenState extends State<StationExerciseScreen> {
     return StationPositionPanel(
       exercise: _exercise,
       station: station,
+      label: AppLocalizations.of(context)!.placement,
       asCard: true,
+      withTitle: false,
       fillHeight: fillHeight,
       sectionId: 'position',
       miniMapKey: ValueKey<String>(

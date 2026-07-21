@@ -9,7 +9,7 @@ import 'package:ringdrill/views/widgets/role_marker.dart';
 /// a [LatLng] directly rather than a Station/Exercise pair so it stays
 /// domain-agnostic per the project's MapView rule.
 ///
-/// Used in both [RolePlayScreen] (detail view) and the [RolePlaysView]
+/// Used in both [RolePlayScreen] (detail view) and the [RolePlayListView]
 /// expandable tile body.
 class RoleMiniMap extends StatelessWidget {
   const RoleMiniMap({
@@ -27,7 +27,7 @@ class RoleMiniMap extends StatelessWidget {
   /// Additional read-only markers (the parent post's position, the portrayed
   /// person's location) shown alongside this role's own central marker — the
   /// caller only includes ones that sit at a distinct spot. Empty for the
-  /// RolePlaysView tile.
+  /// RolePlayListView tile.
   final List<MapMarkerSpec<int>> extraMarkers;
 
   @override

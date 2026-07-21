@@ -8,6 +8,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
+import 'package:ringdrill/services/app_user_role.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart'
     show ActionChipFormatter;
 import 'package:ringdrill/services/exercise_service.dart';
@@ -25,31 +26,30 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
-import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/roleplay_description_rollup.dart';
 import 'package:ringdrill/views/widgets/roleplay_scope.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 import 'package:ringdrill/views/widgets/teaching_empty_state.dart';
-import 'package:ringdrill/views/widgets/tile_section_divider.dart';
 
 /// Flat list of all [RolePlay] rows across all exercises, sorted by
 /// exercise order then role index. Each row uses [ExpandableTile].
 ///
 /// The tab also carries an exercise filter (mirrors [StationListView])
 /// and a cast roster button in the AppBar.
-class RolePlaysView extends StatefulWidget {
-  const RolePlaysView({super.key, required this.controller});
+class RolePlayListView extends StatefulWidget {
+  const RolePlayListView({super.key, required this.controller});
 
   final RolePlaysController controller;
 
   @override
-  State<RolePlaysView> createState() => _RolePlaysViewState();
+  State<RolePlayListView> createState() => _RolePlayListViewState();
 }
 
-class _RolePlaysViewState extends State<RolePlaysView> {
+class _RolePlayListViewState extends State<RolePlayListView> {
   final _service = ProgramService();
   StreamSubscription? _subscription;
 
@@ -100,7 +100,7 @@ class _RolePlaysViewState extends State<RolePlaysView> {
   }
 
   @override
-  void didUpdateWidget(covariant RolePlaysView oldWidget) {
+  void didUpdateWidget(covariant RolePlayListView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.filterExerciseUuid.removeListener(_onFilterChanged);
@@ -383,72 +383,36 @@ class _RolePlaysViewState extends State<RolePlaysView> {
 
   Widget _buildExpandedBody(
     BuildContext context,
-    AppLocalizations localizations,
+    AppLocalizations l10n,
     Exercise exercise,
     RolePlay rolePlay,
     Actor? actor,
   ) {
-    // Scenario fields — labeled, rendered via RingDrillText.rich so a
-    // resolved position/address reads as its own action/copy chip (unlike
-    // RolePlayScreen's plain-text signalement, this compact tile treats
-    // signalement/background/behavior alike). Collected as one "section"
-    // (own internal 8px gaps, not full section dividers) so the tile shows at
-    // most one divider between it and the position panel/Cast, not one per
-    // field.
-    final scenarioBlocks = <Widget>[];
-    void addScenarioBlock(String label, String? text) {
-      if (text == null || text.isEmpty) return;
-      if (scenarioBlocks.isNotEmpty) {
-        scenarioBlocks.add(const SizedBox(height: 12));
-      }
-      scenarioBlocks.add(
-        _ExpandedFieldBlock(
-          label: label,
-          text: text,
-          overrides: _overridesFor(exercise, rolePlay),
-        ),
-      );
-    }
-
-    addScenarioBlock(localizations.roleSignalement, rolePlay.signalement);
-    addScenarioBlock(localizations.roleBackground, rolePlay.background);
-    addScenarioBlock(localizations.roleBehavior, rolePlay.behavior);
-
-    // One shared TileSectionDivider between each present section — never a
-    // leading or trailing one — so Scenario/Position/Cast read as
-    // consistently divided regardless of which are present for this role.
+    // Scenario/Position/Cast, each spaced evenly via the Column's own
+    // `spacing` below — no separate divider widget needed.
     final sections = <Widget>[
-      if (scenarioBlocks.isNotEmpty)
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: scenarioBlocks,
-        ),
+      RolePlayDescriptionRollup(
+        exercise: exercise,
+        rolePlay: rolePlay,
+        station: _stationFor(exercise, rolePlay),
+        role: AppUserRole.director,
+      ),
       if (rolePlay.position != null)
         RolePositionPanel(
           key: ValueKey('role-map-${rolePlay.uuid}'),
           position: rolePlay.position!,
-          label:
-              resolveScopedField(
-                context,
-                rolePlay.name,
-                overrides: _overridesFor(exercise, rolePlay),
-              ) ??
-              rolePlay.name,
+          withTitle: true,
+          withBorder: true,
           mapHeight: 140,
         ),
-      _buildCastSection(context, localizations, rolePlay, actor),
+      _buildCastSection(context, l10n, rolePlay, actor),
     ];
 
     return Column(
+      spacing: 8.0,
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < sections.length; i++) ...[
-          if (i > 0) const TileSectionDivider(),
-          sections[i],
-        ],
-      ],
+      children: sections,
     );
   }
 
@@ -663,40 +627,6 @@ class RolePlaysCreateFab extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Small helper widget — labeled field block matching RolePlayScreen style.
-// ---------------------------------------------------------------------------
-
-class _ExpandedFieldBlock extends StatelessWidget {
-  const _ExpandedFieldBlock({
-    required this.label,
-    required this.text,
-    this.overrides = const {},
-  });
-
-  final String label;
-  final String text;
-  final Map<String, String> overrides;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 2),
-        RingDrillText.rich(text, overrides: overrides),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Controller
 // ---------------------------------------------------------------------------
 
@@ -717,7 +647,7 @@ class RolePlaysController extends ScreenController {
   String title(BuildContext context) =>
       AppLocalizations.of(context)!.rolePlaysTab;
 
-  // "Ny rolle" is rendered as a FAB inside RolePlaysView's body (above the
+  // "Ny rolle" is rendered as a FAB inside RolePlayListView's body (above the
   // filter banner) rather than a Scaffold FAB, so the banner pushes it up
   // instead of covering it. The create flow stays here.
   Future<void> openCreateRolePlay(BuildContext context) async {

@@ -9,14 +9,16 @@ import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
+import 'package:ringdrill/views/widgets/cast_pill.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
-import 'package:ringdrill/views/widgets/tile_section_divider.dart';
+import 'package:ringdrill/views/widgets/role_position_panel.dart';
+import 'package:ringdrill/views/widgets/roleplay_description_rollup.dart';
 
 import 'support/save_roundtrip_harness.dart';
 
 // ---------------------------------------------------------------------------
-// DESIGN-010 "browser tile polish" — Spill tile (roleplays_view.dart).
+// DESIGN-010 "browser tile polish" — Spill tile (roleplay_list_view.dart).
 // Covers: uniform section dividers (Fix 1), the "Spilles av {realName}"
 // Cast line with no castPrivateHint (Fix 3), unified marker management on
 // the shared bottom sheet with no context menu (Fix 4), and per-tile
@@ -88,7 +90,7 @@ void main() {
 
   Future<void> expandFirstRole(WidgetTester tester) async {
     await tester.pumpWidget(
-      _harness(RolePlaysView(controller: RolePlaysController())),
+      _harness(RolePlayListView(controller: RolePlaysController())),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.expand_more).first);
@@ -96,25 +98,29 @@ void main() {
   }
 
   testWidgets(
-    'Fix 1: TileSectionDivider separates scenario/position/cast with the '
-    'shared, symmetric spacing',
+    'Fix 1: scenario/position/cast sections share the same symmetric '
+    'spacing (Column.spacing, no separate divider widget)',
     (tester) async {
       await expandFirstRole(tester);
 
-      // Signalement, position and cast are all present, so exactly 2
-      // dividers separate the 3 sections.
-      final dividers = find.byType(TileSectionDivider);
-      expect(dividers, findsNWidgets(2));
+      // Signalement, position and cast are all present, one gap between
+      // each pair of adjacent sections.
+      final descriptionRect = tester.getRect(
+        find.byType(RolePlayDescriptionRollup),
+      );
+      final positionRect = tester.getRect(find.byType(RolePositionPanel));
+      // The cast section's own Row (holding the CastPill + phone chip) is
+      // the section's top edge — the CastPill itself is vertically centred
+      // within that Row (default CrossAxisAlignment.center) and sits lower
+      // than the row's top whenever the phone chip is taller than the pill.
+      final castRowRect = tester.getRect(
+        find
+            .ancestor(of: find.byType(CastPill).first, matching: find.byType(Row))
+            .first,
+      );
 
-      for (var i = 0; i < dividers.evaluate().length; i++) {
-        final descendantPaddings = tester.widgetList<Padding>(
-          find.descendant(of: dividers.at(i), matching: find.byType(Padding)),
-        );
-        expect(
-          descendantPaddings.map((p) => p.padding),
-          contains(const EdgeInsets.symmetric(vertical: kTileSectionSpacing)),
-        );
-      }
+      expect(positionRect.top - descriptionRect.bottom, 8.0);
+      expect(castRowRect.top - positionRect.bottom, 8.0);
     },
   );
 
@@ -161,10 +167,7 @@ void main() {
     // flat text — the "UTM:"/"STED:" labels stay in the surrounding prose
     // (only found via `findRichText`) while each resolved value is its own
     // chip widget's plain Text.
-    expect(
-      find.textContaining('UTM:', findRichText: true),
-      findsOneWidget,
-    );
+    expect(find.textContaining('UTM:', findRichText: true), findsOneWidget);
     expect(find.textContaining(formatUtm(_stationPosition)), findsWidgets);
     expect(find.textContaining('STED:', findRichText: true), findsOneWidget);
     expect(find.textContaining('Innkjøring'), findsWidgets);

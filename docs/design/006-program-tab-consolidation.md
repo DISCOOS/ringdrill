@@ -9,7 +9,7 @@ related_code:
   - lib/views/main_screen.dart
   - lib/views/program_view.dart
   - lib/views/station_list_view.dart
-  - lib/views/roleplays_view.dart
+  - lib/views/roleplay_list_view.dart
   - lib/views/teams_view.dart
   - lib/views/stations_view.dart
   - lib/views/shell/master_detail_scope.dart

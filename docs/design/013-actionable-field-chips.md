@@ -13,7 +13,7 @@ related_code:
   - lib/views/widgets/station_scope.dart
   - lib/views/widgets/roleplay_scope.dart
   - lib/views/shell/open_form_surface.dart
-  - lib/views/roleplays_view.dart
+  - lib/views/roleplay_list_view.dart
   - lib/views/roleplay_screen.dart
   - lib/views/widgets/ringdrill_text.dart
   - lib/views/widgets/ringdrill_text_field.dart

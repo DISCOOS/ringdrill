@@ -7,7 +7,7 @@ import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/program_view.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -172,17 +172,16 @@ void main() {
       .map((t) => t.data!)
       .toList();
 
-  testWidgets(
-    'exercises load in index order: Gamma(0), Alpha(1), Beta(2)',
-    (tester) async {
-      final controllers = _HarnessControllers();
-      addTearDown(controllers.dispose);
-      await tester.pumpWidget(_harness(controllers));
-      await tester.pumpAndSettle();
+  testWidgets('exercises load in index order: Gamma(0), Alpha(1), Beta(2)', (
+    tester,
+  ) async {
+    final controllers = _HarnessControllers();
+    addTearDown(controllers.dispose);
+    await tester.pumpWidget(_harness(controllers));
+    await tester.pumpAndSettle();
 
-      expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
-    },
-  );
+    expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
+  });
 
   testWidgets(
     'entering reorder mode shows drag handles; exiting restores the default view',
@@ -216,33 +215,32 @@ void main() {
     },
   );
 
-  testWidgets(
-    'sort by start time reorders chronologically and renumbers',
-    (tester) async {
-      final controllers = _HarnessControllers();
-      addTearDown(controllers.dispose);
-      await tester.pumpWidget(_harness(controllers));
-      await tester.pumpAndSettle();
+  testWidgets('sort by start time reorders chronologically and renumbers', (
+    tester,
+  ) async {
+    final controllers = _HarnessControllers();
+    addTearDown(controllers.dispose);
+    await tester.pumpWidget(_harness(controllers));
+    await tester.pumpAndSettle();
 
-      // Initial order is Gamma(10h), Alpha(8h), Beta(9h).
-      expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
+    // Initial order is Gamma(10h), Alpha(8h), Beta(9h).
+    expect(renderedOrder(tester), ['Gamma', 'Alpha', 'Beta']);
 
-      // The list header exposes sort actions as direct buttons (not hidden
-      // behind an overflow menu — ADR-0035 §"List header, all visible").
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l10n.exerciseSortByStartTimeShort));
-      await tester.pumpAndSettle();
+    // The list header exposes sort actions as direct buttons (not hidden
+    // behind an overflow menu — ADR-0035 §"List header, all visible").
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await tester.tap(find.text(l10n.exerciseSortByStartTimeShort));
+    await tester.pumpAndSettle();
 
-      // Start times: Alpha 08h < Beta 09h < Gamma 10h.
-      expect(renderedOrder(tester), ['Alpha', 'Beta', 'Gamma']);
+    // Start times: Alpha 08h < Beta 09h < Gamma 10h.
+    expect(renderedOrder(tester), ['Alpha', 'Beta', 'Gamma']);
 
-      final exercises = ProgramService().loadExercises();
-      final byName = {for (final e in exercises) e.name: e.index};
-      expect(byName['Alpha'], 0);
-      expect(byName['Beta'], 1);
-      expect(byName['Gamma'], 2);
-    },
-  );
+    final exercises = ProgramService().loadExercises();
+    final byName = {for (final e in exercises) e.name: e.index};
+    expect(byName['Alpha'], 0);
+    expect(byName['Beta'], 1);
+    expect(byName['Gamma'], 2);
+  });
 
   testWidgets(
     'onReorderItem callback maps from/to index pair to the correct persisted order',

@@ -10,7 +10,9 @@ import 'package:ringdrill/services/brief/field_resolver.dart' show formatUtm;
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/widgets/plan_scope.dart';
-import 'package:ringdrill/views/widgets/tile_section_divider.dart';
+import 'package:ringdrill/views/widgets/station_description_rollup.dart';
+import 'package:ringdrill/views/widgets/station_position_panel.dart';
+import 'package:ringdrill/views/widgets/station_role_summary.dart';
 
 import 'support/save_roundtrip_harness.dart';
 
@@ -87,30 +89,21 @@ void main() {
   }
 
   testWidgets(
-    'Fix 1: TileSectionDivider separates description/position/markers with '
-    'the shared, symmetric spacing',
+    'Fix 1: description/position/markers sections share the same symmetric '
+    'spacing (Column.spacing, no separate divider widget)',
     (tester) async {
       await expandFirstStation(tester);
 
       // Description, position and markers (a role is attached to station 0)
-      // are all present, so exactly 2 dividers separate the 3 sections.
-      final dividers = find.byType(TileSectionDivider);
-      expect(dividers, findsNWidgets(2));
+      // are all present, one gap between each pair of adjacent sections.
+      final descriptionRect = tester.getRect(
+        find.byType(StationDescriptionRollup),
+      );
+      final positionRect = tester.getRect(find.byType(StationPositionPanel));
+      final markersRect = tester.getRect(find.byType(StationRoleSummary));
 
-      // Every divider gets the same, symmetric top/bottom padding from the
-      // one shared constant — not an ad-hoc SizedBox stacked next to it.
-      // `dividers.at(i)` (positional), not `find.byWidget` — the const
-      // TileSectionDivider instances at different tree locations canonicalize
-      // to the same object, so byWidget would match every occurrence at once.
-      for (var i = 0; i < dividers.evaluate().length; i++) {
-        final descendantPaddings = tester.widgetList<Padding>(
-          find.descendant(of: dividers.at(i), matching: find.byType(Padding)),
-        );
-        expect(
-          descendantPaddings.map((p) => p.padding),
-          contains(const EdgeInsets.symmetric(vertical: kTileSectionSpacing)),
-        );
-      }
+      expect(positionRect.top - descriptionRect.bottom, 16.0);
+      expect(markersRect.top - positionRect.bottom, 16.0);
     },
   );
 

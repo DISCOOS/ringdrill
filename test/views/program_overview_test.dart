@@ -11,7 +11,7 @@ import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/app_routes.dart';
 import 'package:ringdrill/views/program_view.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/teams_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -229,7 +229,6 @@ class _ProgramOverviewHarnessState extends State<_ProgramOverviewHarness> {
   }
 }
 
-
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues(_prefs());
@@ -255,7 +254,6 @@ void main() {
     expect(find.textContaining(l10n.exercise(_exercises.length)), findsWidgets);
   });
 
-
   testWidgets('overview renders description when present', (tester) async {
     tester.view.physicalSize = const Size(400, 700);
     tester.view.devicePixelRatio = 1;
@@ -269,7 +267,6 @@ void main() {
 
     expect(find.text('Program description text'), findsOneWidget);
   });
-
 
   testWidgets(
     'scrolling the segment list scrolls the overview away while the switcher '
@@ -287,7 +284,10 @@ void main() {
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       // Overview description and switcher are both visible initially.
-      expect(find.text('Program description text').hitTestable(), findsOneWidget);
+      expect(
+        find.text('Program description text').hitTestable(),
+        findsOneWidget,
+      );
       expect(
         find.byType(SegmentedButton<ProgramSegment>).hitTestable(),
         findsOneWidget,

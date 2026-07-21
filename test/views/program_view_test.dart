@@ -11,8 +11,8 @@ import 'package:ringdrill/models/team.dart';
 import 'package:ringdrill/services/program_service.dart';
 import 'package:ringdrill/views/coordinator_screen.dart';
 import 'package:ringdrill/views/program_view.dart';
+import 'package:ringdrill/views/roleplay_list_view.dart';
 import 'package:ringdrill/views/roleplay_screen.dart';
-import 'package:ringdrill/views/roleplays_view.dart';
 import 'package:ringdrill/views/shell/app_router.dart';
 import 'package:ringdrill/views/station_list_view.dart';
 import 'package:ringdrill/views/station_screen.dart';
@@ -261,85 +261,82 @@ void main() {
     expect(appBarBrief(), findsOneWidget);
   });
 
-  testWidgets(
-    'wide layout auto-selects each program segment\'s first item '
-    '(collapsible-master-pane)',
-    (tester) async {
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets('wide layout auto-selects each program segment\'s first item '
+      '(collapsible-master-pane)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-      // After ADR-0032 the segment switcher pushes canonical
-      // /program/:uuid/:segment paths through `context.go(...)`. The
-      // hand-rolled GoRouter we used before had no segment routes and never
-      // re-rendered MainScreen with a new `location`, so taps short-circuited
-      // with `No GoRouter found in context`. Pump the production router and
-      // wrap it in `MaterialApp.router` so URL → state actually flows.
-      await ProgramService().setActive(_programUuid);
-      final router = buildRouter(false, true);
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      );
-      await tester.pumpAndSettle();
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // After ADR-0032 the segment switcher pushes canonical
+    // /program/:uuid/:segment paths through `context.go(...)`. The
+    // hand-rolled GoRouter we used before had no segment routes and never
+    // re-rendered MainScreen with a new `location`, so taps short-circuited
+    // with `No GoRouter found in context`. Pump the production router and
+    // wrap it in `MaterialApp.router` so URL → state actually flows.
+    await ProgramService().setActive(_programUuid);
+    final router = buildRouter(false, true);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-      // Every segment in this fixture has exactly one item, so the wide
-      // detail pane auto-selects it instead of showing the empty
-      // placeholder (DESIGN-010 collapsible master pane).
-      expect(find.text(l10n.detailEmptyExercise), findsNothing);
-      expect(find.byType(CoordinatorScreen), findsOneWidget);
+    // Every segment in this fixture has exactly one item, so the wide
+    // detail pane auto-selects it instead of showing the empty
+    // placeholder (DESIGN-010 collapsible master pane).
+    expect(find.text(l10n.detailEmptyExercise), findsNothing);
+    expect(find.byType(CoordinatorScreen), findsOneWidget);
 
-      await tester.tap(
-        find
-            .descendant(
-              of: find.byType(SegmentedButton<ProgramSegment>),
-              matching: find.text(l10n.stationsTab),
-            )
-            .hitTestable(),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<SegmentedButton<ProgramSegment>>(
-              find.byType(SegmentedButton<ProgramSegment>),
-            )
-            .selected,
-        {ProgramSegment.stations},
-      );
-      expect(find.text(l10n.detailEmptyStation), findsNothing);
-      expect(find.byType(StationExerciseScreen), findsOneWidget);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(SegmentedButton<ProgramSegment>),
+            matching: find.text(l10n.stationsTab),
+          )
+          .hitTestable(),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<SegmentedButton<ProgramSegment>>(
+            find.byType(SegmentedButton<ProgramSegment>),
+          )
+          .selected,
+      {ProgramSegment.stations},
+    );
+    expect(find.text(l10n.detailEmptyStation), findsNothing);
+    expect(find.byType(StationExerciseScreen), findsOneWidget);
 
-      await tester.tap(
-        find
-            .descendant(
-              of: find.byType(SegmentedButton<ProgramSegment>),
-              matching: find.text(l10n.scriptSegment),
-            )
-            .hitTestable(),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.detailEmptyRolePlay), findsNothing);
-      expect(find.byType(RolePlayScreen), findsOneWidget);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(SegmentedButton<ProgramSegment>),
+            matching: find.text(l10n.scriptSegment),
+          )
+          .hitTestable(),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.detailEmptyRolePlay), findsNothing);
+    expect(find.byType(RolePlayScreen), findsOneWidget);
 
-      await tester.tap(
-        find
-            .descendant(
-              of: find.byType(SegmentedButton<ProgramSegment>),
-              matching: find.text(l10n.team(2)),
-            )
-            .hitTestable(),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.detailEmptyTeam), findsNothing);
-      expect(find.byType(TeamScreen), findsOneWidget);
-    },
-  );
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(SegmentedButton<ProgramSegment>),
+            matching: find.text(l10n.team(2)),
+          )
+          .hitTestable(),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.detailEmptyTeam), findsNothing);
+    expect(find.byType(TeamScreen), findsOneWidget);
+  });
 
   testWidgets(
     'wide detail empty pane still shows when a segment has no items',
