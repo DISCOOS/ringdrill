@@ -329,6 +329,13 @@ class _MapViewState<K> extends State<MapView<K>> {
   bool _isSearching = false;
   int _currentLayerIndex = 0;
 
+  /// Per-instance scope for this map's [MapCommand] hero tags — several
+  /// `MapView`s (a list's mini-map previews alongside a detail pane's own
+  /// map, in the master/detail split layouts) can be in the same subtree at
+  /// once, so a command name alone ("layers", "locate", ...) is not unique
+  /// enough on its own; combined with this per-`State` key it is.
+  final Object _heroScope = UniqueKey();
+
   /// Last known device position resolved by the locate-me FAB. Null until
   /// the user has successfully located themselves at least once during
   /// this session. Survives layer toggles but resets on widget rebuild
@@ -520,7 +527,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                     children: [
                       if (withToggle)
                         MapCommand(
-                          heroTag: 'layers',
+                          heroTag: (_heroScope, 'layers'),
                           tooltip: AppLocalizations.of(context)!.layers,
                           onPressed: _toggleLayer,
                           icon: Icons.layers,
@@ -554,7 +561,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                     children: [
                       if (widget.withLocate) ...[
                         MapCommand(
-                          heroTag: 'locate',
+                          heroTag: (_heroScope, 'locate'),
                           tooltip: AppLocalizations.of(context)!.locateMe,
                           size: commandSize,
                           onPressed: _locating ? null : _locateMe,
@@ -576,7 +583,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                       ],
                       if (showZoom) ...[
                         MapCommand(
-                          heroTag: 'zoomIn',
+                          heroTag: (_heroScope, 'zoomIn'),
                           tooltip: AppLocalizations.of(context)!.zoomIn,
                           size: commandSize,
                           onPressed: _zoomIn,
@@ -584,7 +591,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                         ),
                         const SizedBox(height: 8),
                         MapCommand(
-                          heroTag: 'zoomOut',
+                          heroTag: (_heroScope, 'zoomOut'),
                           tooltip: AppLocalizations.of(context)!.zoomOut,
                           size: commandSize,
                           onPressed: _zoomOut,
@@ -594,7 +601,7 @@ class _MapViewState<K> extends State<MapView<K>> {
                       ],
                       if (widget.withCenter)
                         MapCommand(
-                          heroTag: 'center',
+                          heroTag: (_heroScope, 'center'),
                           tooltip: AppLocalizations.of(context)!.recenter,
                           size: commandSize,
                           onPressed: _toggleCenter,

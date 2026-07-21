@@ -79,6 +79,63 @@ void main() {
     expect(scalebar.padding, const EdgeInsets.all(10));
   });
 
+  testWidgets(
+    'two MapViews in the same subtree (e.g. a master/detail split) do not '
+    'collide on a shared MapCommand hero tag when a route is pushed',
+    (tester) async {
+      // Hero collision detection only runs while Navigator resolves a route
+      // transition (HeroController scans the outgoing route's subtree for
+      // heroes to fly) — a static pump with no navigation never exercises
+      // it, so this drives a real push, matching the reported crash
+      // ("[GoRouter] pushing .../brief" while a master/detail split with
+      // two maps was on screen).
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Column(
+                children: [
+                  SizedBox(
+                    height: 200,
+                    child: MapView<int>(
+                      layers: MapConfig.layers,
+                      withToggle: true,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 200,
+                    child: MapView<int>(
+                      layers: MapConfig.layers,
+                      withToggle: true,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const Scaffold(body: Text('next')),
+                      ),
+                    ),
+                    child: const Text('push'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.layers), findsNWidgets(2));
+
+      await tester.tap(find.text('push'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('next'), findsOneWidget);
+    },
+  );
+
   testWidgets('withCross renders one fixed centre pin, not the old red X', (
     tester,
   ) async {
