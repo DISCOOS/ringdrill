@@ -20,6 +20,7 @@ A design doc is not an ADR. ADRs record architectural decisions that constrain t
 | DESIGN-010 | [Inline preview and the resolve-context scope cascade](./010-inline-preview-and-resolve-scope.md) | Accepted | 2026-07-08 |
 | DESIGN-011 | [Person-with-role and the Roster model](./011-person-with-role-and-roster-model.md) | Accepted | 2026-07-10 |
 | DESIGN-012 | [A unified cast pill on person/actor rows](./012-unified-cast-pill.md) | Accepted | 2026-07-19 |
+| DESIGN-013 | [Actionable field chips (tap-to-call, open-in-maps), per output format](./013-actionable-field-chips.md) | Accepted | 2026-07-19 |
 
 ## Folder layout
 
