@@ -171,7 +171,7 @@
   "@enterFileName": {
     "description": "Label"
   },
-  "fileNameHint": "MyProgram",
+  "fileNameHint": "MyPlan",
   "@fileNameHint": {
     "description": "Label"
   },
@@ -203,7 +203,7 @@
   },
   "openCorruptDrill": "\"{name}\" is damaged or incomplete.",
   "@openCorruptDrill": {
-    "description": "Shown when a .drill archive is structurally valid ZIP but the program manifest is broken.",
+    "description": "Shown when a .drill archive is structurally valid ZIP but the plan manifest is broken.",
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -216,8 +216,8 @@
     }
   },
 
-  "exportedProgram": "Exported Program",
-  "@exportedProgram": {
+  "exportedPlan": "Exported Plan",
+  "@exportedPlan": {
     "description": "Label"
   },
   "exportSuccess": "Export to \"{name}\" was successful!",
@@ -302,11 +302,11 @@
   },
   "showMore": "Show more",
   "@showMore": {
-    "description": "Expands a truncated text block in the program overview"
+    "description": "Expands a truncated text block in the plan overview"
   },
   "showLess": "Show less",
   "@showLess": {
-    "description": "Collapses an expanded text block in the program overview"
+    "description": "Collapses an expanded text block in the plan overview"
   },
   "hideAll": "Hide all",
   "@hideAll": {
@@ -344,7 +344,7 @@
       "total": { "type": "int" }
     }
   },
-  "importSuccess": "Program \"{name}\" imported successfully!",
+  "importSuccess": "Plan \"{name}\" imported successfully!",
   "@importSuccess": {
     "description": "Message"
   },
@@ -352,13 +352,13 @@
   "@importFailure": {
     "description": "Message"
   },
-  "program": "{count, plural, =0{Program} =1{Program} other{Programs}}",
-  "@program": {
-    "description": "Program with plurals"
+  "plan": "{count, plural, =0{Plan} =1{Plan} other{Plans}}",
+  "@plan": {
+    "description": "Plan with plurals"
   },
-  "programTab": "Plan",
-  "@programTab": {
-    "description": "Bottom navigation label and AppBar fallback title for the Program tab. The tab hosts the active training plan (exercises, stations, markers, teams); using the singular plan term avoids colliding with the inner 'Exercises' segment label."
+  "planTab": "Plan",
+  "@planTab": {
+    "description": "Bottom navigation label and AppBar fallback title for the Plan tab. The tab hosts the active training plan (exercises, stations, markers, teams); using the singular plan term avoids colliding with the inner 'Exercises' segment label."
   },
   "exercise": "{count, plural, =0{Exercise} =1{Exercise} other{Exercises}}",
   "@exercise": {
@@ -417,11 +417,11 @@
   },
   "emptyStationsTitle": "No stations yet",
   "@emptyStationsTitle": {
-    "description": "Teaching empty-state title shown in the Program Stations segment when the active plan has no stations."
+    "description": "Teaching empty-state title shown in the Plan Stations segment when the active plan has no stations."
   },
   "emptyStationsBody": "Stations are added inside your exercises. Create an exercise first and they will show up here.",
   "@emptyStationsBody": {
-    "description": "Teaching empty-state body shown in the Program Stations segment when the active plan has no stations."
+    "description": "Teaching empty-state body shown in the Plan Stations segment when the active plan has no stations."
   },
   "stationName": "Station Name",
   "@stationName": {
@@ -461,11 +461,11 @@
   },
   "emptyTeamsTitle": "No teams yet",
   "@emptyTeamsTitle": {
-    "description": "Teaching empty-state title shown in the Program Teams segment when the active plan has no teams."
+    "description": "Teaching empty-state title shown in the Plan Teams segment when the active plan has no teams."
   },
   "emptyTeamsBody": "Teams come from the team count in your exercises. Create an exercise first and they will show up here.",
   "@emptyTeamsBody": {
-    "description": "Teaching empty-state body shown in the Program Teams segment when the active plan has no teams."
+    "description": "Teaching empty-state body shown in the Plan Teams segment when the active plan has no teams."
   },
   "numberOfMembers": "Number of members",
   "@numberOfMembers": {
@@ -475,32 +475,32 @@
   "@stationDescription": {
     "description": "Label"
   },
-  "programFile": "Program file",
-  "@programFile": {
+  "planFile": "Plan file",
+  "@planFile": {
     "description": "Message"
   },
-  "openProgramHint": "Do you want to open the program, or import exercises into current program?",
-  "@openProgramHint": {
+  "openPlanHint": "Do you want to open the plan, or import exercises into current plan?",
+  "@openPlanHint": {
     "description": "Message"
   },
-  "openProgram": "Open...",
-  "@openProgram": {
+  "openPlanAction": "Open...",
+  "@openPlanAction": {
     "description": "Label"
   },
-  "importProgram": "Import...",
-  "@importProgram": {
+  "importPlan": "Import...",
+  "@importPlan": {
     "description": "Label"
   },
-  "exportProgram": "Export...",
-  "@exportProgram": {
+  "exportPlan": "Export...",
+  "@exportPlan": {
     "description": "Label"
   },
-  "sendToProgram": "Send to...",
-  "@sendToProgram": {
+  "sendToPlan": "Send to...",
+  "@sendToPlan": {
     "description": "Label"
   },
-  "shareProgram": "Share...",
-  "@shareProgram": {
+  "sharePlan": "Share...",
+  "@sharePlan": {
     "description": "Label"
   },
   "feedback": "Feedback...",
@@ -609,11 +609,11 @@
   },
   "emptyExercisesTitle": "No exercises yet",
   "@emptyExercisesTitle": {
-    "description": "Teaching empty-state title shown in the Program Exercises segment when the active plan has no exercises."
+    "description": "Teaching empty-state title shown in the Plan Exercises segment when the active plan has no exercises."
   },
   "emptyExercisesBody": "Add your first exercise to get started.",
   "@emptyExercisesBody": {
-    "description": "Teaching empty-state body shown in the Program Exercises segment when the active plan has no exercises."
+    "description": "Teaching empty-state body shown in the Plan Exercises segment when the active plan has no exercises."
   },
   "save": "SAVE",
   "@save": {
@@ -1462,7 +1462,7 @@
 
   "roleplay": "{count, plural, =0{Roleplay} =1{Roleplay} other{Roleplays}}",
   "@roleplay": {
-    "description": "Roleplay count noun for the Program tab overview summary line.",
+    "description": "Roleplay count noun for the Plan tab overview summary line.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -1475,7 +1475,7 @@
   },
   "scriptSegment": "Script",
   "@scriptSegment": {
-    "description": "Program-tab segment label for the publishable scenario layer (Spill/Script). Holds the RolePlay roster today; SilentWitness later. Distinct from rolePlaysTab, which names the Markører role roster inside the segment."
+    "description": "Plan-tab segment label for the publishable scenario layer (Spill/Script). Holds the RolePlay roster today; SilentWitness later. Distinct from rolePlaysTab, which names the Markører role roster inside the segment."
   },
   "playSection": "Play",
   "@playSection": {
@@ -1507,7 +1507,7 @@
   },
   "castRoster": "Cast roster",
   "@castRoster": {
-    "description": "AppBar tooltip / sheet title for the full list of Actor records in the program."
+    "description": "AppBar tooltip / sheet title for the full list of Actor records in the plan."
   },
   "newActor": "New actor",
   "@newActor": {
@@ -1543,7 +1543,7 @@
   },
   "noActorsInRoster": "No actors yet. Tap + New actor to add one.",
   "@noActorsInRoster": {
-    "description": "Empty state shown in the cast roster sheet when no Actor records exist in the program."
+    "description": "Empty state shown in the cast roster sheet when no Actor records exist in the plan."
   },
   "emptyRosterTitle": "No actors yet",
   "@emptyRosterTitle": {
@@ -1553,13 +1553,13 @@
   "@emptyRosterBody": {
     "description": "Teaching empty-state body shown on the Roster tab when the active plan has no Actor records."
   },
-  "noActiveProgramHint": "No active program. Open or create one in the Exercises tab.",
-  "@noActiveProgramHint": {
-    "description": "Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activeProgramUuid is null."
+  "noActivePlanHint": "No active plan. Open or create one in the Exercises tab.",
+  "@noActivePlanHint": {
+    "description": "Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activePlanUuid is null."
   },
-  "noSignalement": "No description",
-  "@noSignalement": {
-    "description": "Placeholder shown in the Role section when the signalement field is blank."
+  "noRoleDescription": "No description",
+  "@noRoleDescription": {
+    "description": "Placeholder shown in the Role section when the description field is blank."
   },
   "noBackground": "No background",
   "@noBackground": {
@@ -1579,11 +1579,11 @@
   },
   "emptyRolesTitle": "No plays yet",
   "@emptyRolesTitle": {
-    "description": "Teaching empty-state title shown in the Program Script segment when the active plan has no plays."
+    "description": "Teaching empty-state title shown in the Plan Script segment when the active plan has no plays."
   },
   "emptyRolesBody": "A play describes what the roles do at the station. Create an exercise first, then add the plays it needs.",
   "@emptyRolesBody": {
-    "description": "Teaching empty-state body shown in the Program Script segment when the active plan has no plays."
+    "description": "Teaching empty-state body shown in the Plan Script segment when the active plan has no plays."
   },
   "noRolesInExercise": "No roles in this exercise.",
   "@noRolesInExercise": {
@@ -1693,7 +1693,7 @@
   },
   "roleplaySectionRole": "Role",
   "@roleplaySectionRole": {
-    "description": "DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor. Carries RolePlay's short structural fields (name, age, signalement, station, position)."
+    "description": "DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor. Carries RolePlay's short structural fields (name, age, description, station, position)."
   },
   "stationRolesSection": "Roles",
   "@stationRolesSection": {
@@ -1703,9 +1703,9 @@
   "@noRolesAtThisStation": {
     "description": "Empty-state hint shown in the Markørordre section when no RolePlays are linked to the current station."
   },
-  "roleSignalement": "Signalement",
-  "@roleSignalement": {
-    "description": "Form field label for the signalement field in RolePlayFormScreen; reused by PersonsSection (Person.signalement, DESIGN-009 prompt 3)."
+  "roleDescription": "Description",
+  "@roleDescription": {
+    "description": "Form field label for the description field in RolePlayFormScreen; reused by PersonsSection (Person.description, DESIGN-009 prompt 3)."
   },
   "roleBackground": "Background",
   "@roleBackground": {
@@ -1779,9 +1779,9 @@
   "@briefTemplateMissing": {
     "description": "Shown when the brief template asset fails to load, usually because the running build's asset manifest predates a newly added template. A full restart (or clean rebuild and hard refresh on web) resolves it."
   },
-  "briefMissingProgram": "No active program",
-  "@briefMissingProgram": {
-    "description": "Empty-state when the brief route is opened with no program loaded."
+  "briefMissingPlan": "No active plan",
+  "@briefMissingPlan": {
+    "description": "Empty-state when the brief route is opened with no plan loaded."
   },
   "briefMissingExercise": "Exercise not found",
   "@briefMissingExercise": {
@@ -1793,7 +1793,7 @@
   },
   "briefAction": "Open brief",
   "@briefAction": {
-    "description": "Label/tooltip for the brief entry-point action on CoordinatorScreen and ProgramView app bars."
+    "description": "Label/tooltip for the brief entry-point action on CoordinatorScreen and PlanView app bars."
   },
   "briefClose": "Close",
   "@briefClose": {
@@ -1944,53 +1944,53 @@
     "description": "Empty detail pane text shown on the Roster tab in the wide layout."
   },
 
-  "editProgram": "Edit plan",
-  "@editProgram": {
-    "description": "AppBar title for ProgramFormScreen when editing the active plan."
+  "editPlan": "Edit plan",
+  "@editPlan": {
+    "description": "AppBar title for PlanFormScreen when editing the active plan."
   },
-  "programSectionPlan": "Plan",
-  "@programSectionPlan": {
-    "description": "DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor. Carries Program's short structural fields (name, description, tags, formats, language)."
+  "planSectionPlan": "Plan",
+  "@planSectionPlan": {
+    "description": "DESIGN-008 default-section label for PlanFormScreen's section-navigated editor. Carries Plan's short structural fields (name, description, tags, formats, language)."
   },
-  "programName": "Plan name",
-  "@programName": {
-    "description": "Field label for Program.name in ProgramFormScreen."
+  "planName": "Plan name",
+  "@planName": {
+    "description": "Field label for Plan.name in PlanFormScreen."
   },
-  "programDescription": "Description",
-  "@programDescription": {
-    "description": "Field label for Program.description in ProgramFormScreen. Renders below the title in the brief."
+  "planDescription": "Description",
+  "@planDescription": {
+    "description": "Field label for Plan.description in PlanFormScreen. Renders below the title in the brief."
   },
-  "programDescriptionHint": "Short description shown under the plan name in the brief",
-  "@programDescriptionHint": {
-    "description": "Hint text for the Program.description field."
+  "planDescriptionHint": "Short description shown under the plan name in the brief",
+  "@planDescriptionHint": {
+    "description": "Hint text for the Plan.description field."
   },
-  "programEditorTagsLabel": "Tags",
-  "@programEditorTagsLabel": {
-    "description": "Field/section label for the tags chip editor in ProgramFormScreen."
+  "planEditorTagsLabel": "Tags",
+  "@planEditorTagsLabel": {
+    "description": "Field/section label for the tags chip editor in PlanFormScreen."
   },
-  "programEditorTagsHint": "Add a tag",
-  "@programEditorTagsHint": {
-    "description": "Hint text inside the tag input field in ProgramFormScreen."
+  "planEditorTagsHint": "Add a tag",
+  "@planEditorTagsHint": {
+    "description": "Hint text inside the tag input field in PlanFormScreen."
   },
-  "programEditorTagRemoveTooltip": "Remove tag",
-  "@programEditorTagRemoveTooltip": {
-    "description": "Tooltip on the delete icon chip in the tags editor in ProgramFormScreen."
+  "planEditorTagRemoveTooltip": "Remove tag",
+  "@planEditorTagRemoveTooltip": {
+    "description": "Tooltip on the delete icon chip in the tags editor in PlanFormScreen."
   },
-  "programEditorTagTooLong": "Tag is too long (max 40 characters)",
-  "@programEditorTagTooLong": {
+  "planEditorTagTooLong": "Tag is too long (max 40 characters)",
+  "@planEditorTagTooLong": {
     "description": "Validation message shown when a tag exceeds the maximum length."
   },
-  "briefSectionProgramIntro": "Intro",
-  "@briefSectionProgramIntro": {
-    "description": "Optional section label for Program.briefIntroMd in ProgramFormScreen. Booklet label: \"Generelt om spill og øvingsledelse\"."
+  "briefSectionPlanIntro": "Intro",
+  "@briefSectionPlanIntro": {
+    "description": "Optional section label for Plan.briefIntroMd in PlanFormScreen. Booklet label: \"Generelt om spill og øvingsledelse\"."
   },
-  "briefSectionProgramComms": "Comms",
-  "@briefSectionProgramComms": {
-    "description": "Optional section label for Program.commsMd in ProgramFormScreen. Booklet label: \"Talegrupper\"."
+  "briefSectionPlanComms": "Comms",
+  "@briefSectionPlanComms": {
+    "description": "Optional section label for Plan.commsMd in PlanFormScreen. Booklet label: \"Talegrupper\"."
   },
-  "briefSectionProgramBeforeRound": "Before each station",
-  "@briefSectionProgramBeforeRound": {
-    "description": "Optional section label for Program.beforeRoundMd in ProgramFormScreen. Booklet label: \"Før hver post\"."
+  "briefSectionPlanBeforeRound": "Before each station",
+  "@briefSectionPlanBeforeRound": {
+    "description": "Optional section label for Plan.beforeRoundMd in PlanFormScreen. Booklet label: \"Før hver post\"."
   },
   "briefSectionExerciseMethod": "Method",
   "@briefSectionExerciseMethod": {
@@ -2014,7 +2014,7 @@
   },
   "briefSectionExerciseComms": "Comms",
   "@briefSectionExerciseComms": {
-    "description": "Optional section label for Exercise.commsMd. Booklet label: \"Samband\". Overrides Program.commsMd."
+    "description": "Optional section label for Exercise.commsMd. Booklet label: \"Samband\". Overrides Plan.commsMd."
   },
   "briefSectionStationEquipment": "Equipment",
   "@briefSectionStationEquipment": {
@@ -2047,7 +2047,7 @@
 
   "stationNumberFormatLabel": "Station numbering",
   "@stationNumberFormatLabel": {
-    "description": "Label for the station number format picker in ProgramFormScreen."
+    "description": "Label for the station number format picker in PlanFormScreen."
   },
   "stationNumberFormatDotted": "1.1, 1.2",
   "@stationNumberFormatDotted": {
@@ -2060,7 +2060,7 @@
 
   "planLanguageLabel": "Lang",
   "@planLanguageLabel": {
-    "description": "Label for the plan-content language picker in ProgramFormScreen. Kept short since the picker sits beside the plan-name field. Distinct from the app's own UI language."
+    "description": "Label for the plan-content language picker in PlanFormScreen. Kept short since the picker sits beside the plan-name field. Distinct from the app's own UI language."
   },
   "planLanguageChooseHint": "Choose",
   "@planLanguageChooseHint": {
@@ -2169,7 +2169,7 @@
 
   "variablesSectionTitle": "Variables",
   "@variablesSectionTitle": {
-    "description": "DESIGN-008 Stage 5 section label for the plan-variable declaration section (Program editor, section-navigated shell)."
+    "description": "DESIGN-008 Stage 5 section label for the plan-variable declaration section (Plan editor, section-navigated shell)."
   },
   "variablesSectionPublishNote": "Published with the plan. Do not enter real personal data.",
   "@variablesSectionPublishNote": {
@@ -2556,7 +2556,7 @@
   },
   "personsSectionSearchHint": "Search persons",
   "@personsSectionSearchHint": {
-    "description": "Placeholder text in the Persons section's search field (filters by name/signalement)."
+    "description": "Placeholder text in the Persons section's search field (filters by name/description)."
   },
   "personsSectionSortByName": "Name",
   "@personsSectionSortByName": {
@@ -2568,7 +2568,7 @@
   },
   "roleGender": "Gender",
   "@roleGender": {
-    "description": "Label above the GenderSegmentedControl, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first."
+    "description": "Label above the GenderSegmentedControl, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleDescription family it joins, even though PersonsSection uses it first."
   },
   "rolePlayPersonLabel": "Person",
   "@rolePlayPersonLabel": {
@@ -2608,7 +2608,7 @@
   },
   "rolePlayCustomizedFrom": "Customized from {name}",
   "@rolePlayCustomizedFrom": {
-    "description": "Identity card's collapsed-header third line, shown instead of the signalement when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4j, superseding 4i's \"Portraying {name}\"), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.",
+    "description": "Identity card's collapsed-header third line, shown instead of the description when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4j, superseding 4i's \"Portraying {name}\"), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.",
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -2637,9 +2637,9 @@
     "description": "GenderSegmentedControl option label for the stable code \"other\"."
   },
 
-  "programSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",
-  "@programSaveBlockedUndeclaredVariable": {
-    "description": "Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.",
+  "planSaveBlockedUndeclaredVariable": "Can’t save: {sections} contains an unknown variable",
+  "@planSaveBlockedUndeclaredVariable": {
+    "description": "Snackbar shown when Save is blocked because a Plan-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.",
     "placeholders": {
       "sections": { "type": "String" }
     }
@@ -2723,7 +2723,7 @@
   },
   "primerSkip": "Skip",
   "@primerSkip": {
-    "description": "Skip button on the concept primer — dismisses the primer and goes straight to the Program tab."
+    "description": "Skip button on the concept primer — dismisses the primer and goes straight to the Plan tab."
   },
   "primerHeading": "Teams rotate",
   "@primerHeading": {
@@ -2739,7 +2739,7 @@
   },
   "primerStartEmpty": "Start an empty plan",
   "@primerStartEmpty": {
-    "description": "Secondary CTA on the concept primer — dismisses the primer and lands on an empty Program tab."
+    "description": "Secondary CTA on the concept primer — dismisses the primer and lands on an empty Plan tab."
   },
   "primerTeamLabel": "Team {n}",
   "@primerTeamLabel": {
@@ -2752,7 +2752,7 @@
   },
   "startHereCue": "Start here",
   "@startHereCue": {
-    "description": "First-run-only inline pill label beside the first Program FAB, nudging the user to create their first exercise."
+    "description": "First-run-only inline pill label beside the first Plan FAB, nudging the user to create their first exercise."
   },
 
   "migrationBannerHeading": "The web app is moving to web.ringdrill.app.",

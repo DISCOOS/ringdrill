@@ -19,7 +19,7 @@
   "select": "VELG",
   "cancel": "AVBRYT",
   "enterFileName": "Skriv inn filnavn",
-  "fileNameHint": "MittProgram",
+  "fileNameHint": "MinPlan",
   "invalidFileName": "Ugyldig filnavn. Prøv igjen.",
   "openSuccess": "Åpning av \"{name}\" var vellykket!",
   "openFailure": "Åpning av \"{name}\" mislyktes. Prøv igjen.",
@@ -27,7 +27,7 @@
   "openEmptyDrill": "\"{name}\" er tom eller mangler innhold.",
   "openCorruptDrill": "\"{name}\" er skadet eller ufullstendig.",
   "openUnsupportedSchema": "\"{name}\" bruker et nyere format. Oppdater RingDrill for å åpne den.",
-  "exportedProgram": "Eksportert Program",
+  "exportedPlan": "Eksportert Plan",
   "exportSuccess": "Eksport til \"{name}\" var vellykket!",
   "exportFailure": "Eksport til \"{name}\" mislyktes. Prøv igjen.",
   "selectDirectory": "Velg en mappe",
@@ -47,24 +47,24 @@
   "showRoleplays": "Vis markører",
   "filterActiveCombined": "Filter aktivt",
   "exercisesShownOfTotal": "Viser {shown} av {total} øvelser",
-  "importSuccess": "Program \"{name}\" ble importert.",
+  "importSuccess": "Plan \"{name}\" ble importert.",
   "importFailure": "Kunne ikke importere \"{name}\". Prøv igjen.",
   "sharedFileReceived": "Velg [Åpne] for å erstatte eksisterende øvelser fullstendig, eller [Importer] for å legge til i eksisterende øvelser, og overskrive kun hvis de allerede finnes. Hva ønsker du å gjøre?",
   "sendToSuccess": "Sending av \"{name}\" var vellykket!",
   "sendToFailure": "Sending av \"{name}\" mislyktes. Prøv igjen.",
   "restartNow": "RESTART",
   "appUpdateAvailable": "En oppdatering er tilgjengelig",
-  "programFile": "Programfil",
-  "openProgramHint": "Vil du åpne programmet, eller importere øvelser inn i nåværende?",
-  "openProgram": "Åpne...",
-  "importProgram": "Import...",
-  "exportProgram": "Eksport...",
-  "sendToProgram": "Send til...",
-  "shareProgram": "Del...",
+  "planFile": "Planfil",
+  "openPlanHint": "Vil du åpne planen, eller importere øvelser inn i nåværende?",
+  "openPlanAction": "Åpne...",
+  "importPlan": "Import...",
+  "exportPlan": "Eksport...",
+  "sendToPlan": "Send til...",
+  "sharePlan": "Del...",
   "feedback": "Tilbakemelding...",
   "schedule": "Plan",
-  "program": "{count, plural, =0{Program} =1{Program} other{Programmer}}",
-  "programTab": "Øvingsplan",
+  "plan": "{count, plural, =0{Plan} =1{Plan} other{Planer}}",
+  "planTab": "Øvingsplan",
   "exercise": "{count, plural, =0{Øvelse} =1{Øvelse} other{Øvelser}}",
   "round": "{count, plural, =0{Runde} =1{Runde} other{Runder}}",
   "station": "{count, plural, =0{Post} =1{Post} other{Poster}}",
@@ -509,7 +509,7 @@
 
   "roleplay": "{count, plural, =0{Markør} =1{Markør} other{Markører}}",
   "@roleplay": {
-    "description": "Roleplay count noun for the Program tab overview summary line.",
+    "description": "Roleplay count noun for the Plan tab overview summary line.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -522,7 +522,7 @@
   },
   "scriptSegment": "Spill",
   "@scriptSegment": {
-    "description": "Program-tab segment label for the publishable scenario layer (Spill/Script). Holds the RolePlay roster today; SilentWitness later. Distinct from rolePlaysTab, which names the Markører role roster inside the segment."
+    "description": "Plan-tab segment label for the publishable scenario layer (Spill/Script). Holds the RolePlay roster today; SilentWitness later. Distinct from rolePlaysTab, which names the Markører role roster inside the segment."
   },
   "playSection": "Spill",
   "@playSection": {
@@ -554,7 +554,7 @@
   },
   "castRoster": "Markører",
   "@castRoster": {
-    "description": "AppBar tooltip / sheet title for the full list of Actor records in the program."
+    "description": "AppBar tooltip / sheet title for the full list of Actor records in the plan."
   },
   "newActor": "Ny markør",
   "@newActor": {
@@ -590,7 +590,7 @@
   },
   "noActorsInRoster": "Ingen markører ennå. Trykk + Ny markør for å legge til.",
   "@noActorsInRoster": {
-    "description": "Tom tilstand vist i rollebesetting-arket når det ikke finnes noen Actor-poster i programmet."
+    "description": "Tom tilstand vist i rollebesetting-arket når det ikke finnes noen Actor-poster i planen."
   },
   "emptyRosterTitle": "Ingen markører ennå",
   "@emptyRosterTitle": {
@@ -600,13 +600,13 @@
   "@emptyRosterBody": {
     "description": "Lærende tom-tilstand-tekst vist i Bemanning-fanen når den aktive planen ikke har noen markører."
   },
-  "noActiveProgramHint": "Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen.",
-  "@noActiveProgramHint": {
-    "description": "Vist som faneinnhold og tooltip på deaktivert rollebesetting-knapp i AppBar når activeProgramUuid er null."
+  "noActivePlanHint": "Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen.",
+  "@noActivePlanHint": {
+    "description": "Vist som faneinnhold og tooltip på deaktivert rollebesetting-knapp i AppBar når activePlanUuid er null."
   },
-  "noSignalement": "Ingen signalement",
-  "@noSignalement": {
-    "description": "Placeholder shown when signalement is blank."
+  "noRoleDescription": "Ingen signalement",
+  "@noRoleDescription": {
+    "description": "Placeholder shown when the description field is blank."
   },
   "noBackground": "Ingen bakgrunn",
   "@noBackground": {
@@ -744,9 +744,9 @@
   "@noRolesAtThisStation": {
     "description": "Tom-tilstand vist i Markørordre-seksjonen når ingen markørordrer er koblet til posten."
   },
-  "roleSignalement": "Signalement",
-  "@roleSignalement": {
-    "description": "Feltetikett for signalement-feltet i RolePlayFormScreen; gjenbrukt av PersonsSection (Person.signalement, DESIGN-009 prompt 3)."
+  "roleDescription": "Signalement",
+  "@roleDescription": {
+    "description": "Feltetikett for signalement-feltet i RolePlayFormScreen; gjenbrukt av PersonsSection (Person.description, DESIGN-009 prompt 3)."
   },
   "roleBackground": "Bakgrunn",
   "@roleBackground": {
@@ -789,7 +789,7 @@
     }
   },
   "briefTemplateMissing": "Brief-malen kunne ikke lastes. Start appen på nytt og prøv igjen.",
-  "briefMissingProgram": "Ingen aktiv plan",
+  "briefMissingPlan": "Ingen aktiv plan",
   "briefMissingExercise": "Øvelse ikke funnet",
   "briefToc": "Innhold",
   "briefAction": "Åpne brief",
@@ -914,53 +914,53 @@
     "description": "Tom detaljrute vist i Roster-fanen i bred layout."
   },
 
-  "editProgram": "Endre plan",
-  "@editProgram": {
-    "description": "AppBar-tittel i ProgramFormScreen ved redigering av aktiv plan."
+  "editPlan": "Endre plan",
+  "@editPlan": {
+    "description": "AppBar-tittel i PlanFormScreen ved redigering av aktiv plan."
   },
-  "programSectionPlan": "Plan",
-  "@programSectionPlan": {
-    "description": "DESIGN-008 standardseksjon-etikett for ProgramFormScreens seksjonsnavigerte editor. Bærer Program sine korte strukturfelt (navn, beskrivelse, tagger, formater, språk)."
+  "planSectionPlan": "Plan",
+  "@planSectionPlan": {
+    "description": "DESIGN-008 standardseksjon-etikett for PlanFormScreens seksjonsnavigerte editor. Bærer Plan sine korte strukturfelt (navn, beskrivelse, tagger, formater, språk)."
   },
-  "programName": "Plannavn",
-  "@programName": {
-    "description": "Feltetikett for Program.name i ProgramFormScreen."
+  "planName": "Plannavn",
+  "@planName": {
+    "description": "Feltetikett for Plan.name i PlanFormScreen."
   },
-  "programDescription": "Beskrivelse",
-  "@programDescription": {
-    "description": "Feltetikett for Program.description i ProgramFormScreen. Vises under tittelen i briefen."
+  "planDescription": "Beskrivelse",
+  "@planDescription": {
+    "description": "Feltetikett for Plan.description i PlanFormScreen. Vises under tittelen i briefen."
   },
-  "programDescriptionHint": "Kort beskrivelse som vises under plannavnet i briefen",
-  "@programDescriptionHint": {
-    "description": "Plassholdertekst for Program.description-feltet."
+  "planDescriptionHint": "Kort beskrivelse som vises under plannavnet i briefen",
+  "@planDescriptionHint": {
+    "description": "Plassholdertekst for Plan.description-feltet."
   },
-  "programEditorTagsLabel": "Etiketter",
-  "@programEditorTagsLabel": {
-    "description": "Felt-/seksjonsoverskrift for etikett-redigeringen i ProgramFormScreen."
+  "planEditorTagsLabel": "Etiketter",
+  "@planEditorTagsLabel": {
+    "description": "Felt-/seksjonsoverskrift for etikett-redigeringen i PlanFormScreen."
   },
-  "programEditorTagsHint": "Legg til en etikett",
-  "@programEditorTagsHint": {
-    "description": "Plassholdertekst i etikett-inndata-feltet i ProgramFormScreen."
+  "planEditorTagsHint": "Legg til en etikett",
+  "@planEditorTagsHint": {
+    "description": "Plassholdertekst i etikett-inndata-feltet i PlanFormScreen."
   },
-  "programEditorTagRemoveTooltip": "Fjern etikett",
-  "@programEditorTagRemoveTooltip": {
-    "description": "Verktøytips på slett-ikonet i etikett-redigeringen i ProgramFormScreen."
+  "planEditorTagRemoveTooltip": "Fjern etikett",
+  "@planEditorTagRemoveTooltip": {
+    "description": "Verktøytips på slett-ikonet i etikett-redigeringen i PlanFormScreen."
   },
-  "programEditorTagTooLong": "Etiketten er for lang (maks 40 tegn)",
-  "@programEditorTagTooLong": {
+  "planEditorTagTooLong": "Etiketten er for lang (maks 40 tegn)",
+  "@planEditorTagTooLong": {
     "description": "Valideringsmelding som vises når en etikett overskrider makslengden."
   },
-  "briefSectionProgramIntro": "Generelt om spill og øvingsledelse",
-  "@briefSectionProgramIntro": {
-    "description": "Etikett for valgfri seksjon for Program.briefIntroMd i ProgramFormScreen. Speiler heftet."
+  "briefSectionPlanIntro": "Generelt om spill og øvingsledelse",
+  "@briefSectionPlanIntro": {
+    "description": "Etikett for valgfri seksjon for Plan.briefIntroMd i PlanFormScreen. Speiler heftet."
   },
-  "briefSectionProgramComms": "Talegrupper",
-  "@briefSectionProgramComms": {
-    "description": "Etikett for valgfri seksjon for Program.commsMd i ProgramFormScreen."
+  "briefSectionPlanComms": "Talegrupper",
+  "@briefSectionPlanComms": {
+    "description": "Etikett for valgfri seksjon for Plan.commsMd i PlanFormScreen."
   },
-  "briefSectionProgramBeforeRound": "Før hver post",
-  "@briefSectionProgramBeforeRound": {
-    "description": "Etikett for valgfri seksjon for Program.beforeRoundMd i ProgramFormScreen."
+  "briefSectionPlanBeforeRound": "Før hver post",
+  "@briefSectionPlanBeforeRound": {
+    "description": "Etikett for valgfri seksjon for Plan.beforeRoundMd i PlanFormScreen."
   },
   "briefSectionExerciseMethod": "Metode",
   "@briefSectionExerciseMethod": {
@@ -984,7 +984,7 @@
   },
   "briefSectionExerciseComms": "Samband",
   "@briefSectionExerciseComms": {
-    "description": "Etikett for valgfri seksjon for Exercise.commsMd. Overstyrer Program.commsMd."
+    "description": "Etikett for valgfri seksjon for Exercise.commsMd. Overstyrer Plan.commsMd."
   },
   "briefSectionStationEquipment": "Utstyrsbehov",
   "@briefSectionStationEquipment": {
@@ -1017,7 +1017,7 @@
 
   "stationNumberFormatLabel": "Postnummerering",
   "@stationNumberFormatLabel": {
-    "description": "Etikett for valg av postnummerformat i ProgramFormScreen."
+    "description": "Etikett for valg av postnummerformat i PlanFormScreen."
   },
   "stationNumberFormatDotted": "1.1, 1.2",
   "@stationNumberFormatDotted": {
@@ -1136,7 +1136,7 @@
 
   "variablesSectionTitle": "Variabler",
   "@variablesSectionTitle": {
-    "description": "DESIGN-008 Stage 5 seksjonsetikett for variabel-deklareringsseksjonen (Program-editoren, seksjonsnavigert skall)."
+    "description": "DESIGN-008 Stage 5 seksjonsetikett for variabel-deklareringsseksjonen (Plan-editoren, seksjonsnavigert skall)."
   },
   "variablesSectionPublishNote": "Publiseres med planen. Ikke legg inn reelle persondata.",
   "@variablesSectionPublishNote": {
@@ -1535,7 +1535,7 @@
   },
   "roleGender": "Kjønn",
   "@roleGender": {
-    "description": "Etikett over GenderSegmentedControl, delt mellom PersonsSection (Person.gender) og, fra DESIGN-009 prompt 4, RolePlayFormScreens eget gender-felt (ADR-0047) -- kalt roleGender for roleName/roleAge/roleSignalement-familien den slutter seg til, selv om PersonsSection bruker den først."
+    "description": "Etikett over GenderSegmentedControl, delt mellom PersonsSection (Person.gender) og, fra DESIGN-009 prompt 4, RolePlayFormScreens eget gender-felt (ADR-0047) -- kalt roleGender for roleName/roleAge/roleDescription-familien den slutter seg til, selv om PersonsSection bruker den først."
   },
   "rolePlayPersonLabel": "Person",
   "@rolePlayPersonLabel": {
@@ -1604,9 +1604,9 @@
     "description": "GenderSegmentedControl-alternativ for den stabile koden «other»."
   },
 
-  "programSaveBlockedUndeclaredVariable": "Kan ikke lagre: {sections} inneholder en ukjent variabel",
-  "@programSaveBlockedUndeclaredVariable": {
-    "description": "Snackbar vist når Lagre blokkeres fordi en Program-scopet markdown-seksjon inneholder {{var.<navn>}} for et udeklarert navn. {sections} er en kommaseparert liste over de aktuelle seksjonsetikettene.",
+  "planSaveBlockedUndeclaredVariable": "Kan ikke lagre: {sections} inneholder en ukjent variabel",
+  "@planSaveBlockedUndeclaredVariable": {
+    "description": "Snackbar vist når Lagre blokkeres fordi en Plan-scopet markdown-seksjon inneholder {{var.<navn>}} for et udeklarert navn. {sections} er en kommaseparert liste over de aktuelle seksjonsetikettene.",
     "placeholders": {
       "sections": { "type": "String" }
     }
@@ -1690,7 +1690,7 @@
   },
   "primerSkip": "Hopp over",
   "@primerSkip": {
-    "description": "Hopp over-knapp på konseptprimeren — avviser primeren og går rett til Program-fanen."
+    "description": "Hopp over-knapp på konseptprimeren — avviser primeren og går rett til Plan-fanen."
   },
   "primerHeading": "Lagene roterer",
   "@primerHeading": {
@@ -1702,11 +1702,11 @@
   },
   "primerOpenExample": "Åpne et eksempel",
   "@primerOpenExample": {
-    "description": "Primær CTA på konseptprimeren — åpner et innebygd eksempelprogram (stubbet til steg 3)."
+    "description": "Primær CTA på konseptprimeren — åpner et innebygd eksempelplan (stubbet til steg 3)."
   },
   "primerStartEmpty": "Start en tom plan",
   "@primerStartEmpty": {
-    "description": "Sekundær CTA på konseptprimeren — avviser primeren og lander på en tom Program-fane."
+    "description": "Sekundær CTA på konseptprimeren — avviser primeren og lander på en tom Plan-fane."
   },
   "primerTeamLabel": "Lag {n}",
   "@primerTeamLabel": {
@@ -1719,7 +1719,7 @@
   },
   "startHereCue": "Start her",
   "@startHereCue": {
-    "description": "Engangs inline-pill-merkelapp ved siden av første Program-FAB, som nudger brukeren til å opprette sin første øvelse."
+    "description": "Engangs inline-pill-merkelapp ved siden av første Plan-FAB, som nudger brukeren til å opprette sin første øvelse."
   },
 
   "migrationBannerHeading": "Web-appen flytter til web.ringdrill.app.",

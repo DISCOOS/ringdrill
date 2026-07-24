@@ -150,7 +150,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterFileName => 'Enter File Name';
 
   @override
-  String get fileNameHint => 'MyProgram';
+  String get fileNameHint => 'MyPlan';
 
   @override
   String get invalidFileName => 'Invalid file name. Please try again.';
@@ -186,7 +186,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get exportedProgram => 'Exported Program';
+  String get exportedPlan => 'Exported Plan';
 
   @override
   String exportSuccess(Object name) {
@@ -295,7 +295,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String importSuccess(Object name) {
-    return 'Program \"$name\" imported successfully!';
+    return 'Plan \"$name\" imported successfully!';
   }
 
   @override
@@ -304,19 +304,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String program(num count) {
+  String plan(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Programs',
-      one: 'Program',
-      zero: 'Program',
+      other: 'Plans',
+      one: 'Plan',
+      zero: 'Plan',
     );
     return '$_temp0';
   }
 
   @override
-  String get programTab => 'Plan';
+  String get planTab => 'Plan';
 
   @override
   String exercise(num count) {
@@ -434,26 +434,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stationDescription => 'Station Description';
 
   @override
-  String get programFile => 'Program file';
+  String get planFile => 'Plan file';
 
   @override
-  String get openProgramHint =>
-      'Do you want to open the program, or import exercises into current program?';
+  String get openPlanHint =>
+      'Do you want to open the plan, or import exercises into current plan?';
 
   @override
-  String get openProgram => 'Open...';
+  String get openPlanAction => 'Open...';
 
   @override
-  String get importProgram => 'Import...';
+  String get importPlan => 'Import...';
 
   @override
-  String get exportProgram => 'Export...';
+  String get exportPlan => 'Export...';
 
   @override
-  String get sendToProgram => 'Send to...';
+  String get sendToPlan => 'Send to...';
 
   @override
-  String get shareProgram => 'Share...';
+  String get sharePlan => 'Share...';
 
   @override
   String get feedback => 'Feedback...';
@@ -1654,11 +1654,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.';
 
   @override
-  String get noActiveProgramHint =>
-      'No active program. Open or create one in the Exercises tab.';
+  String get noActivePlanHint =>
+      'No active plan. Open or create one in the Exercises tab.';
 
   @override
-  String get noSignalement => 'No description';
+  String get noRoleDescription => 'No description';
 
   @override
   String get noBackground => 'No background';
@@ -1765,7 +1765,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noRolesAtThisStation => 'No roles at this post';
 
   @override
-  String get roleSignalement => 'Signalement';
+  String get roleDescription => 'Description';
 
   @override
   String get roleBackground => 'Background';
@@ -1821,7 +1821,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The brief template could not be loaded. Restart the app and try again.';
 
   @override
-  String get briefMissingProgram => 'No active program';
+  String get briefMissingPlan => 'No active plan';
 
   @override
   String get briefMissingExercise => 'Exercise not found';
@@ -1940,41 +1940,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailEmptyRoster => 'Select an actor to see details';
 
   @override
-  String get editProgram => 'Edit plan';
+  String get editPlan => 'Edit plan';
 
   @override
-  String get programSectionPlan => 'Plan';
+  String get planSectionPlan => 'Plan';
 
   @override
-  String get programName => 'Plan name';
+  String get planName => 'Plan name';
 
   @override
-  String get programDescription => 'Description';
+  String get planDescription => 'Description';
 
   @override
-  String get programDescriptionHint =>
+  String get planDescriptionHint =>
       'Short description shown under the plan name in the brief';
 
   @override
-  String get programEditorTagsLabel => 'Tags';
+  String get planEditorTagsLabel => 'Tags';
 
   @override
-  String get programEditorTagsHint => 'Add a tag';
+  String get planEditorTagsHint => 'Add a tag';
 
   @override
-  String get programEditorTagRemoveTooltip => 'Remove tag';
+  String get planEditorTagRemoveTooltip => 'Remove tag';
 
   @override
-  String get programEditorTagTooLong => 'Tag is too long (max 40 characters)';
+  String get planEditorTagTooLong => 'Tag is too long (max 40 characters)';
 
   @override
-  String get briefSectionProgramIntro => 'Intro';
+  String get briefSectionPlanIntro => 'Intro';
 
   @override
-  String get briefSectionProgramComms => 'Comms';
+  String get briefSectionPlanComms => 'Comms';
 
   @override
-  String get briefSectionProgramBeforeRound => 'Before each station';
+  String get briefSectionPlanBeforeRound => 'Before each station';
 
   @override
   String get briefSectionExerciseMethod => 'Method';
@@ -2483,7 +2483,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get genderOtherLabel => 'Other';
 
   @override
-  String programSaveBlockedUndeclaredVariable(String sections) {
+  String planSaveBlockedUndeclaredVariable(String sections) {
     return 'Can’t save: $sections contains an unknown variable';
   }
 

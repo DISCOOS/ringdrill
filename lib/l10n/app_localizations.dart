@@ -359,7 +359,7 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
-  /// **'MyProgram'**
+  /// **'MyPlan'**
   String get fileNameHint;
 
   /// Message
@@ -392,7 +392,7 @@ abstract class AppLocalizations {
   /// **'\"{name}\" is empty or has no content.'**
   String openEmptyDrill(String name);
 
-  /// Shown when a .drill archive is structurally valid ZIP but the program manifest is broken.
+  /// Shown when a .drill archive is structurally valid ZIP but the plan manifest is broken.
   ///
   /// In en, this message translates to:
   /// **'\"{name}\" is damaged or incomplete.'**
@@ -407,8 +407,8 @@ abstract class AppLocalizations {
   /// Label
   ///
   /// In en, this message translates to:
-  /// **'Exported Program'**
-  String get exportedProgram;
+  /// **'Exported Plan'**
+  String get exportedPlan;
 
   /// Message
   ///
@@ -530,13 +530,13 @@ abstract class AppLocalizations {
   /// **'Show all'**
   String get showAll;
 
-  /// Expands a truncated text block in the program overview
+  /// Expands a truncated text block in the plan overview
   ///
   /// In en, this message translates to:
   /// **'Show more'**
   String get showMore;
 
-  /// Collapses an expanded text block in the program overview
+  /// Collapses an expanded text block in the plan overview
   ///
   /// In en, this message translates to:
   /// **'Show less'**
@@ -593,7 +593,7 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Program \"{name}\" imported successfully!'**
+  /// **'Plan \"{name}\" imported successfully!'**
   String importSuccess(Object name);
 
   /// Message
@@ -602,17 +602,17 @@ abstract class AppLocalizations {
   /// **'Failed to import \"{name}\". Please try again.'**
   String importFailure(Object name);
 
-  /// Program with plurals
+  /// Plan with plurals
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Program} =1{Program} other{Programs}}'**
-  String program(num count);
+  /// **'{count, plural, =0{Plan} =1{Plan} other{Plans}}'**
+  String plan(num count);
 
-  /// Bottom navigation label and AppBar fallback title for the Program tab. The tab hosts the active training plan (exercises, stations, markers, teams); using the singular plan term avoids colliding with the inner 'Exercises' segment label.
+  /// Bottom navigation label and AppBar fallback title for the Plan tab. The tab hosts the active training plan (exercises, stations, markers, teams); using the singular plan term avoids colliding with the inner 'Exercises' segment label.
   ///
   /// In en, this message translates to:
   /// **'Plan'**
-  String get programTab;
+  String get planTab;
 
   /// Exercise with plurals
   ///
@@ -692,13 +692,13 @@ abstract class AppLocalizations {
   /// **'No stations in this exercise.'**
   String get noStationsInExercise;
 
-  /// Teaching empty-state title shown in the Program Stations segment when the active plan has no stations.
+  /// Teaching empty-state title shown in the Plan Stations segment when the active plan has no stations.
   ///
   /// In en, this message translates to:
   /// **'No stations yet'**
   String get emptyStationsTitle;
 
-  /// Teaching empty-state body shown in the Program Stations segment when the active plan has no stations.
+  /// Teaching empty-state body shown in the Plan Stations segment when the active plan has no stations.
   ///
   /// In en, this message translates to:
   /// **'Stations are added inside your exercises. Create an exercise first and they will show up here.'**
@@ -758,13 +758,13 @@ abstract class AppLocalizations {
   /// **'Team name'**
   String get teamName;
 
-  /// Teaching empty-state title shown in the Program Teams segment when the active plan has no teams.
+  /// Teaching empty-state title shown in the Plan Teams segment when the active plan has no teams.
   ///
   /// In en, this message translates to:
   /// **'No teams yet'**
   String get emptyTeamsTitle;
 
-  /// Teaching empty-state body shown in the Program Teams segment when the active plan has no teams.
+  /// Teaching empty-state body shown in the Plan Teams segment when the active plan has no teams.
   ///
   /// In en, this message translates to:
   /// **'Teams come from the team count in your exercises. Create an exercise first and they will show up here.'**
@@ -785,44 +785,44 @@ abstract class AppLocalizations {
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Program file'**
-  String get programFile;
+  /// **'Plan file'**
+  String get planFile;
 
   /// Message
   ///
   /// In en, this message translates to:
-  /// **'Do you want to open the program, or import exercises into current program?'**
-  String get openProgramHint;
+  /// **'Do you want to open the plan, or import exercises into current plan?'**
+  String get openPlanHint;
 
   /// Label
   ///
   /// In en, this message translates to:
   /// **'Open...'**
-  String get openProgram;
+  String get openPlanAction;
 
   /// Label
   ///
   /// In en, this message translates to:
   /// **'Import...'**
-  String get importProgram;
+  String get importPlan;
 
   /// Label
   ///
   /// In en, this message translates to:
   /// **'Export...'**
-  String get exportProgram;
+  String get exportPlan;
 
   /// Label
   ///
   /// In en, this message translates to:
   /// **'Send to...'**
-  String get sendToProgram;
+  String get sendToPlan;
 
   /// Label
   ///
   /// In en, this message translates to:
   /// **'Share...'**
-  String get shareProgram;
+  String get sharePlan;
 
   /// Label
   ///
@@ -980,13 +980,13 @@ abstract class AppLocalizations {
   /// **'No exercises yet!'**
   String get noExercisesYet;
 
-  /// Teaching empty-state title shown in the Program Exercises segment when the active plan has no exercises.
+  /// Teaching empty-state title shown in the Plan Exercises segment when the active plan has no exercises.
   ///
   /// In en, this message translates to:
   /// **'No exercises yet'**
   String get emptyExercisesTitle;
 
-  /// Teaching empty-state body shown in the Program Exercises segment when the active plan has no exercises.
+  /// Teaching empty-state body shown in the Plan Exercises segment when the active plan has no exercises.
   ///
   /// In en, this message translates to:
   /// **'Add your first exercise to get started.'**
@@ -2648,7 +2648,7 @@ abstract class AppLocalizations {
   /// **'Copy exercise'**
   String get exerciseCopyTooltip;
 
-  /// Roleplay count noun for the Program tab overview summary line.
+  /// Roleplay count noun for the Plan tab overview summary line.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{Roleplay} =1{Roleplay} other{Roleplays}}'**
@@ -2660,7 +2660,7 @@ abstract class AppLocalizations {
   /// **'RolePlays'**
   String get rolePlaysTab;
 
-  /// Program-tab segment label for the publishable scenario layer (Spill/Script). Holds the RolePlay roster today; SilentWitness later. Distinct from rolePlaysTab, which names the Markører role roster inside the segment.
+  /// Plan-tab segment label for the publishable scenario layer (Spill/Script). Holds the RolePlay roster today; SilentWitness later. Distinct from rolePlaysTab, which names the Markører role roster inside the segment.
   ///
   /// In en, this message translates to:
   /// **'Script'**
@@ -2708,7 +2708,7 @@ abstract class AppLocalizations {
   /// **'Clear cast'**
   String get clearCast;
 
-  /// AppBar tooltip / sheet title for the full list of Actor records in the program.
+  /// AppBar tooltip / sheet title for the full list of Actor records in the plan.
   ///
   /// In en, this message translates to:
   /// **'Cast roster'**
@@ -2744,7 +2744,7 @@ abstract class AppLocalizations {
   /// **'Exercise: {name}'**
   String roleSubtitleExercise(String name);
 
-  /// Empty state shown in the cast roster sheet when no Actor records exist in the program.
+  /// Empty state shown in the cast roster sheet when no Actor records exist in the plan.
   ///
   /// In en, this message translates to:
   /// **'No actors yet. Tap + New actor to add one.'**
@@ -2762,17 +2762,17 @@ abstract class AppLocalizations {
   /// **'Actors are the people who play out roles in your exercises. Add your first actor here, then cast them in roles from the Script tab in the Plan.'**
   String get emptyRosterBody;
 
-  /// Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activeProgramUuid is null.
+  /// Shown as the Markører tab body and as tooltip on the disabled cast-roster AppBar action when activePlanUuid is null.
   ///
   /// In en, this message translates to:
-  /// **'No active program. Open or create one in the Exercises tab.'**
-  String get noActiveProgramHint;
+  /// **'No active plan. Open or create one in the Exercises tab.'**
+  String get noActivePlanHint;
 
-  /// Placeholder shown in the Role section when the signalement field is blank.
+  /// Placeholder shown in the Role section when the description field is blank.
   ///
   /// In en, this message translates to:
   /// **'No description'**
-  String get noSignalement;
+  String get noRoleDescription;
 
   /// Placeholder shown in the Role section when the background field is blank.
   ///
@@ -2798,13 +2798,13 @@ abstract class AppLocalizations {
   /// **'Please select a station'**
   String get pleaseSelectStation;
 
-  /// Teaching empty-state title shown in the Program Script segment when the active plan has no plays.
+  /// Teaching empty-state title shown in the Plan Script segment when the active plan has no plays.
   ///
   /// In en, this message translates to:
   /// **'No plays yet'**
   String get emptyRolesTitle;
 
-  /// Teaching empty-state body shown in the Program Script segment when the active plan has no plays.
+  /// Teaching empty-state body shown in the Plan Script segment when the active plan has no plays.
   ///
   /// In en, this message translates to:
   /// **'A play describes what the roles do at the station. Create an exercise first, then add the plays it needs.'**
@@ -2942,7 +2942,7 @@ abstract class AppLocalizations {
   /// **'Edit role'**
   String get editRolePlayTitle;
 
-  /// DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor. Carries RolePlay's short structural fields (name, age, signalement, station, position).
+  /// DESIGN-008 default-section label for RolePlayFormScreen's section-navigated editor. Carries RolePlay's short structural fields (name, age, description, station, position).
   ///
   /// In en, this message translates to:
   /// **'Role'**
@@ -2960,11 +2960,11 @@ abstract class AppLocalizations {
   /// **'No roles at this post'**
   String get noRolesAtThisStation;
 
-  /// Form field label for the signalement field in RolePlayFormScreen; reused by PersonsSection (Person.signalement, DESIGN-009 prompt 3).
+  /// Form field label for the description field in RolePlayFormScreen; reused by PersonsSection (Person.description, DESIGN-009 prompt 3).
   ///
   /// In en, this message translates to:
-  /// **'Signalement'**
-  String get roleSignalement;
+  /// **'Description'**
+  String get roleDescription;
 
   /// Form field label for the background field in RolePlayFormScreen.
   ///
@@ -3062,11 +3062,11 @@ abstract class AppLocalizations {
   /// **'The brief template could not be loaded. Restart the app and try again.'**
   String get briefTemplateMissing;
 
-  /// Empty-state when the brief route is opened with no program loaded.
+  /// Empty-state when the brief route is opened with no plan loaded.
   ///
   /// In en, this message translates to:
-  /// **'No active program'**
-  String get briefMissingProgram;
+  /// **'No active plan'**
+  String get briefMissingPlan;
 
   /// Empty-state when the exerciseUuid resolves to nothing.
   ///
@@ -3080,7 +3080,7 @@ abstract class AppLocalizations {
   /// **'Contents'**
   String get briefToc;
 
-  /// Label/tooltip for the brief entry-point action on CoordinatorScreen and ProgramView app bars.
+  /// Label/tooltip for the brief entry-point action on CoordinatorScreen and PlanView app bars.
   ///
   /// In en, this message translates to:
   /// **'Open brief'**
@@ -3278,77 +3278,77 @@ abstract class AppLocalizations {
   /// **'Select an actor to see details'**
   String get detailEmptyRoster;
 
-  /// AppBar title for ProgramFormScreen when editing the active plan.
+  /// AppBar title for PlanFormScreen when editing the active plan.
   ///
   /// In en, this message translates to:
   /// **'Edit plan'**
-  String get editProgram;
+  String get editPlan;
 
-  /// DESIGN-008 default-section label for ProgramFormScreen's section-navigated editor. Carries Program's short structural fields (name, description, tags, formats, language).
+  /// DESIGN-008 default-section label for PlanFormScreen's section-navigated editor. Carries Plan's short structural fields (name, description, tags, formats, language).
   ///
   /// In en, this message translates to:
   /// **'Plan'**
-  String get programSectionPlan;
+  String get planSectionPlan;
 
-  /// Field label for Program.name in ProgramFormScreen.
+  /// Field label for Plan.name in PlanFormScreen.
   ///
   /// In en, this message translates to:
   /// **'Plan name'**
-  String get programName;
+  String get planName;
 
-  /// Field label for Program.description in ProgramFormScreen. Renders below the title in the brief.
+  /// Field label for Plan.description in PlanFormScreen. Renders below the title in the brief.
   ///
   /// In en, this message translates to:
   /// **'Description'**
-  String get programDescription;
+  String get planDescription;
 
-  /// Hint text for the Program.description field.
+  /// Hint text for the Plan.description field.
   ///
   /// In en, this message translates to:
   /// **'Short description shown under the plan name in the brief'**
-  String get programDescriptionHint;
+  String get planDescriptionHint;
 
-  /// Field/section label for the tags chip editor in ProgramFormScreen.
+  /// Field/section label for the tags chip editor in PlanFormScreen.
   ///
   /// In en, this message translates to:
   /// **'Tags'**
-  String get programEditorTagsLabel;
+  String get planEditorTagsLabel;
 
-  /// Hint text inside the tag input field in ProgramFormScreen.
+  /// Hint text inside the tag input field in PlanFormScreen.
   ///
   /// In en, this message translates to:
   /// **'Add a tag'**
-  String get programEditorTagsHint;
+  String get planEditorTagsHint;
 
-  /// Tooltip on the delete icon chip in the tags editor in ProgramFormScreen.
+  /// Tooltip on the delete icon chip in the tags editor in PlanFormScreen.
   ///
   /// In en, this message translates to:
   /// **'Remove tag'**
-  String get programEditorTagRemoveTooltip;
+  String get planEditorTagRemoveTooltip;
 
   /// Validation message shown when a tag exceeds the maximum length.
   ///
   /// In en, this message translates to:
   /// **'Tag is too long (max 40 characters)'**
-  String get programEditorTagTooLong;
+  String get planEditorTagTooLong;
 
-  /// Optional section label for Program.briefIntroMd in ProgramFormScreen. Booklet label: "Generelt om spill og øvingsledelse".
+  /// Optional section label for Plan.briefIntroMd in PlanFormScreen. Booklet label: "Generelt om spill og øvingsledelse".
   ///
   /// In en, this message translates to:
   /// **'Intro'**
-  String get briefSectionProgramIntro;
+  String get briefSectionPlanIntro;
 
-  /// Optional section label for Program.commsMd in ProgramFormScreen. Booklet label: "Talegrupper".
+  /// Optional section label for Plan.commsMd in PlanFormScreen. Booklet label: "Talegrupper".
   ///
   /// In en, this message translates to:
   /// **'Comms'**
-  String get briefSectionProgramComms;
+  String get briefSectionPlanComms;
 
-  /// Optional section label for Program.beforeRoundMd in ProgramFormScreen. Booklet label: "Før hver post".
+  /// Optional section label for Plan.beforeRoundMd in PlanFormScreen. Booklet label: "Før hver post".
   ///
   /// In en, this message translates to:
   /// **'Before each station'**
-  String get briefSectionProgramBeforeRound;
+  String get briefSectionPlanBeforeRound;
 
   /// Optional section label for Exercise.methodMd. Booklet label: "Metode".
   ///
@@ -3380,7 +3380,7 @@ abstract class AppLocalizations {
   /// **'Execution tips'**
   String get briefSectionExerciseExecutionTips;
 
-  /// Optional section label for Exercise.commsMd. Booklet label: "Samband". Overrides Program.commsMd.
+  /// Optional section label for Exercise.commsMd. Booklet label: "Samband". Overrides Plan.commsMd.
   ///
   /// In en, this message translates to:
   /// **'Comms'**
@@ -3428,7 +3428,7 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get briefSectionStationDirectorNotes;
 
-  /// Label for the station number format picker in ProgramFormScreen.
+  /// Label for the station number format picker in PlanFormScreen.
   ///
   /// In en, this message translates to:
   /// **'Station numbering'**
@@ -3446,7 +3446,7 @@ abstract class AppLocalizations {
   /// **'1a, 1b'**
   String get stationNumberFormatAlpha;
 
-  /// Label for the plan-content language picker in ProgramFormScreen. Kept short since the picker sits beside the plan-name field. Distinct from the app's own UI language.
+  /// Label for the plan-content language picker in PlanFormScreen. Kept short since the picker sits beside the plan-name field. Distinct from the app's own UI language.
   ///
   /// In en, this message translates to:
   /// **'Lang'**
@@ -3590,7 +3590,7 @@ abstract class AppLocalizations {
   /// **'Create person “{label}”'**
   String tokenMenuCreatePerson(String label);
 
-  /// DESIGN-008 Stage 5 section label for the plan-variable declaration section (Program editor, section-navigated shell).
+  /// DESIGN-008 Stage 5 section label for the plan-variable declaration section (Plan editor, section-navigated shell).
   ///
   /// In en, this message translates to:
   /// **'Variables'**
@@ -4136,7 +4136,7 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get personsSectionNotesLabel;
 
-  /// Placeholder text in the Persons section's search field (filters by name/signalement).
+  /// Placeholder text in the Persons section's search field (filters by name/description).
   ///
   /// In en, this message translates to:
   /// **'Search persons'**
@@ -4154,7 +4154,7 @@ abstract class AppLocalizations {
   /// **'Age'**
   String get personsSectionSortByAge;
 
-  /// Label above the GenderSegmentedControl, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleSignalement family it joins, even though PersonsSection uses it first.
+  /// Label above the GenderSegmentedControl, shared by PersonsSection (Person.gender) and, from DESIGN-009 prompt 4, RolePlayFormScreen's own gender field (ADR-0047) -- named roleGender for the roleName/roleAge/roleDescription family it joins, even though PersonsSection uses it first.
   ///
   /// In en, this message translates to:
   /// **'Gender'**
@@ -4214,7 +4214,7 @@ abstract class AppLocalizations {
   /// **'Reset'**
   String get rolePlayIdentityResetAction;
 
-  /// Identity card's collapsed-header third line, shown instead of the signalement when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4j, superseding 4i's "Portraying {name}"), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.
+  /// Identity card's collapsed-header third line, shown instead of the description when the roleplay's displayed name itself is an override (DESIGN-009 prompt 4j, superseding 4i's "Portraying {name}"), so the reader still knows which Person is actually being portrayed. {name} is that Person's own name.
   ///
   /// In en, this message translates to:
   /// **'Customized from {name}'**
@@ -4250,11 +4250,11 @@ abstract class AppLocalizations {
   /// **'Other'**
   String get genderOtherLabel;
 
-  /// Snackbar shown when Save is blocked because a Program-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.
+  /// Snackbar shown when Save is blocked because a Plan-scope markdown section contains {{var.<name>}} for an undeclared name. {sections} is a comma-joined list of the offending section labels.
   ///
   /// In en, this message translates to:
   /// **'Can’t save: {sections} contains an unknown variable'**
-  String programSaveBlockedUndeclaredVariable(String sections);
+  String planSaveBlockedUndeclaredVariable(String sections);
 
   /// Snackbar shown when Save is blocked because a station or roleplay field contains a {{station.loc.<slug>}}/{{station.person.<slug>}} token whose slug does not resolve against the (linked) station's own locations/persons (DESIGN-009 prompt 5). {sections} is a comma-joined list of the offending field/section labels, {references} a comma-joined list of the broken reference tokens (e.g. station.loc.ghost).
   ///
@@ -4340,7 +4340,7 @@ abstract class AppLocalizations {
   /// **'Alphabetical'**
   String get exerciseSortAlphabeticallyShort;
 
-  /// Skip button on the concept primer — dismisses the primer and goes straight to the Program tab.
+  /// Skip button on the concept primer — dismisses the primer and goes straight to the Plan tab.
   ///
   /// In en, this message translates to:
   /// **'Skip'**
@@ -4364,7 +4364,7 @@ abstract class AppLocalizations {
   /// **'Open an example'**
   String get primerOpenExample;
 
-  /// Secondary CTA on the concept primer — dismisses the primer and lands on an empty Program tab.
+  /// Secondary CTA on the concept primer — dismisses the primer and lands on an empty Plan tab.
   ///
   /// In en, this message translates to:
   /// **'Start an empty plan'**
@@ -4376,7 +4376,7 @@ abstract class AppLocalizations {
   /// **'Team {n}'**
   String primerTeamLabel(int n);
 
-  /// First-run-only inline pill label beside the first Program FAB, nudging the user to create their first exercise.
+  /// First-run-only inline pill label beside the first Plan FAB, nudging the user to create their first exercise.
   ///
   /// In en, this message translates to:
   /// **'Start here'**

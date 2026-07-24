@@ -150,7 +150,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get enterFileName => 'Skriv inn filnavn';
 
   @override
-  String get fileNameHint => 'MittProgram';
+  String get fileNameHint => 'MinPlan';
 
   @override
   String get invalidFileName => 'Ugyldig filnavn. Prøv igjen.';
@@ -186,7 +186,7 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String get exportedProgram => 'Eksportert Program';
+  String get exportedPlan => 'Eksportert Plan';
 
   @override
   String exportSuccess(Object name) {
@@ -295,7 +295,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String importSuccess(Object name) {
-    return 'Program \"$name\" ble importert.';
+    return 'Plan \"$name\" ble importert.';
   }
 
   @override
@@ -304,19 +304,19 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String program(num count) {
+  String plan(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Programmer',
-      one: 'Program',
-      zero: 'Program',
+      other: 'Planer',
+      one: 'Plan',
+      zero: 'Plan',
     );
     return '$_temp0';
   }
 
   @override
-  String get programTab => 'Øvingsplan';
+  String get planTab => 'Øvingsplan';
 
   @override
   String exercise(num count) {
@@ -434,26 +434,26 @@ class AppLocalizationsNb extends AppLocalizations {
   String get stationDescription => 'Postbeskrivelse';
 
   @override
-  String get programFile => 'Programfil';
+  String get planFile => 'Planfil';
 
   @override
-  String get openProgramHint =>
-      'Vil du åpne programmet, eller importere øvelser inn i nåværende?';
+  String get openPlanHint =>
+      'Vil du åpne planen, eller importere øvelser inn i nåværende?';
 
   @override
-  String get openProgram => 'Åpne...';
+  String get openPlanAction => 'Åpne...';
 
   @override
-  String get importProgram => 'Import...';
+  String get importPlan => 'Import...';
 
   @override
-  String get exportProgram => 'Eksport...';
+  String get exportPlan => 'Eksport...';
 
   @override
-  String get sendToProgram => 'Send til...';
+  String get sendToPlan => 'Send til...';
 
   @override
-  String get shareProgram => 'Del...';
+  String get sharePlan => 'Del...';
 
   @override
   String get feedback => 'Tilbakemelding...';
@@ -1651,11 +1651,11 @@ class AppLocalizationsNb extends AppLocalizations {
       'Markører er personene som spiller ut roller i øvelsene dine. Legg til din første markør her, så kan du besette roller i Spill-fanen i øvingsplanen.';
 
   @override
-  String get noActiveProgramHint =>
+  String get noActivePlanHint =>
       'Ingen aktiv øvelsesplan. Velg eller opprett en i Øvelser-fanen.';
 
   @override
-  String get noSignalement => 'Ingen signalement';
+  String get noRoleDescription => 'Ingen signalement';
 
   @override
   String get noBackground => 'Ingen bakgrunn';
@@ -1762,7 +1762,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get noRolesAtThisStation => 'Ingen markører på denne posten';
 
   @override
-  String get roleSignalement => 'Signalement';
+  String get roleDescription => 'Signalement';
 
   @override
   String get roleBackground => 'Bakgrunn';
@@ -1818,7 +1818,7 @@ class AppLocalizationsNb extends AppLocalizations {
       'Brief-malen kunne ikke lastes. Start appen på nytt og prøv igjen.';
 
   @override
-  String get briefMissingProgram => 'Ingen aktiv plan';
+  String get briefMissingPlan => 'Ingen aktiv plan';
 
   @override
   String get briefMissingExercise => 'Øvelse ikke funnet';
@@ -1937,41 +1937,41 @@ class AppLocalizationsNb extends AppLocalizations {
   String get detailEmptyRoster => 'Velg en markør for å se detaljer';
 
   @override
-  String get editProgram => 'Endre plan';
+  String get editPlan => 'Endre plan';
 
   @override
-  String get programSectionPlan => 'Plan';
+  String get planSectionPlan => 'Plan';
 
   @override
-  String get programName => 'Plannavn';
+  String get planName => 'Plannavn';
 
   @override
-  String get programDescription => 'Beskrivelse';
+  String get planDescription => 'Beskrivelse';
 
   @override
-  String get programDescriptionHint =>
+  String get planDescriptionHint =>
       'Kort beskrivelse som vises under plannavnet i briefen';
 
   @override
-  String get programEditorTagsLabel => 'Etiketter';
+  String get planEditorTagsLabel => 'Etiketter';
 
   @override
-  String get programEditorTagsHint => 'Legg til en etikett';
+  String get planEditorTagsHint => 'Legg til en etikett';
 
   @override
-  String get programEditorTagRemoveTooltip => 'Fjern etikett';
+  String get planEditorTagRemoveTooltip => 'Fjern etikett';
 
   @override
-  String get programEditorTagTooLong => 'Etiketten er for lang (maks 40 tegn)';
+  String get planEditorTagTooLong => 'Etiketten er for lang (maks 40 tegn)';
 
   @override
-  String get briefSectionProgramIntro => 'Generelt om spill og øvingsledelse';
+  String get briefSectionPlanIntro => 'Generelt om spill og øvingsledelse';
 
   @override
-  String get briefSectionProgramComms => 'Talegrupper';
+  String get briefSectionPlanComms => 'Talegrupper';
 
   @override
-  String get briefSectionProgramBeforeRound => 'Før hver post';
+  String get briefSectionPlanBeforeRound => 'Før hver post';
 
   @override
   String get briefSectionExerciseMethod => 'Metode';
@@ -2481,7 +2481,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get genderOtherLabel => 'Annet';
 
   @override
-  String programSaveBlockedUndeclaredVariable(String sections) {
+  String planSaveBlockedUndeclaredVariable(String sections) {
     return 'Kan ikke lagre: $sections inneholder en ukjent variabel';
   }
 
