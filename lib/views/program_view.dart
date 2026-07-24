@@ -202,7 +202,18 @@ class _ProgramViewState extends State<ProgramView> {
       bool reordering,
       Widget dragHandle,
     ) {
-      final markers = exercise.getLocations(false);
+      // Numbered, not name-only: matches the app-wide station-marker
+      // convention (station's plan number as MapMarkerSpec.shortLabel,
+      // "number name" as the full label) so this card's map behaves the
+      // same as every other station-position surface once labels are
+      // shown, instead of showing bare names with no zoom-tiered short
+      // form at all.
+      final markers = exercise.getNumberedLocations(
+        exerciseNumber: index + 1,
+        format:
+            _programService.activeProgram?.stationNumberFormat ??
+            StationNumberFormat.dotted,
+      );
       final selectedTarget = targetNotifier?.value;
       final isSelected =
           selectedTarget is ExerciseSheetTarget &&
@@ -1146,7 +1157,9 @@ class _ExerciseCardState extends State<ExerciseCard> {
           ),
           if (markers.isNotEmpty) ...[
             ExerciseMiniMap(
+              exercise: exercise,
               markers: markers,
+              liveEvent: liveEvent,
               mapKey: ValueKey<String>('exercise-card-map-${exercise.uuid}'),
             ),
             if (showStations) const SizedBox(height: 8),
@@ -1799,7 +1812,16 @@ abstract class ProgramPageControllerBase extends ScreenController {
                           itemBuilder: (context, index) {
                             final exercise = exercises[index];
                             final uuid = exercise.uuid;
-                            final markers = exercise.getLocations(false);
+                            // Numbered, not name-only — see buildExerciseRow's
+                            // identical fix above for why.
+                            final markers = exercise.getNumberedLocations(
+                              exerciseNumber: index + 1,
+                              format:
+                                  ProgramService()
+                                      .activeProgram
+                                      ?.stationNumberFormat ??
+                                  StationNumberFormat.dotted,
+                            );
                             return ExerciseCard(
                               exercise: exercise,
                               // Reuse the exercises-tab rendering: passing the

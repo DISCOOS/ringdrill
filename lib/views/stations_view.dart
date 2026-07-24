@@ -21,7 +21,7 @@ import 'package:ringdrill/views/widgets/exercise_number_badge.dart';
 import 'package:ringdrill/views/widgets/resolve_scoped_field.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
-import 'package:ringdrill/views/widgets/role_marker.dart';
+import 'package:ringdrill/views/widgets/role_mini_map.dart' show roleMarker;
 
 import '../models/exercise.dart' show Exercise, ExerciseX, StationLocation;
 import '../services/program_service.dart' show ProgramService;
@@ -120,39 +120,28 @@ class _StationsViewState extends State<StationsView>
     _detailTarget.value = null;
   }
 
-  /// Camera fit that frames [points] centred on their centroid, with overlay
-  /// aware padding. This is the *same* framing the in-map "centre" control
-  /// applies (MapView._toggleCenter fits the identical set of points), so an
-  /// auto-fit after a filter change lands the markers exactly where pressing
-  /// "centre" would. Returns null when there are fewer than two points to
-  /// frame — callers fall back to a plain recentre.
-  CameraFit? _markersFit(List<LatLng> points, EdgeInsets padding) {
-    if (points.length < 2) return null;
-    return points.centroidFit(padding) ?? points.fit(padding);
-  }
-
   void _recenter() {
     if (!mounted) return;
     final markers = _visibleLocations();
-    if (markers.isEmpty) {
-      _mapController.move(MapConfig.initialCenter, _mapController.camera.zoom);
-      return;
-    }
-    // Padding matches the MapView overlays (search field at top, FAB column at
-    // bottom) so the centroid sits in the visible centre rather than under the
-    // FABs.
-    final padding = MapConfig.fitPadding(
+    // Flags mirror the MapView overlays below (search field at top, FAB
+    // column at bottom) so an auto-fit after a filter change lands the
+    // markers exactly where pressing "centre" would. MapConfig.fitFor
+    // handles zero, one or many markers uniformly (zero lands on
+    // MapConfig.initialCenter), so there's no need to special-case the
+    // count here.
+    final fit = MapConfig.fitFor(
+      markers.map((m) => m.$3),
       withSearch: true,
       withZoom: true,
       withCenter: true,
       withLocate: true,
+      viewport: MediaQuery.sizeOf(context),
+      // The fit always lands on an overview zoom, below labelDetailZoomFor
+      // — reserve the short chip's footprint, not the full label it won't
+      // show yet (mirrors MapView's own internal default-fit logic).
+      labels: markers.map((m) => m.$4 ?? m.$2),
     );
-    final fit = _markersFit(markers.map((m) => m.$3).toList(), padding);
-    if (fit != null) {
-      _mapController.fitCamera(fit);
-    } else {
-      _mapController.move(markers.average(), _mapController.camera.zoom);
-    }
+    _mapController.fitCamera(fit);
   }
 
   /// Markers that should currently be plotted — i.e. every station with a
@@ -172,18 +161,10 @@ class _StationsViewState extends State<StationsView>
     // carry the "you have nothing yet" message. A snackbar here just nagged on
     // first launch (DESIGN-007).
 
-    // Centre on the actual stations when present; only fall back to the
-    // configured initial centre (Oslo) when nothing is plotted yet.
-    final center = markers.isEmpty
-        ? MapConfig.initialCenter
-        : markers.average();
-
-    final fitPadding = MapConfig.fitPadding(
-      withSearch: true,
-      withZoom: true,
-      withCenter: true,
-      withLocate: true,
-    );
+    // Centre on the actual stations when present; markers.average() itself
+    // falls back to the configured initial centre (Oslo) when nothing is
+    // plotted yet, so there's no need to branch on emptiness here.
+    final center = markers.average();
 
     final allExercises = _programService.loadExercises();
     final localizations = AppLocalizations.of(context)!;
@@ -212,47 +193,37 @@ class _StationsViewState extends State<StationsView>
         .where((rp) => rp.position.isFiniteOrNull)
         .toList();
     final roleSpecs = _showRoleplays
-        ? roleplays.map(
-            (rp) => MapMarkerSpec<(String, int)>(
-              id: (rp.exerciseUuid, rp.index),
-              label: () {
+        ? roleplays
+              .map((rp) {
                 final exercise = _programService.getExercise(rp.exerciseUuid);
-                if (exercise == null) return rp.name;
                 final stationIndex = rp.stationIndex;
                 final station =
-                    (stationIndex != null &&
+                    (exercise != null &&
+                        stationIndex != null &&
                         stationIndex >= 0 &&
                         stationIndex < exercise.stations.length)
                     ? exercise.stations[stationIndex]
                     : null;
-                // Eager per-roleplay label: no per-item scoped subtree to read
-                // from, so feed the exercise/station/self facets explicitly —
-                // otherwise a {{station.*}} etc. in a marker name throws the
-                // all-or-nothing mustache pass and the label falls to literal.
-                return resolveModelField(
-                      context,
-                      rp.name,
-                      exercise: exercise,
-                      station: station,
-                      roleplay: rp,
-                      overrides: _overridesFor(
-                        exercise,
-                        stationIndex: stationIndex,
-                      ),
-                    ) ??
-                    rp.name;
-              }(),
-              point: rp.position!,
-              child: const RoleMarker(),
-              clusterGroup: 'markers',
-              onTap: () {
-                final ctx = _scopeContext ?? context;
-                ContextSheet.of(
-                  ctx,
-                ).show(ctx, RoleSheetTarget(rolePlayUuid: rp.uuid));
-              },
-            ),
-          )
+                return roleMarker<(String, int)>(
+                  context,
+                  rp,
+                  station,
+                  id: (rp.exerciseUuid, rp.index),
+                  exercise: exercise,
+                  overrides: exercise == null
+                      ? const {}
+                      : _overridesFor(exercise, stationIndex: stationIndex),
+                  clusterGroup: 'markers',
+                  onTap: () {
+                    final ctx = _scopeContext ?? context;
+                    ContextSheet.of(
+                      ctx,
+                    ).show(ctx, RoleSheetTarget(rolePlayUuid: rp.uuid));
+                  },
+                );
+              })
+              .whereType<MapMarkerSpec<(String, int)>>()
+              .toList()
         : <MapMarkerSpec<(String, int)>>[];
 
     final allSpecs = [...stationSpecs, ...roleSpecs];
@@ -275,13 +246,10 @@ class _StationsViewState extends State<StationsView>
             withZoom: true,
             withLocate: true,
             initialCenter: center,
-            // Fit the same set the in-map "centre" control fits (all visible
-            // station + roleplay markers, centroid-centred) so changing the
-            // filter re-frames exactly like pressing "centre".
-            initialFit: _markersFit(
-              allSpecs.map((s) => s.point).toList(),
-              fitPadding,
-            ),
+            // No initialFit: MapView computes its own default fit from
+            // `markers` below, using its own real render size — this always
+            // matches what pressing "centre" would produce, for any window
+            // size or embedding context, with no guessing needed here.
             controller: _mapController,
             interactionFlags: MapConfig.interactive,
             layers: MapConfig.layers,
@@ -727,22 +695,24 @@ class _StationsViewState extends State<StationsView>
     // leave the camera where it is.
     final exercise = _programService.getExercise(exerciseUuid);
     if (exercise == null) return;
-    final siblingPoints = exercise.stations
+    final siblingStations = exercise.stations
         .where((s) => s.position != null && s.index != stationIndex)
-        .map((s) => s.position!)
         .toList(growable: false);
-    if (siblingPoints.isEmpty) return;
-    final padding = MapConfig.fitPadding(
+    if (siblingStations.isEmpty) return;
+    // Flags mirror this screen's MapView (withSearch/withZoom/withCenter/
+    // withLocate all true) so the pick-mode drop lands where "centre" would.
+    // MapConfig.fitFor handles one or many siblings uniformly, so there's
+    // no need to special-case a lone sibling here.
+    final fit = MapConfig.fitFor(
+      siblingStations.map((s) => s.position!),
       withSearch: true,
       withZoom: true,
       withCenter: true,
+      withLocate: true,
+      viewport: MediaQuery.sizeOf(context),
+      labels: siblingStations.map((s) => s.name),
     );
-    final fit = siblingPoints.centroidFit(padding);
-    if (fit != null) {
-      _mapController.fitCamera(fit);
-    } else {
-      _mapController.move(siblingPoints.first, _mapController.camera.zoom);
-    }
+    _mapController.fitCamera(fit);
   }
 
   Future<void> _savePickedPosition() async {

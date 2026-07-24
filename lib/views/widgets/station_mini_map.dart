@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/numbering.dart';
+import 'package:ringdrill/models/location.dart';
+import 'package:ringdrill/models/numbering.dart' show StationNumberFormat;
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/services/program_service.dart';
-import 'package:ringdrill/utils/latlng_utils.dart';
 import 'package:ringdrill/utils/plan_variables.dart';
 import 'package:ringdrill/views/map_view.dart';
+import 'package:ringdrill/views/shell/master_detail_leading.dart';
 import 'package:ringdrill/views/widgets/location_kind_style.dart';
 import 'package:ringdrill/views/widgets/ringdrill_sheet.dart';
 import 'package:ringdrill/views/widgets/sheet_title.dart';
-import 'package:ringdrill/views/widgets/station_number_badge.dart';
 
 /// The effective plan-variable map (ADR-0046) at [station]'s scope: the
 /// active plan's declared values overlaid by [exercise]'s overrides, then
@@ -20,13 +21,67 @@ Map<String, String> _stationOverrides(Exercise exercise, Station station) {
   return effectivePlanVariables(program, exercise: exercise, station: station);
 }
 
+/// The app-wide station-position-marker numbering convention, computed
+/// once here so every map surface that plots a station's own position
+/// agrees: [shortLabel] is the plan number alone ("1.1"/"1a", matching
+/// [StationNumberBadge] and `ProgramService.getLocations`), [rawLabel] is
+/// that number joined with the station's own *unresolved* name ("1.1
+/// Turgåer") — the full text a pin shows once zoomed in past
+/// [MapConfig.labelDetailZoomFor].
+///
+/// Deliberately does not resolve plan-variable tokens in [rawLabel] itself
+/// — callers substitute with whichever mechanism fits their context
+/// ([substitutePlanVariables] with no ambient widget tree,
+/// [resolveScopedField]/[resolveModelField] with one), the same split
+/// every other caller in this codebase already makes.
+({String rawLabel, String shortLabel}) stationNumbering(
+  Exercise exercise,
+  Station station,
+) {
+  final service = ProgramService();
+  final format =
+      service.activeProgram?.stationNumberFormat ?? StationNumberFormat.dotted;
+  final exNum =
+      service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
+  final exerciseNumber = exNum < 1 ? 1 : exNum;
+  return (
+    rawLabel: station.numberAndName(format, exerciseNumber: exerciseNumber),
+    shortLabel: station.numberLabel(format, exerciseNumber: exerciseNumber),
+  );
+}
+
+/// One marker for a scenario [Location] (id [id], styled by its
+/// [LocationKind] — ADR-0020/DESIGN-009) — the shared shape every map
+/// surface that plots a station's scenario locations (Bosted, LKP, ...)
+/// uses, so an icon/size/label tweak lands everywhere at once. No
+/// [MapMarkerSpec.shortLabel]: locations are few enough per station, and
+/// don't need a zoom-tiered short form the way a station's own number does.
+///
+/// [location.position] must be non-null — callers already filter for that
+/// (a `for` loop with `if (point == null) continue`, matching the
+/// `Iterable<LatLng>`-poisoning guard the rest of this codebase uses).
+MapMarkerSpec<int> locationMarker(
+  Location location, {
+  required int id,
+  double size = 28,
+}) {
+  final point = location.position;
+  assert(point != null, 'locationMarker requires a positioned Location');
+  return MapMarkerSpec(
+    id: id,
+    label: location.label.isEmpty ? location.slug : location.label,
+    point: point!,
+    child: Icon(location.kind.icon, color: location.kind.color, size: size),
+  );
+}
+
 /// Markers for [station]'s own administrative position (id `0`, green
 /// `Icons.place`, matching every other station marker in the app) plus its
-/// scenario `locations` that carry a coordinate (id `index + 1`, styled by
-/// `LocationKind` — ADR-0047/DESIGN-009), visually distinct from the
-/// administrative marker. A person's `home` is not iterated separately: it
-/// always names a `Location` already in `station.locations`, so it is
-/// covered by the same loop.
+/// scenario `locations` that carry a coordinate (id `index + 1`, via
+/// [locationMarker]), visually distinct from the administrative marker. A
+/// person's `home` is not iterated separately: it always names a
+/// `Location` already in `station.locations`, so it is covered by the
+/// same loop.
 ///
 /// A plain top-level function (not private) so tests can assert on the
 /// built [MapMarkerSpec] list directly — a marker-spec unit test, rather
@@ -37,13 +92,15 @@ List<MapMarkerSpec<int>> stationMarkers(Exercise exercise, Station station) {
   final markers = <MapMarkerSpec<int>>[];
   final position = station.position;
   if (position != null) {
+    final numbering = stationNumbering(exercise, station);
     markers.add(
       MapMarkerSpec(
         id: 0,
         label: substitutePlanVariables(
-          station.name,
+          numbering.rawLabel,
           _stationOverrides(exercise, station),
         ),
+        shortLabel: numbering.shortLabel,
         point: position,
         child: const Icon(Icons.place, color: Colors.green, size: 32),
       ),
@@ -51,30 +108,71 @@ List<MapMarkerSpec<int>> stationMarkers(Exercise exercise, Station station) {
   }
   for (var i = 0; i < station.locations.length; i++) {
     final location = station.locations[i];
-    final point = location.position;
-    if (point == null) continue;
-    markers.add(
-      MapMarkerSpec(
-        id: i + 1,
-        label: location.label.isEmpty ? location.slug : location.label,
-        point: point,
-        child: Icon(location.kind.icon, color: location.kind.color, size: 28),
-      ),
-    );
+    if (location.position == null) continue;
+    markers.add(locationMarker(location, id: i + 1));
   }
   return markers;
 }
 
-/// Static preview of a single station's position. Tapping the preview
-/// opens a modal bottom sheet with the interactive variant centred on
-/// the same point. Embed this anywhere a station is rendered to get the
-/// "tap mini-map → bottom sheet" interaction for free.
+/// The shared "big" station map config — every marker, fully interactive
+/// (pan/zoom/tap), used both for the medium/expanded direct embed
+/// ([StationMiniMap]'s own `withFullscreen: true` case) and the compact
+/// sheet's body ([openStationMapSheet]). Centralised so the two never
+/// drift apart the way a hand-duplicated config eventually does.
+MapView<int> _interactiveStationMap({
+  Key? key,
+  required Exercise exercise,
+  required Station station,
+  required List<MapMarkerSpec<int>> markers,
+  required LatLng position,
+  bool withFullscreen = false,
+}) => MapView<int>(
+  key: key,
+  layers: MapConfig.layers,
+  withZoom: true,
+  withCenter: true,
+  withToggle: true,
+  withClustering: false,
+  initialCenter: position,
+  // No initialZoom/initialFit: MapView computes its own defaults from
+  // `markers` (the station plus any scenario locations) using its own
+  // real render size, instead of always centring on the station's own
+  // point alone — so a station with off-site locations doesn't preview
+  // them out of frame, and a station with none zooms tight enough to show
+  // its full name immediately.
+  interactionFlags: MapConfig.interactive,
+  markers: markers,
+  withFullscreen: withFullscreen,
+  fullscreenHeader: withFullscreen
+      ? _MapSheetHeader(station: station, exercise: exercise)
+      : null,
+);
+
+/// A single station's position, embedded anywhere a station is rendered.
+/// By default this is a static preview: tapping it opens an interactive
+/// variant as a modal bottom sheet ([openStationMapSheet]). Pass
+/// [interactive] `true` to render the map directly interactive in place
+/// instead — the same pan/zoom/tap/FAB-command experience as
+/// `CoordinatorScreen`'s all-stations map — with a built-in "expand to
+/// fullscreen" command ([MapView.withFullscreen]) for going bigger still.
+///
+/// [interactive] is the caller's decision, not something this widget
+/// guesses from its own render size: an embed's local width/height can be
+/// misleading (e.g. `WideDetailMapSplit`'s fixed-width left column leaves
+/// the map pane itself narrower than the *screen's* own breakpoint would
+/// suggest), so `StationPositionPanel` forwards its own `fillHeight` —
+/// already the caller's considered answer to "do I have room for this" —
+/// straight through as `interactive`, rather than this widget re-deriving
+/// the same answer from constraints that don't actually tell the whole
+/// story. See [MapConfig.minInteractiveHeight] for the height a caller
+/// should have available before opting in.
 class StationMiniMap extends StatelessWidget {
   const StationMiniMap({
     super.key,
     required this.exercise,
     required this.station,
     this.height = 140,
+    this.interactive = false,
     this.borderRadius = const BorderRadius.all(Radius.circular(8)),
     this.markers,
   });
@@ -82,6 +180,11 @@ class StationMiniMap extends StatelessWidget {
   final Exercise exercise;
   final Station station;
   final double height;
+
+  /// Render directly interactive (pan/zoom/tap, own FAB stack) instead of
+  /// the default static tap-to-expand preview. See the class doc for why
+  /// this is caller-decided rather than self-detected.
+  final bool interactive;
 
   /// Overrides the default administrative-only [stationMarkers] with a
   /// richer scenario set (DESIGN-010's Post viewer: the station's own
@@ -102,41 +205,50 @@ class StationMiniMap extends StatelessWidget {
     if (position == null) {
       return const SizedBox.shrink();
     }
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      // GestureDetector outside, IgnorePointer inside: the wrapper
-      // claims all taps within the mini-map bounds, and the
-      // IgnorePointer prevents FlutterMap's internal marker and map
-      // gestures from competing in the gesture arena. Without that
-      // arena suppression, marker GestureDetectors inside MapView win
-      // the tap before our outer handler fires, which is why an
-      // InkWell-overlay-only approach was failing here.
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => openStationMapSheet(context, exercise, station),
-        child: ClipRRect(
-          borderRadius: borderRadius,
-          child: IgnorePointer(
-            child: MapView(
-              layers: MapConfig.layers,
-              withToggle: false,
-              withClustering: false,
-              initialZoom: 15,
-              initialCenter: position,
-              markers: markers ?? stationMarkers(exercise, station),
+    final markerList = markers ?? stationMarkers(exercise, station);
+    final content = interactive
+        ? ClipRRect(
+            borderRadius: borderRadius,
+            child: _interactiveStationMap(
+              exercise: exercise,
+              station: station,
+              markers: markerList,
+              position: position,
+              withFullscreen: true,
             ),
-          ),
-        ),
-      ),
-    );
+          )
+        // GestureDetector outside, IgnorePointer inside: the wrapper
+        // claims all taps within the mini-map bounds, and the
+        // IgnorePointer prevents FlutterMap's internal marker and map
+        // gestures from competing in the gesture arena. Without that
+        // arena suppression, marker GestureDetectors inside MapView win
+        // the tap before our outer handler fires, which is why an
+        // InkWell-overlay-only approach was failing here.
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => openStationMapSheet(context, exercise, station),
+            child: ClipRRect(
+              borderRadius: borderRadius,
+              child: IgnorePointer(
+                child: MapView(
+                  layers: MapConfig.layers,
+                  withToggle: false,
+                  withClustering: false,
+                  initialCenter: position,
+                  markers: markerList,
+                ),
+              ),
+            ),
+          );
+    return SizedBox(height: height, width: double.infinity, child: content);
   }
 }
 
-/// Opens the interactive single-station map in a modal bottom sheet.
-/// Exposed as a top-level function so other surfaces (e.g. a future
-/// list row that does not embed [StationMiniMap]) can trigger the same
-/// interaction.
+/// Opens the interactive single-station map as a modal bottom sheet —
+/// compact windows only; medium/expanded windows show the same map
+/// directly interactive in place instead (see [StationMiniMap]). Exposed
+/// as a top-level function so other surfaces (e.g. a future list row that
+/// does not embed [StationMiniMap]) can trigger the same interaction.
 Future<void> openStationMapSheet(
   BuildContext context,
   Exercise exercise,
@@ -147,7 +259,7 @@ Future<void> openStationMapSheet(
     return Future.value();
   }
   final markers = stationMarkers(exercise, station);
-  final points = markers.map((m) => m.point).toList();
+
   return showRingdrillActionSheet<void>(
     context: context,
     builder: (sheetContext) {
@@ -160,21 +272,11 @@ Future<void> openStationMapSheet(
           children: [
             _MapSheetHeader(station: station, exercise: exercise),
             Expanded(
-              child: MapView(
-                layers: MapConfig.layers,
-                withZoom: true,
-                withCenter: true,
-                withToggle: true,
-                withClustering: false,
-                initialZoom: 16,
-                initialCenter: position,
-                // A location marker may sit away from the station's own
-                // point; fit all of them (falls back to initialCenter/Zoom
-                // above when there's nothing to fit, i.e. fewer than two
-                // points — see LatlngListX.fit).
-                initialFit: points.fit(),
-                interactionFlags: MapConfig.interactive,
+              child: _interactiveStationMap(
+                exercise: exercise,
+                station: station,
                 markers: markers,
+                position: position,
               ),
             ),
           ],
@@ -195,45 +297,25 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mirror the leading badge from the Stations list rows so the sheet
-    // header reads as "the same station, viewed bigger". The exercise
-    // number is the 1-based position in the unfiltered exercises list;
-    // fall back to just the station index if the lookup fails.
+    // Mirrors StationExerciseScreen's own AppBar exactly (station_screen.dart)
+    // — same MasterDetailLeading close-X, same toolbarHeight/SheetTitle
+    // shape, the formatted post number folded into the primary text rather
+    // than a separate badge widget — so the map sheet reads as "the same
+    // station header, viewed bigger" instead of inventing its own chrome.
+    // This map sheet is always a modal (dialog or bottom sheet), never an
+    // inline MasterDetailPane body, so `onClose` always just pops it.
     final service = ProgramService();
     final program = service.activeProgram;
-    final exercises = service.loadExercises();
-    final exerciseIndex = exercises.indexWhere((e) => e.uuid == exercise.uuid);
-    final label = exerciseIndex < 0
-        ? '${station.index + 1}'
-        : Numbering.station(
-            program?.stationNumberFormat ?? StationNumberFormat.dotted,
-            exerciseNumber: exerciseIndex + 1,
-            stationIndex: station.index,
-          );
-    // Mirror the Stations-tab badge: tertiary swatch when at least one
-    // RolePlay ("markør") points at this station, so the map sheet reads
-    // the same as the list row it was opened from.
-    final hasRoles = service.loadRolePlays().any(
-      (r) => r.exerciseUuid == exercise.uuid && r.stationIndex == station.index,
-    );
-    // Use a real AppBar so the header picks up `AppBarTheme` (brandDeep
-    // background, white foreground, elevation) and reads identically to
-    // the AppBar atop every viewer-sheet body in the app — the bar that
-    // sits inside StationExerciseScreen, RolePlayScreen and so on. The
-    // custom Padding/Row this replaced inherited the action sheet's
-    // light surface color and looked out of place.
+    final exerciseNumber =
+        service.loadExercises().indexWhere((e) => e.uuid == exercise.uuid) + 1;
     return AppBar(
-      automaticallyImplyLeading: false,
+      leading: MasterDetailLeading(onClose: () => Navigator.of(context).pop()),
       toolbarHeight: 72,
-      leadingWidth: 64,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16),
-        child: Center(
-          child: StationNumberBadge(label: label, hasRoles: hasRoles),
-        ),
-      ),
       title: SheetTitle(
-        primary: station.name,
+        primary: station.numberAndName(
+          program?.stationNumberFormat ?? StationNumberFormat.dotted,
+          exerciseNumber: exerciseNumber < 1 ? 1 : exerciseNumber,
+        ),
         secondary: exercise.name,
         primaryOverrides: _stationOverrides(exercise, station),
         secondaryOverrides: program == null

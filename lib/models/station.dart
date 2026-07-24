@@ -47,6 +47,18 @@ sealed class Station with _$Station {
 }
 
 extension StationNumbering on Station {
+  /// This station's formatted number alone ([Numbering.station], per
+  /// [format] and the 1-based [exerciseNumber]) — e.g. "1.1" / "1a".
+  /// Map marker labels use this rather than [numberAndName]: the number
+  /// takes far less room above the pin and matches the StationNumberBadge
+  /// used everywhere else (see `ProgramService.getLocations`).
+  String numberLabel(StationNumberFormat format, {required int exerciseNumber}) =>
+      Numbering.station(
+        format,
+        exerciseNumber: exerciseNumber,
+        stationIndex: index,
+      );
+
   /// This station's formatted number ([Numbering.station], per [format] and
   /// the 1-based [exerciseNumber]) followed by its [name] — e.g. "1.1 Turgåer".
   /// The raw [name] is used as-is; the caller resolves any plan-variable
@@ -54,7 +66,5 @@ extension StationNumbering on Station {
   String numberAndName(
     StationNumberFormat format, {
     required int exerciseNumber,
-  }) =>
-      '${Numbering.station(format, exerciseNumber: exerciseNumber, stationIndex: index)} '
-      '$name';
+  }) => '${numberLabel(format, exerciseNumber: exerciseNumber)} $name';
 }

@@ -6,7 +6,12 @@ import 'package:ringdrill/models/station.dart';
 part 'exercise.freezed.dart';
 part 'exercise.g.dart';
 
-typedef StationLocation = ((String, int), String, LatLng);
+/// `(id, label, point, shortLabel)`. [shortLabel] is the compact on-map
+/// chip text for overview zooms (a station's plan number, e.g. "1.2") —
+/// null when a producer has none to offer, in which case [label] renders
+/// at every zoom labels are visible at all (see
+/// `MapConfig.labelDetailZoomFor`, `LatlngListX.toMarkerSpecs`).
+typedef StationLocation = ((String, int), String, LatLng, String?);
 
 /// Represents an immutable exercise with a start and end time
 @freezed
@@ -56,14 +61,18 @@ extension ExerciseX on Exercise {
         (uuid, i++),
         [if (withExersiceName) name, s.name].join(' | '),
         s.position!,
+        null,
       ));
     }
     return markers;
   }
 
-  /// Like [getLocations] but labels each positioned station with its station
-  /// *number* (e.g. "1.2" / "1a") instead of its name, so map markers read the
-  /// same token as [StationNumberBadge].
+  /// Like [getLocations] but labels each positioned station with its number
+  /// + name (e.g. "1.2 Turgåer") and carries the number alone (e.g. "1.2")
+  /// as the marker's `shortLabel` — the app-wide map convention: the
+  /// number-only chip shows at overview zooms (matching
+  /// [StationNumberBadge]), expanding to the full label once zoomed in
+  /// close enough to have room for it (`MapConfig.labelDetailZoomFor`).
   ///
   /// [exerciseNumber] is the 1-based position of this exercise in the program
   /// (the caller knows the program order; the exercise itself does not). The
@@ -87,15 +96,12 @@ extension ExerciseX on Exercise {
     final markers = <StationLocation>[];
     for (final s in stations) {
       if (s.position == null) continue;
-      markers.add((
-        (uuid, positioned++),
-        Numbering.station(
-          format,
-          exerciseNumber: exerciseNumber,
-          stationIndex: subByStationIndex[s.index] ?? 0,
-        ),
-        s.position!,
-      ));
+      final number = Numbering.station(
+        format,
+        exerciseNumber: exerciseNumber,
+        stationIndex: subByStationIndex[s.index] ?? 0,
+      );
+      markers.add(((uuid, positioned++), '$number ${s.name}', s.position!, number));
     }
     return markers;
   }

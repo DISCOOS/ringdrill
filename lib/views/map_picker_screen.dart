@@ -83,6 +83,7 @@ class _MapPickerScreenState<K> extends State<MapPickerScreen<K>> {
       MapMarkerSpec<K>(
         id: spec.id,
         label: spec.label,
+        shortLabel: spec.shortLabel,
         point: spec.point,
         clusterGroup: spec.clusterGroup,
         highlighted: spec.highlighted,

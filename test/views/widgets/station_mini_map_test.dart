@@ -61,6 +61,12 @@ void main() {
       expect(markers, hasLength(2));
       final positionMarker = markers.firstWhere((m) => m.id == 0);
       expect(positionMarker.point, stationPosition);
+      // The full label always includes the station's plan number ahead of
+      // its name ("1.1 Post 1"), not the name alone — the exact
+      // inconsistency this session's consolidation fixed across every
+      // station-position marker in the app.
+      expect(positionMarker.label, '1.1 Post 1');
+      expect(positionMarker.shortLabel, '1.1');
 
       final locationMarker = markers.firstWhere((m) => m.id != 0);
       expect(locationMarker.point, home.position);

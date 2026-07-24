@@ -28,6 +28,7 @@ import 'package:ringdrill/views/widgets/expandable_tile.dart';
 import 'package:ringdrill/views/widgets/face_badge_icon.dart';
 import 'package:ringdrill/views/widgets/ringdrill_picker.dart';
 import 'package:ringdrill/views/widgets/ringdrill_text.dart';
+import 'package:ringdrill/views/widgets/role_mini_map.dart';
 import 'package:ringdrill/views/widgets/role_number_badge.dart';
 import 'package:ringdrill/views/widgets/role_position_panel.dart';
 import 'package:ringdrill/views/widgets/roleplay_description_rollup.dart';
@@ -232,16 +233,13 @@ class _RolePlayListViewState extends State<RolePlayListView> {
         _service.activeProgram?.stationNumberFormat ??
         StationNumberFormat.dotted;
     final stationIndex = rolePlay.stationIndex;
-    if (stationIndex == null) {
-      return format == StationNumberFormat.alpha
-          ? '$exerciseNumber?'
-          : '$exerciseNumber.?';
-    }
-    return Numbering.role(
+    final roleNumber = stationIndex == null
+        ? 0
+        : _service.roleNumberAtStation(rolePlay, stationIndex);
+    return rolePlay.numberLabel(
       format,
       exerciseNumber: exerciseNumber,
-      stationIndex: stationIndex,
-      roleNumber: _service.roleNumberAtStation(rolePlay, stationIndex),
+      roleNumber: roleNumber,
     );
   }
 
@@ -347,6 +345,7 @@ class _RolePlayListViewState extends State<RolePlayListView> {
           exercise,
           rolePlay,
           actor,
+          exerciseNumber,
         ),
       ),
     );
@@ -387,23 +386,44 @@ class _RolePlayListViewState extends State<RolePlayListView> {
     Exercise exercise,
     RolePlay rolePlay,
     Actor? actor,
+    int exerciseNumber,
   ) {
+    final station = _stationFor(exercise, rolePlay);
     // Scenario/Position/Cast, each spaced evenly via the Column's own
     // `spacing` below — no separate divider widget needed.
     final sections = <Widget>[
       RolePlayDescriptionRollup(
         exercise: exercise,
         rolePlay: rolePlay,
-        station: _stationFor(exercise, rolePlay),
+        station: station,
         role: AppUserRole.director,
       ),
       if (rolePlay.position != null)
-        RolePositionPanel(
-          key: ValueKey('role-map-${rolePlay.uuid}'),
-          position: rolePlay.position!,
-          withTitle: true,
-          withBorder: true,
-          mapHeight: 140,
+        // Builder: roleContextMarkers resolves scoped fields, so it needs a
+        // context inside whatever resolve scopes wrap this tile — and the
+        // same post/person context pins the RolePlayScreen detail panel
+        // shows must appear here too, since compact windows only ever see
+        // this tile (the detail screen is a medium/expanded surface).
+        Builder(
+          builder: (context) {
+            final overrides = _overridesFor(exercise, rolePlay);
+            return RolePositionPanel(
+              key: ValueKey('role-map-${rolePlay.uuid}'),
+              exercise: exercise,
+              rolePlay: rolePlay,
+              station: station,
+              overrides: overrides,
+              withTitle: true,
+              withBorder: true,
+              mapHeight: 140,
+              extraMarkers: roleContextMarkers(
+                context,
+                rolePlay,
+                station,
+                overrides: overrides,
+              ).markers,
+            );
+          },
         ),
       _buildCastSection(context, l10n, rolePlay, actor),
     ];

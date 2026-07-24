@@ -59,24 +59,33 @@ class PositionFormField<K> extends FormField<LatLng> {
            final l10n = AppLocalizations.of(state.context)!;
 
            Future<void> openPicker() async {
-             // With a position, open on it. Without one, frame the picker on
-             // the surrounding markers (e.g. sibling stations) instead of
-             // the global default centre, so the user places the new point
-             // near its context.
+             // With a position, open on it — no fit, since editing an
+             // existing point should show where it currently is, not
+             // reframe to the sibling context. Without one, frame the
+             // picker on the surrounding markers (e.g. sibling stations)
+             // instead of the global default centre, so the user places the
+             // new point near its context; MapConfig.fitFor handles zero,
+             // one or many sibling markers uniformly, so there's no need to
+             // special-case the count here.
              final points = markers.map((m) => m.point).toList(growable: false);
              final LatLng center;
              CameraFit? fit;
              if (position != null) {
                center = position;
-             } else if (points.isEmpty) {
-               center = MapConfig.initialCenter;
-             } else if (points.length == 1) {
-               center = points.first;
              } else {
                center = points.average();
-               fit =
-                   points.centroidFit() ??
-                   CameraFit.coordinates(coordinates: points);
+               // Flags mirror MapPickerScreen's own defaults (all true,
+               // since this call site doesn't override them) so the initial
+               // framing matches what pressing "centre" would produce.
+               fit = MapConfig.fitFor(
+                 points,
+                 withSearch: true,
+                 withZoom: true,
+                 withCenter: true,
+                 withLocate: true,
+                 viewport: MediaQuery.sizeOf(state.context),
+                 labels: markers.map((m) => m.label),
+               );
              }
              final selected = await openFormSurface<LatLng>(
                state.context,

@@ -184,7 +184,10 @@ void main() {
     await _awaitSheetOpen(tester);
 
     expect(find.byType(StationExerciseScreen), findsOneWidget);
-    expect(find.text('Station Kanal 8'), findsWidgets);
+    // The SheetTitle prefixes the resolved name with the formatted post
+    // number (Station.numberAndName) — "1.1 Station Kanal 8", not the bare
+    // resolved name alone.
+    expect(find.text('1.1 Station Kanal 8'), findsWidgets);
     expect(find.textContaining('{{var.frekvens}}'), findsNothing);
   });
 }
