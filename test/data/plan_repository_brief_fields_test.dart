@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,19 +11,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 // drop them silently. The repository now persists them in parallel sidecar
 // keys; these tests assert they survive a save → reload round-trip.
 
-const _programUuid = 'prog-1';
+const _planUuid = 'prog-1';
 
-Program _shell({
+Plan _shell({
   String? briefIntroMd,
   String? commsMd,
   String? beforeRoundMd,
 }) {
   final now = DateTime.utc(2026, 1, 1);
-  return Program(
-    uuid: _programUuid,
+  return Plan(
+    uuid: _planUuid,
     name: 'Plan',
     description: '',
-    metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
+    metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
     teams: const [],
     sessions: const [],
     exercises: const [],
@@ -63,12 +63,12 @@ Exercise _exercise({
   commsMd: commsMd,
 );
 
-Future<ProgramRepository> _repo() async {
+Future<PlanRepository> _repo() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final repo = ProgramRepository(prefs);
-  await repo.saveProgramShell(_shell());
-  await repo.setActiveProgramUuid(_programUuid);
+  final repo = PlanRepository(prefs);
+  await repo.savePlanShell(_shell());
+  await repo.setActivePlanUuid(_planUuid);
   return repo;
 }
 
@@ -152,9 +152,9 @@ void main() {
     expect(repo.loadRolePlays().single.background, 'Bakgrunn');
   });
 
-  test('Program brief fields survive a round-trip', () async {
+  test('Plan brief fields survive a round-trip', () async {
     final repo = await _repo();
-    await repo.saveProgramShell(
+    await repo.savePlanShell(
       _shell(
         briefIntroMd: 'Intro',
         commsMd: 'Talegrupper',
@@ -162,15 +162,15 @@ void main() {
       ),
     );
 
-    final program = repo.loadProgram(_programUuid);
-    expect(program!.briefIntroMd, 'Intro');
-    expect(program.commsMd, 'Talegrupper');
-    expect(program.beforeRoundMd, 'Før runde');
+    final plan = repo.loadPlan(_planUuid);
+    expect(plan!.briefIntroMd, 'Intro');
+    expect(plan.commsMd, 'Talegrupper');
+    expect(plan.beforeRoundMd, 'Før runde');
   });
 
-  test('saveProgram round-trips nested exercise + roleplay markdown', () async {
+  test('savePlan round-trips nested exercise + roleplay markdown', () async {
     final repo = await _repo();
-    final program = _shell(briefIntroMd: 'Intro').copyWith(
+    final plan = _shell(briefIntroMd: 'Intro').copyWith(
       exercises: [
         _exercise(methodMd: 'Metode'),
       ],
@@ -184,9 +184,9 @@ void main() {
         ),
       ],
     );
-    await repo.saveProgram(program);
+    await repo.savePlan(plan);
 
-    final loaded = repo.loadProgram(_programUuid)!;
+    final loaded = repo.loadPlan(_planUuid)!;
     expect(loaded.briefIntroMd, 'Intro');
     expect(loaded.exercises.single.methodMd, 'Metode');
     expect(loaded.rolePlays.single.behavior, 'Oppførsel');

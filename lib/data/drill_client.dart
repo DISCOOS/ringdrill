@@ -32,10 +32,15 @@ class DrillApiException implements Exception {
 }
 
 /// Upload response from drills-upload.
+///
+/// [planId] is the Dart-side name (Program -> Plan rename); the wire key,
+/// query param and `x-program-id` header stay `programId` — that's the
+/// Netlify functions' API contract (`netlify/functions/*.js`, AGENTS.md rule
+/// 8), a separate system this refactor's Dart-only rename does not reach.
 @immutable
 class DrillUploadResponse {
   final String slug;
-  final String programId;
+  final String planId;
   final String version;
   final String etag;
   final Uri latestUrl;
@@ -49,7 +54,7 @@ class DrillUploadResponse {
 
   const DrillUploadResponse({
     required this.slug,
-    required this.programId,
+    required this.planId,
     required this.version,
     required this.etag,
     required this.latestUrl,
@@ -61,7 +66,7 @@ class DrillUploadResponse {
   factory DrillUploadResponse.fromJson(Map<String, dynamic> j) =>
       DrillUploadResponse(
         slug: j['slug'] as String,
-        programId: j['programId'] as String,
+        planId: j['programId'] as String,
         version: j['version'] as String,
         etag: j['etag'] as String,
         latestUrl: Uri.parse(j['latest'] as String),
@@ -136,7 +141,7 @@ class DrillDownloadResponse {
 /// Market feed item (published drills only).
 @immutable
 class MarketFeedItem {
-  final String programId;
+  final String planId;
   final String slug;
   final String name;
 
@@ -159,7 +164,7 @@ class MarketFeedItem {
   final Uri latestUrl;
   final DateTime? updatedAt;
   const MarketFeedItem({
-    required this.programId,
+    required this.planId,
     required this.slug,
     required this.name,
     this.description = '',
@@ -172,7 +177,7 @@ class MarketFeedItem {
   });
 
   factory MarketFeedItem.fromJson(Map<String, dynamic> j) => MarketFeedItem(
-    programId: j['programId'] as String,
+    planId: j['programId'] as String,
     slug: j['slug'] as String,
     name: j['name'] as String,
     description: j['description'] as String? ?? '',
@@ -209,7 +214,7 @@ class MarketFeedPageResponse {
 class AdminListItem {
   final String slug;
   final String? ownerId;
-  final String? programId;
+  final String? planId;
   final bool? published;
   final int? versionCount;
   final DateTime? updatedAt;
@@ -220,7 +225,7 @@ class AdminListItem {
   const AdminListItem({
     required this.slug,
     this.ownerId,
-    this.programId,
+    this.planId,
     this.published,
     this.versionCount,
     this.latest,
@@ -231,7 +236,7 @@ class AdminListItem {
   factory AdminListItem.fromJson(Map<String, dynamic> j) => AdminListItem(
     slug: j['slug'] as String,
     ownerId: j['ownerId'] as String?,
-    programId: j['programId'] as String?,
+    planId: j['programId'] as String?,
     published: j['published'] as bool?,
     versionCount: (j['versionCount'] as num?)?.toInt(),
     latest: j['latest'] == null
@@ -358,10 +363,10 @@ class DrillClient {
     String ownerId = 'anon',
     bool published = false,
   }) async {
-    final program = file.program();
+    final plan = file.plan();
     final qs = <String, String>{
       'ownerId': ownerId,
-      'programId': program.uuid,
+      'programId': plan.uuid,
       // Send an explicit version only when the caller has actually set one on
       // the DrillFile (file.version > 0 means "I uploaded version N before, so
       // tag this one N+1"). When unset, let the backend auto-bump to the next
@@ -393,10 +398,10 @@ class DrillClient {
       final version = res.headers['x-version'] ?? '';
       final latestUrl = res.headers['x-latest'];
       final versionedUrl = res.headers['x-versioned'];
-      final programId = res.headers['x-program-id'] ?? '';
+      final planId = res.headers['x-program-id'] ?? '';
       return DrillUploadResponse(
         slug: file.slug,
-        programId: programId,
+        planId: planId,
         version: version,
         etag: etag,
         latestUrl: latestUrl != null ? Uri.parse(latestUrl) : uri,

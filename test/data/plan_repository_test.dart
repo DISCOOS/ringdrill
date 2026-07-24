@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 
@@ -37,14 +37,14 @@ Exercise _ex(String uuid, String name, {int index = 0}) => Exercise(
 // ---------------------------------------------------------------------------
 
 void main() {
-  group('ProgramRepository._normaliseExerciseOrder', () {
+  group('PlanRepository._normaliseExerciseOrder', () {
     test('legacy plan (all index 0, n>1) loads in name order with indices 0..n-1', () {
       final items = [
         _ex('c', 'Zebra', index: 0),
         _ex('a', 'Alpha', index: 0),
         _ex('b', 'Mango', index: 0),
       ];
-      final result = ProgramRepository.normaliseExerciseOrderForTest(items);
+      final result = PlanRepository.normaliseExerciseOrderForTest(items);
       expect(result.map((e) => e.name).toList(), ['Alpha', 'Mango', 'Zebra']);
       expect(result.map((e) => e.index).toList(), [0, 1, 2]);
     });
@@ -55,7 +55,7 @@ void main() {
         _ex('b', 'Alpha', index: 0),
         _ex('c', 'Mango', index: 1),
       ];
-      final result = ProgramRepository.normaliseExerciseOrderForTest(items);
+      final result = PlanRepository.normaliseExerciseOrderForTest(items);
       expect(result.map((e) => e.name).toList(), ['Alpha', 'Mango', 'Zebra']);
       // Indices preserved exactly as stored.
       expect(result.map((e) => e.index).toList(), [0, 1, 2]);
@@ -67,7 +67,7 @@ void main() {
         _ex('b', 'Alpha', index: 2), // duplicate → invalid
         _ex('c', 'Gamma', index: 2),
       ];
-      final result = ProgramRepository.normaliseExerciseOrderForTest(items);
+      final result = PlanRepository.normaliseExerciseOrderForTest(items);
       expect(result.map((e) => e.name).toList(), ['Alpha', 'Beta', 'Gamma']);
       expect(result.map((e) => e.index).toList(), [0, 1, 2]);
     });
@@ -77,21 +77,21 @@ void main() {
         _ex('a', 'Beta', index: 0),
         _ex('b', 'Alpha', index: 5), // gap → invalid
       ];
-      final result = ProgramRepository.normaliseExerciseOrderForTest(items);
+      final result = PlanRepository.normaliseExerciseOrderForTest(items);
       expect(result.map((e) => e.name).toList(), ['Alpha', 'Beta']);
       expect(result.map((e) => e.index).toList(), [0, 1]);
     });
 
     test('single-exercise plan with index 0 is treated as already valid', () {
       final items = [_ex('a', 'Solo', index: 0)];
-      final result = ProgramRepository.normaliseExerciseOrderForTest(items);
+      final result = PlanRepository.normaliseExerciseOrderForTest(items);
       expect(result.length, 1);
       expect(result.first.name, 'Solo');
       expect(result.first.index, 0);
     });
 
     test('empty list returns empty', () {
-      final result = ProgramRepository.normaliseExerciseOrderForTest([]);
+      final result = PlanRepository.normaliseExerciseOrderForTest([]);
       expect(result, isEmpty);
     });
   });

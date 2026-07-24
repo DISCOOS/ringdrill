@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
@@ -37,16 +37,16 @@ void main() {
     });
 
     final prefs = await SharedPreferences.getInstance();
-    final repo = ProgramRepository(prefs);
+    final repo = PlanRepository(prefs);
 
     await repo.init();
 
-    final programs = repo.listPrograms();
-    expect(programs, hasLength(1));
-    final programUuid = programs.single.uuid;
-    expect(repo.activeProgramUuid, programUuid);
-    expect(repo.loadExercises(programUuid), [exercise]);
-    expect(repo.loadTeams(programUuid), [team]);
+    final plans = repo.listPlans();
+    expect(plans, hasLength(1));
+    final planUuid = plans.single.uuid;
+    expect(repo.activePlanUuid, planUuid);
+    expect(repo.loadExercises(planUuid), [exercise]);
+    expect(repo.loadTeams(planUuid), [team]);
     expect(prefs.containsKey('e:${exercise.uuid}'), isFalse);
     expect(prefs.containsKey('t:${team.uuid}'), isFalse);
     expect(prefs.getString(AppConfig.keyLibrarySchema), '1');
@@ -54,6 +54,6 @@ void main() {
     final keysAfterFirstInit = prefs.getKeys().toSet();
     await repo.init();
     expect(prefs.getKeys(), keysAfterFirstInit);
-    expect(repo.listPrograms(), hasLength(1));
+    expect(repo.listPlans(), hasLength(1));
   });
 }

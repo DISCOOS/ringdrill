@@ -5,28 +5,28 @@ import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Regression test for the bug where a catalog refresh silently destroyed the
 /// local cast roster. Actors are local PII and stripped from the catalog
 /// archive server-side (ADR-0018), so the downloaded remote always has an
-/// empty actor list. `_overwriteCatalogProgram` used to save that empty list
+/// empty actor list. `_overwriteCatalogPlan` used to save that empty list
 /// over the local copy, wiping the user's actors and breaking every
 /// role↔actor assignment — the "marker list had a name yesterday, it's empty
 /// today" report.
 ///
 /// The fix merges locally-stored actors back in when overwriting from the
-/// catalog (and on reinstall via [ProgramService.installFromFile]).
+/// catalog (and on reinstall via [PlanService.installFromFile]).
 void main() {
   const slug = 'cast-plan';
   const installedEtag = 'etag-v1';
 
-  Program buildProgram(
-    String programUuid, {
+  Plan buildPlan(
+    String planUuid, {
     required List<Actor> actors,
     required List<RolePlay> rolePlays,
   }) {
@@ -50,12 +50,12 @@ void main() {
       ],
       endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
     );
-    final base = Program(
-      uuid: programUuid,
+    final base = Plan(
+      uuid: planUuid,
       name: 'Cast Plan',
       description: '',
-      metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
-      source: ProgramSource.catalog(
+      metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
+      source: PlanSource.catalog(
         slug: slug,
         latestEtag: installedEtag,
         installedAt: now,
@@ -71,16 +71,16 @@ void main() {
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   tearDown(() async {
-    await ProgramService().clearAllForTest();
+    await PlanService().clearAllForTest();
   });
 
   test('silent catalog refresh preserves locally-stored actors', () async {
-    final service = ProgramService();
-    const programUuid = 'program-cast';
+    final service = PlanService();
+    const planUuid = 'plan-cast';
     const actor = Actor(
       uuid: 'actor-1',
       realName: 'Kari Nordmann',
@@ -95,29 +95,29 @@ void main() {
       actorUuid: 'actor-1',
     );
 
-    final local = buildProgram(
-      programUuid,
+    final local = buildPlan(
+      planUuid,
       actors: const [actor],
       rolePlays: const [rolePlay],
     );
-    await service.replaceProgram(local);
+    await service.replacePlan(local);
 
     // Sanity: the actor and its cast assignment are stored locally, and the
     // local copy has no divergence from the installed snapshot (so the
     // refresh takes the silent path, not the conflict dialog).
-    final stored = service.loadProgram(programUuid)!;
+    final stored = service.loadPlan(planUuid)!;
     expect(stored.actors.map((a) => a.uuid), contains('actor-1'));
     expect(stored.rolePlays.single.actorUuid, 'actor-1');
     expect(stored.computeContentHash(), stored.contentHash);
 
     // Remote mirrors the same plan but with actors stripped server-side. The
     // roleplay still references actor-1.
-    final remote = buildProgram(
-      programUuid,
+    final remote = buildPlan(
+      planUuid,
       actors: const [],
       rolePlays: const [rolePlay],
     );
-    final remoteBytes = DrillFile.fromProgram(remote, '$slug.drill').content;
+    final remoteBytes = DrillFile.fromPlan(remote, '$slug.drill').content;
 
     final client = DrillClient(
       baseUrl: 'https://example.test',
@@ -142,7 +142,7 @@ void main() {
 
     var conflictCalled = false;
     final outcome = await service.refreshCatalogItem(
-      programUuid,
+      planUuid,
       client,
       onConflict:
           (
@@ -164,7 +164,7 @@ void main() {
     );
     expect(outcome.kind, CatalogRefreshKind.updatedSilently);
 
-    final refreshed = service.loadProgram(programUuid)!;
+    final refreshed = service.loadPlan(planUuid)!;
     expect(
       refreshed.actors.map((a) => a.uuid),
       contains('actor-1'),

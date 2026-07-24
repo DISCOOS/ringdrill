@@ -4,9 +4,9 @@ import 'package:http/testing.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/models/exercise.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Regression test for the bug where local-only edits to a catalog-sourced
@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// returned upToDate without ever consulting the local contentHash, so users
 /// got no conflict dialog and no way to revert.
 ///
-/// The fix in [ProgramService.refreshCatalogItem] computes `hasLocalChanges`
+/// The fix in [PlanService.refreshCatalogItem] computes `hasLocalChanges`
 /// before the 304 short-circuit, downloads the unchanged remote copy, and
 /// passes the divergence through the conflict callback with
 /// `remoteUnchanged: true`.
@@ -22,7 +22,7 @@ void main() {
   const slug = 'sample-plan';
   const installedEtag = 'etag-v1';
 
-  Program buildBaselineProgram(String programUuid) {
+  Plan buildBaselinePlan(String planUuid) {
     final now = DateTime.utc(2026, 5, 28);
     final exercise = Exercise(
       uuid: 'exercise-1',
@@ -43,16 +43,16 @@ void main() {
       ],
       endTime: const SimpleTimeOfDay(hour: 8, minute: 17),
     );
-    final baseline = Program(
-      uuid: programUuid,
+    final baseline = Plan(
+      uuid: planUuid,
       name: 'Sample Plan',
       description: '',
-      metadata: ProgramMetadata(
+      metadata: PlanMetadata(
         created: now,
         updated: now,
         version: '1.0',
       ),
-      source: ProgramSource.catalog(
+      source: PlanSource.catalog(
         slug: slug,
         latestEtag: installedEtag,
         installedAt: now,
@@ -66,8 +66,8 @@ void main() {
     return baseline.copyWith(contentHash: baseline.computeContentHash());
   }
 
-  DrillClient buildMockClient(Program remote) {
-    final remoteBytes = DrillFile.fromProgram(remote, '$slug.drill').content;
+  DrillClient buildMockClient(Plan remote) {
+    final remoteBytes = DrillFile.fromPlan(remote, '$slug.drill').content;
     return DrillClient(
       baseUrl: 'https://example.test',
       httpClient: MockClient((request) async {
@@ -92,43 +92,43 @@ void main() {
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
-    await ProgramService().init();
+    await PlanService().init();
   });
 
   tearDown(() async {
-    await ProgramService().clearAllForTest();
+    await PlanService().clearAllForTest();
   });
 
   test(
     'local-only edit triggers conflict callback with remoteUnchanged=true',
     () async {
-      final service = ProgramService();
-      final baseline = buildBaselineProgram('program-edit');
+      final service = PlanService();
+      final baseline = buildBaselinePlan('plan-edit');
 
       // Pretend the user installed the plan from the catalog: baseline
       // contentHash matches what is on disk.
-      await service.replaceProgram(baseline);
+      await service.replacePlan(baseline);
 
-      // Locally edit the exercise start time. replaceProgram does NOT recompute
-      // contentHash — that is precisely what marks the program as having
+      // Locally edit the exercise start time. replacePlan does NOT recompute
+      // contentHash — that is precisely what marks the plan as having
       // unpublished edits.
       final editedExercise = baseline.exercises.single.copyWith(
         startTime: const SimpleTimeOfDay(hour: 9, minute: 30),
       );
       final edited = baseline.copyWith(exercises: [editedExercise]);
-      await service.replaceProgram(edited);
+      await service.replacePlan(edited);
 
       // Sanity check: contentHash now diverges from the live content.
-      final stored = service.loadProgram(baseline.uuid)!;
+      final stored = service.loadPlan(baseline.uuid)!;
       expect(stored.contentHash, isNotNull);
       expect(stored.computeContentHash(), isNot(stored.contentHash));
 
-      // The remote bytes mirror the originally installed program (unchanged).
+      // The remote bytes mirror the originally installed plan (unchanged).
       final client = buildMockClient(baseline);
 
       bool conflictCallbackInvoked = false;
       bool seenRemoteUnchanged = false;
-      ProgramDiff? seenDiff;
+      PlanDiff? seenDiff;
 
       final outcome = await service.refreshCatalogItem(
         baseline.uuid,
@@ -163,7 +163,7 @@ void main() {
       expect(outcome.remoteUnchanged, isTrue);
 
       // After overwriteLocal the local copy is back to baseline start time.
-      final restored = service.loadProgram(baseline.uuid)!;
+      final restored = service.loadPlan(baseline.uuid)!;
       expect(restored.exercises.single.startTime.hour, 8);
       expect(restored.exercises.single.startTime.minute, 0);
       // contentHash is re-synced to remote content, so a subsequent refresh
@@ -175,9 +175,9 @@ void main() {
   test(
     'unchanged remote + clean local short-circuits to upToDate',
     () async {
-      final service = ProgramService();
-      final baseline = buildBaselineProgram('program-clean');
-      await service.replaceProgram(baseline);
+      final service = PlanService();
+      final baseline = buildBaselinePlan('plan-clean');
+      await service.replacePlan(baseline);
 
       final client = buildMockClient(baseline);
 
@@ -213,9 +213,9 @@ void main() {
     'a 404 on HEAD (slug removed from the catalog) reports removedFromCatalog '
     'instead of throwing',
     () async {
-      final service = ProgramService();
-      final baseline = buildBaselineProgram('program-removed');
-      await service.replaceProgram(baseline);
+      final service = PlanService();
+      final baseline = buildBaselinePlan('plan-removed');
+      await service.replacePlan(baseline);
 
       final client = DrillClient(
         baseUrl: 'https://example.test',

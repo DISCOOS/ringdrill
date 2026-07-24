@@ -6,12 +6,12 @@ import 'package:nanoid/nanoid.dart';
 import 'package:ringdrill/data/drill_client.dart';
 import 'package:ringdrill/data/drill_file.dart';
 import 'package:ringdrill/data/drill_library.dart';
-import 'package:ringdrill/data/program_repository.dart';
+import 'package:ringdrill/data/plan_repository.dart';
 import 'package:ringdrill/l10n/app_localizations.dart';
 import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/numbering.dart';
-import 'package:ringdrill/models/program.dart';
+import 'package:ringdrill/models/plan.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
 import 'package:ringdrill/models/team.dart';
@@ -22,7 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 typedef OnSelectExercises =
     Future<Iterable<Exercise>?> Function(Iterable<Exercise> items);
 
-/// Thrown by [ProgramService.deleteProgram] when the user asks to
+/// Thrown by [PlanService.deletePlan] when the user asks to
 /// delete their only remaining plan.
 ///
 /// Per ADR-0038 §"Edge case: no active plan", the app guarantees an
@@ -31,14 +31,14 @@ typedef OnSelectExercises =
 /// the unsupported "no plan" state. UI surfaces catch this and
 /// surface a localized snackbar instead of letting the deletion
 /// proceed.
-class LastProgramDeletionException implements Exception {
-  const LastProgramDeletionException();
+class LastPlanDeletionException implements Exception {
+  const LastPlanDeletionException();
   @override
   String toString() =>
-      'LastProgramDeletionException: refusing to delete the only remaining plan';
+      'LastPlanDeletionException: refusing to delete the only remaining plan';
 }
 
-enum ProgramEventType {
+enum PlanEventType {
   exerciseAdded,
   exerciseDeleted,
   teamSaved,
@@ -46,14 +46,14 @@ enum ProgramEventType {
   rolePlayDeleted,
   actorSaved,
   actorDeleted,
-  programOpened,
-  programImported,
-  programExported,
-  programCreated,
-  programDeleted,
-  programActivated,
-  programInstalled,
-  programRefreshed,
+  planOpened,
+  planImported,
+  planExported,
+  planCreated,
+  planDeleted,
+  planActivated,
+  planInstalled,
+  planRefreshed,
 }
 
 enum CatalogConflictChoice {
@@ -84,14 +84,14 @@ enum CatalogRefreshKind {
 class CatalogRefreshOutcome {
   const CatalogRefreshOutcome({
     required this.kind,
-    required this.programUuid,
+    required this.planUuid,
     this.diff,
     this.remoteUnchanged = false,
   });
 
   final CatalogRefreshKind kind;
-  final String programUuid;
-  final ProgramDiff? diff;
+  final String planUuid;
+  final PlanDiff? diff;
 
   /// True when the catalog server reported no changes (HTTP 304) but the
   /// local copy diverged from the installed snapshot. Distinguishes a real
@@ -117,7 +117,7 @@ class BundleInstallResult {
   bool get isEmpty => imported == 0 && skipped.isEmpty;
 }
 
-/// One inner `.drill` entry that [ProgramService.installBundle] could not
+/// One inner `.drill` entry that [PlanService.installBundle] could not
 /// install, and why.
 class SkippedDrillEntry {
   const SkippedDrillEntry({required this.fileName, required this.reason});
@@ -126,18 +126,18 @@ class SkippedDrillEntry {
   final DrillFormatReason reason;
 }
 
-class ProgramEvent {
+class PlanEvent {
   final DrillFile? file;
-  final Program program;
+  final Plan plan;
   final Exercise? exercise;
   final Team? team;
   final RolePlay? rolePlay;
   final Actor? actor;
-  final ProgramEventType type;
+  final PlanEventType type;
 
-  ProgramEvent(
+  PlanEvent(
     this.type,
-    this.program, {
+    this.plan, {
     this.file,
     this.exercise,
     this.team,
@@ -145,90 +145,90 @@ class ProgramEvent {
     this.actor,
   });
 
-  factory ProgramEvent.added(Program program, Exercise exercise) =>
-      ProgramEvent(ProgramEventType.exerciseAdded, program, exercise: exercise);
+  factory PlanEvent.added(Plan plan, Exercise exercise) =>
+      PlanEvent(PlanEventType.exerciseAdded, plan, exercise: exercise);
 
-  factory ProgramEvent.deleted(Program program, Exercise exercise) =>
-      ProgramEvent(
-        ProgramEventType.exerciseDeleted,
-        program,
+  factory PlanEvent.deleted(Plan plan, Exercise exercise) =>
+      PlanEvent(
+        PlanEventType.exerciseDeleted,
+        plan,
         exercise: exercise,
       );
 
-  factory ProgramEvent.teamSaved(Program program, Team team) =>
-      ProgramEvent(ProgramEventType.teamSaved, program, team: team);
+  factory PlanEvent.teamSaved(Plan plan, Team team) =>
+      PlanEvent(PlanEventType.teamSaved, plan, team: team);
 
-  factory ProgramEvent.rolePlaySaved(Program program, RolePlay rolePlay) =>
-      ProgramEvent(
-        ProgramEventType.rolePlaySaved,
-        program,
+  factory PlanEvent.rolePlaySaved(Plan plan, RolePlay rolePlay) =>
+      PlanEvent(
+        PlanEventType.rolePlaySaved,
+        plan,
         rolePlay: rolePlay,
       );
 
-  factory ProgramEvent.rolePlayDeleted(Program program, RolePlay rolePlay) =>
-      ProgramEvent(
-        ProgramEventType.rolePlayDeleted,
-        program,
+  factory PlanEvent.rolePlayDeleted(Plan plan, RolePlay rolePlay) =>
+      PlanEvent(
+        PlanEventType.rolePlayDeleted,
+        plan,
         rolePlay: rolePlay,
       );
 
-  factory ProgramEvent.actorSaved(Program program, Actor actor) =>
-      ProgramEvent(ProgramEventType.actorSaved, program, actor: actor);
+  factory PlanEvent.actorSaved(Plan plan, Actor actor) =>
+      PlanEvent(PlanEventType.actorSaved, plan, actor: actor);
 
-  factory ProgramEvent.actorDeleted(Program program, Actor actor) =>
-      ProgramEvent(ProgramEventType.actorDeleted, program, actor: actor);
+  factory PlanEvent.actorDeleted(Plan plan, Actor actor) =>
+      PlanEvent(PlanEventType.actorDeleted, plan, actor: actor);
 
-  factory ProgramEvent.opened(Program program, DrillFile file) =>
-      ProgramEvent(ProgramEventType.programOpened, program, file: file);
+  factory PlanEvent.opened(Plan plan, DrillFile file) =>
+      PlanEvent(PlanEventType.planOpened, plan, file: file);
 
-  factory ProgramEvent.imported(Program program, DrillFile file) =>
-      ProgramEvent(ProgramEventType.programImported, program, file: file);
+  factory PlanEvent.imported(Plan plan, DrillFile file) =>
+      PlanEvent(PlanEventType.planImported, plan, file: file);
 
-  factory ProgramEvent.importedProgram(Program program) =>
-      ProgramEvent(ProgramEventType.programImported, program);
+  factory PlanEvent.importedPlan(Plan plan) =>
+      PlanEvent(PlanEventType.planImported, plan);
 
-  factory ProgramEvent.exported(Program program, DrillFile file) =>
-      ProgramEvent(ProgramEventType.programExported, program, file: file);
+  factory PlanEvent.exported(Plan plan, DrillFile file) =>
+      PlanEvent(PlanEventType.planExported, plan, file: file);
 }
 
-class ProgramService {
-  static final ProgramService _instance = ProgramService._internal();
+class PlanService {
+  static final PlanService _instance = PlanService._internal();
 
-  factory ProgramService() => _instance;
+  factory PlanService() => _instance;
 
-  ProgramService._internal();
+  PlanService._internal();
 
-  final StreamController<ProgramEvent> _controller =
+  final StreamController<PlanEvent> _controller =
       StreamController.broadcast();
 
   bool _isReady = false;
-  late final ProgramRepository _repo;
+  late final PlanRepository _repo;
 
-  Stream<ProgramEvent> get events => _controller.stream;
+  Stream<PlanEvent> get events => _controller.stream;
 
   Future<List<Exercise>> init() async {
     if (!_isReady) {
       final prefs = await SharedPreferences.getInstance();
-      _repo = ProgramRepository(prefs);
+      _repo = PlanRepository(prefs);
       await _repo.init();
       _isReady = true;
     }
-    return activeProgram == null ? const [] : _repo.loadExercises();
+    return activePlan == null ? const [] : _repo.loadExercises();
   }
 
-  List<Program> listPrograms() => _isReady ? _repo.listPrograms() : const [];
+  List<Plan> listPlans() => _isReady ? _repo.listPlans() : const [];
 
-  Program? loadProgram(String uuid) =>
-      _isReady ? _repo.loadProgram(uuid) : null;
+  Plan? loadPlan(String uuid) =>
+      _isReady ? _repo.loadPlan(uuid) : null;
 
-  Program? get activeProgram {
+  Plan? get activePlan {
     if (!_isReady) return null;
-    final uuid = _repo.activeProgramUuid;
+    final uuid = _repo.activePlanUuid;
     if (uuid == null) return null;
-    return _repo.loadProgram(uuid);
+    return _repo.loadPlan(uuid);
   }
 
-  String? get activeProgramUuid => _isReady ? _repo.activeProgramUuid : null;
+  String? get activePlanUuid => _isReady ? _repo.activePlanUuid : null;
 
   bool get librarySchemaJustMigrated =>
       _isReady && _repo.librarySchemaJustMigrated;
@@ -236,82 +236,82 @@ class ProgramService {
   Future<void> clearLibrarySchemaJustMigrated() =>
       _isReady ? _repo.clearLibrarySchemaJustMigrated() : Future.value();
 
-  Future<Program> createProgram({
+  Future<Plan> createPlan({
     required String name,
     String description = '',
   }) async {
     final now = DateTime.now();
-    final emptyProgram = Program(
+    final emptyPlan = Plan(
       uuid: nanoid(10),
       name: name,
       description: description,
-      metadata: ProgramMetadata(created: now, updated: now, version: '1.0'),
-      source: const ProgramSource.local(),
+      metadata: PlanMetadata(created: now, updated: now, version: '1.0'),
+      source: const PlanSource.local(),
       teams: const [],
       sessions: const [],
       exercises: const [],
       rolePlays: const [],
       actors: const [],
     );
-    final program = emptyProgram.copyWith(
-      contentHash: emptyProgram.computeContentHash(),
+    final plan = emptyPlan.copyWith(
+      contentHash: emptyPlan.computeContentHash(),
     );
-    await _repo.saveProgramShell(program);
-    _controller.add(ProgramEvent(ProgramEventType.programCreated, program));
-    return program;
+    await _repo.savePlanShell(plan);
+    _controller.add(PlanEvent(PlanEventType.planCreated, plan));
+    return plan;
   }
 
   Future<void> setActive(String uuid) async {
     if (ExerciseService().isStarted) {
-      throw StateError('Cannot switch active program while an exercise runs.');
+      throw StateError('Cannot switch active plan while an exercise runs.');
     }
-    await _repo.setActiveProgramUuid(uuid);
-    final program = _repo.loadProgram(uuid);
-    if (program != null) {
-      _controller.add(ProgramEvent(ProgramEventType.programActivated, program));
+    await _repo.setActivePlanUuid(uuid);
+    final plan = _repo.loadPlan(uuid);
+    if (plan != null) {
+      _controller.add(PlanEvent(PlanEventType.planActivated, plan));
     }
   }
 
-  Future<void> deleteProgram(String uuid) async {
-    if (_repo.activeProgramUuid == uuid && ExerciseService().isStarted) {
-      throw StateError('Cannot delete active program while an exercise runs.');
+  Future<void> deletePlan(String uuid) async {
+    if (_repo.activePlanUuid == uuid && ExerciseService().isStarted) {
+      throw StateError('Cannot delete active plan while an exercise runs.');
     }
     // The library is required to keep at least one plan around so
-    // `activeProgram` is never null (ADR-0038). UI-side guards
+    // `activePlan` is never null (ADR-0038). UI-side guards
     // should catch this before the user attempts the deletion, but
     // the service throws as defence-in-depth in case a call site
     // forgets.
-    if (_repo.listPrograms().length <= 1) {
-      throw const LastProgramDeletionException();
+    if (_repo.listPlans().length <= 1) {
+      throw const LastPlanDeletionException();
     }
-    final program = _repo.loadProgram(uuid);
-    await _repo.deleteProgram(uuid);
-    if (program != null) {
-      _controller.add(ProgramEvent(ProgramEventType.programDeleted, program));
+    final plan = _repo.loadPlan(uuid);
+    await _repo.deletePlan(uuid);
+    if (plan != null) {
+      _controller.add(PlanEvent(PlanEventType.planDeleted, plan));
     }
   }
 
-  /// Wipes every program from the repository, bypassing the
-  /// [LastProgramDeletionException] guard that protects production callers
+  /// Wipes every plan from the repository, bypassing the
+  /// [LastPlanDeletionException] guard that protects production callers
   /// (ADR-0038). Test-only — production code paths must keep at least one
   /// plan around. Drives `tearDown` blocks that reset state between tests.
   @visibleForTesting
   Future<void> clearAllForTest() async {
     if (!_isReady) return;
-    for (final program in List<Program>.from(_repo.listPrograms())) {
-      await _repo.deleteProgram(program.uuid);
+    for (final plan in List<Plan>.from(_repo.listPlans())) {
+      await _repo.deletePlan(plan.uuid);
     }
   }
 
-  Future<void> replaceProgram(Program program) async {
-    await _repo.saveProgram(program);
-    _controller.add(ProgramEvent(ProgramEventType.programRefreshed, program));
+  Future<void> replacePlan(Plan plan) async {
+    await _repo.savePlan(plan);
+    _controller.add(PlanEvent(PlanEventType.planRefreshed, plan));
   }
 
   Exercise? getExercise(String uuid) => _repo.getExercise(uuid);
 
   List<RolePlay> loadRolePlays() {
-    if (activeProgramUuid == null) return const [];
+    if (activePlanUuid == null) return const [];
     return _repo.loadRolePlays();
   }
 
@@ -337,67 +337,67 @@ class ProgramService {
     return (pos < 0 ? peers.length : pos) + 1;
   }
 
-  /// Persists [rolePlay] under the currently active program, creating a
+  /// Persists [rolePlay] under the currently active plan, creating a
   /// default plan first if none exists yet. Mirrors [saveExercise]: every
-  /// mutation that writes nested data must ensure a parent program exists,
-  /// otherwise [_repo.saveRolePlay] (via `_requireProgramUuid`) throws
-  /// `Bad state: No active program.` and the call site has no chance to
+  /// mutation that writes nested data must ensure a parent plan exists,
+  /// otherwise [_repo.saveRolePlay] (via `_requirePlanUuid`) throws
+  /// `Bad state: No active plan.` and the call site has no chance to
   /// recover — see Sentry issue 7503574588.
   Future<void> saveRolePlay(
     AppLocalizations localizations,
     RolePlay rolePlay,
   ) async {
-    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _ensureActivePlan(localizations.defaultPlanName);
     await _repo.saveRolePlay(rolePlay);
     // Notify listeners so views that depend on RolePlay state (e.g. the
     // Roster tab's actor→roles subtitle) can refresh on cast / uncast.
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent.rolePlaySaved(program, rolePlay));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent.rolePlaySaved(plan, rolePlay));
     }
   }
 
   Future<RolePlay?> deleteRolePlay(String uuid) async {
     final deleted = await _repo.deleteRolePlay(uuid);
-    final program = activeProgram;
-    if (deleted != null && program != null) {
-      _controller.add(ProgramEvent.rolePlayDeleted(program, deleted));
+    final plan = activePlan;
+    if (deleted != null && plan != null) {
+      _controller.add(PlanEvent.rolePlayDeleted(plan, deleted));
     }
     return deleted;
   }
 
   List<Actor> loadActors() {
-    if (activeProgramUuid == null) return const [];
+    if (activePlanUuid == null) return const [];
     return _repo.loadActors();
   }
 
   Actor? getActor(String uuid) => _repo.getActor(uuid);
 
   /// See [saveRolePlay] for the rationale behind requiring localizations
-  /// and ensuring an active program before write.
+  /// and ensuring an active plan before write.
   Future<void> saveActor(
     AppLocalizations localizations,
     Actor actor,
   ) async {
-    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _ensureActivePlan(localizations.defaultPlanName);
     await _repo.saveActor(actor);
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent.actorSaved(program, actor));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent.actorSaved(plan, actor));
     }
   }
 
   Future<Actor?> deleteActor(String uuid) async {
     final deleted = await _repo.deleteActor(uuid);
-    final program = activeProgram;
-    if (deleted != null && program != null) {
-      _controller.add(ProgramEvent.actorDeleted(program, deleted));
+    final plan = activePlan;
+    if (deleted != null && plan != null) {
+      _controller.add(PlanEvent.actorDeleted(plan, deleted));
     }
     return deleted;
   }
 
   List<Exercise> loadExercises() {
-    if (activeProgramUuid == null) return const [];
+    if (activePlanUuid == null) return const [];
     return _repo.loadExercises();
   }
 
@@ -408,7 +408,7 @@ class ProgramService {
     // still available via the search-result chip and the station detail
     // screen.
     final format =
-        activeProgram?.stationNumberFormat ?? StationNumberFormat.dotted;
+        activePlan?.stationNumberFormat ?? StationNumberFormat.dotted;
     final markers = <StationLocation>[];
     final exercises = loadExercises();
     for (var ei = 0; ei < exercises.length; ei++) {
@@ -426,18 +426,18 @@ class ProgramService {
     AppLocalizations localizations,
     Exercise exercise,
   ) async {
-    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _ensureActivePlan(localizations.defaultPlanName);
     await ensureTeams(localizations, exercise.numberOfTeams);
-    // Assign a new index when this exercise is not yet in the program so it
+    // Assign a new index when this exercise is not yet in the plan so it
     // appends at the end. Leave an edit of an existing exercise's index alone.
     final persisted = _repo.getExercise(exercise.uuid);
     final toSave = persisted == null
         ? exercise.copyWith(index: _nextExerciseIndex())
         : exercise;
     await _repo.saveExercise(toSave);
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent.added(program, toSave));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent.added(plan, toSave));
     }
   }
 
@@ -449,9 +449,9 @@ class ProgramService {
     return existing.map((e) => e.index).reduce(max) + 1;
   }
 
-  /// Rewrites [Exercise.index] values so the exercises in the active program
+  /// Rewrites [Exercise.index] values so the exercises in the active plan
   /// are ordered according to [orderedUuids] (a full permutation of all
-  /// exercise uuids in the program). Each exercise whose position changed is
+  /// exercise uuids in the plan). Each exercise whose position changed is
   /// persisted through the existing save path.
   ///
   /// Called by drag-to-reorder, move-up/down, and the one-shot sort actions —
@@ -463,9 +463,9 @@ class ProgramService {
         await _repo.saveExercise(ex.copyWith(index: i));
       }
     }
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent(ProgramEventType.programRefreshed, program));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent(PlanEventType.planRefreshed, plan));
     }
   }
 
@@ -526,9 +526,9 @@ class ProgramService {
       }
     }
 
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent(ProgramEventType.programRefreshed, program));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent(PlanEventType.planRefreshed, plan));
     }
   }
 
@@ -536,55 +536,55 @@ class ProgramService {
     AppLocalizations localizations,
     Team team,
   ) async {
-    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _ensureActivePlan(localizations.defaultPlanName);
     await _repo.saveTeam(team);
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent.teamSaved(program, team));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent.teamSaved(plan, team));
     }
   }
 
   Future<void> deleteExercise(String uuid, [bool replace = false]) async {
-    final program = activeProgram;
-    if (program == null) return;
+    final plan = activePlan;
+    if (plan == null) return;
     final deleted = await _repo.deleteExercise(uuid);
     if (deleted != null) {
-      _controller.add(ProgramEvent.deleted(program, deleted));
+      _controller.add(PlanEvent.deleted(plan, deleted));
     }
   }
 
-  Future<DrillFile> exportProgram(
+  Future<DrillFile> exportPlan(
     String uuid,
     String fileName,
     List<String> selected,
   ) async {
-    final program = _programForExport(
+    final plan = _planForExport(
       uuid: uuid,
       name: fileName,
       selected: selected,
     );
-    final drillFile = DrillFile.fromProgram(program, fileName);
-    _controller.add(ProgramEvent.exported(program, drillFile));
+    final drillFile = DrillFile.fromPlan(plan, fileName);
+    _controller.add(PlanEvent.exported(plan, drillFile));
     return drillFile;
   }
 
-  Future<Program?> openProgram(
+  Future<Plan?> openPlan(
     AppLocalizations localizations,
     DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
-    final program = await installFromFile(file, activate: true);
-    _controller.add(ProgramEvent.opened(program, file));
-    return program;
+    final plan = await installFromFile(file, activate: true);
+    _controller.add(PlanEvent.opened(plan, file));
+    return plan;
   }
 
-  Future<Program?> importProgram(
+  Future<Plan?> importPlan(
     AppLocalizations localizations,
     DrillFile file, {
     OnSelectExercises? onSelect,
   }) async {
-    await _ensureActiveProgram(localizations.defaultPlanName);
-    final incoming = file.program();
+    await _ensureActivePlan(localizations.defaultPlanName);
+    final incoming = file.plan();
     final selected = onSelect == null
         ? incoming.exercises
         : await onSelect.call(incoming.exercises);
@@ -601,19 +601,19 @@ class ProgramService {
     }
     await ensureTeams(localizations, maxNumberOfTeams);
 
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent.imported(program, file));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent.imported(plan, file));
     }
-    return program?.copyWith(exercises: selected.toList());
+    return plan?.copyWith(exercises: selected.toList());
   }
 
-  Future<Program?> mergeFromProgram(
+  Future<Plan?> mergeFromPlan(
     AppLocalizations localizations,
-    Program source,
+    Plan source,
     List<String> selectedExerciseUuids,
   ) async {
-    await _ensureActiveProgram(localizations.defaultPlanName);
+    await _ensureActivePlan(localizations.defaultPlanName);
     final selected = source.exercises
         .where((exercise) => selectedExerciseUuids.contains(exercise.uuid))
         .toList();
@@ -630,28 +630,29 @@ class ProgramService {
     }
     await ensureTeams(localizations, maxNumberOfTeams);
 
-    final program = activeProgram;
-    if (program != null) {
-      _controller.add(ProgramEvent.importedProgram(program));
+    final plan = activePlan;
+    if (plan != null) {
+      _controller.add(PlanEvent.importedPlan(plan));
     }
-    return program?.copyWith(exercises: selected);
+    return plan?.copyWith(exercises: selected);
   }
 
-  Future<Program> installFromFile(
+  Future<Plan> installFromFile(
     DrillFile file, {
     bool activate = false,
   }) async {
-    final incoming = file.program();
+    final incoming = file.plan();
     // Always preserve the incoming uuid. The catalog wiki model relies on
-    // Program.uuid being stable across opens so the backend ownership check
-    // (ownerId, programId) lines up when the same plan is published again
+    // Plan.uuid being stable across opens so the backend ownership check
+    // (ownerId, programId — the Netlify functions' wire name for this uuid)
+    // lines up when the same plan is published again
     // from a different device or after reinstall. Regenerating on collision
     // here would silently break that link. If the user re-opens a plan they
     // already have, the existing local copy is overwritten — which matches
     // the "this is the same plan" semantic.
     final now = DateTime.now();
     final installed = incoming.copyWith(
-      source: ProgramSource.imported(fileName: file.fileName),
+      source: PlanSource.imported(fileName: file.fileName),
       metadata: incoming.metadata.copyWith(updated: now),
       contentHash: incoming.computeContentHash(),
       // Keep the local cast roster when re-opening a plan we already have.
@@ -659,18 +660,18 @@ class ProgramService {
       // without this the existing actors would be wiped on every reinstall.
       actors: _mergeLocalActors(incoming.uuid, incoming.actors),
     );
-    await _repo.saveProgram(installed);
+    await _repo.savePlan(installed);
     if (activate) {
-      await _repo.setActiveProgramUuid(installed.uuid);
+      await _repo.setActivePlanUuid(installed.uuid);
       ExerciseService().stop();
     }
     _controller.add(
-      ProgramEvent(ProgramEventType.programInstalled, installed, file: file),
+      PlanEvent(PlanEventType.planInstalled, installed, file: file),
     );
     return installed;
   }
 
-  /// Install every program in a drill-library bundle into the local
+  /// Install every plan in a drill-library bundle into the local
   /// library. Never activates anything and never touches the active plan
   /// (ADR-0045). Best-effort per entry: a [DrillFormatException] on one
   /// entry increments [BundleInstallResult.skipped] and does not abort the
@@ -696,7 +697,7 @@ class ProgramService {
     return BundleInstallResult(imported: imported, skipped: skipped);
   }
 
-  Future<Program> installFromCatalog(
+  Future<Plan> installFromCatalog(
     MarketFeedItem item,
     DrillClient client, {
     bool activate = false,
@@ -708,33 +709,33 @@ class ProgramService {
   /// Same as [installFromCatalog], but for a caller that already downloaded
   /// the blob (e.g. a bottom sheet offering both "Open" and "Import" off a
   /// single fetch of a shared `/i/<slug>` link — see `install_link_handler`).
-  Future<Program> installFromCatalogFile(
+  Future<Plan> installFromCatalogFile(
     MarketFeedItem item,
     DrillDownloadResponse download, {
     bool activate = false,
   }) async {
     final installed = await installFromFile(download.file, activate: activate);
-    final catalogProgram = installed.copyWith(
-      source: ProgramSource.catalog(
+    final catalogPlan = installed.copyWith(
+      source: PlanSource.catalog(
         slug: item.slug,
         latestEtag: download.etag ?? '',
         installedAt: DateTime.now(),
         latestVersion: download.version,
       ),
-      contentHash: _repo.loadProgram(installed.uuid)?.computeContentHash(),
+      contentHash: _repo.loadPlan(installed.uuid)?.computeContentHash(),
     );
-    await _repo.saveProgramShell(catalogProgram);
+    await _repo.savePlanShell(catalogPlan);
     _controller.add(
-      ProgramEvent(ProgramEventType.programInstalled, catalogProgram),
+      PlanEvent(PlanEventType.planInstalled, catalogPlan),
     );
-    return _repo.loadProgram(catalogProgram.uuid) ?? catalogProgram;
+    return _repo.loadPlan(catalogPlan.uuid) ?? catalogPlan;
   }
 
   Future<CatalogRefreshOutcome> refreshCatalogItem(
-    String programUuid,
+    String planUuid,
     DrillClient client, {
     required Future<CatalogConflictChoice> Function(
-      ProgramDiff diff, {
+      PlanDiff diff, {
       required bool ownedSlug,
       required bool remoteUnchanged,
       required String? localVersion,
@@ -742,7 +743,7 @@ class ProgramService {
     })
     onConflict,
   }) async {
-    final local = _repo.loadProgram(programUuid);
+    final local = _repo.loadPlan(planUuid);
     final source = local?.source;
     final catalogSource = source?.whenOrNull(
       catalog: (slug, latestEtag, installedAt, latestVersion) => (
@@ -755,7 +756,7 @@ class ProgramService {
     if (local == null || catalogSource == null) {
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.failed,
-        programUuid: programUuid,
+        planUuid: planUuid,
       );
     }
     final (:slug, :storedEtag, :installedAt, :storedVersion) = catalogSource;
@@ -774,19 +775,19 @@ class ProgramService {
     if (!head.exists) {
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.removedFromCatalog,
-        programUuid: programUuid,
+        planUuid: planUuid,
       );
     }
     if (head.notModified && !hasLocalChanges) {
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.upToDate,
-        programUuid: programUuid,
+        planUuid: planUuid,
       );
     }
 
     final download = await client.download(slug);
-    final remote = download.file.program();
-    final diff = diffPrograms(local, remote);
+    final remote = download.file.plan();
+    final diff = diffPlans(local, remote);
     final latestEtag = download.etag ?? head.etag ?? storedEtag;
     final catalogVersion = download.version ?? head.version ?? storedVersion;
     final remoteUnchanged = head.notModified;
@@ -800,7 +801,7 @@ class ProgramService {
 
     if (!hasLocalChanges) {
       debugPrint('[refreshCatalogItem] no local changes → overwriting local');
-      await _overwriteCatalogProgram(
+      await _overwriteCatalogPlan(
         local,
         remote,
         slug,
@@ -809,7 +810,7 @@ class ProgramService {
       );
       return CatalogRefreshOutcome(
         kind: CatalogRefreshKind.updatedSilently,
-        programUuid: programUuid,
+        planUuid: planUuid,
         diff: diff,
         remoteUnchanged: remoteUnchanged,
       );
@@ -827,12 +828,12 @@ class ProgramService {
       case CatalogConflictChoice.cancel:
         return CatalogRefreshOutcome(
           kind: CatalogRefreshKind.cancelled,
-          programUuid: programUuid,
+          planUuid: planUuid,
           diff: diff,
           remoteUnchanged: remoteUnchanged,
         );
       case CatalogConflictChoice.overwriteLocal:
-        await _overwriteCatalogProgram(
+        await _overwriteCatalogPlan(
           local,
           remote,
           slug,
@@ -841,7 +842,7 @@ class ProgramService {
         );
         return CatalogRefreshOutcome(
           kind: CatalogRefreshKind.updatedAfterPrompt,
-          programUuid: programUuid,
+          planUuid: planUuid,
           diff: diff,
           remoteUnchanged: remoteUnchanged,
         );
@@ -851,13 +852,13 @@ class ProgramService {
         // local changes — sending the stale storedEtag would 412 against
         // the server we just synced from.
         final upload = await client.upload(
-          DrillFile.fromProgram(local, slug),
+          DrillFile.fromPlan(local, slug),
           ifMatchEtag: latestEtag,
           published: true,
         );
         await _repo.setOwnsCatalogSlug(slug, true);
         final published = local.copyWith(
-          source: ProgramSource.catalog(
+          source: PlanSource.catalog(
             slug: slug,
             latestEtag: upload.etag,
             installedAt: installedAt,
@@ -865,13 +866,13 @@ class ProgramService {
           ),
           contentHash: local.computeContentHash(),
         );
-        await _repo.saveProgramShell(published);
+        await _repo.savePlanShell(published);
         _controller.add(
-          ProgramEvent(ProgramEventType.programRefreshed, published),
+          PlanEvent(PlanEventType.planRefreshed, published),
         );
         return CatalogRefreshOutcome(
           kind: CatalogRefreshKind.published,
-          programUuid: programUuid,
+          planUuid: planUuid,
           diff: diff,
           remoteUnchanged: remoteUnchanged,
         );
@@ -879,23 +880,23 @@ class ProgramService {
         final fork = local.copyWith(
           uuid: nanoid(10),
           name: '${local.name} copy',
-          source: const ProgramSource.local(),
+          source: const PlanSource.local(),
           contentHash: local.computeContentHash(),
         );
-        await _repo.saveProgram(fork);
-        _controller.add(ProgramEvent(ProgramEventType.programCreated, fork));
+        await _repo.savePlan(fork);
+        _controller.add(PlanEvent(PlanEventType.planCreated, fork));
         return CatalogRefreshOutcome(
           kind: CatalogRefreshKind.forked,
-          programUuid: fork.uuid,
+          planUuid: fork.uuid,
           diff: diff,
           remoteUnchanged: remoteUnchanged,
         );
     }
   }
 
-  /// Publish a program to the catalog.
+  /// Publish a plan to the catalog.
   ///
-  /// Handles both first-time publish (when [Program.source] is [_Local] or
+  /// Handles both first-time publish (when [Plan.source] is [_Local] or
   /// [_Imported]) and updates of an already-published plan (when the source is
   /// [_Catalog]).
   ///
@@ -906,14 +907,14 @@ class ProgramService {
   /// Throws [DrillApiException] with `status == 409` when the slug is in use by
   /// an unrelated plan, and with `status == 412` when a concurrent update raced
   /// ahead. Other errors are rethrown unchanged.
-  Future<({Program program, bool notModified})> publishProgram(
-    String programUuid, {
+  Future<({Plan plan, bool notModified})> publishPlan(
+    String planUuid, {
     required String slug,
     required DrillClient client,
   }) async {
-    final local = _repo.loadProgram(programUuid);
+    final local = _repo.loadPlan(planUuid);
     if (local == null) {
-      throw StateError('Program $programUuid not found');
+      throw StateError('Plan $planUuid not found');
     }
 
     final catalogSource = local.source.whenOrNull(
@@ -938,23 +939,23 @@ class ProgramService {
     }
 
     debugPrint(
-      '[publishProgram] slug=$effectiveSlug name="${local.name}" '
+      '[publishPlan] slug=$effectiveSlug name="${local.name}" '
       'ifMatch=$ifMatch contentHash=${local.contentHash}',
     );
-    final file = DrillFile.fromProgram(local, effectiveSlug);
+    final file = DrillFile.fromPlan(local, effectiveSlug);
     final upload = await client.upload(
       file,
       ifMatchEtag: ifMatch,
       published: true,
     );
     debugPrint(
-      '[publishProgram] upload version=${upload.version} '
+      '[publishPlan] upload version=${upload.version} '
       'newEtag=${upload.etag} notModified=${upload.notModified}',
     );
     await _repo.setOwnsCatalogSlug(effectiveSlug, true);
 
     final published = local.copyWith(
-      source: ProgramSource.catalog(
+      source: PlanSource.catalog(
         slug: effectiveSlug,
         latestEtag: upload.etag,
         installedAt: existingInstalledAt ?? DateTime.now(),
@@ -962,40 +963,40 @@ class ProgramService {
       ),
       contentHash: local.computeContentHash(),
     );
-    await _repo.saveProgramShell(published);
+    await _repo.savePlanShell(published);
     _controller.add(
-      ProgramEvent(ProgramEventType.programRefreshed, published),
+      PlanEvent(PlanEventType.planRefreshed, published),
     );
     return (
-      program: _repo.loadProgram(published.uuid) ?? published,
+      plan: _repo.loadPlan(published.uuid) ?? published,
       notModified: upload.notModified,
     );
   }
 
-  /// Publish a program to the catalog under a specific [slug], forking the
+  /// Publish a plan to the catalog under a specific [slug], forking the
   /// local plan if the slug differs from its current catalog slug.
   ///
-  /// Behaviour depends on the program's current source:
-  ///   - Source is local / imported: identical to [publishProgram] (first-time
+  /// Behaviour depends on the plan's current source:
+  ///   - Source is local / imported: identical to [publishPlan] (first-time
   ///     publish at the requested slug).
   ///   - Source is catalog and [slug] equals the current slug: delegates to
-  ///     [publishProgram] — pure update, no fork.
+  ///     [publishPlan] — pure update, no fork.
   ///   - Source is catalog and [slug] differs from the current slug: a local
-  ///     fork is created (new [Program.uuid]) tracking the new slug, and the
+  ///     fork is created (new [Plan.uuid]) tracking the new slug, and the
   ///     fork is published. The original local plan is left untouched and
   ///     continues to track its existing slug.
   ///
-  /// Returns the published [Program] (the fork, when a fork was created).
+  /// Returns the published [Plan] (the fork, when a fork was created).
   ///
-  /// Throws the same exceptions as [publishProgram].
-  Future<({Program program, bool notModified})> publishProgramAs(
-    String programUuid, {
+  /// Throws the same exceptions as [publishPlan].
+  Future<({Plan plan, bool notModified})> publishPlanAs(
+    String planUuid, {
     required String slug,
     required DrillClient client,
   }) async {
-    final local = _repo.loadProgram(programUuid);
+    final local = _repo.loadPlan(planUuid);
     if (local == null) {
-      throw StateError('Program $programUuid not found');
+      throw StateError('Plan $planUuid not found');
     }
     final cleanSlug = sanitizeSlug(slug);
     if (cleanSlug.isEmpty) {
@@ -1008,8 +1009,8 @@ class ProgramService {
     );
     if (currentSlug == null || currentSlug == cleanSlug) {
       // First-time publish, or update in place under the same slug. No fork.
-      return publishProgram(
-        programUuid,
+      return publishPlan(
+        planUuid,
         slug: cleanSlug,
         client: client,
       );
@@ -1021,14 +1022,14 @@ class ProgramService {
     final now = DateTime.now();
     final fork = local.copyWith(
       uuid: nanoid(10),
-      source: const ProgramSource.local(),
+      source: const PlanSource.local(),
       metadata: local.metadata.copyWith(updated: now),
       contentHash: local.computeContentHash(),
     );
-    await _repo.saveProgram(fork);
-    _controller.add(ProgramEvent(ProgramEventType.programCreated, fork));
+    await _repo.savePlan(fork);
+    _controller.add(PlanEvent(PlanEventType.planCreated, fork));
 
-    return publishProgram(
+    return publishPlan(
       fork.uuid,
       slug: cleanSlug,
       client: client,
@@ -1036,7 +1037,7 @@ class ProgramService {
   }
 
   List<Team> loadTeams() {
-    if (activeProgramUuid == null) return const [];
+    if (activePlanUuid == null) return const [];
     return _repo.loadTeams();
   }
 
@@ -1056,24 +1057,24 @@ class ProgramService {
     return teams;
   }
 
-  Program _programForExport({
+  Plan _planForExport({
     required String uuid,
     required String name,
     required List<String> selected,
   }) {
     final now = DateTime.now();
-    final current = activeProgram;
+    final current = activePlan;
     final exercises = loadExercises()
         .where((exercise) => selected.contains(exercise.uuid))
         .toList();
-    return Program(
+    return Plan(
       uuid: uuid,
       name: name,
       description: current?.description ?? '',
       metadata:
           current?.metadata.copyWith(updated: now) ??
-          ProgramMetadata(created: now, updated: now, version: '1.0'),
-      source: current?.source ?? const ProgramSource.local(),
+          PlanMetadata(created: now, updated: now, version: '1.0'),
+      source: current?.source ?? const PlanSource.local(),
       teams: loadTeams(),
       sessions: current?.sessions ?? const [],
       exercises: exercises,
@@ -1084,21 +1085,21 @@ class ProgramService {
 
   /// Public entry point for the gated startup call in [MainScreen].
   ///
-  /// Only runs when SharedPreferences already contains the active-program key
-  /// (i.e., the user has previously created a program). On a fresh install,
+  /// Only runs when SharedPreferences already contains the active-plan key
+  /// (i.e., the user has previously created a plan). On a fresh install,
   /// [MainScreen] skips this call so no auto-created "Default plan" appears.
-  Future<void> ensureActiveProgram(AppLocalizations localizations) =>
-      _ensureActiveProgram(localizations.defaultPlanName);
+  Future<void> ensureActivePlan(AppLocalizations localizations) =>
+      _ensureActivePlan(localizations.defaultPlanName);
 
-  Future<void> _ensureActiveProgram(String defaultPlanName) async {
-    if (activeProgramUuid != null) return;
-    final program = await createProgram(name: defaultPlanName);
-    await _repo.setActiveProgramUuid(program.uuid);
+  Future<void> _ensureActivePlan(String defaultPlanName) async {
+    if (activePlanUuid != null) return;
+    final plan = await createPlan(name: defaultPlanName);
+    await _repo.setActivePlanUuid(plan.uuid);
   }
 
-  Future<void> _overwriteCatalogProgram(
-    Program local,
-    Program remote,
+  Future<void> _overwriteCatalogPlan(
+    Plan local,
+    Plan remote,
     String slug,
     String latestEtag,
     String? latestVersion,
@@ -1106,7 +1107,7 @@ class ProgramService {
     final merged = remote.copyWith(
       uuid: local.uuid,
       name: remote.name,
-      source: ProgramSource.catalog(
+      source: PlanSource.catalog(
         slug: slug,
         latestEtag: latestEtag,
         installedAt: DateTime.now(),
@@ -1118,23 +1119,23 @@ class ProgramService {
       // silently destroy the user's roster and break role↔actor links.
       actors: _mergeLocalActors(local.uuid, remote.actors),
     );
-    await _repo.saveProgram(merged);
-    _controller.add(ProgramEvent(ProgramEventType.programRefreshed, merged));
+    await _repo.savePlan(merged);
+    _controller.add(PlanEvent(PlanEventType.planRefreshed, merged));
   }
 
   /// Actors are local-only PII: the catalog strips the `actors/` folder
-  /// server-side (ADR-0018), so any program fetched from the catalog arrives
+  /// server-side (ADR-0018), so any plan fetched from the catalog arrives
   /// with an empty actor list. Replacing the local copy wholesale would then
   /// destroy the cast roster built on this device — the data loss behind
   /// "the marker list had a name yesterday, it's empty today".
   ///
-  /// This merges [incoming] over the actors already stored for [programUuid]
+  /// This merges [incoming] over the actors already stored for [planUuid]
   /// by uuid: incoming entries win, and local-only actors (those absent from
   /// [incoming]) are retained. A first install has no existing actors, so it
   /// returns [incoming] unchanged. A genuine peer-to-peer `.drill` that
   /// legitimately carries actors still imports them.
-  List<Actor> _mergeLocalActors(String programUuid, List<Actor> incoming) {
-    final existing = _repo.loadActors(programUuid);
+  List<Actor> _mergeLocalActors(String planUuid, List<Actor> incoming) {
+    final existing = _repo.loadActors(planUuid);
     if (existing.isEmpty) return incoming;
     final incomingUuids = {for (final a in incoming) a.uuid};
     return [

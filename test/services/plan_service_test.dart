@@ -5,7 +5,7 @@ import 'package:ringdrill/models/actor.dart';
 import 'package:ringdrill/models/exercise.dart';
 import 'package:ringdrill/models/role_play.dart';
 import 'package:ringdrill/models/station.dart';
-import 'package:ringdrill/services/program_service.dart';
+import 'package:ringdrill/services/plan_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
@@ -51,20 +51,20 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await ProgramService().init();
-    // Pre-create and activate a program so saveExercise doesn't need to
+    await PlanService().init();
+    // Pre-create and activate a plan so saveExercise doesn't need to
     // create a default plan itself.
-    final program = await ProgramService().createProgram(name: 'Test plan');
-    await ProgramService().setActive(program.uuid);
+    final plan = await PlanService().createPlan(name: 'Test plan');
+    await PlanService().setActive(plan.uuid);
   });
 
   tearDown(() async {
-    await ProgramService().clearAllForTest();
+    await PlanService().clearAllForTest();
   });
 
-  group('ProgramService — index assignment on create', () {
+  group('PlanService — index assignment on create', () {
     test('first exercise appended to empty plan gets index 0', () async {
-      final service = ProgramService();
+      final service = PlanService();
       final exercise = _ex('ex-1');
       await service.saveExercise(l10n, exercise);
 
@@ -74,7 +74,7 @@ void main() {
     });
 
     test('second exercise appended gets index 1', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, _ex('ex-1', index: 0));
       await service.saveExercise(l10n, _ex('ex-2', index: 0));
 
@@ -88,7 +88,7 @@ void main() {
     });
 
     test('editing an existing exercise preserves its index', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, _ex('ex-1'));
       final original = service.loadExercises().first;
 
@@ -100,9 +100,9 @@ void main() {
     });
   });
 
-  group('ProgramService — reorderExercises', () {
+  group('PlanService — reorderExercises', () {
     test('produces a dense 0..n-1 permutation', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, _ex('ex-a', name: 'Alpha'));
       await service.saveExercise(l10n, _ex('ex-b', name: 'Beta'));
       await service.saveExercise(l10n, _ex('ex-c', name: 'Gamma'));
@@ -121,7 +121,7 @@ void main() {
     });
 
     test('reordering to the same order does not change indices', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, _ex('ex-1'));
       await service.saveExercise(l10n, _ex('ex-2'));
 
@@ -164,9 +164,9 @@ void main() {
     endTime: _end,
   );
 
-  group('ProgramService — reorderStations', () {
+  group('PlanService — reorderStations', () {
     test('writes a dense 0..n-1 index permutation in the new order', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, exThreeStations('ex-s'));
 
       // Reorder: Gamma first, then Alpha, then Beta.
@@ -181,7 +181,7 @@ void main() {
     });
 
     test('a RolePlay whose stationIndex pointed at a moved station follows it', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, exThreeStations('ex-s'));
 
       // Marker at old station index 0 (Alpha).
@@ -203,7 +203,7 @@ void main() {
     });
 
     test('a RolePlay with stationIndex == null is left untouched', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, exThreeStations('ex-s'));
 
       final rp = RolePlay(
@@ -222,9 +222,9 @@ void main() {
     });
   });
 
-  group('ProgramService — delete', () {
+  group('PlanService — delete', () {
     test('deleteExercise removes the exercise from the active plan', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, _ex('ex-keep', name: 'Keep'));
       await service.saveExercise(l10n, _ex('ex-drop', name: 'Drop'));
       expect(service.loadExercises().length, 2);
@@ -237,7 +237,7 @@ void main() {
     });
 
     test('deleteExercise on an unknown uuid is a no-op', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, _ex('ex-1'));
 
       await service.deleteExercise('does-not-exist');
@@ -248,7 +248,7 @@ void main() {
     test(
       'deleteRolePlay removes the role but leaves its cast actor in the roster',
       () async {
-        final service = ProgramService();
+        final service = PlanService();
         await service.saveExercise(l10n, _ex('ex-1'));
 
         const actor = Actor(
@@ -283,12 +283,12 @@ void main() {
 
   // These guard the stream contract: every mutation must emit so the
   // StreamBuilder-driven surfaces (Spill list, Roster, Post rows) refresh.
-  group('ProgramService — mutations emit events', () {
-    Future<List<ProgramEventType>> capture(
-      ProgramService service,
+  group('PlanService — mutations emit events', () {
+    Future<List<PlanEventType>> capture(
+      PlanService service,
       Future<void> Function() mutate,
     ) async {
-      final types = <ProgramEventType>[];
+      final types = <PlanEventType>[];
       final sub = service.events.listen((e) => types.add(e.type));
       await mutate();
       // `events` is a broadcast stream: `_controller.add` schedules delivery
@@ -300,7 +300,7 @@ void main() {
     }
 
     test('deleteRolePlay emits rolePlayDeleted', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveExercise(l10n, _ex('ex-1'));
       await service.saveRolePlay(
         l10n,
@@ -309,11 +309,11 @@ void main() {
 
       final types = await capture(service, () => service.deleteRolePlay('rp-1'));
 
-      expect(types, contains(ProgramEventType.rolePlayDeleted));
+      expect(types, contains(PlanEventType.rolePlayDeleted));
     });
 
     test('saveActor emits actorSaved', () async {
-      final service = ProgramService();
+      final service = PlanService();
       final types = await capture(
         service,
         () => service.saveActor(
@@ -322,11 +322,11 @@ void main() {
         ),
       );
 
-      expect(types, contains(ProgramEventType.actorSaved));
+      expect(types, contains(PlanEventType.actorSaved));
     });
 
     test('deleteActor emits actorDeleted', () async {
-      final service = ProgramService();
+      final service = PlanService();
       await service.saveActor(
         l10n,
         const Actor(uuid: 'actor-1', realName: 'Kari'),
@@ -334,7 +334,7 @@ void main() {
 
       final types = await capture(service, () => service.deleteActor('actor-1'));
 
-      expect(types, contains(ProgramEventType.actorDeleted));
+      expect(types, contains(PlanEventType.actorDeleted));
     });
   });
 }
