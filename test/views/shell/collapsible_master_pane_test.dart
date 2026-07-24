@@ -178,7 +178,7 @@ void main() {
       await _tapSegment(tester, l10n.stationsTab);
       expect(
         find.descendant(
-          of: find.byType(StationExerciseScreen),
+          of: find.byType(StationScreen),
           matching: find.textContaining('Station A1'),
         ),
         findsOneWidget,

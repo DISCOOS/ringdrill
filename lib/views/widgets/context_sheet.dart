@@ -378,7 +378,7 @@ class _DefaultContextSheetBody extends StatelessWidget {
         uuid: exerciseUuid,
       ),
       StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
-        StationExerciseScreen(uuid: exerciseUuid, stationIndex: stationIndex),
+        StationScreen(uuid: exerciseUuid, stationIndex: stationIndex),
       TeamSheetTarget(:final exerciseUuid, :final teamIndex) => _teamBody(
         exerciseUuid,
         teamIndex,

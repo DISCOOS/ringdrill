@@ -109,7 +109,7 @@ Widget _stationHarness(String uuid) {
       GoRoute(
         path: '/',
         builder: (context, state) =>
-            StationExerciseScreen(stationIndex: 0, uuid: uuid),
+            StationScreen(stationIndex: 0, uuid: uuid),
       ),
     ],
   );

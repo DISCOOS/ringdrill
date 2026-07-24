@@ -215,7 +215,7 @@ void main() {
       expect(_selectedSegment(tester), {ProgramSegment.stations});
       expect(
         tester
-            .widget<StationExerciseScreen>(find.byType(StationExerciseScreen))
+            .widget<StationScreen>(find.byType(StationScreen))
             .uuid,
         _exerciseAUuid,
       );
@@ -256,8 +256,8 @@ void main() {
       // drag the master along: segment switches to Poster...
       expect(_selectedSegment(tester), {ProgramSegment.stations});
       // ...and the detail pane shows the Post viewer for that station.
-      final detail = tester.widget<StationExerciseScreen>(
-        find.byType(StationExerciseScreen),
+      final detail = tester.widget<StationScreen>(
+        find.byType(StationScreen),
       );
       expect(detail.uuid, _exerciseAUuid);
       expect(detail.stationIndex, 0);
@@ -280,7 +280,7 @@ void main() {
       // must not race the redirect and clobber it back to null/first).
       await tester.pump();
       await tester.pump();
-      expect(find.byType(StationExerciseScreen), findsOneWidget);
+      expect(find.byType(StationScreen), findsOneWidget);
       expect(find.byType(RolePlayScreen), findsNothing);
     },
   );
@@ -307,8 +307,8 @@ void main() {
     // master-list tap) — the existing per-segment memory must still work.
     await tester.tap(find.text('Station B1').first);
     await tester.pumpAndSettle();
-    var detail = tester.widget<StationExerciseScreen>(
-      find.byType(StationExerciseScreen),
+    var detail = tester.widget<StationScreen>(
+      find.byType(StationScreen),
     );
     expect(detail.uuid, _exerciseBUuid);
 
@@ -317,8 +317,8 @@ void main() {
     // the segment's first item.
     await _tapSegment(tester, l10n.scriptSegment);
     await _tapSegment(tester, l10n.stationsTab);
-    detail = tester.widget<StationExerciseScreen>(
-      find.byType(StationExerciseScreen),
+    detail = tester.widget<StationScreen>(
+      find.byType(StationScreen),
     );
     expect(detail.uuid, _exerciseBUuid);
   });
@@ -346,7 +346,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('1.1 Station A1'));
       await tester.pumpAndSettle();
-      expect(find.byType(StationExerciseScreen), findsOneWidget);
+      expect(find.byType(StationScreen), findsOneWidget);
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
@@ -365,7 +365,7 @@ void main() {
       expect(tester.takeException(), isNull);
       // The deferred go lands on Poster with that station shown.
       expect(_selectedSegment(tester), {ProgramSegment.stations});
-      expect(find.byType(StationExerciseScreen), findsOneWidget);
+      expect(find.byType(StationScreen), findsOneWidget);
     },
   );
 
@@ -388,7 +388,7 @@ void main() {
       // The post-context card still redirects the modal's own content...
       await tester.tap(find.text('1.1 Station A1'));
       await tester.pumpAndSettle();
-      expect(find.byType(StationExerciseScreen), findsOneWidget);
+      expect(find.byType(StationScreen), findsOneWidget);
 
       // ...but closing it lands back on the Spill segment underneath, not
       // Poster: the narrow layout has no master pane, so the redirect must

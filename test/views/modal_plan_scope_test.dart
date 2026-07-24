@@ -176,14 +176,14 @@ void main() {
     },
   );
 
-  testWidgets('a detail sheet (StationExerciseScreen via ContextSheet.show) '
+  testWidgets('a detail sheet (StationScreen via ContextSheet.show) '
       'resolves the station name in its SheetTitle', (tester) async {
     await tester.pumpWidget(
       _buildHarness(exerciseUuid: _exerciseUuid, stationIndex: 0),
     );
     await _awaitSheetOpen(tester);
 
-    expect(find.byType(StationExerciseScreen), findsOneWidget);
+    expect(find.byType(StationScreen), findsOneWidget);
     // The SheetTitle prefixes the resolved name with the formatted post
     // number (Station.numberAndName) — "1.1 Station Kanal 8", not the bare
     // resolved name alone.

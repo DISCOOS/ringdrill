@@ -297,7 +297,7 @@ class _MapSheetHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mirrors StationExerciseScreen's own AppBar exactly (station_screen.dart)
+    // Mirrors StationScreen's own AppBar exactly (station_screen.dart)
     // — same MasterDetailLeading close-X, same toolbarHeight/SheetTitle
     // shape, the formatted post number folded into the primary text rather
     // than a separate badge widget — so the map sheet reads as "the same

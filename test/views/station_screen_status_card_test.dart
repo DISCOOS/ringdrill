@@ -107,7 +107,7 @@ Widget _buildScreen({required int stationIndex}) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => StationExerciseScreen(
+        builder: (context, state) => StationScreen(
           stationIndex: stationIndex,
           uuid: _exerciseUuid,
         ),

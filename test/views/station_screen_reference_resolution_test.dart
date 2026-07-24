@@ -92,7 +92,7 @@ Widget _buildScreen() {
         path: '/',
         builder: (context, state) => const PlanScope(
           variables: [],
-          child: StationExerciseScreen(
+          child: StationScreen(
             stationIndex: 0,
             uuid: _exerciseUuid,
           ),

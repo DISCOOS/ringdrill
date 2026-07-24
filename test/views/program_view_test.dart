@@ -311,7 +311,7 @@ void main() {
       {ProgramSegment.stations},
     );
     expect(find.text(l10n.detailEmptyStation), findsNothing);
-    expect(find.byType(StationExerciseScreen), findsOneWidget);
+    expect(find.byType(StationScreen), findsOneWidget);
 
     await tester.tap(
       find

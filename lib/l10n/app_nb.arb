@@ -721,7 +721,7 @@
 
   "addRolePlay": "Legg til markørordre",
   "@addRolePlay": {
-    "description": "Knappetikett i Markørordre-seksjonen på StationExerciseScreen."
+    "description": "Knappetikett i Markørordre-seksjonen på StationScreen."
   },
   "newRolePlayTitle": "Nytt spill",
   "@newRolePlayTitle": {
@@ -737,7 +737,7 @@
   },
   "stationRolesSection": "Markører",
   "@stationRolesSection": {
-    "description": "Seksjonstittel for markørordrelisten i StationExerciseScreen."
+    "description": "Seksjonstittel for markørordrelisten i StationScreen."
   },
   "noRolesAtThisStation": "Ingen markører på denne posten",
   "@noRolesAtThisStation": {

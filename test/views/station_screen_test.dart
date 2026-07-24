@@ -119,14 +119,14 @@ Future<void> _seedAndInit() async {
   await ProgramService().init();
 }
 
-/// Wraps [StationExerciseScreen] in a GoRouter so [context.push] works
+/// Wraps [StationScreen] in a GoRouter so [context.push] works
 /// while still allowing the ProgramService to be ready before rendering.
 Widget _buildScreen({int stationIndex = 0}) {
   final router = GoRouter(
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => StationExerciseScreen(
+        builder: (context, state) => StationScreen(
           stationIndex: stationIndex,
           uuid: _exerciseUuid,
         ),
@@ -140,7 +140,7 @@ Widget _buildScreen({int stationIndex = 0}) {
   );
 }
 
-/// Hosts [StationExerciseScreen] inside an open [ContextSheet] so the
+/// Hosts [StationScreen] inside an open [ContextSheet] so the
 /// enacted-person tap that calls `ContextSheet.of(context).replace(...)`
 /// resolves and updates the sheet body.
 class _StationSheetHarness extends StatefulWidget {
@@ -181,7 +181,7 @@ class _StationSheetHarnessState extends State<_StationSheetHarness> {
       controller: _controller,
       bodyBuilder: (ctx, target) => switch (target) {
         StationSheetTarget(:final exerciseUuid, :final stationIndex) =>
-          StationExerciseScreen(uuid: exerciseUuid, stationIndex: stationIndex),
+          StationScreen(uuid: exerciseUuid, stationIndex: stationIndex),
         RoleSheetTarget(:final rolePlayUuid) => Scaffold(
           body: Center(child: Text('RolePlay $rolePlayUuid')),
         ),

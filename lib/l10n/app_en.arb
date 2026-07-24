@@ -1677,7 +1677,7 @@
 
   "addRolePlay": "Add role",
   "@addRolePlay": {
-    "description": "Button label in the Markører section on StationExerciseScreen to create a new RolePlay at this post."
+    "description": "Button label in the Markører section on StationScreen to create a new RolePlay at this post."
   },
   "newRolePlayTitle": "New role",
   "@newRolePlayTitle": {
@@ -1693,7 +1693,7 @@
   },
   "stationRolesSection": "Roles",
   "@stationRolesSection": {
-    "description": "Section header for the Markørordre list inside StationExerciseScreen."
+    "description": "Section header for the Markørordre list inside StationScreen."
   },
   "noRolesAtThisStation": "No roles at this post",
   "@noRolesAtThisStation": {

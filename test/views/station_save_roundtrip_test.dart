@@ -7,7 +7,7 @@ import 'package:ringdrill/views/widgets/context_sheet.dart';
 import 'support/save_roundtrip_harness.dart';
 
 /// Station editor → save → persist round-trip through the compact modal
-/// ContextSheet path (StationSheetTarget → StationExerciseScreen → AppBar
+/// ContextSheet path (StationSheetTarget → StationScreen → AppBar
 /// edit icon → StationFormScreen; the caller splices the popped station
 /// into its owning exercise and saves that). See save_roundtrip_harness.dart
 /// for why this seam needs end-to-end coverage.
@@ -56,7 +56,7 @@ void main() {
     );
     await openSheet(tester);
 
-    // Round 1: sheet body (StationExerciseScreen) → edit → rename → save.
+    // Round 1: sheet body (StationScreen) → edit → rename → save.
     await renameViaSheet(tester, from: 'Post 1', to: 'Post X');
     expect(
       ProgramService().getExercise('ex-rt-st')?.stations[0].name,

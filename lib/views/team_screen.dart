@@ -54,7 +54,7 @@ class _TeamScreenState extends State<TeamScreen>
         .toList();
 
     return Scaffold(
-      // Sheet-body AppBar (matches TeamExerciseScreen/StationExerciseScreen):
+      // Sheet-body AppBar (matches TeamExerciseScreen/StationScreen):
       // close affordance + SheetTitle + edit, so TeamScreen renders cleanly as
       // a ContextSheet body, not just a standalone route.
       appBar: AppBar(

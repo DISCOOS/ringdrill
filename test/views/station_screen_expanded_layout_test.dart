@@ -91,7 +91,7 @@ Widget _harness(Widget widget) => MaterialApp(
   home: widget,
 );
 
-/// Pumps [StationExerciseScreen] with the test binding reporting a wide
+/// Pumps [StationScreen] with the test binding reporting a wide
 /// (1200x800) window, but the widget itself constrained to [paneWidth] via
 /// an ancestor `SizedBox` — reproducing "wide window, narrow pane" the way
 /// the coordinator's own pane-local-breakpoint test does, so this proves the
@@ -112,7 +112,7 @@ Future<void> _pumpAtPaneWidth(WidgetTester tester, double paneWidth) async {
         child: SizedBox(
           width: paneWidth,
           height: 800,
-          child: const StationExerciseScreen(
+          child: const StationScreen(
             stationIndex: 0,
             uuid: _exerciseUuid,
           ),
@@ -142,7 +142,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -188,7 +188,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -241,7 +241,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -274,7 +274,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -299,7 +299,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -331,7 +331,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -365,7 +365,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();
@@ -388,7 +388,7 @@ void main() {
 
       await tester.pumpWidget(
         _harness(
-          const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+          const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
         ),
       );
       await tester.pumpAndSettle();

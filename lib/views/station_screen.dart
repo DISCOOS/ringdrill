@@ -44,18 +44,18 @@ import 'package:ringdrill/views/widgets/station_position_panel.dart';
 import 'package:ringdrill/views/widgets/station_scenario_map.dart';
 import 'package:ringdrill/views/widgets/station_scope.dart';
 
-class StationExerciseScreen extends StatefulWidget {
+class StationScreen extends StatefulWidget {
   final int stationIndex;
   final String uuid;
 
-  const StationExerciseScreen({
+  const StationScreen({
     super.key,
     required this.stationIndex,
     required this.uuid,
   });
 
   @override
-  State<StationExerciseScreen> createState() => _StationExerciseScreenState();
+  State<StationScreen> createState() => _StationScreenState();
 }
 
 /// The three segments of the compact/medium detail body: the post brief
@@ -67,7 +67,7 @@ class StationExerciseScreen extends StatefulWidget {
 /// selection regardless of a resize (the expanded body never reads it).
 enum _StationDetailView { info, script, map }
 
-class _StationExerciseScreenState extends State<StationExerciseScreen> {
+class _StationScreenState extends State<StationScreen> {
   late bool _isStarted;
   late Exercise _exercise;
   _StationDetailView _view = _StationDetailView.info;

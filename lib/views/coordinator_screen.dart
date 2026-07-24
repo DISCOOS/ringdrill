@@ -95,7 +95,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
   _CoordinatorView _view = _CoordinatorView.stations;
 
   /// The effective plan-variable map (ADR-0046) at [exercise]'s scope,
-  /// optionally narrowed to [station]'s — mirrors `StationExerciseScreen`.
+  /// optionally narrowed to [station]'s — mirrors `StationScreen`.
   /// Empty when there is no active plan.
   Map<String, String> _overridesFor(Exercise exercise, {Station? station}) {
     final program = _programService.activeProgram;
@@ -1777,7 +1777,7 @@ class _CoordinatorScreenState extends State<CoordinatorScreen>
             muted: none,
             // Mirror the description tap in _buildStationDetail: a round
             // row here represents "team T at station S in round R", so a
-            // tap should open the same StationExerciseScreen the
+            // tap should open the same StationScreen the
             // station-list path leads to. Rounds where the team has no
             // station (`none`) get no tap handler so the dead cell can't
             // trigger navigation.

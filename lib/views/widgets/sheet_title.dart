@@ -16,7 +16,7 @@ import 'package:ringdrill/views/widgets/ringdrill_text.dart';
 /// matters — omit where the entity has none.
 ///
 /// Designed to be dropped into `AppBar.title` together with
-/// `toolbarHeight: 72`. Used by `StationExerciseScreen`,
+/// `toolbarHeight: 72`. Used by `StationScreen`,
 /// `TeamExerciseScreen`, `RolePlayScreen` and the station mini-map sheet
 /// header so every viewer-context AppBar reads the same way.
 class SheetTitle extends StatelessWidget {

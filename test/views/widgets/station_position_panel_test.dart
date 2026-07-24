@@ -78,7 +78,7 @@ void main() {
       expect(find.byType(BottomSheet), findsOneWidget);
       expect(find.byType(Dialog), findsNothing);
 
-      // The header mirrors StationExerciseScreen's own AppBar exactly:
+      // The header mirrors StationScreen's own AppBar exactly:
       // MasterDetailLeading always renders a close-X in `leading` (there is
       // no MasterDetailScope reachable from a sheet's Overlay, so it never
       // shows the sidebar-toggle branch instead).

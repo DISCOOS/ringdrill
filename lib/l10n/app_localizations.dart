@@ -2918,7 +2918,7 @@ abstract class AppLocalizations {
   /// **'Delete the role \"{name}\"? The actor {actor} is unassigned from it, but kept in the roster.'**
   String confirmDeleteRolePlayWithActor(String name, String actor);
 
-  /// Button label in the Markører section on StationExerciseScreen to create a new RolePlay at this post.
+  /// Button label in the Markører section on StationScreen to create a new RolePlay at this post.
   ///
   /// In en, this message translates to:
   /// **'Add role'**
@@ -2942,7 +2942,7 @@ abstract class AppLocalizations {
   /// **'Role'**
   String get roleplaySectionRole;
 
-  /// Section header for the Markørordre list inside StationExerciseScreen.
+  /// Section header for the Markørordre list inside StationScreen.
   ///
   /// In en, this message translates to:
   /// **'Roles'**

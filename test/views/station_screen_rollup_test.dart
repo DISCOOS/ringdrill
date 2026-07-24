@@ -95,7 +95,7 @@ Widget _buildScreen() {
       GoRoute(
         path: '/',
         builder: (context, state) =>
-            const StationExerciseScreen(stationIndex: 0, uuid: _exerciseUuid),
+            const StationScreen(stationIndex: 0, uuid: _exerciseUuid),
       ),
     ],
   );
